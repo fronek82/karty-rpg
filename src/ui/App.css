@@ -1,0 +1,77 @@
+:root {
+  --tlo: #f7f5f0;
+  --tekst: #1d1b18;
+  --akcent: #7a2e1f;
+  --obramowanie: #d8d2c4;
+  --tlo-panelu: #ffffff;
+  color-scheme: light dark;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tlo: #1b1a18;
+    --tekst: #ece8df;
+    --akcent: #e0846f;
+    --obramowanie: #3a3631;
+    --tlo-panelu: #24221f;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--tlo);
+  color: var(--tekst);
+}
+
+a {
+  color: var(--akcent);
+}
+
+.aplikacja {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.naglowek {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--obramowanie);
+  background: var(--tlo-panelu);
+}
+
+.logo {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tresc {
+  flex: 1;
+  width: 100%;
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.uwaga {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  background: var(--tlo-panelu);
+}
+
+.stopka {
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
