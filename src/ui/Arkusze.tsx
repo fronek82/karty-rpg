@@ -5,10 +5,14 @@ import type { Arkusz } from '../model/arkusz';
 import { pakietMausritter } from '../pakiety/mausritter';
 import type { Pakiet } from '../pakiety/typy';
 import { scenaDoSvg } from '../silnik/svg';
+import { zapiszPlik } from './pliki';
 import { wczytajZasobyPakietu, type ZasobyPakietu } from './zasoby';
 
+/** Źródło arkuszy – pakiet albo projekt (oba mają talie i arkusze). */
+export type ZrodloArkuszy = Pick<Pakiet, 'id' | 'nazwa' | 'talie' | 'arkusze'>;
+
 /**
- * Arkusze do druku z pakietu: podgląd (dopasowany do szerokości albo w skali 1:1)
+ * Arkusze do druku z pakietu lub projektu: podgląd (dopasowany do szerokości albo w skali 1:1)
  * i pobieranie PDF. Kod PDF (pdf-lib) ładowany dopiero przy pierwszym pobraniu.
  */
 
@@ -24,7 +28,7 @@ function zasoby(pakiet: Pakiet): Promise<ZasobyPakietu> {
   return z;
 }
 
-function zbuduj(pakiet: Pakiet, arkusz: Arkusz, z: ZasobyPakietu): WynikArkusza {
+function zbuduj(pakiet: ZrodloArkuszy, arkusz: Arkusz, z: ZasobyPakietu): WynikArkusza {
   const talia = pakiet.talie.find((x) => x.id === arkusz.taliaId);
   if (!talia) throw new Error(`talia ${arkusz.taliaId}`);
   return zbudujArkusz(arkusz, talia, {
@@ -32,19 +36,6 @@ function zbuduj(pakiet: Pakiet, arkusz: Arkusz, z: ZasobyPakietu): WynikArkusza 
     szablony: z.szablony,
     obraz: (id) => z.obrazy.get(id)?.info,
   });
-}
-
-function zapiszPlik(bajty: Uint8Array, nazwa: string) {
-  const url = URL.createObjectURL(
-    new Blob([bajty as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }),
-  );
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nazwa;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 const szczegoly = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -58,34 +49,58 @@ type Blad = {
   szczegoly: string;
 };
 
+/** Strona arkuszy pakietu wbudowanego (zasoby z plików aplikacji). */
 export function Arkusze({ pakiet = pakietMausritter }: { pakiet?: Pakiet }) {
   // Zasoby razem z id pakietu – po zmianie pakietu stare czcionki nie trafią do nowego układu.
   const [z, ustawZ] = useState<{ pakietId: string; zasoby: ZasobyPakietu }>();
-  const [blad, ustawBlad] = useState<Blad>();
+  const [blad, ustawBlad] = useState<{ pakietId: string; szczegoly: string }>();
   const [proba, ustawProbe] = useState(0);
-  const [wybrany, ustawWybrany] = useState(0);
-  const [skala, ustawSkala] = useState<Skala>('dopasuj');
-  const [trwa, ustawTrwa] = useState(false);
-  const [pdfGotowy, ustawPdfGotowy] = useState(false);
 
   useEffect(() => {
     let aktywny = true;
     zasoby(pakiet).then(
       (w) => aktywny && ustawZ({ pakietId: pakiet.id, zasoby: w }),
-      (e: unknown) =>
-        aktywny &&
-        ustawBlad({
-          klucz: 'arkusze.bladWczytywania',
-          szczegoly: szczegoly(e),
-          pakietId: pakiet.id,
-        }),
+      (e: unknown) => aktywny && ustawBlad({ pakietId: pakiet.id, szczegoly: szczegoly(e) }),
     );
     return () => {
       aktywny = false;
     };
   }, [pakiet, proba]);
 
-  const zasobyPakietu = z?.pakietId === pakiet.id ? z.zasoby : undefined;
+  return (
+    <WidokArkuszy
+      zrodlo={pakiet}
+      zasoby={z?.pakietId === pakiet.id ? z.zasoby : undefined}
+      bladWczytywania={blad?.pakietId === pakiet.id ? blad.szczegoly : undefined}
+      ponow={() => {
+        ustawBlad(undefined);
+        ustawProbe((p) => p + 1);
+      }}
+    />
+  );
+}
+
+/**
+ * Podgląd i PDF arkuszy źródła. Zasoby wczytuje rodzic; `bladWczytywania` i `ponow`
+ * pozwalają pokazać błąd wczytywania z przyciskiem „Spróbuj ponownie”.
+ */
+export function WidokArkuszy({
+  zrodlo: pakiet,
+  zasoby: zasobyPakietu,
+  bladWczytywania,
+  ponow,
+}: {
+  zrodlo: ZrodloArkuszy;
+  zasoby?: ZasobyPakietu;
+  bladWczytywania?: string;
+  ponow?: () => void;
+}) {
+  const [blad, ustawBlad] = useState<Blad>();
+  const [wybrany, ustawWybrany] = useState(0);
+  const [skala, ustawSkala] = useState<Skala>('dopasuj');
+  const [trwa, ustawTrwa] = useState(false);
+  const [pdfGotowy, ustawPdfGotowy] = useState(false);
+
   const arkusz: Arkusz | undefined = pakiet.arkusze[wybrany] ?? pakiet.arkusze[0];
   // Błąd silnika (np. brak czcionki) nie może wywrócić renderu całej aplikacji.
   const uklad = useMemo((): { wynik?: WynikArkusza; blad?: Blad } => {
@@ -97,7 +112,10 @@ export function Arkusze({ pakiet = pakietMausritter }: { pakiet?: Pakiet }) {
     }
   }, [pakiet, arkusz, zasobyPakietu]);
   const wynik = uklad.wynik;
-  const widocznyBlad =
+  const widocznyBlad: Blad | undefined =
+    (bladWczytywania !== undefined
+      ? { klucz: 'arkusze.bladWczytywania', szczegoly: bladWczytywania }
+      : undefined) ??
     (blad && (blad.pakietId === undefined || blad.pakietId === pakiet.id) ? blad : undefined) ??
     uklad.blad;
 
@@ -135,7 +153,11 @@ export function Arkusze({ pakiet = pakietMausritter }: { pakiet?: Pakiet }) {
           return o ? { dane: o.dane, format: o.format } : undefined;
         },
       });
-      zapiszPlik(bajty, wszystkie ? `${pakiet.id}-arkusze.pdf` : `${arkusz.id}.pdf`);
+      zapiszPlik(
+        bajty,
+        'application/pdf',
+        wszystkie ? `${pakiet.id}-arkusze.pdf` : `${arkusz.id}.pdf`,
+      );
       ustawPdfGotowy(true);
     } catch (e) {
       ustawBlad({ klucz: 'arkusze.bladPdf', szczegoly: szczegoly(e), pakietId: pakiet.id });
@@ -185,7 +207,7 @@ export function Arkusze({ pakiet = pakietMausritter }: { pakiet?: Pakiet }) {
               type="button"
               onClick={() => {
                 ustawBlad(undefined);
-                ustawProbe((p) => p + 1);
+                if (widocznyBlad.klucz === 'arkusze.bladWczytywania') ponow?.();
               }}
             >
               {t('arkusze.ponow')}

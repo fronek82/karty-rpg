@@ -1,0 +1,44 @@
+import { rejestrZProjektu } from '../dane/pakiet';
+import type { DaneZasobow, Projekt } from '../model/projekt';
+import type { ObrazWPamieci, ZasobyPakietu } from './zasoby';
+
+export interface ZasobyProjektu {
+  zasoby: ZasobyPakietu;
+  /** Ostrzeżenia (np. uszkodzona czcionka) – projekt i tak się otwiera. */
+  ostrzezenia: string[];
+  /** Zwalnia adresy `blob:` obrazów – wołać, gdy zasoby przestają być używane. */
+  zwolnij(): void;
+}
+
+/**
+ * Zasoby projektu do silnika i podglądu: rejestr czcionek z biblioteki i obrazy z adresami
+ * `blob:` (bez kopii base64 w pamięci i w każdym SVG strony).
+ */
+export function zasobyProjektu(projekt: Projekt, dane: DaneZasobow): ZasobyProjektu {
+  const { rejestr, ostrzezenia } = rejestrZProjektu(projekt, dane);
+  const obrazy = new Map<string, ObrazWPamieci>();
+  const adresy: string[] = [];
+  for (const opis of projekt.zasoby) {
+    if (opis.rodzaj !== 'obraz') continue;
+    const bajty = dane.get(opis.id);
+    if (!bajty) continue;
+    const typ = opis.format === 'png' ? 'image/png' : 'image/jpeg';
+    const adres = URL.createObjectURL(new Blob([bajty as Uint8Array<ArrayBuffer>], { type: typ }));
+    adresy.push(adres);
+    obrazy.set(opis.id, {
+      info: { szerokosc: opis.szerokosc, wysokosc: opis.wysokosc },
+      dane: bajty,
+      format: opis.format,
+      adres,
+    });
+  }
+  return {
+    zasoby: {
+      czcionki: rejestr,
+      szablony: new Map(projekt.szablony.map((s) => [s.id, s])),
+      obrazy,
+    },
+    ostrzezenia,
+    zwolnij: () => adresy.forEach((a) => URL.revokeObjectURL(a)),
+  };
+}
