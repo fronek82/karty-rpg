@@ -1,0 +1,13 @@
+# Pliki robocze, które nie trafiają do repozytorium
+zasoby-prywatne/
+
+# Zależności i wyniki budowania
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# System
+.DS_Store
+Thumbs.db

@@ -1,0 +1,542 @@
+import { z } from 'zod';
+import { t } from '../i18n';
+import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
+import type { Kontener, Szablon, Wezel } from '../model/szablon';
+
+/** Błąd wczytywania danych z komunikatem po polsku, gotowym do pokazania użytkownikowi. */
+export class BladDanych extends Error {
+  constructor(komunikat: string) {
+    super(komunikat);
+    this.name = 'BladDanych';
+  }
+}
+
+/*
+ * Schematy sprawdzają wszystkie znane pola (typy, zakresy, wartości wyliczeniowe), ale nie usuwają
+ * pól, których nie znają (`looseObject`) – import nie może po cichu gubić danych.
+ */
+const liczba = z.number().finite();
+const nieujemna = liczba.min(0);
+const dodatnia = liczba.positive();
+const calkowita = liczba.int();
+const identyfikator = z.string().min(1);
+/** Id zasobu: litery, cyfry, `_`, `-`, `.`, `/` (w nazwie pliku w archiwum kodowany). */
+const idZasobu = z.string().regex(/^[\w./-]{1,100}$/);
+const obj = z.looseObject;
+const opc = <T extends z.ZodType>(s: T) => s.optional();
+const osi = z.enum(['poczatek', 'srodek', 'koniec']);
+const wariantCzcionki = z.enum(['normalny', 'pogrubiony', 'kursywa', 'pogrubiona-kursywa']);
+const xy = obj({ x: liczba, y: liczba });
+
+const rozmiar = z.union([
+  obj({ mm: nieujemna }),
+  obj({ procent: nieujemna }),
+  obj({ wypelnij: dodatnia }),
+  z.literal('auto'),
+]);
+const odstepy = (wartosc: z.ZodNumber) =>
+  z.union([
+    wartosc,
+    obj({ gora: opc(wartosc), prawo: opc(wartosc), dol: opc(wartosc), lewo: opc(wartosc) }),
+  ]);
+const krawedzie = obj({
+  gora: opc(z.boolean()),
+  prawo: opc(z.boolean()),
+  dol: opc(z.boolean()),
+  lewo: opc(z.boolean()),
+});
+
+const baza = {
+  id: identyfikator,
+  szerokosc: opc(rozmiar),
+  wysokosc: opc(rozmiar),
+  margines: opc(odstepy(liczba)),
+  padding: opc(odstepy(nieujemna)),
+  wyrownanie: opc(obj({ poziomo: opc(osi), pionowo: opc(osi) })),
+  tlo: opc(z.string()),
+  obramowanie: opc(
+    obj({
+      grubosc: nieujemna,
+      kolor: z.string(),
+      styl: opc(z.enum(['ciagla', 'przerywana', 'kropkowana'])),
+      krawedzie: opc(krawedzie),
+    }),
+  ),
+  promien: opc(nieujemna),
+  minSzerokosc: opc(nieujemna),
+  minWysokosc: opc(nieujemna),
+};
+const bazaPola = {
+  ...baza,
+  klucz: opc(z.string()),
+  gdyPuste: opc(z.enum(['pokaz-ramke', 'ukryj'])),
+};
+
+const polaStylu = {
+  wariant: opc(wariantCzcionki),
+  minRozmiar: opc(dodatnia),
+  kolor: opc(z.string()),
+  wyrownanie: opc(z.enum(['lewo', 'srodek', 'prawo'])),
+  wyrownaniePionowe: opc(osi),
+  interlinia: opc(dodatnia),
+  wielkieLitery: opc(z.boolean()),
+  odstepLiter: opc(liczba),
+  obwodka: opc(obj({ grubosc: nieujemna, kolor: z.string() })),
+};
+const stylTekstu = obj({ czcionka: z.string().min(1), rozmiar: dodatnia, ...polaStylu });
+const stylCzesciowy = obj({
+  czcionka: opc(z.string().min(1)),
+  rozmiar: opc(dodatnia),
+  ...polaStylu,
+});
+const napis = z.union([z.string(), obj({ parametr: z.string() })]);
+const dopasowanie = z.enum(['dopasuj', 'wypelnij', 'rozciagnij']);
+
+const pole = z.discriminatedUnion('typ', [
+  obj({
+    ...bazaPola,
+    typ: z.literal('tekst'),
+    styl: stylTekstu,
+    tekst: opc(napis),
+    wieleWierszy: opc(z.boolean()),
+    etykieta: opc(
+      obj({ tekst: napis, pozycja: z.enum(['nad', 'przed']), styl: opc(stylCzesciowy) }),
+    ),
+  }),
+  obj({
+    ...bazaPola,
+    typ: z.literal('wartosc'),
+    styl: stylTekstu,
+    tekst: opc(napis),
+    ksztalt: z.enum(['prostokat', 'kolo', 'sciety']),
+  }),
+  obj({
+    ...bazaPola,
+    typ: z.literal('obraz'),
+    dopasowanie,
+    zasob: opc(z.string()),
+    kadr: opc(xy),
+    omijaj: opc(z.array(z.string())),
+    odstepOdOmijanych: opc(nieujemna),
+  }),
+  obj({
+    ...bazaPola,
+    typ: z.literal('znaczniki'),
+    kolumny: calkowita.min(1),
+    rzedy: calkowita.min(1),
+    ksztalt: z.enum(['kolo', 'kwadrat']),
+    srednica: dodatnia,
+    odstep: nieujemna,
+    grubosc: nieujemna,
+    kolor: opc(z.string()),
+  }),
+  obj({ ...bazaPola, typ: z.literal('wpis'), styl: stylTekstu, sufiks: opc(napis) }),
+  obj({
+    ...bazaPola,
+    typ: z.literal('ikona'),
+    ikona: z.enum(['gwiazdka', 'nozyczki']),
+    rozmiar: dodatnia,
+    kolor: opc(z.string()),
+  }),
+]);
+
+// Rzutowanie konieczne przy schemacie rekurencyjnym; zgodność z modelem sprawdza `_Zgodnosc` niżej.
+const kontener: z.ZodType<Kontener> = z.lazy(() =>
+  obj({
+    ...baza,
+    typ: z.enum(['wiersz', 'kolumna', 'warstwy']),
+    dzieci: z.array(wezel),
+    odstep: opc(nieujemna),
+    rozklad: opc(z.enum(['poczatek', 'srodek', 'koniec', 'miedzy'])),
+  }),
+) as unknown as z.ZodType<Kontener>;
+const wezel: z.ZodType<Wezel> = z.lazy(() => z.union([kontener, pole])) as z.ZodType<Wezel>;
+
+const rozmiarSlotow = { kolumny: calkowita.min(1), rzedy: calkowita.min(1) };
+const rozmiarKarty = z.discriminatedUnion('tryb', [
+  obj({
+    tryb: z.literal('sloty'),
+    slot: obj({ szerokosc: dodatnia, wysokosc: dodatnia }),
+    ...rozmiarSlotow,
+  }),
+  obj({ tryb: z.literal('mm'), szerokosc: dodatnia, wysokosc: dodatnia }),
+]);
+
+const szablon = obj({
+  id: identyfikator,
+  nazwa: z.string(),
+  rozmiar: rozmiarKarty,
+  promienRogow: opc(nieujemna),
+  tlo: opc(z.string()),
+  korzen: kontener,
+  parametry: opc(z.array(obj({ klucz: z.string(), nazwa: z.string(), domyslnie: z.string() }))),
+  warianty: opc(z.array(obj({ ...rozmiarSlotow, korzen: kontener }))),
+});
+
+const ustawieniaObrazu = obj({
+  skala: opc(dodatnia),
+  przesuniecie: opc(xy),
+  obrot: opc(liczba),
+  dopasowanie: opc(dopasowanie),
+});
+
+const karta = obj({
+  id: identyfikator,
+  szablonId: identyfikator,
+  dane: z.record(z.string(), z.string()),
+  ilosc: calkowita.min(0),
+  rozmiar: opc(obj(rozmiarSlotow)),
+  obrazy: opc(z.record(z.string(), ustawieniaObrazu)),
+});
+
+const talia = obj({
+  id: identyfikator,
+  nazwa: z.string(),
+  karty: z.array(karta),
+  grupy: opc(
+    z.array(
+      obj({
+        id: identyfikator,
+        naglowek: z.string(),
+        opis: opc(z.string()),
+        karty: z.array(z.string()),
+      }),
+    ),
+  ),
+});
+
+const arkusz = obj({
+  id: identyfikator,
+  nazwa: z.string(),
+  taliaId: identyfikator,
+  ustawienia: obj({
+    papier: z.enum(['A4', 'Letter']),
+    orientacja: z.enum(['pionowa', 'pozioma']),
+    marginesy: obj({ gora: nieujemna, prawo: nieujemna, dol: nieujemna, lewo: nieujemna }),
+    tytul: opc(
+      obj({
+        tekst: z.string(),
+        polozenie: z.enum(['gora', 'lewo']),
+        styl: stylTekstu,
+        odstep: nieujemna,
+      }),
+    ),
+    grupy: opc(
+      obj({ styl: stylTekstu, stylOpisu: stylTekstu, odstep: nieujemna, odstepOdKart: nieujemna }),
+    ),
+    linie: obj({ grubosc: nieujemna, kolor: z.string(), kreska: dodatnia, przerwa: nieujemna }),
+    nozyczki: opc(
+      obj({
+        linia: z.enum(['pozioma', 'pionowa']),
+        indeks: calkowita.min(0),
+        strona: z.enum(['poczatek', 'koniec']),
+        rozmiar: dodatnia,
+        odstep: nieujemna,
+      }),
+    ),
+    czarnoBialy: opc(z.boolean()),
+    poczatekSiatki: opc(xy),
+  }),
+  przypiete: opc(
+    z.array(
+      obj({
+        kartaId: identyfikator,
+        kolumna: calkowita.min(0),
+        rzad: calkowita.min(0),
+        strona: opc(calkowita.min(0)),
+      }),
+    ),
+  ),
+});
+
+const opisZasobu = z.discriminatedUnion('rodzaj', [
+  obj({
+    rodzaj: z.literal('obraz'),
+    id: idZasobu,
+    nazwa: z.string(),
+    format: z.enum(['png', 'jpg']),
+    szerokosc: dodatnia,
+    wysokosc: dodatnia,
+  }),
+  obj({
+    rodzaj: z.literal('czcionka'),
+    id: idZasobu,
+    nazwa: z.string(),
+    rodzina: z.string().min(1),
+    wariant: wariantCzcionki,
+    format: z.enum(['ttf', 'otf', 'woff', 'woff2']),
+    zrodlo: z.enum(['wbudowana', 'google', 'wlasna']),
+  }),
+]);
+
+export const schematProjektu = obj({
+  wersja: calkowita,
+  id: identyfikator,
+  nazwa: z.string(),
+  utworzono: z.string(),
+  zmieniono: z.string(),
+  role: z.record(z.string(), z.string()),
+  zasoby: z.array(opisZasobu),
+  szablony: z.array(szablon),
+  talie: z.array(talia),
+  arkusze: z.array(arkusz),
+});
+
+export const schematPlikuSzablonu = obj({
+  wersja: calkowita,
+  szablon,
+  role: z.record(z.string(), z.string()),
+  zasoby: z.array(opisZasobu),
+});
+
+/**
+ * Kontrola w czasie kompilacji: dane po walidacji muszą pasować do typów modelu.
+ * Rozjazd schematu i interfejsów (np. nowe wymagane pole w modelu) to błąd typów.
+ */
+type _Zgodnosc = [
+  z.infer<typeof schematProjektu> extends Projekt ? true : never,
+  z.infer<typeof szablon> extends Szablon ? true : never,
+];
+export const _zgodnosc: _Zgodnosc = [true, true];
+
+function sciezka(p: PropertyKey[]): string {
+  return p.length ? p.map(String).join('.') : '(korzeń)';
+}
+
+/** Komunikat zod po polsku (zod domyślnie mówi po angielsku). */
+function komunikat(issue: z.core.$ZodIssue): string {
+  switch (issue.code) {
+    case 'invalid_type':
+      return t('dane.zod.typ', { oczekiwano: issue.expected });
+    case 'too_small':
+      return t('dane.zod.zaMalo', { min: String(issue.minimum) });
+    case 'too_big':
+      return t('dane.zod.zaDuzo', { max: String(issue.maximum) });
+    case 'invalid_value':
+      return t('dane.zod.wartosc', { dozwolone: issue.values.map(String).join(', ') });
+    case 'invalid_format':
+      return t('dane.zod.format');
+    case 'invalid_union':
+      return t('dane.zod.wariant');
+    default:
+      return t('dane.zod.inne');
+  }
+}
+
+/**
+ * Przy unii (np. węzeł: kontener albo jedno z pól) zod zgłasza tylko „żaden wariant nie pasuje”.
+ * Schodzimy do gałęzi, która zaszła najdalej (najdłuższa ścieżka błędu) – to zwykle ta, o którą
+ * chodziło autorowi pliku.
+ */
+function najkonkretniejszy(issue: z.core.$ZodIssue): z.core.$ZodIssue {
+  if (issue.code !== 'invalid_union' || issue.errors.length === 0) return issue;
+  let najlepszy: z.core.$ZodIssue | undefined;
+  for (const galaz of issue.errors) {
+    const kandydat = galaz[0] && najkonkretniejszy(galaz[0]);
+    if (kandydat && (!najlepszy || kandydat.path.length > najlepszy.path.length)) {
+      najlepszy = kandydat;
+    }
+  }
+  return najlepszy ? { ...najlepszy, path: [...issue.path, ...najlepszy.path] } : issue;
+}
+
+/** Sprawdza dane schematem; błąd zamienia na czytelny komunikat z miejscem w pliku. */
+export function sprawdz<T>(schemat: z.ZodType<T>, dane: unknown): T {
+  const wynik = schemat.safeParse(dane);
+  if (wynik.success) return wynik.data;
+  const pierwszy = wynik.error.issues[0] && najkonkretniejszy(wynik.error.issues[0]);
+  throw new BladDanych(
+    t('dane.niepoprawnaStruktura', {
+      sciezka: sciezka(pierwszy?.path ?? []),
+      komunikat: pierwszy ? komunikat(pierwszy) : '',
+    }),
+  );
+}
+
+type Migracja = (dane: Record<string, unknown>) => Record<string, unknown>;
+
+/**
+ * Migracje: klucz `n` zamienia dane ze schematu `n` na `n + 1`. Projekt i plik szablonu mają
+ * osobne kroki (inny kształt), ale wspólny numer wersji. Na razie brak migracji.
+ */
+export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<number, Migracja> } = {
+  projekt: {},
+  szablon: {},
+};
+
+export function migruj(
+  surowe: unknown,
+  rodzaj: keyof typeof MIGRACJE = 'projekt',
+  docelowa: number = WERSJA_SCHEMATU,
+): unknown {
+  if (typeof surowe !== 'object' || surowe === null || Array.isArray(surowe)) {
+    throw new BladDanych(t('dane.brakWersji'));
+  }
+  let dane = surowe as Record<string, unknown>;
+  const wersja = dane.wersja;
+  if (typeof wersja !== 'number' || !Number.isInteger(wersja) || wersja < 1) {
+    throw new BladDanych(t('dane.brakWersji'));
+  }
+  if (wersja > docelowa) throw new BladDanych(t('dane.nowszaWersja', { wersja }));
+  for (let w = wersja; w < docelowa; w++) {
+    const krok = MIGRACJE[rodzaj][w];
+    if (!krok) throw new BladDanych(t('dane.brakMigracji', { wersja: w }));
+    dane = { ...krok(dane), wersja: w + 1 };
+  }
+  return dane;
+}
+
+function powtorzenie(ids: Iterable<string>): string | undefined {
+  const widziane = new Set<string>();
+  for (const id of ids) {
+    if (widziane.has(id)) return id;
+    widziane.add(id);
+  }
+  return undefined;
+}
+
+function* wezly(w: Wezel): Generator<Wezel> {
+  yield w;
+  if ('dzieci' in w) for (const d of w.dzieci) yield* wezly(d);
+}
+
+function drzewa(s: Szablon): Kontener[] {
+  return [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)];
+}
+
+/** Identyfikatory zasobów obrazów wskazanych stałymi w szablonie. */
+export function zasobySzablonu(s: Szablon): string[] {
+  return drzewa(s).flatMap((k) =>
+    [...wezly(k)].flatMap((w) => (w.typ === 'obraz' && w.zasob ? [w.zasob] : [])),
+  );
+}
+
+/**
+ * Twarde reguły spójności – ich złamanie uniemożliwia poprawne użycie projektu: powtórzone id,
+ * karta z nieznanym szablonem, arkusz z nieznaną talią, grupa lub przypięcie z nieznaną kartą.
+ */
+export function sprawdzSpojnosc(p: Projekt): void {
+  const blad = (opis: string): never => {
+    throw new BladDanych(t('dane.zlaSpojnosc', { opis }));
+  };
+  const powtorzony = (ids: Iterable<string>, gdzie: string) => {
+    const id = powtorzenie(ids);
+    if (id !== undefined) blad(t('dane.powtorzonyId', { id, gdzie }));
+  };
+  powtorzony(
+    p.zasoby.map((z) => z.id),
+    t('dane.gdzie.zasoby'),
+  );
+  powtorzony(
+    p.szablony.map((s) => s.id),
+    t('dane.gdzie.szablony'),
+  );
+  powtorzony(
+    p.talie.map((x) => x.id),
+    t('dane.gdzie.talie'),
+  );
+  powtorzony(
+    p.arkusze.map((a) => a.id),
+    t('dane.gdzie.arkusze'),
+  );
+  for (const s of p.szablony) {
+    for (const k of drzewa(s)) {
+      powtorzony(
+        [...wezly(k)].map((w) => w.id),
+        t('dane.gdzie.szablon', { id: s.id }),
+      );
+    }
+  }
+  const szablony = new Set(p.szablony.map((s) => s.id));
+  const talie = new Map(p.talie.map((x) => [x.id, new Set(x.karty.map((k) => k.id))]));
+  for (const talia of p.talie) {
+    const gdzie = t('dane.gdzie.talia', { id: talia.id });
+    powtorzony(
+      talia.karty.map((k) => k.id),
+      gdzie,
+    );
+    powtorzony(
+      (talia.grupy ?? []).map((g) => g.id),
+      gdzie,
+    );
+    powtorzony(
+      (talia.grupy ?? []).flatMap((g) => g.karty),
+      gdzie,
+    );
+    for (const k of talia.karty) {
+      if (!szablony.has(k.szablonId)) {
+        blad(t('dane.nieznanySzablon', { karta: k.id, szablon: k.szablonId }));
+      }
+    }
+    const karty = talie.get(talia.id)!;
+    for (const g of talia.grupy ?? []) {
+      for (const kartaId of g.karty) {
+        if (!karty.has(kartaId))
+          blad(t('dane.nieznanaKartaWGrupie', { grupa: g.id, karta: kartaId }));
+      }
+    }
+  }
+  for (const a of p.arkusze) {
+    const karty = talie.get(a.taliaId);
+    if (!karty) return blad(t('dane.nieznanaTalia', { arkusz: a.id, talia: a.taliaId }));
+    for (const pp of a.przypiete ?? []) {
+      if (!karty.has(pp.kartaId)) {
+        blad(t('dane.nieznanaKartaPrzypieta', { arkusz: a.id, karta: pp.kartaId }));
+      }
+    }
+  }
+}
+
+/**
+ * Miękkie reguły – projekt da się otworzyć (silnik użyje czcionki zapasowej / pustej ramki),
+ * ale użytkownik powinien wiedzieć: rola bez czcionek, obraz szablonu lub karty bez zasobu,
+ * dwie czcionki o tej samej rodzinie i wariancie (wygrywa ostatnia).
+ */
+export function ostrzezeniaProjektu(p: Projekt): string[] {
+  const wynik: string[] = [];
+  const zasoby = new Set(p.zasoby.map((z) => z.id));
+  const czcionki = p.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z] : []));
+  const rodziny = new Set(czcionki.map((c) => c.rodzina));
+  for (const [rola, rodzina] of Object.entries(p.role)) {
+    if (!rodziny.has(rodzina)) wynik.push(t('dane.nieznanaRodzina', { rola, rodzina }));
+  }
+  for (const s of p.szablony) {
+    for (const id of new Set(zasobySzablonu(s))) {
+      if (!zasoby.has(id)) {
+        wynik.push(t('dane.nieznanyZasob', { gdzie: t('dane.gdzie.szablon', { id: s.id }), id }));
+      }
+    }
+  }
+  const szablony = new Map(p.szablony.map((s) => [s.id, s]));
+  const zgloszone = new Set<string>();
+  for (const talia of p.talie) {
+    for (const k of talia.karty) {
+      const s = szablony.get(k.szablonId);
+      if (!s) continue;
+      for (const w of drzewa(s).flatMap((d) => [...wezly(d)])) {
+        if (w.typ !== 'obraz' || !w.klucz) continue;
+        const id = k.dane[w.klucz];
+        if (id && !zasoby.has(id) && !zgloszone.has(id)) {
+          zgloszone.add(id);
+          wynik.push(t('dane.nieznanyZasob', { gdzie: t('dane.gdzie.karta', { id: k.id }), id }));
+        }
+      }
+    }
+  }
+  const pary = new Set<string>();
+  for (const c of czcionki) {
+    const klucz = `${c.rodzina}\u0000${c.wariant}`;
+    if (pary.has(klucz)) {
+      wynik.push(t('dane.powtorzonaCzcionka', { rodzina: c.rodzina, wariant: c.wariant }));
+    }
+    pary.add(klucz);
+  }
+  return wynik;
+}
+
+/** Migruje, sprawdza kształt i twardą spójność – wspólne wejście dla pliku i bazy. */
+export function przygotujProjekt(surowe: unknown): Projekt {
+  const projekt = sprawdz(schematProjektu, migruj(surowe, 'projekt')) as Projekt;
+  sprawdzSpojnosc(projekt);
+  return projekt;
+}

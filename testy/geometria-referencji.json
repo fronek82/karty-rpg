@@ -1,0 +1,25 @@
+{
+  "opis": "Pozycje linii cięcia (mm, A4 poziomo po przycięciu) zmierzone wektorowo z arkuszy referencyjnych Mausrittera (pdftocairo -svg). Same liczby – bez treści z PDF. Slot w druku 25,725 mm; test skaluje je do 25,75 mm.",
+  "slotWDruku": 25.725,
+  "arkusze": {
+    "mausritter-arkusz-bron": {
+      "pionowe": [
+        26.67, 52.4, 78.12, 103.85, 129.57, 155.3, 181.02, 206.75, 232.47, 258.19, 283.92
+      ],
+      "poziome": [12.81, 38.53, 64.26, 89.98, 115.71, 141.43, 192.88]
+    },
+    "mausritter-arkusz-wyposazenie": {
+      "pionowe": [
+        26.67, 52.4, 78.12, 103.85, 129.57, 155.3, 181.02, 206.75, 232.47, 258.19, 283.92
+      ],
+      "poziome": [12.81, 38.53, 64.26, 89.98, 115.71, 141.43, 167.16, 192.88]
+    },
+    "mausritter-arkusz-stany": {
+      "pionowe": [
+        12.53, 38.25, 63.98, 89.7, 92.51, 118.23, 121.12, 146.84, 149.72, 175.45, 201.17, 204.13,
+        229.85, 232.79, 258.52, 284.24
+      ],
+      "poziome": [42.45, 68.18, 93.9, 119.63, 145.35, 171.08, 196.8]
+    }
+  }
+}

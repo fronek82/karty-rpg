@@ -13,10 +13,11 @@ Aplikacja przeglądarkowa do projektowania i drukowania kart do gier RPG i plans
 - **Interfejs po polsku**, ale z teksty wydzielone tak, żeby dało się dodać inne języki.
 - Musi działać na macOS i Windows (Chrome, Safari, Firefox, Edge).
 
-### Proponowany stos (do potwierdzenia w fazie planowania)
+### Stos (potwierdzony w fazie planowania M1)
 - Vite + TypeScript + React
-- Renderowanie kart: SVG generowany z modelu danych
-- PDF: jsPDF + svg2pdf.js (z osadzaniem czcionek) lub pdf-lib – wybrać po prototypie
+- Renderowanie kart: SVG generowany z modelu danych (przez wspólną „scenę” – listę elementów w mm)
+- Tekst: **fontkit 2** – kształtowanie tekstu (ligatury, kerning, glify złożone) i kontury glifów; obsługa TTF, OTF/CFF, WOFF, WOFF2
+- PDF: **pdf-lib** – rysowanie sceny, tekst jako krzywe (sekcja 8); bez jsPDF, svg2pdf.js i opentype.js (uzasadnienie: `docs/decyzja-pdf.md`)
 - Przechowywanie: IndexedDB (np. Dexie)
 - Import arkuszy: CSV oraz XLSX (SheetJS)
 - Testy: Vitest (logika) + Playwright (testy wizualne – porównywanie wyrenderowanych arkuszy ze wzorcami)
@@ -149,9 +150,11 @@ Edytor warstw:
 
 ## 8. Czcionki
 
-- Wgrywanie TTF/OTF (WOFF/WOFF2 – konwersja lub ostrzeżenie, jeśli biblioteka PDF wymaga TTF).
+- Wgrywanie TTF, OTF, WOFF i WOFF2 (bez konwersji).
 - Wybór z Google Fonts (np. Cinzel, MedievalSharp, Uncial Antiqua).
-- Czcionki osadzane w PDF.
+- **Tekst jako krzywe:** silnik kształtuje tekst (fontkit 2) i zamienia go na kontury glifów. Te same kontury trafiają do podglądu SVG i do PDF, więc podgląd = wydruk dla każdej czcionki. Pliki czcionek nie są osadzane w PDF.
+  - Każdy użyty glif jest zapisany w PDF **raz** (XObject) i wstawiany wielokrotnie – PDF nie puchnie przy dużej ilości tekstu (pilnuje tego test rozmiaru pliku).
+  - Tekstu w PDF nie da się zaznaczyć ani wyszukać. Później (M4) możliwa niewidoczna warstwa tekstu do wyszukiwania, bez wpływu na wygląd.
 - Czcionki dostępne wszędzie: przód, rewers, tytuły arkuszy.
 - Przy eksporcie szablonu do udostępnienia: ostrzeżenie o licencji czcionek spoza Google Fonts.
 
@@ -205,7 +208,7 @@ Podgląd arkusza przed pobraniem PDF, w skali.
 ## 12. Kamienie milowe
 
 ### M1 – Mausritter na A4 (pierwszy cel)
-Cel: aplikacja wiernie odtwarza trzy arkusze referencyjne: **„Karty broni i pancerzy”**, **„Karty niezbędnego wyposażenia”**, **„Karty stanów”** (pliki referencyjne użytkownik dostarczy do `referencje/`).
+Cel: aplikacja wiernie odtwarza trzy arkusze referencyjne: **„Karty broni i pancerzy”**, **„Karty niezbędnego wyposażenia”**, **„Karty stanów”** (pliki referencyjne leżą lokalnie w `zasoby-prywatne/referencje/` i nie trafiają do repozytorium; w repozytorium są tylko zmierzone wymiary – patrz `docs/plan-M1.md`).
 
 Zakres:
 - Silnik layoutu (wiersze/kolumny), renderowanie SVG.
@@ -256,7 +259,7 @@ Główny agent planuje i rozdziela pracę. Utworzyć w `.claude/agents/`:
 |---|---|
 | `silnik-layoutu` | Model danych szablonu, algorytm układu (wiersze/kolumny, rozmiary, auto-dopasowanie tekstu), renderowanie SVG. |
 | `edytor-ui` | Interfejs: edytor szablonów, panel właściwości, tabela danych, edytor rewersu, podgląd. |
-| `druk-pdf` | Rozmieszczanie kart na arkuszu, linie cięcia, spady, druk dwustronny, generowanie PDF z osadzonymi czcionkami. |
+| `druk-pdf` | Rozmieszczanie kart na arkuszu, linie cięcia, spady, druk dwustronny, generowanie PDF (tekst jako krzywe, glify jako XObject wielokrotnego użytku). |
 | `biblioteka-ozdobnikow` | Motywy SVG, narożniki, separatory, styl szkicowy, 9-slice, zestawy stylów. |
 | `dane-import` | Przechowywanie (IndexedDB), import CSV/XLSX, eksport/import projektów i szablonów. |
 | `tester` | Testy Vitest i Playwright, testy wizualne porównujące arkusze z referencjami. |
