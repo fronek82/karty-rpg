@@ -185,14 +185,52 @@ describe('zbudujArkusz – tytuł, nożyczki, linie', () => {
     const s = w.strony[0]!;
     const tytul = s.elementy.find((e) => e.typ === 'grupa' && e.obrot === -90);
     if (tytul?.typ !== 'grupa') throw new Error('brak tytułu');
-    const xs = tytul.elementy.flatMap((e) => (e.typ === 'tekst' ? e.glify.map((g) => g.x) : []));
-    // Długość tytułu wzdłuż siatki (od dolnej krawędzi w górę) – do początku ostatniej litery.
-    const dlugosc = Math.max(...xs);
+    // Długość całego napisu (z ostatnią literą) wzdłuż siatki, od dolnej krawędzi w górę.
+    const dlugosc = w.tytul!.dlugosc;
     const n = a.ustawienia.nozyczki!;
     const limit = 6 * SLOT - (n.rozmiar / 2 + 1);
-    expect(dlugosc).toBeLessThan(limit);
+    expect(dlugosc).toBeLessThanOrEqual(limit + 1e-6);
     expect(dlugosc).toBeGreaterThan(0.9 * limit);
     expect(w.ostrzezenia).toEqual([]);
+  });
+
+  it('tytuł poziomy kończy się przed nożyczkami nad siatką; nożyczki „koniec” nic nie zmieniają', () => {
+    const a = arkuszeMausrittera[1]!;
+    const zTytulem = (polozenie: 'gora' | 'lewo', strona: 'poczatek' | 'koniec') =>
+      zbudujArkusz(
+        {
+          ...a,
+          ustawienia: {
+            ...a.ustawienia,
+            tytul: { ...a.ustawienia.tytul!, polozenie },
+            nozyczki: { linia: 'pionowa', indeks: 3, strona, rozmiar: 6, odstep: 2 },
+          },
+        },
+        taliaWyposazenia,
+        ctx,
+      );
+    const gora = zTytulem('gora', 'poczatek');
+    expect(gora.tytul!.dlugosc).toBeLessThanOrEqual(3 * SLOT - 4 + 1e-6);
+    expect(gora.ostrzezenia).toEqual([]);
+    const koniec = zTytulem('lewo', 'koniec');
+    expect(koniec.tytul!.rozmiar).toBe(a.ustawienia.tytul!.styl.rozmiar);
+  });
+
+  it('tytuł, który nie mieści się nawet po zmniejszeniu – ostrzeżenie', () => {
+    const a = arkuszeMausrittera[1]!;
+    const w = zbudujArkusz(
+      {
+        ...a,
+        ustawienia: {
+          ...a.ustawienia,
+          tytul: { ...a.ustawienia.tytul!, polozenie: 'gora' },
+          nozyczki: { linia: 'pionowa', indeks: 0, strona: 'poczatek', rozmiar: 6, odstep: 2 },
+        },
+      },
+      taliaWyposazenia,
+      ctx,
+    );
+    expect(w.ostrzezenia).toContainEqual({ komunikat: 'tytul-nie-miesci-sie' });
   });
 
   it('opis grupy co najmniej 2 mm nad górną linią cięcia kart', () => {

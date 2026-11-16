@@ -152,7 +152,8 @@ export type DopasowanieObrazu = PoleObraz['dopasowanie'];
 /**
  * Ustawienia obrazu zapisane w danych jednej karty (np. kadrowanie ilustracji).
  * Przekształcenie liczone od położenia z dopasowania: skala i obrót wokół środka obrazu,
- * potem przesunięcie. Obraz zawsze przycinany do ramki pola.
+ * potem przesunięcie. Przekształcony obraz jest przycinany do ramki pola; bez przekształcenia –
+ * do obszaru dopasowania, gdy z niego wychodzi (tryb „wypełnij”).
  */
 export interface UstawieniaObrazu {
   /** Mnożnik rozmiaru (1 = jak z dopasowania). */

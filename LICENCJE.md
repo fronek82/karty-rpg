@@ -14,6 +14,13 @@ Pakiety szablonów mają dodatkowo własny plik `LICENCJE.md` w swoim katalogu.
 
 Pakiety szablonów: `src/pakiety/mausritter/LICENCJE.md`.
 
+Własne rysunki projektu (licencja jak kod, MIT), generowane skryptami z `narzedzia/`:
+
+| Zasób                        | Ścieżka                                       | Skrypt                         |
+| ---------------------------- | --------------------------------------------- | ------------------------------ |
+| Obrazek zastępczy pakietu    | `src/pakiety/mausritter/obrazy/zastepczy.png` | `narzedzia/obraz-zastepczy.py` |
+| Obrazek testowy (litera „F”) | `testy/zasoby/litera-f.png`                   | `narzedzia/obraz-testowy.py`   |
+
 ## Materiały, których nie publikujemy
 
 - Arkusze referencyjne Mausrittera (polskie wydanie, sklep Stinger-Prest) służą wyłącznie do

@@ -7,6 +7,7 @@ import {
   konturScietego,
   renderujKarte,
   wartoscPola,
+  normalizujUstawieniaObrazu,
   wolnyObszar,
 } from './karta';
 import { korzenKarty } from '../model/szablon';
@@ -439,5 +440,111 @@ describe('obraz – omijanie pól i ustawienia karty', () => {
     expect(svg).toMatch(
       /<g clip-path="url\(#p0\)"><image [^>]*transform="rotate\(90 [\d.]+ [\d.]+\)"\/><\/g>/,
     );
+  });
+});
+
+describe('obraz – przypadki z przeglądu E4a', () => {
+  const szablon = (omijaj: string[], extra: Record<string, unknown> = {}): Szablon => ({
+    id: 'o',
+    nazwa: 'Obraz',
+    rozmiar: { tryb: 'mm', szerokosc: 20, wysokosc: 14 },
+    korzen: {
+      id: 'k',
+      typ: 'warstwy',
+      dzieci: [
+        { id: 'obraz', typ: 'obraz', klucz: 'obraz', dopasowanie: 'dopasuj', omijaj, ...extra },
+        {
+          id: 'znak',
+          typ: 'ikona',
+          ikona: 'gwiazdka',
+          klucz: 'znak',
+          gdyPuste: 'ukryj',
+          rozmiar: 6,
+          minWysokosc: 7.5,
+          wyrownanie: { poziomo: 'koniec', pionowo: 'poczatek' },
+        },
+        {
+          id: 'drugi',
+          typ: 'ikona',
+          ikona: 'gwiazdka',
+          rozmiar: 4,
+          wyrownanie: { poziomo: 'poczatek', pionowo: 'koniec' },
+        },
+      ],
+    },
+  });
+  const kwadrat = {
+    czcionki,
+    obraz: (z: string) => (z === 'k.png' ? { szerokosc: 100, wysokosc: 100 } : undefined),
+  };
+  const obraz = (sz: Szablon, dane: Record<string, string>, obrazy?: Record<string, object>) => {
+    const w = renderujKarte(
+      sz,
+      { dane: { obraz: 'k.png', ...dane }, ...(obrazy ? { obrazy } : {}) },
+      kwadrat,
+    );
+    const o = wszystkie(w.scena).find((e) => e.typ === 'obraz');
+    return { o: o?.typ === 'obraz' ? o : undefined, ostrzezenia: w.ostrzezenia };
+  };
+
+  it('„wypełnij” z omijaniem przycina do wolnego obszaru, nie do ramki pola', () => {
+    const { o } = obraz(szablon(['znak'], { dopasowanie: 'wypelnij' }), { znak: '1' });
+    // Wolny obszar po lewej: 20 − 6 − 0,5 = 13,5 × 14.
+    expect(o!.przyciecie).toEqual({ x: 0, y: 0, szer: 13.5, wys: 14 });
+  });
+
+  it('ukryte omijane pole nie zabiera miejsca; kilka przeszkód naraz', () => {
+    const pelny = obraz(szablon(['znak']), {}).o!;
+    expect([pelny.x, pelny.y, pelny.szer, pelny.wys].map((v) => +v.toFixed(6) + 0)).toEqual([
+      3, 0, 14, 14,
+    ]);
+    // Znak (prawy górny róg, do y 7,5) i drugi (lewy dolny, od y 10): obraz omija oba z odstępem.
+    const { o } = obraz(szablon(['znak', 'drugi']), { znak: '1' });
+    const rozlaczne = (p: { x: number; y: number; szer: number; wys: number }) =>
+      o!.x + o!.szer <= p.x + 1e-9 ||
+      p.x + p.szer <= o!.x + 1e-9 ||
+      o!.y + o!.wys <= p.y + 1e-9 ||
+      p.y + p.wys <= o!.y + 1e-9;
+    expect(rozlaczne({ x: 13.5, y: 0, szer: 6.5, wys: 8 })).toBe(true);
+    expect(rozlaczne({ x: 0, y: 9.5, szer: 4.5, wys: 4.5 })).toBe(true);
+    expect(o!.wys).toBeCloseTo(9.5);
+  });
+
+  it('brak miejsca – ostrzeżenie zamiast obrazu 0×0; nieznany identyfikator – ostrzeżenie', () => {
+    const pelna = obraz(szablon(['k']), {});
+    expect(pelna.o).toBeUndefined();
+    expect(pelna.ostrzezenia.map((x) => x.komunikat)).toContain('brak-miejsca-na-obraz');
+    const literowka = obraz(szablon(['znakk']), {});
+    expect(literowka.ostrzezenia).toContainEqual({
+      pole: 'obraz',
+      komunikat: 'nieznane-pole-do-omijania',
+      szczegoly: 'znakk',
+    });
+  });
+
+  it('niepoprawne ustawienia z danych są normalizowane; obrót ujemny działa', () => {
+    expect(
+      normalizujUstawieniaObrazu({
+        skala: 0,
+        przesuniecie: { x: Number.NaN, y: Infinity },
+        obrot: Infinity,
+        dopasowanie: 'zle' as never,
+      }),
+    ).toEqual({ skala: 1, przesuniecie: { x: 0, y: 0 }, obrot: 0 });
+    expect(normalizujUstawieniaObrazu({ skala: -2, obrot: -400 })).toMatchObject({
+      skala: 1,
+      obrot: -40,
+    });
+    const bez = obraz(szablon([]), {}).o!;
+    const nan = obraz(szablon([]), {}, { obraz: { skala: Number.NaN, obrot: Number.NaN } }).o!;
+    expect(nan).toEqual(bez);
+    const ujemny = obraz(szablon([]), {}, { obraz: { obrot: -30 } }).o!;
+    expect(ujemny.obrot).toBe(-30);
+    expect(
+      scenaDoSvg(
+        { szer: 20, wys: 14, elementy: [ujemny], glify: {} },
+        { adresObrazu: () => 'k.png' },
+      ),
+    ).toContain('rotate(-30 ');
   });
 });

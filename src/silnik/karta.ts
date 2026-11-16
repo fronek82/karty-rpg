@@ -42,7 +42,12 @@ export interface KontekstRenderowania {
 
 export interface Ostrzezenie {
   pole: string;
-  komunikat: 'tekst-nie-miesci-sie' | 'brak-obrazu' | 'brak-znakow';
+  komunikat:
+    | 'tekst-nie-miesci-sie'
+    | 'brak-obrazu'
+    | 'brak-znakow'
+    | 'brak-miejsca-na-obraz'
+    | 'nieznane-pole-do-omijania';
   szczegoly?: string;
 }
 
@@ -184,6 +189,13 @@ export function renderujKarte(
     u.dzieci.forEach(zbierz);
   };
   zbierz(korzen);
+  // Wszystkie węzły szablonu (także ukryte) – do sprawdzenia identyfikatorów w `omijaj`.
+  const wezlySzablonu = new Set<string>();
+  const zbierzSzablon = (w: Wezel) => {
+    wezlySzablonu.add(w.id);
+    if (czyKontener(w)) w.dzieci.forEach(zbierzSzablon);
+  };
+  zbierzSzablon(korzen.wezel);
 
   const rysuj = (u: UlozonyWezel) => {
     const w = u.wezel;
@@ -213,7 +225,12 @@ export function renderujKarte(
         wys: Math.max(0, u.wys - p.gora - p.dol),
       };
       if (w.typ === 'obraz') {
+        for (const id of w.omijaj ?? [])
+          if (!wezlySzablonu.has(id) || id === w.id)
+            ostrzezenia.push({ pole: w.id, komunikat: 'nieznane-pole-do-omijania', szczegoly: id });
+        // Pole ukryte (np. pusta wartość) nie zajmuje miejsca – obraz może wejść na jego miejsce.
         const przeszkody = (w.omijaj ?? [])
+          .filter((id) => id !== w.id)
           .map((id) => ulozone.get(id))
           .filter((x): x is UlozonyWezel => x !== undefined);
         elementy.push(
@@ -538,10 +555,35 @@ function rysujPoleObrazu(
     ostrzezenia.push({ pole: pole.id, komunikat: 'brak-obrazu', szczegoly: zasob });
     return [];
   }
-  const dopasowanie = ustawienia?.dopasowanie ?? pole.dopasowanie;
+  const u = normalizujUstawieniaObrazu(ustawienia);
+  const dopasowanie = u.dopasowanie ?? pole.dopasowanie;
   const obszar = wolnyObszar(ramka, przeszkody, pole.odstepOdOmijanych ?? 0.5, info, dopasowanie);
+  if (!(obszar.szer > 1e-6 && obszar.wys > 1e-6)) {
+    ostrzezenia.push({ pole: pole.id, komunikat: 'brak-miejsca-na-obraz', szczegoly: zasob });
+    return [];
+  }
   const kadr = pole.kadr ?? { x: 0.5, y: 0.5 };
-  return [rysujObraz(zasob, info, obszar, ramka, dopasowanie, kadr, ustawienia)];
+  return [rysujObraz(zasob, info, obszar, ramka, dopasowanie, kadr, u)];
+}
+
+/**
+ * Ustawienia obrazu z danych karty (import, edycja) bez wartości niepoprawnych:
+ * skala skończona i dodatnia (inaczej 1), przesunięcie i obrót skończone (inaczej 0),
+ * obrót sprowadzony do (−360, 360).
+ */
+export function normalizujUstawieniaObrazu(u: UstawieniaObrazu | undefined): UstawieniaObrazu {
+  if (!u) return {};
+  const liczba = (v: number | undefined, domyslna: number) =>
+    v !== undefined && Number.isFinite(v) ? v : domyslna;
+  const skala = liczba(u.skala, 1);
+  const obrot = liczba(u.obrot, 0) % 360;
+  const DOPASOWANIA: DopasowanieObrazu[] = ['dopasuj', 'wypelnij', 'rozciagnij'];
+  return {
+    skala: skala > 0 ? skala : 1,
+    przesuniecie: { x: liczba(u.przesuniecie?.x, 0), y: liczba(u.przesuniecie?.y, 0) },
+    obrot: obrot === 0 ? 0 : obrot,
+    ...(u.dopasowanie && DOPASOWANIA.includes(u.dopasowanie) ? { dopasowanie: u.dopasowanie } : {}),
+  };
 }
 
 /**
@@ -577,7 +619,16 @@ export function wolnyObszar(
         { x: c.x, y: d, szer: c.szer, wys: cd - d },
       );
     }
-    kandydaci = nowi.filter((c) => c.szer > EPS && c.wys > EPS);
+    // Bez prostokątów pustych i zawartych w innych (jak w MaxRects) – lista nie rośnie 4^k.
+    const niepuste = nowi.filter((c) => c.szer > EPS && c.wys > EPS);
+    const zawiera = (a: Ramka, b: Ramka) =>
+      a.x <= b.x + EPS &&
+      a.y <= b.y + EPS &&
+      a.x + a.szer >= b.x + b.szer - EPS &&
+      a.y + a.wys >= b.y + b.wys - EPS;
+    kandydaci = niepuste.filter(
+      (c, i) => !niepuste.some((d, j) => j !== i && zawiera(d, c) && (!zawiera(c, d) || j < i)),
+    );
   }
   const ocena = (c: Ramka) => {
     if (dopasowanie !== 'dopasuj') return c.szer * c.wys;
@@ -624,10 +675,7 @@ function rysujObraz(
   }
   const przeksztalcony = czyPrzeksztalcony(ustawienia);
   if (przeksztalcony && ustawienia) {
-    const k =
-      ustawienia.skala !== undefined && Number.isFinite(ustawienia.skala) && ustawienia.skala > 0
-        ? ustawienia.skala
-        : 1;
+    const k = ustawienia.skala ?? 1;
     const cx = x + szer / 2 + (ustawienia.przesuniecie?.x ?? 0);
     const cy = y + wys / 2 + (ustawienia.przesuniecie?.y ?? 0);
     szer *= k;
@@ -636,12 +684,15 @@ function rysujObraz(
     y = cy - wys / 2;
   }
   const obrot = ustawienia?.obrot ? ustawienia.obrot % 360 : 0;
+  // Przycięcie: po przekształceniu z karty – do ramki pola (użytkownik kadruje świadomie);
+  // bez przekształcenia – do wolnego obszaru, gdy obraz z niego wychodzi (np. „wypełnij”).
+  const przyciecie = przeksztalcony ? ramkaPola : obszar;
   const T = 1e-6;
   const wychodzi =
-    x < ramkaPola.x - T ||
-    y < ramkaPola.y - T ||
-    x + szer > ramkaPola.x + ramkaPola.szer + T ||
-    y + wys > ramkaPola.y + ramkaPola.wys + T;
+    x < przyciecie.x - T ||
+    y < przyciecie.y - T ||
+    x + szer > przyciecie.x + przyciecie.szer + T ||
+    y + wys > przyciecie.y + przyciecie.wys + T;
   return {
     typ: 'obraz',
     zasob,
@@ -650,6 +701,6 @@ function rysujObraz(
     szer,
     wys,
     ...(obrot !== 0 ? { obrot } : {}),
-    ...(przeksztalcony || wychodzi ? { przyciecie: { ...ramkaPola } } : {}),
+    ...(przeksztalcony || wychodzi ? { przyciecie: { ...przyciecie } } : {}),
   };
 }

@@ -17,7 +17,11 @@ Kamień milowy M1 ze `SPEC.md` (sekcja 12). Dokument opisuje ustalenia, pomiary 
 | 9   | Treść pakietu  | Wolno: nazwy przedmiotów, kości, klasy broni, ilości, nazwy stanów, ich skutki i warunki usunięcia (mechanika gry). Opisy grup stanów – własnymi słowami (PDF nie zawiera informacji o wolnej licencji). Zamiast ilustracji – neutralny obrazek zastępczy; ilustracje użytkownik wgrywa w aplikacji. |
 | 10  | Napisy stałe   | „Usunięcie:”, „/ 250p”, „-1 obr” to **parametry szablonu** z wartością domyślną, nadpisywalne w danych karty.                                                                                                                                                                                        |
 | 11  | Klasa broni    | Biała obwódka liter (czytelność na tle ilustracji).                                                                                                                                                                                                                                                  |
-| 12  | Ilustracje     | Obraz nie nachodzi na znaczniki (poza zaklęciem) ani na ramkę wartości.                                                                                                                                                                                                                              |
+| 12  | Ilustracje     | Obraz nie nachodzi na znaczniki (poza zaklęciem) ani na ramkę wartości. Broń 1×1: obraz od wiersza znaczników do dolnej krawędzi, w największym wolnym prostokącie obok ramki (pole obrazu `omijaj`); klasa leży na obrazie. Lekka zbroja 2×1: obraz na całą wysokość pod paskiem tytułu.            |
+| 13  | Kadr obrazu    | Ustawienia obrazu zapisane w karcie (`Karta.obrazy[idPola]`): skala, przesunięcie X/Y (mm), obrót (°), tryb dopasowania. Przekształcony obraz przycinany do ramki pola. Edycja myszą i polami liczbowymi w E7.                                                                                       |
+| 14  | Nożyczki       | Na końcu przerywanej linii prowadzącej do krawędzi siatki (wzór jak linie cięcia), jak w oryginale.                                                                                                                                                                                                  |
+| 15  | Tytuł arkusza  | Pionowy 36 pt; dłuższy tytuł automatycznie zmniejszany do długości boku siatki z miejscem na nożyczki – sięga prawie całej wysokości siatki jak w referencji.                                                                                                                                        |
+| 16  | Opisy grup     | Co najmniej 2 mm od dołu liter opisu grupy do górnej linii cięcia kart (odstęp 2,5 mm od dołu wiersza).                                                                                                                                                                                              |
 
 ## 2. Pomiary referencji (`Mausritter_kartyekwipunku.pdf`)
 
@@ -100,19 +104,19 @@ Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E4a → E5 → E7 → E
 
 ## 5. Stan realizacji
 
-| Etap | Stan        | Commity                         | Uwagi                                                                                                                   |
-| ---- | ----------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| E0   | ✅          | `f116898`                       | CI na każdej gałęzi, wdrożenie Pages z `main`                                                                           |
-| E1   | ✅          | `0dcf91a`                       | decyzja: tekst jako krzywe (`docs/decyzja-pdf.md`)                                                                      |
-| E2   | ✅          | `283e6d8`, `6aac0dc`            | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                      |
-| E3   | ✅          | `e93d618`, `d362a12`, `167c5c6` | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png` |
-| E4   | ✅          | `43b257a`, `1ae47ed`            | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                              |
-| E4a  | ⏳ następny |                                 | poprawki szablonów z E3 – sekcja 6                                                                                      |
-| E5   | ⬜          |                                 | PDF wielostronicowy z obrazami już działa w testach; zostaje pobieranie w UI i podgląd w skali (razem z E7)             |
-| E6   | ⬜          |                                 |                                                                                                                         |
-| E7   | ⬜          |                                 |                                                                                                                         |
-| E8   | ⬜          |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                           |
-| E9   | ⬜          |                                 |                                                                                                                         |
+| Etap | Stan | Commity                         | Uwagi                                                                                                                   |
+| ---- | ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| E0   | ✅   | `f116898`                       | CI na każdej gałęzi, wdrożenie Pages z `main`                                                                           |
+| E1   | ✅   | `0dcf91a`                       | decyzja: tekst jako krzywe (`docs/decyzja-pdf.md`)                                                                      |
+| E2   | ✅   | `283e6d8`, `6aac0dc`            | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                      |
+| E3   | ✅   | `e93d618`, `d362a12`, `167c5c6` | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png` |
+| E4   | ✅   | `43b257a`, `1ae47ed`            | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                              |
+| E4a  | ✅   | `0291dc2`, `d72ab3e`, przegląd  | sekcja 6; PNG w `docs/obrazy/e4a-*.png`                                                                                 |
+| E5   | ⬜   |                                 | PDF wielostronicowy z obrazami już działa w testach; zostaje pobieranie w UI i podgląd w skali (razem z E7)             |
+| E6   | ⬜   |                                 |                                                                                                                         |
+| E7   | ⬜   |                                 |                                                                                                                         |
+| E8   | ⬜   |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                           |
+| E9   | ⬜   |                                 |                                                                                                                         |
 
 ## 6. Zadania po E4 – poprawki szablonów z E3 (etap E4a)
 
@@ -129,6 +133,8 @@ Commit i push po każdym większym kroku.
    - zapis w modelu danych karty (E6 – eksport/import razem z kartą);
    - **E7 (interfejs):** edycja myszą w podglądzie karty – przeciąganie przesuwa, kółko skaluje – oraz pola liczbowe (skala, X, Y, obrót, dopasowanie) i przycisk „Resetuj”.
 
+Zrobione w E4a także: nożyczki na linii prowadzącej, większy tytuł pionowy, odstęp 2 mm pod opisami grup stanów (decyzje 14–16). Po przeglądzie: przycięcie „wypełnij” do wolnego obszaru, ostrzeżenia `brak-miejsca-na-obraz` i `nieznane-pole-do-omijania`, normalizacja ustawień obrazu (NaN, nieskończoność, skala ≤ 0), wielokrotne przybliżanie rozmiaru tytułu, linia prowadząca nie przecina nagłówków grup.
+
 ### Odłożone (backlog)
 
 - Brak czcionki: czcionka zapasowa z ostrzeżeniem zamiast przerwania renderu; komunikaty błędów silnika przez i18n (E6/E7).
@@ -138,3 +144,6 @@ Commit i push po każdym większym kroku.
 - Tryb czarno-biały dla obrazów rastrowych – konwersja przy wczytywaniu zasobów (E7).
 - Pas nagłówków grup liczony z szacunkowej szerokości grupy – przy podziale grupy na strony nagłówek może się nie zmieścić (jest ostrzeżenie).
 - Paczka aplikacji ~800 KB (fontkit + pdf-lib) – PDF ładowany na żądanie (E7).
+- Limit długości tytułu liczony z siatki regularnej (linia nr k = k slotów). Przy grupach z odstępami lub pustym pierwszym rzędzie pozycja linii nożyczek może być inna – liczyć z tych samych odcinków co nożyczki (pakiet Mausritter tego nie używa).
+- Nowe komunikaty ostrzeżeń (`tytul-nie-miesci-sie`, `brak-miejsca-na-obraz`, `nieznane-pole-do-omijania`) – teksty w i18n razem z pozostałymi ostrzeżeniami (E7).
+- Ponowna nakładka E4a na referencję z oryginalnymi czcionkami – w lokalnym teście E8.

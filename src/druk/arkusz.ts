@@ -43,6 +43,8 @@ export interface WynikArkusza {
   /** Lewy górny róg siatki (mm od rogu strony). */
   poczatekSiatki: { x: Mm; y: Mm };
   slot: { szerokosc: Mm; wysokosc: Mm };
+  /** Tytuł po dopasowaniu: rozmiar czcionki i długość napisu (mm). */
+  tytul?: { rozmiar: Mm; dlugosc: Mm };
   ostrzezenia: OstrzezenieArkusza[];
 }
 
@@ -246,6 +248,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   for (const o of rozmieszczenie.ostrzezenia) ostrzezenia.push({ komunikat: o });
   const rzedySiatki = Math.floor(siatka.wys / slot.wysokosc + 1e-6);
 
+  let rozmiarTytulu = u.tytul?.styl.rozmiar ?? 0;
   // Tytuł nie dłuższy niż bok siatki (minus miejsce na nożyczki na tej samej krawędzi).
   if (u.tytul && tytul && tytul.szer > 0) {
     const kolumnySiatki = Math.floor(siatka.szer / slot.szerokosc + 1e-6);
@@ -254,18 +257,25 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     let limit: Mm;
     if (u.tytul.polozenie === 'lewo') {
       limit = rzedySiatki * slot.wysokosc;
-      if (n?.linia === 'pozioma' && n.strona === 'poczatek')
+      if (n?.linia === 'pozioma' && n.strona === 'poczatek' && n.indeks <= rzedySiatki)
         limit = Math.min(limit, (rzedySiatki - n.indeks) * slot.wysokosc - zapas);
     } else {
       limit = kolumnySiatki * slot.szerokosc;
-      if (n?.linia === 'pionowa' && n.strona === 'poczatek')
+      if (n?.linia === 'pionowa' && n.strona === 'poczatek' && n.indeks <= kolumnySiatki)
         limit = Math.min(limit, n.indeks * slot.szerokosc - zapas);
     }
-    if (limit > 0 && tytul.szer > limit) {
-      const skala = Math.max(0.25, limit / tytul.szer);
-      if (skala === 0.25) ostrzezenia.push({ komunikat: 'tytul-nie-miesci-sie' });
-      const styl = { ...u.tytul.styl, rozmiar: u.tytul.styl.rozmiar * skala };
-      tytul = napis(u.tytul.tekst, styl, undefined, ctx.czcionki);
+    if (limit <= 0) {
+      ostrzezenia.push({ komunikat: 'tytul-nie-miesci-sie' });
+    } else if (tytul.szer > limit) {
+      // Szerokość nie musi rosnąć liniowo z rozmiarem (np. odstęp liter w mm) – kilka przybliżeń.
+      let skala = 1;
+      for (let i = 0; i < 4 && tytul.szer > limit + 1e-6 && skala > 0.25; i++) {
+        skala = Math.max(0.25, skala * (limit / tytul.szer) * (i === 0 ? 1 : 0.995));
+        const styl = { ...u.tytul.styl, rozmiar: u.tytul.styl.rozmiar * skala };
+        tytul = napis(u.tytul.tekst, styl, undefined, ctx.czcionki);
+        rozmiarTytulu = styl.rozmiar;
+      }
+      if (tytul.szer > limit + 1e-6) ostrzezenia.push({ komunikat: 'tytul-nie-miesci-sie' });
     }
   }
 
@@ -361,7 +371,14 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       glify: polaczGlify(...glify),
     });
   }
-  return { strony, rozmieszczenie, poczatekSiatki: poczatek, slot, ostrzezenia };
+  return {
+    strony,
+    rozmieszczenie,
+    poczatekSiatki: poczatek,
+    slot,
+    ...(tytul && u.tytul ? { tytul: { rozmiar: rozmiarTytulu, dlugosc: tytul.szer } } : {}),
+    ostrzezenia,
+  };
 }
 
 function ostrzezenieKarty(k: Karta, o: Ostrzezenie): OstrzezenieArkusza {
@@ -418,7 +435,8 @@ function nozyczkiNaScenie(
     obrot = n.strona === 'poczatek' ? 90 : -90;
     prowadzaca =
       n.strona === 'poczatek'
-        ? { x1: x, y1: y + r / 2, x2: x, y2: gora }
+        ? // Nad siatką linia kończy się nad pasem nagłówków grup – nie przecina napisów.
+          { x1: x, y1: y + r / 2, x2: x, y2: gora - pasNaglowkow }
         : { x1: x, y1: dol, x2: x, y2: y - r / 2 };
   }
   const wynik: ElementSceny[] = [];
