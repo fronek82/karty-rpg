@@ -78,7 +78,16 @@ Panel pokazuje pola z szablonu (klucze i parametry – jak dziś kolumny tabeli)
 | K5   | Strona startowa z miniaturami, usunięcie starych widoków i tras, nowe testy e2e, dostępność (fokus, etykiety, Escape).                                                                                                                                                                                              |
 | K6   | Przegląd kodu, poprawki, zrzuty ekranu, PR, scalenie, sprawdzenie wdrożenia.                                                                                                                                                                                                                                        |
 
-## 6. Decyzje do zatwierdzenia
+### Stan realizacji
+
+| Etap  | Stan | Uwagi                                                                                                                               |
+| ----- | ---- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| K1    | ✅   | `f9b7bc9` – model, silnik (puste strony, nagłówki, slot), normalizacja (wydruk identyczny – test), operacje, historia, rejestr gier |
+| K2–K4 | ✅   | `2e30013` – edytor kartki, gesty, panele kart / nagłówka / ustawień, gotowe układy                                                  |
+| K5    | ✅   | start z wyborem gry i miniaturami, usunięte stare widoki, teksty i style; nowe e2e                                                  |
+| K6    | 🟡   | przegląd, zrzuty, PR, scalenie                                                                                                      |
+
+## 6. Decyzje (zatwierdzone)
 
 | #   | Pytanie                                          | Rekomendacja                                                                                                                                                                                                                                            |
 | --- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

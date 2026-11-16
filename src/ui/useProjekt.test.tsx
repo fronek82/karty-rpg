@@ -11,6 +11,7 @@ import { projektZPakietu } from '../dane/pakiet';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import { pakietMausritter } from '../pakiety/mausritter';
 import { baza } from './baza';
+import { czyKartkaZnormalizowana } from '../druk/normalizacja';
 import { useProjekt, type StanProjektu } from './useProjekt';
 
 const czytaj = async (plik: string) => new Uint8Array(readFileSync(plik));
@@ -121,6 +122,38 @@ describe('useProjekt', () => {
     const z = await baza().wczytaj(id);
     expect(z.zasoby.has('obraz-x')).toBe(true);
     expect(pierwszaKarta(z.projekt).dane.nazwa).toBe('Po błędzie');
+    h.unmount();
+  });
+
+  it('projekt sprzed edytora jest normalizowany przy otwarciu i zapisywany', async () => {
+    const h = await otworz();
+    const p = gotowy(h.result.current).projekt;
+    expect(czyKartkaZnormalizowana(p)).toBe(true);
+    await waitFor(async () =>
+      expect(czyKartkaZnormalizowana((await baza().wczytaj(id)).projekt)).toBe(true),
+    );
+    h.unmount();
+  });
+
+  it('cofnij / ponów; seria zmian jednego pola to jeden krok', async () => {
+    const h = await otworz();
+    const k = pierwszaKarta(gotowy(h.result.current).projekt);
+    const nazwa = () => pierwszaKarta(gotowy(h.result.current).projekt).dane.nazwa;
+    const przed = nazwa();
+    expect(gotowy(h.result.current).mozeCofnac).toBe(false);
+    act(() => {
+      for (const v of ['M', 'Mi', 'Mie'])
+        gotowy(h.result.current).zmien((p) => ustawDane(p, T, k.id, 'nazwa', v), {
+          klucz: 'nazwa',
+        });
+    });
+    expect(nazwa()).toBe('Mie');
+    expect(gotowy(h.result.current).mozeCofnac).toBe(true);
+    act(() => gotowy(h.result.current).cofnij());
+    expect(nazwa()).toBe(przed);
+    expect(gotowy(h.result.current).mozePonowic).toBe(true);
+    act(() => gotowy(h.result.current).ponow());
+    expect(nazwa()).toBe('Mie');
     h.unmount();
   });
 

@@ -21,7 +21,7 @@ import {
 } from '../../dane/kartka';
 import { zbudujArkusz, zSzarymiObrazami, type WynikArkusza } from '../../druk/arkusz';
 import { pakietProjektu } from '../../druk/normalizacja';
-import { t } from '../../i18n';
+import { t, tJesliJest } from '../../i18n';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
 import {
@@ -728,6 +728,12 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     </aside>
   );
 
+  // Role bez czcionki – silnik użył zapasowej (zbiór uzupełniany przy budowie stron).
+  const brakujaceCzcionki = useMemo(
+    () => (kartki.length && zasoby ? [...zasoby.czcionki.brakujace] : []),
+    [kartki, zasoby],
+  );
+
   // --- Widok.
   const naglowekProjektu = (
     <header className="pasek-gorny">
@@ -809,13 +815,24 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
   return (
     <div className="edytor-kartki">
       {naglowekProjektu}
-      {edycja.ostrzezenia.length > 0 && (
+      {(edycja.ostrzezenia.length > 0 || brakujaceCzcionki.length > 0) && (
         <details className="uwaga ostrzezenia-projektu">
-          <summary>{t('projekt.ostrzezenia', { liczba: edycja.ostrzezenia.length })}</summary>
+          <summary>
+            {t('projekt.ostrzezenia', {
+              liczba: edycja.ostrzezenia.length + (brakujaceCzcionki.length ? 1 : 0),
+            })}
+          </summary>
           <ul>
             {edycja.ostrzezenia.map((o, i) => (
               <li key={i}>{o}</li>
             ))}
+            {brakujaceCzcionki.length > 0 && (
+              <li>
+                {t('czcionki.brakujace', {
+                  lista: brakujaceCzcionki.map((r) => tJesliJest(`rola.${r}`) ?? r).join(', '),
+                })}
+              </li>
+            )}
           </ul>
         </details>
       )}

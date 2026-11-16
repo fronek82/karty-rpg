@@ -8,16 +8,17 @@ projekty zostają na Twoim komputerze (IndexedDB).
 
 ## Jak zacząć (Mausritter)
 
-1. **Projekty → „Nowy projekt z pakietu”** – powstaje projekt z trzema taliami i arkuszami.
-2. **Talia** – w tabeli edytujesz nazwy, wartości, ilość sztuk i rozmiar karty w slotach.
-   Obok widać podgląd zaznaczonej karty; obraz przesuwasz myszą, kółko zmienia skalę.
-   „Wgraj obraz…” dodaje własną ilustrację (PNG/JPG, także zdjęcia z telefonu).
-3. **Czcionki i role** – możesz wgrać własne czcionki (np. oryginalne do tytułów) i przypisać
-   je do ról „Tytuł” i „Treść”.
-4. **Arkusze do druku** – podgląd, ręczna korekta układu, ustawienia (tytuł, papier,
-   czarno-biały) i „Pobierz PDF”. **Drukuj w skali 100%** (bez „dopasuj do strony”).
-5. **Eksportuj** projekt do pliku `.kartyrpg`, żeby mieć kopię zapasową albo przenieść go
-   na inny komputer (Projekty → Importuj).
+1. Na starcie wybierz **„Stwórz karty do Mausrittera”**, potem **„Pusta kartka”** albo
+   **„Zacznij od gotowego układu”** (Broń i pancerze / Wyposażenie / Stany / Wszystkie trzy).
+2. Na kartce A4 **kliknij pusty slot** i wybierz typ karty (broń, zbroja, ekwipunek, zaklęcie,
+   stan, pusta karta). Karta pojawia się w domyślnym rozmiarze dla typu.
+3. **Kliknij kartę** – w panelu z prawej edytujesz jej pola, rozmiar i ilustrację (także zdjęcia
+   z telefonu). Shift + klik albo prostokąt zaznaczają kilka kart – wspólne pola zmieniasz naraz.
+4. Karty **przeciągasz myszą** (także na kolejną stronę); „Duplikuj ×N”, Delete, Ctrl+D,
+   Ctrl+Z, strzałki. Na arkuszu stanów dodasz **nagłówek grupy** nad kolumnami.
+5. **Ustawienia**: tytuł kartki, czarno-biały, papier, czcionki (także własne).
+6. **Pobierz PDF** i drukuj w **skali 100%** (bez „dopasuj do strony”). **Eksportuj** zapisuje
+   projekt do pliku `.kartyrpg` (kopia zapasowa, przeniesienie na inny komputer – import na starcie).
 
 ## Uruchomienie
 
