@@ -10,8 +10,8 @@ export function pikseleNaSzarosc(rgba: Uint8ClampedArray): Uint8ClampedArray {
 }
 
 /**
- * Obraz w skali szarości jako PNG (przezroczystość zachowana) – do trybu czarno-białego arkusza.
- * Silnik i PDF dostają gotowy szary plik. Wołający zwalnia `adres` (blob:).
+ * Obraz w skali szarości w tym samym formacie (PNG z przezroczystością, JPEG ~0,92 – zdjęcia
+ * nie puchną w PDF). Silnik i PDF dostają gotowy szary plik. Wołający zwalnia `adres` (blob:).
  */
 export async function obrazNaSzarosc(o: ObrazWPamieci): Promise<ObrazWPamieci> {
   const typ = o.format === 'png' ? 'image/png' : 'image/jpeg';
@@ -29,12 +29,12 @@ export async function obrazNaSzarosc(o: ObrazWPamieci): Promise<ObrazWPamieci> {
   pikseleNaSzarosc(obraz.data);
   ctx.putImageData(obraz, 0, 0);
   const blob = await new Promise<Blob>((ok, blad) =>
-    canvas.toBlob((b) => (b ? ok(b) : blad(new Error('toBlob'))), 'image/png'),
+    canvas.toBlob((b) => (b ? ok(b) : blad(new Error('toBlob'))), typ, 0.92),
   );
   return {
     info: o.info,
     dane: new Uint8Array(await blob.arrayBuffer()),
-    format: 'png',
+    format: o.format,
     adres: URL.createObjectURL(blob),
   };
 }

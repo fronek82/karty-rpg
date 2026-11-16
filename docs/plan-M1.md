@@ -161,6 +161,25 @@ Dla E7 (interfejs):
 - `zapisz(projekt)` bez zasobów do częstej edycji kart; z zasobami tylko przy zmianie biblioteki. Przy dużych bibliotekach dodać `dodajZasob` / `usunZasob` zamiast przepisywania wszystkich Blobów.
 - Pakiet Mausritter → projekt przez `projektZPakietu` („Nowy projekt z pakietu”). Google Fonts – M4.
 
+### Po przeglądzie E7
+
+Poprawione:
+
+- `useProjekt`: stan bieżący w refie, zmiany liczone synchronicznie z najnowszego projektu; zapis wybiera tryb (z bajtami, gdy biblioteka zmieniona od ostatniego udanego zapisu); błąd zapisu zostawia zmiany do ponowienia (kolejna edycja, zamknięcie, ostrzeżenie `beforeunload`); zapis samego dokumentu nie kasuje Blobów, wgrywanie obrazu/czcionki nie gubi równoległych edycji – test hooka (jsdom + fake-indexeddb);
+- role czcionek bez ponownego parsowania czcionek; ostrzeżenia projektu liczone tylko przy zmianie talii/szablonów/biblioteki/ról; podgląd arkusza z wartości odroczonej (`useDeferredValue`); przeciąganie obrazu lokalnie, jeden zapis po puszczeniu; kółko z ograniczeniem skali i krokiem zależnym od `deltaY`;
+- szare obrazy tylko użyte na arkuszach cz-b, z pamięcią konwersji; JPEG zostaje JPEG-iem;
+- PDF: ścieżka zapasowa w wątku głównym, gdy workera nie da się uruchomić;
+- brakujące czcionki w podglądzie karty liczone dla tej karty (`sledzBraki`); wyciek `FontFace` w StrictMode;
+- `ustawIlosc` usuwa nadmiarowe przypięcia; osobne ostrzeżenie „przypięcie poza siatką”; Escape anuluje zaznaczenie w korekcie i zamyka dialogi (fokus na bezpiecznym przycisku); `key` talii; locale dat z i18n; lista projektów czeka na ostatni zapis.
+
+Odłożone do E8/E9:
+
+- Orientacja EXIF zdjęć JPEG: podgląd w przeglądarce ją stosuje, PDF (pdf-lib) nie – normalizować przy wgrywaniu.
+- Przerwanie budowy PDF przy opuszczeniu strony (AbortSignal do workera).
+- Korekta: karta nieprzypięta upuszczona na przypiętą → „koliduje” (zamiana tylko między przypiętymi); przy zaznaczeniu wszystkie sloty w kolejności Tab.
+- Nazwa pliku PDF z `arkusz.id` (stabilna, testowana) zamiast z nazwy arkusza.
+- Komunikaty wyjątków silnika/druku (np. `talia …`) bez i18n.
+
 ### Odłożone (backlog)
 
 - ~~Brak czcionki → czcionka zapasowa z ostrzeżeniem~~ – E7d. Komunikaty wyjątków silnika (np. „talia …”) nadal po polsku w kodzie, bez i18n.

@@ -16,8 +16,14 @@ export interface ProjektWEdycji {
   zapis: StanZapisu;
   /** Zmiana samego dokumentu (dane kart, układ) – zapis do bazy z opóźnieniem. */
   zmien(f: (p: Projekt) => Projekt): void;
-  /** Zmiana biblioteki zasobów (czcionki, obrazy) – zapis od razu, razem z bajtami. */
-  zmienZZasobami(projekt: Projekt, dane: DaneZasobow): Promise<void>;
+  /**
+   * Zmiana biblioteki zasobów (czcionki, obrazy). `f` dostaje NAJNOWSZY projekt i dane (nie te
+   * z renderu), wynik od razu trafia do stanu, a zapis z bajtami rusza natychmiast. Obietnica
+   * odrzucona, gdy `f` rzuci (stan bez zmian) albo zapis się nie uda (zmiany czekają na ponowienie).
+   */
+  zmienZZasobami(
+    f: (p: Projekt, dane: DaneZasobow) => { projekt: Projekt; dane: DaneZasobow },
+  ): Promise<void>;
 }
 
 export type StanProjektu =
@@ -30,18 +36,33 @@ const OPOZNIENIE_ZAPISU = 500;
 const komunikat = (e: unknown) =>
   e instanceof BladDanych ? e.message : String(e instanceof Error ? e.message : e);
 
+/** Ostatni zaplanowany zapis dowolnego projektu – lista projektów czeka na niego przed odczytem. */
+let ostatniZapis: Promise<void> = Promise.resolve();
+export const poOstatnimZapisie = (): Promise<void> => ostatniZapis.catch(() => undefined);
+
+interface Biezacy {
+  id: string;
+  projekt: Projekt;
+  dane: DaneZasobow;
+  /** Dokument zmieniony od ostatniego udanego zapisu. */
+  brudny: boolean;
+  /** Biblioteka zasobów zmieniona – następny zapis musi zawierać bajty. */
+  zasobyBrudne: boolean;
+}
+
 /**
- * Projekt otwarty do edycji. Zmiany od razu w stanie (UI), zapis do IndexedDB po chwili
- * bezczynności i przy zamknięciu strony projektu. Zapisy idą po kolei (łańcuch obietnic).
- * Zasoby silnika (czcionki, obrazy `blob:`) odtwarzane tylko przy zmianie biblioteki.
+ * Projekt otwarty do edycji. Źródłem prawdy jest ref `biezacy` (zmiany liczone synchronicznie,
+ * bez efektów ubocznych w updaterach stanu); stan Reacta tylko go odzwierciedla. Zapisy idą
+ * po kolei (łańcuch obietnic); błąd zapisu zostawia flagi „brudny”, więc kolejna zmiana albo
+ * zamknięcie projektu ponawia zapis, a przeglądarka ostrzega przy zamykaniu karty.
  */
 export function useProjekt(id: string): StanProjektu {
-  const [wczytany, ustawWczytany] = useState<
+  const [widok, ustawWidok] = useState<
     { id: string; projekt: Projekt; dane: DaneZasobow } | { id: string; blad: string }
   >();
-  const [zasoby, ustawZasoby] = useState<{ klucz: object; z: ZasobyProjektu }>();
+  const [zasoby, ustawZasoby] = useState<ZasobyProjektu>();
   const [zapis, ustawZapis] = useState<StanZapisu>({ stan: 'zapisano' });
-  const doZapisu = useRef<Projekt | undefined>(undefined);
+  const biezacy = useRef<Biezacy | undefined>(undefined);
   const zegar = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const kolejka = useRef<Promise<void>>(Promise.resolve());
 
@@ -50,108 +71,141 @@ export function useProjekt(id: string): StanProjektu {
     baza()
       .wczytaj(id)
       .then(
-        ({ projekt, zasoby: dane }) => aktywny && ustawWczytany({ id, projekt, dane }),
-        (e: unknown) => aktywny && ustawWczytany({ id, blad: komunikat(e) }),
+        ({ projekt, zasoby: dane }) => {
+          if (!aktywny) return;
+          biezacy.current = { id, projekt, dane, brudny: false, zasobyBrudne: false };
+          ustawWidok({ id, projekt, dane });
+        },
+        (e: unknown) => aktywny && ustawWidok({ id, blad: komunikat(e) }),
       );
     return () => {
       aktywny = false;
     };
   }, [id]);
 
-  const zapiszTeraz = useCallback(() => {
+  const odswiez = () => {
+    const b = biezacy.current;
+    if (b) ustawWidok({ id: b.id, projekt: b.projekt, dane: b.dane });
+  };
+
+  /** Zapisuje bieżący stan (jeśli brudny). Obietnica odrzucona przy błędzie zapisu. */
+  const zapiszTeraz = useCallback((): Promise<void> => {
     clearTimeout(zegar.current);
-    const p = doZapisu.current;
-    if (!p) return kolejka.current;
-    doZapisu.current = undefined;
-    kolejka.current = kolejka.current.then(() =>
-      baza()
-        .zapisz(p)
-        .then(
-          () => {
-            if (!doZapisu.current) ustawZapis({ stan: 'zapisano' });
-          },
-          (e: unknown) => ustawZapis({ stan: 'blad', komunikat: komunikat(e) }),
-        ),
-    );
-    return kolejka.current;
+    const zadanie = kolejka.current.then(async () => {
+      const b = biezacy.current;
+      if (!b || !b.brudny) return;
+      const { projekt, dane } = b;
+      const zZasobami = b.zasobyBrudne;
+      b.brudny = false;
+      b.zasobyBrudne = false;
+      try {
+        await baza().zapisz(projekt, zZasobami ? dane : undefined);
+        if (!biezacy.current?.brudny) ustawZapis({ stan: 'zapisano' });
+      } catch (e) {
+        // Zmiany czekają na ponowienie (kolejna edycja, zamknięcie projektu).
+        b.brudny = true;
+        b.zasobyBrudne ||= zZasobami;
+        ustawZapis({ stan: 'blad', komunikat: komunikat(e) });
+        throw e;
+      }
+    });
+    kolejka.current = zadanie.catch(() => undefined);
+    ostatniZapis = kolejka.current;
+    return zadanie;
   }, []);
 
-  // Zapis przy zamknięciu projektu; ostrzeżenie przeglądarki przy zamykaniu karty w trakcie.
+  // Zapis przy zamknięciu projektu; ostrzeżenie przeglądarki przy zamykaniu karty z niezapisanymi zmianami.
   useEffect(() => {
     const przedZamknieciem = (e: BeforeUnloadEvent) => {
-      if (doZapisu.current) {
-        void zapiszTeraz();
+      if (biezacy.current?.brudny) {
+        void zapiszTeraz().catch(() => undefined);
         e.preventDefault();
       }
     };
     window.addEventListener('beforeunload', przedZamknieciem);
     return () => {
       window.removeEventListener('beforeunload', przedZamknieciem);
-      void zapiszTeraz();
+      void zapiszTeraz().catch(() => undefined);
     };
   }, [zapiszTeraz]);
 
-  const gotowy = wczytany && wczytany.id === id && 'projekt' in wczytany ? wczytany : undefined;
+  const zmien = useCallback(
+    (f: (p: Projekt) => Projekt) => {
+      const b = biezacy.current;
+      if (!b) return;
+      const nowy = f(b.projekt);
+      if (nowy === b.projekt) return;
+      b.projekt = nowy;
+      b.brudny = true;
+      odswiez();
+      ustawZapis({ stan: 'zapisywanie' });
+      clearTimeout(zegar.current);
+      zegar.current = setTimeout(
+        () => void zapiszTeraz().catch(() => undefined),
+        OPOZNIENIE_ZAPISU,
+      );
+    },
+    [zapiszTeraz],
+  );
+
+  const zmienZZasobami = useCallback<ProjektWEdycji['zmienZZasobami']>(
+    async (f) => {
+      const b = biezacy.current;
+      if (!b) return;
+      const wynik = f(b.projekt, b.dane); // błąd z `f` – stan bez zmian
+      b.projekt = wynik.projekt;
+      b.dane = wynik.dane;
+      b.brudny = true;
+      b.zasobyBrudne = true;
+      odswiez();
+      ustawZapis({ stan: 'zapisywanie' });
+      await zapiszTeraz();
+    },
+    [zapiszTeraz],
+  );
+
+  const gotowy = widok && widok.id === id && 'projekt' in widok ? widok : undefined;
   const projekt = gotowy?.projekt;
   const dane = gotowy?.dane;
 
-  // Zasoby silnika zależą tylko od biblioteki i szablonów – nie od danych kart (edycja kart
-  // zachowuje referencje tych części projektu).
+  // Zasoby silnika (parsowanie czcionek, adresy blob:) tylko przy zmianie biblioteki lub szablonów;
+  // role czcionek przypisywane do istniejącego rejestru (bez ponownego parsowania).
   const bibl = projekt?.zasoby;
-  const role = projekt?.role;
   const szablony = projekt?.szablony;
-  const kluczZasobow = useMemo(
-    () => (bibl && role && szablony && dane ? {} : undefined),
-    [bibl, role, szablony, dane],
-  );
   const projektRef = useRef(projekt);
   useEffect(() => {
     projektRef.current = projekt;
   });
   useEffect(() => {
     const p = projektRef.current;
-    if (!kluczZasobow || !p || !dane) return;
+    if (!bibl || !szablony || !p || !dane) return;
     const z = zasobyProjektu(p, dane);
-    ustawZasoby({ klucz: kluczZasobow, z });
+    ustawZasoby(z);
     return () => z.zwolnij();
-  }, [kluczZasobow, dane]);
+  }, [bibl, szablony, dane]);
 
-  const zmien = useCallback(
-    (f: (p: Projekt) => Projekt) => {
-      ustawWczytany((w) => {
-        if (!w || !('projekt' in w)) return w;
-        const nowy = f(w.projekt);
-        doZapisu.current = nowy;
-        return { ...w, projekt: nowy };
-      });
-      ustawZapis({ stan: 'zapisywanie' });
-      clearTimeout(zegar.current);
-      zegar.current = setTimeout(() => void zapiszTeraz(), OPOZNIENIE_ZAPISU);
-    },
-    [zapiszTeraz],
+  const role = projekt?.role;
+  const zasobyZRolami = useMemo(
+    () => (zasoby && role ? zasoby.zRolami(role) : undefined),
+    [zasoby, role],
+  );
+  const talie = projekt?.talie;
+  const ostrzezenia = useMemo(
+    () => (projekt ? ostrzezeniaProjektu(projekt) : []),
+    // Ostrzeżenia zależą od talii, szablonów, biblioteki i ról – nie od nazwy czy arkuszy.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [talie, szablony, bibl, role],
   );
 
-  const zmienZZasobami = useCallback(async (nowy: Projekt, noweDane: DaneZasobow) => {
-    doZapisu.current = undefined;
-    clearTimeout(zegar.current);
-    ustawZapis({ stan: 'zapisywanie' });
-    const zadanie = kolejka.current.then(() => baza().zapisz(nowy, noweDane));
-    kolejka.current = zadanie.catch(() => undefined);
-    await zadanie; // błąd (np. walidacji) trafia do wołającego – stan projektu bez zmian
-    ustawWczytany((w) => (w && w.id === nowy.id ? { id: w.id, projekt: nowy, dane: noweDane } : w));
-    ustawZapis({ stan: 'zapisano' });
-  }, []);
-
-  if (!wczytany || wczytany.id !== id) return { stan: 'wczytywanie' };
-  if ('blad' in wczytany) return { stan: 'blad', komunikat: wczytany.blad };
-  // Przy zmianie biblioteki do czasu podmiany zostają poprzednie zasoby (bez migania strony).
-  if (!zasoby || !projekt || !dane) return { stan: 'wczytywanie' };
+  if (!widok || widok.id !== id) return { stan: 'wczytywanie' };
+  if ('blad' in widok) return { stan: 'blad', komunikat: widok.blad };
+  if (!zasobyZRolami || !projekt || !dane) return { stan: 'wczytywanie' };
   return {
     stan: 'gotowy',
     projekt,
     dane,
-    zasoby: zasoby.z,
-    ostrzezenia: [...ostrzezeniaProjektu(projekt), ...zasoby.z.ostrzezenia],
+    zasoby: zasobyZRolami,
+    ostrzezenia: [...ostrzezenia, ...zasobyZRolami.ostrzezenia],
     zapis,
     zmien,
     zmienZZasobami,

@@ -32,8 +32,10 @@ function Probka({ opis, dane }: { opis: OpisCzcionki; dane?: Uint8Array }) {
     let aktywny = true;
     ff.load().then(
       () => {
+        // Po sprzątaniu (np. StrictMode) nie dodajemy – inaczej czcionka zostałaby na stałe.
+        if (!aktywny) return;
         document.fonts.add(ff);
-        if (aktywny) ustawRodzine(nazwa);
+        ustawRodzine(nazwa);
       },
       () => undefined,
     );
@@ -62,22 +64,22 @@ export function Czcionki({ edycja }: { edycja: ProjektWEdycji }) {
   const wgraj = async (pliki: File[]) => {
     ustawBlad(undefined);
     try {
-      const zajete = new Set(projekt.zasoby.map((z) => z.id));
-      const nowe = [];
-      for (const f of pliki) {
-        const w = wgrajCzcionke(f.name, new Uint8Array(await f.arrayBuffer()), { zajete });
-        zajete.add(w.opis.id);
-        nowe.push({ opis: w.opis, dane: w.dane });
-      }
-      const wynik = dodajZasoby(projekt, dane, nowe);
-      await edycja.zmienZZasobami(wynik.projekt, wynik.dane);
-      ustawStatus(
-        t('czcionki.wgrano', {
-          lista: nowe
-            .map((n) => `${n.opis.rodzina} (${t(`wariant.${n.opis.wariant}`)})`)
-            .join(', '),
-        }),
+      const odczytane = await Promise.all(
+        pliki.map(async (f) => ({ nazwa: f.name, bajty: new Uint8Array(await f.arrayBuffer()) })),
       );
+      let opisy: string[] = [];
+      // Id i dodanie liczone z najnowszego projektu (nie z renderu sprzed odczytu plików).
+      await edycja.zmienZZasobami((p, d) => {
+        const zajete = new Set(p.zasoby.map((z) => z.id));
+        const nowe = odczytane.map(({ nazwa, bajty }) => {
+          const w = wgrajCzcionke(nazwa, bajty, { zajete });
+          zajete.add(w.opis.id);
+          return { opis: w.opis, dane: w.dane };
+        });
+        opisy = nowe.map((n) => `${n.opis.rodzina} (${t(`wariant.${n.opis.wariant}`)})`);
+        return dodajZasoby(p, d, nowe);
+      });
+      ustawStatus(t('czcionki.wgrano', { lista: opisy.join(', ') }));
     } catch (e) {
       ustawBlad(komunikat(e));
     }
@@ -86,8 +88,7 @@ export function Czcionki({ edycja }: { edycja: ProjektWEdycji }) {
   const usun = async (c: OpisCzcionki) => {
     ustawBlad(undefined);
     try {
-      const wynik = usunZasob(projekt, dane, c.id);
-      await edycja.zmienZZasobami(wynik.projekt, wynik.dane);
+      await edycja.zmienZZasobami((p, d) => usunZasob(p, d, c.id));
       ustawStatus(t('czcionki.usunieto', { nazwa: c.nazwa }));
     } catch (e) {
       ustawBlad(komunikat(e));

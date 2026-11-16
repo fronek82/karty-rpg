@@ -101,6 +101,18 @@ describe('rozmiescKarty bez grup', () => {
     expect(w.karty).toHaveLength(2);
   });
 
+  it('przypięcie poza siatką ma osobne ostrzeżenie, karta rozmieszczana automatycznie', () => {
+    const w = rozmiescKarty(
+      lista([['a', 1, 1, 2]]),
+      { szer: 30, wys: 20, slot: SLOT },
+      {
+        przypiete: [{ kartaId: 'a', kolumna: 0, rzad: 1 }],
+      },
+    );
+    expect(w.ostrzezenia).toEqual(['przypiecie-poza-siatka:a@0,1']);
+    expect(w.karty).toHaveLength(1);
+  });
+
   it('karta większa niż strona jest pomijana z ostrzeżeniem', () => {
     const w = rozmiescKarty(lista([['duza', 1, 3, 1]]), { szer: 20, wys: 20, slot: SLOT });
     expect(w.karty).toHaveLength(0);

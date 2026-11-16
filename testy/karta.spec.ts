@@ -42,7 +42,10 @@ test('podgląd karty, skala polem i myszą, przesunięcie przeciąganiem, reset'
   // Kółko myszy zmniejsza skalę.
   await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
   await page.mouse.wheel(0, 100);
-  await expect(page.getByLabel('Skala')).toHaveValue(String(Math.round((2 / 1.1) * 1000) / 1000));
+  // Krok kółka: exp(−deltaY · 0,00095).
+  await expect(page.getByLabel('Skala')).toHaveValue(
+    String(Math.round(2 * Math.exp(-100 * 0.00095) * 1000) / 1000),
+  );
 
   await page.getByLabel('Obrót (°)').fill('15');
   await expect(page.getByRole('status')).toHaveText('Zapisano');

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { ustawDane, ustawObrazKarty } from '../../dane/edycja';
+import { dodajZasoby, ustawDane, ustawObrazKarty } from '../../dane/edycja';
 import { opisObrazu } from '../../dane/obrazy';
 import { BladDanych } from '../../dane/schemat';
-import { t } from '../../i18n';
+import { t, tJesliJest } from '../../i18n';
 import {
   czyKontener,
   korzenKarty,
@@ -21,7 +21,8 @@ import type { ProjektWEdycji } from '../useProjekt';
 
 /** Skala podglądu karty (piksele CSS na milimetr). */
 const PX_NA_MM = 6;
-const KROK_SKALI = 1.1;
+const SKALA_MIN = 0.05;
+const SKALA_MAX = 20;
 
 function polaObrazu(w: Wezel): PoleObraz[] {
   if (czyKontener(w)) return w.dzieci.flatMap(polaObrazu);
@@ -59,23 +60,34 @@ export function PanelKarty({
   );
   const [wybranePole, ustawWybranePole] = useState<string>();
   const pole = pola.find((p) => p.id === wybranePole) ?? pola[0];
-  const ustawienia = pole ? karta.obrazy?.[pole.id] : undefined;
+  // Podczas przeciągania ustawienia są lokalne (płynny podgląd bez przeliczania całej strony);
+  // do projektu trafiają raz, po puszczeniu przycisku.
+  const [tymczasowe, ustawTymczasowe] = useState<UstawieniaObrazu>();
+  const zapisane = pole ? karta.obrazy?.[pole.id] : undefined;
+  const ustawienia = tymczasowe ?? zapisane;
   const u = normalizujUstawieniaObrazu(ustawienia);
+  const kartaPodgladu = useMemo(
+    () =>
+      tymczasowe && pole ? { ...karta, obrazy: { ...karta.obrazy, [pole.id]: tymczasowe } } : karta,
+    [karta, tymczasowe, pole],
+  );
   const [blad, ustawBlad] = useState<string>();
-  const podglad = useRef<HTMLDivElement>(null);
+  const [podglad, ustawPodglad] = useState<HTMLDivElement | null>(null);
   const plik = useRef<HTMLInputElement>(null);
   const T = talia.id;
 
   const render = useMemo(() => {
     if (!szablon) return { blad: t('karta.brakSzablonu', { id: karta.szablonId }) };
     try {
-      const w = renderujKarte(szablon, karta, {
-        czcionki: zasoby.zasoby.czcionki,
-        obraz: (id) => zasoby.zasoby.obrazy.get(id)?.info,
-      });
+      const { wynik: w, braki } = zasoby.zasoby.czcionki.sledzBraki(() =>
+        renderujKarte(szablon, kartaPodgladu, {
+          czcionki: zasoby.zasoby.czcionki,
+          obraz: (id) => zasoby.zasoby.obrazy.get(id)?.info,
+        }),
+      );
       return {
         wynik: w,
-        brakujace: [...zasoby.zasoby.czcionki.brakujace],
+        brakujace: braki,
         svg: scenaDoSvg(w.scena, {
           adresObrazu: (id) => zasoby.zasoby.obrazy.get(id)?.adres,
           przedrostekId: 'podglad',
@@ -88,7 +100,7 @@ export function PanelKarty({
     } catch (e) {
       return { blad: e instanceof Error ? e.message : String(e) };
     }
-  }, [szablon, karta, zasoby]);
+  }, [szablon, karta, kartaPodgladu, zasoby]);
 
   const zmienObraz = (f: (u: UstawieniaObrazu) => UstawieniaObrazu | undefined) => {
     if (!pole) return;
@@ -99,40 +111,52 @@ export function PanelKarty({
     });
   };
 
-  // Kółko myszy – nasłuch niepasywny, żeby nie przewijać strony podczas skalowania.
+  // Kółko myszy – nasłuch niepasywny (bez przewijania strony), na bieżącym elemencie podglądu.
   const zmienObrazRef = useRef(zmienObraz);
   useEffect(() => {
     zmienObrazRef.current = zmienObraz;
   });
   const maObraz = !!pole;
   useEffect(() => {
-    const el = podglad.current;
-    if (!el || !maObraz) return;
+    if (!podglad || !maObraz) return;
     const kolko = (e: WheelEvent) => {
       e.preventDefault();
-      const mnoznik = e.deltaY < 0 ? KROK_SKALI : 1 / KROK_SKALI;
-      zmienObrazRef.current((x) => ({ ...x, skala: zaokr((x.skala ?? 1) * mnoznik, 3) }));
+      // Krok zależny od siły obrotu (touchpad daje małe deltaY), skala w granicach pola liczbowego.
+      const mnoznik = Math.exp(-Math.max(-200, Math.min(200, e.deltaY)) * 0.00095);
+      zmienObrazRef.current((x) => ({
+        ...x,
+        skala: zaokr(Math.min(SKALA_MAX, Math.max(SKALA_MIN, (x.skala ?? 1) * mnoznik)), 3),
+      }));
     };
-    el.addEventListener('wheel', kolko, { passive: false });
-    return () => el.removeEventListener('wheel', kolko);
-  }, [maObraz]);
+    podglad.addEventListener('wheel', kolko, { passive: false });
+    return () => podglad.removeEventListener('wheel', kolko);
+  }, [podglad, maObraz]);
 
-  const przeciaganie = useRef<{ x: number; y: number; mmNaPx: number } | undefined>(undefined);
+  const przeciaganie = useRef<
+    { x: number; y: number; mmNaPx: number; u: UstawieniaObrazu } | undefined
+  >(undefined);
+  const zakonczPrzeciaganie = () => {
+    const p = przeciaganie.current;
+    przeciaganie.current = undefined;
+    if (p && tymczasowe) zmienObraz(() => p.u);
+    ustawTymczasowe(undefined);
+  };
 
   const wgraj = async (f: File) => {
     ustawBlad(undefined);
     try {
-      const dane = new Uint8Array(await f.arrayBuffer());
-      const wymiary = await wymiaryObrazu(dane).catch(() => ({ szerokosc: 0, wysokosc: 0 }));
-      const opis = opisObrazu(f.name, dane, wymiary, new Set(projekt.zasoby.map((z) => z.id)));
-      const noweDane = new Map(edycja.dane).set(opis.id, dane);
-      let nowy = {
-        ...projekt,
-        zasoby: [...projekt.zasoby, opis],
-        zmieniono: new Date().toISOString(),
-      };
-      if (pole?.klucz) nowy = ustawDane(nowy, T, karta.id, pole.klucz, opis.id);
-      await edycja.zmienZZasobami(nowy, noweDane);
+      const bajty = new Uint8Array(await f.arrayBuffer());
+      const wymiary = await wymiaryObrazu(bajty).catch(() => ({ szerokosc: 0, wysokosc: 0 }));
+      const klucz = pole?.klucz;
+      // Id i przypisanie liczone z najnowszego projektu (edycje w trakcie wczytywania zostają).
+      await edycja.zmienZZasobami((p, d) => {
+        const opis = opisObrazu(f.name, bajty, wymiary, new Set(p.zasoby.map((z) => z.id)));
+        const w = dodajZasoby(p, d, [{ opis, dane: bajty }]);
+        return {
+          projekt: klucz ? ustawDane(w.projekt, T, karta.id, klucz, opis.id) : w.projekt,
+          dane: w.dane,
+        };
+      });
     } catch (e) {
       ustawBlad(e instanceof BladDanych ? e.message : String(e instanceof Error ? e.message : e));
     }
@@ -149,7 +173,7 @@ export function PanelKarty({
         </p>
       ) : (
         <div
-          ref={podglad}
+          ref={ustawPodglad}
           className={`podglad-karty ${pole ? 'przesuwalny' : ''}`}
           style={
             { '--szer-px': `${(render.wynik?.scena.szer ?? 0) * PX_NA_MM}px` } as CSSProperties
@@ -157,13 +181,14 @@ export function PanelKarty({
           title={pole ? t('karta.wskazowkaMyszy') : undefined}
           onPointerDown={(e) => {
             if (!pole || e.button !== 0) return;
-            const svg = podglad.current?.querySelector('svg');
+            const svg = podglad?.querySelector('svg');
             if (!svg || !render.wynik) return;
             e.currentTarget.setPointerCapture(e.pointerId);
             przeciaganie.current = {
               x: e.clientX,
               y: e.clientY,
               mmNaPx: render.wynik.scena.szer / svg.getBoundingClientRect().width,
+              u,
             };
           }}
           onPointerMove={(e) => {
@@ -172,17 +197,18 @@ export function PanelKarty({
             const dx = (e.clientX - p.x) * p.mmNaPx;
             const dy = (e.clientY - p.y) * p.mmNaPx;
             if (Math.abs(dx) + Math.abs(dy) < 0.05) return;
-            przeciaganie.current = { ...p, x: e.clientX, y: e.clientY };
-            zmienObraz((x) => ({
-              ...x,
+            const nowe = {
+              ...p.u,
               przesuniecie: {
-                x: zaokr((x.przesuniecie?.x ?? 0) + dx),
-                y: zaokr((x.przesuniecie?.y ?? 0) + dy),
+                x: zaokr((p.u.przesuniecie?.x ?? 0) + dx),
+                y: zaokr((p.u.przesuniecie?.y ?? 0) + dy),
               },
-            }));
+            };
+            przeciaganie.current = { ...p, x: e.clientX, y: e.clientY, u: nowe };
+            ustawTymczasowe(nowe);
           }}
-          onPointerUp={() => (przeciaganie.current = undefined)}
-          onPointerCancel={() => (przeciaganie.current = undefined)}
+          onPointerUp={zakonczPrzeciaganie}
+          onPointerCancel={zakonczPrzeciaganie}
           dangerouslySetInnerHTML={{ __html: render.svg ?? '' }}
         />
       )}
@@ -207,7 +233,7 @@ export function PanelKarty({
               <select value={pole.id} onChange={(e) => ustawWybranePole(e.target.value)}>
                 {pola.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.id}
+                    {(p.klucz && tJesliJest(`pole.${p.klucz}`)) || p.klucz || p.id}
                   </option>
                 ))}
               </select>
@@ -264,7 +290,7 @@ export function PanelKarty({
               etykieta={t('karta.skala')}
               wartosc={u.skala ?? 1}
               krok={0.05}
-              min={0.05}
+              min={SKALA_MIN}
               zmiana={(v) => zmienObraz((x) => ({ ...x, skala: v }))}
             />
             <Liczba

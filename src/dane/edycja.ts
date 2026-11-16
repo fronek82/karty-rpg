@@ -205,9 +205,19 @@ export function ustawDane(
   });
 }
 
+/** Ilość sztuk; przypięcia ponad nową ilość (na arkuszach tej talii) są usuwane – od końca. */
 export function ustawIlosc(p: Projekt, taliaId: string, kartaId: string, ilosc: number): Projekt {
   const n = Number.isFinite(ilosc) ? Math.max(0, Math.min(999, Math.round(ilosc))) : 0;
-  return zmienKarte(p, taliaId, kartaId, (k) => ({ ...k, ilosc: n }));
+  const x = zmienKarte(p, taliaId, kartaId, (k) => ({ ...k, ilosc: n }));
+  return {
+    ...x,
+    arkusze: x.arkusze.map((a) => {
+      if (a.taliaId !== taliaId || !a.przypiete) return a;
+      let zostaje = n;
+      const przypiete = a.przypiete.filter((pp) => pp.kartaId !== kartaId || zostaje-- > 0);
+      return przypiete.length === a.przypiete.length ? a : { ...a, przypiete };
+    }),
+  };
 }
 
 /** Zmienia szablon karty; dane zostają (klucze wspólne działają, reszta jest ignorowana). */

@@ -155,8 +155,10 @@ export const pl = {
   'ostrzezenie.przypieciaPrzyGrupach': 'przypięcia są ignorowane, gdy talia ma grupy',
   'ostrzezenie.przypiecieBezKarty': 'przypięcie wskazuje kartę spoza talii lub z ilością 0: {a}',
   'ostrzezenie.przypiecieZlaStrona': 'przypięcie poza zakresem stron: {a}',
-  'ostrzezenie.przypiecieKoliduje':
-    'przypięcie nachodzi na inną kartę lub wychodzi poza siatkę: {a}',
+  'ostrzezenie.przypiecieKoliduje': 'przypięcie nachodzi na inną przypiętą kartę: {a}',
+  'ostrzezenie.przypieciePozaSiatka':
+    'przypięcie wychodzi poza siatkę (np. po zmianie papieru lub orientacji): {a}',
+  'arkusze.bladWorkera': 'Nie udało się utworzyć PDF w tle.',
   'ostrzezenie.kartaWWieluGrupach': 'karta w kilku grupach: {a}',
   'pole.nazwa': 'Nazwa',
   'pole.obraz': 'Obraz',

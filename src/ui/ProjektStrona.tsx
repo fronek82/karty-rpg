@@ -72,7 +72,7 @@ function Projekt({ edycja, podstrona }: { edycja: ProjektWEdycji; podstrona?: st
       ) : rodzaj === 'czcionki' ? (
         <Czcionki edycja={edycja} />
       ) : talia ? (
-        <StronaTalii edycja={edycja} taliaId={talia.id} />
+        <StronaTalii key={talia.id} edycja={edycja} taliaId={talia.id} />
       ) : podstrona === undefined ? (
         <Przeglad edycja={edycja} adres={adres} />
       ) : (

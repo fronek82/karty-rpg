@@ -7,10 +7,11 @@ import {
 } from '../dane/archiwum';
 import type { PodsumowanieProjektu } from '../dane/baza';
 import { BladDanych } from '../dane/schemat';
-import { t } from '../i18n';
+import { jezyk, t } from '../i18n';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import { pakietMausritter } from '../pakiety/mausritter';
 import { baza, nowyProjektZPakietu } from './baza';
+import { poOstatnimZapisie } from './useProjekt';
 import { nazwaPliku, zapiszPlik } from './pliki';
 
 const komunikat = (e: unknown) =>
@@ -18,7 +19,7 @@ const komunikat = (e: unknown) =>
     ? e.message
     : t('projekty.bladNieoczekiwany', { szczegoly: String(e instanceof Error ? e.message : e) });
 
-const formatDaty = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'medium', timeStyle: 'short' });
+const formatDaty = new Intl.DateTimeFormat(jezyk(), { dateStyle: 'medium', timeStyle: 'short' });
 
 /** Lista projektów zapisanych w przeglądarce: nowy z pakietu, import, eksport, usuwanie. */
 export function Projekty() {
@@ -31,8 +32,9 @@ export function Projekty() {
   const plik = useRef<HTMLInputElement>(null);
 
   const odswiez = useCallback(() => {
-    baza()
-      .lista()
+    // Zapis zamkniętego właśnie projektu jest asynchroniczny – lista czeka na niego.
+    poOstatnimZapisie()
+      .then(() => baza().lista())
       .then(ustawListe, (e: unknown) => ustawBlad(komunikat(e)));
   }, []);
   useEffect(odswiez, [odswiez]);
@@ -122,9 +124,18 @@ export function Projekty() {
         </p>
       )}
       {kolizja && (
-        <div role="alertdialog" aria-labelledby="kolizja-tytul" className="uwaga">
+        <div
+          role="alertdialog"
+          aria-labelledby="kolizja-tytul"
+          className="uwaga"
+          onKeyDown={(e) => e.key === 'Escape' && ustawKolizje(undefined)}
+        >
           <p id="kolizja-tytul">{t('projekty.kolizja', { nazwa: kolizja.projekt.nazwa })}</p>
-          <button type="button" onClick={() => void zapiszImport(kolizja.projekt, kolizja.zasoby)}>
+          <button
+            type="button"
+            autoFocus
+            onClick={() => void zapiszImport(kolizja.projekt, kolizja.zasoby)}
+          >
             {t('projekty.zastap')}
           </button>{' '}
           <button
@@ -147,7 +158,12 @@ export function Projekty() {
         </div>
       )}
       {doUsuniecia && (
-        <div role="alertdialog" aria-labelledby="usun-tytul" className="uwaga">
+        <div
+          role="alertdialog"
+          aria-labelledby="usun-tytul"
+          className="uwaga"
+          onKeyDown={(e) => e.key === 'Escape' && ustawDoUsuniecia(undefined)}
+        >
           <p id="usun-tytul">{t('projekty.potwierdzUsuniecie', { nazwa: doUsuniecia.nazwa })}</p>
           <button
             type="button"
@@ -161,7 +177,7 @@ export function Projekty() {
           >
             {t('projekty.usun')}
           </button>{' '}
-          <button type="button" onClick={() => ustawDoUsuniecia(undefined)}>
+          <button type="button" autoFocus onClick={() => ustawDoUsuniecia(undefined)}>
             {t('projekty.anuluj')}
           </button>
         </div>

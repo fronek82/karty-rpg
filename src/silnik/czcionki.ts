@@ -201,6 +201,7 @@ export class RejestrCzcionek {
   private readonly rodziny = new Map<string, Partial<Record<WariantCzcionki, Czcionka>>>();
   private readonly role = new Map<string, string>();
   private zapasowa: string | undefined;
+  private sledzone: Set<string> | undefined;
   /** Nazwy (role lub rodziny), dla których użyto czcionki zapasowej – do ostrzeżeń w UI. */
   readonly brakujace = new Set<string>();
 
@@ -225,6 +226,26 @@ export class RejestrCzcionek {
     return this;
   }
 
+  /** Zastępuje wszystkie role (np. po zmianie w projekcie) i czyści listę brakujących. */
+  ustawRole(role: Record<string, string>): this {
+    this.role.clear();
+    for (const [r, f] of Object.entries(role)) this.role.set(r, f);
+    this.brakujace.clear();
+    return this;
+  }
+
+  /** Wykonuje `f` i zwraca nazwy, dla których w jego trakcie użyto czcionki zapasowej. */
+  sledzBraki<T>(f: () => T): { wynik: T; braki: string[] } {
+    const poprzednie = this.sledzone;
+    const braki = new Set<string>();
+    this.sledzone = braki;
+    try {
+      return { wynik: f(), braki: [...braki] };
+    } finally {
+      this.sledzone = poprzednie;
+    }
+  }
+
   przypiszRole(rola: string, rodzina: string): this {
     this.role.set(rola, rodzina);
     return this;
@@ -236,6 +257,7 @@ export class RejestrCzcionek {
     const zapasowa = this.zapasowa !== undefined ? this.znajdz(this.zapasowa, wariant) : undefined;
     if (zapasowa) {
       this.brakujace.add(nazwa);
+      this.sledzone?.add(nazwa);
       return zapasowa;
     }
     throw new Error(`Brak czcionki „${nazwa}” (${wariant}).`);

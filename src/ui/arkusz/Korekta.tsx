@@ -45,17 +45,22 @@ export function przenies(
   cel: Omit<Polozenie, 'kartaId'>,
 ): string | undefined {
   const z = czyPrzypieta(arkusz, zaznaczona) ? zaznaczona : undefined;
-  const w = przypnijKarte(
-    edycja.projekt,
-    arkusz.id,
-    z,
-    { kartaId: zaznaczona.kartaId, ...cel },
-    rozmiarKarty(wynik),
-    wynik.siatka,
-  );
-  if ('blad' in w) return t(w.blad === 'koliduje' ? 'korekta.koliduje' : 'korekta.pozaSiatka');
-  edycja.zmien(() => w.projekt);
-  return undefined;
+  let blad: string | undefined;
+  // `zmien` liczy synchronicznie z najnowszego projektu – błąd przypięcia zostawia projekt bez zmian.
+  edycja.zmien((p) => {
+    const w = przypnijKarte(
+      p,
+      arkusz.id,
+      z,
+      { kartaId: zaznaczona.kartaId, ...cel },
+      rozmiarKarty(wynik),
+      wynik.siatka,
+    );
+    if ('projekt' in w) return w.projekt;
+    blad = t(w.blad === 'koliduje' ? 'korekta.koliduje' : 'korekta.pozaSiatka');
+    return p;
+  });
+  return blad;
 }
 
 /**

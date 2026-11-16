@@ -88,7 +88,7 @@ export function TabelaTalii({ edycja, talia, wybrana, wybierz }: WlasciwosciTabe
     return (
       <tr
         key={k.id}
-        aria-selected={wybrana === k.id}
+        aria-current={wybrana === k.id ? 'true' : undefined}
         className={wybrana === k.id ? 'wybrana' : undefined}
         onFocus={() => wybierz?.(k.id)}
         onClick={() => wybierz?.(k.id)}

@@ -267,6 +267,20 @@ describe('ręczna korekta arkusza', () => {
     ).toEqual({ blad: 'koliduje' });
   });
 
+  it('zmniejszenie ilości usuwa nadmiarowe przypięcia tej karty', () => {
+    const x = zamrozUklad(odepnijWszystkie(p, A), A, [
+      { kartaId: 'bron-igla', strona: 0, kolumna: 0, rzad: 0 },
+      { kartaId: 'bron-sztylet', strona: 0, kolumna: 1, rzad: 0 },
+      { kartaId: 'bron-igla', strona: 0, kolumna: 2, rzad: 0 },
+      { kartaId: 'bron-igla', strona: 0, kolumna: 3, rzad: 0 },
+    ]);
+    const y = ustawIlosc(x, 'mausritter-bron-i-pancerze', 'bron-igla', 1);
+    expect(arkusz(y).przypiete).toEqual([
+      { kartaId: 'bron-igla', kolumna: 0, rzad: 0 },
+      { kartaId: 'bron-sztylet', kolumna: 1, rzad: 0 },
+    ]);
+  });
+
   it('zamrożenie układu i odpięcie wszystkich', () => {
     const x = zamrozUklad(p, A, [
       { kartaId: 'bron-igla', strona: 0, kolumna: 1, rzad: 2 },

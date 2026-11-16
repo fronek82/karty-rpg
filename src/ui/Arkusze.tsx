@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { SUFIKS_SZARY, zbudujArkusz, zSzarymiObrazami, type WynikArkusza } from '../druk/arkusz';
 import { ustawTytulArkusza, ustawUstawieniaArkusza } from '../dane/edycja';
+import { zasobySzablonu } from '../dane/schemat';
 import { t, tJesliJest } from '../i18n';
 import { PAPIERY, type Arkusz, type Papier } from '../model/arkusz';
 import { pakietMausritter } from '../pakiety/mausritter';
@@ -104,11 +105,21 @@ export function WidokArkuszy({
   /** Projekt w edycji – włącza ustawienia arkusza i ręczną korektę układu. */
   edycja?: ProjektWEdycji;
 }) {
-  const potrzebneSzare = pakiet.arkusze.some((a) => a.ustawienia.czarnoBialy);
-  const zasobyPakietu = useZSzarymiObrazami(zasobyWejscie, potrzebneSzare);
+  // Pisanie (np. tytułu) nie czeka na przebudowę arkusza i SVG wszystkich stron.
+  const zrodloOdroczone = useDeferredValue(pakiet);
+  const zasobyPakietu = useZSzarymiObrazami(zasobyWejscie, zrodloOdroczone);
   const [korekta, ustawKorekte] = useState(false);
   const [zaznaczona, ustawZaznaczona] = useState<Zaznaczenie>();
   const [komunikatKorekty, ustawKomunikatKorekty] = useState<string>();
+  // Escape anuluje zaznaczenie karty w korekcie.
+  useEffect(() => {
+    if (!zaznaczona) return;
+    const klawisz = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') ustawZaznaczona(undefined);
+    };
+    window.addEventListener('keydown', klawisz);
+    return () => window.removeEventListener('keydown', klawisz);
+  }, [zaznaczona]);
   const [blad, ustawBlad] = useState<Blad>();
   const [wybrany, ustawWybrany] = useState(0);
   const [skala, ustawSkala] = useState<Skala>('dopasuj');
@@ -116,15 +127,17 @@ export function WidokArkuszy({
   const [pdfGotowy, ustawPdfGotowy] = useState(false);
 
   const arkusz: Arkusz | undefined = pakiet.arkusze[wybrany] ?? pakiet.arkusze[0];
+  const arkuszPodgladu: Arkusz | undefined =
+    zrodloOdroczone.arkusze[wybrany] ?? zrodloOdroczone.arkusze[0];
   // Błąd silnika (np. brak czcionki) nie może wywrócić renderu całej aplikacji.
   const uklad = useMemo((): { wynik?: WynikArkusza; blad?: Blad } => {
-    if (!zasobyPakietu || !arkusz) return {};
+    if (!zasobyPakietu || !arkuszPodgladu) return {};
     try {
-      return { wynik: zbuduj(pakiet, arkusz, zasobyPakietu) };
+      return { wynik: zbuduj(zrodloOdroczone, arkuszPodgladu!, zasobyPakietu) };
     } catch (e) {
       return { blad: { klucz: 'arkusze.bladUkladu', szczegoly: szczegoly(e) } };
     }
-  }, [pakiet, arkusz, zasobyPakietu]);
+  }, [zrodloOdroczone, arkuszPodgladu, zasobyPakietu]);
   const wynik = uklad.wynik;
   const nazwyKart = useMemo(
     () =>
@@ -147,14 +160,14 @@ export function WidokArkuszy({
     () =>
       wynik && zasobyPakietu
         ? wynik.strony.map((s, i) =>
-            scenaDoSvg(arkusz?.ustawienia.czarnoBialy ? zSzarymiObrazami(s) : s, {
+            scenaDoSvg(arkuszPodgladu?.ustawienia.czarnoBialy ? zSzarymiObrazami(s) : s, {
               adresObrazu: (id) => zasobyPakietu.obrazy.get(id)?.adres,
               przedrostekId: `a${wybrany}s${i}`,
               atrybuty: { role: 'img', 'aria-label': t('arkusze.strona', { numer: i + 1 }) },
             }),
           )
         : [],
-    [wynik, zasobyPakietu, wybrany, arkusz],
+    [wynik, zasobyPakietu, wybrany, arkuszPodgladu],
   );
 
   const pobierz = async (wszystkie: boolean) => {
@@ -373,41 +386,74 @@ export function WidokArkuszy({
   );
 }
 
+/** Obrazy użyte na arkuszach czarno-białych: wartości danych kart i stałe obrazy szablonów. */
+function obrazyCzarnoBialych(zrodlo: ZrodloArkuszy, z: ZasobyPakietu): Set<string> {
+  const ids = new Set<string>();
+  for (const a of zrodlo.arkusze) {
+    if (!a.ustawienia.czarnoBialy) continue;
+    for (const k of zrodlo.talie.find((x) => x.id === a.taliaId)?.karty ?? []) {
+      for (const v of Object.values(k.dane)) if (z.obrazy.has(v)) ids.add(v);
+      const s = z.szablony.get(k.szablonId);
+      if (s) for (const id of zasobySzablonu(s)) ids.add(id);
+    }
+  }
+  return ids;
+}
+
 /**
- * Zasoby uzupełnione o szare wersje obrazów (`id#szary`), gdy któryś arkusz jest czarno-biały.
- * Do czasu konwersji – undefined (podgląd czeka). Adresy blob: szarych obrazów są zwalniane.
+ * Zasoby uzupełnione o szare wersje obrazów (`id#szary`) użytych na arkuszach czarno-białych.
+ * Konwersje pamiętane (po obiekcie obrazu) – edycja kart nie powtarza ich; do pierwszej
+ * konwersji – undefined (podgląd czeka). Adresy blob: szarych obrazów zwalniane przy odmontowaniu.
  */
 function useZSzarymiObrazami(
   z: ZasobyPakietu | undefined,
-  potrzebne: boolean,
+  zrodlo: ZrodloArkuszy,
 ): ZasobyPakietu | undefined {
+  const pamiec = useRef(new Map<ObrazWPamieci, Promise<ObrazWPamieci>>());
+  useEffect(() => {
+    const m = pamiec.current;
+    return () => {
+      for (const p of m.values()) void p.then((o) => URL.revokeObjectURL(o.adres));
+      m.clear();
+    };
+  }, []);
+  const potrzebne = useMemo(
+    () => (z ? [...obrazyCzarnoBialych(zrodlo, z)].sort().join('\n') : ''),
+    [z, zrodlo],
+  );
   const [szare, ustawSzare] = useState<{
+    klucz: string;
     zrodlo: ZasobyPakietu;
     mapa: Map<string, ObrazWPamieci>;
   }>();
   useEffect(() => {
     if (!z || !potrzebne) return;
     let aktywny = true;
-    const utworzone: ObrazWPamieci[] = [];
     void Promise.all(
-      [...z.obrazy].map(async ([id, o]) => {
-        // Obraz, którego nie da się przetworzyć, zostaje kolorowy – lepsze niż brak obrazu.
-        const s = await obrazNaSzarosc(o).catch(() => o);
-        if (s !== o) utworzone.push(s);
-        return [id + SUFIKS_SZARY, s] as const;
+      potrzebne.split('\n').flatMap((id) => {
+        const o = z.obrazy.get(id);
+        if (!o) return [];
+        let p = pamiec.current.get(o);
+        if (!p) {
+          // Obraz, którego nie da się przetworzyć, zostaje kolorowy – lepsze niż brak obrazu.
+          p = obrazNaSzarosc(o).catch(() => ({ ...o }));
+          pamiec.current.set(o, p);
+        }
+        return [p.then((s) => [id + SUFIKS_SZARY, s] as const)];
       }),
     ).then((pary) => {
-      if (aktywny) ustawSzare({ zrodlo: z, mapa: new Map(pary) });
-      else utworzone.forEach((o) => URL.revokeObjectURL(o.adres));
+      if (aktywny) ustawSzare({ klucz: potrzebne, zrodlo: z, mapa: new Map(pary) });
     });
     return () => {
       aktywny = false;
-      utworzone.forEach((o) => URL.revokeObjectURL(o.adres));
     };
   }, [z, potrzebne]);
   return useMemo(() => {
     if (!z || !potrzebne) return z;
-    if (szare?.zrodlo !== z) return undefined;
+    if (szare?.zrodlo !== z || szare.klucz !== potrzebne) {
+      // Do czasu nowej konwersji – poprzednie szare obrazy (bez znikania podglądu).
+      return szare ? { ...z, obrazy: new Map([...z.obrazy, ...szare.mapa]) } : undefined;
+    }
     return { ...z, obrazy: new Map([...z.obrazy, ...szare.mapa]) };
   }, [z, potrzebne, szare]);
 }

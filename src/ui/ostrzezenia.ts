@@ -23,6 +23,7 @@ const KODY: Record<string, KluczTekstu> = {
   'przypiecie-bez-karty': 'ostrzezenie.przypiecieBezKarty',
   'przypiecie-zla-strona': 'ostrzezenie.przypiecieZlaStrona',
   'przypiecie-koliduje': 'ostrzezenie.przypiecieKoliduje',
+  'przypiecie-poza-siatka': 'ostrzezenie.przypieciePozaSiatka',
   'karta-w-wielu-grupach': 'ostrzezenie.kartaWWieluGrupach',
 };
 

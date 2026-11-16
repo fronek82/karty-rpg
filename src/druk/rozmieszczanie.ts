@@ -162,6 +162,15 @@ function rozmiescBezGrup(
       continue;
     }
     const z = strona(p.strona ?? 0);
+    if (
+      p.kolumna < 0 ||
+      p.rzad < 0 ||
+      p.kolumna + e.kolumny > kolumny ||
+      p.rzad + e.rzedy > rzedy
+    ) {
+      ostrzezenia.push(`przypiecie-poza-siatka:${p.kartaId}@${p.kolumna},${p.rzad}`);
+      continue;
+    }
     if (!z.wolne(p.kolumna, p.rzad, e.kolumny, e.rzedy)) {
       ostrzezenia.push(`przypiecie-koliduje:${p.kartaId}@${p.kolumna},${p.rzad}`);
       continue;

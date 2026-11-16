@@ -13,7 +13,7 @@ export interface ObrazWPamieci {
   info: InformacjaOObrazie;
   dane: Uint8Array;
   format: 'png' | 'jpg';
-  /** Adres do podglądu SVG (data:, żeby SVG wstawione jako tekst było samowystarczalne). */
+  /** Adres do podglądu SVG: `data:` w pakiecie wbudowanym, `blob:` w projektach (zwalniany). */
   adres: string;
 }
 
