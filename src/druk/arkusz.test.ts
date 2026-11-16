@@ -159,6 +159,66 @@ describe('zbudujArkusz – tytuł, nożyczki, linie', () => {
     }
   });
 
+  it('nożyczki na końcu przerywanej linii prowadzącej do krawędzi siatki', () => {
+    const a = arkuszeMausrittera[1]!;
+    const w = zbudujArkusz(a, taliaWyposazenia, ctx);
+    const s = w.strony[0]!;
+    const n = a.ustawienia.nozyczki!;
+    const y = w.poczatekSiatki.y + SLOT;
+    const nozyczki = scissors(s);
+    expect(nozyczki.y).toBeCloseTo(y, 3);
+    const prowadzaca = linie(s).find(
+      (l) => l.y1 === l.y2 && Math.abs(l.y1 - y) < 1e-3 && l.x2 <= w.poczatekSiatki.x + 1e-3,
+    );
+    expect(prowadzaca).toBeDefined();
+    expect(prowadzaca!.x1).toBeCloseTo(nozyczki.x + n.rozmiar / 2, 3);
+    expect(prowadzaca!.x2).toBeCloseTo(w.poczatekSiatki.x, 3);
+    expect(prowadzaca!.obrys.kreska).toEqual([
+      a.ustawienia.linie.kreska,
+      a.ustawienia.linie.przerwa,
+    ]);
+  });
+
+  it('tytuł pionowy sięga prawie całej siatki i kończy się pod nożyczkami', () => {
+    const a = arkuszeMausrittera[1]!;
+    const w = zbudujArkusz(a, taliaWyposazenia, ctx);
+    const s = w.strony[0]!;
+    const tytul = s.elementy.find((e) => e.typ === 'grupa' && e.obrot === -90);
+    if (tytul?.typ !== 'grupa') throw new Error('brak tytułu');
+    const xs = tytul.elementy.flatMap((e) => (e.typ === 'tekst' ? e.glify.map((g) => g.x) : []));
+    // Długość tytułu wzdłuż siatki (od dolnej krawędzi w górę) – do początku ostatniej litery.
+    const dlugosc = Math.max(...xs);
+    const n = a.ustawienia.nozyczki!;
+    const limit = 6 * SLOT - (n.rozmiar / 2 + 1);
+    expect(dlugosc).toBeLessThan(limit);
+    expect(dlugosc).toBeGreaterThan(0.9 * limit);
+    expect(w.ostrzezenia).toEqual([]);
+  });
+
+  it('opis grupy co najmniej 2 mm nad górną linią cięcia kart', () => {
+    const a = arkuszeMausrittera[2]!;
+    const w = zbudujArkusz(a, talia(a), ctx);
+    const s = w.strony[0]!;
+    // Grupy tekstu nad siatką: nagłówki i opisy (pomijamy tytuł arkusza).
+    const nad = s.elementy.filter(
+      (e): e is Extract<ElementSceny, { typ: 'grupa' }> =>
+        e.typ === 'grupa' &&
+        !e.obrot &&
+        e.y < w.poczatekSiatki.y &&
+        e.elementy.some((x) => x.typ === 'tekst'),
+    );
+    expect(nad.length).toBeGreaterThan(2);
+    // Linia bazowa ostatniej linijki opisu + zejście liter (~0,25 rozmiaru) ≥ 2 mm nad kartami.
+    const zejscie = 0.25 * a.ustawienia.grupy!.stylOpisu.rozmiar;
+    const dol = Math.max(
+      ...nad.flatMap((g) =>
+        g.elementy.flatMap((e) => (e.typ === 'tekst' ? e.glify.map((x) => g.y + x.y) : [])),
+      ),
+    );
+    expect(w.poczatekSiatki.y - (dol + zejscie)).toBeGreaterThanOrEqual(2);
+    expect(w.ostrzezenia).toEqual([]);
+  });
+
   it('nożyczki na nieistniejącej linii – ostrzeżenie zamiast rysunku', () => {
     const a = arkuszeMausrittera[0]!;
     const w = zbudujArkusz(

@@ -180,7 +180,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   });
 
   // Tytuł.
-  const tytul = u.tytul ? napis(u.tytul.tekst, u.tytul.styl, undefined, ctx.czcionki) : undefined;
+  let tytul = u.tytul ? napis(u.tytul.tekst, u.tytul.styl, undefined, ctx.czcionki) : undefined;
   const obszar = {
     x: u.marginesy.lewo,
     y: u.marginesy.gora,
@@ -245,6 +245,29 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   });
   for (const o of rozmieszczenie.ostrzezenia) ostrzezenia.push({ komunikat: o });
   const rzedySiatki = Math.floor(siatka.wys / slot.wysokosc + 1e-6);
+
+  // Tytuł nie dłuższy niż bok siatki (minus miejsce na nożyczki na tej samej krawędzi).
+  if (u.tytul && tytul && tytul.szer > 0) {
+    const kolumnySiatki = Math.floor(siatka.szer / slot.szerokosc + 1e-6);
+    const n = u.nozyczki;
+    const zapas = n ? n.rozmiar / 2 + 1 : 0;
+    let limit: Mm;
+    if (u.tytul.polozenie === 'lewo') {
+      limit = rzedySiatki * slot.wysokosc;
+      if (n?.linia === 'pozioma' && n.strona === 'poczatek')
+        limit = Math.min(limit, (rzedySiatki - n.indeks) * slot.wysokosc - zapas);
+    } else {
+      limit = kolumnySiatki * slot.szerokosc;
+      if (n?.linia === 'pionowa' && n.strona === 'poczatek')
+        limit = Math.min(limit, n.indeks * slot.szerokosc - zapas);
+    }
+    if (limit > 0 && tytul.szer > limit) {
+      const skala = Math.max(0.25, limit / tytul.szer);
+      if (skala === 0.25) ostrzezenia.push({ komunikat: 'tytul-nie-miesci-sie' });
+      const styl = { ...u.tytul.styl, rozmiar: u.tytul.styl.rozmiar * skala };
+      tytul = napis(u.tytul.tekst, styl, undefined, ctx.czcionki);
+    }
+  }
 
   // Karty renderujemy raz na kartę (i rozmiar) – egzemplarze są identyczne.
   const pamiec = new Map<string, Scena>();
@@ -324,8 +347,8 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       }
     }
     if (u.nozyczki && odcinki.length > 0) {
-      const n = nozyczkiNaScenie(u.nozyczki, odcinki, pas, u.linie.kolor);
-      if (n) elementy.push(n);
+      const n = nozyczkiNaScenie(u.nozyczki, odcinki, pas, u.linie);
+      if (n) elementy.push(...n);
       else
         ostrzezenia.push({
           komunikat: `nozyczki-poza-siatka:${u.nozyczki.linia}:${u.nozyczki.indeks}`,
@@ -350,48 +373,69 @@ function ostrzezenieKarty(k: Karta, o: Ostrzezenie): OstrzezenieArkusza {
 
 /**
  * Nożyczki na przedłużeniu `indeks`-tej linii cięcia (licząc rzeczywiste linie na stronie –
- * przy grupach z odstępami), poza obszarem kart, skierowane do środka.
+ * przy grupach z odstępami), poza obszarem kart, skierowane do środka. Od nożyczek do krawędzi
+ * siatki biegnie przerywana linia prowadząca – jak w oryginale.
  */
 function nozyczkiNaScenie(
   n: NonNullable<Arkusz['ustawienia']['nozyczki']>,
   odcinki: { x1: Mm; y1: Mm; x2: Mm; y2: Mm }[],
   pasNaglowkow: Mm,
-  kolor: string,
-): ElementSceny | undefined {
+  linie: LinieCiecia,
+): ElementSceny[] | undefined {
   const r = n.rozmiar;
   const odstep = n.odstep + r / 2;
   const unikalne = (v: number[]) =>
     [...new Set(v.map((x) => Math.round(x * 1000) / 1000))].sort((a, b) => a - b);
   const pionowe = odcinki.filter((o) => o.x1 === o.x2);
   const poziome = odcinki.filter((o) => o.y1 === o.y2);
-  const lewa = Math.min(...poziome.map((o) => Math.min(o.x1, o.x2)));
-  const prawa = Math.max(...poziome.map((o) => Math.max(o.x1, o.x2)));
-  const gora = Math.min(...pionowe.map((o) => Math.min(o.y1, o.y2)));
-  const dol = Math.max(...pionowe.map((o) => Math.max(o.y1, o.y2)));
   let x: Mm;
   let y: Mm;
   let obrot: number;
+  let prowadzaca: { x1: Mm; y1: Mm; x2: Mm; y2: Mm };
   if (n.linia === 'pozioma') {
     const yy = unikalne(poziome.map((o) => o.y1))[n.indeks];
     if (yy === undefined) return undefined;
+    // Krawędź siatki na tej linii: skrajny odcinek leżący na niej.
+    const naLinii = poziome.filter((o) => Math.abs(o.y1 - yy) < 1e-3);
+    const lewa = Math.min(...naLinii.map((o) => Math.min(o.x1, o.x2)));
+    const prawa = Math.max(...naLinii.map((o) => Math.max(o.x1, o.x2)));
     y = yy;
     x = n.strona === 'poczatek' ? lewa - odstep : prawa + odstep;
     obrot = n.strona === 'poczatek' ? 0 : 180;
+    prowadzaca =
+      n.strona === 'poczatek'
+        ? { x1: x + r / 2, y1: y, x2: lewa, y2: y }
+        : { x1: prawa, y1: y, x2: x - r / 2, y2: y };
   } else {
     const xx = unikalne(pionowe.map((o) => o.x1))[n.indeks];
     if (xx === undefined) return undefined;
+    const naLinii = pionowe.filter((o) => Math.abs(o.x1 - xx) < 1e-3);
+    const gora = Math.min(...naLinii.map((o) => Math.min(o.y1, o.y2)));
+    const dol = Math.max(...naLinii.map((o) => Math.max(o.y1, o.y2)));
     x = xx;
     // Nad siatką – ponad pasem nagłówków grup.
     y = n.strona === 'poczatek' ? gora - pasNaglowkow - odstep : dol + odstep;
     obrot = n.strona === 'poczatek' ? 90 : -90;
+    prowadzaca =
+      n.strona === 'poczatek'
+        ? { x1: x, y1: y + r / 2, x2: x, y2: gora }
+        : { x1: x, y1: dol, x2: x, y2: y - r / 2 };
   }
-  return {
+  const wynik: ElementSceny[] = [];
+  if (Math.hypot(prowadzaca.x2 - prowadzaca.x1, prowadzaca.y2 - prowadzaca.y1) > linie.kreska)
+    wynik.push(liniaCiecia(prowadzaca, linie));
+  wynik.push({
     typ: 'grupa',
     x,
     y,
     obrot,
     elementy: [
-      { typ: 'sciezka', kontur: konturIkony('nozyczki', -r / 2, -r / 2, r), wypelnienie: kolor },
+      {
+        typ: 'sciezka',
+        kontur: konturIkony('nozyczki', -r / 2, -r / 2, r),
+        wypelnienie: linie.kolor,
+      },
     ],
-  };
+  });
+  return wynik;
 }

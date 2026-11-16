@@ -30,6 +30,19 @@ const stylTytulu = {
   rozmiar: pt(32),
   kolor: KOLOR,
 };
+/**
+ * Tytuł pionowy: jak w referencji – dłuższy tytuł sięga prawie całej wysokości siatki
+ * (zmniejszany automatycznie, żeby kończył się pod nożyczkami), krótszy ma ten sam rozmiar.
+ */
+const stylTytuluPionowego = { ...stylTytulu, rozmiar: pt(36) };
+/** Nożyczki na końcu przerywanej linii prowadzącej do drugiej poziomej linii cięcia. */
+const NOZYCZKI_Z_BOKU = {
+  linia: 'pozioma',
+  indeks: 1,
+  strona: 'poczatek',
+  rozmiar: 5.5,
+  odstep: 7,
+} as const;
 
 /** Układ w zapisie „karta: [kolumna, rząd], …” – każda para to jeden egzemplarz. */
 function przypnij(uklad: Record<string, [number, number][]>): PrzypietaKarta[] {
@@ -44,9 +57,14 @@ export const arkuszBroni: Arkusz = {
   taliaId: taliaBroni.id,
   ustawienia: {
     ...wspolne,
-    tytul: { tekst: 'Karty broni i pancerzy', polozenie: 'lewo', styl: stylTytulu, odstep: 1.3 },
+    tytul: {
+      tekst: 'Karty broni i pancerzy',
+      polozenie: 'lewo',
+      styl: stylTytuluPionowego,
+      odstep: 1.3,
+    },
     poczatekSiatki: zReferencji(26.67, 12.81),
-    nozyczki: { linia: 'pozioma', indeks: 1, strona: 'poczatek', rozmiar: 6, odstep: 5 },
+    nozyczki: NOZYCZKI_Z_BOKU,
   },
   przypiete: przypnij({
     'bron-improwizowana': [
@@ -155,11 +173,11 @@ export const arkuszWyposazenia: Arkusz = {
     tytul: {
       tekst: 'Karty niezbędnego wyposażenia',
       polozenie: 'lewo',
-      styl: stylTytulu,
+      styl: stylTytuluPionowego,
       odstep: 1.3,
     },
     poczatekSiatki: zReferencji(26.67, 12.81),
-    nozyczki: { linia: 'pozioma', indeks: 1, strona: 'poczatek', rozmiar: 6, odstep: 5 },
+    nozyczki: NOZYCZKI_Z_BOKU,
   },
   przypiete: przypnij({
     'przedmiot-pochodnie': [...wiersze(0, 3, [0]), ...wiersze(4, 6, [0, 1])],
@@ -186,7 +204,9 @@ export const arkuszStanow: Arkusz = {
       stylOpisu: { czcionka: 'tresc', rozmiar: pt(9), kolor: KOLOR },
       // Odstępy w referencji wahają się (2,81–2,96 mm) – średnia z całej szerokości siatki.
       odstep: Math.round(((284.24 - 12.53 - 10 * 25.725) / 5) * SKALA_REFERENCJI * 1000) / 1000,
-      odstepOdKart: 0.3,
+      // Co najmniej 2 mm od dołu liter ostatniej linijki opisu do górnej linii cięcia kart
+      // (odstęp liczony od dołu wiersza, z interlinią – stąd zapas).
+      odstepOdKart: 2.5,
     },
     poczatekSiatki: zReferencji(12.53, 42.45),
     nozyczki: { linia: 'pionowa', indeks: 2, strona: 'koniec', rozmiar: 6, odstep: 1.5 },

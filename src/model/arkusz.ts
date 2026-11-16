@@ -12,6 +12,10 @@ export interface TytulArkusza {
   tekst: string;
   /** `gora` – poziomo nad siatką; `lewo` – pionowo wzdłuż lewej krawędzi, czytany od dołu. */
   polozenie: 'gora' | 'lewo';
+  /**
+   * `styl.rozmiar` to rozmiar największy: dłuższy tytuł jest zmniejszany, żeby zmieścił się wzdłuż
+   * boku siatki (z miejscem na nożyczki na początku tej krawędzi).
+   */
   styl: StylTekstu;
   /** Odstęp między tytułem a siatką (mm). */
   odstep: Mm;
@@ -25,7 +29,10 @@ export interface LinieCiecia {
   przerwa: Mm;
 }
 
-/** Nożyczki na przedłużeniu linii cięcia, poza siatką, skierowane do środka. */
+/**
+ * Nożyczki na przedłużeniu linii cięcia, poza siatką, skierowane do środka; od nożyczek
+ * do krawędzi siatki biegnie przerywana linia prowadząca.
+ */
 export interface Nozyczki {
   linia: 'pozioma' | 'pionowa';
   /** Numer linii siatki (0 = pierwsza krawędź). */
@@ -33,7 +40,7 @@ export interface Nozyczki {
   /** Na początku (lewo/góra) czy na końcu (prawo/dół) linii. */
   strona: 'poczatek' | 'koniec';
   rozmiar: Mm;
-  /** Odstęp od siatki (mm). */
+  /** Odstęp od siatki do nożyczek (mm) – długość linii prowadzącej. */
   odstep: Mm;
 }
 
@@ -48,7 +55,7 @@ export interface UstawieniaArkusza {
     stylOpisu: StylTekstu;
     /** Odstęp między grupami (mm). */
     odstep: Mm;
-    /** Odstęp między opisem a kartami (mm). */
+    /** Odstęp między opisem a górną linią cięcia kart (mm). */
     odstepOdKart: Mm;
   };
   linie: LinieCiecia;
