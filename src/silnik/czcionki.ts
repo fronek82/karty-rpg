@@ -46,6 +46,11 @@ export class Czcionka {
     return glify;
   }
 
+  /** Rodzina i styl z metadanych pliku (np. „EB Garamond”, „Bold Italic”). */
+  metadane(): { rodzina: string; styl: string } {
+    return { rodzina: this.font.familyName ?? '', styl: this.font.subfamilyName ?? '' };
+  }
+
   /** Szerokość tekstu w jednostkach czcionki. */
   szerokosc(tekst: string): number {
     return this.uloz(tekst).reduce((suma, g) => suma + g.przesuniecie, 0);

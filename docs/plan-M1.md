@@ -104,19 +104,19 @@ Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E4a → E5 → E6 → E
 
 ## 5. Stan realizacji
 
-| Etap | Stan | Commity                         | Uwagi                                                                                                                                              |
-| ---- | ---- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| E0   | ✅   | `f116898`                       | CI na każdej gałęzi, wdrożenie Pages z `main`                                                                                                      |
-| E1   | ✅   | `0dcf91a`                       | decyzja: tekst jako krzywe (`docs/decyzja-pdf.md`)                                                                                                 |
-| E2   | ✅   | `283e6d8`, `6aac0dc`            | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                                                 |
-| E3   | ✅   | `e93d618`, `d362a12`, `167c5c6` | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png`                            |
-| E4   | ✅   | `43b257a`, `1ae47ed`            | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                                                         |
-| E4a  | ✅   | `0291dc2`, `d72ab3e`, przegląd  | sekcja 6; PNG w `docs/obrazy/e4a-*.png`                                                                                                            |
-| E5   | ✅   | `502eb11`, przegląd             | strona `#/arkusze`: podgląd (dopasuj / 1:1), „Pobierz PDF” (arkusz / wszystkie), PDF↔SVG całych arkuszy; zrzut `docs/obrazy/e5-strona-arkusze.png` |
-| E6   | ⬜   |                                 |                                                                                                                                                    |
-| E7   | ⬜   |                                 |                                                                                                                                                    |
-| E8   | ⬜   |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                                                      |
-| E9   | ⬜   |                                 |                                                                                                                                                    |
+| Etap | Stan | Commity                         | Uwagi                                                                                                                                                                                                                                                                         |
+| ---- | ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0   | ✅   | `f116898`                       | CI na każdej gałęzi, wdrożenie Pages z `main`                                                                                                                                                                                                                                 |
+| E1   | ✅   | `0dcf91a`                       | decyzja: tekst jako krzywe (`docs/decyzja-pdf.md`)                                                                                                                                                                                                                            |
+| E2   | ✅   | `283e6d8`, `6aac0dc`            | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                                                                                                                                                                            |
+| E3   | ✅   | `e93d618`, `d362a12`, `167c5c6` | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png`                                                                                                                                                       |
+| E4   | ✅   | `43b257a`, `1ae47ed`            | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                                                                                                                                                                                    |
+| E4a  | ✅   | `0291dc2`, `d72ab3e`, przegląd  | sekcja 6; PNG w `docs/obrazy/e4a-*.png`                                                                                                                                                                                                                                       |
+| E5   | ✅   | `502eb11`, przegląd             | strona `#/arkusze`: podgląd (dopasuj / 1:1), „Pobierz PDF” (arkusz / wszystkie), PDF↔SVG całych arkuszy; zrzut `docs/obrazy/e5-strona-arkusze.png`                                                                                                                            |
+| E6   | ✅   | (ten commit)                    | `src/dane/`: Dexie (projekty + zasoby jako Blob), schemat z wersją i migracjami (zod, bez gubienia nieznanych pól), spójność odwołań, wgrywanie czcionek, `.kartyrpg` i `.kartyrpg-szablon` (ZIP, fflate), ostrzeżenie o licencji czcionek, pakiet → projekt; test round-trip |
+| E7   | ⬜   |                                 |                                                                                                                                                                                                                                                                               |
+| E8   | ⬜   |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                                                                                                                                                                                 |
+| E9   | ⬜   |                                 |                                                                                                                                                                                                                                                                               |
 
 ## 6. Zadania po E4 – poprawki szablonów z E3 (etap E4a)
 
@@ -137,10 +137,17 @@ Zrobione w E4a także: nożyczki na linii prowadzącej, większy tytuł pionowy,
 
 Po E5 (przegląd): zasoby po nieudanym wczytaniu nie zostają w pamięci (przycisk „Spróbuj ponownie”), błąd układu nie wywraca aplikacji (granica błędu wokół strony ładowanej leniwie), stały region `role="status"`, komunikaty błędów przez i18n, stan „brak arkuszy”.
 
+### Po E6 – do E7
+
+- Interfejs: wybór pliku `.kartyrpg`, wgrywanie czcionek (podgląd rodziny/wariantu z `wgrajCzcionke`, możliwość poprawy), przypisanie ról, lista projektów z `BazaProjektow`, komunikaty `BladDanych` w UI.
+- `ZapiszProjekt` z samym dokumentem (bez zasobów) służy do częstej edycji kart; zasoby zapisywać tylko przy ich zmianie.
+- Import szablonu: kolizja zasobu o tej samej nazwie i innej treści jest błędem (zmiana nazwy zasobu – w UI).
+- Pliki czcionek WOFF/WOFF2 przyjmowane bez konwersji (PDF używa krzywych); eksport szablonu ostrzega o czcionkach z `zrodlo: 'wlasna'`. Google Fonts – M4.
+- Pakiet Mausritter ładowany do bazy jako projekt przez `projektZPakietu` (UI: przycisk „Nowy projekt z pakietu”).
+
 ### Odłożone (backlog)
 
-- Brak czcionki: czcionka zapasowa z ostrzeżeniem zamiast przerwania renderu; komunikaty błędów silnika przez i18n (E6/E7).
-- Unikalne identyfikatory czcionek w projekcie (klucz glifu = id czcionki + numer glifu) (E6).
+- Brak czcionki: czcionka zapasowa z ostrzeżeniem zamiast przerwania renderu; komunikaty błędów silnika przez i18n (E7). (Unikalne id czcionek – zrobione w E6: id czcionki w silniku = id zasobu.)
 - Limit pamięci podręcznej układu tekstu (LRU) przy długiej edycji (E7).
 - Łamanie wierszy przy `odstepLiter` minimalnie zbyt ostrożne.
 - Tryb czarno-biały dla obrazów rastrowych – konwersja przy wczytywaniu zasobów (E7).
