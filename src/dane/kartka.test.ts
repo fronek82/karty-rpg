@@ -6,6 +6,7 @@ import type { Projekt } from '../model/projekt';
 import { pakietMausritter } from '../pakiety/mausritter';
 import {
   dodajKarteWSlocie,
+  dodajKartke,
   dodajNaglowek,
   dodajStrone,
   duplikujKarty,
@@ -224,5 +225,17 @@ describe('kartka – strony i nagłówki', () => {
     const bez = usunNaglowek(zOdstepem.projekt, A, m.id);
     expect(bez.arkusze.find((a) => a.id === A)!.naglowki).toHaveLength(1);
     expect(() => przygotujProjekt(zOdstepem.projekt)).not.toThrow();
+  });
+});
+
+describe('kartka – nowa kartka', () => {
+  it('własna talia i tytuł, unikalne id', () => {
+    const wzor = { nazwa: 'Moje karty', ustawienia: pakietMausritter.nowaKartka.ustawienia };
+    const { projekt, arkuszId } = dodajKartke(pelny, wzor, 'Kartka 4');
+    const a = projekt.arkusze.find((x) => x.id === arkuszId)!;
+    expect(a.ustawienia.tytul?.tekst).toBe('Kartka 4');
+    expect(projekt.talie.find((t) => t.id === a.taliaId)!.karty).toEqual([]);
+    expect(pakietMausritter.nowaKartka.ustawienia.tytul?.tekst).toBe('Moje karty');
+    expect(() => przygotujProjekt(projekt)).not.toThrow();
   });
 });

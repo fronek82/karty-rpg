@@ -4,15 +4,14 @@ import {
   importujProjekt,
   jakoKopia,
   ROZSZERZENIE_PROJEKTU,
-} from '../dane/archiwum';
-import type { PodsumowanieProjektu } from '../dane/baza';
-import { BladDanych } from '../dane/schemat';
-import { jezyk, t } from '../i18n';
-import type { DaneZasobow, Projekt } from '../model/projekt';
-import { pakietMausritter } from '../pakiety/mausritter';
-import { baza, nowyProjektZPakietu } from './baza';
-import { poOstatnimZapisie } from './useProjekt';
-import { nazwaPliku, zapiszPlik } from './pliki';
+} from '../../dane/archiwum';
+import type { PodsumowanieProjektu } from '../../dane/baza';
+import { BladDanych } from '../../dane/schemat';
+import { jezyk, t } from '../../i18n';
+import type { DaneZasobow, Projekt } from '../../model/projekt';
+import { baza } from '../baza';
+import { nazwaPliku, zapiszPlik } from '../pliki';
+import { poOstatnimZapisie } from '../useProjekt';
 
 const komunikat = (e: unknown) =>
   e instanceof BladDanych
@@ -21,9 +20,10 @@ const komunikat = (e: unknown) =>
 
 const formatDaty = new Intl.DateTimeFormat(jezyk(), { dateStyle: 'medium', timeStyle: 'short' });
 
-/** Lista projektów zapisanych w przeglądarce: nowy z pakietu, import, eksport, usuwanie. */
-export function Projekty() {
+/** „Moje projekty”: kafelki z miniaturą pierwszej strony; import, eksport, usuwanie. */
+export function ListaProjektow() {
   const [lista, ustawListe] = useState<PodsumowanieProjektu[]>();
+  const [miniatury, ustawMiniatury] = useState<Map<string, string>>(new Map());
   const [blad, ustawBlad] = useState<string>();
   const [status, ustawStatus] = useState('');
   const [trwa, ustawTrwa] = useState(false);
@@ -34,8 +34,14 @@ export function Projekty() {
   const odswiez = useCallback(() => {
     // Zapis zamkniętego właśnie projektu jest asynchroniczny – lista czeka na niego.
     poOstatnimZapisie()
-      .then(() => baza().lista())
-      .then(ustawListe, (e: unknown) => ustawBlad(komunikat(e)));
+      .then(() => Promise.all([baza().lista(), baza().miniatury()]))
+      .then(
+        ([l, m]) => {
+          ustawListe(l);
+          ustawMiniatury(m);
+        },
+        (e: unknown) => ustawBlad(komunikat(e)),
+      );
   }, []);
   useEffect(odswiez, [odswiez]);
 
@@ -83,24 +89,11 @@ export function Projekty() {
     });
 
   return (
-    <section className="projekty">
-      <h1>{t('projekty.tytul')}</h1>
-      <p>{t('projekty.opis')}</p>
-      <div className="pasek-narzedzi">
-        <button
-          type="button"
-          disabled={trwa}
-          onClick={() =>
-            void wykonaj(async () => {
-              const id = await nowyProjektZPakietu(pakietMausritter);
-              window.location.hash = `#/projekt/${encodeURIComponent(id)}`;
-            })
-          }
-        >
-          {t('projekty.nowyZPakietu', { pakiet: pakietMausritter.nazwa })}
-        </button>
+    <section className="lista-projektow" aria-labelledby="moje-projekty">
+      <div className="naglowek-sekcji">
+        <h2 id="moje-projekty">{t('start.mojeProjekty')}</h2>
         <button type="button" disabled={trwa} onClick={() => plik.current?.click()}>
-          {t('projekty.importuj')}
+          ⤒ {t('projekty.importuj')}
         </button>
         <input
           ref={plik}
@@ -185,23 +178,48 @@ export function Projekty() {
       {lista === undefined ? (
         <p>{t('projekty.wczytywanie')}</p>
       ) : lista.length === 0 ? (
-        <p>{t('projekty.brak')}</p>
+        <p className="podpis">{t('projekty.brak')}</p>
       ) : (
-        <ul className="lista-projektow">
+        <ul className="kafelki-projektow">
           {lista.map((p) => (
-            <li key={p.id}>
-              <a href={`#/projekt/${encodeURIComponent(p.id)}`}>{p.nazwa}</a>
-              <span className="podpis">
-                {t('projekty.zmieniono', { data: formatDaty.format(new Date(p.zmieniono)) })}
-              </span>
-              <span className="akcje">
-                <button type="button" disabled={trwa} onClick={() => void eksportuj(p)}>
-                  {t('projekty.eksportuj')}
-                </button>
-                <button type="button" disabled={trwa} onClick={() => ustawDoUsuniecia(p)}>
-                  {t('projekty.usun')}
-                </button>
-              </span>
+            <li key={p.id} className="kafelek-projektu">
+              <a
+                href={`#/projekt/${encodeURIComponent(p.id)}`}
+                className="miniatura"
+                aria-hidden="true"
+                tabIndex={-1}
+              >
+                {miniatury.get(p.id) ? (
+                  <span dangerouslySetInnerHTML={{ __html: miniatury.get(p.id)! }} />
+                ) : (
+                  <span className="bez-miniatury">🂠</span>
+                )}
+              </a>
+              <div className="opis-projektu">
+                <a href={`#/projekt/${encodeURIComponent(p.id)}`} className="nazwa">
+                  {p.nazwa}
+                </a>
+                <span className="podpis">
+                  {t('start.podsumowanie', { strony: p.liczbaStron, karty: p.liczbaKart })} ·{' '}
+                  {t('projekty.zmieniono', { data: formatDaty.format(new Date(p.zmieniono)) })}
+                </span>
+                <span className="akcje">
+                  <a className="przycisk glowny" href={`#/projekt/${encodeURIComponent(p.id)}`}>
+                    {t('start.otworz')}
+                  </a>
+                  <button type="button" disabled={trwa} onClick={() => void eksportuj(p)}>
+                    {t('projekty.eksportuj')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={trwa}
+                    aria-label={t('start.usunProjekt', { nazwa: p.nazwa })}
+                    onClick={() => ustawDoUsuniecia(p)}
+                  >
+                    {t('projekty.usun')}
+                  </button>
+                </span>
+              </div>
             </li>
           ))}
         </ul>

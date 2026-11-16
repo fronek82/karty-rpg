@@ -514,3 +514,24 @@ export function kartyWObszarze(
   };
   return karty.filter((k) => nachodza(k, obszar)).map((k) => k.karta.id);
 }
+
+/** Nowa, pusta kartka w projekcie (własna talia i tytuł) – np. „Kartka 2”. */
+export function dodajKartke(
+  p: Projekt,
+  wzor: { nazwa: string; ustawienia: Arkusz['ustawienia'] },
+  nazwa: string,
+): { projekt: Projekt; arkuszId: string } {
+  const zajete = new Set([...p.arkusze.map((a) => a.id), ...p.talie.map((t) => t.id)]);
+  const id = unikalneId('kartka', zajete);
+  const ustawienia = structuredClone(wzor.ustawienia);
+  if (ustawienia.tytul) ustawienia.tytul.tekst = nazwa;
+  return {
+    projekt: {
+      ...p,
+      zmieniono: teraz(),
+      talie: [...p.talie, { id, nazwa, karty: [] }],
+      arkusze: [...p.arkusze, { id, nazwa, taliaId: id, liczbaStron: 1, ustawienia }],
+    },
+    arkuszId: id,
+  };
+}

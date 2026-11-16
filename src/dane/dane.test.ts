@@ -228,11 +228,20 @@ describe('baza IndexedDB', () => {
     const nowy = { ...projekt, nazwa: 'Zmieniony', zmieniono: '2099-01-01T00:00:00.000Z' };
     await baza.zapisz(nowy);
     expect(await baza.lista()).toEqual([
-      { id: 'p1', nazwa: 'Zmieniony', zmieniono: '2099-01-01T00:00:00.000Z' },
+      {
+        id: 'p1',
+        nazwa: 'Zmieniony',
+        zmieniono: '2099-01-01T00:00:00.000Z',
+        liczbaKart: projekt.talie.reduce((s, t) => s + t.karty.reduce((a, k) => a + k.ilosc, 0), 0),
+        liczbaStron: 3,
+      },
     ]);
+    await baza.zapiszMiniature('p1', '<svg/>');
+    expect((await baza.miniatury()).get('p1')).toBe('<svg/>');
     rowne(zasoby, (await baza.wczytaj('p1')).zasoby);
     await baza.usun('p1');
     expect(await baza.lista()).toEqual([]);
+    expect((await baza.miniatury()).size).toBe(0);
     await expect(baza.wczytaj('p1')).rejects.toThrow(/Nie ma projektu/);
   });
 

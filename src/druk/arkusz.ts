@@ -30,6 +30,12 @@ export interface KontekstArkusza {
   czcionki: RejestrCzcionek;
   szablony: Map<string, Szablon>;
   obraz?: (zasob: string) => InformacjaOObrazie | undefined;
+  /**
+   * Pamięć wyrenderowanych kart między wywołaniami (edytor: zmiana jednej karty nie renderuje
+   * pozostałych). Klucz – obiekt karty (niezmienny); ważna tylko dla tych samych czcionek,
+   * szablonów i obrazów – przy ich zmianie wołający tworzy nową.
+   */
+  pamiecKart?: WeakMap<Karta, { scena: Scena; ostrzezenia: Ostrzezenie[] }>;
 }
 
 export interface OstrzezenieArkusza {
@@ -189,7 +195,11 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   });
 
   // Tytuł.
-  let tytul = u.tytul ? napis(u.tytul.tekst, u.tytul.styl, undefined, ctx.czcionki) : undefined;
+  // Pusty tytuł („bez tytułu” w edytorze) – bez paska tytułu.
+  let tytul =
+    u.tytul && u.tytul.tekst.trim()
+      ? napis(u.tytul.tekst, u.tytul.styl, undefined, ctx.czcionki)
+      : undefined;
   const obszar = {
     x: u.marginesy.lewo,
     y: u.marginesy.gora,
@@ -316,10 +326,14 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   const scenaKarty = (k: Karta) => {
     let s = pamiec.get(k.id);
     if (!s) {
-      const w = renderujKarte(szablon(k)!, k, {
-        czcionki: ctx.czcionki,
-        ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
-      });
+      let w = ctx.pamiecKart?.get(k);
+      if (!w) {
+        w = renderujKarte(szablon(k)!, k, {
+          czcionki: ctx.czcionki,
+          ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
+        });
+        ctx.pamiecKart?.set(k, w);
+      }
       for (const o of w.ostrzezenia) ostrzezenia.push(ostrzezenieKarty(k, o));
       s = w.scena;
       pamiec.set(k.id, s);
