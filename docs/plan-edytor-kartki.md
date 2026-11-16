@@ -112,3 +112,25 @@ Panel pokazuje pola z szablonu (klucze i parametry – jak dziś kolumny tabeli)
 - „Dodaj stronę” jest jeden, pod wszystkimi kartkami (dodaje stronę do ostatniej). Przy projektach z wieloma kartkami lepszy będzie przycisk przy każdej kartce.
 - Zarządzanie biblioteką czcionek ze starego widoku (zmiana nazwy rodziny, wariant, usuwanie czcionki) nie ma jeszcze miejsca w nowym interfejsie – w ustawieniach jest tylko wgrywanie i wybór czcionek ról. Do dodania w osobnym panelu „Czcionki”.
 - Zmiany ustawień kartki, które wypchnęłyby przypięte karty poza stronę (np. większa czcionka nagłówków), są odrzucane z komunikatem – bez podpowiedzi, co przestawić.
+
+## 9. Decyzje podjęte bez konsultacji
+
+Rozstrzygnięcia przyjęte w trakcie K1–K6, gdy plan i decyzje D1–D7 ich nie przesądzały. Każde da się łatwo zmienić.
+
+| #   | Sprawa                                           | Decyzja                                                                                                                                                                                   |
+| --- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | Stare projekty (talie z ilościami, układ auto)   | Normalizowane automatycznie przy otwarciu do modelu kartki, z identycznym wydrukiem. Schemat zostaje w wersji 2 (migracja 1→2 tożsamościowa), błąd normalizacji to komunikat, nie awaria. |
+| B2  | Karty, które w starym projekcie się nie mieściły | Nie są usuwane – zostają w projekcie jako „odłożone” (ilość 0) z ostrzeżeniem nad kartką.                                                                                                 |
+| B3  | Zmiana ustawień wypychająca karty poza kartkę    | Odrzucana z komunikatem (dotyczy też czcionek ról i nagłówków), zamiast samoczynnego przestawiania kart.                                                                                  |
+| B4  | „Duplikuj ×N” bez miejsca na stronie             | Kopie trafiają do kolejnych wolnych slotów, a gdy ich zabraknie – na nową stronę. Limit pola: 100 kopii.                                                                                  |
+| B5  | Zaznaczenie kart różnych typów                   | Panel pokazuje tylko akcje (Duplikuj, ×N, Usuń); pola edytuje się tylko przy jednym typie.                                                                                                |
+| B6  | Skróty                                           | Oprócz Delete / Ctrl+D / Ctrl+Z: Backspace też usuwa, Ctrl+Y i Ctrl+Shift+Z ponawiają, strzałki przesuwają zaznaczenie, Escape odznacza. Skróty nie działają, gdy fokus jest w polu.      |
+| B7  | Historia „Cofnij”                                | 100 kroków; wpisywanie w jedno pole w odstępach do 1,5 s to jeden krok.                                                                                                                   |
+| B8  | Tablet                                           | Przeciąganie karty po przytrzymaniu palca 300 ms; krótki ruch przewija stronę.                                                                                                            |
+| B9  | Przycisk „Rozmiar” na pasku nad kartą            | Przełącza cyklicznie na następny rozmiar typu, który się mieści; ukryty, gdy żaden inny się nie mieści.                                                                                   |
+| B10 | Tytuł kartki                                     | Pusty tytuł = brak paska tytułu (opcja „brak”); wyczyszczenie pola nie kasuje tytułu, dopóki nie wpisze się nowego.                                                                       |
+| B11 | Miniatury projektów                              | Pierwsza strona jako SVG bez ilustracji (adresy obrazów są chwilowe), zapisywana 1,5 s po zmianie i przy wyjściu z edytora.                                                               |
+| B12 | Kolejność pól w panelu karty                     | Pola tekstowe, potem znaczniki (licznik 0–12), ilustracja na końcu.                                                                                                                       |
+| B13 | Gry „w budowie”                                  | Własne karty oznaczone jako M2, D&D / Warhammer / Jedyny Pierścień jako M3.                                                                                                               |
+| B14 | Dostępność                                       | Jeden przystanek Tab na stronę kartki, strzałki po wolnych slotach, Enter otwiera menu typu; fokus wraca na slot po Escape i przechodzi na nową lub przesuniętą kartę.                    |
+| B15 | Projekt bez kartek                               | Komunikat i przycisk „Nowa kartka” zamiast pustego ekranu; „Ustawienia” nieaktywne.                                                                                                       |
