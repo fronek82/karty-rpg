@@ -19,6 +19,8 @@ export interface Obrys {
   grubosc: Mm;
   /** Wzór kreski (mm): długość kreski, przerwa, … */
   kreska?: Mm[];
+  /** Przesunięcie wzoru kreski (mm) – początek wzoru przypada w −faza. */
+  fazaKreski?: Mm;
 }
 
 export interface GlifNaScenie {

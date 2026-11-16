@@ -49,6 +49,7 @@ function atrybutyObrysu(o: Obrys | undefined): string {
   if (!czyObrys(o)) return '';
   let a = ` stroke="${kolorSceny(o.kolor)}" stroke-width="${liczba(o.grubosc)}"`;
   if (o.kreska) a += ` stroke-dasharray="${o.kreska.map((v) => liczba(v)).join(' ')}"`;
+  if (o.kreska && o.fazaKreski) a += ` stroke-dashoffset="${liczba(o.fazaKreski)}"`;
   return a;
 }
 

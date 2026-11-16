@@ -1,3 +1,4 @@
+import type { Arkusz } from '../model/arkusz';
 import type { Szablon, Talia } from '../model/szablon';
 
 /** Obraz dołączony do pakietu (plik w katalogu pakietu). */
@@ -27,5 +28,6 @@ export interface Pakiet {
   czcionki: CzcionkaPakietu[];
   szablony: Szablon[];
   talie: Talia[];
+  arkusze: Arkusz[];
   zasoby: ZasobPakietu[];
 }

@@ -159,7 +159,7 @@ export interface PoleWpis extends PoleBazowe {
   styl: StylTekstu;
 }
 
-export type NazwaIkony = 'gwiazdka';
+export type NazwaIkony = 'gwiazdka' | 'nozyczki';
 
 export interface PoleIkona extends PoleBazowe {
   typ: 'ikona';

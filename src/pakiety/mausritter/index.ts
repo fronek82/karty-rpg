@@ -1,5 +1,6 @@
 import type { Pakiet } from '../typy';
 import zastepczy from './obrazy/zastepczy.png';
+import { arkuszeMausrittera } from './arkusze';
 import { szablonyMausrittera } from './szablony';
 import { OBRAZ_ZASTEPCZY, talieMausrittera } from './talie';
 
@@ -28,5 +29,6 @@ export const pakietMausritter: Pakiet = {
   ],
   szablony: szablonyMausrittera,
   talie: talieMausrittera,
+  arkusze: arkuszeMausrittera,
   zasoby: [{ id: OBRAZ_ZASTEPCZY, plik: zastepczy, szerokosc: 512, wysokosc: 512, format: 'png' }],
 };

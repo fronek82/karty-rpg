@@ -130,7 +130,7 @@ function ustawObrys(o: Obrys): PDFOperator[] {
   return [
     setStrokingRgbColor(r, g, b),
     setLineWidth(r3(o.grubosc)),
-    setDashPattern(o.kreska ? o.kreska.map(r3) : [], 0),
+    setDashPattern(o.kreska ? o.kreska.map(r3) : [], o.kreska ? r3(o.fazaKreski ?? 0) : 0),
   ];
 }
 

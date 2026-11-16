@@ -20,7 +20,52 @@ function gwiazdka(): Kontur {
   return kontur;
 }
 
-const IKONY: Record<NazwaIkony, Kontur> = { gwiazdka: gwiazdka() };
+const KAPPA = 0.5522847498;
+
+/** Okrąg jako kontur; `przeciwnie` – odwrotny kierunek (otwór przy wypełnianiu nonzero). */
+function okrag(cx: number, cy: number, r: number, przeciwnie = false): Kontur {
+  const k = r * KAPPA;
+  const z = (v: number) => Math.round(v * 1e4) / 1e4;
+  if (!przeciwnie) {
+    return [
+      ['M', z(cx + r), z(cy)],
+      ['C', z(cx + r), z(cy + k), z(cx + k), z(cy + r), z(cx), z(cy + r)],
+      ['C', z(cx - k), z(cy + r), z(cx - r), z(cy + k), z(cx - r), z(cy)],
+      ['C', z(cx - r), z(cy - k), z(cx - k), z(cy - r), z(cx), z(cy - r)],
+      ['C', z(cx + k), z(cy - r), z(cx + r), z(cy - k), z(cx + r), z(cy)],
+      ['Z'],
+    ];
+  }
+  return [
+    ['M', z(cx + r), z(cy)],
+    ['C', z(cx + r), z(cy - k), z(cx + k), z(cy - r), z(cx), z(cy - r)],
+    ['C', z(cx - k), z(cy - r), z(cx - r), z(cy - k), z(cx - r), z(cy)],
+    ['C', z(cx - r), z(cy + k), z(cx - k), z(cy + r), z(cx), z(cy + r)],
+    ['C', z(cx + k), z(cy + r), z(cx + r), z(cy + k), z(cx + r), z(cy)],
+    ['Z'],
+  ];
+}
+
+/** Nożyczki ✂ w kwadracie 1×1: uchwyty z lewej, ostrza skierowane w prawo (własny rysunek). */
+function nozyczki(): Kontur {
+  const ostrze = (y0: number, y1: number): Kontur => [
+    // Od uchwytu, przez oś (0,5; 0,5), do czubka po przeciwnej stronie.
+    ['M', 0.3, y0 - 0.045],
+    ['L', 1.0, y1],
+    ['L', 0.3, y0 + 0.045],
+    ['Z'],
+  ];
+  return [
+    ...okrag(0.17, 0.27, 0.16),
+    ...okrag(0.17, 0.27, 0.095, true),
+    ...okrag(0.17, 0.73, 0.16),
+    ...okrag(0.17, 0.73, 0.095, true),
+    ...ostrze(0.36, 0.6),
+    ...ostrze(0.64, 0.4),
+  ];
+}
+
+const IKONY: Record<NazwaIkony, Kontur> = { gwiazdka: gwiazdka(), nozyczki: nozyczki() };
 
 /** Kontur ikony przeskalowany do kwadratu o boku `rozmiar` w punkcie (x, y). */
 export function konturIkony(nazwa: NazwaIkony, x: number, y: number, rozmiar: number): Kontur {
