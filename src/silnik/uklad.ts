@@ -101,8 +101,8 @@ export function zmierz(
     tresc = zmierzKontener(w, wnetrze, ctx);
   }
   return {
-    szer: stalaSzer ?? Math.max(w.minSzerokosc ?? 0, tresc.szer + paddingi(w, 'szer')),
-    wys: stalaWys ?? Math.max(w.minWysokosc ?? 0, tresc.wys + paddingi(w, 'wys')),
+    szer: stalaSzer ?? Math.max(minimum(w, 'szer'), tresc.szer + paddingi(w, 'szer')),
+    wys: stalaWys ?? Math.max(minimum(w, 'wys'), tresc.wys + paddingi(w, 'wys')),
   };
 }
 
@@ -191,7 +191,10 @@ function rozmiaryWOsiGlownej(
     rozmiary: dzieci.map(
       (d, i) =>
         rozmiary[i] ??
-        (sumaWag > 0 ? (wolne * (wagaWypelnienia(rozmiarWezla(d, glowna)) ?? 0)) / sumaWag : 0),
+        Math.max(
+          minimum(d, glowna),
+          sumaWag > 0 ? (wolne * (wagaWypelnienia(rozmiarWezla(d, glowna)) ?? 0)) / sumaWag : 0,
+        ),
     ),
     wolne,
     sumaWag,
@@ -290,11 +293,18 @@ function rozmiarWPoprzek(
   const v = staly(r, dostepne);
   if (v !== undefined) return v;
   // Jawne 'auto' = wg treści; brak rozmiaru i brak wyrównania = rozciągnij.
-  if (wagaWypelnienia(r) !== undefined) return dostepne;
-  if (r !== 'auto' && wyrownanieOsi(d, os) === undefined) return dostepne;
+  const min = minimum(d, os);
+  if (wagaWypelnienia(r) !== undefined) return Math.max(min, dostepne);
+  if (r !== 'auto' && wyrownanieOsi(d, os) === undefined) return Math.max(min, dostepne);
   const pelne: Ograniczenie = { ...ogr };
   pelne[os] = dostepne;
-  return Math.min(dostepne, zmierz(d, pelne, ctx, ustalone)[os]);
+  // Treść przycinamy do dostępnego miejsca, ale minimum ma pierwszeństwo.
+  return Math.max(min, Math.min(dostepne, zmierz(d, pelne, ctx, ustalone)[os]));
+}
+
+/** Minimalny rozmiar węzła w osi (0, gdy brak). */
+function minimum(w: Wezel, os: Os): Mm {
+  return (os === 'szer' ? w.minSzerokosc : w.minWysokosc) ?? 0;
 }
 
 function przesuniecie(wyr: WyrownanieOsi | undefined, wolne: Mm): Mm {

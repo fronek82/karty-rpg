@@ -218,11 +218,12 @@ function rysujObramowanie(
       szer: Math.max(0, u.szer - g),
       wys: Math.max(0, u.wys - g),
     };
-    // Ścięcie mierzone na zewnętrznej krawędzi; na osi linii jest mniejsze o (√2−1)·g/2.
+    // Ścięcie mierzone na zewnętrznej krawędzi (jak tło). Ośmiokąt przesunięty do środka o g/2
+    // ma ścięcie mniejsze o (2 − √2)·g/2 – wtedy zewnętrzna krawędź linii pokrywa się z tłem.
     return [
       {
         typ: 'sciezka',
-        kontur: konturScietego(wew, Math.max(0, (promien ?? 0) - g / 2)),
+        kontur: konturScietego(wew, Math.max(0, (promien ?? 0) - ((2 - Math.SQRT2) * g) / 2)),
         obrys: s,
       },
     ];
@@ -254,7 +255,7 @@ function rysujObramowanie(
 }
 
 /** Prostokąt ze ściętymi rogami (ośmiokąt) – ramka wartości, np. „-1 obr” na zbroi. */
-function konturScietego(r: { x: Mm; y: Mm; szer: Mm; wys: Mm }, sciecie: Mm): Kontur {
+export function konturScietego(r: { x: Mm; y: Mm; szer: Mm; wys: Mm }, sciecie: Mm): Kontur {
   const c = Math.max(0, Math.min(sciecie, r.szer / 2, r.wys / 2));
   const { x, y, szer: w, wys: h } = r;
   return [

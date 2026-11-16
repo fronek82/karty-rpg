@@ -180,3 +180,41 @@ describe('pomiar z łamaniem tekstu', () => {
     expect(zmierz(k, { szer: 20 }, ctx()).wys).toBe(8);
   });
 });
+
+describe('minimalny rozmiar', () => {
+  it('rozmiar wg treści nie schodzi poniżej minimum', () => {
+    expect(zmierz(pole('a', 2, { minSzerokosc: 6, minWysokosc: 5 }), {}, ctx())).toEqual({
+      szer: 6,
+      wys: 5,
+    });
+  });
+
+  it('wypełnianie i rozciąganie respektują minimum', () => {
+    const k = wiersz([
+      pole('stale', 1, { szerokosc: { mm: 18 } }),
+      pole('wyp', 1, { szerokosc: { wypelnij: 1 }, minSzerokosc: 5, minWysokosc: 12 }),
+    ]);
+    const u = rozmiesc(k, 0, 0, 20, 10, ctx());
+    // Wolne 2 mm < minimum 5 mm; rozciągnięcie 10 mm < minimum 12 mm.
+    expect(prost(znajdz(u, 'wyp')!)).toEqual([18, 0, 5, 12]);
+  });
+
+  it('w warstwach z wyrównaniem minimum wygrywa z przycięciem do miejsca', () => {
+    const k: Kontener = {
+      id: 'k',
+      typ: 'warstwy',
+      dzieci: [
+        pole('ramka', 2, {
+          minSzerokosc: 7,
+          minWysokosc: 7,
+          wyrownanie: { poziomo: 'koniec', pionowo: 'poczatek' },
+        }),
+      ],
+    };
+    expect(prost(rozmiesc(k, 0, 0, 20, 5, ctx()).dzieci[0]!)).toEqual([13, 0, 7, 7]);
+  });
+
+  it('rozmiar stały ma pierwszeństwo przed minimum', () => {
+    expect(zmierz(pole('a', 2, { szerokosc: { mm: 3 }, minSzerokosc: 6 }), {}, ctx()).szer).toBe(3);
+  });
+});

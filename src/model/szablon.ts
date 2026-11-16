@@ -49,7 +49,10 @@ interface WezelBazowy {
   obramowanie?: Obramowanie;
   /** Zaokrąglenie rogów tła i obramowania (mm); przy kształcie „sciety” – wielkość ścięcia. */
   promien?: Mm;
-  /** Najmniejszy rozmiar (mm), także gdy treść jest mniejsza – np. kwadratowa ramka wartości. */
+  /**
+   * Najmniejszy rozmiar (mm) – np. kwadratowa ramka wartości. Obowiązuje przy rozmiarze wg treści,
+   * rozciąganiu i wypełnianiu (także kosztem wyjścia poza rodzica); rozmiar stały (mm, %) ma pierwszeństwo.
+   */
   minSzerokosc?: Mm;
   minWysokosc?: Mm;
 }

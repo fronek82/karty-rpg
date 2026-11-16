@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { pt } from '../model/jednostki';
 import type { Szablon } from '../model/szablon';
-import { czyPuste, renderujKarte, wartoscPola } from './karta';
+import { czyPuste, konturScietego, renderujKarte, wartoscPola } from './karta';
 import type { ElementSceny, Scena } from './scena';
 import { scenaDoSvg } from './svg';
 import { rejestrTestowy, szablonBroni } from './__testy__/pomoc';
@@ -195,5 +195,54 @@ describe('poprawki po przeglądzie E2', () => {
     const wypelniony = renderujKarte(szablon, { dane: { stan: '120' } }, { czcionki }).scena;
     const glify = wszystkie(wypelniony).flatMap((e) => (e.typ === 'tekst' ? e.glify : []));
     expect(glify).toHaveLength('/250p'.length + '120'.length);
+  });
+});
+
+describe('ramka ze ściętymi rogami', () => {
+  it('kontur to ośmiokąt ze ścięciem ograniczonym do połowy krótszego boku', () => {
+    const k = konturScietego({ x: 0, y: 0, szer: 10, wys: 4 }, 3);
+    expect(k).toHaveLength(9);
+    expect(k[0]).toEqual(['M', 2, 0]);
+    expect(k[2]).toEqual(['L', 10, 2]);
+  });
+
+  it('obrys leży wewnątrz tła: zewnętrzna krawędź linii pokrywa się z krawędzią tła', () => {
+    const szablon: Szablon = {
+      id: 'z',
+      nazwa: 'z',
+      rozmiar: { tryb: 'mm', szerokosc: 20, wysokosc: 10 },
+      korzen: {
+        id: 'k',
+        typ: 'warstwy',
+        dzieci: [
+          {
+            id: 'w',
+            typ: 'wartosc',
+            tekst: '-1 obr',
+            ksztalt: 'sciety',
+            promien: 1,
+            tlo: '#ffffff',
+            obramowanie: { grubosc: 0.2, kolor: '#000000' },
+            styl: { czcionka: 'tresc', rozmiar: pt(8) },
+          },
+        ],
+      },
+    };
+    const sciezki = renderujKarte(szablon, { dane: {} }, { czcionki }).scena.elementy.filter(
+      (e) => e.typ === 'sciezka',
+    );
+    expect(sciezki).toHaveLength(2);
+    const [tlo, obrys] = sciezki;
+    if (tlo?.typ !== 'sciezka' || obrys?.typ !== 'sciezka') throw new Error();
+    // Ukośny bok: odległość między równoległymi ukosami tła i osi linii = g/2.
+    const odlUkosu = (kontur: typeof tlo.kontur) => {
+      const [, x1, y1] = kontur[0] as ['M', number, number];
+      const [, x2, y2] = kontur[7] as ['L', number, number];
+      // Prosta przez (x1,y1) i (x2,y2); odległość od początku układu (lewy górny róg).
+      return (
+        Math.abs((y2 - y1) * 0 - (x2 - x1) * 0 + x2 * y1 - y2 * x1) / Math.hypot(y2 - y1, x2 - x1)
+      );
+    };
+    expect(odlUkosu(obrys.kontur) - odlUkosu(tlo.kontur)).toBeCloseTo(0.1, 6);
   });
 });

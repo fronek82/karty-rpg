@@ -17,20 +17,15 @@ import {
 
 export const OBRAZ_ZASTEPCZY = 'mausritter/zastepczy';
 
-let licznik = 0;
+/** Karta z jawnym, stałym identyfikatorem (zapisane projekty i grupy się do niego odwołują). */
 function karta(
+  id: string,
   szablonId: string,
   dane: Record<string, string>,
   ilosc: number,
   rozmiar?: { kolumny: number; rzedy: number },
 ): Karta {
-  licznik++;
-  const k: Karta = {
-    id: `${szablonId.replace('mausritter-', '')}-${String(licznik).padStart(2, '0')}`,
-    szablonId,
-    dane,
-    ilosc,
-  };
+  const k: Karta = { id, szablonId, dane, ilosc };
   if (rozmiar) k.rozmiar = rozmiar;
   return k;
 }
@@ -39,63 +34,91 @@ const Z = OBRAZ_ZASTEPCZY;
 const PIONOWA = { kolumny: 1, rzedy: 2 };
 const POZIOMA = { kolumny: 2, rzedy: 1 };
 
-function bron(nazwa: string, wartosc: string, klasa: string, ilosc: number, ciezka = false): Karta {
+function bron(
+  id: string,
+  nazwa: string,
+  wartosc: string,
+  klasa: string,
+  ilosc: number,
+  ciezka = false,
+): Karta {
   const dane: Record<string, string> = { nazwa, wartosc, klasa };
   if (nazwa !== '' || klasa === 'Improwizowana') dane.obraz = Z;
-  return karta(szablonBron.id, dane, ilosc, ciezka ? PIONOWA : undefined);
+  return karta(id, szablonBron.id, dane, ilosc, ciezka ? PIONOWA : undefined);
 }
 
-licznik = 0;
 export const taliaBroni: Talia = {
   id: 'mausritter-bron-i-pancerze',
   nazwa: 'Karty broni i pancerzy',
   karty: [
-    bron('', 'k6', 'Improwizowana', 4),
-    bron('Igła', 'k6', 'Lekka', 3),
-    bron('Sztylet', 'k6', 'Lekka', 3),
-    bron('', 'k6', 'Lekka', 2),
-    bron('Topór', 'k6/k8', 'Średnia', 2),
-    bron('Miecz', 'k6/k8', 'Średnia', 2),
-    bron('Kiścień', 'k6/k8', 'Średnia', 2),
-    bron('', 'k6/k8', 'Średnia', 2),
-    bron('Młot bojowy', 'k10', 'Ciężka', 2, true),
-    bron('Włócznia', 'k10', 'Ciężka', 2, true),
-    bron('Hak', 'k10', 'Ciężka', 2, true),
-    bron('', 'k10', 'Ciężka', 2, true),
-    bron('Proca', 'k6', 'Lekka dystansowa', 3),
-    bron('', 'k6', 'Lekka dystansowa', 3),
-    bron('Łuk', 'k8', 'Ciężka dystansowa', 3, true),
-    bron('', 'k8', 'Ciężka dystansowa', 1, true),
-    karta(szablonBron.id, { nazwa: 'Kamienie', klasa: 'Amunicja', obraz: Z }, 3),
-    karta(szablonBron.id, { nazwa: 'Strzały', klasa: 'Amunicja', obraz: Z }, 3),
-    karta(szablonZbroja.id, { nazwa: 'Ciężka zbroja', wartosc: '-1 obr', obraz: Z }, 3, PIONOWA),
-    karta(szablonZbroja.id, { nazwa: 'Lekka zbroja', wartosc: '-1 obr', obraz: Z }, 4, POZIOMA),
+    bron('bron-improwizowana', '', 'k6', 'Improwizowana', 4),
+    bron('bron-igla', 'Igła', 'k6', 'Lekka', 3),
+    bron('bron-sztylet', 'Sztylet', 'k6', 'Lekka', 3),
+    bron('bron-pusta-lekka', '', 'k6', 'Lekka', 2),
+    bron('bron-topor', 'Topór', 'k6/k8', 'Średnia', 2),
+    bron('bron-miecz', 'Miecz', 'k6/k8', 'Średnia', 2),
+    bron('bron-kiscien', 'Kiścień', 'k6/k8', 'Średnia', 2),
+    bron('bron-pusta-srednia', '', 'k6/k8', 'Średnia', 2),
+    bron('bron-mlot-bojowy', 'Młot bojowy', 'k10', 'Ciężka', 2, true),
+    bron('bron-wlocznia', 'Włócznia', 'k10', 'Ciężka', 2, true),
+    bron('bron-hak', 'Hak', 'k10', 'Ciężka', 2, true),
+    bron('bron-pusta-ciezka', '', 'k10', 'Ciężka', 2, true),
+    bron('bron-proca', 'Proca', 'k6', 'Lekka dystansowa', 3),
+    bron('bron-pusta-lekka-dystansowa', '', 'k6', 'Lekka dystansowa', 3),
+    bron('bron-luk', 'Łuk', 'k8', 'Ciężka dystansowa', 3, true),
+    bron('bron-pusta-ciezka-dystansowa', '', 'k8', 'Ciężka dystansowa', 1, true),
+    karta(
+      'amunicja-kamienie',
+      szablonBron.id,
+      { nazwa: 'Kamienie', klasa: 'Amunicja', obraz: Z },
+      3,
+    ),
+    karta('amunicja-strzaly', szablonBron.id, { nazwa: 'Strzały', klasa: 'Amunicja', obraz: Z }, 3),
+    karta(
+      'zbroja-ciezka',
+      szablonZbroja.id,
+      { nazwa: 'Ciężka zbroja', wartosc: '-1 obr', obraz: Z },
+      3,
+      PIONOWA,
+    ),
+    karta(
+      'zbroja-lekka',
+      szablonZbroja.id,
+      { nazwa: 'Lekka zbroja', wartosc: '-1 obr', obraz: Z },
+      4,
+      POZIOMA,
+    ),
   ],
 };
 
-licznik = 0;
 export const taliaWyposazenia: Talia = {
   id: 'mausritter-wyposazenie',
   nazwa: 'Karty niezbędnego wyposażenia',
   karty: [
-    karta(szablonPrzedmiot.id, { nazwa: 'Pochodnie', obraz: Z }, 10),
-    karta(szablonPrzedmiot.id, { nazwa: 'Latarnia', obraz: Z }, 4),
-    karta(szablonPrzedmiot.id, { nazwa: 'Latarnia elektr.', obraz: Z, uzycia: '6' }, 4),
-    karta(szablonSakiewka.id, { nazwa: 'Sakiewka', obraz: Z }, 8),
-    karta(szablonPrzedmiot.id, { nazwa: 'Prowiant', obraz: Z }, 8),
-    karta(szablonZaklecie.id, { obraz: Z }, 9),
-    karta(szablonPusta.id, {}, 19),
-    karta(szablonPusta.id, {}, 4, POZIOMA),
+    karta('przedmiot-pochodnie', szablonPrzedmiot.id, { nazwa: 'Pochodnie', obraz: Z }, 10),
+    karta('przedmiot-latarnia', szablonPrzedmiot.id, { nazwa: 'Latarnia', obraz: Z }, 4),
+    karta(
+      'przedmiot-latarnia-elektryczna',
+      szablonPrzedmiot.id,
+      { nazwa: 'Latarnia elektr.', obraz: Z, uzycia: '6' },
+      4,
+    ),
+    karta('sakiewka', szablonSakiewka.id, { nazwa: 'Sakiewka', obraz: Z }, 8),
+    karta('przedmiot-prowiant', szablonPrzedmiot.id, { nazwa: 'Prowiant', obraz: Z }, 8),
+    karta('zaklecie', szablonZaklecie.id, { obraz: Z }, 9),
+    karta('pusta-1x1', szablonPusta.id, {}, 19),
+    karta('pusta-2x1', szablonPusta.id, {}, 4, POZIOMA),
   ],
 };
 
-licznik = 0;
 const wyczerpana = karta(
+  'stan-wyczerpana',
   szablonStan.id,
   { nazwa: 'Wyczerpana', usuniecie: 'Długi odpoczynek' },
   18,
 );
 const przerazona = karta(
+  'stan-przerazona',
   szablonStan.id,
   {
     nazwa: 'Przerażona',
@@ -104,18 +127,25 @@ const przerazona = karta(
   },
   6,
 );
-const glodna = karta(szablonStan.id, { nazwa: 'Głodna', usuniecie: 'Spożycie posiłku' }, 6);
+const glodna = karta(
+  'stan-glodna',
+  szablonStan.id,
+  { nazwa: 'Głodna', usuniecie: 'Spożycie posiłku' },
+  6,
+);
 const ranna = karta(
+  'stan-ranna',
   szablonStan.id,
   { nazwa: 'Ranna', skutek: 'Utrudnienie\nw testach SF i ZR', usuniecie: 'Pełny odpoczynek' },
   12,
 );
 const niepoczytalna = karta(
+  'stan-niepoczytalna',
   szablonStan.id,
   { nazwa: 'Niepoczytalna', skutek: 'Utrudnienie\nw testach SW', usuniecie: 'Pełny odpoczynek' },
   6,
 );
-const wlasny = karta(szablonStan.id, {}, 12);
+const wlasny = karta('stan-wlasny', szablonStan.id, {}, 12);
 
 /** Opisy grup – własnymi słowami (polskie wydanie nie jest na wolnej licencji). */
 const grupyStanow: GrupaKart[] = [
