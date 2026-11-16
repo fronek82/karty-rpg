@@ -172,3 +172,87 @@ a {
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }
+
+.ukryte {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.przewijanie-tabeli {
+  overflow-x: auto;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  background: var(--tlo-panelu);
+}
+
+.tabela-danych {
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  min-width: 100%;
+}
+
+.tabela-danych th,
+.tabela-danych td {
+  padding: 0.2rem 0.3rem;
+  border-bottom: 1px solid var(--obramowanie);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabela-danych thead th {
+  position: sticky;
+  top: 0;
+  background: var(--tlo-panelu);
+}
+
+.tabela-danych input[type='text'] {
+  width: 9rem;
+}
+
+.tabela-danych input.ilosc {
+  width: 4rem;
+}
+
+.tabela-danych tr.wybrana {
+  background: color-mix(in srgb, var(--akcent) 12%, transparent);
+}
+
+.tabela-danych td.nieaktywna {
+  color: color-mix(in srgb, var(--tekst) 40%, transparent);
+  text-align: center;
+}
+
+.tabela-danych .akcje {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.nazwa-talii input {
+  font-size: 1.2rem;
+  font-weight: 600;
+  min-width: 18rem;
+}
+
+.pasek-projektu {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+}
+
+.status-zapisu {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.status-zapisu.blad {
+  color: var(--akcent);
+  opacity: 1;
+  font-weight: 600;
+}

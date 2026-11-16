@@ -24,7 +24,7 @@ const wersja = import.meta.env.VITE_WERSJA ?? '0.1.0';
 
 export function App() {
   const trasa = useTrasa();
-  const dopasowanie = /^\/projekt\/([^/]+)(?:\/([^/]+))?$/.exec(trasa);
+  const dopasowanie = /^\/projekt\/([^/]+)(?:\/(.+))?$/.exec(trasa);
   const trasaProjektu = dopasowanie?.[1]
     ? { id: decodeURIComponent(dopasowanie[1]), podstrona: dopasowanie[2] }
     : undefined;
