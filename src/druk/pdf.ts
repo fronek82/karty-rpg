@@ -25,7 +25,14 @@ import {
 } from 'pdf-lib';
 import { PT_NA_MM } from '../model/jednostki';
 import type { Kolor } from '../model/szablon';
-import type { ElementSceny, Kontur, Obrys, Scena } from '../silnik/scena';
+import {
+  czyObrys,
+  kolorSceny,
+  type ElementSceny,
+  type Kontur,
+  type Obrys,
+  type Scena,
+} from '../silnik/scena';
 
 /**
  * Serializator sceny do PDF (pdf-lib). Każda scena = jedna strona o wymiarach sceny.
@@ -46,7 +53,7 @@ export interface OpcjePdf {
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
 
 function kolorRgb(k: Kolor): [number, number, number] {
-  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(k);
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/.exec(kolorSceny(k));
   if (!m) return [0, 0, 0];
   return [parseInt(m[1]!, 16) / 255, parseInt(m[2]!, 16) / 255, parseInt(m[3]!, 16) / 255].map(
     (v) => Math.round(v * 1000) / 1000,
@@ -125,7 +132,12 @@ function ustawObrys(o: Obrys): PDFOperator[] {
   ];
 }
 
-function rysujKsztalt(kontur: Kontur, wyp: Kolor | undefined, o: Obrys | undefined): PDFOperator[] {
+function rysujKsztalt(
+  kontur: Kontur,
+  wyp: Kolor | undefined,
+  obrys: Obrys | undefined,
+): PDFOperator[] {
+  const o = czyObrys(obrys) ? obrys : undefined;
   if (!wyp && !o) return [];
   const ops: PDFOperator[] = [pushGraphicsState()];
   if (wyp) {
@@ -144,6 +156,7 @@ class BudowniczyPdf {
   private readonly glifyXObject = new Map<string, PDFRef>();
   private readonly obrazy = new Map<string, PDFRef>();
   private licznikGlifow = 0;
+  readonly pominieteObrazy = new Set<string>();
 
   constructor(
     private readonly doc: PDFDocument,
@@ -192,12 +205,18 @@ class BudowniczyPdf {
     if (istniejacy) return istniejacy;
     const dane = this.opcje.obraz?.(zasob);
     if (!dane) return undefined;
-    const obraz =
-      dane.format === 'png'
-        ? await this.doc.embedPng(dane.dane)
-        : await this.doc.embedJpg(dane.dane);
-    this.obrazy.set(zasob, obraz.ref);
-    return obraz.ref;
+    try {
+      const obraz =
+        dane.format === 'png'
+          ? await this.doc.embedPng(dane.dane)
+          : await this.doc.embedJpg(dane.dane);
+      this.obrazy.set(zasob, obraz.ref);
+      return obraz.ref;
+    } catch {
+      // Uszkodzony plik nie przerywa całego PDF – obraz pomijamy i zgłaszamy.
+      this.pominieteObrazy.add(zasob);
+      return undefined;
+    }
   }
 
   async strona(scena: Scena): Promise<void> {
@@ -239,6 +258,7 @@ class BudowniczyPdf {
       case 'sciezka':
         return rysujKsztalt(e.kontur, e.wypelnienie, e.obrys);
       case 'linia':
+        if (!czyObrys(e.obrys)) return [];
         return [
           pushGraphicsState(),
           ...ustawObrys(e.obrys),
@@ -298,6 +318,8 @@ export interface WynikPdf {
   bajty: Uint8Array;
   /** Liczba różnych glifów zapisanych w dokumencie (każdy raz). */
   liczbaGlifow: number;
+  /** Zasoby obrazów, których nie udało się odczytać (pominięte w PDF). */
+  pominieteObrazy: string[];
 }
 
 /** Tworzy PDF – jedna strona na scenę. Wynik deterministyczny (stała data utworzenia). */
@@ -309,5 +331,9 @@ export async function scenyDoPdf(sceny: Scena[], opcje: OpcjePdf = {}): Promise<
   const budowniczy = new BudowniczyPdf(doc, opcje);
   for (const s of sceny) await budowniczy.strona(s);
   const bajty = await doc.save({ useObjectStreams: true });
-  return { bajty, liczbaGlifow: budowniczy.liczbaGlifow };
+  return {
+    bajty,
+    liczbaGlifow: budowniczy.liczbaGlifow,
+    pominieteObrazy: [...budowniczy.pominieteObrazy],
+  };
 }

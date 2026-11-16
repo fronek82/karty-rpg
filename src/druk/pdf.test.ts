@@ -133,4 +133,18 @@ describe('scenyDoPdf', () => {
     const tekst = Buffer.from(bajty).toString('latin1');
     expect(tekst.match(/\/Subtype \/Image/g)).toHaveLength(1);
   });
+
+  it('uszkodzony obraz nie przerywa PDF, tylko jest zgłaszany', async () => {
+    const scena: Scena = {
+      szer: 20,
+      wys: 20,
+      glify: {},
+      elementy: [{ typ: 'obraz', zasob: 'zly', x: 0, y: 0, szer: 10, wys: 10 }],
+    };
+    const wynik = await scenyDoPdf([scena], {
+      obraz: () => ({ dane: new Uint8Array([1, 2, 3]), format: 'png' }),
+    });
+    expect(wynik.pominieteObrazy).toEqual(['zly']);
+    expect((await PDFDocument.load(wynik.bajty)).getPageCount()).toBe(1);
+  });
 });

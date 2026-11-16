@@ -119,6 +119,7 @@ describe('etykieta i pole do wpisania', () => {
         {
           id: 'sakiewka',
           typ: 'wpis',
+          klucz: 'stan',
           sufiks: '/ 250p',
           styl: { czcionka: 'tresc', wariant: 'pogrubiony', rozmiar: pt(6) },
           obramowanie: { grubosc: 0.2, kolor: '#000000' },
@@ -151,5 +152,48 @@ describe('etykieta i pole do wpisania', () => {
     if (p.typ !== 'tekst') throw new Error();
     expect(wartoscPola(p, { usuniecie: '  ' })).toBe('');
     expect(czyPuste(p, {})).toBe(true);
+  });
+});
+
+describe('poprawki po przeglądzie E2', () => {
+  const okregi = (dane: Record<string, string>) =>
+    wszystkie(renderujKarte(szablonBroni, { dane }, ctx).scena).filter((e) => e.typ === 'okrag')
+      .length;
+
+  it('znaczniki: ułamki w dół, limit, pusta komórka = wartość domyślna', () => {
+    expect(okregi({ uzycia: '2.5' })).toBe(2);
+    expect(okregi({ uzycia: '2,9' })).toBe(2);
+    expect(okregi({ uzycia: '100000' })).toBe(60);
+    expect(okregi({ uzycia: '' })).toBe(3);
+    expect(okregi({})).toBe(3);
+    expect(okregi({ uzycia: '0' })).toBe(0);
+  });
+
+  it('wpis z kluczem i pustymi danymi nadal pokazuje sufiks', () => {
+    const szablon: Szablon = {
+      id: 'sakiewka',
+      nazwa: 'Sakiewka',
+      rozmiar: { tryb: 'mm', szerokosc: 25, wysokosc: 6 },
+      korzen: {
+        id: 'k',
+        typ: 'kolumna',
+        dzieci: [
+          {
+            id: 'wpis',
+            typ: 'wpis',
+            klucz: 'stan',
+            sufiks: '/ 250p',
+            styl: { czcionka: 'tresc', rozmiar: pt(6) },
+            obramowanie: { grubosc: 0.2, kolor: '#000000' },
+          },
+        ],
+      },
+    };
+    const pusty = renderujKarte(szablon, { dane: {} }, { czcionki }).scena;
+    expect(ile(pusty, 'tekst')).toBe(1);
+    expect(ile(pusty, 'prostokat')).toBe(1);
+    const wypelniony = renderujKarte(szablon, { dane: { stan: '120' } }, { czcionki }).scena;
+    const glify = wszystkie(wypelniony).flatMap((e) => (e.typ === 'tekst' ? e.glify : []));
+    expect(glify).toHaveLength('/250p'.length + '120'.length);
   });
 });

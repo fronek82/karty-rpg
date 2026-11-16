@@ -6,7 +6,8 @@ export type Kolor = string;
 /**
  * Rozmiar elementu wzdłuż jednej osi:
  * - `{ mm }` – stały,
- * - `{ procent }` – procent wnętrza rodzica (bez jego paddingu),
+ * - `{ procent }` – procent miejsca dostępnego dla dziecka: wnętrza rodzica (bez paddingu);
+ *   w osi poprzecznej i w warstwach – pomniejszonego o marginesy dziecka,
  * - `{ wypelnij }` – udział w wolnym miejscu z wagą,
  * - `'auto'` – dopasuj do treści.
  */

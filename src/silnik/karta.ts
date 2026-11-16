@@ -59,18 +59,20 @@ export function wartoscPola(pole: Pole, dane: Record<string, string>): string {
     case 'obraz':
       return pole.zasob ?? '';
     case 'znaczniki':
-      return pole.klucz !== undefined && zDanych !== undefined
-        ? zDanych
-        : String(pole.kolumny * pole.rzedy);
+      return String(pole.kolumny * pole.rzedy);
     case 'wpis':
+      return '';
     case 'ikona':
+      // Ikona bez klucza jest zawsze widoczna; z kluczem – gdy w danych coś jest.
       return pole.klucz !== undefined ? '' : '1';
   }
 }
 
 export function czyPuste(pole: Pole, dane: Record<string, string>): boolean {
+  // Pole do wpisania to sama ramka (i sufiks) – nigdy nie jest „puste”.
+  if (pole.typ === 'wpis') return false;
   const v = wartoscPola(pole, dane).trim();
-  if (pole.typ === 'znaczniki') return !(Number(v) > 0);
+  if (pole.typ === 'znaczniki') return liczbaZnacznikow(v) === 0;
   return v === '';
 }
 
@@ -85,8 +87,18 @@ function fragmentyTekstu(pole: PoleTekst, wartosc: string): Fragment[] {
   return fr;
 }
 
+/** Górny limit znaczników na jednej karcie (ochrona przed błędem w danych). */
+export const MAKS_ZNACZNIKOW = 60;
+
+/** Liczba znaczników z wartości: całkowita, od 0 do MAKS_ZNACZNIKOW. */
+export function liczbaZnacznikow(v: string): number {
+  const n = Math.floor(Number(v.replace(',', '.')));
+  return Number.isFinite(n) ? Math.min(MAKS_ZNACZNIKOW, Math.max(0, n)) : 0;
+}
+
 /** Liczba kolumn i rzędów znaczników dla danej liczby. */
-function siatkaZnacznikow(kolumny: number, rzedy: number, liczba: number) {
+function siatkaZnacznikow(kolumnyWzoru: number, rzedy: number, liczba: number) {
+  const kolumny = Math.max(1, Math.floor(kolumnyWzoru));
   if (liczba === kolumny * rzedy) return { kolumny, rzedy };
   return { kolumny: Math.min(kolumny, liczba), rzedy: Math.ceil(liczba / kolumny) };
 }
@@ -97,7 +109,8 @@ function wzorKreski(styl: StylLinii | undefined, grubosc: Mm): Mm[] | undefined 
   return undefined;
 }
 
-function obrys(o: Obramowanie): Obrys {
+function obrys(o: Obramowanie): Obrys | undefined {
+  if (!(o.grubosc > 0)) return undefined;
   const kreska = wzorKreski(o.styl, o.grubosc);
   return kreska
     ? { kolor: o.kolor, grubosc: o.grubosc, kreska }
@@ -163,8 +176,8 @@ export function renderujKarte(
       const ramka = {
         x: u.x + p.lewo,
         y: u.y + p.gora,
-        szer: u.szer - p.lewo - p.prawo,
-        wys: u.wys - p.gora - p.dol,
+        szer: Math.max(0, u.szer - p.lewo - p.prawo),
+        wys: Math.max(0, u.wys - p.gora - p.dol),
       };
       elementy.push(...rysujTekst(w, '', ramka, ctx, glify, ostrzezenia));
     }
@@ -189,6 +202,7 @@ function rysujObramowanie(
 ): ElementSceny[] {
   const g = o.grubosc;
   const s = obrys(o);
+  if (!s) return [];
   const k = o.krawedzie;
   if (!k) {
     // Linia w całości wewnątrz węzła: przesunięta o pół grubości.
@@ -249,7 +263,7 @@ function zmierzPole(
     case 'obraz':
       return { szer: ogr.szer ?? 0, wys: ogr.wys ?? 0 };
     case 'znaczniki': {
-      const s = siatkaZnacznikow(pole.kolumny, pole.rzedy, Number(wartosc) || 0);
+      const s = siatkaZnacznikow(pole.kolumny, pole.rzedy, liczbaZnacznikow(wartosc));
       return {
         szer: s.kolumny * pole.srednica + Math.max(0, s.kolumny - 1) * pole.odstep,
         wys: s.rzedy * pole.srednica + Math.max(0, s.rzedy - 1) * pole.odstep,
@@ -281,16 +295,8 @@ function rysujTekst(
   const fr = fragmentyTekstu(pole, wartosc);
   if (fr.length === 0) return [];
   const wieleWierszy = pole.wieleWierszy !== false;
-  const minSkala =
-    pole.styl.minRozmiar !== undefined ? pole.styl.minRozmiar / pole.styl.rozmiar : 1;
-  const uklad = ulozDopasowany(
-    fr,
-    ramka.szer,
-    ramka.wys,
-    ctx.czcionki,
-    wieleWierszy,
-    Math.min(1, minSkala),
-  );
+  const minSkala = minimalnaSkala(pole.styl);
+  const uklad = ulozDopasowany(fr, ramka.szer, ramka.wys, ctx.czcionki, wieleWierszy, minSkala);
   if (uklad.przepelnienie) ostrzezenia.push({ pole: pole.id, komunikat: 'tekst-nie-miesci-sie' });
   dodajOstrzezenieZnakow(pole.id, fr, ctx, ostrzezenia);
   return tekstNaScene(
@@ -302,6 +308,12 @@ function rysujTekst(
   );
 }
 
+/** Najmniejsza skala auto-dopasowania – nigdy poniżej 25% (tekst nieczytelny = przepełnienie). */
+function minimalnaSkala(styl: { rozmiar: Mm; minRozmiar?: Mm }): number {
+  if (styl.minRozmiar === undefined || !(styl.rozmiar > 0)) return 1;
+  return Math.min(1, Math.max(0.25, styl.minRozmiar / styl.rozmiar));
+}
+
 function dodajOstrzezenieZnakow(
   id: string,
   fr: Fragment[],
@@ -310,7 +322,8 @@ function dodajOstrzezenieZnakow(
 ) {
   const braki = new Set<string>();
   for (const f of fr) {
-    for (const z of ctx.czcionki.pobierz(f.styl.czcionka, f.styl.wariant).brakujaceZnaki(f.tekst))
+    const tekst = f.styl.wielkieLitery ? f.tekst.toLocaleUpperCase('pl') : f.tekst;
+    for (const z of ctx.czcionki.pobierz(f.styl.czcionka, f.styl.wariant).brakujaceZnaki(tekst))
       braki.add(z);
   }
   if (braki.size > 0)
@@ -331,16 +344,8 @@ function rysujPole(
       return rysujTekst(pole, wartosc, ramka, ctx, glify, ostrzezenia);
     case 'wartosc': {
       const fr = [{ tekst: wartosc, styl: pole.styl }];
-      const minSkala =
-        pole.styl.minRozmiar !== undefined ? pole.styl.minRozmiar / pole.styl.rozmiar : 1;
-      const uklad = ulozDopasowany(
-        fr,
-        ramka.szer,
-        ramka.wys,
-        ctx.czcionki,
-        false,
-        Math.min(1, minSkala),
-      );
+      const minSkala = minimalnaSkala(pole.styl);
+      const uklad = ulozDopasowany(fr, ramka.szer, ramka.wys, ctx.czcionki, false, minSkala);
       if (uklad.przepelnienie)
         ostrzezenia.push({ pole: pole.id, komunikat: 'tekst-nie-miesci-sie' });
       dodajOstrzezenieZnakow(pole.id, fr, ctx, ostrzezenia);
@@ -361,8 +366,8 @@ function rysujPole(
       return [rysujObraz(wartosc, info, ramka, pole.dopasowanie, pole.kadr ?? { x: 0.5, y: 0.5 })];
     }
     case 'znaczniki': {
-      const s = siatkaZnacznikow(pole.kolumny, pole.rzedy, Number(wartosc) || 0);
-      const liczba = Number(wartosc) || 0;
+      const s = siatkaZnacznikow(pole.kolumny, pole.rzedy, liczbaZnacznikow(wartosc));
+      const liczba = liczbaZnacznikow(wartosc);
       const kolor = pole.kolor ?? CZARNY;
       const wynik: ElementSceny[] = [];
       for (let i = 0; i < liczba; i++) {

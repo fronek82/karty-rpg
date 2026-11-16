@@ -6,9 +6,19 @@ import { rozmiesc, zmierz, type KontekstUkladu, type UlozonyWezel } from './ukla
 const pole = (id: string, bok: number, extra: Partial<Pole> = {}): Pole =>
   ({ id, typ: 'ikona', ikona: 'gwiazdka', rozmiar: bok, ...extra }) as Pole;
 
+/**
+ * Pole „tekst” udaje akapit: 40 mm tekstu w wierszach po 2 mm wysokości,
+ * łamany do dostępnej szerokości.
+ */
 const ctx = (ukryte: string[] = []): KontekstUkladu => ({
-  zmierzPole: (p) =>
-    p.typ === 'ikona' ? { szer: p.rozmiar, wys: p.rozmiar } : { szer: 0, wys: 0 },
+  zmierzPole: (p, ogr) => {
+    if (p.typ === 'ikona') return { szer: p.rozmiar, wys: p.rozmiar };
+    if (p.typ === 'tekst') {
+      const szer = Math.min(40, ogr.szer ?? 40);
+      return { szer, wys: 2 * Math.ceil(40 / szer) };
+    }
+    return { szer: 0, wys: 0 };
+  },
   czyUkryty: (w) => ukryte.includes(w.id),
 });
 
@@ -143,5 +153,30 @@ describe('warstwy', () => {
       [15, 1, 4, 4],
       [1, 17, 2, 2],
     ]);
+  });
+});
+
+describe('pomiar z łamaniem tekstu', () => {
+  const akapit = { id: 'opis', typ: 'tekst', styl: { czcionka: 'x', rozmiar: 1 } } as Pole;
+
+  it('wiersz „auto” mierzy wypełniające dziecko z jego szerokością', () => {
+    // Kolumna 25 mm: ikona 3 mm + akapit wypełniający 22 mm → 2 wiersze po 2 mm.
+    const k: Kontener = {
+      id: 'k',
+      typ: 'kolumna',
+      dzieci: [
+        wiersz([pole('ikona', 3), { ...akapit, szerokosc: { wypelnij: 1 } }], { id: 'rzad' }),
+      ],
+    };
+    expect(zmierz(k, { szer: 25 }, ctx())).toEqual({ szer: 25, wys: 4 });
+    const u = rozmiesc(k, 0, 0, 25, 30, ctx());
+    // Wiersz jest rozciągnięty na kolumnę, ale wysokość „auto” w kolumnie wynika z pomiaru.
+    expect(prost(znajdz(u, 'rzad')!)).toEqual([0, 0, 25, 4]);
+    expect(prost(znajdz(u, 'opis')!)).toEqual([3, 0, 22, 4]);
+  });
+
+  it('procent szerokości też łamie tekst przy pomiarze', () => {
+    const k = wiersz([{ ...akapit, szerokosc: { procent: 50 } }]);
+    expect(zmierz(k, { szer: 20 }, ctx()).wys).toBe(8);
   });
 });

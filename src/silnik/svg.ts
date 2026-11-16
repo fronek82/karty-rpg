@@ -1,4 +1,11 @@
-import type { ElementSceny, Kontur, Obrys, Scena } from './scena';
+import {
+  czyObrys,
+  kolorSceny,
+  type ElementSceny,
+  type Kontur,
+  type Obrys,
+  type Scena,
+} from './scena';
 import { liczba } from './liczby';
 
 /**
@@ -9,6 +16,11 @@ import { liczba } from './liczby';
 export interface OpcjeSvg {
   /** Adres (np. data: lub blob:) obrazu z biblioteki; undefined = obraz pominięty. */
   adresObrazu?: (zasob: string) => string | undefined;
+  /**
+   * Przedrostek identyfikatorów (glify, przycięcia). Gdy na jednej stronie HTML jest kilka SVG,
+   * każdy musi mieć inny – inaczej `<use href="#g0">` wskaże glif z innej karty.
+   */
+  przedrostekId?: string;
   /** Dodatkowe atrybuty elementu <svg> (np. klasa w UI). */
   atrybuty?: Record<string, string>;
 }
@@ -34,25 +46,29 @@ export function konturNaD(kontur: Kontur, miejsc = 3): string {
 }
 
 function atrybutyObrysu(o: Obrys | undefined): string {
-  if (!o) return '';
-  let a = ` stroke="${o.kolor}" stroke-width="${liczba(o.grubosc)}"`;
+  if (!czyObrys(o)) return '';
+  let a = ` stroke="${kolorSceny(o.kolor)}" stroke-width="${liczba(o.grubosc)}"`;
   if (o.kreska) a += ` stroke-dasharray="${o.kreska.map((v) => liczba(v)).join(' ')}"`;
   return a;
 }
 
-const wypelnienie = (k: string | undefined) => ` fill="${k ?? 'none'}"`;
+const wypelnienie = (k: string | undefined) =>
+  ` fill="${k === undefined ? 'none' : kolorSceny(k)}"`;
 
 export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
   // Identyfikatory glifów: kolejne numery w posortowanej kolejności kluczy – wynik deterministyczny.
   const klucze = Object.keys(scena.glify).sort();
-  const idGlifu = new Map(klucze.map((k, i) => [k, `g${i}`]));
+  const px = opcje.przedrostekId ?? '';
+  const idGlifu = new Map(klucze.map((k, i) => [k, `${px}g${i}`]));
   let licznikPrzyciec = 0;
   const przyciecia: string[] = [];
 
   const element = (e: ElementSceny): string => {
     switch (e.typ) {
       case 'prostokat': {
-        const r = e.promien ? ` rx="${liczba(e.promien)}"` : '';
+        // Promień ograniczony jak w PDF (rogi kołowe, nie eliptyczne).
+        const pr = Math.max(0, Math.min(e.promien ?? 0, e.szer / 2, e.wys / 2));
+        const r = pr > 0 ? ` rx="${liczba(pr)}" ry="${liczba(pr)}"` : '';
         return `<rect x="${liczba(e.x)}" y="${liczba(e.y)}" width="${liczba(e.szer)}" height="${liczba(e.wys)}"${r}${wypelnienie(e.wypelnienie)}${atrybutyObrysu(e.obrys)}/>`;
       }
       case 'linia':
@@ -63,7 +79,7 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
         return `<path d="${konturNaD(e.kontur)}"${wypelnienie(e.wypelnienie)}${atrybutyObrysu(e.obrys)}/>`;
       case 'tekst':
         return (
-          `<g fill="${e.kolor}">` +
+          `<g fill="${kolorSceny(e.kolor)}">` +
           e.glify
             .map((g) => {
               const s = liczba(g.skala, 6);
@@ -77,7 +93,7 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
         if (!adres) return '';
         let clip = '';
         if (e.przyciecie) {
-          const id = `p${licznikPrzyciec++}`;
+          const id = `${px}p${licznikPrzyciec++}`;
           const p = e.przyciecie;
           przyciecia.push(
             `<clipPath id="${id}"><rect x="${liczba(p.x)}" y="${liczba(p.y)}" width="${liczba(p.szer)}" height="${liczba(p.wys)}"/></clipPath>`,

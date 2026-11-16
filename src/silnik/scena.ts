@@ -86,3 +86,20 @@ export function polaczGlify(
   for (const s of slowniki) Object.assign(wynik, s);
   return wynik;
 }
+
+/**
+ * Kolor w postaci `#rrggbb` (małe litery). Przyjmuje też `#rgb`. Każdy inny zapis daje czarny –
+ * tak samo w SVG i PDF, żeby podgląd i wydruk się nie rozjechały (i żeby nic obcego nie trafiło do SVG).
+ */
+export function kolorSceny(k: string | undefined): string {
+  if (!k) return '#000000';
+  const s = k.trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(s)) return s;
+  const m = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(s);
+  return m ? `#${m[1]}${m[1]}${m[2]}${m[2]}${m[3]}${m[3]}` : '#000000';
+}
+
+/** Obrys rysowany tylko przy dodatniej grubości (SVG i PDF zachowują się wtedy tak samo). */
+export function czyObrys(o: Obrys | undefined): o is Obrys {
+  return o !== undefined && o.grubosc > 0;
+}

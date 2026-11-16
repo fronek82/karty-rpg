@@ -78,10 +78,18 @@ function widoczneDzieci(k: Kontener, ctx: KontekstUkladu): Wezel[] {
   return k.dzieci.filter((d) => !ctx.czyUkryty(d));
 }
 
-/** Rozmiar węzła (bez marginesów) przy danych ograniczeniach. */
-export function zmierz(w: Wezel, ogr: Ograniczenie, ctx: KontekstUkladu): Wymiary {
-  const stalaSzer = staly(w.szerokosc, ogr.szer);
-  const stalaWys = staly(w.wysokosc, ogr.wys);
+/**
+ * Rozmiar węzła (bez marginesów). `ogr` – miejsce dostępne (od niego liczą się procenty);
+ * `ustalone` – rozmiar już wyznaczony przez rodzica (np. udział w wypełnieniu), używany wprost.
+ */
+export function zmierz(
+  w: Wezel,
+  ogr: Ograniczenie,
+  ctx: KontekstUkladu,
+  ustalone: Ograniczenie = {},
+): Wymiary {
+  const stalaSzer = ustalone.szer ?? staly(w.szerokosc, ogr.szer);
+  const stalaWys = ustalone.wys ?? staly(w.wysokosc, ogr.wys);
   const wnetrze: Ograniczenie = {
     szer: odejmij(stalaSzer ?? ogr.szer, paddingi(w, 'szer')),
     wys: odejmij(stalaWys ?? ogr.wys, paddingi(w, 'wys')),
@@ -119,16 +127,75 @@ function zmierzKontener(k: Kontener, wnetrze: Ograniczenie, ctx: KontekstUkladu)
   }
   const glowna: Os = k.typ === 'wiersz' ? 'szer' : 'wys';
   const poprzeczna = druga(glowna);
+  // Najpierw oś główna (jak przy rozmieszczaniu), potem poprzeczna przy znanym rozmiarze
+  // w osi głównej – inaczej tekst w wypełniającym dziecku wiersza mierzy się niezłamany.
+  const { rozmiary } = rozmiaryWOsiGlownej(
+    k,
+    dzieci,
+    glowna,
+    wnetrze[glowna],
+    wnetrze[poprzeczna],
+    ctx,
+  );
   let suma = (k.odstep ?? 0) * Math.max(0, dzieci.length - 1);
   let maks = 0;
-  for (const d of dzieci) {
+  dzieci.forEach((d, i) => {
+    const rozmiarGl = rozmiary[i] ?? 0;
     const ogr: Ograniczenie = {};
     ogr[poprzeczna] = odejmij(wnetrze[poprzeczna], marginesy(d, poprzeczna));
-    const r = zmierz(d, ogr, ctx);
-    suma += (staly(rozmiarWezla(d, glowna), wnetrze[glowna]) ?? r[glowna]) + marginesy(d, glowna);
+    const ustalone: Ograniczenie = {};
+    ustalone[glowna] = rozmiarGl;
+    const r = zmierz(d, ogr, ctx, ustalone);
+    suma += rozmiarGl + marginesy(d, glowna);
     maks = Math.max(maks, r[poprzeczna] + marginesy(d, poprzeczna));
-  }
+  });
   return glowna === 'szer' ? { szer: suma, wys: maks } : { szer: maks, wys: suma };
+}
+
+/**
+ * Rozmiary dzieci w osi głównej: stałe, wg treści, a wypełniające dzielą wolne miejsce wg wag.
+ * Gdy miejsce w osi głównej jest nieznane (pomiar), wypełniające dostają rozmiar wg treści.
+ */
+function rozmiaryWOsiGlownej(
+  k: Kontener,
+  dzieci: Wezel[],
+  glowna: Os,
+  dostepneGlowna: Mm | undefined,
+  dostepnePoprzeczna: Mm | undefined,
+  ctx: KontekstUkladu,
+): { rozmiary: Mm[]; wolne: Mm; sumaWag: number } {
+  const poprzeczna = druga(glowna);
+  const wgTresci = (d: Wezel) => {
+    const ogr: Ograniczenie = {};
+    ogr[poprzeczna] = odejmij(dostepnePoprzeczna, marginesy(d, poprzeczna));
+    return zmierz(d, ogr, ctx)[glowna];
+  };
+  const rozmiary: (Mm | undefined)[] = [];
+  let zajete = (k.odstep ?? 0) * Math.max(0, dzieci.length - 1);
+  let sumaWag = 0;
+  for (const d of dzieci) {
+    zajete += marginesy(d, glowna);
+    const r = rozmiarWezla(d, glowna);
+    const waga = wagaWypelnienia(r);
+    if (waga !== undefined && dostepneGlowna !== undefined) {
+      sumaWag += waga;
+      rozmiary.push(undefined);
+      continue;
+    }
+    const v = (waga === undefined ? staly(r, dostepneGlowna) : undefined) ?? wgTresci(d);
+    rozmiary.push(v);
+    zajete += v;
+  }
+  const wolne = dostepneGlowna === undefined ? 0 : Math.max(0, dostepneGlowna - zajete);
+  return {
+    rozmiary: dzieci.map(
+      (d, i) =>
+        rozmiary[i] ??
+        (sumaWag > 0 ? (wolne * (wagaWypelnienia(rozmiarWezla(d, glowna)) ?? 0)) / sumaWag : 0),
+    ),
+    wolne,
+    sumaWag,
+  };
 }
 
 /** Rozmieszcza węzeł w ramce (x, y, szer, wys) – ramka to jego obrys bez marginesów. */
@@ -155,8 +222,8 @@ export function rozmiesc(
       const m = rozwinOdstepy(d.margines);
       const dostSzer = Math.max(0, ramka.szer - m.lewo - m.prawo);
       const dostWys = Math.max(0, ramka.wys - m.gora - m.dol);
-      const sz = rozmiarWPoprzek(d, 'szer', dostSzer, { wys: dostWys }, ctx);
-      const wy = rozmiarWPoprzek(d, 'wys', dostWys, { szer: sz }, ctx);
+      const sz = rozmiarWPoprzek(d, 'szer', dostSzer, { wys: dostWys }, {}, ctx);
+      const wy = rozmiarWPoprzek(d, 'wys', dostWys, { szer: dostSzer }, { szer: sz }, ctx);
       const dx = przesuniecie(wyrownanieOsi(d, 'szer'), dostSzer - sz);
       const dy = przesuniecie(wyrownanieOsi(d, 'wys'), dostWys - wy);
       return rozmiesc(d, ramka.x + m.lewo + dx, ramka.y + m.gora + dy, sz, wy, ctx);
@@ -171,34 +238,14 @@ export function rozmiesc(
   const odstep = w.odstep ?? 0;
 
   // 1. Rozmiary w osi głównej: stałe i wg treści; wypełniające dostają resztę wg wag.
-  const rozmiary: (Mm | undefined)[] = [];
-  let zajete = odstep * Math.max(0, dzieci.length - 1);
-  let sumaWag = 0;
-  for (const d of dzieci) {
-    zajete += marginesy(d, glowna);
-    const r = rozmiarWezla(d, glowna);
-    const waga = wagaWypelnienia(r);
-    if (waga !== undefined) {
-      sumaWag += waga;
-      rozmiary.push(undefined);
-      continue;
-    }
-    let v = staly(r, dostepneGlowna);
-    if (v === undefined) {
-      const ogr: Ograniczenie = {};
-      ogr[poprzeczna] = Math.max(0, dostepnePoprzeczna - marginesy(d, poprzeczna));
-      v = zmierz(d, ogr, ctx)[glowna];
-    }
-    rozmiary.push(v);
-    zajete += v;
-  }
-  const wolne = Math.max(0, dostepneGlowna - zajete);
-  dzieci.forEach((d, i) => {
-    if (rozmiary[i] === undefined) {
-      rozmiary[i] =
-        sumaWag > 0 ? (wolne * (wagaWypelnienia(rozmiarWezla(d, glowna)) ?? 0)) / sumaWag : 0;
-    }
-  });
+  const { rozmiary, wolne, sumaWag } = rozmiaryWOsiGlownej(
+    w,
+    dzieci,
+    glowna,
+    dostepneGlowna,
+    dostepnePoprzeczna,
+    ctx,
+  );
 
   // 2. Rozłożenie w osi głównej, gdy zostaje miejsce (bez dzieci wypełniających).
   const zostalo = sumaWag > 0 ? 0 : wolne;
@@ -217,9 +264,9 @@ export function rozmiesc(
     const mPopPrzed = glowna === 'szer' ? m.gora : m.lewo;
     const rozmiarGl = rozmiary[i] ?? 0;
     const dostPop = Math.max(0, dostepnePoprzeczna - marginesy(d, poprzeczna));
-    const ogr: Ograniczenie = {};
-    ogr[glowna] = rozmiarGl;
-    const rozmiarPop = rozmiarWPoprzek(d, poprzeczna, dostPop, ogr, ctx);
+    const ustalone: Ograniczenie = {};
+    ustalone[glowna] = rozmiarGl;
+    const rozmiarPop = rozmiarWPoprzek(d, poprzeczna, dostPop, {}, ustalone, ctx);
     const pozPop = mPopPrzed + przesuniecie(wyrownanieOsi(d, poprzeczna), dostPop - rozmiarPop);
     const start = poz + mPrzed;
     poz = start + rozmiarGl + mPo + odstep + dodatkowyOdstep;
@@ -236,6 +283,7 @@ function rozmiarWPoprzek(
   os: Os,
   dostepne: Mm,
   ogr: Ograniczenie,
+  ustalone: Ograniczenie,
   ctx: KontekstUkladu,
 ): Mm {
   const r = rozmiarWezla(d, os);
@@ -246,7 +294,7 @@ function rozmiarWPoprzek(
   if (r !== 'auto' && wyrownanieOsi(d, os) === undefined) return dostepne;
   const pelne: Ograniczenie = { ...ogr };
   pelne[os] = dostepne;
-  return Math.min(dostepne, zmierz(d, pelne, ctx)[os]);
+  return Math.min(dostepne, zmierz(d, pelne, ctx, ustalone)[os]);
 }
 
 function przesuniecie(wyr: WyrownanieOsi | undefined, wolne: Mm): Mm {
