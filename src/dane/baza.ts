@@ -50,11 +50,18 @@ export class BazaProjektow {
     return wpisy.map((w) => ({ id: w.id, nazwa: w.projekt.nazwa, zmieniono: w.zmieniono }));
   }
 
+  async istnieje(id: string): Promise<boolean> {
+    return (await this.db.projekty.where('id').equals(id).count()) > 0;
+  }
+
   /**
-   * Zapisuje projekt. Z `zasoby` – zastępuje wszystkie zasoby projektu (każdy opisany zasób musi
-   * mieć bajty); bez – zmienia tylko dokument projektu (np. edycja karty).
+   * Zapisuje projekt (po walidacji – do bazy nie trafi projekt, którego nie da się otworzyć).
+   * Z `zasoby` – zastępuje wszystkie zasoby projektu (każdy opisany zasób musi mieć bajty);
+   * bez – zmienia tylko dokument projektu (np. edycja karty), a każdy opisany zasób musi już
+   * być w bazie. Nieużywane Bloby są usuwane.
    */
   async zapisz(projekt: Projekt, zasoby?: DaneZasobow): Promise<void> {
+    przygotujProjekt(projekt);
     const opisane = new Set(projekt.zasoby.map((z) => z.id));
     if (zasoby) {
       for (const id of opisane) {
@@ -63,8 +70,9 @@ export class BazaProjektow {
     }
     const tabele = [this.db.projekty, this.db.zasoby];
     await this.db.transaction('rw', tabele, async () => {
+      const wProjekcie = this.db.zasoby.where('projektId').equals(projekt.id);
       if (zasoby) {
-        await this.db.zasoby.where('projektId').equals(projekt.id).delete();
+        await wProjekcie.delete();
         await this.db.zasoby.bulkPut(
           [...opisane].map((id) => ({
             projektId: projekt.id,
@@ -72,17 +80,34 @@ export class BazaProjektow {
             dane: new Blob([zasoby.get(id) as Uint8Array<ArrayBuffer>]),
           })),
         );
+      } else {
+        const wBazie = new Set((await wProjekcie.primaryKeys()).map(([, id]) => id));
+        for (const id of opisane) {
+          if (!wBazie.has(id)) throw new BladDanych(t('dane.brakZasobu', { id }));
+        }
+        const osierocone = [...wBazie].filter((id) => !opisane.has(id));
+        await this.db.zasoby.bulkDelete(
+          osierocone.map((id) => [projekt.id, id] as [string, string]),
+        );
       }
       await this.db.projekty.put({ id: projekt.id, zmieniono: projekt.zmieniono, projekt });
     });
   }
 
-  /** Wczytuje projekt z migracją i walidacją (dane w bazie mogą pochodzić ze starszej wersji). */
+  /**
+   * Wczytuje projekt z migracją i walidacją (dane w bazie mogą pochodzić ze starszej wersji).
+   * Dokument i zasoby czytane w jednej transakcji (spójny stan przy zapisie z innej karty).
+   */
   async wczytaj(id: string): Promise<{ projekt: Projekt; zasoby: DaneZasobow }> {
-    const wpis = await this.db.projekty.get(id);
+    const [wpis, wpisy] = await this.db.transaction('r', [this.db.projekty, this.db.zasoby], () =>
+      Promise.all([
+        this.db.projekty.get(id),
+        this.db.zasoby.where('projektId').equals(id).toArray(),
+      ]),
+    );
     if (!wpis) throw new BladDanych(t('dane.brakProjektuWBazie', { id }));
     const projekt = przygotujProjekt(wpis.projekt);
-    const wpisy = await this.db.zasoby.where('projektId').equals(id).toArray();
+    // Odczyt Blobów poza transakcją (await na nie-IDB zamknąłby transakcję Dexie).
     const zasoby: DaneZasobow = new Map();
     for (const w of wpisy) zasoby.set(w.id, new Uint8Array(await w.dane.arrayBuffer()));
     for (const opis of projekt.zasoby) {

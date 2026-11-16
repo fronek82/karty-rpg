@@ -1,15 +1,29 @@
 import { t } from '../i18n';
 import type { OpisCzcionki, ZrodloCzcionki } from '../model/projekt';
 import type { WariantCzcionki } from '../model/szablon';
-import { Czcionka, wczytajCzcionke } from '../silnik/czcionki';
+import { BladKolekcjiCzcionek, Czcionka, wczytajCzcionke } from '../silnik/czcionki';
 import { BladDanych } from './schemat';
 
-const FORMATY = ['ttf', 'otf', 'woff', 'woff2'] as const;
-const MAKS_BAJTOW = 25 * 1024 * 1024;
+export const FORMATY_CZCIONEK = ['ttf', 'otf', 'woff', 'woff2'] as const;
+export type FormatCzcionki = (typeof FORMATY_CZCIONEK)[number];
+export const MAKS_BAJTOW_CZCIONKI = 25 * 1024 * 1024;
 
-function wariantZNazwy(styl: string): WariantCzcionki {
-  const pogrubiony = /bold|black|heavy/i.test(styl);
-  const kursywa = /italic|oblique/i.test(styl);
+export function formatCzcionkiZNazwy(nazwaPliku: string): FormatCzcionki | undefined {
+  const rozszerzenie = nazwaPliku.split('.').pop()?.toLowerCase();
+  return FORMATY_CZCIONEK.find((f) => f === rozszerzenie);
+}
+
+/** Format obrazu z sygnatury pliku (nie z rozszerzenia). */
+export function formatObrazu(dane: Uint8Array): 'png' | 'jpg' | undefined {
+  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (png.every((b, i) => dane[i] === b)) return 'png';
+  if (dane[0] === 0xff && dane[1] === 0xd8 && dane[2] === 0xff) return 'jpg';
+  return undefined;
+}
+
+/** Wariant z metadanych: grubość ≥ 600 = pogrubiony, bit kursywy w OS/2 lub head. */
+export function wariantCzcionki(grubosc: number, kursywa: boolean): WariantCzcionki {
+  const pogrubiony = grubosc >= 600;
   if (pogrubiony && kursywa) return 'pogrubiona-kursywa';
   if (pogrubiony) return 'pogrubiony';
   return kursywa ? 'kursywa' : 'normalny';
@@ -28,6 +42,13 @@ export function identyfikatorZNazwy(nazwa: string, przedrostek: string): string 
   return `${przedrostek}-${baza || 'plik'}`;
 }
 
+/** `id`, a gdy zajęte – `id-2`, `id-3`, … */
+export function unikalneId(id: string, zajete: ReadonlySet<string>): string {
+  let wynik = id;
+  for (let n = 2; zajete.has(wynik); n++) wynik = `${id}-${n}`;
+  return wynik;
+}
+
 export interface WgranaCzcionka {
   opis: OpisCzcionki;
   dane: Uint8Array;
@@ -37,31 +58,34 @@ export interface WgranaCzcionka {
 /**
  * Sprawdza plik czcionki (fontkit: TTF, OTF, WOFF, WOFF2) i zwraca jej opis do biblioteki.
  * Rodzinę i wariant bierze z metadanych pliku; użytkownik może je poprawić w interfejsie.
- * Id zasobu jest id czcionki w silniku, więc glify z różnych czcionek się nie mieszają.
+ * Id zasobu (unikalne względem `zajete`) jest id czcionki w silniku, więc glify z różnych
+ * czcionek się nie mieszają.
  */
 export function wgrajCzcionke(
   nazwaPliku: string,
   dane: Uint8Array,
-  zrodlo: ZrodloCzcionki = 'wlasna',
+  {
+    zrodlo = 'wlasna',
+    zajete = new Set(),
+  }: { zrodlo?: ZrodloCzcionki; zajete?: ReadonlySet<string> } = {},
 ): WgranaCzcionka {
-  const format = nazwaPliku.split('.').pop()?.toLowerCase();
-  const znany = FORMATY.find((f) => f === format);
-  if (!znany) throw new BladDanych(t('dane.zlyFormatCzcionki', { plik: nazwaPliku }));
-  if (dane.length > MAKS_BAJTOW) {
+  const format = formatCzcionkiZNazwy(nazwaPliku);
+  if (!format) throw new BladDanych(t('dane.zlyFormatCzcionki', { plik: nazwaPliku }));
+  if (dane.length > MAKS_BAJTOW_CZCIONKI) {
     throw new BladDanych(
       t('dane.zaDuzy', { plik: nazwaPliku, mb: (dane.length / 1024 / 1024).toFixed(1) }),
     );
   }
-  const id = identyfikatorZNazwy(nazwaPliku.replace(/\.[^.]+$/, ''), 'czcionka');
+  const bezRozszerzenia = nazwaPliku.replace(/\.[^.]+$/, '');
+  const id = unikalneId(identyfikatorZNazwy(bezRozszerzenia, 'czcionka'), zajete);
   let czcionka: Czcionka;
   try {
     czcionka = wczytajCzcionke(id, dane);
   } catch (e) {
-    const powod = e instanceof Error ? e.message : String(e);
     throw new BladDanych(
-      powod.includes('kolekcją')
+      e instanceof BladKolekcjiCzcionek
         ? t('dane.czcionkaKolekcja', { plik: nazwaPliku })
-        : t('dane.nieczytelnaCzcionka', { plik: nazwaPliku, powod }),
+        : t('dane.nieczytelnaCzcionka', { plik: nazwaPliku }),
     );
   }
   const info = czcionka.metadane();
@@ -70,9 +94,9 @@ export function wgrajCzcionke(
       rodzaj: 'czcionka',
       id,
       nazwa: nazwaPliku,
-      rodzina: info.rodzina || nazwaPliku.replace(/\.[^.]+$/, ''),
-      wariant: wariantZNazwy(info.styl),
-      format: znany,
+      rodzina: info.rodzina || bezRozszerzenia,
+      wariant: wariantCzcionki(info.grubosc, info.kursywa),
+      format,
       zrodlo,
     },
     dane,

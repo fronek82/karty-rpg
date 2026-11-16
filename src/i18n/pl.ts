@@ -11,6 +11,32 @@ export const pl = {
   'dane.nowszaWersja':
     'Plik został zapisany w nowszej wersji aplikacji (schemat {wersja}). Zaktualizuj aplikację.',
   'dane.brakWersji': 'Plik nie ma numeru wersji schematu.',
+  'dane.brakMigracji': 'Brak migracji danych ze schematu {wersja} – plik jest nieobsługiwany.',
+  'dane.zod.typ': 'zły typ wartości (oczekiwano: {oczekiwano})',
+  'dane.zod.zaMalo': 'wartość za mała (najmniej {min})',
+  'dane.zod.zaDuzo': 'wartość za duża (najwięcej {max})',
+  'dane.zod.wartosc': 'niedozwolona wartość (dozwolone: {dozwolone})',
+  'dane.zod.format': 'niepoprawny format',
+  'dane.zod.wariant': 'wartość nie pasuje do żadnego z dozwolonych rodzajów',
+  'dane.zod.inne': 'niepoprawna wartość',
+  'dane.gdzie.zasoby': 'zasoby',
+  'dane.gdzie.szablony': 'szablony',
+  'dane.gdzie.talie': 'talie',
+  'dane.gdzie.arkusze': 'arkusze',
+  'dane.gdzie.szablon': 'szablon {id}',
+  'dane.gdzie.talia': 'talia {id}',
+  'dane.gdzie.karta': 'karta {id}',
+  'dane.nieznanaKartaPrzypieta': 'arkusz „{arkusz}” przypina nieznaną kartę „{karta}”',
+  'dane.powtorzonaCzcionka':
+    'W bibliotece są dwie czcionki „{rodzina}” ({wariant}) – używana będzie ostatnia.',
+  'dane.konfliktRoli':
+    'Rola „{rola}” w projekcie używa „{projekt}”, a szablon był zaprojektowany z „{szablon}”.',
+  'dane.zbytWieleWpisow': 'Plik zawiera zbyt wiele wpisów ({liczba}).',
+  'dane.zaDuzeArchiwum': 'Rozpakowana zawartość pliku jest zbyt duża ({mb} MB).',
+  'dane.zlyZasobCzcionki': 'Czcionka „{id}” w pliku jest uszkodzona: {powod}',
+  'dane.zlyZasobObrazu': 'Obraz „{id}” w pliku nie jest obrazem PNG ani JPG.',
+  'dane.uszkodzonaCzcionka':
+    'Nie udało się wczytać czcionki „{id}” – użyta będzie czcionka zapasowa.',
   'dane.niepoprawnaStruktura': 'Niepoprawne dane w pliku – {sciezka}: {komunikat}',
   'dane.brakZasobu': 'W pliku brakuje zasobu „{id}”.',
   'dane.nadmiarowyPlik': 'Plik zawiera nieoczekiwany wpis „{plik}”.',
@@ -24,9 +50,9 @@ export const pl = {
   'dane.nieznanaRodzina': 'rola „{rola}” wskazuje rodzinę „{rodzina}”, której nie ma w bibliotece',
   'dane.zlyFormatCzcionki':
     'Nieobsługiwany format czcionki „{plik}” (dozwolone: TTF, OTF, WOFF, WOFF2).',
-  'dane.nieczytelnaCzcionka': 'Nie udało się wczytać czcionki „{plik}”: {powod}',
+  'dane.nieczytelnaCzcionka':
+    'Nie udało się wczytać czcionki „{plik}” – plik jest uszkodzony albo to nie czcionka.',
   'dane.czcionkaKolekcja': 'Plik „{plik}” jest kolekcją czcionek – wybierz pojedynczą czcionkę.',
-  'dane.zlyObraz': 'Plik „{plik}” nie jest obrazem PNG ani JPG.',
   'dane.brakProjektuWBazie': 'Nie ma projektu „{id}” w pamięci przeglądarki.',
   'dane.kolizjaZasobu':
     'Zasób „{id}” już istnieje w projekcie i ma inną zawartość – zmień jego nazwę przed importem.',

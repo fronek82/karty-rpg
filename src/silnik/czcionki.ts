@@ -46,9 +46,34 @@ export class Czcionka {
     return glify;
   }
 
-  /** Rodzina i styl z metadanych pliku (np. „EB Garamond”, „Bold Italic”). */
-  metadane(): { rodzina: string; styl: string } {
-    return { rodzina: this.font.familyName ?? '', styl: this.font.subfamilyName ?? '' };
+  /**
+   * Metadane z pliku: rodzina typograficzna (rekord nazwy 16, awaryjnie 1), styl (17, awaryjnie 2),
+   * grubość (OS/2 usWeightClass) i kursywa (OS/2 fsSelection lub head.macStyle).
+   */
+  metadane(): { rodzina: string; styl: string; grubosc: number; kursywa: boolean } {
+    const f = this.font;
+    const nazwa = (klucz: string) => {
+      try {
+        return f.getName(klucz, 'en') ?? undefined;
+      } catch {
+        return undefined;
+      }
+    };
+    const os2 = f['OS/2'] as
+      { usWeightClass?: number; fsSelection?: { italic?: boolean } } | undefined;
+    const head = (f as unknown as { head?: unknown }).head as
+      { macStyle?: { italic?: boolean; bold?: boolean } } | undefined;
+    const styl = nazwa('preferredSubfamily') ?? f.subfamilyName ?? '';
+    return {
+      rodzina: nazwa('preferredFamily') ?? f.familyName ?? '',
+      styl,
+      grubosc: os2?.usWeightClass ?? (head?.macStyle?.bold ? 700 : 400),
+      kursywa: !!(
+        os2?.fsSelection?.italic ||
+        head?.macStyle?.italic ||
+        /italic|oblique/i.test(styl)
+      ),
+    };
   }
 
   /** Szerokość tekstu w jednostkach czcionki. */
@@ -130,11 +155,16 @@ export function konturZFontkit(komendy: fontkit.PathCommand[]): Kontur {
   return wynik;
 }
 
+/** Plik jest kolekcją czcionek (TTC/DFONT) – trzeba wybrać pojedynczą czcionkę. */
+export class BladKolekcjiCzcionek extends Error {}
+
 export function wczytajCzcionke(id: string, dane: Uint8Array): Czcionka {
   // fontkit przyjmuje Buffer, ale w praktyce działa na każdym Uint8Array (także w przeglądarce).
   const font = fontkit.create(dane as Buffer);
   if (!('layout' in font)) {
-    throw new Error(`Plik czcionki „${id}” jest kolekcją czcionek – wybierz pojedynczą czcionkę.`);
+    throw new BladKolekcjiCzcionek(
+      `Plik czcionki „${id}” jest kolekcją czcionek – wybierz pojedynczą czcionkę.`,
+    );
   }
   return new Czcionka(id, font);
 }

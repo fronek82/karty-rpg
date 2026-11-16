@@ -139,11 +139,15 @@ Po E5 (przegląd): zasoby po nieudanym wczytaniu nie zostają w pamięci (przyci
 
 ### Po E6 – do E7
 
-- Interfejs: wybór pliku `.kartyrpg`, wgrywanie czcionek (podgląd rodziny/wariantu z `wgrajCzcionke`, możliwość poprawy), przypisanie ról, lista projektów z `BazaProjektow`, komunikaty `BladDanych` w UI.
-- `ZapiszProjekt` z samym dokumentem (bez zasobów) służy do częstej edycji kart; zasoby zapisywać tylko przy ich zmianie.
-- Import szablonu: kolizja zasobu o tej samej nazwie i innej treści jest błędem (zmiana nazwy zasobu – w UI).
-- Pliki czcionek WOFF/WOFF2 przyjmowane bez konwersji (PDF używa krzywych); eksport szablonu ostrzega o czcionkach z `zrodlo: 'wlasna'`. Google Fonts – M4.
-- Pakiet Mausritter ładowany do bazy jako projekt przez `projektZPakietu` (UI: przycisk „Nowy projekt z pakietu”).
+Po przeglądzie E6 poprawione: sprawdzanie treści zasobów przy imporcie (czcionka przez fontkit, sygnatura PNG/JPG), pełne schematy pól stylu, obrazu, arkusza (nieznany wariant czcionki itp. odrzucany), polskie komunikaty zod z najkonkretniejszą gałęzią unii, osobne migracje projektu i pliku szablonu, walidacja przy zapisie do bazy i kontrola Blobów w transakcji, odczyt w jednej transakcji, usuwanie osieroconych Blobów, `istnieje()` i `jakoKopia()`, twarde reguły spójności (powtórzone id węzłów, grup, kart w grupach; przypięte karty) oddzielone od ostrzeżeń (`ostrzezeniaProjektu`: rola bez czcionek, brakujący obraz szablonu lub karty, powtórzona para rodzina+wariant), `rejestrZProjektu` nie przerywa przy uszkodzonej czcionce, wariant czcionki z OS/2 (grubość ≥ 600, bit kursywy) i rodzina typograficzna (rekord 16), unikalne id zasobów (`-2`, `-3`), import szablonu nie zmienia wyglądu istniejących kart (role i czcionki projektu wygrywają, konflikty jako ostrzeżenia, kolizja id zasobu → nowe id z przepisaniem odwołań), limity ZIP (wpis, suma, liczba wpisów, tylko oczekiwane nazwy), kontrola zgodności schematu z typami modelu w czasie kompilacji.
+
+Dla E7 (interfejs):
+
+- Import `.kartyrpg`: gdy `BazaProjektow.istnieje(id)` – zapytać „zastąp / zapisz jako kopię” (`jakoKopia`). Nigdy nie nadpisywać bez pytania.
+- Pokazywać `ostrzezeniaProjektu` i ostrzeżenia z `rejestrZProjektu` / `dodajSzablon` / `eksportujSzablon`; komunikaty `BladDanych` wprost.
+- Wgrywanie czcionek: podgląd rodziny/wariantu z `wgrajCzcionke` (z `zajete` = id w projekcie), możliwość poprawy.
+- `zapisz(projekt)` bez zasobów do częstej edycji kart; z zasobami tylko przy zmianie biblioteki. Przy dużych bibliotekach dodać `dodajZasob` / `usunZasob` zamiast przepisywania wszystkich Blobów.
+- Pakiet Mausritter → projekt przez `projektZPakietu` („Nowy projekt z pakietu”). Google Fonts – M4.
 
 ### Odłożone (backlog)
 
