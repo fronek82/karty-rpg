@@ -101,8 +101,8 @@ export function zmierz(
     tresc = zmierzKontener(w, wnetrze, ctx);
   }
   return {
-    szer: stalaSzer ?? tresc.szer + paddingi(w, 'szer'),
-    wys: stalaWys ?? tresc.wys + paddingi(w, 'wys'),
+    szer: stalaSzer ?? Math.max(w.minSzerokosc ?? 0, tresc.szer + paddingi(w, 'szer')),
+    wys: stalaWys ?? Math.max(w.minWysokosc ?? 0, tresc.wys + paddingi(w, 'wys')),
   };
 }
 

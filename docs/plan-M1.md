@@ -28,6 +28,18 @@ Pliki referencyjne (PDF i zrzuty ekranu) **nie są w repozytorium** – leżą l
 - Rozmiary kart: 1×1, 1×2 (ciężka broń, ciężka zbroja, broń dystansowa ciężka), 2×1 (lekka zbroja, puste karty).
 - Dokładne liczby do testu geometrycznego zostaną zapisane w `testy/geometria-referencji.json` (skrypt w `narzedzia/`).
 
+### Pomiary wektorowe (E3)
+
+Z PDF zamienionego na SVG (`pdftocairo -svg`), w mm:
+
+- Arkusz w PDF jest przeskalowany do 99,89% – slot zaprojektowany jako 73 pt (25,75 mm) drukuje się jako 25,725 mm.
+- Pasek tytułu 6,71 mm, linie 0,176 mm (0,5 pt) w kolorze `#231f20`.
+- Znaczniki: średnica zewnętrzna 2,87 mm, odstęp 0,51 mm, 1,3 mm od lewej krawędzi, 1,1 mm pod linią tytułu.
+- Ramka wartości: min. 6,87 × 6,87 mm, 1,0 mm pod linią, ~1,45 mm od prawej krawędzi; na zbroi ośmiokąt ze ściętymi rogami (3 pt).
+- Sakiewka: pole 22,2 × 6,36 mm, 1,4 mm od dołu.
+- Czcionki: tytuł 10 pt (stan 12 pt), wartość 10 pt (zbroja 8,5 pt), klasa 8 pt, skutek stanu 8 pt kursywą, nagłówek grupy 13 pt, opis grupy 9 pt, tytuł arkusza 32 pt.
+- Linie cięcia: 0,264 mm (0,75 pt), kreska 2,3 mm / przerwa 1,55 mm, wzór wyśrodkowany na każdej krawędzi karty.
+
 ### Budowa szablonów (tylko układ)
 
 | Szablon     | Elementy                                                                                                                         |
@@ -51,7 +63,7 @@ src/
   ui/         React: projekty, talie, tabela danych, podgląd karty i arkusza, ustawienia druku
   i18n/       klucze tekstów + pl.json
 public/czcionki/      EB Garamond, Grenze Gotisch (OFL) + licencje
-pakiety/mausritter/   szablony JSON, przykładowe dane (własne), LICENCJE.md
+src/pakiety/mausritter/  szablony i talie (TS), obrazek zastępczy, LICENCJE.md
 narzedzia/            skrypty pomocnicze (pomiar referencji)
 testy/                testy e2e i wizualne Playwright
 docs/                 plany i notatki

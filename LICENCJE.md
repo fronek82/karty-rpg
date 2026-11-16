@@ -12,6 +12,8 @@ Pakiety szablonów mają dodatkowo własny plik `LICENCJE.md` w swoim katalogu.
 | EB Garamond (Regular, Bold, Italic, Bold Italic) | `public/czcionki/EBGaramond-*.ttf`    | Google Fonts | The EB Garamond Project Authors (Georg Duffner, Octavio Pardo) | SIL OFL 1.1 – `public/czcionki/OFL-EBGaramond.txt`    |
 | Grenze Gotisch (Regular, Bold)                   | `public/czcionki/GrenzeGotisch-*.ttf` | Google Fonts | The Grenze Gotisch Project Authors (Omnibus-Type)              | SIL OFL 1.1 – `public/czcionki/OFL-GrenzeGotisch.txt` |
 
+Pakiety szablonów: `src/pakiety/mausritter/LICENCJE.md`.
+
 ## Materiały, których nie publikujemy
 
 - Arkusze referencyjne Mausrittera (polskie wydanie, sklep Stinger-Prest) służą wyłącznie do

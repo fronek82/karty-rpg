@@ -47,8 +47,11 @@ interface WezelBazowy {
   wyrownanie?: { poziomo?: WyrownanieOsi; pionowo?: WyrownanieOsi };
   tlo?: Kolor;
   obramowanie?: Obramowanie;
-  /** Zaokrąglenie rogów tła i obramowania (mm). */
+  /** Zaokrąglenie rogów tła i obramowania (mm); przy kształcie „sciety” – wielkość ścięcia. */
   promien?: Mm;
+  /** Najmniejszy rozmiar (mm), także gdy treść jest mniejsza – np. kwadratowa ramka wartości. */
+  minSzerokosc?: Mm;
+  minWysokosc?: Mm;
 }
 
 /** Wiersz (dzieci obok siebie), kolumna (jedno pod drugim) lub warstwy (jedno na drugim). */
@@ -113,7 +116,8 @@ export interface PoleWartosc extends PoleBazowe {
   typ: 'wartosc';
   tekst?: string;
   styl: StylTekstu;
-  ksztalt: 'prostokat' | 'kolo';
+  /** `sciety` – prostokąt ze ściętymi rogami (wielkość ścięcia w `promien`). */
+  ksztalt: 'prostokat' | 'kolo' | 'sciety';
 }
 
 export interface PoleObraz extends PoleBazowe {
@@ -184,6 +188,23 @@ export interface Karta {
   ilosc: number;
   /** Rozmiar w slotach (tylko szablony w trybie slotów). */
   rozmiar?: { kolumny: number; rzedy: number };
+}
+
+/** Grupa kart w talii – na arkuszu dostaje nagłówek z opisem nad kolumnami (np. stany). */
+export interface GrupaKart {
+  id: string;
+  naglowek: string;
+  opis?: string;
+  /** Identyfikatory kart należących do grupy (w kolejności). */
+  karty: string[];
+}
+
+/** Talia – zbiór kart (na razie bez rewersu – M4). */
+export interface Talia {
+  id: string;
+  nazwa: string;
+  karty: Karta[];
+  grupy?: GrupaKart[];
 }
 
 export function czyKontener(wezel: Wezel): wezel is Kontener {

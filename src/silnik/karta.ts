@@ -13,7 +13,7 @@ import {
 } from '../model/szablon';
 import type { RejestrCzcionek } from './czcionki';
 import { konturIkony } from './ikony';
-import type { DefinicjaGlifu, ElementSceny, Obrys, Scena } from './scena';
+import type { DefinicjaGlifu, ElementSceny, Kontur, Obrys, Scena } from './scena';
 import { tekstNaScene, ulozDopasowany, ulozTekst, type Fragment } from './tekst';
 import {
   rozmiesc,
@@ -151,16 +151,22 @@ export function renderujKarte(
   const rysuj = (u: UlozonyWezel) => {
     const w = u.wezel;
     const promien = promienWezla(w, u);
-    if (w.tlo)
-      elementy.push({
-        typ: 'prostokat',
-        x: u.x,
-        y: u.y,
-        szer: u.szer,
-        wys: u.wys,
-        promien,
-        wypelnienie: w.tlo,
-      });
+    const sciety = !czyKontener(w) && w.typ === 'wartosc' && w.ksztalt === 'sciety';
+    if (w.tlo) {
+      elementy.push(
+        sciety
+          ? { typ: 'sciezka', kontur: konturScietego(u, promien ?? 0), wypelnienie: w.tlo }
+          : {
+              typ: 'prostokat',
+              x: u.x,
+              y: u.y,
+              szer: u.szer,
+              wys: u.wys,
+              promien,
+              wypelnienie: w.tlo,
+            },
+      );
+    }
     if (!czyKontener(w) && !czyPuste(w, dane)) {
       const p = rozwinOdstepy(w.padding);
       const ramka = {
@@ -182,7 +188,7 @@ export function renderujKarte(
       elementy.push(...rysujTekst(w, '', ramka, ctx, glify, ostrzezenia));
     }
     u.dzieci.forEach(rysuj);
-    if (w.obramowanie) elementy.push(...rysujObramowanie(w.obramowanie, u, promien));
+    if (w.obramowanie) elementy.push(...rysujObramowanie(w.obramowanie, u, promien, sciety));
   };
   rysuj(korzen);
 
@@ -199,11 +205,28 @@ function rysujObramowanie(
   o: Obramowanie,
   u: UlozonyWezel,
   promien: Mm | undefined,
+  sciety = false,
 ): ElementSceny[] {
   const g = o.grubosc;
   const s = obrys(o);
   if (!s) return [];
   const k = o.krawedzie;
+  if (!k && sciety) {
+    const wew = {
+      x: u.x + g / 2,
+      y: u.y + g / 2,
+      szer: Math.max(0, u.szer - g),
+      wys: Math.max(0, u.wys - g),
+    };
+    // Ścięcie mierzone na zewnętrznej krawędzi; na osi linii jest mniejsze o (√2−1)·g/2.
+    return [
+      {
+        typ: 'sciezka',
+        kontur: konturScietego(wew, Math.max(0, (promien ?? 0) - g / 2)),
+        obrys: s,
+      },
+    ];
+  }
   if (!k) {
     // Linia w całości wewnątrz węzła: przesunięta o pół grubości.
     return [
@@ -228,6 +251,23 @@ function rysujObramowanie(
   if (k.lewo) linie.push({ typ: 'linia', x1: l + g / 2, y1: gr, x2: l + g / 2, y2: d, obrys: s });
   if (k.prawo) linie.push({ typ: 'linia', x1: p - g / 2, y1: gr, x2: p - g / 2, y2: d, obrys: s });
   return linie;
+}
+
+/** Prostokąt ze ściętymi rogami (ośmiokąt) – ramka wartości, np. „-1 obr” na zbroi. */
+function konturScietego(r: { x: Mm; y: Mm; szer: Mm; wys: Mm }, sciecie: Mm): Kontur {
+  const c = Math.max(0, Math.min(sciecie, r.szer / 2, r.wys / 2));
+  const { x, y, szer: w, wys: h } = r;
+  return [
+    ['M', x + c, y],
+    ['L', x + w - c, y],
+    ['L', x + w, y + c],
+    ['L', x + w, y + h - c],
+    ['L', x + w - c, y + h],
+    ['L', x + c, y + h],
+    ['L', x, y + h - c],
+    ['L', x, y + c],
+    ['Z'],
+  ];
 }
 
 function zmierzPole(
