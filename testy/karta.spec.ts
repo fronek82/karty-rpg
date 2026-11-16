@@ -122,8 +122,21 @@ test('zdjęcie z obrotem EXIF jest zapisywane już obrócone (podgląd = PDF)', 
     const dane = new Uint8Array(await (await fetch(adres!)).arrayBuffer());
     // Bez orientacji z pliku: zapisane piksele muszą już być obrócone.
     const b = await createImageBitmap(new Blob([dane]), { imageOrientation: 'none' });
+    const c = new OffscreenCanvas(b.width, b.height).getContext('2d')!;
+    c.drawImage(b, 0, 0);
+    const kolor = (x: number, y: number) => {
+      const [r, , bl] = c.getImageData(x, y, 1, 1).data;
+      return r! > 150 && bl! < 100 ? 'czerwony' : bl! > 150 && r! < 100 ? 'niebieski' : 'inny';
+    };
     const tekst = new TextDecoder('latin1').decode(dane.subarray(0, 200));
-    return { szer: b.width, wys: b.height, exif: tekst.includes('Exif') };
+    return {
+      szer: b.width,
+      wys: b.height,
+      exif: tekst.includes('Exif'),
+      gora: kolor(10, 8),
+      dol: kolor(10, 32),
+    };
   }, href);
-  expect(wynik).toEqual({ szer: 20, wys: 40, exif: false });
+  // Orientacja 6 (obrót o 90° zgodnie z zegarem): lewa, czerwona połowa trafia na górę.
+  expect(wynik).toEqual({ szer: 20, wys: 40, exif: false, gora: 'czerwony', dol: 'niebieski' });
 });

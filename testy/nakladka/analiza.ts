@@ -2,9 +2,9 @@ import type { ElementSceny, Scena } from '../../src/silnik/scena';
 
 /**
  * Analiza nakładki arkusza na referencję: pozycje linii cięcia z naszej sceny (dokładne, mm),
- * odszukanie ich w rastrze referencji (profil ciemnych pikseli) i dopasowanie liniowe
- * r = a·p + b w każdej osi. Reszty dopasowania mówią, czy siatka się zgadza; a i b – jak
- * referencja jest przeskalowana i przesunięta (np. druk 99,89%).
+ * odszukanie ich w rastrze referencji (profil ciemności) i dopasowanie liniowe r = a·p + b
+ * w każdej osi. Reszty mówią, czy siatka się zgadza; a i b – jak referencja jest przeskalowana
+ * (np. druk 99,89%) i przesunięta.
  */
 
 export interface Linie {
@@ -38,31 +38,45 @@ export function linieCiecia(scena: Scena): Linie {
 }
 
 /**
- * Najsilniejsze maksimum profilu w oknie ±`okno` mm wokół `mm`, z położeniem jako średnią ważoną
- * w jego otoczeniu (dokładność poniżej piksela). undefined – brak wyraźnej linii.
+ * Linia w profilu (suma ciemności w kolumnie/wierszu) w oknie ±`okno` mm wokół `mm`.
+ * Wybierane jest najsilniejsze maksimum o wąskim plateau (≤ `maksSzerokosc` mm na połowie
+ * wysokości) – linia cięcia jest cienka, a pasek tytułu czy zaczerniony obszar szeroki.
+ * Położenie – średnia ważona w otoczeniu maksimum (dokładność poniżej piksela).
+ * undefined – brak wyraźnej, cienkiej linii.
  */
 export function znajdzLinie(
-  profil: number[],
+  profil: ArrayLike<number>,
   pxNaMm: number,
   mm: number,
   okno: number,
   minimum: number,
+  maksSzerokosc = 0.6,
 ): number | undefined {
   const od = Math.max(0, Math.floor((mm - okno) * pxNaMm));
   const do_ = Math.min(profil.length - 1, Math.ceil((mm + okno) * pxNaMm));
-  let najlepszy = -1;
-  for (let i = od; i <= do_; i++)
-    if (najlepszy < 0 || profil[i]! > profil[najlepszy]!) najlepszy = i;
-  if (najlepszy < 0 || profil[najlepszy]! < minimum) return undefined;
-  const r = Math.max(1, Math.round(pxNaMm * 0.4));
-  let suma = 0;
-  let waga = 0;
-  for (let i = Math.max(0, najlepszy - r); i <= Math.min(profil.length - 1, najlepszy + r); i++) {
-    const w = Math.max(0, profil[i]! - profil[najlepszy]! / 2);
-    suma += (i + 0.5) * w;
-    waga += w;
+  const kandydaci: number[] = [];
+  for (let i = od; i <= do_; i++) {
+    const v = profil[i]!;
+    if (v >= minimum && v >= (profil[i - 1] ?? 0) && v >= (profil[i + 1] ?? 0)) kandydaci.push(i);
   }
-  return suma / waga / pxNaMm;
+  kandydaci.sort((a, b) => profil[b]! - profil[a]!);
+  for (const szczyt of kandydaci) {
+    const pol = profil[szczyt]! / 2;
+    let l = szczyt;
+    let p = szczyt;
+    while (l > 0 && profil[l - 1]! > pol) l--;
+    while (p < profil.length - 1 && profil[p + 1]! > pol) p++;
+    if ((p - l + 1) / pxNaMm > maksSzerokosc) continue;
+    let suma = 0;
+    let waga = 0;
+    for (let i = l; i <= p; i++) {
+      const w = profil[i]! - pol;
+      suma += (i + 0.5) * w;
+      waga += w;
+    }
+    if (waga > 0) return suma / waga / pxNaMm;
+  }
+  return undefined;
 }
 
 export interface Dopasowanie {
@@ -97,4 +111,28 @@ export function dopasuj(nasze: number[], znalezione: (number | undefined)[]): Do
     brakujace,
     maksReszta: Math.max(...wynik.map((x) => Math.abs(x.reszta))),
   };
+}
+
+/**
+ * Dwa przebiegi: zgrubny (okno ±`okno` mm wokół naszej pozycji) i dokładny – w wąskim oknie
+ * wokół pozycji przewidzianej pierwszym dopasowaniem. Pojedyncze pomyłki pierwszego przebiegu
+ * (np. sąsiedni element) nie przesuwają wyniku, bo drugi szuka tam, gdzie wskazuje cała siatka.
+ */
+export function dopasujLinie(
+  profil: ArrayLike<number>,
+  pxNaMm: number,
+  nasze: number[],
+  minimum: number,
+  okno = 3,
+  oknoDokladne = 0.75,
+): Dopasowanie {
+  if (nasze.length < 2) throw new Error('Za mało linii cięcia do dopasowania (potrzebne ≥ 2).');
+  const zgrubne = dopasuj(
+    nasze,
+    nasze.map((p) => znajdzLinie(profil, pxNaMm, p, okno, minimum)),
+  );
+  return dopasuj(
+    nasze,
+    nasze.map((p) => znajdzLinie(profil, pxNaMm, zgrubne.a * p + zgrubne.b, oknoDokladne, minimum)),
+  );
 }

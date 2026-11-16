@@ -15,8 +15,10 @@ export function pikseleNaSzarosc(rgba: Uint8ClampedArray): Uint8ClampedArray {
  */
 export async function obrazNaSzarosc(o: ObrazWPamieci): Promise<ObrazWPamieci> {
   const typ = o.format === 'png' ? 'image/png' : 'image/jpeg';
+  // Bez orientacji EXIF – jak w PDF (szara kopia ma te same piksele co kolorowa w PDF).
   const bitmapa = await createImageBitmap(
     new Blob([o.dane as Uint8Array<ArrayBuffer>], { type: typ }),
+    { imageOrientation: 'none' },
   );
   const canvas = document.createElement('canvas');
   canvas.width = bitmapa.width;

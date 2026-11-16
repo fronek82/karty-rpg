@@ -6,5 +6,7 @@ describe('nazwaPliku', () => {
     expect(nazwaPliku('Karty broni i pancerzy', '.pdf')).toBe('karty-broni-i-pancerzy.pdf');
     expect(nazwaPliku('Łódź – żółć / stany?', '.pdf')).toBe('lodz-zolc-stany.pdf');
     expect(nazwaPliku('   ', '.pdf')).toBe('projekt.pdf');
+    expect(nazwaPliku('Mausritter – karty', '-arkusze.pdf')).toBe('mausritter-karty-arkusze.pdf');
+    expect(nazwaPliku('x'.repeat(300), '.pdf')).toHaveLength(104);
   });
 });

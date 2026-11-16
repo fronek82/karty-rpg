@@ -9,9 +9,9 @@ import type { Szablon, WariantCzcionki } from '../src/model/szablon';
 import { arkuszeMausrittera } from '../src/pakiety/mausritter/arkusze';
 import { szablonyMausrittera } from '../src/pakiety/mausritter/szablony';
 import { OBRAZ_ZASTEPCZY, talieMausrittera } from '../src/pakiety/mausritter/talie';
-import { RejestrCzcionek, wczytajCzcionke } from '../src/silnik/czcionki';
+import { type RejestrCzcionek, wczytajCzcionke } from '../src/silnik/czcionki';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
-import { dopasuj, linieCiecia, znajdzLinie, type Dopasowanie } from './nakladka/analiza';
+import { dopasujLinie, linieCiecia, type Dopasowanie } from './nakladka/analiza';
 
 /**
  * E8: nakładka arkuszy na referencję.
@@ -29,13 +29,19 @@ const PX_NA_MM = 10;
 const MM = 72 / 25.4;
 /** Najwyżej tyle może odstawać linia po dopasowaniu skali i przesunięcia (jak test geometrii). */
 const TOLERANCJA_MM = 0.3;
+/** Dopuszczalne odchylenie skali od skali druku oryginału (0,15% ≈ 0,45 mm na 297 mm). */
+const TOLERANCJA_SKALI = 0.0015;
+/** Po przycięciu do TrimBox obie strony są w tym samym układzie – przesunięcie siatki małe. */
+const TOLERANCJA_PRZESUNIECIA_MM = 0.5;
 const KATALOG = 'zasoby-prywatne/referencje';
 
 interface Konfiguracja {
   plik: string;
   /** Numer strony (od 1) w pliku referencji dla każdego arkusza. */
   strony: Record<string, number>;
-  /** Oryginalne czcionki (ścieżki względem katalogu referencji) i role. */
+  /** Skala druku oryginału (arkusz w PDF przeskalowany do 99,89% – plan, decyzja 7). */
+  skalaDruku: number;
+  /** Oryginalne czcionki (ścieżki względem katalogu referencji) i role – nadpisują testowe. */
   czcionki?: { rodzina: string; wariant: WariantCzcionki; plik: string }[];
   role?: Record<string, string>;
 }
@@ -47,19 +53,25 @@ const DOMYSLNA: Konfiguracja = {
     'mausritter-arkusz-wyposazenie': 2,
     'mausritter-arkusz-stany': 3,
   },
+  skalaDruku: 0.9989,
 };
 
-function konfiguracja(): Konfiguracja {
+/** Konfiguracja z `nakladka.json` (scalana z domyślną; błąd JSON – w testach oryginału). */
+function konfiguracja(): Konfiguracja | { blad: string } {
   const plik = join(KATALOG, 'nakladka.json');
-  return existsSync(plik)
-    ? { ...DOMYSLNA, ...(JSON.parse(readFileSync(plik, 'utf8')) as Partial<Konfiguracja>) }
-    : DOMYSLNA;
+  if (!existsSync(plik)) return DOMYSLNA;
+  try {
+    const k = JSON.parse(readFileSync(plik, 'utf8')) as Partial<Konfiguracja>;
+    return { ...DOMYSLNA, ...k, strony: { ...DOMYSLNA.strony, ...k.strony } };
+  } catch (e) {
+    return { blad: `${plik}: ${e instanceof Error ? e.message : String(e)}` };
+  }
 }
 
+/** Czcionki testowe (OFL) nadpisane oryginalnymi z konfiguracji; brakujące – zapasowa. */
 function rejestr(k: Konfiguracja): RejestrCzcionek {
-  if (!k.czcionki?.length) return rejestrTestowy();
-  const r = new RejestrCzcionek();
-  for (const c of k.czcionki) {
+  const r = rejestrTestowy().ustawZapasowa('EB Garamond');
+  for (const c of k.czcionki ?? []) {
     r.dodaj(c.rodzina, c.wariant, wczytajCzcionke(c.plik, readFileSync(join(KATALOG, c.plik))));
   }
   for (const [rola, rodzina] of Object.entries(k.role ?? {})) r.przypiszRole(rola, rodzina);
@@ -82,6 +94,8 @@ async function naszArkusz(arkusz: Arkusz, czcionki: RejestrCzcionek) {
 }
 
 const ADRES = 'http://nakladka.test/';
+/** Pliki PDF podawane stronie przez trasę (bez przesyłania megabajtów jako JSON). */
+const pliki = new Map<string, Uint8Array>();
 async function przygotujStrone(page: Page) {
   const pdfjs = readFileSync('node_modules/pdfjs-dist/build/pdf.min.mjs');
   const worker = readFileSync('node_modules/pdfjs-dist/build/pdf.worker.min.mjs');
@@ -91,6 +105,8 @@ async function przygotujStrone(page: Page) {
       return route.fulfill({ body: pdfjs, contentType: 'text/javascript' });
     if (sciezka === '/pdf.worker.mjs')
       return route.fulfill({ body: worker, contentType: 'text/javascript' });
+    const pdf = pliki.get(sciezka);
+    if (pdf) return route.fulfill({ body: Buffer.from(pdf), contentType: 'application/pdf' });
     return route.fulfill({ body: '<!doctype html><body></body>', contentType: 'text/html' });
   });
   await page.goto(ADRES);
@@ -116,13 +132,18 @@ async function rasteryzuj(
   nrStrony: number,
   trim?: { x: number; y: number; width: number; height: number },
 ): Promise<Profil> {
+  const adres = `/${klucz}.pdf`;
+  pliki.set(adres, pdf);
   return page.evaluate(
-    async ({ klucz, pdf, nrStrony, trim, pxNaMm }) => {
+    async ({ klucz, adres, nrStrony, trim, pxNaMm }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const g = globalThis as any;
       g.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
-      const dok = await g.pdfjsLib.getDocument({ data: new Uint8Array(pdf) }).promise;
+      const dok = await g.pdfjsLib.getDocument({ url: adres }).promise;
       const strona = await dok.getPage(nrStrony);
+      if (strona.rotate % 360 !== 0) {
+        throw new Error(`Strona ${nrStrony} jest obrócona (${strona.rotate}°) – nieobsługiwane.`);
+      }
       const s = (pxNaMm * 25.4) / 72;
       const viewport = strona.getViewport({ scale: s });
       const cala = new OffscreenCanvas(Math.round(viewport.width), Math.round(viewport.height));
@@ -146,19 +167,19 @@ async function rasteryzuj(
       k.drawImage(cala, obszar.x, obszar.y, obszar.w, obszar.h, 0, 0, obszar.w, obszar.h);
       (g.kanwy ??= {})[klucz] = kanwa;
       const d = k.getImageData(0, 0, obszar.w, obszar.h).data;
+      // Profil ważony ciemnością (255 − jasność): cienkie, wygładzone i szare linie też się liczą.
       const kolumny = new Array<number>(obszar.w).fill(0);
       const wiersze = new Array<number>(obszar.h).fill(0);
       for (let y = 0; y < obszar.h; y++)
         for (let x = 0; x < obszar.w; x++) {
           const i = (y * obszar.w + x) * 4;
-          if ((d[i]! + d[i + 1]! + d[i + 2]!) / 3 < 160) {
-            kolumny[x]!++;
-            wiersze[y]!++;
-          }
+          const c = 255 - (d[i]! + d[i + 1]! + d[i + 2]!) / 3;
+          kolumny[x]! += c;
+          wiersze[y]! += c;
         }
       return { szer: obszar.w, wys: obszar.h, kolumny, wiersze };
     },
-    { klucz, pdf: [...pdf], nrStrony, trim, pxNaMm: PX_NA_MM },
+    { klucz, adres, nrStrony, trim, pxNaMm: PX_NA_MM },
   );
 }
 
@@ -218,21 +239,31 @@ async function analizuj(
   const { scena, pdf } = await naszArkusz(arkusz, czcionki);
   const linie = linieCiecia(scena);
   const dok = await PDFDocument.load(referencja);
-  const trim = dok.getPage(nrStrony - 1).getTrimBox();
+  // Prostokąt może być zapisany „odwrotnie” (ujemne wymiary) – normalizacja.
+  const t = dok.getPage(nrStrony - 1).getTrimBox();
+  const trim = {
+    x: Math.min(t.x, t.x + t.width),
+    y: Math.min(t.y, t.y + t.height),
+    width: Math.abs(t.width),
+    height: Math.abs(t.height),
+  };
   await rasteryzuj(page, 'nasza', pdf, 1);
   const ref = await rasteryzuj(page, 'referencja', referencja, nrStrony, trim);
 
-  const zakres = (v: number[]) => Math.max(...v) - Math.min(...v);
-  // Linia przerywana (kreska 2,3 / przerwa 1,55 mm) pokrywa ~60% długości – próg z zapasem.
-  const szukaj = (profil: number[], pozycje: number[], dlugosc: number) =>
-    pozycje.map((p) => znajdzLinie(profil, PX_NA_MM, p, 3, 0.2 * dlugosc * PX_NA_MM));
-  const x = dopasuj(linie.pionowe, szukaj(ref.kolumny, linie.pionowe, zakres(linie.poziome)));
-  const y = dopasuj(linie.poziome, szukaj(ref.wiersze, linie.poziome, zakres(linie.pionowe)));
+  const zakres = (v: number[]) => (v.length ? Math.max(...v) - Math.min(...v) : 0);
+  // Linia przerywana (kreska 2,3 / przerwa 1,55 mm) pokrywa ~60% długości – próg z zapasem
+  // (12% pełnej ciemności na długości siatki).
+  const minimum = (dlugosc: number) => 0.12 * dlugosc * PX_NA_MM * 255;
+  const x = dopasujLinie(ref.kolumny, PX_NA_MM, linie.pionowe, minimum(zakres(linie.poziome)));
+  const y = dopasujLinie(ref.wiersze, PX_NA_MM, linie.poziome, minimum(zakres(linie.pionowe)));
   const nakladka = await obrazNakladki(page, x, y);
   const raport = {
     arkusz: arkusz.id,
     stronaReferencji: nrStrony,
     trimBoxPt: trim,
+    // Krok siatki referencji w mm (nasz slot × skala) – do porównania z kartą postaci.
+    krokSiatkiMm: { pionowo: 25.75 * x.a, poziomo: 25.75 * y.a },
+    brakujaceCzcionki: [...czcionki.brakujace],
     pionowe: x,
     poziome: y,
     pokrycieNaszychPikseli: Math.round(nakladka.pokrycie * 1000) / 1000,
@@ -252,6 +283,7 @@ function sprawdzDopasowanie(
   x: Dopasowanie,
   y: Dopasowanie,
   linie: { pionowe: number[]; poziome: number[] },
+  skalaDruku: number,
 ) {
   // Prawie wszystkie linie znalezione, reszty w tolerancji, skala blisko 1 (druk ~99,89%).
   expect(x.brakujace.length, `brak pionowych: ${x.brakujace.join(', ')}`).toBeLessThanOrEqual(
@@ -262,52 +294,62 @@ function sprawdzDopasowanie(
   );
   expect(x.maksReszta).toBeLessThan(TOLERANCJA_MM);
   expect(y.maksReszta).toBeLessThan(TOLERANCJA_MM);
-  expect(Math.abs(x.a - 1)).toBeLessThan(0.01);
-  expect(Math.abs(y.a - 1)).toBeLessThan(0.01);
+  // Krok siatki i marginesy: skala zgodna ze skalą druku oryginału, przesunięcie małe.
+  expect(Math.abs(x.a - skalaDruku), `skala pozioma ${x.a}`).toBeLessThan(TOLERANCJA_SKALI);
+  expect(Math.abs(y.a - skalaDruku), `skala pionowa ${y.a}`).toBeLessThan(TOLERANCJA_SKALI);
+  expect(Math.abs(x.b), `przesunięcie poziome ${x.b} mm`).toBeLessThan(TOLERANCJA_PRZESUNIECIA_MM);
+  expect(Math.abs(y.b), `przesunięcie pionowe ${y.b} mm`).toBeLessThan(TOLERANCJA_PRZESUNIECIA_MM);
 }
 
 test.describe('nakładka na referencję', () => {
   test.beforeEach(async ({ page }) => przygotujStrone(page));
 
-  test('autotest: referencja syntetyczna (spad, skala 99,89%, przesunięcie)', async ({
-    page,
-  }, info) => {
+  for (const arkusz of arkuszeMausrittera) {
+    test(`autotest (referencja syntetyczna): ${arkusz.nazwa}`, async ({ page }, info) => {
+      const { pdf } = await naszArkusz(arkusz, rejestrTestowy());
+      // Strona 306 × 228 mm, TrimBox = A4 poziomo 4,5 mm od lewej i 9 mm od dołu (jak oryginał),
+      // treść przeskalowana do 99,89% i przesunięta o znaną wartość.
+      const SKALA = 0.9989;
+      const PRZES = { x: 0.4, y: 0.3 };
+      const ref = await PDFDocument.create();
+      const [osadzona] = await ref.embedPdf(pdf, [0]);
+      const strona = ref.addPage([306 * MM, 228 * MM]);
+      const trim = { x: 4.5 * MM, y: 9 * MM, w: 297 * MM, h: 210 * MM };
+      strona.setTrimBox(trim.x, trim.y, trim.w, trim.h);
+      strona.drawPage(osadzona!, {
+        x: trim.x + PRZES.x * MM,
+        y: trim.y + trim.h - osadzona!.height * SKALA - PRZES.y * MM,
+        xScale: SKALA,
+        yScale: SKALA,
+      });
+      const czcionki = rejestrTestowy();
+      const { x, y, linie } = await analizuj(page, info, arkusz, czcionki, await ref.save(), 1);
+      sprawdzDopasowanie(x, y, linie, SKALA);
+      expect(x.b).toBeCloseTo(PRZES.x, 1);
+      expect(y.b).toBeCloseTo(PRZES.y, 1);
+      expect(x.maksReszta).toBeLessThan(0.08);
+      expect(y.maksReszta).toBeLessThan(0.08);
+    });
+  }
+
+  test('autotest: siatka o złym kroku (99,3%) jest wykrywana', async ({ page }, info) => {
     const arkusz = arkuszeMausrittera[0]!;
     const { pdf } = await naszArkusz(arkusz, rejestrTestowy());
-    // Strona 306 × 228 mm, TrimBox = A4 poziomo 4,5 mm od lewej i 9 mm od dołu (jak oryginał).
-    const SKALA = 0.9989;
-    const PRZES = { x: 0.4, y: 0.3 };
     const ref = await PDFDocument.create();
     const [osadzona] = await ref.embedPdf(pdf, [0]);
-    const strona = ref.addPage([306 * MM, 228 * MM]);
-    const trim = { x: 4.5 * MM, y: 9 * MM, w: 297 * MM, h: 210 * MM };
-    strona.setTrimBox(trim.x, trim.y, trim.w, trim.h);
-    strona.drawPage(osadzona!, {
-      x: trim.x + PRZES.x * MM,
-      y: trim.y + trim.h - osadzona!.height * SKALA - PRZES.y * MM,
-      xScale: SKALA,
-      yScale: SKALA,
-    });
-    const { x, y, linie } = await analizuj(
-      page,
-      info,
-      arkusz,
-      rejestrTestowy(),
-      await ref.save(),
-      1,
-    );
-    sprawdzDopasowanie(x, y, linie);
-    expect(x.a).toBeCloseTo(SKALA, 3);
-    expect(y.a).toBeCloseTo(SKALA, 3);
-    expect(x.b).toBeCloseTo(PRZES.x, 1);
-    expect(y.b).toBeCloseTo(PRZES.y, 1);
-    expect(x.maksReszta).toBeLessThan(0.08);
+    const strona = ref.addPage([297 * MM, 210 * MM]);
+    strona.drawPage(osadzona!, { x: 0, y: 210 * MM * (1 - 0.993), xScale: 0.993, yScale: 0.993 });
+    const { x } = await analizuj(page, info, arkusz, rejestrTestowy(), await ref.save(), 1);
+    // Reszty są małe (siatka regularna), ale skala odbiega od skali druku – test oryginału padnie.
+    expect(x.maksReszta).toBeLessThan(TOLERANCJA_MM);
+    expect(Math.abs(x.a - 0.9989)).toBeGreaterThan(TOLERANCJA_SKALI);
   });
 
   const k = konfiguracja();
-  const plik = join(KATALOG, k.plik);
+  const plik = 'blad' in k ? '' : join(KATALOG, k.plik);
   for (const arkusz of arkuszeMausrittera) {
     test(`oryginał: ${arkusz.nazwa}`, async ({ page }, info) => {
+      if ('blad' in k) throw new Error(`Niepoprawny nakladka.json – ${k.blad}`);
       test.skip(!existsSync(plik), `brak ${plik} – test tylko lokalny (pliki poza repozytorium)`);
       const nr = k.strony[arkusz.id];
       test.skip(nr === undefined, `brak numeru strony dla ${arkusz.id} w nakladka.json`);
@@ -319,7 +361,7 @@ test.describe('nakładka na referencję', () => {
         readFileSync(plik),
         nr!,
       );
-      sprawdzDopasowanie(x, y, linie);
+      sprawdzDopasowanie(x, y, linie, k.skalaDruku);
     });
   }
 });

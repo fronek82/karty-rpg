@@ -41,37 +41,95 @@ export function opisObrazu(
  * mają 6 lub 8 (obrót o 90°): przeglądarka obraca je przy wyświetlaniu, a PDF (pdf-lib) nie –
  * dlatego obraz z orientacją ≠ 1 jest przy wgrywaniu przekodowywany z zastosowanym obrotem.
  */
-export function orientacjaExif(dane: Uint8Array): number | undefined {
-  if (dane[0] !== 0xff || dane[1] !== 0xd8) return undefined;
+/** Segmenty nagłówka JPEG (do początku danych obrazu): znacznik, początek i koniec treści. */
+function* segmentyJpeg(dane: Uint8Array): Generator<{ znacznik: number; od: number; do: number }> {
+  if (dane[0] !== 0xff || dane[1] !== 0xd8) return;
   const v = new DataView(dane.buffer, dane.byteOffset, dane.byteLength);
   let i = 2;
   while (i + 4 <= dane.length) {
-    if (dane[i] !== 0xff) return undefined;
+    if (dane[i] !== 0xff) return;
+    while (dane[i + 1] === 0xff && i + 5 <= dane.length) i++; // bajty wypełniające 0xFF
     const znacznik = dane[i + 1]!;
-    if (znacznik === 0xda || znacznik === 0xd9) return undefined; // początek danych obrazu
+    if (znacznik === 0xda || znacznik === 0xd9) return; // początek danych obrazu / koniec pliku
     const dlugosc = v.getUint16(i + 2);
-    if (znacznik === 0xe1 && i + 10 <= dane.length) {
-      const exif = String.fromCharCode(...dane.subarray(i + 4, i + 10));
-      if (exif === 'Exif\0\0') {
-        const tiff = i + 10;
-        if (tiff + 8 > dane.length) return undefined;
-        const le = dane[tiff] === 0x49; // „II” – little endian, „MM” – big endian
-        const u16 = (o: number) => v.getUint16(o, le);
-        const ifd = tiff + v.getUint32(tiff + 4, le);
-        if (ifd + 2 > dane.length) return undefined;
-        const liczba = u16(ifd);
-        for (let n = 0; n < liczba; n++) {
-          const wpis = ifd + 2 + n * 12;
-          if (wpis + 12 > dane.length) return undefined;
-          if (u16(wpis) === 0x0112) {
-            const o = u16(wpis + 8);
-            return o >= 1 && o <= 8 ? o : undefined;
-          }
-        }
-        return undefined;
+    if (dlugosc < 2 || i + 2 + dlugosc > dane.length) return;
+    yield { znacznik, od: i + 4, do: i + 2 + dlugosc };
+    i += 2 + dlugosc;
+  }
+}
+
+/**
+ * Orientacja EXIF zdjęcia JPEG (1–8) albo undefined, gdy jej brak. Zdjęcia z telefonu często
+ * mają 6 lub 8 (obrót o 90°): przeglądarka obraca je przy wyświetlaniu, a PDF (pdf-lib) nie –
+ * dlatego obraz z orientacją ≠ 1 jest przy wgrywaniu przekodowywany z zastosowanym obrotem.
+ * Odczyt ograniczony do segmentu APP1 (uszkodzony EXIF nie sięga do danych obrazu).
+ */
+export function orientacjaExif(dane: Uint8Array): number | undefined {
+  const v = new DataView(dane.buffer, dane.byteOffset, dane.byteLength);
+  for (const s of segmentyJpeg(dane)) {
+    if (s.znacznik !== 0xe1 || s.do - s.od < 14) continue;
+    if (String.fromCharCode(...dane.subarray(s.od, s.od + 6)) !== 'Exif\0\0') continue;
+    const tiff = s.od + 6;
+    const le = dane[tiff] === 0x49; // „II” – little endian, „MM” – big endian
+    if (!le && dane[tiff] !== 0x4d) return undefined;
+    const ifd = tiff + v.getUint32(tiff + 4, le);
+    if (ifd + 2 > s.do) return undefined;
+    const liczba = v.getUint16(ifd, le);
+    for (let n = 0; n < liczba; n++) {
+      const wpis = ifd + 2 + n * 12;
+      if (wpis + 12 > s.do) return undefined;
+      // Znacznik 0x0112 (Orientation), typ 3 (SHORT).
+      if (v.getUint16(wpis, le) === 0x0112 && v.getUint16(wpis + 2, le) === 3) {
+        const o = v.getUint16(wpis + 8, le);
+        return o >= 1 && o <= 8 ? o : undefined;
       }
     }
-    i += 2 + dlugosc;
+    return undefined;
   }
   return undefined;
 }
+
+/** Wymiary zapisanego obrazu JPEG (z nagłówka SOF, bez orientacji EXIF). */
+export function wymiaryJpeg(dane: Uint8Array): { szerokosc: number; wysokosc: number } | undefined {
+  const v = new DataView(dane.buffer, dane.byteOffset, dane.byteLength);
+  for (const s of segmentyJpeg(dane)) {
+    const z = s.znacznik;
+    // SOF0–SOF15 bez DHT (C4), JPG (C8), DAC (CC).
+    if (z >= 0xc0 && z <= 0xcf && z !== 0xc4 && z !== 0xc8 && z !== 0xcc && s.do - s.od >= 5) {
+      return { wysokosc: v.getUint16(s.od + 1), szerokosc: v.getUint16(s.od + 3) };
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Przekształcenie kanwy (a, b, c, d, e, f) rysujące obraz zapisany w rozmiarze `szer` × `wys`
+ * tak, jak wskazuje orientacja EXIF; kanwa wynikowa ma wymiary z `wymiaryPoObrocie`.
+ */
+export function macierzOrientacji(
+  o: number,
+  szer: number,
+  wys: number,
+): [number, number, number, number, number, number] {
+  switch (o) {
+    case 2:
+      return [-1, 0, 0, 1, szer, 0];
+    case 3:
+      return [-1, 0, 0, -1, szer, wys];
+    case 4:
+      return [1, 0, 0, -1, 0, wys];
+    case 5:
+      return [0, 1, 1, 0, 0, 0];
+    case 6:
+      return [0, 1, -1, 0, wys, 0];
+    case 7:
+      return [0, -1, -1, 0, wys, szer];
+    case 8:
+      return [0, -1, 1, 0, 0, szer];
+    default:
+      return [1, 0, 0, 1, 0, 0];
+  }
+}
+
+export const wymiaryPoObrocie = (o: number, szer: number, wys: number) =>
+  o >= 5 && o <= 8 ? { szerokosc: wys, wysokosc: szer } : { szerokosc: szer, wysokosc: wys };

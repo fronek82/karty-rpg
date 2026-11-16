@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { dodajZasoby, ustawDane, ustawObrazKarty } from '../../dane/edycja';
-import { opisObrazu } from '../../dane/obrazy';
+import { MAKS_BAJTOW_OBRAZU, opisObrazu } from '../../dane/obrazy';
 import { BladDanych } from '../../dane/schemat';
 import { t, tJesliJest } from '../../i18n';
 import {
@@ -138,6 +138,12 @@ export function PanelKarty({
   const wgraj = async (f: File) => {
     ustawBlad(undefined);
     try {
+      // Limit przed dekodowaniem – duży plik nie zajmuje pamięci na próżno.
+      if (f.size > MAKS_BAJTOW_OBRAZU) {
+        throw new BladDanych(
+          t('dane.zaDuzy', { plik: f.name, mb: (f.size / 1024 / 1024).toFixed(1) }),
+        );
+      }
       // Zdjęcia z telefonu: obrót z EXIF zastosowany od razu (podgląd = PDF).
       const { dane: bajty, ...wymiary } = await przygotujObraz(
         new Uint8Array(await f.arrayBuffer()),

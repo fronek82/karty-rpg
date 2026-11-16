@@ -4,6 +4,8 @@ const port = 4173;
 
 export default defineConfig({
   testDir: './testy',
+  // Pliki *.test.ts w testy/ to testy jednostkowe (Vitest).
+  testMatch: '**/*.spec.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

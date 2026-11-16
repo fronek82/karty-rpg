@@ -53,6 +53,8 @@ export const pl = {
   'dane.nieczytelnaCzcionka':
     'Nie udało się wczytać czcionki „{plik}” – plik jest uszkodzony albo to nie czcionka.',
   'dane.czcionkaKolekcja': 'Plik „{plik}” jest kolekcją czcionek – wybierz pojedynczą czcionkę.',
+  'dane.bladObrotu':
+    'Nie udało się obrócić zdjęcia według zapisanej orientacji – zapisz je obrócone w innym programie i wgraj ponownie.',
   'dane.zlyObraz': 'Plik „{plik}” nie jest obrazem PNG ani JPG.',
   'dane.brakProjektuWBazie': 'Nie ma projektu „{id}” w pamięci przeglądarki.',
   'dane.kolizjaZasobu':
