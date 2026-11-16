@@ -63,7 +63,8 @@ export const pl = {
   'aplikacja.opis':
     'Projektuj i drukuj karty do gier RPG i planszowych. Wszystko działa w przeglądarce, a dane zostają na Twoim komputerze.',
   'start.wersja': 'Wersja {wersja}',
-  'start.wkrotce': 'Aplikacja jest w budowie – trwa kamień milowy M1 (Mausritter na A4).',
+  'start.wkrotce':
+    'Wersja M1: karty ekwipunku i stanów Mausrittera na A4 – projekty, edycja danych, własne obrazy i czcionki, PDF do druku.',
   'nawigacja.start': 'Start',
   'nawigacja.nieZnaleziono': 'Nie ma takiej strony.',
   'nawigacja.wrocNaStart': 'Wróć na stronę startową',

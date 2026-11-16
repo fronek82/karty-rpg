@@ -16,6 +16,7 @@ import {
 import { normalizujUstawieniaObrazu, renderujKarte } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
 import { nazwaRoli } from '../czcionki/Czcionki';
+import { przygotujObraz } from '../obrazy';
 import { tekstOstrzezenia } from '../ostrzezenia';
 import type { ProjektWEdycji } from '../useProjekt';
 
@@ -30,14 +31,6 @@ function polaObrazu(w: Wezel): PoleObraz[] {
 }
 
 const zaokr = (v: number, n = 2) => Math.round(v * 10 ** n) / 10 ** n;
-
-/** Wymiary obrazu w pikselach (dekodowanie w przeglądarce). */
-async function wymiaryObrazu(dane: Uint8Array): Promise<{ szerokosc: number; wysokosc: number }> {
-  const bitmapa = await createImageBitmap(new Blob([dane as Uint8Array<ArrayBuffer>]));
-  const w = { szerokosc: bitmapa.width, wysokosc: bitmapa.height };
-  bitmapa.close();
-  return w;
-}
 
 /**
  * Panel zaznaczonej karty: podgląd (ten sam silnik SVG co arkusz i PDF) i ustawienia obrazu.
@@ -145,8 +138,10 @@ export function PanelKarty({
   const wgraj = async (f: File) => {
     ustawBlad(undefined);
     try {
-      const bajty = new Uint8Array(await f.arrayBuffer());
-      const wymiary = await wymiaryObrazu(bajty).catch(() => ({ szerokosc: 0, wysokosc: 0 }));
+      // Zdjęcia z telefonu: obrót z EXIF zastosowany od razu (podgląd = PDF).
+      const { dane: bajty, ...wymiary } = await przygotujObraz(
+        new Uint8Array(await f.arrayBuffer()),
+      );
       const klucz = pole?.klucz;
       // Id i przypisanie liczone z najnowszego projektu (edycje w trakcie wczytywania zostają).
       await edycja.zmienZZasobami((p, d) => {

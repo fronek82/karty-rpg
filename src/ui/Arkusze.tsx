@@ -12,7 +12,7 @@ import { tekstOstrzezeniaArkusza } from './ostrzezenia';
 import { pdfWWatku } from './pdfWWatku';
 import { obrazNaSzarosc } from './szarosc';
 import type { ProjektWEdycji } from './useProjekt';
-import { zapiszPlik } from './pliki';
+import { nazwaPliku, zapiszPlik } from './pliki';
 import { wczytajZasobyPakietu, type ObrazWPamieci, type ZasobyPakietu } from './zasoby';
 
 /** Źródło arkuszy – pakiet albo projekt (oba mają talie i arkusze). */
@@ -193,7 +193,8 @@ export function WidokArkuszy({
       zapiszPlik(
         bajty,
         'application/pdf',
-        wszystkie ? `${pakiet.id}-arkusze.pdf` : `${arkusz.id}.pdf`,
+        // Nazwa pliku z nazwy arkusza (projektu) – czytelna w folderze pobranych.
+        wszystkie ? nazwaPliku(pakiet.nazwa, '-arkusze.pdf') : nazwaPliku(arkusz.nazwa, '.pdf'),
       );
       ustawPdfGotowy(true);
     } catch (e) {

@@ -80,3 +80,50 @@ test('wgranie obrazu do biblioteki i przypisanie do karty', async ({ page }) => 
   await page.reload();
   await expect(page.getByLabel('Obraz, karta 1', { exact: true })).toHaveValue('obraz-Moj-miecz');
 });
+
+/** JPEG 40×20 (z kanwy w przeglądarce) z dopisanym EXIF: orientacja 6 (obrót o 90°). */
+async function jpegZObrotem(page: Page): Promise<Buffer> {
+  const jpeg = Buffer.from(
+    await page.evaluate(async () => {
+      const c = new OffscreenCanvas(40, 20);
+      const x = c.getContext('2d')!;
+      x.fillStyle = '#d00';
+      x.fillRect(0, 0, 20, 20);
+      x.fillStyle = '#00d';
+      x.fillRect(20, 0, 20, 20);
+      const b = await c.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
+      return [...new Uint8Array(await b.arrayBuffer())];
+    }),
+  );
+  const tiff = Buffer.alloc(26);
+  tiff.write('II', 0, 'latin1');
+  tiff.writeUInt16LE(42, 2);
+  tiff.writeUInt32LE(8, 4);
+  tiff.writeUInt16LE(1, 8);
+  tiff.writeUInt16LE(0x0112, 10);
+  tiff.writeUInt16LE(3, 12);
+  tiff.writeUInt32LE(1, 14);
+  tiff.writeUInt16LE(6, 18);
+  const app1 = Buffer.concat([Buffer.from('Exif\0\0', 'latin1'), tiff]);
+  const naglowek = Buffer.from([0xff, 0xe1, (app1.length + 2) >> 8, (app1.length + 2) & 0xff]);
+  return Buffer.concat([jpeg.subarray(0, 2), naglowek, app1, jpeg.subarray(2)]);
+}
+
+test('zdjęcie z obrotem EXIF jest zapisywane już obrócone (podgląd = PDF)', async ({ page }) => {
+  await taliaBroni(page);
+  await page.getByTestId('plik-obrazu').setInputFiles({
+    name: 'zdjecie.jpg',
+    mimeType: 'image/jpeg',
+    buffer: await jpegZObrotem(page),
+  });
+  await expect(page.getByLabel('Plik:')).toHaveValue('obraz-zdjecie');
+  const href = await obraz(page).getAttribute('href');
+  const wynik = await page.evaluate(async (adres) => {
+    const dane = new Uint8Array(await (await fetch(adres!)).arrayBuffer());
+    // Bez orientacji z pliku: zapisane piksele muszą już być obrócone.
+    const b = await createImageBitmap(new Blob([dane]), { imageOrientation: 'none' });
+    const tekst = new TextDecoder('latin1').decode(dane.subarray(0, 200));
+    return { szer: b.width, wys: b.height, exif: tekst.includes('Exif') };
+  }, href);
+  expect(wynik).toEqual({ szer: 20, wys: 40, exif: false });
+});

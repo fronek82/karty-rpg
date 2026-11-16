@@ -25,7 +25,7 @@ test('podgląd arkusza i pobranie PDF jednego arkusza', async ({ page }) => {
   expect(ramka.width / ramka.height).toBeCloseTo(297 / 210, 2);
 
   const { nazwa, bajty } = await pobierzPdf(page, 'Pobierz PDF');
-  expect(nazwa).toBe('mausritter-arkusz-bron.pdf');
+  expect(nazwa).toBe('karty-broni-i-pancerzy.pdf');
   await expect(page.getByRole('status')).toHaveText('PDF gotowy – sprawdź pobrane pliki.');
   expect(bajty.subarray(0, 5).toString()).toBe('%PDF-');
   const pdf = await PDFDocument.load(bajty);
@@ -50,7 +50,7 @@ test('wybór arkusza, skala 1:1 i PDF wszystkich arkuszy', async ({ page }) => {
   expect((await strona.boundingBox())!.width).toBeCloseTo((297 / 25.4) * 96, 0);
 
   const { nazwa, bajty } = await pobierzPdf(page, 'Pobierz wszystkie arkusze (PDF)');
-  expect(nazwa).toBe('mausritter-arkusze.pdf');
+  expect(nazwa).toBe('mausritter-karty-ekwipunku-i-stanow-arkusze.pdf');
   const pdf = await PDFDocument.load(bajty);
   expect(pdf.getPageCount()).toBe(3);
 });

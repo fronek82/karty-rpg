@@ -25,7 +25,7 @@ test('nowy projekt z pakietu → arkusze i PDF → eksport → import jako kopia
   const href = await page.locator('.strona-arkusza image').first().getAttribute('href');
   expect(href).toMatch(/^blob:/);
   const pdf = await pobierz(page, () => page.getByRole('button', { name: 'Pobierz PDF' }).click());
-  expect(pdf.nazwa).toBe('mausritter-arkusz-bron.pdf');
+  expect(pdf.nazwa).toBe('karty-broni-i-pancerzy.pdf');
   expect((await PDFDocument.load(readFileSync(pdf.sciezka))).getPageCount()).toBe(1);
 
   await page.getByRole('link', { name: 'Projekty' }).first().click();

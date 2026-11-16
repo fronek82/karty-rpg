@@ -115,8 +115,8 @@ Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E4a → E5 → E6 → E
 | E5   | ✅   | `502eb11`, przegląd                                                       | strona `#/arkusze`: podgląd (dopasuj / 1:1), „Pobierz PDF” (arkusz / wszystkie), PDF↔SVG całych arkuszy; zrzut `docs/obrazy/e5-strona-arkusze.png`                                                                                                                            |
 | E6   | ✅   | `fa91274`                                                                 | `src/dane/`: Dexie (projekty + zasoby jako Blob), schemat z wersją i migracjami (zod, bez gubienia nieznanych pól), spójność odwołań, wgrywanie czcionek, `.kartyrpg` i `.kartyrpg-szablon` (ZIP, fflate), ostrzeżenie o licencji czcionek, pakiet → projekt; test round-trip |
 | E7   | ✅   | `cfbe6a2`, `b981f15`, `4cd106f`, `2872e78`, `8f506f0`, przegląd `d2480cf` | E7a–E7e (sekcja 7): projekty, tabela danych, podgląd i obraz karty, czcionki i role, korekta i ustawienia arkusza, PDF w workerze; zrzuty `docs/obrazy/e7-*.png`                                                                                                              |
-| E8   | ⬜   |                                                                           | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                                                                                                                                                                                 |
-| E9   | ⬜   |                                                                           |                                                                                                                                                                                                                                                                               |
+| E8   | ✅   | (E8)                                                                      | test geometrii w CI (E4); `testy/nakladka-referencji.spec.ts`: nakładka na oryginał (lokalnie, `npm run test:nakladka`) z dopasowaniem skali i przesunięcia, raport PNG + JSON; autotest na referencji syntetycznej w CI                                                      |
+| E9   | 🟡   |                                                                           | Pages + sprawdzenie strony po wdrożeniu w CI, README dla użytkownika; czeka na wydruk testowy i uwagi użytkownika                                                                                                                                                             |
 
 ## 6. Zadania po E4 – poprawki szablonów z E3 (etap E4a)
 
@@ -174,10 +174,10 @@ Poprawione:
 
 Odłożone do E8/E9:
 
-- Orientacja EXIF zdjęć JPEG: podgląd w przeglądarce ją stosuje, PDF (pdf-lib) nie – normalizować przy wgrywaniu.
+- ~~Orientacja EXIF zdjęć JPEG~~ – E9: przy wgrywaniu zdjęcie z orientacją ≠ 1 przekodowywane z obrotem (`src/ui/obrazy.ts`). Obrazy wgrane wcześniej (przed poprawką) zostają bez zmian.
 - Przerwanie budowy PDF przy opuszczeniu strony (AbortSignal do workera).
 - Korekta: karta nieprzypięta upuszczona na przypiętą → „koliduje” (zamiana tylko między przypiętymi); przy zaznaczeniu wszystkie sloty w kolejności Tab.
-- Nazwa pliku PDF z `arkusz.id` (stabilna, testowana) zamiast z nazwy arkusza.
+- ~~Nazwa pliku PDF z `arkusz.id`~~ – E9: z nazwy arkusza / projektu (`nazwaPliku`).
 - Komunikaty wyjątków silnika/druku (np. `talia …`) bez i18n.
 
 ### Odłożone (backlog)
