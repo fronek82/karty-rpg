@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { t } from '../i18n';
 import { WidokArkuszy } from './Arkusze';
+import { PanelKarty } from './talia/PanelKarty';
 import { TabelaTalii } from './talia/TabelaTalii';
 import { tekstZapisu, useProjekt, type ProjektWEdycji } from './useProjekt';
 
@@ -74,8 +75,20 @@ function Projekt({ edycja, podstrona }: { edycja: ProjektWEdycji; podstrona?: st
 
 function StronaTalii({ edycja, taliaId }: { edycja: ProjektWEdycji; taliaId: string }) {
   const talia = edycja.projekt.talie.find((x) => x.id === taliaId)!;
-  const [wybrana, ustawWybrana] = useState<string>();
-  return <TabelaTalii edycja={edycja} talia={talia} wybrana={wybrana} wybierz={ustawWybrana} />;
+  const [wybrana, ustawWybrana] = useState<string | undefined>(talia.karty[0]?.id);
+  const karta = talia.karty.find((k) => k.id === wybrana);
+  return (
+    <div className="strona-talii">
+      <TabelaTalii edycja={edycja} talia={talia} wybrana={karta?.id} wybierz={ustawWybrana} />
+      {karta ? (
+        <PanelKarty key={karta.id} edycja={edycja} talia={talia} karta={karta} />
+      ) : (
+        <aside className="panel-karty">
+          <p>{t('karta.wybierzKarte')}</p>
+        </aside>
+      )}
+    </div>
+  );
 }
 
 function Przeglad({ edycja, adres }: { edycja: ProjektWEdycji; adres: string }) {

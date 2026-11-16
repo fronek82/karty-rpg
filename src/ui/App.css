@@ -54,6 +54,11 @@ a {
   background: var(--tlo-panelu);
 }
 
+.naglowek nav {
+  display: flex;
+  gap: 1rem;
+}
+
 .logo {
   font-weight: 700;
   text-decoration: none;
@@ -255,4 +260,89 @@ a {
   color: var(--akcent);
   opacity: 1;
   font-weight: 600;
+}
+
+.tresc:has(.strona-talii) {
+  max-width: 110rem;
+}
+
+.strona-talii {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 70rem) {
+  .strona-talii {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.panel-karty {
+  position: sticky;
+  top: 1rem;
+  width: 22rem;
+  max-width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  background: var(--tlo-panelu);
+}
+
+.panel-karty h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.podglad-karty {
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem;
+  background: #e9e4d8;
+  border-radius: 0.25rem;
+  overflow: auto;
+  max-height: 60vh;
+  touch-action: none;
+  user-select: none;
+}
+
+.podglad-karty svg {
+  width: var(--szer-px);
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+  max-width: 100%;
+  height: auto;
+}
+
+.podglad-karty.przesuwalny {
+  cursor: grab;
+}
+
+.podglad-karty.przesuwalny:active {
+  cursor: grabbing;
+}
+
+.ostrzezenia-karty {
+  font-size: 0.85rem;
+  color: var(--akcent);
+}
+
+.ustawienia-obrazu {
+  margin-top: 1rem;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.25rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.wiersz-pol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.wiersz-pol input[type='number'] {
+  width: 4.5rem;
 }

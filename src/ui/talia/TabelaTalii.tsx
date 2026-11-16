@@ -14,7 +14,7 @@ import {
   ustawSzablon,
   type KolumnaDanych,
 } from '../../dane/edycja';
-import { t } from '../../i18n';
+import { t, tJesliJest } from '../../i18n';
 import type { Karta, Szablon, Talia } from '../../model/szablon';
 import type { ProjektWEdycji } from '../useProjekt';
 
@@ -47,7 +47,14 @@ export function TabelaTalii({ edycja, talia, wybrana, wybierz }: WlasciwosciTabe
     () => new Map(projekt.szablony.map((s) => [s.id, s])),
     [projekt.szablony],
   );
-  const kolumny = useMemo(() => kolumnyTalii(talia, szablony), [talia, szablony]);
+  // Nazwy kolumn pól: z i18n (`pole.<klucz>`), gdy jest; inaczej z klucza. Parametry mają nazwę w szablonie.
+  const kolumny = useMemo(
+    () =>
+      kolumnyTalii(talia, szablony).map((k) =>
+        k.rodzaj === 'pole' ? { ...k, nazwa: tJesliJest(`pole.${k.klucz}`) ?? k.nazwa } : k,
+      ),
+    [talia, szablony],
+  );
   const kolumnySzablonu = useMemo(
     () =>
       new Map(projekt.szablony.map((s) => [s.id, new Set(kolumnyJednego(s).map((k) => k.klucz))])),
@@ -62,6 +69,7 @@ export function TabelaTalii({ edycja, talia, wybrana, wybierz }: WlasciwosciTabe
     () => talia.karty.at(-1)?.szablonId ?? projekt.szablony[0]?.id ?? '',
   );
   const T = talia.id;
+  const obrazy = projekt.zasoby.filter((z) => z.rodzaj === 'obraz');
   const sztuk = talia.karty.reduce((s, k) => s + k.ilosc, 0);
 
   const dodaj = () => {
@@ -123,13 +131,33 @@ export function TabelaTalii({ edycja, talia, wybrana, wybierz }: WlasciwosciTabe
         {kolumny.map((kol) =>
           maKolumne(s, kol, kolumnySzablonu) ? (
             <td key={kol.klucz}>
-              <input
-                type="text"
-                aria-label={etykieta(kol.nazwa)}
-                value={k.dane[kol.klucz] ?? ''}
-                placeholder={kol.domyslnie}
-                onChange={(e) => zmien((p) => ustawDane(p, T, k.id, kol.klucz, e.target.value))}
-              />
+              {kol.typPola === 'obraz' ? (
+                <select
+                  aria-label={etykieta(kol.nazwa)}
+                  value={k.dane[kol.klucz] ?? ''}
+                  onChange={(e) => zmien((p) => ustawDane(p, T, k.id, kol.klucz, e.target.value))}
+                >
+                  <option value="">{t('karta.brakObrazu')}</option>
+                  {obrazy.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.nazwa}
+                    </option>
+                  ))}
+                  {k.dane[kol.klucz] && !obrazy.some((o) => o.id === k.dane[kol.klucz]) && (
+                    <option value={k.dane[kol.klucz]}>
+                      {t('karta.nieznanyObraz', { id: k.dane[kol.klucz]! })}
+                    </option>
+                  )}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  aria-label={etykieta(kol.nazwa)}
+                  value={k.dane[kol.klucz] ?? ''}
+                  placeholder={kol.domyslnie}
+                  onChange={(e) => zmien((p) => ustawDane(p, T, k.id, kol.klucz, e.target.value))}
+                />
+              )}
             </td>
           ) : (
             <td key={kol.klucz} className="nieaktywna" title={t('talia.brakPola')}>

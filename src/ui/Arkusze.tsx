@@ -5,6 +5,7 @@ import type { Arkusz } from '../model/arkusz';
 import { pakietMausritter } from '../pakiety/mausritter';
 import type { Pakiet } from '../pakiety/typy';
 import { scenaDoSvg } from '../silnik/svg';
+import { tekstOstrzezeniaArkusza } from './ostrzezenia';
 import { zapiszPlik } from './pliki';
 import { wczytajZasobyPakietu, type ZasobyPakietu } from './zasoby';
 
@@ -112,6 +113,16 @@ export function WidokArkuszy({
     }
   }, [pakiet, arkusz, zasobyPakietu]);
   const wynik = uklad.wynik;
+  const nazwyKart = useMemo(
+    () =>
+      new Map(
+        (pakiet.talie.find((x) => x.id === arkusz?.taliaId)?.karty ?? []).map((k) => [
+          k.id,
+          k.dane.nazwa ?? '',
+        ]),
+      ),
+    [pakiet.talie, arkusz],
+  );
   const widocznyBlad: Blad | undefined =
     (bladWczytywania !== undefined
       ? { klucz: 'arkusze.bladWczytywania', szczegoly: bladWczytywania }
@@ -262,10 +273,7 @@ export function WidokArkuszy({
           <summary>{t('arkusze.ostrzezenia', { liczba: wynik.ostrzezenia.length })}</summary>
           <ul>
             {wynik.ostrzezenia.map((o, i) => (
-              <li key={i}>
-                {o.kartaId ? `${o.kartaId}: ` : ''}
-                <code>{o.komunikat}</code>
-              </li>
+              <li key={i}>{tekstOstrzezeniaArkusza(o, o.kartaId && nazwyKart.get(o.kartaId))}</li>
             ))}
           </ul>
         </details>
