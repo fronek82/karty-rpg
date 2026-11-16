@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { pt } from '../model/jednostki';
 import type { Szablon } from '../model/szablon';
-import { czyPuste, daneZParametrami, konturScietego, renderujKarte, wartoscPola } from './karta';
+import {
+  czyPuste,
+  daneZParametrami,
+  konturScietego,
+  renderujKarte,
+  wartoscPola,
+  wolnyObszar,
+} from './karta';
 import { korzenKarty } from '../model/szablon';
 import type { ElementSceny, Scena } from './scena';
 import { scenaDoSvg } from './svg';
@@ -319,5 +326,118 @@ describe('parametry szablonu i warianty układu', () => {
       (e) => e.typ === 'tekst',
     );
     expect(tekst).toMatchObject({ obwodka: { grubosc: 0.7, kolor: '#ffffff' } });
+  });
+});
+
+describe('obraz – omijanie pól i ustawienia karty', () => {
+  const kwadrat = { szerokosc: 100, wysokosc: 100 };
+  const ramka = { x: 0, y: 0, szer: 20, wys: 14 };
+
+  it('wolny obszar: największy prostokąt obok przeszkody, z odstępem', () => {
+    // Przeszkoda w prawym górnym rogu: lewa strona 13 × 14 > dół 20 × 6.
+    const p = { x: 14, y: 0, szer: 6, wys: 7.5 };
+    expect(wolnyObszar(ramka, [p], 0.5, kwadrat, 'dopasuj')).toEqual({
+      x: 0,
+      y: 0,
+      szer: 13.5,
+      wys: 14,
+    });
+    // Dla „wypełnij” liczy się powierzchnia prostokąta: 13,5 × 14 = 189 > 20 × 6 = 120.
+    expect(wolnyObszar(ramka, [p], 0.5, kwadrat, 'wypelnij').szer).toBe(13.5);
+    // Szeroki obraz (4:1) lepiej mieści się pod przeszkodą.
+    expect(wolnyObszar(ramka, [p], 0.5, { szerokosc: 4, wysokosc: 1 }, 'dopasuj')).toEqual({
+      x: 0,
+      y: 8,
+      szer: 20,
+      wys: 6,
+    });
+    // Przeszkoda poza ramką nic nie zmienia.
+    expect(wolnyObszar(ramka, [{ x: 30, y: 0, szer: 5, wys: 5 }], 0.5, kwadrat, 'dopasuj')).toEqual(
+      ramka,
+    );
+  });
+
+  const szablon: Szablon = {
+    id: 'o',
+    nazwa: 'Obraz',
+    rozmiar: { tryb: 'mm', szerokosc: 30, wysokosc: 20 },
+    korzen: {
+      id: 'k',
+      typ: 'warstwy',
+      dzieci: [
+        { id: 'obraz', typ: 'obraz', klucz: 'obraz', dopasowanie: 'dopasuj', omijaj: ['znak'] },
+        {
+          id: 'znak',
+          typ: 'ikona',
+          ikona: 'gwiazdka',
+          rozmiar: 8,
+          wyrownanie: { poziomo: 'koniec', pionowo: 'poczatek' },
+        },
+      ],
+    },
+  };
+  const obrazy = (sc: Scena) => wszystkie(sc).filter((e) => e.typ === 'obraz');
+
+  it('obraz nie wchodzi pod omijane pole', () => {
+    const [o] = obrazy(renderujKarte(szablon, { dane: { obraz: 'kij.png' } }, ctx).scena);
+    // Ramka 30 × 20, gwiazdka 8 × 8 w prawym górnym rogu: wolne 21,5 × 20 po lewej.
+    expect(o).toMatchObject({ typ: 'obraz' });
+    if (o?.typ !== 'obraz') return;
+    expect(o.x + o.szer).toBeLessThanOrEqual(21.5 + 1e-9);
+    expect(o.szer / o.wys).toBeCloseTo(4 / 3);
+    expect(o.przyciecie).toBeUndefined();
+  });
+
+  it('skala, przesunięcie i obrót z danych karty; przycięcie do ramki pola', () => {
+    const bez = obrazy(renderujKarte(szablon, { dane: { obraz: 'kij.png' } }, ctx).scena)[0]!;
+    const z = obrazy(
+      renderujKarte(
+        szablon,
+        {
+          dane: { obraz: 'kij.png' },
+          obrazy: { obraz: { skala: 2, przesuniecie: { x: 1, y: -2 }, obrot: 30 } },
+        },
+        ctx,
+      ).scena,
+    )[0]!;
+    if (bez.typ !== 'obraz' || z.typ !== 'obraz') throw new Error('brak obrazu');
+    expect(z.szer).toBeCloseTo(bez.szer * 2);
+    expect(z.x + z.szer / 2).toBeCloseTo(bez.x + bez.szer / 2 + 1);
+    expect(z.y + z.wys / 2).toBeCloseTo(bez.y + bez.wys / 2 - 2);
+    expect(z.obrot).toBe(30);
+    expect(z.przyciecie).toEqual({ x: 0, y: 0, szer: 30, wys: 20 });
+  });
+
+  it('ustawienia neutralne nic nie zmieniają; dopasowanie z karty nadpisuje szablon', () => {
+    const bez = renderujKarte(szablon, { dane: { obraz: 'kij.png' } }, ctx).scena;
+    const neutralne = renderujKarte(
+      szablon,
+      {
+        dane: { obraz: 'kij.png' },
+        obrazy: { obraz: { skala: 1, obrot: 360, przesuniecie: { x: 0, y: 0 } } },
+      },
+      ctx,
+    ).scena;
+    expect(scenaDoSvg(neutralne)).toBe(scenaDoSvg(bez));
+    const [r] = obrazy(
+      renderujKarte(
+        szablon,
+        { dane: { obraz: 'kij.png' }, obrazy: { obraz: { dopasowanie: 'rozciagnij' } } },
+        ctx,
+      ).scena,
+    );
+    expect(r).toMatchObject({ x: 0, y: 0, szer: 21.5, wys: 20 });
+  });
+
+  it('SVG: obrót na obrazie, przycięcie na grupie (nie obraca się z obrazem)', () => {
+    const { scena } = renderujKarte(
+      szablon,
+      { dane: { obraz: 'kij.png' }, obrazy: { obraz: { obrot: 90 } } },
+      ctx,
+    );
+    const svg = scenaDoSvg(scena, { adresObrazu: () => 'kij.png' });
+    expect(svg).toMatch(
+      /<g clip-path="url\(#p0\)"><image [^>]*transform="rotate\(90 [\d.]+ [\d.]+\)"\/><\/g>/,
+    );
   });
 });

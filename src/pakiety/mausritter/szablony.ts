@@ -5,6 +5,7 @@ import type {
   Obramowanie,
   ParametrSzablonu,
   Pole,
+  PoleObraz,
   StylTekstu,
   Szablon,
 } from '../../model/szablon';
@@ -99,7 +100,7 @@ function znaczniki(): Pole {
 }
 
 /** Pole ilustracji – obraz wgrany przez użytkownika; w pakiecie obrazek zastępczy. */
-function obraz(margines: { gora: Mm; dol: Mm }): Pole {
+function obraz(margines: { gora: Mm; dol: Mm }): PoleObraz {
   return {
     id: 'obraz',
     typ: 'obraz',
@@ -145,36 +146,29 @@ function klasa(): Pole {
 
 const WNETRZE = { gora: POD_LINIA, ...WCIECIE };
 
+/** Wysokość rzędu znaczników z marginesem – pod nim zaczyna się ilustracja broni. */
+const RZAD_ZNACZNIKOW: Mm = 0.08 + 2.866 + 0.45;
+
 /**
- * Broń i zbroja 1×1 i 2×1: po lewej znaczniki, pod nimi ilustracja; po prawej ramka wartości.
- * Ilustracja nigdy nie wchodzi pod ramkę. Klasa nałożona w lewym dolnym rogu (biała obwódka).
+ * Broń 1×1 i zbroja 2×1: ilustracja na warstwie spodniej, na niej znaczniki (lewy górny róg),
+ * ramka wartości z białym tłem (prawy górny róg) i klasa z białą obwódką (lewy dolny róg).
+ * Broń: obraz od wiersza znaczników do dolnej krawędzi, w największym wolnym miejscu obok
+ * ramki wartości (nie wchodzi pod nią). Zbroja 2×1: na całą wysokość pod paskiem tytułu,
+ * znaczniki i ramka w rogach.
  */
-function trescUzbrojenia(ramka: Pole, zKlasa: boolean): Kontener {
+function trescUzbrojenia(ramka: Pole, zKlasa: boolean, obrazPodZnacznikami: boolean): Kontener {
   return {
     id: 'tresc',
     typ: 'warstwy',
     wysokosc: { wypelnij: 1 },
-    padding: WNETRZE,
+    padding: { ...WNETRZE, dol: 0.5 },
     dzieci: [
-      {
-        id: 'uklad',
-        typ: 'wiersz',
-        odstep: 0.6,
-        dzieci: [
-          {
-            id: 'lewa',
-            typ: 'kolumna',
-            szerokosc: { wypelnij: 1 },
-            odstep: 0.5,
-            dzieci: [
-              { ...znaczniki(), wyrownanie: { poziomo: 'poczatek' } },
-              { ...obraz({ gora: 0, dol: 0 }), wysokosc: { wypelnij: 1 } },
-            ],
-          },
-          ramka,
-        ],
-      },
-      ...(zKlasa ? [klasa()] : []),
+      obrazPodZnacznikami
+        ? { ...obraz({ gora: RZAD_ZNACZNIKOW, dol: 0 }), omijaj: ['wartosc'] }
+        : obraz({ gora: 0, dol: 0 }),
+      znaczniki(),
+      { ...ramka, wyrownanie: { poziomo: 'koniec', pionowo: 'poczatek' } },
+      ...(zKlasa ? [{ ...klasa(), margines: { lewo: 0.3, dol: 0.4 + WNETRZE.dol - 0.5 } }] : []),
     ],
   };
 }
@@ -230,7 +224,7 @@ export const szablonBron = karta(
   'Broń',
   1,
   1,
-  [pasekTytulu(), trescUzbrojenia(wartosc('prostokat', 10), true)],
+  [pasekTytulu(), trescUzbrojenia(wartosc('prostokat', 10), true, true)],
   undefined,
   [pasekTytulu(), trescUzbrojeniaPionowa(wartosc('prostokat', 10), true)],
 );
@@ -240,7 +234,7 @@ export const szablonZbroja = karta(
   'Zbroja',
   1,
   2,
-  [pasekTytulu(), trescUzbrojenia(wartosc('sciety', 8.5, { parametr: 'obrona' }), false)],
+  [pasekTytulu(), trescUzbrojenia(wartosc('sciety', 8.5, { parametr: 'obrona' }), false, false)],
   [{ klucz: 'obrona', nazwa: 'Obrona', domyslnie: '-1 obr' }],
   [pasekTytulu(), trescUzbrojeniaPionowa(wartosc('sciety', 8.5, { parametr: 'obrona' }), false)],
 );

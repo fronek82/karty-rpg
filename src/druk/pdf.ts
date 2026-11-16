@@ -331,6 +331,24 @@ class BudowniczyPdf {
           const p = e.przyciecie;
           ops.push(rectangle(r3(p.x), r3(p.y), r3(p.szer), r3(p.wys)), clip(), endPath());
         }
+        if (e.obrot) {
+          // Obrót wokół środka obrazu (oś Y w dół – dodatni kąt zgodnie z ruchem wskazówek).
+          const kat = (e.obrot * Math.PI) / 180;
+          const c = Math.round(Math.cos(kat) * 1e6) / 1e6;
+          const s = Math.round(Math.sin(kat) * 1e6) / 1e6;
+          const cx = e.x + e.szer / 2;
+          const cy = e.y + e.wys / 2;
+          ops.push(
+            concatTransformationMatrix(
+              c,
+              s,
+              -s,
+              c,
+              r3(cx - c * cx + s * cy),
+              r3(cy - s * cx - c * cy),
+            ),
+          );
+        }
         ops.push(
           concatTransformationMatrix(r3(e.szer), 0, 0, -r3(e.wys), r3(e.x), r3(e.y + e.wys)),
           drawObject(nazwa(`obraz:${e.zasob}`, ref, 'Im')),

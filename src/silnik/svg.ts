@@ -106,7 +106,12 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
           );
           clip = ` clip-path="url(#${id})"`;
         }
-        return `<image href="${esc(adres)}" x="${liczba(e.x)}" y="${liczba(e.y)}" width="${liczba(e.szer)}" height="${liczba(e.wys)}" preserveAspectRatio="none"${clip}/>`;
+        const obrot = e.obrot
+          ? ` transform="rotate(${liczba(e.obrot)} ${liczba(e.x + e.szer / 2)} ${liczba(e.y + e.wys / 2)})"`
+          : '';
+        const obraz = `<image href="${esc(adres)}" x="${liczba(e.x)}" y="${liczba(e.y)}" width="${liczba(e.szer)}" height="${liczba(e.wys)}" preserveAspectRatio="none"${obrot}/>`;
+        // Przycięcie na grupie: na samym <image> obracałoby się razem z obrazem.
+        return clip ? `<g${clip}>${obraz}</g>` : obraz;
       }
       case 'grupa': {
         const obrot = e.obrot ? ` rotate(${liczba(e.obrot)})` : '';

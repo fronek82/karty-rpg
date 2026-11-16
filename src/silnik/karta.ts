@@ -6,11 +6,14 @@ import {
   rozwinOdstepy,
   wymiaryKarty,
   type Karta,
+  type DopasowanieObrazu,
   type Obramowanie,
   type Pole,
+  type PoleObraz,
   type PoleTekst,
   type StylLinii,
   type Szablon,
+  type UstawieniaObrazu,
   type Wezel,
 } from '../model/szablon';
 import type { RejestrCzcionek } from './czcionki';
@@ -147,7 +150,7 @@ function obrys(o: Obramowanie): Obrys | undefined {
 /** Renderuje kartę na scenę (mm). Silnik nie zależy od DOM – działa w testach, workerze i UI. */
 export function renderujKarte(
   szablon: Szablon,
-  karta: Pick<Karta, 'dane' | 'rozmiar'>,
+  karta: Pick<Karta, 'dane' | 'rozmiar' | 'obrazy'>,
   ctx: KontekstRenderowania,
 ): WyrenderowanaKarta {
   const { szer, wys } = wymiaryKarty(szablon, karta);
@@ -174,6 +177,13 @@ export function renderujKarte(
     });
   }
   const korzen = rozmiesc(korzenKarty(szablon, karta), 0, 0, szer, wys, kontekst);
+  // Położenia wszystkich widocznych węzłów – obraz może omijać pola rysowane nad nim.
+  const ulozone = new Map<string, UlozonyWezel>();
+  const zbierz = (u: UlozonyWezel) => {
+    ulozone.set(u.wezel.id, u);
+    u.dzieci.forEach(zbierz);
+  };
+  zbierz(korzen);
 
   const rysuj = (u: UlozonyWezel) => {
     const w = u.wezel;
@@ -202,7 +212,14 @@ export function renderujKarte(
         szer: Math.max(0, u.szer - p.lewo - p.prawo),
         wys: Math.max(0, u.wys - p.gora - p.dol),
       };
-      elementy.push(...rysujPole(w, ramka, dane, ctx, glify, ostrzezenia));
+      if (w.typ === 'obraz') {
+        const przeszkody = (w.omijaj ?? [])
+          .map((id) => ulozone.get(id))
+          .filter((x): x is UlozonyWezel => x !== undefined);
+        elementy.push(
+          ...rysujPoleObrazu(w, ramka, dane, ctx, ostrzezenia, przeszkody, karta.obrazy?.[w.id]),
+        );
+      } else elementy.push(...rysujPole(w, ramka, dane, ctx, glify, ostrzezenia));
     } else if (!czyKontener(w) && w.typ === 'tekst' && w.etykieta) {
       // Pusta wartość z „pokaż pustą ramkę”: etykieta (np. „Usunięcie:”) zostaje.
       const p = rozwinOdstepy(w.padding);
@@ -428,14 +445,8 @@ function rysujPole(
         pole.styl.obwodka,
       );
     }
-    case 'obraz': {
-      const info = ctx.obraz?.(wartosc);
-      if (!info || info.szerokosc <= 0 || info.wysokosc <= 0) {
-        ostrzezenia.push({ pole: pole.id, komunikat: 'brak-obrazu', szczegoly: wartosc });
-        return [];
-      }
-      return [rysujObraz(wartosc, info, ramka, pole.dopasowanie, pole.kadr ?? { x: 0.5, y: 0.5 })];
-    }
+    case 'obraz':
+      return rysujPoleObrazu(pole, ramka, dane, ctx, ostrzezenia, [], undefined);
     case 'znaczniki': {
       const s = siatkaZnacznikow(pole.kolumny, pole.rzedy, liczbaZnacznikow(wartosc));
       const liczba = liczbaZnacznikow(wartosc);
@@ -512,21 +523,133 @@ function rysujPole(
   }
 }
 
+function rysujPoleObrazu(
+  pole: PoleObraz,
+  ramka: Ramka,
+  dane: Record<string, string>,
+  ctx: KontekstRenderowania,
+  ostrzezenia: Ostrzezenie[],
+  przeszkody: Ramka[],
+  ustawienia: UstawieniaObrazu | undefined,
+): ElementSceny[] {
+  const zasob = wartoscPola(pole, dane);
+  const info = ctx.obraz?.(zasob);
+  if (!info || info.szerokosc <= 0 || info.wysokosc <= 0) {
+    ostrzezenia.push({ pole: pole.id, komunikat: 'brak-obrazu', szczegoly: zasob });
+    return [];
+  }
+  const dopasowanie = ustawienia?.dopasowanie ?? pole.dopasowanie;
+  const obszar = wolnyObszar(ramka, przeszkody, pole.odstepOdOmijanych ?? 0.5, info, dopasowanie);
+  const kadr = pole.kadr ?? { x: 0.5, y: 0.5 };
+  return [rysujObraz(zasob, info, obszar, ramka, dopasowanie, kadr, ustawienia)];
+}
+
+/**
+ * Największy prostokąt ramki wolny od przeszkód (powiększonych o odstęp). Dla „dopasuj”
+ * liczy się powierzchnia obrazu po dopasowaniu (proporcje), dla innych trybów – prostokąta.
+ */
+export function wolnyObszar(
+  ramka: Ramka,
+  przeszkody: Ramka[],
+  odstep: Mm,
+  info: InformacjaOObrazie,
+  dopasowanie: DopasowanieObrazu,
+): Ramka {
+  const EPS = 1e-6;
+  let kandydaci: Ramka[] = [ramka];
+  for (const q of przeszkody) {
+    const l = q.x - odstep;
+    const g = q.y - odstep;
+    const p = q.x + q.szer + odstep;
+    const d = q.y + q.wys + odstep;
+    const nowi: Ramka[] = [];
+    for (const c of kandydaci) {
+      const cp = c.x + c.szer;
+      const cd = c.y + c.wys;
+      if (l >= cp - EPS || p <= c.x + EPS || g >= cd - EPS || d <= c.y + EPS) {
+        nowi.push(c);
+        continue;
+      }
+      nowi.push(
+        { x: c.x, y: c.y, szer: l - c.x, wys: c.wys },
+        { x: p, y: c.y, szer: cp - p, wys: c.wys },
+        { x: c.x, y: c.y, szer: c.szer, wys: g - c.y },
+        { x: c.x, y: d, szer: c.szer, wys: cd - d },
+      );
+    }
+    kandydaci = nowi.filter((c) => c.szer > EPS && c.wys > EPS);
+  }
+  const ocena = (c: Ramka) => {
+    if (dopasowanie !== 'dopasuj') return c.szer * c.wys;
+    const s = Math.min(c.szer / info.szerokosc, c.wys / info.wysokosc);
+    return s * s * info.szerokosc * info.wysokosc;
+  };
+  let najlepszy: Ramka | undefined;
+  for (const c of kandydaci) if (!najlepszy || ocena(c) > ocena(najlepszy) + EPS) najlepszy = c;
+  return najlepszy ?? { ...ramka, szer: 0, wys: 0 };
+}
+
+/** Czy ustawienia karty zmieniają położenie obrazu względem dopasowania. */
+function czyPrzeksztalcony(u: UstawieniaObrazu | undefined): boolean {
+  if (!u) return false;
+  return (
+    (u.skala !== undefined && u.skala !== 1) ||
+    (u.obrot !== undefined && u.obrot % 360 !== 0) ||
+    (u.przesuniecie !== undefined && (u.przesuniecie.x !== 0 || u.przesuniecie.y !== 0))
+  );
+}
+
+/**
+ * Obraz dopasowany do obszaru, potem przekształcony ustawieniami karty: skala wokół środka,
+ * przesunięcie, obrót. Przycięcie do ramki pola – po przekształceniu albo gdy obraz z niej wychodzi.
+ */
 function rysujObraz(
   zasob: string,
   info: InformacjaOObrazie,
-  ramka: Ramka,
-  dopasowanie: 'dopasuj' | 'wypelnij' | 'rozciagnij',
+  obszar: Ramka,
+  ramkaPola: Ramka,
+  dopasowanie: DopasowanieObrazu,
   kadr: { x: number; y: number },
+  ustawienia?: UstawieniaObrazu,
 ): ElementSceny {
-  if (dopasowanie === 'rozciagnij') return { typ: 'obraz', zasob, ...ramka };
-  const skalaX = ramka.szer / info.szerokosc;
-  const skalaY = ramka.wys / info.wysokosc;
-  const skala = dopasowanie === 'dopasuj' ? Math.min(skalaX, skalaY) : Math.max(skalaX, skalaY);
-  const szer = info.szerokosc * skala;
-  const wys = info.wysokosc * skala;
-  const x = ramka.x + (ramka.szer - szer) * kadr.x;
-  const y = ramka.y + (ramka.wys - wys) * kadr.y;
-  if (dopasowanie === 'dopasuj') return { typ: 'obraz', zasob, x, y, szer, wys };
-  return { typ: 'obraz', zasob, x, y, szer, wys, przyciecie: { ...ramka } };
+  let { x, y, szer, wys } = obszar;
+  if (dopasowanie !== 'rozciagnij') {
+    const skalaX = obszar.szer / info.szerokosc;
+    const skalaY = obszar.wys / info.wysokosc;
+    const skala = dopasowanie === 'dopasuj' ? Math.min(skalaX, skalaY) : Math.max(skalaX, skalaY);
+    szer = info.szerokosc * skala;
+    wys = info.wysokosc * skala;
+    x = obszar.x + (obszar.szer - szer) * kadr.x;
+    y = obszar.y + (obszar.wys - wys) * kadr.y;
+  }
+  const przeksztalcony = czyPrzeksztalcony(ustawienia);
+  if (przeksztalcony && ustawienia) {
+    const k =
+      ustawienia.skala !== undefined && Number.isFinite(ustawienia.skala) && ustawienia.skala > 0
+        ? ustawienia.skala
+        : 1;
+    const cx = x + szer / 2 + (ustawienia.przesuniecie?.x ?? 0);
+    const cy = y + wys / 2 + (ustawienia.przesuniecie?.y ?? 0);
+    szer *= k;
+    wys *= k;
+    x = cx - szer / 2;
+    y = cy - wys / 2;
+  }
+  const obrot = ustawienia?.obrot ? ustawienia.obrot % 360 : 0;
+  const T = 1e-6;
+  const wychodzi =
+    x < ramkaPola.x - T ||
+    y < ramkaPola.y - T ||
+    x + szer > ramkaPola.x + ramkaPola.szer + T ||
+    y + wys > ramkaPola.y + ramkaPola.wys + T;
+  return {
+    typ: 'obraz',
+    zasob,
+    x,
+    y,
+    szer,
+    wys,
+    ...(obrot !== 0 ? { obrot } : {}),
+    ...(przeksztalcony || wychodzi ? { przyciecie: { ...ramkaPola } } : {}),
+  };
 }

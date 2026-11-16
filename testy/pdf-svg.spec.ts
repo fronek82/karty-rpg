@@ -10,6 +10,10 @@ import { szablonBron } from '../src/pakiety/mausritter/szablony';
 import { OBRAZ_ZASTEPCZY } from '../src/pakiety/mausritter/talie';
 
 const PNG_ZASTEPCZY = readFileSync('src/pakiety/mausritter/obrazy/zastepczy.png');
+/** Ciemna, niesymetryczna litera „F” – obrót lub odbicie od razu widać w porównaniu. */
+const PNG_LITERA = readFileSync('testy/zasoby/litera-f.png');
+const LITERA = 'litera-f';
+const PNGI: Record<string, Buffer> = { [OBRAZ_ZASTEPCZY]: PNG_ZASTEPCZY, [LITERA]: PNG_LITERA };
 
 /**
  * Podgląd = wydruk: ta sama scena zapisana jako SVG (rysuje Chromium) i jako PDF (rysuje pdf.js)
@@ -141,6 +145,18 @@ const PRZYPADKI: { nazwa: string; wynik: () => ReturnType<typeof renderujKarte> 
       ),
   },
   {
+    nazwa: 'ustawienia obrazu karty: skala, przesunięcie, obrót i przycięcie',
+    wynik: () =>
+      renderujKarte(
+        szablonBron,
+        {
+          dane: { nazwa: 'Kij', wartosc: 'k6/k8', klasa: 'Średnia', obraz: LITERA },
+          obrazy: { obraz: { skala: 1.7, przesuniecie: { x: 2.5, y: -1 }, obrot: 33 } },
+        },
+        { czcionki, obraz: () => ({ szerokosc: 640, wysokosc: 480 }) },
+      ),
+  },
+  {
     nazwa: 'karta broni 1×2',
     wynik: () =>
       renderujKarte(
@@ -174,14 +190,11 @@ for (const p of PRZYPADKI) {
     const { scena, ostrzezenia } = p.wynik();
     expect(ostrzezenia).toEqual([]);
     const { bajty } = await scenyDoPdf([scena], {
-      obraz: (z) =>
-        z === OBRAZ_ZASTEPCZY ? { dane: new Uint8Array(PNG_ZASTEPCZY), format: 'png' } : undefined,
+      obraz: (z) => (PNGI[z] ? { dane: new Uint8Array(PNGI[z]), format: 'png' } : undefined),
     });
     const svg = scenaDoSvg(scena, {
       adresObrazu: (z) =>
-        z === OBRAZ_ZASTEPCZY
-          ? 'data:image/png;base64,' + PNG_ZASTEPCZY.toString('base64')
-          : undefined,
+        PNGI[z] ? 'data:image/png;base64,' + PNGI[z].toString('base64') : undefined,
     });
     const w = await porownaj(page, svg, bajty);
     test.info().annotations.push({ type: 'porównanie', description: JSON.stringify(w) });

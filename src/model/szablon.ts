@@ -138,6 +138,31 @@ export interface PoleObraz extends PoleBazowe {
   dopasowanie: 'dopasuj' | 'wypelnij' | 'rozciagnij';
   /** Punkt zaczepienia kadru, 0–1 w każdej osi (domyślnie środek). */
   kadr?: { x: number; y: number };
+  /**
+   * Identyfikatory pól, które obraz omija (np. ramka wartości nałożona na ilustrację).
+   * Obraz jest dopasowywany do największego wolnego prostokąta ramki pola.
+   */
+  omijaj?: string[];
+  /** Odstęp od omijanych pól (mm, domyślnie 0,5). */
+  odstepOdOmijanych?: Mm;
+}
+
+export type DopasowanieObrazu = PoleObraz['dopasowanie'];
+
+/**
+ * Ustawienia obrazu zapisane w danych jednej karty (np. kadrowanie ilustracji).
+ * Przekształcenie liczone od położenia z dopasowania: skala i obrót wokół środka obrazu,
+ * potem przesunięcie. Obraz zawsze przycinany do ramki pola.
+ */
+export interface UstawieniaObrazu {
+  /** Mnożnik rozmiaru (1 = jak z dopasowania). */
+  skala?: number;
+  /** Przesunięcie w mm. */
+  przesuniecie?: { x: Mm; y: Mm };
+  /** Obrót w stopniach, zgodnie z ruchem wskazówek zegara. */
+  obrot?: number;
+  /** Nadpisuje tryb dopasowania z szablonu. */
+  dopasowanie?: DopasowanieObrazu;
 }
 
 /** Kółka/kwadraty do zamalowania. Wartość z danych (liczba) nadpisuje liczbę znaczników. */
@@ -227,6 +252,8 @@ export interface Karta {
   ilosc: number;
   /** Rozmiar w slotach (tylko szablony w trybie slotów). */
   rozmiar?: { kolumny: number; rzedy: number };
+  /** Ustawienia obrazów tej karty według identyfikatora pola obrazu. */
+  obrazy?: Record<string, UstawieniaObrazu>;
 }
 
 /** Grupa kart w talii – na arkuszu dostaje nagłówek z opisem nad kolumnami (np. stany). */

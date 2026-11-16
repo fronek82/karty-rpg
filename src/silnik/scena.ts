@@ -62,8 +62,10 @@ export type ElementSceny =
       y: Mm;
       szer: Mm;
       wys: Mm;
-      /** Obszar przycięcia (mm, w układzie sceny). */
+      /** Obszar przycięcia (mm, w układzie sceny – nie obraca się z obrazem). */
       przyciecie?: { x: Mm; y: Mm; szer: Mm; wys: Mm };
+      /** Obrót wokół środka obrazu (stopnie, zgodnie z ruchem wskazówek zegara). */
+      obrot?: number;
     }
   | {
       typ: 'grupa';
