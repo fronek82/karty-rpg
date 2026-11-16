@@ -106,6 +106,10 @@ export function odcinkiCiecia(
 function liniaCiecia(o: { x1: Mm; y1: Mm; x2: Mm; y2: Mm }, l: LinieCiecia): ElementSceny {
   const dlugosc = Math.hypot(o.x2 - o.x1, o.y2 - o.y1);
   const okres = l.kreska + l.przerwa;
+  if (!(l.kreska > 0) || !(l.przerwa > 0)) {
+    // Bez wzoru (np. kreska 0) – linia ciągła.
+    return { typ: 'linia', ...o, obrys: { kolor: l.kolor, grubosc: l.grubosc } };
+  }
   const n = Math.max(1, Math.floor((dlugosc + l.przerwa) / okres));
   const wzor = n * l.kreska + (n - 1) * l.przerwa;
   const poczatek = (dlugosc - wzor) / 2;
@@ -198,7 +202,11 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   const grupy = u.grupy && talia.grupy && talia.grupy.length > 0 ? talia.grupy : undefined;
   const lista = egzemplarze(karty, (k) => {
     const { szer, wys } = wymiaryKarty(szablon(k)!, k);
-    return { kolumny: Math.round(szer / slot.szerokosc), rzedy: Math.round(wys / slot.wysokosc) };
+    // Karta mniejsza niż slot zajmuje cały slot (inaczej rozmiar 0 dałby nakładanie).
+    return {
+      kolumny: Math.max(1, Math.round(szer / slot.szerokosc)),
+      rzedy: Math.max(1, Math.round(wys / slot.wysokosc)),
+    };
   });
   let pas = 0;
   if (grupy && u.grupy) {
@@ -275,7 +283,8 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         elementy: s.elementy,
       });
     });
-    for (const o of odcinkiCiecia(prostokaty, slot)) elementy.push(liniaCiecia(o, u.linie));
+    const odcinki = odcinkiCiecia(prostokaty, slot);
+    for (const o of odcinki) elementy.push(liniaCiecia(o, u.linie));
 
     const dolSiatki = poczatek.y + rzedySiatki * slot.wysokosc;
     if (u.tytul && tytul) {
@@ -305,16 +314,22 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         const naglowek = napis(g.naglowek, u.grupy.styl, szer, ctx.czcionki);
         const opis = napis(g.opis ?? '', u.grupy.stylOpisu, szer, ctx.czcionki);
         glify.push(naglowek.glify, opis.glify);
+        if (naglowek.wys + opis.wys + u.grupy.odstepOdKart > pas + 1e-6) {
+          ostrzezenia.push({ komunikat: `naglowek-grupy-nie-miesci-sie:${g.id}` });
+        }
         const x = poczatek.x + r.x;
         const y = poczatek.y - pas;
         elementy.push({ typ: 'grupa', x, y, elementy: naglowek.elementy });
         elementy.push({ typ: 'grupa', x, y: y + naglowek.wys, elementy: opis.elementy });
       }
     }
-    if (u.nozyczki && prostokaty.length > 0) {
-      const prawa = Math.max(...prostokaty.map((p) => p.x + p.kolumny * slot.szerokosc));
-      const dol = Math.max(...prostokaty.map((p) => p.y + p.rzedy * slot.wysokosc));
-      elementy.push(nozyczkiNaScenie(u.nozyczki, poczatek, prawa, dol, slot, u.linie.kolor));
+    if (u.nozyczki && odcinki.length > 0) {
+      const n = nozyczkiNaScenie(u.nozyczki, odcinki, pas, u.linie.kolor);
+      if (n) elementy.push(n);
+      else
+        ostrzezenia.push({
+          komunikat: `nozyczki-poza-siatka:${u.nozyczki.linia}:${u.nozyczki.indeks}`,
+        });
     }
     strony.push({
       szer: strona.szer,
@@ -333,26 +348,41 @@ function ostrzezenieKarty(k: Karta, o: Ostrzezenie): OstrzezenieArkusza {
   };
 }
 
+/**
+ * Nożyczki na przedłużeniu `indeks`-tej linii cięcia (licząc rzeczywiste linie na stronie –
+ * przy grupach z odstępami), poza obszarem kart, skierowane do środka.
+ */
 function nozyczkiNaScenie(
   n: NonNullable<Arkusz['ustawienia']['nozyczki']>,
-  poczatek: { x: Mm; y: Mm },
-  prawa: Mm,
-  dol: Mm,
-  slot: { szerokosc: Mm; wysokosc: Mm },
+  odcinki: { x1: Mm; y1: Mm; x2: Mm; y2: Mm }[],
+  pasNaglowkow: Mm,
   kolor: string,
-): ElementSceny {
+): ElementSceny | undefined {
   const r = n.rozmiar;
   const odstep = n.odstep + r / 2;
+  const unikalne = (v: number[]) =>
+    [...new Set(v.map((x) => Math.round(x * 1000) / 1000))].sort((a, b) => a - b);
+  const pionowe = odcinki.filter((o) => o.x1 === o.x2);
+  const poziome = odcinki.filter((o) => o.y1 === o.y2);
+  const lewa = Math.min(...poziome.map((o) => Math.min(o.x1, o.x2)));
+  const prawa = Math.max(...poziome.map((o) => Math.max(o.x1, o.x2)));
+  const gora = Math.min(...pionowe.map((o) => Math.min(o.y1, o.y2)));
+  const dol = Math.max(...pionowe.map((o) => Math.max(o.y1, o.y2)));
   let x: Mm;
   let y: Mm;
   let obrot: number;
   if (n.linia === 'pozioma') {
-    y = poczatek.y + n.indeks * slot.wysokosc;
-    x = n.strona === 'poczatek' ? poczatek.x - odstep : prawa + odstep;
+    const yy = unikalne(poziome.map((o) => o.y1))[n.indeks];
+    if (yy === undefined) return undefined;
+    y = yy;
+    x = n.strona === 'poczatek' ? lewa - odstep : prawa + odstep;
     obrot = n.strona === 'poczatek' ? 0 : 180;
   } else {
-    x = poczatek.x + n.indeks * slot.szerokosc;
-    y = n.strona === 'poczatek' ? poczatek.y - odstep : dol + odstep;
+    const xx = unikalne(pionowe.map((o) => o.x1))[n.indeks];
+    if (xx === undefined) return undefined;
+    x = xx;
+    // Nad siatką – ponad pasem nagłówków grup.
+    y = n.strona === 'poczatek' ? gora - pasNaglowkow - odstep : dol + odstep;
     obrot = n.strona === 'poczatek' ? 90 : -90;
   }
   return {

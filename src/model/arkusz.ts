@@ -53,11 +53,14 @@ export interface UstawieniaArkusza {
   };
   linie: LinieCiecia;
   nozyczki?: Nozyczki;
-  /** Skala szarości (kolory kart zamieniane na szarości). */
+  /**
+   * Skala szarości: kolory tekstu, linii i wypełnień zamieniane na szarości. Obrazy rastrowe
+   * zamienia warstwa wczytująca zasoby (UI, E7) – silnik i PDF dostają już szare pliki.
+   */
   czarnoBialy?: boolean;
   /**
-   * Ręczne położenie lewego górnego rogu siatki (mm od rogu strony). Bez tego siatka jest
-   * wyrównana do prawego dolnego rogu obszaru po marginesach, tytule i nagłówkach.
+   * Ręczne położenie lewego górnego rogu siatki (mm od rogu strony). Bez tego siatka zaczyna się
+   * w lewym górnym rogu obszaru po marginesach, tytule i pasie nagłówków grup.
    */
   poczatekSiatki?: { x: Mm; y: Mm };
 }

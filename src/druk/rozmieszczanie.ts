@@ -127,6 +127,9 @@ export function rozmiescKarty(
       `karta-wieksza-niz-strona:${[...new Set(zaDuze.map((e) => e.karta.id))].join(',')}`,
     );
   const doRozmieszczenia = lista.filter((e) => !zaDuze.includes(e));
+  if (opcje.grupy && opcje.przypiete && opcje.przypiete.length > 0) {
+    ostrzezenia.push('przypiecia-ignorowane-przy-grupach');
+  }
   return opcje.grupy
     ? rozmiescGrupami(doRozmieszczenia, siatka, rzedy, opcje.grupy, ostrzezenia)
     : rozmiescBezGrup(doRozmieszczenia, kolumny, rzedy, opcje.przypiete ?? [], ostrzezenia);
@@ -154,6 +157,10 @@ function rozmiescBezGrup(
       continue;
     }
     const e = pozostale[i]!;
+    if ((p.strona ?? 0) < 0 || !Number.isInteger(p.strona ?? 0)) {
+      ostrzezenia.push(`przypiecie-zla-strona:${p.kartaId}`);
+      continue;
+    }
     const z = strona(p.strona ?? 0);
     if (!z.wolne(p.kolumna, p.rzad, e.kolumny, e.rzedy)) {
       ostrzezenia.push(`przypiecie-koliduje:${p.kartaId}@${p.kolumna},${p.rzad}`);
@@ -196,9 +203,20 @@ function rozmiescGrupami(
   let strona = 0;
   let x = 0; // zajęta szerokość bieżącej strony (mm)
 
+  // Karta w kilku grupach należy do pierwszej (inaczej jej ilość by się zwielokrotniła).
+  const przydzial = new Map<string, string>();
+  for (const g of grupy.lista) {
+    for (const id of g.kartyIds) {
+      if (przydzial.has(id)) ostrzezenia.push(`karta-w-wielu-grupach:${id}`);
+      else przydzial.set(id, g.id);
+    }
+  }
   // Karty spoza grup trafiają do grupy bez nagłówka na końcu.
-  const wGrupach = new Set(grupy.lista.flatMap((g) => g.kartyIds));
-  const lista2 = [...grupy.lista];
+  const wGrupach = new Set(przydzial.keys());
+  const lista2 = grupy.lista.map((g) => ({
+    ...g,
+    kartyIds: g.kartyIds.filter((id) => przydzial.get(id) === g.id),
+  }));
   const bezGrupy = lista.filter((e) => !wGrupach.has(e.karta.id));
   if (bezGrupy.length > 0)
     lista2.push({ id: '', kartyIds: [...new Set(bezGrupy.map((e) => e.karta.id))] });

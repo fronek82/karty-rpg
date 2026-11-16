@@ -118,3 +118,67 @@ describe('zbudujArkusz – pakiet Mausritter', () => {
     expect(bajty.length).toBeLessThan(300_000);
   });
 });
+
+describe('zbudujArkusz – tytuł, nożyczki, linie', () => {
+  const grupa = (s: Scena, i: number) => s.elementy.filter((e) => e.typ === 'grupa')[i]!;
+  const scissors = (s: Scena) =>
+    s.elementy.find(
+      (e): e is Extract<ElementSceny, { typ: 'grupa' }> =>
+        e.typ === 'grupa' && e.elementy.length === 1 && e.elementy[0]!.typ === 'sciezka',
+    )!;
+
+  it('tytuł pionowy: obrót −90°, początek przy dolnej krawędzi siatki, na lewo od siatki', () => {
+    const a = arkuszeMausrittera[0]!;
+    const w = zbudujArkusz(a, taliaBroni, ctx);
+    const s = w.strony[0]!;
+    const tytul = s.elementy.find((e) => e.typ === 'grupa' && e.obrot === -90);
+    expect(tytul).toBeDefined();
+    if (tytul?.typ !== 'grupa') return;
+    expect(tytul.y).toBeCloseTo(w.poczatekSiatki.y + 7 * SLOT, 6);
+    expect(tytul.x).toBeLessThan(w.poczatekSiatki.x);
+    expect(grupa(s, 0).typ).toBe('grupa');
+  });
+
+  it('nożyczki leżą na rzeczywistej linii cięcia także przy grupach z odstępami', () => {
+    const a = arkuszeMausrittera[2]!;
+    for (const indeks of [2, 5, 9]) {
+      const w = zbudujArkusz(
+        { ...a, ustawienia: { ...a.ustawienia, nozyczki: { ...a.ustawienia.nozyczki!, indeks } } },
+        talia(a),
+        ctx,
+      );
+      const s = w.strony[0]!;
+      const xs = [
+        ...new Set(
+          linie(s)
+            .filter((o) => o.x1 === o.x2)
+            .map((o) => Math.round(o.x1 * 1000) / 1000),
+        ),
+      ].sort((p, q) => p - q);
+      expect(scissors(s).x).toBeCloseTo(xs[indeks]!, 3);
+    }
+  });
+
+  it('nożyczki na nieistniejącej linii – ostrzeżenie zamiast rysunku', () => {
+    const a = arkuszeMausrittera[0]!;
+    const w = zbudujArkusz(
+      {
+        ...a,
+        ustawienia: { ...a.ustawienia, nozyczki: { ...a.ustawienia.nozyczki!, indeks: 99 } },
+      },
+      taliaBroni,
+      ctx,
+    );
+    expect(w.ostrzezenia).toEqual([{ komunikat: 'nozyczki-poza-siatka:pozioma:99' }]);
+  });
+
+  it('kreska o zerowej długości daje linię ciągłą zamiast NaN', () => {
+    const a = arkuszeMausrittera[0]!;
+    const w = zbudujArkusz(
+      { ...a, ustawienia: { ...a.ustawienia, linie: { ...a.ustawienia.linie, kreska: 0 } } },
+      taliaBroni,
+      ctx,
+    );
+    expect(linie(w.strony[0]!)[0]!.obrys.kreska).toBeUndefined();
+  });
+});
