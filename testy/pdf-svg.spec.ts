@@ -222,18 +222,20 @@ for (const arkusz of arkuszeMausrittera) {
       },
     );
     expect(wynik.ostrzezenia).toEqual([]);
-    const scena = wynik.strony[0]!;
-    const { bajty } = await scenyDoPdf([scena], {
-      obraz: (z) => (PNGI[z] ? { dane: new Uint8Array(PNGI[z]), format: 'png' } : undefined),
-    });
-    const svg = scenaDoSvg(scena, {
-      adresObrazu: (z) =>
-        PNGI[z] ? 'data:image/png;base64,' + PNGI[z].toString('base64') : undefined,
-    });
-    const w = await porownaj(page, svg, bajty);
-    console.info(arkusz.nazwa, w);
-    expect(w.ciemneSvg).toBeGreaterThan(w.wszystkie * 0.005);
-    expect(Math.abs(w.ciemnePdf - w.ciemneSvg) / w.ciemneSvg).toBeLessThan(0.05);
-    expect(w.rozne / w.wszystkie).toBeLessThan(0.001);
+    // Każda strona arkusza osobno.
+    for (const [i, scena] of wynik.strony.entries()) {
+      const { bajty } = await scenyDoPdf([scena], {
+        obraz: (z) => (PNGI[z] ? { dane: new Uint8Array(PNGI[z]), format: 'png' } : undefined),
+      });
+      const svg = scenaDoSvg(scena, {
+        adresObrazu: (z) =>
+          PNGI[z] ? 'data:image/png;base64,' + PNGI[z].toString('base64') : undefined,
+      });
+      const w = await porownaj(page, svg, bajty);
+      console.info(arkusz.nazwa, i + 1, w);
+      expect(w.ciemneSvg).toBeGreaterThan(w.wszystkie * 0.005);
+      expect(Math.abs(w.ciemnePdf - w.ciemneSvg) / w.ciemneSvg).toBeLessThan(0.05);
+      expect(w.rozne / w.wszystkie).toBeLessThan(0.001);
+    }
   });
 }

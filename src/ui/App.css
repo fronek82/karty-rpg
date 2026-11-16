@@ -101,7 +101,12 @@ a {
   margin-right: 0.5rem;
 }
 
-.pasek-narzedzi button {
+.status {
+  margin: 0;
+}
+
+.pasek-narzedzi button,
+.uwaga button {
   font: inherit;
   padding: 0.4rem 0.9rem;
   border: 1px solid var(--akcent);
@@ -111,7 +116,8 @@ a {
   cursor: pointer;
 }
 
-.pasek-narzedzi button:disabled {
+.pasek-narzedzi button:disabled,
+.uwaga button:disabled {
   opacity: 0.5;
   cursor: default;
 }

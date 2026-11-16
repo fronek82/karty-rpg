@@ -26,6 +26,7 @@ test('podgląd arkusza i pobranie PDF jednego arkusza', async ({ page }) => {
 
   const { nazwa, bajty } = await pobierzPdf(page, 'Pobierz PDF');
   expect(nazwa).toBe('mausritter-arkusz-bron.pdf');
+  await expect(page.getByRole('status')).toHaveText('PDF gotowy – sprawdź pobrane pliki.');
   expect(bajty.subarray(0, 5).toString()).toBe('%PDF-');
   const pdf = await PDFDocument.load(bajty);
   expect(pdf.getPageCount()).toBe(1);
@@ -42,6 +43,7 @@ test('wybór arkusza, skala 1:1 i PDF wszystkich arkuszy', async ({ page }) => {
   await expect(page.getByRole('img', { name: 'Strona 1' })).toBeVisible();
   await page.getByLabel('Arkusz:').selectOption({ label: 'Karty stanów' });
   await page.getByLabel('rozmiar rzeczywisty (1:1)').check();
+  // Zakładamy zoom 100% i DPR = 1 (domyślne ustawienia Playwright).
   const strona = page.getByRole('img', { name: 'Strona 1' });
   await expect(strona).toHaveAttribute('width', '297mm');
   // 297 mm w CSS = 297 / 25,4 × 96 px.
@@ -51,4 +53,19 @@ test('wybór arkusza, skala 1:1 i PDF wszystkich arkuszy', async ({ page }) => {
   expect(nazwa).toBe('mausritter-arkusze.pdf');
   const pdf = await PDFDocument.load(bajty);
   expect(pdf.getPageCount()).toBe(3);
+});
+
+test('nieudane wczytanie czcionki – komunikat i ponowna próba', async ({ page }) => {
+  let blokuj = true;
+  await page.route('**/czcionki/GrenzeGotisch-Bold.ttf', (route) =>
+    blokuj ? route.fulfill({ status: 404 }) : route.continue(),
+  );
+  await page.goto('./#/arkusze');
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('Nie udało się wczytać czcionek lub obrazów pakietu.');
+  await expect(page.getByRole('button', { name: 'Pobierz PDF' })).toBeDisabled();
+  blokuj = false;
+  await alert.getByRole('button', { name: 'Spróbuj ponownie' }).click();
+  await expect(page.getByRole('img', { name: 'Strona 1' })).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });

@@ -1,10 +1,11 @@
 import { lazy, Suspense } from 'react';
 import { t } from '../i18n';
+import { GranicaBledu } from './GranicaBledu';
+import { useTrasa } from './useTrasa';
+import './App.css';
 
 // Silnik (fontkit) i pakiet ładowane dopiero na stronie arkuszy; PDF (pdf-lib) – przy pobraniu.
 const Arkusze = lazy(() => import('./Arkusze').then((m) => ({ default: m.Arkusze })));
-import { useTrasa } from './useTrasa';
-import './App.css';
 
 const wersja = import.meta.env.VITE_WERSJA ?? '0.1.0';
 
@@ -32,9 +33,11 @@ export function App() {
             </p>
           </section>
         ) : trasa === '/arkusze' ? (
-          <Suspense fallback={<p>{t('arkusze.wczytywanie')}</p>}>
-            <Arkusze />
-          </Suspense>
+          <GranicaBledu>
+            <Suspense fallback={<p>{t('aplikacja.wczytywanieStrony')}</p>}>
+              <Arkusze />
+            </Suspense>
+          </GranicaBledu>
         ) : (
           <section>
             <h1>{t('nawigacja.nieZnaleziono')}</h1>

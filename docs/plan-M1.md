@@ -100,23 +100,23 @@ Zasady:
 | **E8** Testy wizualne      | tester             | test geometryczny względem `geometria-referencji.json` (CI); lokalny test nakładania z oryginalnymi czcionkami i referencją z `zasoby-prywatne/` (pomijany, gdy brak plików)             | raport z nakładką różnic                                                          |
 | **E9** Wdrożenie           | główny + recenzent | GitHub Pages, przegląd, wydruk testowy                                                                                                                                                   | strona działa, użytkownik potwierdza wydruk                                       |
 
-Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E4a → E5 → E7 → E8 → E9. Recenzent przegląda kod po E2–E7. Po każdym etapie commit i krótkie podsumowanie.
+Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E4a → E5 → E6 → E7 → E8 → E9. Recenzent przegląda kod po E2–E7. Po każdym etapie commit i krótkie podsumowanie.
 
 ## 5. Stan realizacji
 
-| Etap | Stan | Commity                         | Uwagi                                                                                                                   |
-| ---- | ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| E0   | ✅   | `f116898`                       | CI na każdej gałęzi, wdrożenie Pages z `main`                                                                           |
-| E1   | ✅   | `0dcf91a`                       | decyzja: tekst jako krzywe (`docs/decyzja-pdf.md`)                                                                      |
-| E2   | ✅   | `283e6d8`, `6aac0dc`            | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                      |
-| E3   | ✅   | `e93d618`, `d362a12`, `167c5c6` | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png` |
-| E4   | ✅   | `43b257a`, `1ae47ed`            | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                              |
-| E4a  | ✅   | `0291dc2`, `d72ab3e`, przegląd  | sekcja 6; PNG w `docs/obrazy/e4a-*.png`                                                                                 |
-| E5   | ⬜   |                                 | PDF wielostronicowy z obrazami już działa w testach; zostaje pobieranie w UI i podgląd w skali (razem z E7)             |
-| E6   | ⬜   |                                 |                                                                                                                         |
-| E7   | ⬜   |                                 |                                                                                                                         |
-| E8   | ⬜   |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                           |
-| E9   | ⬜   |                                 |                                                                                                                         |
+| Etap | Stan | Commity                         | Uwagi                                                                                                                                              |
+| ---- | ---- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0   | ✅   | `f116898`                       | CI na każdej gałęzi, wdrożenie Pages z `main`                                                                                                      |
+| E1   | ✅   | `0dcf91a`                       | decyzja: tekst jako krzywe (`docs/decyzja-pdf.md`)                                                                                                 |
+| E2   | ✅   | `283e6d8`, `6aac0dc`            | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                                                 |
+| E3   | ✅   | `e93d618`, `d362a12`, `167c5c6` | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png`                            |
+| E4   | ✅   | `43b257a`, `1ae47ed`            | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                                                         |
+| E4a  | ✅   | `0291dc2`, `d72ab3e`, przegląd  | sekcja 6; PNG w `docs/obrazy/e4a-*.png`                                                                                                            |
+| E5   | ✅   | `502eb11`, przegląd             | strona `#/arkusze`: podgląd (dopasuj / 1:1), „Pobierz PDF” (arkusz / wszystkie), PDF↔SVG całych arkuszy; zrzut `docs/obrazy/e5-strona-arkusze.png` |
+| E6   | ⬜   |                                 |                                                                                                                                                    |
+| E7   | ⬜   |                                 |                                                                                                                                                    |
+| E8   | ⬜   |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                                                      |
+| E9   | ⬜   |                                 |                                                                                                                                                    |
 
 ## 6. Zadania po E4 – poprawki szablonów z E3 (etap E4a)
 
@@ -135,6 +135,8 @@ Commit i push po każdym większym kroku.
 
 Zrobione w E4a także: nożyczki na linii prowadzącej, większy tytuł pionowy, odstęp 2 mm pod opisami grup stanów (decyzje 14–16). Po przeglądzie: przycięcie „wypełnij” do wolnego obszaru, ostrzeżenia `brak-miejsca-na-obraz` i `nieznane-pole-do-omijania`, normalizacja ustawień obrazu (NaN, nieskończoność, skala ≤ 0), wielokrotne przybliżanie rozmiaru tytułu, linia prowadząca nie przecina nagłówków grup.
 
+Po E5 (przegląd): zasoby po nieudanym wczytaniu nie zostają w pamięci (przycisk „Spróbuj ponownie”), błąd układu nie wywraca aplikacji (granica błędu wokół strony ładowanej leniwie), stały region `role="status"`, komunikaty błędów przez i18n, stan „brak arkuszy”.
+
 ### Odłożone (backlog)
 
 - Brak czcionki: czcionka zapasowa z ostrzeżeniem zamiast przerwania renderu; komunikaty błędów silnika przez i18n (E6/E7).
@@ -147,3 +149,6 @@ Zrobione w E4a także: nożyczki na linii prowadzącej, większy tytuł pionowy,
 - Limit długości tytułu liczony z siatki regularnej (linia nr k = k slotów). Przy grupach z odstępami lub pustym pierwszym rzędzie pozycja linii nożyczek może być inna – liczyć z tych samych odcinków co nożyczki (pakiet Mausritter tego nie używa).
 - Nowe komunikaty ostrzeżeń (`tytul-nie-miesci-sie`, `brak-miejsca-na-obraz`, `nieznane-pole-do-omijania`) – teksty w i18n razem z pozostałymi ostrzeżeniami (E7).
 - Ponowna nakładka E4a na referencję z oryginalnymi czcionkami – w lokalnym teście E8.
+- Ostrzeżenia arkusza w UI pokazywane jako surowe kody (`kartaId: komunikat`) – teksty i18n w E7.
+- Obrazy w podglądzie jako `data:` (kopia base64 w pamięci i w każdym SVG strony) – przy dużych obrazach z biblioteki (E6/E7) przejść na `blob:` z zarządzaniem czasem życia (revoke).
+- Budowa wszystkich arkuszy przy „Pobierz wszystkie” w wątku głównym – przy dużych taliach przenieść do workera (E7).

@@ -18,13 +18,15 @@ function zasoby(pakiet: Pakiet): Promise<ZasobyPakietu> {
   if (!z) {
     z = wczytajZasobyPakietu(pakiet);
     pamiecZasobow.set(pakiet.id, z);
+    // Nieudane wczytanie nie zostaje w pamięci – „Spróbuj ponownie” pobiera pliki od nowa.
+    z.catch(() => pamiecZasobow.delete(pakiet.id));
   }
   return z;
 }
 
 function zbuduj(pakiet: Pakiet, arkusz: Arkusz, z: ZasobyPakietu): WynikArkusza {
   const talia = pakiet.talie.find((x) => x.id === arkusz.taliaId);
-  if (!talia) throw new Error(`Brak talii ${arkusz.taliaId}`);
+  if (!talia) throw new Error(`talia ${arkusz.taliaId}`);
   return zbudujArkusz(arkusz, talia, {
     czcionki: z.czcionki,
     szablony: z.szablony,
@@ -45,89 +47,162 @@ function zapiszPlik(bajty: Uint8Array, nazwa: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-async function pobierzPdf(
-  sceny: WynikArkusza['strony'],
-  z: ZasobyPakietu,
-  tytul: string,
-  plik: string,
-) {
-  const { scenyDoPdf } = await import('../druk/pdf');
-  const { bajty } = await scenyDoPdf(sceny, {
-    tytul,
-    obraz: (id) => {
-      const o = z.obrazy.get(id);
-      return o ? { dane: o.dane, format: o.format } : undefined;
-    },
-  });
-  zapiszPlik(bajty, plik);
-}
+const szczegoly = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 type Skala = 'dopasuj' | 'rzeczywista';
+type Status = 'wczytywanie' | 'gotowe' | 'generowanie' | 'pdfGotowy' | 'blad';
+type Blad = {
+  /** Błąd dotyczy tego pakietu – po zmianie pakietu przestaje być pokazywany. */
+  pakietId?: string;
+  klucz: 'arkusze.bladWczytywania' | 'arkusze.bladUkladu' | 'arkusze.bladPdf';
+  szczegoly: string;
+};
 
 export function Arkusze({ pakiet = pakietMausritter }: { pakiet?: Pakiet }) {
-  const [z, ustawZ] = useState<ZasobyPakietu>();
-  const [blad, ustawBlad] = useState<string>();
+  // Zasoby razem z id pakietu – po zmianie pakietu stare czcionki nie trafią do nowego układu.
+  const [z, ustawZ] = useState<{ pakietId: string; zasoby: ZasobyPakietu }>();
+  const [blad, ustawBlad] = useState<Blad>();
+  const [proba, ustawProbe] = useState(0);
   const [wybrany, ustawWybrany] = useState(0);
   const [skala, ustawSkala] = useState<Skala>('dopasuj');
   const [trwa, ustawTrwa] = useState(false);
+  const [pdfGotowy, ustawPdfGotowy] = useState(false);
 
   useEffect(() => {
     let aktywny = true;
     zasoby(pakiet).then(
-      (w) => aktywny && ustawZ(w),
-      (e: unknown) => aktywny && ustawBlad(String(e)),
+      (w) => aktywny && ustawZ({ pakietId: pakiet.id, zasoby: w }),
+      (e: unknown) =>
+        aktywny &&
+        ustawBlad({
+          klucz: 'arkusze.bladWczytywania',
+          szczegoly: szczegoly(e),
+          pakietId: pakiet.id,
+        }),
     );
     return () => {
       aktywny = false;
     };
-  }, [pakiet]);
+  }, [pakiet, proba]);
 
-  const arkusz = pakiet.arkusze[wybrany] ?? pakiet.arkusze[0]!;
-  const wynik = useMemo(() => (z ? zbuduj(pakiet, arkusz, z) : undefined), [pakiet, arkusz, z]);
+  const zasobyPakietu = z?.pakietId === pakiet.id ? z.zasoby : undefined;
+  const arkusz: Arkusz | undefined = pakiet.arkusze[wybrany] ?? pakiet.arkusze[0];
+  // Błąd silnika (np. brak czcionki) nie może wywrócić renderu całej aplikacji.
+  const uklad = useMemo((): { wynik?: WynikArkusza; blad?: Blad } => {
+    if (!zasobyPakietu || !arkusz) return {};
+    try {
+      return { wynik: zbuduj(pakiet, arkusz, zasobyPakietu) };
+    } catch (e) {
+      return { blad: { klucz: 'arkusze.bladUkladu', szczegoly: szczegoly(e) } };
+    }
+  }, [pakiet, arkusz, zasobyPakietu]);
+  const wynik = uklad.wynik;
+  const widocznyBlad =
+    (blad && (blad.pakietId === undefined || blad.pakietId === pakiet.id) ? blad : undefined) ??
+    uklad.blad;
+
   const svg = useMemo(
     () =>
-      wynik && z
+      wynik && zasobyPakietu
         ? wynik.strony.map((s, i) =>
             scenaDoSvg(s, {
-              adresObrazu: (id) => z.obrazy.get(id)?.adres,
+              adresObrazu: (id) => zasobyPakietu.obrazy.get(id)?.adres,
               przedrostekId: `a${wybrany}s${i}`,
               atrybuty: { role: 'img', 'aria-label': t('arkusze.strona', { numer: i + 1 }) },
             }),
           )
         : [],
-    [wynik, z, wybrany],
+    [wynik, zasobyPakietu, wybrany],
   );
 
   const pobierz = async (wszystkie: boolean) => {
-    if (!z || !wynik) return;
+    if (!zasobyPakietu || !wynik || !arkusz) return;
     ustawTrwa(true);
+    ustawPdfGotowy(false);
     try {
-      if (wszystkie) {
-        const sceny = pakiet.arkusze.flatMap((a) => zbuduj(pakiet, a, z).strony);
-        await pobierzPdf(sceny, z, pakiet.nazwa, `${pakiet.id}-arkusze.pdf`);
-      } else {
-        await pobierzPdf(wynik.strony, z, arkusz.nazwa, `${arkusz.id}.pdf`);
-      }
+      // Najpierw kod PDF – w tym czasie React pokaże „Tworzę PDF…” i wyłączy przyciski.
+      const { scenyDoPdf } = await import('../druk/pdf');
+      await new Promise((r) => setTimeout(r, 0));
+      const sceny = wszystkie
+        ? pakiet.arkusze.flatMap((a) =>
+            a === arkusz ? wynik.strony : zbuduj(pakiet, a, zasobyPakietu).strony,
+          )
+        : wynik.strony;
+      const { bajty } = await scenyDoPdf(sceny, {
+        tytul: wszystkie ? pakiet.nazwa : arkusz.nazwa,
+        obraz: (id) => {
+          const o = zasobyPakietu.obrazy.get(id);
+          return o ? { dane: o.dane, format: o.format } : undefined;
+        },
+      });
+      zapiszPlik(bajty, wszystkie ? `${pakiet.id}-arkusze.pdf` : `${arkusz.id}.pdf`);
+      ustawPdfGotowy(true);
     } catch (e) {
-      ustawBlad(String(e));
+      ustawBlad({ klucz: 'arkusze.bladPdf', szczegoly: szczegoly(e), pakietId: pakiet.id });
     } finally {
       ustawTrwa(false);
     }
   };
 
+  const status: Status = widocznyBlad
+    ? 'blad'
+    : trwa
+      ? 'generowanie'
+      : !wynik
+        ? 'wczytywanie'
+        : pdfGotowy
+          ? 'pdfGotowy'
+          : 'gotowe';
+  const tekstStatusu: Record<Status, string> = {
+    wczytywanie: t('arkusze.wczytywanie'),
+    generowanie: t('arkusze.generowanie'),
+    pdfGotowy: t('arkusze.pdfGotowy'),
+    gotowe: '',
+    blad: '',
+  };
+
+  if (pakiet.arkusze.length === 0)
+    return (
+      <section className="arkusze">
+        <h1>{t('arkusze.tytul')}</h1>
+        <p>{t('arkusze.brakArkuszy')}</p>
+      </section>
+    );
+
   return (
     <section className="arkusze">
       <h1>{t('arkusze.tytul')}</h1>
       <p>{t('arkusze.opis', { pakiet: pakiet.nazwa })}</p>
-      {blad && (
-        <p role="alert" className="uwaga">
-          {t('arkusze.blad', { blad })}
-        </p>
+      {widocznyBlad && (
+        <div role="alert" className="uwaga">
+          <p>{t(widocznyBlad.klucz)}</p>
+          <details>
+            <summary>{t('arkusze.szczegoly')}</summary>
+            <code>{widocznyBlad.szczegoly}</code>
+          </details>
+          {widocznyBlad.klucz !== 'arkusze.bladUkladu' && (
+            <button
+              type="button"
+              onClick={() => {
+                ustawBlad(undefined);
+                ustawProbe((p) => p + 1);
+              }}
+            >
+              {t('arkusze.ponow')}
+            </button>
+          )}
+        </div>
       )}
       <div className="pasek-narzedzi">
         <label>
           {t('arkusze.wybor')}{' '}
-          <select value={wybrany} onChange={(e) => ustawWybrany(Number(e.target.value))}>
+          <select
+            value={wybrany}
+            onChange={(e) => {
+              ustawWybrany(Number(e.target.value));
+              ustawPdfGotowy(false);
+            }}
+          >
             {pakiet.arkusze.map((a, i) => (
               <option key={a.id} value={i}>
                 {a.nazwa}
@@ -155,9 +230,11 @@ export function Arkusze({ pakiet = pakietMausritter }: { pakiet?: Pakiet }) {
         <button type="button" disabled={!wynik || trwa} onClick={() => void pobierz(true)}>
           {t('arkusze.pobierzWszystkie')}
         </button>
-        {trwa && <span aria-live="polite">{t('arkusze.generowanie')}</span>}
+        {/* Region stale obecny w DOM – czytniki ekranu ogłaszają zmianę jego tekstu. */}
+        <p role="status" aria-live="polite" className="status">
+          {tekstStatusu[status]}
+        </p>
       </div>
-      {!wynik && !blad && <p aria-live="polite">{t('arkusze.wczytywanie')}</p>}
       {wynik && wynik.ostrzezenia.length > 0 && (
         <details className="uwaga">
           <summary>{t('arkusze.ostrzezenia', { liczba: wynik.ostrzezenia.length })}</summary>
@@ -177,7 +254,10 @@ export function Arkusze({ pakiet = pakietMausritter }: { pakiet?: Pakiet }) {
           {skala === 'rzeczywista' ? ` ${t('arkusze.uwagaSkali')}` : ''}
         </p>
       )}
-      <div className={`podglad-arkusza ${skala === 'dopasuj' ? 'dopasuj' : 'rzeczywista'}`}>
+      <div
+        className={`podglad-arkusza ${skala === 'dopasuj' ? 'dopasuj' : 'rzeczywista'}`}
+        aria-busy={!wynik && !widocznyBlad}
+      >
         {svg.map((s, i) => (
           <div key={i} className="strona-arkusza" dangerouslySetInnerHTML={{ __html: s }} />
         ))}
