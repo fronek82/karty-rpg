@@ -27,3 +27,9 @@ export function t(klucz: KluczTekstu, parametry?: Record<string, string | number
     nazwa in parametry ? String(parametry[nazwa]) : calosc,
   );
 }
+
+/** Tekst dla klucza zbudowanego dynamicznie (np. `pole.<klucz danych>`), gdy istnieje. */
+export function tJesliJest(klucz: string): string | undefined {
+  const slownik: Record<string, string> = slowniki[aktywnyJezyk];
+  return Object.hasOwn(slownik, klucz) ? slownik[klucz] : undefined;
+}

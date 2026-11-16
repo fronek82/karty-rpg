@@ -11,6 +11,9 @@ export interface UlozonyGlif {
   dy: number;
 }
 
+/** Najwięcej zapamiętanych układów tekstu na czcionkę – długa edycja nie zjada pamięci. */
+export const LIMIT_PAMIECI_UKLADU = 4000;
+
 /**
  * Czcionka wczytana przez fontkit (TTF, OTF/CFF, WOFF, WOFF2). Kształtuje tekst
  * (ligatury, kerning, glify złożone) i zwraca kontury glifów.
@@ -33,17 +36,31 @@ export class Czcionka {
     this.descent = Math.abs(font.descent);
   }
 
-  /** Kształtuje tekst w jedną linię (bez łamania). */
+  /** Kształtuje tekst w jedną linię (bez łamania). Pamięć podręczna LRU (`LIMIT_PAMIECI_UKLADU`). */
   uloz(tekst: string): UlozonyGlif[] {
     const zapamietany = this.pamiecUkladu.get(tekst);
-    if (zapamietany) return zapamietany;
+    if (zapamietany) {
+      // Odświeżenie pozycji – Map zachowuje kolejność wstawiania, najstarszy jest pierwszy.
+      this.pamiecUkladu.delete(tekst);
+      this.pamiecUkladu.set(tekst, zapamietany);
+      return zapamietany;
+    }
     const run = this.font.layout(tekst);
     const glify = run.glyphs.map((g, i) => {
       const p = run.positions[i];
       return { id: g.id, przesuniecie: p?.xAdvance ?? 0, dx: p?.xOffset ?? 0, dy: p?.yOffset ?? 0 };
     });
     this.pamiecUkladu.set(tekst, glify);
+    if (this.pamiecUkladu.size > LIMIT_PAMIECI_UKLADU) {
+      const najstarszy = this.pamiecUkladu.keys().next().value;
+      if (najstarszy !== undefined) this.pamiecUkladu.delete(najstarszy);
+    }
     return glify;
+  }
+
+  /** Liczba zapamiętanych układów tekstu (do testów). */
+  get rozmiarPamieciUkladu(): number {
+    return this.pamiecUkladu.size;
   }
 
   /**
@@ -183,6 +200,24 @@ const ZAPASOWE: Record<WariantCzcionki, WariantCzcionki[]> = {
 export class RejestrCzcionek {
   private readonly rodziny = new Map<string, Partial<Record<WariantCzcionki, Czcionka>>>();
   private readonly role = new Map<string, string>();
+  private zapasowa: string | undefined;
+  private sledzone: Set<string> | undefined;
+  /** Nazwy (role lub rodziny), dla których użyto czcionki zapasowej – do ostrzeżeń w UI. */
+  readonly brakujace = new Set<string>();
+
+  /**
+   * Rodzina zapasowa: gdy szukanej czcionki brak, zamiast błędu używana jest ta rodzina,
+   * a nazwa trafia do `brakujace`. Bez zapasowej brak czcionki to błąd (np. w testach).
+   */
+  ustawZapasowa(rodzina: string | undefined): this {
+    this.zapasowa = rodzina;
+    return this;
+  }
+
+  /** Rodziny z wczytanymi czcionkami. */
+  get nazwyRodzin(): string[] {
+    return [...this.rodziny.keys()];
+  }
 
   dodaj(rodzina: string, wariant: WariantCzcionki, czcionka: Czcionka): this {
     const warianty = this.rodziny.get(rodzina) ?? {};
@@ -191,20 +226,50 @@ export class RejestrCzcionek {
     return this;
   }
 
+  /** Zastępuje wszystkie role (np. po zmianie w projekcie) i czyści listę brakujących. */
+  ustawRole(role: Record<string, string>): this {
+    this.role.clear();
+    for (const [r, f] of Object.entries(role)) this.role.set(r, f);
+    this.brakujace.clear();
+    return this;
+  }
+
+  /** Wykonuje `f` i zwraca nazwy, dla których w jego trakcie użyto czcionki zapasowej. */
+  sledzBraki<T>(f: () => T): { wynik: T; braki: string[] } {
+    const poprzednie = this.sledzone;
+    const braki = new Set<string>();
+    this.sledzone = braki;
+    try {
+      return { wynik: f(), braki: [...braki] };
+    } finally {
+      this.sledzone = poprzednie;
+    }
+  }
+
   przypiszRole(rola: string, rodzina: string): this {
     this.role.set(rola, rodzina);
     return this;
   }
 
   pobierz(nazwa: string, wariant: WariantCzcionki = 'normalny'): Czcionka {
-    const rodzina = this.role.get(nazwa) ?? nazwa;
-    const warianty = this.rodziny.get(rodzina);
-    if (warianty) {
-      for (const w of ZAPASOWE[wariant]) {
-        const c = warianty[w];
-        if (c) return c;
-      }
+    const znaleziona = this.znajdz(this.role.get(nazwa) ?? nazwa, wariant);
+    if (znaleziona) return znaleziona;
+    const zapasowa = this.zapasowa !== undefined ? this.znajdz(this.zapasowa, wariant) : undefined;
+    if (zapasowa) {
+      this.brakujace.add(nazwa);
+      this.sledzone?.add(nazwa);
+      return zapasowa;
     }
     throw new Error(`Brak czcionki „${nazwa}” (${wariant}).`);
+  }
+
+  private znajdz(rodzina: string, wariant: WariantCzcionki): Czcionka | undefined {
+    const warianty = this.rodziny.get(rodzina);
+    if (!warianty) return undefined;
+    for (const w of ZAPASOWE[wariant]) {
+      const c = warianty[w];
+      if (c) return c;
+    }
+    return undefined;
   }
 }

@@ -13,7 +13,7 @@ import {
 } from '../pakiety/mausritter/talie';
 import type { ElementSceny, Scena } from '../silnik/scena';
 import { rejestrTestowy } from '../silnik/__testy__/pomoc';
-import { odcinkiCiecia, wSkaliSzarosci, zbudujArkusz } from './arkusz';
+import { odcinkiCiecia, wSkaliSzarosci, zbudujArkusz, zSzarymiObrazami } from './arkusz';
 import { scenyDoPdf } from './pdf';
 
 const ctx = {
@@ -278,5 +278,33 @@ describe('zbudujArkusz – tytuł, nożyczki, linie', () => {
       ctx,
     );
     expect(linie(w.strony[0]!)[0]!.obrys.kreska).toBeUndefined();
+  });
+});
+
+describe('zSzarymiObrazami', () => {
+  it('podmienia zasoby obrazów także w grupach, reszta bez zmian', () => {
+    const scena = {
+      szer: 10,
+      wys: 10,
+      glify: {},
+      elementy: [
+        {
+          typ: 'linia' as const,
+          x1: 0,
+          y1: 0,
+          x2: 1,
+          y2: 1,
+          obrys: { kolor: '#000000', grubosc: 1 },
+        },
+        {
+          typ: 'grupa' as const,
+          elementy: [{ typ: 'obraz' as const, zasob: 'a', x: 0, y: 0, szer: 1, wys: 1 }],
+        },
+      ],
+    } as unknown as Scena;
+    const wynik = zSzarymiObrazami(scena);
+    expect(JSON.stringify(wynik)).toContain('"zasob":"a#szary"');
+    expect(wynik.elementy[0]).toBe(scena.elementy[0]);
+    expect(JSON.stringify(scena)).not.toContain('#szary');
   });
 });

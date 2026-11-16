@@ -1,3 +1,4 @@
+import type { PlikCzcionki } from '../druk/budowaPdf';
 import type { Szablon } from '../model/szablon';
 import type { Pakiet } from '../pakiety/typy';
 import { RejestrCzcionek, wczytajCzcionke } from '../silnik/czcionki';
@@ -12,12 +13,16 @@ export interface ObrazWPamieci {
   info: InformacjaOObrazie;
   dane: Uint8Array;
   format: 'png' | 'jpg';
-  /** Adres do podglądu SVG (data:, żeby SVG wstawione jako tekst było samowystarczalne). */
+  /** Adres do podglądu SVG: `data:` w pakiecie wbudowanym, `blob:` w projektach (zwalniany). */
   adres: string;
 }
 
 export interface ZasobyPakietu {
   czcionki: RejestrCzcionek;
+  /** Bajty czcionek i role – do budowy PDF w workerze (rejestru fontkit nie da się przesłać). */
+  plikiCzcionek: PlikCzcionki[];
+  role: Record<string, string>;
+  zapasowa?: string;
   szablony: Map<string, Szablon>;
   obrazy: Map<string, ObrazWPamieci>;
 }
@@ -40,13 +45,22 @@ export async function wczytajZasobyPakietu(
   baza: string = import.meta.env.BASE_URL,
 ): Promise<ZasobyPakietu> {
   const czcionki = new RejestrCzcionek();
+  const plikiCzcionek: PlikCzcionki[] = [];
+  const role: Record<string, string> = {};
   const zadania: Promise<void>[] = [];
   for (const c of pakiet.czcionki) {
     czcionki.przypiszRole(c.rola, c.rodzina);
+    role[c.rola] = c.rodzina;
     for (const [wariant, plik] of Object.entries(c.warianty)) {
       if (!plik) continue;
       zadania.push(
         pobierz(`${baza}czcionki/${plik}`).then((dane) => {
+          plikiCzcionek.push({
+            id: plik,
+            rodzina: c.rodzina,
+            wariant: wariant as PlikCzcionki['wariant'],
+            dane,
+          });
           czcionki.dodaj(
             c.rodzina,
             wariant as Parameters<RejestrCzcionek['dodaj']>[1],
@@ -71,5 +85,11 @@ export async function wczytajZasobyPakietu(
     );
   }
   await Promise.all(zadania);
-  return { czcionki, szablony: new Map(pakiet.szablony.map((s) => [s.id, s])), obrazy };
+  return {
+    czcionki,
+    plikiCzcionek,
+    role,
+    szablony: new Map(pakiet.szablony.map((s) => [s.id, s])),
+    obrazy,
+  };
 }

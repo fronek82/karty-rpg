@@ -1,9 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { RejestrCzcionek, konturZFontkit } from './czcionki';
+import { LIMIT_PAMIECI_UKLADU, RejestrCzcionek, konturZFontkit } from './czcionki';
 import { czcionkaTestowa, rejestrTestowy } from './__testy__/pomoc';
 
 describe('Czcionka', () => {
   const garamond = czcionkaTestowa('EBGaramond-Regular.ttf');
+
+  it('pamięć układu tekstu ma limit (LRU)', () => {
+    const c = czcionkaTestowa('EBGaramond-Regular.ttf');
+    const a0 = c.uloz('a0');
+    const a1 = c.uloz('a1');
+    for (let i = 2; i <= LIMIT_PAMIECI_UKLADU; i++) {
+      c.uloz(`a${i}`);
+      if (i === 10) c.uloz('a0'); // odświeżony – wypadnie później niż a1
+    }
+    expect(c.rozmiarPamieciUkladu).toBe(LIMIT_PAMIECI_UKLADU);
+    expect(c.uloz('a0')).toBe(a0);
+    expect(c.uloz('a1')).not.toBe(a1);
+    expect(c.uloz('a1')).toEqual(a1);
+  });
 
   it('kształtuje tekst z ligaturami', () => {
     // „fi” to w EB Garamond jeden glif (ligatura).
@@ -45,5 +59,15 @@ describe('RejestrCzcionek', () => {
 
   it('zgłasza czytelny błąd, gdy brak czcionki', () => {
     expect(() => new RejestrCzcionek().pobierz('tytul')).toThrow('Brak czcionki „tytul”');
+  });
+
+  it('czcionka zapasowa zamiast błędu, z zapisem brakującej nazwy', () => {
+    const r = new RejestrCzcionek();
+    const c = czcionkaTestowa('EBGaramond-Regular.ttf');
+    r.dodaj('EB Garamond', 'normalny', c)
+      .ustawZapasowa('EB Garamond')
+      .przypiszRole('tytul', 'Nie Ma');
+    expect(r.pobierz('tytul', 'pogrubiony')).toBe(c);
+    expect([...r.brakujace]).toEqual(['tytul']);
   });
 });

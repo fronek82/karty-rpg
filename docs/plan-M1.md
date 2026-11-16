@@ -104,19 +104,19 @@ Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E4a → E5 → E6 → E
 
 ## 5. Stan realizacji
 
-| Etap | Stan | Commity                         | Uwagi                                                                                                                                                                                                                                                                         |
-| ---- | ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| E0   | ✅   | `f116898`                       | CI na każdej gałęzi, wdrożenie Pages z `main`                                                                                                                                                                                                                                 |
-| E1   | ✅   | `0dcf91a`                       | decyzja: tekst jako krzywe (`docs/decyzja-pdf.md`)                                                                                                                                                                                                                            |
-| E2   | ✅   | `283e6d8`, `6aac0dc`            | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                                                                                                                                                                            |
-| E3   | ✅   | `e93d618`, `d362a12`, `167c5c6` | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png`                                                                                                                                                       |
-| E4   | ✅   | `43b257a`, `1ae47ed`            | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                                                                                                                                                                                    |
-| E4a  | ✅   | `0291dc2`, `d72ab3e`, przegląd  | sekcja 6; PNG w `docs/obrazy/e4a-*.png`                                                                                                                                                                                                                                       |
-| E5   | ✅   | `502eb11`, przegląd             | strona `#/arkusze`: podgląd (dopasuj / 1:1), „Pobierz PDF” (arkusz / wszystkie), PDF↔SVG całych arkuszy; zrzut `docs/obrazy/e5-strona-arkusze.png`                                                                                                                            |
-| E6   | ✅   | `fa91274`                       | `src/dane/`: Dexie (projekty + zasoby jako Blob), schemat z wersją i migracjami (zod, bez gubienia nieznanych pól), spójność odwołań, wgrywanie czcionek, `.kartyrpg` i `.kartyrpg-szablon` (ZIP, fflate), ostrzeżenie o licencji czcionek, pakiet → projekt; test round-trip |
-| E7   | ⬜   |                                 |                                                                                                                                                                                                                                                                               |
-| E8   | ⬜   |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                                                                                                                                                                                 |
-| E9   | ⬜   |                                 |                                                                                                                                                                                                                                                                               |
+| Etap | Stan | Commity                                                                   | Uwagi                                                                                                                                                                                                                                                                         |
+| ---- | ---- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0   | ✅   | `f116898`                                                                 | CI na każdej gałęzi, wdrożenie Pages z `main`                                                                                                                                                                                                                                 |
+| E1   | ✅   | `0dcf91a`                                                                 | decyzja: tekst jako krzywe (`docs/decyzja-pdf.md`)                                                                                                                                                                                                                            |
+| E2   | ✅   | `283e6d8`, `6aac0dc`                                                      | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                                                                                                                                                                            |
+| E3   | ✅   | `e93d618`, `d362a12`, `167c5c6`                                           | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png`                                                                                                                                                       |
+| E4   | ✅   | `43b257a`, `1ae47ed`                                                      | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                                                                                                                                                                                    |
+| E4a  | ✅   | `0291dc2`, `d72ab3e`, przegląd                                            | sekcja 6; PNG w `docs/obrazy/e4a-*.png`                                                                                                                                                                                                                                       |
+| E5   | ✅   | `502eb11`, przegląd                                                       | strona `#/arkusze`: podgląd (dopasuj / 1:1), „Pobierz PDF” (arkusz / wszystkie), PDF↔SVG całych arkuszy; zrzut `docs/obrazy/e5-strona-arkusze.png`                                                                                                                            |
+| E6   | ✅   | `fa91274`                                                                 | `src/dane/`: Dexie (projekty + zasoby jako Blob), schemat z wersją i migracjami (zod, bez gubienia nieznanych pól), spójność odwołań, wgrywanie czcionek, `.kartyrpg` i `.kartyrpg-szablon` (ZIP, fflate), ostrzeżenie o licencji czcionek, pakiet → projekt; test round-trip |
+| E7   | ✅   | `cfbe6a2`, `b981f15`, `4cd106f`, `2872e78`, `8f506f0`, przegląd `d2480cf` | E7a–E7e (sekcja 7): projekty, tabela danych, podgląd i obraz karty, czcionki i role, korekta i ustawienia arkusza, PDF w workerze; zrzuty `docs/obrazy/e7-*.png`                                                                                                              |
+| E8   | ⬜   |                                                                           | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                                                                                                                                                                                 |
+| E9   | ⬜   |                                                                           |                                                                                                                                                                                                                                                                               |
 
 ## 6. Zadania po E4 – poprawki szablonów z E3 (etap E4a)
 
@@ -137,6 +137,18 @@ Zrobione w E4a także: nożyczki na linii prowadzącej, większy tytuł pionowy,
 
 Po E5 (przegląd): zasoby po nieudanym wczytaniu nie zostają w pamięci (przycisk „Spróbuj ponownie”), błąd układu nie wywraca aplikacji (granica błędu wokół strony ładowanej leniwie), stały region `role="status"`, komunikaty błędów przez i18n, stan „brak arkuszy”.
 
+## 7. Etap E7 – podział
+
+Każdy krok: commit + push na gałęzi etapu; po E7e przegląd, PR i scalenie do `main`.
+
+| Krok | Zakres                                                                                                                                                                                                                                                                                                | Stan |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| E7a  | Projekty: lista z IndexedDB, „Nowy projekt z pakietu”, import `.kartyrpg` (kolizja id → „Zastąp / Zapisz jako kopię”), eksport, usuwanie z potwierdzeniem; strona projektu (talie, ostrzeżenia), arkusze i PDF z danych projektu; obrazy w podglądzie jako `blob:` zwalniane przy zamknięciu projektu | ✅   |
+| E7b  | Tabela danych talii: wiersz = karta, kolumny = pola i parametry szablonu + „Ilość”, rozmiar w slotach; dodawanie, usuwanie, kopiowanie kart; zapis do bazy (sam dokument)                                                                                                                             | ✅   |
+| E7c  | Podgląd karty obok tabeli; edycja obrazu karty myszą (przeciąganie, kółko) i polami (skala, X, Y, obrót, dopasowanie, „Resetuj”); wybór/wgrywanie obrazu do biblioteki                                                                                                                                | ✅   |
+| E7d  | Biblioteka czcionek: wgrywanie (rodzina/wariant z pliku, poprawa), przypisanie ról (tytuł, treść), czcionka zapasowa z ostrzeżeniem; wybór szablonu i rozmiaru karty – w tabeli (E7b)                                                                                                                 | ✅   |
+| E7e  | Arkusz: ręczna korekta (przypinanie kart, zamiana miejscami, zamrożenie układu), ustawienia (tytuł, papier, orientacja, tryb cz-b z szarymi obrazami), teksty ostrzeżeń przez i18n (E7c), PDF w workerze, LRU układu tekstu                                                                           | ✅   |
+
 ### Po E6 – do E7
 
 Po przeglądzie E6 poprawione: sprawdzanie treści zasobów przy imporcie (czcionka przez fontkit, sygnatura PNG/JPG), pełne schematy pól stylu, obrazu, arkusza (nieznany wariant czcionki itp. odrzucany), polskie komunikaty zod z najkonkretniejszą gałęzią unii, osobne migracje projektu i pliku szablonu, walidacja przy zapisie do bazy i kontrola Blobów w transakcji, odczyt w jednej transakcji, usuwanie osieroconych Blobów, `istnieje()` i `jakoKopia()`, twarde reguły spójności (powtórzone id węzłów, grup, kart w grupach; przypięte karty) oddzielone od ostrzeżeń (`ostrzezeniaProjektu`: rola bez czcionek, brakujący obraz szablonu lub karty, powtórzona para rodzina+wariant), `rejestrZProjektu` nie przerywa przy uszkodzonej czcionce, wariant czcionki z OS/2 (grubość ≥ 600, bit kursywy) i rodzina typograficzna (rekord 16), unikalne id zasobów (`-2`, `-3`), import szablonu nie zmienia wyglądu istniejących kart (role i czcionki projektu wygrywają, konflikty jako ostrzeżenia, kolizja id zasobu → nowe id z przepisaniem odwołań), limity ZIP (wpis, suma, liczba wpisów, tylko oczekiwane nazwy), kontrola zgodności schematu z typami modelu w czasie kompilacji.
@@ -149,17 +161,36 @@ Dla E7 (interfejs):
 - `zapisz(projekt)` bez zasobów do częstej edycji kart; z zasobami tylko przy zmianie biblioteki. Przy dużych bibliotekach dodać `dodajZasob` / `usunZasob` zamiast przepisywania wszystkich Blobów.
 - Pakiet Mausritter → projekt przez `projektZPakietu` („Nowy projekt z pakietu”). Google Fonts – M4.
 
+### Po przeglądzie E7
+
+Poprawione:
+
+- `useProjekt`: stan bieżący w refie, zmiany liczone synchronicznie z najnowszego projektu; zapis wybiera tryb (z bajtami, gdy biblioteka zmieniona od ostatniego udanego zapisu); błąd zapisu zostawia zmiany do ponowienia (kolejna edycja, zamknięcie, ostrzeżenie `beforeunload`); zapis samego dokumentu nie kasuje Blobów, wgrywanie obrazu/czcionki nie gubi równoległych edycji – test hooka (jsdom + fake-indexeddb);
+- role czcionek bez ponownego parsowania czcionek; ostrzeżenia projektu liczone tylko przy zmianie talii/szablonów/biblioteki/ról; podgląd arkusza z wartości odroczonej (`useDeferredValue`); przeciąganie obrazu lokalnie, jeden zapis po puszczeniu; kółko z ograniczeniem skali i krokiem zależnym od `deltaY`;
+- szare obrazy tylko użyte na arkuszach cz-b, z pamięcią konwersji; JPEG zostaje JPEG-iem;
+- PDF: ścieżka zapasowa w wątku głównym, gdy workera nie da się uruchomić;
+- brakujące czcionki w podglądzie karty liczone dla tej karty (`sledzBraki`); wyciek `FontFace` w StrictMode;
+- `ustawIlosc` usuwa nadmiarowe przypięcia; osobne ostrzeżenie „przypięcie poza siatką”; Escape anuluje zaznaczenie w korekcie i zamyka dialogi (fokus na bezpiecznym przycisku); `key` talii; locale dat z i18n; lista projektów czeka na ostatni zapis.
+
+Odłożone do E8/E9:
+
+- Orientacja EXIF zdjęć JPEG: podgląd w przeglądarce ją stosuje, PDF (pdf-lib) nie – normalizować przy wgrywaniu.
+- Przerwanie budowy PDF przy opuszczeniu strony (AbortSignal do workera).
+- Korekta: karta nieprzypięta upuszczona na przypiętą → „koliduje” (zamiana tylko między przypiętymi); przy zaznaczeniu wszystkie sloty w kolejności Tab.
+- Nazwa pliku PDF z `arkusz.id` (stabilna, testowana) zamiast z nazwy arkusza.
+- Komunikaty wyjątków silnika/druku (np. `talia …`) bez i18n.
+
 ### Odłożone (backlog)
 
-- Brak czcionki: czcionka zapasowa z ostrzeżeniem zamiast przerwania renderu; komunikaty błędów silnika przez i18n (E7). (Unikalne id czcionek – zrobione w E6: id czcionki w silniku = id zasobu.)
-- Limit pamięci podręcznej układu tekstu (LRU) przy długiej edycji (E7).
+- ~~Brak czcionki → czcionka zapasowa z ostrzeżeniem~~ – E7d. Komunikaty wyjątków silnika (np. „talia …”) nadal po polsku w kodzie, bez i18n.
+- ~~Limit pamięci podręcznej układu tekstu (LRU)~~ – E7e.
 - Łamanie wierszy przy `odstepLiter` minimalnie zbyt ostrożne.
-- Tryb czarno-biały dla obrazów rastrowych – konwersja przy wczytywaniu zasobów (E7).
+- ~~Tryb czarno-biały dla obrazów rastrowych~~ – E7e (szare kopie `id#szary`).
 - Pas nagłówków grup liczony z szacunkowej szerokości grupy – przy podziale grupy na strony nagłówek może się nie zmieścić (jest ostrzeżenie).
-- Paczka aplikacji ~800 KB (fontkit + pdf-lib) – PDF ładowany na żądanie (E7).
+- ~~Paczka aplikacji ~800 KB~~ – strony ładowane leniwie, PDF w workerze ładowanym przy pobraniu (E7e).
 - Limit długości tytułu liczony z siatki regularnej (linia nr k = k slotów). Przy grupach z odstępami lub pustym pierwszym rzędzie pozycja linii nożyczek może być inna – liczyć z tych samych odcinków co nożyczki (pakiet Mausritter tego nie używa).
-- Nowe komunikaty ostrzeżeń (`tytul-nie-miesci-sie`, `brak-miejsca-na-obraz`, `nieznane-pole-do-omijania`) – teksty w i18n razem z pozostałymi ostrzeżeniami (E7).
+- ~~Teksty ostrzeżeń w i18n~~ – E7c (`src/ui/ostrzezenia.ts`).
 - Ponowna nakładka E4a na referencję z oryginalnymi czcionkami – w lokalnym teście E8.
-- Ostrzeżenia arkusza w UI pokazywane jako surowe kody (`kartaId: komunikat`) – teksty i18n w E7.
-- Obrazy w podglądzie jako `data:` (kopia base64 w pamięci i w każdym SVG strony) – przy dużych obrazach z biblioteki (E6/E7) przejść na `blob:` z zarządzaniem czasem życia (revoke).
-- Budowa wszystkich arkuszy przy „Pobierz wszystkie” w wątku głównym – przy dużych taliach przenieść do workera (E7).
+- ~~Ostrzeżenia arkusza jako surowe kody~~ – E7c.
+- ~~Obrazy w podglądzie jako `data:`~~ – w projektach `blob:` ze zwalnianiem (E7a); pakiet wbudowany (`#/arkusze`) nadal `data:`.
+- ~~„Pobierz wszystkie” w wątku głównym~~ – E7e (worker).
