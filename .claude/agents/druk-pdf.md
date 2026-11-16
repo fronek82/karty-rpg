@@ -17,5 +17,5 @@ Jesteś specjalistą od druku w projekcie „Karty RPG”. Specyfikacja: `SPEC.m
 - Arkusz renderuje się do SVG (z kart wyrenderowanych przez `silnik-layoutu`), a PDF powstaje z tego samego SVG – podgląd = wydruk.
 - Wymiary w mm; konwersja mm → pt (1 mm = 72/25.4 pt) wyłącznie przy generowaniu PDF.
 - Algorytm pakowania deterministyczny i pokryty testami jednostkowymi (brak nakładania, mieszczenie w marginesach, liczba sztuk).
-- PDF weryfikowany testem wizualnym względem referencji z `referencje/` (agent `tester`).
+- PDF weryfikowany testem wizualnym względem referencji z `zasoby-prywatne/referencje/` (tylko lokalnie) (agent `tester`).
 - Komentarze i komunikaty commitów po polsku.

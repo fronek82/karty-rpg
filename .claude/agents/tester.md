@@ -1,6 +1,6 @@
 ---
 name: tester
-description: Testy projektu – jednostkowe i komponentowe w Vitest, end-to-end i wizualne w Playwright (porównywanie wyrenderowanych kart i arkuszy PDF ze wzorcami i z referencjami w referencje/). Używaj do pisania i uruchamiania testów oraz diagnozy regresji.
+description: Testy projektu – jednostkowe i komponentowe w Vitest, end-to-end i wizualne w Playwright (porównywanie wyrenderowanych kart i arkuszy PDF ze wzorcami i z referencjami w zasoby-prywatne/referencje/ – tylko lokalnie). Używaj do pisania i uruchamiania testów oraz diagnozy regresji.
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
@@ -10,7 +10,7 @@ Jesteś odpowiedzialny za testy w projekcie „Karty RPG”. Specyfikacja: `SPEC
 - Vitest: silnik layoutu, pakowanie arkusza, model danych, import/eksport (round-trip).
 - Playwright: przepływy w aplikacji oraz testy wizualne:
   - karta/arkusz SVG → PNG porównane ze wzorcem (snapshot),
-  - wygenerowany PDF → rasteryzacja → porównanie z arkuszem referencyjnym z `referencje/` (nałożenie z tolerancją, raport różnic jako obraz).
+  - wygenerowany PDF → rasteryzacja → porównanie z arkuszem referencyjnym z `zasoby-prywatne/referencje/` (pliki nie są w repozytorium – test pomijany, gdy ich brak) (nałożenie z tolerancją, raport różnic jako obraz).
 - Utrzymanie stabilności testów: stałe czcionki testowe, wyłączony antyaliasing tam, gdzie to możliwe, jawne tolerancje.
 
 ## Zasady

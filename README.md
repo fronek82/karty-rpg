@@ -43,3 +43,9 @@ docs/        plany i notatki
 
 Pliki robocze, które nie mają trafić do repozytorium, trzymaj w `zasoby-prywatne/`.
 Każdy dodany zasób zewnętrzny wpisz do [`LICENCJE.md`](LICENCJE.md).
+
+## Licencja
+
+Kod aplikacji jest udostępniony na licencji [MIT](LICENSE). Licencja nie obejmuje zasobów
+w pakietach szablonów (czcionek, grafik, wzorów) – każdy z nich ma własne warunki opisane
+w [`LICENCJE.md`](LICENCJE.md) i w pliku `LICENCJE.md` danego pakietu.

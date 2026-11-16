@@ -17,6 +17,8 @@ Kamień milowy M1 ze `SPEC.md` (sekcja 12). Dokument opisuje ustalenia, pomiary 
 
 ## 2. Pomiary referencji (`Mausritter_kartyekwipunku.pdf`)
 
+Pliki referencyjne (PDF i zrzuty ekranu) **nie są w repozytorium** – leżą lokalnie w `zasoby-prywatne/referencje/`. W repozytorium trzymamy tylko zmierzone liczby.
+
 - Strona 306 × 228 mm ze spadem, TrimBox = **A4 poziomo** (297 × 210 mm) przesunięte 9 mm od góry strony. Wszystkie pozycje niżej podano w układzie A4 (od lewego górnego rogu obszaru po przycięciu).
 - Slot 25,75 × 25,75 mm, linie cięcia przerywane, wspólne dla sąsiednich kart.
 - Pasek tytułu karty: ok. 6,7 mm, pod nim ciągła linia.
@@ -24,7 +26,7 @@ Kamień milowy M1 ze `SPEC.md` (sekcja 12). Dokument opisuje ustalenia, pomiary 
 - **Arkusz 2 (wyposażenie):** ta sama siatka; pionowy tytuł zakończony nożyczkami.
 - **Arkusz 3 (stany):** 6 rzędów, grupy po 1–3 kolumny z odstępem ok. 2,9 mm; nad grupą nagłówek i opis; tytuł poziomy u góry; nożyczki pod siatką.
 - Rozmiary kart: 1×1, 1×2 (ciężka broń, ciężka zbroja, broń dystansowa ciężka), 2×1 (lekka zbroja, puste karty).
-- Dokładne liczby do testu geometrycznego zostaną zapisane w `testy/referencje/geometria.json` (skrypt w `narzedzia/`).
+- Dokładne liczby do testu geometrycznego zostaną zapisane w `testy/geometria-referencji.json` (skrypt w `narzedzia/`).
 
 ### Budowa szablonów (tylko układ)
 
@@ -63,17 +65,17 @@ Zasady:
 
 ## 4. Etapy
 
-| Etap                     | Agent              | Zakres                                                                                                                                                               | Gotowe, gdy                                                                  |
-| ------------------------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **E0** Szkielet          | główny             | Vite + TS + React, ESLint, Prettier, Vitest, Playwright, i18n, `LICENCJE.md`, GitHub Actions (testy + Pages), routing hash                                           | `npm run build`, `lint`, `test`, `e2e` przechodzą; strona startowa po polsku |
-| **E1** Prototyp PDF      | druk-pdf           | pdf-lib + fontkit: jedna karta ze sceny, czcionki OTF/TTF z podzbiorem; porównanie z jsPDF + svg2pdf                                                                 | notatka z decyzją w `docs/`, test porównania PDF↔SVG                         |
-| **E2** Model i silnik    | silnik-layoutu     | typy, układ (mm/%/auto/wypełnij, padding, gap, wyrównania, warstwy), tryb slotów, pomiar i łamanie tekstu, pola M1, „gdy puste: pokaż pustą ramkę”, serializator SVG | testy jednostkowe + snapshoty SVG                                            |
-| **E3** Pakiet Mausritter | silnik-layoutu     | 7 szablonów (warianty rozmiarów), przykładowe talie z własnymi danymi, `LICENCJE.md`                                                                                 | każdy szablon renderuje się; snapshoty                                       |
-| **E4** Arkusz            | druk-pdf           | papier, marginesy, tytuł poziomy/pionowy, grupy z nagłówkiem i opisem, rozmieszczanie automatyczne + przypięte pozycje, wspólne linie cięcia, nożyczki, tryb cz-b    | testy rozmieszczania i linii cięcia                                          |
-| **E5** PDF               | druk-pdf           | scena arkusza → PDF A4 z osadzonymi czcionkami                                                                                                                       | PDF otwiera się, test zgodności z SVG                                        |
-| **E6** Dane              | dane-import        | Dexie, schemat z wersją, zasoby jako Blob, wgrywanie czcionek, eksport/import `.kartyrpg`                                                                            | test „round-trip”                                                            |
-| **E7** UI                | edytor-ui          | projekty, talie, tabela z „Ilość”, wybór szablonu/rozmiaru, czcionki do ról, podgląd karty i arkusza, ręczna korekta, „Pobierz PDF”                                  | testy e2e przepływu                                                          |
-| **E8** Testy wizualne    | tester             | test geometryczny względem `geometria.json` (CI); lokalny test nakładania z oryginalnymi czcionkami i referencją z `zasoby-prywatne/` (pomijany, gdy brak plików)    | raport z nakładką różnic                                                     |
-| **E9** Wdrożenie         | główny + recenzent | GitHub Pages, przegląd, wydruk testowy                                                                                                                               | strona działa, użytkownik potwierdza wydruk                                  |
+| Etap                     | Agent              | Zakres                                                                                                                                                                       | Gotowe, gdy                                                                  |
+| ------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **E0** Szkielet          | główny             | Vite + TS + React, ESLint, Prettier, Vitest, Playwright, i18n, `LICENCJE.md`, GitHub Actions (testy + Pages), routing hash                                                   | `npm run build`, `lint`, `test`, `e2e` przechodzą; strona startowa po polsku |
+| **E1** Prototyp PDF      | druk-pdf           | pdf-lib + fontkit: jedna karta ze sceny, czcionki OTF/TTF z podzbiorem; porównanie z jsPDF + svg2pdf                                                                         | notatka z decyzją w `docs/`, test porównania PDF↔SVG                         |
+| **E2** Model i silnik    | silnik-layoutu     | typy, układ (mm/%/auto/wypełnij, padding, gap, wyrównania, warstwy), tryb slotów, pomiar i łamanie tekstu, pola M1, „gdy puste: pokaż pustą ramkę”, serializator SVG         | testy jednostkowe + snapshoty SVG                                            |
+| **E3** Pakiet Mausritter | silnik-layoutu     | 7 szablonów (warianty rozmiarów), przykładowe talie z własnymi danymi, `LICENCJE.md`                                                                                         | każdy szablon renderuje się; snapshoty                                       |
+| **E4** Arkusz            | druk-pdf           | papier, marginesy, tytuł poziomy/pionowy, grupy z nagłówkiem i opisem, rozmieszczanie automatyczne + przypięte pozycje, wspólne linie cięcia, nożyczki, tryb cz-b            | testy rozmieszczania i linii cięcia                                          |
+| **E5** PDF               | druk-pdf           | scena arkusza → PDF A4 z osadzonymi czcionkami                                                                                                                               | PDF otwiera się, test zgodności z SVG                                        |
+| **E6** Dane              | dane-import        | Dexie, schemat z wersją, zasoby jako Blob, wgrywanie czcionek, eksport/import `.kartyrpg`                                                                                    | test „round-trip”                                                            |
+| **E7** UI                | edytor-ui          | projekty, talie, tabela z „Ilość”, wybór szablonu/rozmiaru, czcionki do ról, podgląd karty i arkusza, ręczna korekta, „Pobierz PDF”                                          | testy e2e przepływu                                                          |
+| **E8** Testy wizualne    | tester             | test geometryczny względem `geometria-referencji.json` (CI); lokalny test nakładania z oryginalnymi czcionkami i referencją z `zasoby-prywatne/` (pomijany, gdy brak plików) | raport z nakładką różnic                                                     |
+| **E9** Wdrożenie         | główny + recenzent | GitHub Pages, przegląd, wydruk testowy                                                                                                                                       | strona działa, użytkownik potwierdza wydruk                                  |
 
 Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E5 → E7 → E8 → E9. Recenzent przegląda kod po E2–E7. Po każdym etapie commit i krótkie podsumowanie.

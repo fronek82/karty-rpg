@@ -2,6 +2,7 @@
   "name": "karty-rpg",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
   "description": "Projektowanie i drukowanie kart do gier RPG i planszowych – w całości w przeglądarce.",
   "type": "module",
   "engines": {

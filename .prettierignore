@@ -3,7 +3,6 @@ coverage
 playwright-report
 test-results
 zasoby-prywatne
-referencje
 package-lock.json
 SPEC.md
 .claude

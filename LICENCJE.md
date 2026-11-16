@@ -1,5 +1,8 @@
 # Licencje zasobów zewnętrznych
 
+Kod aplikacji jest na licencji MIT (plik `LICENSE`). Ten plik dotyczy wyłącznie zasobów
+zewnętrznych i nie są one objęte licencją MIT.
+
 Każdy zasób zewnętrzny dodany do repozytorium (czcionka, grafika, wzór karty) musi mieć tu wpis:
 źródło, autor, licencja i – jeśli licencja tego wymaga – treść atrybucji pokazywanej w aplikacji.
 Pakiety szablonów mają dodatkowo własny plik `LICENCJE.md` w swoim katalogu.
