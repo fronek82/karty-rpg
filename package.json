@@ -18,7 +18,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test --trace off"
+    "e2e": "playwright test --trace off",
+    "test:nakladka": "playwright test testy/nakladka-referencji.spec.ts --trace off --reporter=html"
   },
   "dependencies": {
     "dexie": "^4.4.7",
