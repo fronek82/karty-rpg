@@ -43,6 +43,8 @@ export interface WynikArkusza {
   /** Lewy górny róg siatki (mm od rogu strony). */
   poczatekSiatki: { x: Mm; y: Mm };
   slot: { szerokosc: Mm; wysokosc: Mm };
+  /** Siatka w slotach; `grupy` – karty w kolumnach grup (przypięcia wtedy nie działają). */
+  siatka: { kolumny: number; rzedy: number; grupy: boolean };
   /** Tytuł po dopasowaniu: rozmiar czcionki i długość napisu (mm). */
   tytul?: { rozmiar: Mm; dlugosc: Mm };
   ostrzezenia: OstrzezenieArkusza[];
@@ -376,6 +378,11 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     rozmieszczenie,
     poczatekSiatki: poczatek,
     slot,
+    siatka: {
+      kolumny: Math.floor(siatka.szer / slot.szerokosc + 1e-6),
+      rzedy: rzedySiatki,
+      grupy: !!(grupy && u.grupy),
+    },
     ...(tytul && u.tytul ? { tytul: { rozmiar: rozmiarTytulu, dlugosc: tytul.szer } } : {}),
     ostrzezenia,
   };
@@ -456,4 +463,23 @@ function nozyczkiNaScenie(
     ],
   });
   return wynik;
+}
+
+/** Sufiks zasobu obrazu w skali szarości (tryb czarno-biały arkusza). */
+export const SUFIKS_SZARY = '#szary';
+
+/**
+ * Scena arkusza czarno-białego: obrazy wskazują szare wersje zasobów (`id#szary`), które
+ * przygotowuje warstwa wczytująca zasoby. Wektory zamienia na szarości już `zbudujArkusz`.
+ */
+export function zSzarymiObrazami(scena: Scena): Scena {
+  const zmien = (elementy: ElementSceny[]): ElementSceny[] =>
+    elementy.map((e) =>
+      e.typ === 'obraz'
+        ? { ...e, zasob: e.zasob + SUFIKS_SZARY }
+        : e.typ === 'grupa'
+          ? { ...e, elementy: zmien(e.elementy) }
+          : e,
+    );
+  return { ...scena, elementy: zmien(scena.elementy) };
 }

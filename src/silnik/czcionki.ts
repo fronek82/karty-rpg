@@ -11,6 +11,9 @@ export interface UlozonyGlif {
   dy: number;
 }
 
+/** Najwięcej zapamiętanych układów tekstu na czcionkę – długa edycja nie zjada pamięci. */
+export const LIMIT_PAMIECI_UKLADU = 4000;
+
 /**
  * Czcionka wczytana przez fontkit (TTF, OTF/CFF, WOFF, WOFF2). Kształtuje tekst
  * (ligatury, kerning, glify złożone) i zwraca kontury glifów.
@@ -33,17 +36,31 @@ export class Czcionka {
     this.descent = Math.abs(font.descent);
   }
 
-  /** Kształtuje tekst w jedną linię (bez łamania). */
+  /** Kształtuje tekst w jedną linię (bez łamania). Pamięć podręczna LRU (`LIMIT_PAMIECI_UKLADU`). */
   uloz(tekst: string): UlozonyGlif[] {
     const zapamietany = this.pamiecUkladu.get(tekst);
-    if (zapamietany) return zapamietany;
+    if (zapamietany) {
+      // Odświeżenie pozycji – Map zachowuje kolejność wstawiania, najstarszy jest pierwszy.
+      this.pamiecUkladu.delete(tekst);
+      this.pamiecUkladu.set(tekst, zapamietany);
+      return zapamietany;
+    }
     const run = this.font.layout(tekst);
     const glify = run.glyphs.map((g, i) => {
       const p = run.positions[i];
       return { id: g.id, przesuniecie: p?.xAdvance ?? 0, dx: p?.xOffset ?? 0, dy: p?.yOffset ?? 0 };
     });
     this.pamiecUkladu.set(tekst, glify);
+    if (this.pamiecUkladu.size > LIMIT_PAMIECI_UKLADU) {
+      const najstarszy = this.pamiecUkladu.keys().next().value;
+      if (najstarszy !== undefined) this.pamiecUkladu.delete(najstarszy);
+    }
     return glify;
+  }
+
+  /** Liczba zapamiętanych układów tekstu (do testów). */
+  get rozmiarPamieciUkladu(): number {
+    return this.pamiecUkladu.size;
   }
 
   /**

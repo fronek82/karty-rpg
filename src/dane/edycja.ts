@@ -1,3 +1,4 @@
+import type { Arkusz, UstawieniaArkusza } from '../model/arkusz';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
 import {
   czyKontener,
@@ -345,4 +346,160 @@ export function usunZasob(
     projekt: { ...p, zasoby: p.zasoby.filter((z) => z.id !== id), zmieniono: teraz() },
     dane: noweDane,
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Arkusze: ustawienia i ręczna korekta (przypięcia)
+
+function zmienArkusz(p: Projekt, arkuszId: string, f: (a: Arkusz) => Arkusz): Projekt {
+  return {
+    ...p,
+    zmieniono: teraz(),
+    arkusze: p.arkusze.map((a) => (a.id === arkuszId ? f(a) : a)),
+  };
+}
+
+export function ustawUstawieniaArkusza(
+  p: Projekt,
+  arkuszId: string,
+  zmiana: Partial<UstawieniaArkusza>,
+): Projekt {
+  return zmienArkusz(p, arkuszId, (a) => ({ ...a, ustawienia: { ...a.ustawienia, ...zmiana } }));
+}
+
+export function ustawTytulArkusza(p: Projekt, arkuszId: string, tekst: string): Projekt {
+  return zmienArkusz(p, arkuszId, (a) =>
+    a.ustawienia.tytul
+      ? { ...a, ustawienia: { ...a.ustawienia, tytul: { ...a.ustawienia.tytul, tekst } } }
+      : a,
+  );
+}
+
+export interface Polozenie {
+  kartaId: string;
+  strona: number;
+  kolumna: number;
+  rzad: number;
+}
+
+export type BladPrzypiecia = 'poza-siatka' | 'koliduje';
+
+const nachodza = (
+  a: { kolumna: number; rzad: number; kolumny: number; rzedy: number },
+  b: { kolumna: number; rzad: number; kolumny: number; rzedy: number },
+) =>
+  a.kolumna < b.kolumna + b.kolumny &&
+  b.kolumna < a.kolumna + a.kolumny &&
+  a.rzad < b.rzad + b.rzedy &&
+  b.rzad < a.rzad + a.rzedy;
+
+/**
+ * Przypina egzemplarz karty do slotu (ręczna korekta). `z` – obecne położenie egzemplarza,
+ * gdy był przypięty (przypięcie jest przenoszone), inaczej dodawane jest nowe. Cel musi mieścić
+ * się w siatce i nie nachodzić na inne przypięte karty (wyjątek: przypięta karta tego samego
+ * rozmiaru w slocie docelowym – wtedy karty zamieniają się miejscami); karty rozmieszczone
+ * automatycznie ustąpią miejsca przy przeliczeniu.
+ */
+export function przypnijKarte(
+  p: Projekt,
+  arkuszId: string,
+  z: Polozenie | undefined,
+  cel: Polozenie,
+  rozmiar: (kartaId: string) => { kolumny: number; rzedy: number },
+  siatka: { kolumny: number; rzedy: number },
+): { projekt: Projekt } | { blad: BladPrzypiecia } {
+  const arkusz = p.arkusze.find((a) => a.id === arkuszId);
+  if (!arkusz) return { blad: 'poza-siatka' };
+  const r = rozmiar(cel.kartaId);
+  if (
+    cel.kolumna < 0 ||
+    cel.rzad < 0 ||
+    cel.strona < 0 ||
+    cel.kolumna + r.kolumny > siatka.kolumny ||
+    cel.rzad + r.rzedy > siatka.rzedy
+  ) {
+    return { blad: 'poza-siatka' };
+  }
+  const takiSam = (
+    x: { kartaId: string; kolumna: number; rzad: number; strona?: number },
+    y?: Polozenie,
+  ) =>
+    !!y &&
+    x.kartaId === y.kartaId &&
+    x.kolumna === y.kolumna &&
+    x.rzad === y.rzad &&
+    (x.strona ?? 0) === y.strona;
+  const inne = (arkusz.przypiete ?? []).filter((x) => !takiSam(x, z));
+  const kolidujace = inne.filter(
+    (x) =>
+      (x.strona ?? 0) === cel.strona && nachodza({ ...x, ...rozmiar(x.kartaId) }, { ...cel, ...r }),
+  );
+  const nowe = przypiecie(cel);
+  if (kolidujace.length === 0) {
+    return { projekt: zmienArkusz(p, arkuszId, (a) => ({ ...a, przypiete: [...inne, nowe] })) };
+  }
+  // Zamiana miejscami: przypięta karta przeniesiona na inną przypiętą kartę tego samego rozmiaru,
+  // zaczynającą się w slocie docelowym.
+  const [druga] = kolidujace;
+  const r2 = druga && rozmiar(druga.kartaId);
+  if (
+    z &&
+    kolidujace.length === 1 &&
+    druga &&
+    r2 &&
+    druga.kolumna === cel.kolumna &&
+    druga.rzad === cel.rzad &&
+    r2.kolumny === r.kolumny &&
+    r2.rzedy === r.rzedy
+  ) {
+    const zamieniona = przypiecie({ ...z, kartaId: druga.kartaId });
+    return {
+      projekt: zmienArkusz(p, arkuszId, (a) => ({
+        ...a,
+        przypiete: [...inne.map((x) => (x === druga ? zamieniona : x)), nowe],
+      })),
+    };
+  }
+  return { blad: 'koliduje' };
+}
+
+const przypiecie = (x: Polozenie) => ({
+  kartaId: x.kartaId,
+  kolumna: x.kolumna,
+  rzad: x.rzad,
+  ...(x.strona ? { strona: x.strona } : {}),
+});
+
+/** Odpina egzemplarz (wraca do rozmieszczania automatycznego). */
+export function odepnijKarte(p: Projekt, arkuszId: string, z: Polozenie): Projekt {
+  return zmienArkusz(p, arkuszId, (a) => {
+    const przypiete = (a.przypiete ?? []).filter(
+      (x) =>
+        !(
+          x.kartaId === z.kartaId &&
+          x.kolumna === z.kolumna &&
+          x.rzad === z.rzad &&
+          (x.strona ?? 0) === z.strona
+        ),
+    );
+    const { przypiete: _p, ...reszta } = a;
+    void _p;
+    return przypiete.length ? { ...reszta, przypiete } : reszta;
+  });
+}
+
+export function odepnijWszystkie(p: Projekt, arkuszId: string): Projekt {
+  return zmienArkusz(p, arkuszId, (a) => {
+    const { przypiete: _p, ...reszta } = a;
+    void _p;
+    return reszta;
+  });
+}
+
+/** Przypina wszystkie karty tam, gdzie są teraz – układ nie zmieni się przy edycji talii. */
+export function zamrozUklad(p: Projekt, arkuszId: string, polozenia: Polozenie[]): Projekt {
+  return zmienArkusz(p, arkuszId, (a) => ({
+    ...a,
+    przypiete: polozenia.map(przypiecie),
+  }));
 }

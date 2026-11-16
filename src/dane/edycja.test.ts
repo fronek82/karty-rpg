@@ -20,6 +20,12 @@ import {
   zmienNazweRodziny,
   ustawWariantCzcionki,
   usunZasob,
+  przypnijKarte,
+  odepnijKarte,
+  odepnijWszystkie,
+  zamrozUklad,
+  ustawUstawieniaArkusza,
+  ustawTytulArkusza,
 } from './edycja';
 import { ostrzezeniaProjektu } from './schemat';
 import { projektZPakietu } from './pakiet';
@@ -167,5 +173,118 @@ describe('biblioteka czcionek i role', () => {
     for (const g of grenze) y = usunZasob(y.projekt, y.dane, g.id);
     expect(() => przygotujProjekt(y.projekt)).not.toThrow();
     expect(ostrzezeniaProjektu(y.projekt).join()).toMatch(/rola „tytul”/);
+  });
+});
+
+describe('ręczna korekta arkusza', () => {
+  const A = 'mausritter-arkusz-bron';
+  const siatka = { kolumny: 10, rzedy: 7 };
+  const rozmiar = (id: string) => {
+    const k = p.talie.flatMap((t) => t.karty).find((x) => x.id === id)!;
+    return { kolumny: k.rozmiar?.kolumny ?? 1, rzedy: k.rozmiar?.rzedy ?? 1 };
+  };
+  const arkusz = (x: Projekt) => x.arkusze.find((a) => a.id === A)!;
+
+  it('przypięcie, przeniesienie, kolizja, poza siatką, odpięcie', () => {
+    const p0 = odepnijWszystkie(p, A);
+    const w1 = przypnijKarte(
+      p0,
+      A,
+      undefined,
+      { kartaId: 'bron-igla', strona: 0, kolumna: 9, rzad: 6 },
+      rozmiar,
+      siatka,
+    );
+    if (!('projekt' in w1)) throw new Error('oczekiwano przypięcia');
+    expect(arkusz(w1.projekt).przypiete).toEqual([{ kartaId: 'bron-igla', kolumna: 9, rzad: 6 }]);
+    // Przeniesienie tego samego egzemplarza.
+    const z = { kartaId: 'bron-igla', strona: 0, kolumna: 9, rzad: 6 };
+    const w2 = przypnijKarte(w1.projekt, A, z, { ...z, kolumna: 0, rzad: 0 }, rozmiar, siatka);
+    if (!('projekt' in w2)) throw new Error('oczekiwano przypięcia');
+    expect(arkusz(w2.projekt).przypiete).toEqual([{ kartaId: 'bron-igla', kolumna: 0, rzad: 0 }]);
+    // Ciężka broń 1×2 na (0,0) nachodzi na przypiętą igłę.
+    expect(
+      przypnijKarte(
+        w2.projekt,
+        A,
+        undefined,
+        { kartaId: 'bron-mlot-bojowy', strona: 0, kolumna: 0, rzad: 0 },
+        rozmiar,
+        siatka,
+      ),
+    ).toEqual({ blad: 'koliduje' });
+    // 1×2 w ostatnim rzędzie wychodzi poza siatkę.
+    expect(
+      przypnijKarte(
+        w2.projekt,
+        A,
+        undefined,
+        { kartaId: 'bron-mlot-bojowy', strona: 0, kolumna: 3, rzad: 6 },
+        rozmiar,
+        siatka,
+      ),
+    ).toEqual({ blad: 'poza-siatka' });
+    const w3 = odepnijKarte(w2.projekt, A, {
+      kartaId: 'bron-igla',
+      strona: 0,
+      kolumna: 0,
+      rzad: 0,
+    });
+    expect(arkusz(w3).przypiete).toBeUndefined();
+  });
+
+  it('zamiana miejscami dwóch przypiętych kart tego samego rozmiaru', () => {
+    const x = zamrozUklad(odepnijWszystkie(p, A), A, [
+      { kartaId: 'bron-igla', strona: 0, kolumna: 0, rzad: 0 },
+      { kartaId: 'bron-sztylet', strona: 0, kolumna: 1, rzad: 0 },
+      { kartaId: 'bron-mlot-bojowy', strona: 0, kolumna: 2, rzad: 0 },
+    ]);
+    const w = przypnijKarte(
+      x,
+      A,
+      { kartaId: 'bron-igla', strona: 0, kolumna: 0, rzad: 0 },
+      { kartaId: 'bron-igla', strona: 0, kolumna: 1, rzad: 0 },
+      rozmiar,
+      siatka,
+    );
+    if (!('projekt' in w)) throw new Error('oczekiwano zamiany');
+    expect(arkusz(w.projekt).przypiete).toEqual(
+      expect.arrayContaining([
+        { kartaId: 'bron-sztylet', kolumna: 0, rzad: 0 },
+        { kartaId: 'bron-igla', kolumna: 1, rzad: 0 },
+      ]),
+    );
+    // Inny rozmiar (1×1 na 1×2) – brak zamiany.
+    expect(
+      przypnijKarte(
+        x,
+        A,
+        { kartaId: 'bron-igla', strona: 0, kolumna: 0, rzad: 0 },
+        { kartaId: 'bron-igla', strona: 0, kolumna: 2, rzad: 0 },
+        rozmiar,
+        siatka,
+      ),
+    ).toEqual({ blad: 'koliduje' });
+  });
+
+  it('zamrożenie układu i odpięcie wszystkich', () => {
+    const x = zamrozUklad(p, A, [
+      { kartaId: 'bron-igla', strona: 0, kolumna: 1, rzad: 2 },
+      { kartaId: 'bron-igla', strona: 1, kolumna: 0, rzad: 0 },
+    ]);
+    expect(arkusz(x).przypiete).toEqual([
+      { kartaId: 'bron-igla', kolumna: 1, rzad: 2 },
+      { kartaId: 'bron-igla', kolumna: 0, rzad: 0, strona: 1 },
+    ]);
+    expect(() => przygotujProjekt(x)).not.toThrow();
+    expect(arkusz(odepnijWszystkie(x, A)).przypiete).toBeUndefined();
+  });
+
+  it('ustawienia i tytuł arkusza', () => {
+    let x = ustawUstawieniaArkusza(p, A, { czarnoBialy: true, papier: 'Letter' });
+    x = ustawTytulArkusza(x, A, 'Moje karty');
+    expect(arkusz(x).ustawienia).toMatchObject({ czarnoBialy: true, papier: 'Letter' });
+    expect(arkusz(x).ustawienia.tytul?.tekst).toBe('Moje karty');
+    expect(arkusz(p).ustawienia.czarnoBialy).toBeFalsy();
   });
 });

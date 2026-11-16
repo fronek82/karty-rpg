@@ -68,7 +68,7 @@ function Projekt({ edycja, podstrona }: { edycja: ProjektWEdycji; podstrona?: st
         </details>
       )}
       {rodzaj === 'arkusze' ? (
-        <WidokArkuszy zrodlo={projekt} zasoby={edycja.zasoby.zasoby} />
+        <WidokArkuszy zrodlo={projekt} zasoby={edycja.zasoby.zasoby} edycja={edycja} />
       ) : rodzaj === 'czcionki' ? (
         <Czcionki edycja={edycja} />
       ) : talia ? (

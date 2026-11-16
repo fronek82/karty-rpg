@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { zbudujArkusz, type WynikArkusza } from '../druk/arkusz';
+import { SUFIKS_SZARY, zbudujArkusz, zSzarymiObrazami, type WynikArkusza } from '../druk/arkusz';
+import { ustawTytulArkusza, ustawUstawieniaArkusza } from '../dane/edycja';
 import { t, tJesliJest } from '../i18n';
-import type { Arkusz } from '../model/arkusz';
+import { PAPIERY, type Arkusz, type Papier } from '../model/arkusz';
 import { pakietMausritter } from '../pakiety/mausritter';
 import type { Pakiet } from '../pakiety/typy';
 import { scenaDoSvg } from '../silnik/svg';
+import { NakladkaKorekty, PasekKorekty, przenies, type Zaznaczenie } from './arkusz/Korekta';
 import { tekstOstrzezeniaArkusza } from './ostrzezenia';
+import { pdfWWatku } from './pdfWWatku';
+import { obrazNaSzarosc } from './szarosc';
+import type { ProjektWEdycji } from './useProjekt';
 import { zapiszPlik } from './pliki';
-import { wczytajZasobyPakietu, type ZasobyPakietu } from './zasoby';
+import { wczytajZasobyPakietu, type ObrazWPamieci, type ZasobyPakietu } from './zasoby';
 
 /** Źródło arkuszy – pakiet albo projekt (oba mają talie i arkusze). */
 export type ZrodloArkuszy = Pick<Pakiet, 'id' | 'nazwa' | 'talie' | 'arkusze'>;
@@ -87,15 +92,23 @@ export function Arkusze({ pakiet = pakietMausritter }: { pakiet?: Pakiet }) {
  */
 export function WidokArkuszy({
   zrodlo: pakiet,
-  zasoby: zasobyPakietu,
+  zasoby: zasobyWejscie,
   bladWczytywania,
   ponow,
+  edycja,
 }: {
   zrodlo: ZrodloArkuszy;
   zasoby?: ZasobyPakietu;
   bladWczytywania?: string;
   ponow?: () => void;
+  /** Projekt w edycji – włącza ustawienia arkusza i ręczną korektę układu. */
+  edycja?: ProjektWEdycji;
 }) {
+  const potrzebneSzare = pakiet.arkusze.some((a) => a.ustawienia.czarnoBialy);
+  const zasobyPakietu = useZSzarymiObrazami(zasobyWejscie, potrzebneSzare);
+  const [korekta, ustawKorekte] = useState(false);
+  const [zaznaczona, ustawZaznaczona] = useState<Zaznaczenie>();
+  const [komunikatKorekty, ustawKomunikatKorekty] = useState<string>();
   const [blad, ustawBlad] = useState<Blad>();
   const [wybrany, ustawWybrany] = useState(0);
   const [skala, ustawSkala] = useState<Skala>('dopasuj');
@@ -134,14 +147,14 @@ export function WidokArkuszy({
     () =>
       wynik && zasobyPakietu
         ? wynik.strony.map((s, i) =>
-            scenaDoSvg(s, {
+            scenaDoSvg(arkusz?.ustawienia.czarnoBialy ? zSzarymiObrazami(s) : s, {
               adresObrazu: (id) => zasobyPakietu.obrazy.get(id)?.adres,
               przedrostekId: `a${wybrany}s${i}`,
               atrybuty: { role: 'img', 'aria-label': t('arkusze.strona', { numer: i + 1 }) },
             }),
           )
         : [],
-    [wynik, zasobyPakietu, wybrany],
+    [wynik, zasobyPakietu, wybrany, arkusz],
   );
 
   const pobierz = async (wszystkie: boolean) => {
@@ -149,20 +162,20 @@ export function WidokArkuszy({
     ustawTrwa(true);
     ustawPdfGotowy(false);
     try {
-      // Najpierw kod PDF – w tym czasie React pokaże „Tworzę PDF…” i wyłączy przyciski.
-      const { scenyDoPdf } = await import('../druk/pdf');
-      await new Promise((r) => setTimeout(r, 0));
-      const sceny = wszystkie
-        ? pakiet.arkusze.flatMap((a) =>
-            a === arkusz ? wynik.strony : zbuduj(pakiet, a, zasobyPakietu).strony,
-          )
-        : wynik.strony;
-      const { bajty } = await scenyDoPdf(sceny, {
+      const bajty = await pdfWWatku({
         tytul: wszystkie ? pakiet.nazwa : arkusz.nazwa,
-        obraz: (id) => {
-          const o = zasobyPakietu.obrazy.get(id);
-          return o ? { dane: o.dane, format: o.format } : undefined;
-        },
+        arkusze: wszystkie ? pakiet.arkusze : [arkusz],
+        talie: pakiet.talie,
+        szablony: [...zasobyPakietu.szablony.values()],
+        czcionki: zasobyPakietu.plikiCzcionek,
+        role: zasobyPakietu.role,
+        ...(zasobyPakietu.zapasowa !== undefined ? { zapasowa: zasobyPakietu.zapasowa } : {}),
+        obrazy: [...zasobyPakietu.obrazy].map(([id, o]) => ({
+          id,
+          info: o.info,
+          dane: o.dane,
+          format: o.format,
+        })),
       });
       zapiszPlik(
         bajty,
@@ -234,6 +247,8 @@ export function WidokArkuszy({
             onChange={(e) => {
               ustawWybrany(Number(e.target.value));
               ustawPdfGotowy(false);
+              ustawZaznaczona(undefined);
+              ustawKomunikatKorekty(undefined);
             }}
           >
             {pakiet.arkusze.map((a, i) => (
@@ -268,6 +283,38 @@ export function WidokArkuszy({
           {tekstStatusu[status]}
         </p>
       </div>
+      {edycja && arkusz && <UstawieniaArkusza edycja={edycja} arkusz={arkusz} />}
+      {edycja && arkusz && wynik && (
+        <div className="korekta">
+          <label>
+            <input
+              type="checkbox"
+              checked={korekta}
+              disabled={wynik.siatka.grupy}
+              onChange={(e) => {
+                ustawKorekte(e.target.checked);
+                ustawZaznaczona(undefined);
+                ustawKomunikatKorekty(undefined);
+              }}
+            />{' '}
+            {t('korekta.wlacz')}
+          </label>
+          {wynik.siatka.grupy ? (
+            <p className="podpis">{t('korekta.grupy')}</p>
+          ) : (
+            korekta && (
+              <PasekKorekty
+                edycja={edycja}
+                arkusz={arkusz}
+                wynik={wynik}
+                zaznaczona={zaznaczona}
+                zaznacz={ustawZaznaczona}
+                komunikat={komunikatKorekty}
+              />
+            )
+          )}
+        </div>
+      )}
       {wynik && zasobyPakietu && zasobyPakietu.czcionki.brakujace.size > 0 && (
         <p className="uwaga">
           {t('czcionki.brakujace', {
@@ -298,9 +345,135 @@ export function WidokArkuszy({
         aria-busy={!wynik && !widocznyBlad}
       >
         {svg.map((s, i) => (
-          <div key={i} className="strona-arkusza" dangerouslySetInnerHTML={{ __html: s }} />
+          <div key={i} className="strona-arkusza">
+            <div dangerouslySetInnerHTML={{ __html: s }} />
+            {edycja && arkusz && wynik && korekta && !wynik.siatka.grupy && (
+              <NakladkaKorekty
+                wynik={wynik}
+                arkusz={arkusz}
+                strona={i}
+                nazwy={nazwyKart}
+                zaznaczona={zaznaczona}
+                zaznacz={(z) => {
+                  ustawZaznaczona(z);
+                  ustawKomunikatKorekty(undefined);
+                }}
+                doCelu={(cel) => {
+                  if (!zaznaczona) return;
+                  const blad = przenies(edycja, arkusz, wynik, zaznaczona, cel);
+                  ustawKomunikatKorekty(blad);
+                  if (!blad) ustawZaznaczona(undefined);
+                }}
+              />
+            )}
+          </div>
         ))}
       </div>
     </section>
+  );
+}
+
+/**
+ * Zasoby uzupełnione o szare wersje obrazów (`id#szary`), gdy któryś arkusz jest czarno-biały.
+ * Do czasu konwersji – undefined (podgląd czeka). Adresy blob: szarych obrazów są zwalniane.
+ */
+function useZSzarymiObrazami(
+  z: ZasobyPakietu | undefined,
+  potrzebne: boolean,
+): ZasobyPakietu | undefined {
+  const [szare, ustawSzare] = useState<{
+    zrodlo: ZasobyPakietu;
+    mapa: Map<string, ObrazWPamieci>;
+  }>();
+  useEffect(() => {
+    if (!z || !potrzebne) return;
+    let aktywny = true;
+    const utworzone: ObrazWPamieci[] = [];
+    void Promise.all(
+      [...z.obrazy].map(async ([id, o]) => {
+        // Obraz, którego nie da się przetworzyć, zostaje kolorowy – lepsze niż brak obrazu.
+        const s = await obrazNaSzarosc(o).catch(() => o);
+        if (s !== o) utworzone.push(s);
+        return [id + SUFIKS_SZARY, s] as const;
+      }),
+    ).then((pary) => {
+      if (aktywny) ustawSzare({ zrodlo: z, mapa: new Map(pary) });
+      else utworzone.forEach((o) => URL.revokeObjectURL(o.adres));
+    });
+    return () => {
+      aktywny = false;
+      utworzone.forEach((o) => URL.revokeObjectURL(o.adres));
+    };
+  }, [z, potrzebne]);
+  return useMemo(() => {
+    if (!z || !potrzebne) return z;
+    if (szare?.zrodlo !== z) return undefined;
+    return { ...z, obrazy: new Map([...z.obrazy, ...szare.mapa]) };
+  }, [z, potrzebne, szare]);
+}
+
+/** Ustawienia arkusza projektu: tytuł, papier, orientacja, tryb czarno-biały. */
+function UstawieniaArkusza({ edycja, arkusz }: { edycja: ProjektWEdycji; arkusz: Arkusz }) {
+  const u = arkusz.ustawienia;
+  const A = arkusz.id;
+  return (
+    <details className="ustawienia-arkusza">
+      <summary>{t('ustawienia.tytul')}</summary>
+      <div className="wiersz-pol">
+        {u.tytul && (
+          <label>
+            {t('ustawienia.tytulArkusza')}{' '}
+            <input
+              type="text"
+              value={u.tytul.tekst}
+              onChange={(e) => edycja.zmien((p) => ustawTytulArkusza(p, A, e.target.value))}
+            />
+          </label>
+        )}
+        <label>
+          {t('ustawienia.papier')}{' '}
+          <select
+            value={u.papier}
+            onChange={(e) =>
+              edycja.zmien((p) =>
+                ustawUstawieniaArkusza(p, A, { papier: e.target.value as Papier }),
+              )
+            }
+          >
+            {Object.keys(PAPIERY).map((x) => (
+              <option key={x} value={x}>
+                {x}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {t('ustawienia.orientacja')}{' '}
+          <select
+            value={u.orientacja}
+            onChange={(e) =>
+              edycja.zmien((p) =>
+                ustawUstawieniaArkusza(p, A, {
+                  orientacja: e.target.value as 'pionowa' | 'pozioma',
+                }),
+              )
+            }
+          >
+            <option value="pionowa">{t('ustawienia.pionowa')}</option>
+            <option value="pozioma">{t('ustawienia.pozioma')}</option>
+          </select>
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={!!u.czarnoBialy}
+            onChange={(e) =>
+              edycja.zmien((p) => ustawUstawieniaArkusza(p, A, { czarnoBialy: e.target.checked }))
+            }
+          />{' '}
+          {t('ustawienia.czarnoBialy')}
+        </label>
+      </div>
+    </details>
   );
 }

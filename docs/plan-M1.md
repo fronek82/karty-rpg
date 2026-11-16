@@ -114,7 +114,7 @@ Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E4a → E5 → E6 → E
 | E4a  | ✅   | `0291dc2`, `d72ab3e`, przegląd  | sekcja 6; PNG w `docs/obrazy/e4a-*.png`                                                                                                                                                                                                                                       |
 | E5   | ✅   | `502eb11`, przegląd             | strona `#/arkusze`: podgląd (dopasuj / 1:1), „Pobierz PDF” (arkusz / wszystkie), PDF↔SVG całych arkuszy; zrzut `docs/obrazy/e5-strona-arkusze.png`                                                                                                                            |
 | E6   | ✅   | `fa91274`                       | `src/dane/`: Dexie (projekty + zasoby jako Blob), schemat z wersją i migracjami (zod, bez gubienia nieznanych pól), spójność odwołań, wgrywanie czcionek, `.kartyrpg` i `.kartyrpg-szablon` (ZIP, fflate), ostrzeżenie o licencji czcionek, pakiet → projekt; test round-trip |
-| E7   | 🟡   |                                 | E7a–E7d ✅; dalej E7e (sekcja 7)                                                                                                                                                                                                                                              |
+| E7   | 🟡   |                                 | E7a–E7e ✅ (sekcja 7); przegląd i scalenie                                                                                                                                                                                                                                    |
 | E8   | ⬜   |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                                                                                                                                                                                 |
 | E9   | ⬜   |                                 |                                                                                                                                                                                                                                                                               |
 
@@ -147,7 +147,7 @@ Każdy krok: commit + push na gałęzi etapu; po E7e przegląd, PR i scalenie do
 | E7b  | Tabela danych talii: wiersz = karta, kolumny = pola i parametry szablonu + „Ilość”, rozmiar w slotach; dodawanie, usuwanie, kopiowanie kart; zapis do bazy (sam dokument)                                                                                                                             | ✅   |
 | E7c  | Podgląd karty obok tabeli; edycja obrazu karty myszą (przeciąganie, kółko) i polami (skala, X, Y, obrót, dopasowanie, „Resetuj”); wybór/wgrywanie obrazu do biblioteki                                                                                                                                | ✅   |
 | E7d  | Biblioteka czcionek: wgrywanie (rodzina/wariant z pliku, poprawa), przypisanie ról (tytuł, treść), czcionka zapasowa z ostrzeżeniem; wybór szablonu i rozmiaru karty – w tabeli (E7b)                                                                                                                 | ✅   |
-| E7e  | Arkusz: ręczna korekta (przypinanie kart), ustawienia (tryb cz-b z konwersją obrazów), teksty ostrzeżeń przez i18n, „Pobierz wszystkie” w workerze, LRU układu tekstu                                                                                                                                 | ⬜   |
+| E7e  | Arkusz: ręczna korekta (przypinanie kart, zamiana miejscami, zamrożenie układu), ustawienia (tytuł, papier, orientacja, tryb cz-b z szarymi obrazami), teksty ostrzeżeń przez i18n (E7c), PDF w workerze, LRU układu tekstu                                                                           | ✅   |
 
 ### Po E6 – do E7
 
@@ -163,15 +163,15 @@ Dla E7 (interfejs):
 
 ### Odłożone (backlog)
 
-- Brak czcionki: czcionka zapasowa z ostrzeżeniem zamiast przerwania renderu; komunikaty błędów silnika przez i18n (E7). (Unikalne id czcionek – zrobione w E6: id czcionki w silniku = id zasobu.)
-- Limit pamięci podręcznej układu tekstu (LRU) przy długiej edycji (E7).
+- ~~Brak czcionki → czcionka zapasowa z ostrzeżeniem~~ – E7d. Komunikaty wyjątków silnika (np. „talia …”) nadal po polsku w kodzie, bez i18n.
+- ~~Limit pamięci podręcznej układu tekstu (LRU)~~ – E7e.
 - Łamanie wierszy przy `odstepLiter` minimalnie zbyt ostrożne.
-- Tryb czarno-biały dla obrazów rastrowych – konwersja przy wczytywaniu zasobów (E7).
+- ~~Tryb czarno-biały dla obrazów rastrowych~~ – E7e (szare kopie `id#szary`).
 - Pas nagłówków grup liczony z szacunkowej szerokości grupy – przy podziale grupy na strony nagłówek może się nie zmieścić (jest ostrzeżenie).
-- Paczka aplikacji ~800 KB (fontkit + pdf-lib) – PDF ładowany na żądanie (E7).
+- ~~Paczka aplikacji ~800 KB~~ – strony ładowane leniwie, PDF w workerze ładowanym przy pobraniu (E7e).
 - Limit długości tytułu liczony z siatki regularnej (linia nr k = k slotów). Przy grupach z odstępami lub pustym pierwszym rzędzie pozycja linii nożyczek może być inna – liczyć z tych samych odcinków co nożyczki (pakiet Mausritter tego nie używa).
-- Nowe komunikaty ostrzeżeń (`tytul-nie-miesci-sie`, `brak-miejsca-na-obraz`, `nieznane-pole-do-omijania`) – teksty w i18n razem z pozostałymi ostrzeżeniami (E7).
+- ~~Teksty ostrzeżeń w i18n~~ – E7c (`src/ui/ostrzezenia.ts`).
 - Ponowna nakładka E4a na referencję z oryginalnymi czcionkami – w lokalnym teście E8.
-- Ostrzeżenia arkusza w UI pokazywane jako surowe kody (`kartaId: komunikat`) – teksty i18n w E7.
-- Obrazy w podglądzie jako `data:` (kopia base64 w pamięci i w każdym SVG strony) – przy dużych obrazach z biblioteki (E6/E7) przejść na `blob:` z zarządzaniem czasem życia (revoke).
-- Budowa wszystkich arkuszy przy „Pobierz wszystkie” w wątku głównym – przy dużych taliach przenieść do workera (E7).
+- ~~Ostrzeżenia arkusza jako surowe kody~~ – E7c.
+- ~~Obrazy w podglądzie jako `data:`~~ – w projektach `blob:` ze zwalnianiem (E7a); pakiet wbudowany (`#/arkusze`) nadal `data:`.
+- ~~„Pobierz wszystkie” w wątku głównym~~ – E7e (worker).

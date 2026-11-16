@@ -384,3 +384,68 @@ a {
   min-width: 14rem;
   font-size: 1.25rem;
 }
+
+.strona-arkusza {
+  position: relative;
+}
+
+.nakladka-korekty {
+  position: absolute;
+  inset: 0;
+}
+
+.nakladka-korekty button {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.karta-korekty {
+  background: transparent;
+  border: 2px dashed rgb(122 46 31 / 45%);
+}
+
+.karta-korekty.przypieta {
+  border-style: solid;
+  border-color: rgb(122 46 31 / 85%);
+}
+
+.karta-korekty:hover,
+.karta-korekty:focus-visible {
+  background: rgb(122 46 31 / 12%);
+}
+
+.karta-korekty.zaznaczona {
+  background: rgb(122 46 31 / 28%);
+  border: 3px solid #7a2e1f;
+  z-index: 2;
+}
+
+.slot-docelowy {
+  background: rgb(40 110 200 / 6%);
+  border: 1px dotted rgb(40 110 200 / 50%);
+}
+
+.slot-docelowy:hover,
+.slot-docelowy:focus-visible {
+  background: rgb(40 110 200 / 30%);
+}
+
+.ustawienia-arkusza,
+.korekta {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  background: var(--tlo-panelu);
+}
+
+.pasek-korekty p {
+  margin: 0.4rem 0;
+}
+
+.podglad-arkusza.rzeczywista .strona-arkusza {
+  width: max-content;
+}
