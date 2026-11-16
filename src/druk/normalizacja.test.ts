@@ -9,7 +9,12 @@ import { OBRAZ_ZASTEPCZY } from '../pakiety/mausritter/talie';
 import type { RejestrCzcionek } from '../silnik/czcionki';
 import { scenaDoSvg } from '../silnik/svg';
 import { zbudujArkusz } from './arkusz';
-import { czyKartkaZnormalizowana, normalizujKartki, pakietProjektu } from './normalizacja';
+import {
+  czyKartkaZnormalizowana,
+  kartyOdlozone,
+  normalizujKartki,
+  pakietProjektu,
+} from './normalizacja';
 
 const czytaj = async (plik: string) => new Uint8Array(readFileSync(plik));
 let p: Projekt;
@@ -68,11 +73,44 @@ describe('normalizacja do modelu kartki', () => {
     expect(n2.arkusze.map((a) => a.przypiete)).toEqual(n.arkusze.map((a) => a.przypiete));
   });
 
-  it('karta z ilością 0 jest zgłaszana jako pominięta', () => {
+  it('karta z ilością 0 zostaje w talii jako odłożona (nic nie ginie)', () => {
     const x = structuredClone(p);
     x.talie[0]!.karty[0]!.ilosc = 0;
-    const { pominiete } = normalizujKartki(x, { czcionki, obraz });
-    expect(pominiete).toEqual([x.talie[0]!.karty[0]!.id]);
+    const id = x.talie[0]!.karty[0]!.id;
+    const { projekt: n, pominiete } = normalizujKartki(x, { czcionki, obraz });
+    expect(pominiete).toEqual([id]);
+    const k = n.talie.flatMap((t) => t.karty).find((y) => y.id === id)!;
+    expect(k.ilosc).toBe(0);
+    expect(n.arkusze.flatMap((a) => a.przypiete ?? []).some((y) => y.kartaId === id)).toBe(false);
+    expect(czyKartkaZnormalizowana(n)).toBe(true);
+    expect(kartyOdlozone(n, x.arkusze.find((a) => a.taliaId === x.talie[0]!.id)!.id)).toHaveLength(
+      1,
+    );
+  });
+
+  it('stany z kartą spoza grup: wydruk identyczny (kolumna i odstęp regionu bez grupy)', () => {
+    const x = structuredClone(p);
+    const stany = x.talie.find((t) => t.grupy?.length)!;
+    const g = stany.grupy!.at(-1)!;
+    // Ostatnia grupa bez nagłówka – jej karty układają się w regionie bez grupy.
+    stany.grupy = stany.grupy!.slice(0, -1);
+    void g;
+    const { projekt: n } = normalizujKartki(x, { czcionki, obraz });
+    expect(wydruk(n)).toEqual(wydruk(x));
+    expect(czyKartkaZnormalizowana(n)).toBe(true);
+  });
+
+  it('talia bez arkusza dostaje własną kartkę', () => {
+    const x = structuredClone(p);
+    x.talie.push({
+      id: 'luzna',
+      nazwa: 'Luźne karty',
+      karty: [{ ...x.talie[0]!.karty[0]!, id: 'luzna-1', ilosc: 2 }],
+    });
+    const { projekt: n } = normalizujKartki(x, { czcionki, obraz });
+    const a = n.arkusze.find((y) => y.taliaId === 'luzna')!;
+    expect(a.przypiete).toHaveLength(2);
+    expect(czyKartkaZnormalizowana(n)).toBe(true);
   });
 
   it('pakiet rozpoznawany po szablonach', () => {

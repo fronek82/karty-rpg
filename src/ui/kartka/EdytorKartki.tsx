@@ -9,18 +9,20 @@ import {
   kartyKartki,
   kartyWObszarze,
   liczbaStronKartki,
+  mozliweRozmiary,
   przesunKarty,
   usunKarty,
   usunNaglowek,
   usunStrone,
   zmienNaglowek,
+  zmienRozmiarKarty,
   type BladKartki,
   type KartaNaKartce,
   type KontekstKartki,
   type Polozenie,
 } from '../../dane/kartka';
 import { zbudujArkusz, zSzarymiObrazami, type WynikArkusza } from '../../druk/arkusz';
-import { pakietProjektu } from '../../druk/normalizacja';
+import { kartyOdlozone, pakietProjektu } from '../../druk/normalizacja';
 import { t, tJesliJest } from '../../i18n';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
@@ -47,7 +49,7 @@ import type { ZasobyPakietu } from '../zasoby';
 import { geometria, slotPodPunktem, stylMm, stylProstokata, type Geometria } from './geometria';
 import { MenuTypu } from './MenuTypu';
 import { skalaZKolka, zaokr, zmienObrazKarty } from './obrazKarty';
-import { PanelKart } from './PanelKart';
+import { PanelKart, typDlaSzablonu } from './PanelKart';
 import { PanelNaglowka } from './PanelNaglowka';
 import { PanelUstawien } from './PanelUstawien';
 
@@ -70,6 +72,8 @@ type Gest =
       ruch: boolean;
       o?: Polozenie;
       blad?: BladKartki;
+      /** Dotyk: przeciąganie dopiero po przytrzymaniu; wcześniejszy ruch przewija stronę. */
+      dotyk?: { t0: number; x: number; y: number; przewijanie: boolean };
     }
   | {
       rodzaj: 'obszar';
@@ -82,6 +86,7 @@ type Gest =
       x0: number;
       y0: number;
       ruch: boolean;
+      dotyk?: boolean;
     }
   | {
       rodzaj: 'obraz';
@@ -104,6 +109,8 @@ interface Kartka {
 }
 
 const PROG_RUCHU = 4;
+/** Na dotyku karta „podnosi się” po tylu ms przytrzymania (wcześniejszy ruch przewija). */
+const PRZYTRZYMANIE_MS = 300;
 
 /** Pakiet gry projektu (typy kart, gotowe układy) – ładowany z rejestru gier. */
 function usePakiet(id: string | undefined): Pakiet | undefined {
@@ -128,6 +135,10 @@ function poleObrazu(k: Karta, z: ZasobyPakietu): PoleObraz | undefined {
   return szukaj(korzenKarty(s, k));
 }
 
+/** Fokus na elemencie po najbliższym odświeżeniu widoku (np. nowa karta, slot po zamknięciu menu). */
+const fokusPo = (selektor: string) =>
+  requestAnimationFrame(() => document.querySelector<HTMLElement>(selektor)?.focus());
+
 const wPolu = (e: Element | null) =>
   !!e &&
   (e.matches('input, textarea, select, [contenteditable="true"]') || !!e.closest('[role="menu"]'));
@@ -137,12 +148,23 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
   const { projekt, zmien } = edycja;
   const pakiet = usePakiet(pakietProjektu(projekt));
   const zasoby = useZSzarymiObrazami(edycja.zasoby.zasoby, projekt);
-  const [zazn, ustawZazn] = useState<Zaznaczenie>();
+  const [zazn, ustawZaznSurowe] = useState<Zaznaczenie>();
   const [menu, ustawMenu] = useState<{ arkuszId: string } & Polozenie>();
   const [gest, ustawGest] = useState<Gest>();
   const gestRef = useRef<Gest | undefined>(undefined);
-  const [toast, ustawToast] = useState<{ tekst: string; cofnij?: boolean }>();
+  const [toast, ustawToastSurowy] = useState<{ tekst: string; cofnij?: boolean; wersja: number }>();
+  /** Komunikat o zmianie właśnie wykonanej (`zmian` – ile zmian dokumentu ją tworzy). */
+  const ustawToast = useCallback(
+    (x: { tekst: string; cofnij?: boolean } | undefined, zmian = 1) =>
+      ustawToastSurowy(x && { ...x, wersja: edycja.wersja + (x.cofnij ? zmian : 0) }),
+    [edycja.wersja],
+  );
   const [bladUkladu, ustawBladUkladu] = useState<string>();
+  /** Zmiana zaznaczenia czyści komunikat o odrzuconej zmianie układu (należał do innego panelu). */
+  const ustawZazn = useCallback((z: Zaznaczenie) => {
+    ustawZaznSurowe(z);
+    ustawBladUkladu(undefined);
+  }, []);
   const [statusPdf, ustawStatusPdf] = useState('');
   const kartkiRef = useRef<HTMLDivElement>(null);
 
@@ -152,9 +174,10 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     () => (zasoby ? new WeakMap<Karta, { scena: Scena; ostrzezenia: Ostrzezenie[] }>() : undefined),
     [zasoby],
   );
-  // Pamięć zbudowanych kartek (klucz – obiekt arkusza); zmiana tylko jednej kartki nie buduje reszty.
+  // Pamięć zbudowanych kartek (po id – tylko ostatnia wersja, historia nie trzyma starych SVG);
+  // zmiana jednej kartki nie buduje pozostałych.
   const [pamiecKartek] = useState(
-    () => new WeakMap<Arkusz, { talia: Talia; zasoby: unknown; k: Kartka }>(),
+    () => new Map<string, { arkusz: Arkusz; talia: Talia; zasoby: unknown; k: Kartka }>(),
   );
   const arkusze = useDeferredValue(projekt.arkusze);
   const talie = useDeferredValue(projekt.talie);
@@ -162,8 +185,8 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     if (!zasoby || !pamiecKart) return [];
     return arkusze.map((arkusz) => {
       const talia = talie.find((x) => x.id === arkusz.taliaId)!;
-      const z = pamiecKartek.get(arkusz);
-      if (z && z.talia === talia && z.zasoby === zasoby) return z.k;
+      const z = pamiecKartek.get(arkusz.id);
+      if (z && z.arkusz === arkusz && z.talia === talia && z.zasoby === zasoby) return z.k;
       let k: Kartka;
       try {
         const wynik = zbudujArkusz(arkusz, talia, {
@@ -188,17 +211,38 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       } catch (e) {
         k = { arkusz, talia, svg: [], blad: e instanceof Error ? e.message : String(e) };
       }
-      pamiecKartek.set(arkusz, { talia, zasoby, k });
+      pamiecKartek.set(arkusz.id, { arkusz, talia, zasoby, k });
       return k;
     });
   }, [arkusze, talie, zasoby, pamiecKart, pamiecKartek]);
 
+  // Siatka z BIEŻĄCYCH ustawień (podgląd stron jest odroczony): budowa bez kart – tania.
+  const siatkiNaZywo = useMemo(() => {
+    const m = new Map<string, { kolumny: number; rzedy: number }>();
+    if (!zasoby) return m;
+    for (const a of projekt.arkusze) {
+      if (!a.ustawienia.slot) continue;
+      try {
+        const w = zbudujArkusz(
+          { ...a, przypiete: [], liczbaStron: 1 },
+          { id: a.taliaId, nazwa: '', karty: [] },
+          { czcionki: zasoby.czcionki, szablony: zasoby.szablony },
+        );
+        m.set(a.id, { kolumny: w.siatka.kolumny, rzedy: w.siatka.rzedy });
+      } catch {
+        // Błąd układu pokaże podgląd strony.
+      }
+    }
+    return m;
+  }, [projekt.arkusze, zasoby]);
+
   const kontekst = useCallback(
     (arkuszId: string): KontekstKartki | undefined => {
-      const k = kartki.find((x) => x.arkusz.id === arkuszId);
-      return k?.wynik && zasoby ? { szablony: zasoby.szablony, siatka: k.wynik.siatka } : undefined;
+      const siatka =
+        siatkiNaZywo.get(arkuszId) ?? kartki.find((x) => x.arkusz.id === arkuszId)?.wynik?.siatka;
+      return siatka && zasoby ? { szablony: zasoby.szablony, siatka } : undefined;
     },
-    [kartki, zasoby],
+    [kartki, zasoby, siatkiNaZywo],
   );
 
   // Karty na żywo (z bieżącego projektu – przeciąganie i zaznaczenie bez opóźnienia).
@@ -231,40 +275,61 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
    * przestałyby się mieścić albo zaczęły nachodzić na siebie.
    */
   const zmienUklad = useCallback(
-    (f: (p: Projekt) => Projekt, klucz?: string) => {
-      if (!zasoby) return;
+    (f: (p: Projekt) => Projekt, klucz?: string): boolean => {
+      if (!zasoby) return false;
       const nowy = f(projekt);
-      for (const a of nowy.arkusze) {
-        if (
-          projekt.arkusze.includes(a) &&
-          nowy.talie === projekt.talie &&
-          nowy.role === projekt.role
-        )
-          continue;
-        const talia = nowy.talie.find((x) => x.id === a.taliaId)!;
-        const w = zbudujArkusz(a, talia, {
-          czcionki: zasoby.czcionki,
-          szablony: zasoby.szablony,
-          obraz: (id) => zasoby.obrazy.get(id)?.info,
-          pamiecKart,
-        });
-        if (w.ostrzezenia.some((o) => /^przypiecie-(poza-siatka|koliduje)/.test(o.komunikat))) {
-          ustawBladUkladu(t('kartka.zmianaNieMiesci'));
-          return;
+      // Sprawdzenie z NOWYMI rolami czcionek (tymczasowo na wspólnym rejestrze – przywracane).
+      const z = nowy.role === projekt.role ? zasoby : edycja.zasoby.zRolami(nowy.role).zasoby;
+      let ok = true;
+      try {
+        for (const a of nowy.arkusze) {
+          if (
+            projekt.arkusze.includes(a) &&
+            nowy.talie === projekt.talie &&
+            nowy.role === projekt.role
+          )
+            continue;
+          const talia = nowy.talie.find((x) => x.id === a.taliaId)!;
+          const w = zbudujArkusz(a, talia, {
+            czcionki: z.czcionki,
+            szablony: z.szablony,
+            obraz: (id) => z.obrazy.get(id)?.info,
+            // Zapamiętane karty są wyrenderowane starymi czcionkami – przy zmianie ról bez pamięci.
+            ...(nowy.role === projekt.role && pamiecKart ? { pamiecKart } : {}),
+          });
+          const przypietych = (a.przypiete ?? []).length;
+          if (
+            w.rozmieszczenie.karty.length < przypietych ||
+            w.ostrzezenia.some((o) =>
+              /^(przypiecie-|siatka-za-mala|karta-wieksza-niz-strona)/.test(o.komunikat),
+            ) ||
+            (a.naglowki ?? []).some((h) => h.kolumna + h.kolumny > w.siatka.kolumny)
+          ) {
+            ok = false;
+            break;
+          }
         }
+      } finally {
+        if (nowy.role !== projekt.role) edycja.zasoby.zRolami(projekt.role);
+      }
+      if (!ok) {
+        ustawBladUkladu(t('kartka.zmianaNieMiesci'));
+        return false;
       }
       ustawBladUkladu(undefined);
       zmien(f, klucz ? { klucz: `uklad:${klucz}` } : {});
+      return true;
     },
-    [projekt, zasoby, zmien, pamiecKart],
+    [projekt, zasoby, zmien, pamiecKart, edycja.zasoby],
   );
 
   // --- Akcje na zaznaczeniu.
   const usunZaznaczone = useCallback(() => {
     if (aktywne?.rodzaj === 'naglowek') {
-      zmienUklad((p) => usunNaglowek(p, aktywne.arkuszId, aktywne.id));
-      ustawZazn(undefined);
-      ustawToast({ tekst: t('kartka.usunietoNaglowek'), cofnij: true });
+      if (zmienUklad((p) => usunNaglowek(p, aktywne.arkuszId, aktywne.id))) {
+        ustawZazn(undefined);
+        ustawToast({ tekst: t('kartka.usunietoNaglowek'), cofnij: true });
+      }
       return;
     }
     if (aktywne?.rodzaj !== 'karty' || zaznaczoneKarty.length === 0) return;
@@ -279,7 +344,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
           : t('kartka.usunietoKarty', { liczba: n }),
       cofnij: true,
     });
-  }, [aktywne, zaznaczoneKarty, zmien, zmienUklad]);
+  }, [aktywne, zaznaczoneKarty, zmien, zmienUklad, ustawZazn, ustawToast]);
 
   const duplikuj = useCallback(
     (n: number) => {
@@ -292,7 +357,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       if (kopie.length) ustawZazn({ rodzaj: 'karty', arkuszId: aktywne.arkuszId, ids: kopie });
       ustawToast({ tekst: t('kartka.zduplikowano', { liczba: kopie.length }), cofnij: true });
     },
-    [aktywne, kontekst, projekt, zaznaczoneKarty, zmien],
+    [aktywne, kontekst, projekt, zaznaczoneKarty, zmien, ustawZazn, ustawToast],
   );
 
   const przesunZaznaczone = useCallback(
@@ -306,6 +371,9 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
         const x = przesunKarty(p, aktywne.arkuszId, aktywne.ids, o, ctx);
         return 'projekt' in x ? x.projekt : p;
       });
+      // Przycisk karty jest renderowany od nowa w nowym miejscu – fokus idzie za nią.
+      if (document.activeElement?.matches('.karta-na-kartce'))
+        fokusPo(`[data-karta="${aktywne.ids[0]}"]`);
     },
     [aktywne, kontekst, projekt, zmien],
   );
@@ -333,7 +401,11 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       } else if (e.key === 'Escape') {
         ustawMenu(undefined);
         ustawZazn(undefined);
-      } else if (aktywne?.rodzaj === 'karty' && e.key.startsWith('Arrow')) {
+      } else if (
+        aktywne?.rodzaj === 'karty' &&
+        e.key.startsWith('Arrow') &&
+        !document.activeElement?.classList.contains('slot')
+      ) {
         e.preventDefault();
         const o = { strona: 0, kolumna: 0, rzad: 0 };
         if (e.key === 'ArrowLeft') o.kolumna = -1;
@@ -345,7 +417,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     };
     window.addEventListener('keydown', klawisz);
     return () => window.removeEventListener('keydown', klawisz);
-  }, [aktywne, duplikuj, edycja, przesunZaznaczone, usunZaznaczone]);
+  }, [aktywne, duplikuj, edycja, przesunZaznaczone, usunZaznaczone, ustawZazn]);
 
   // Miniatura pierwszej strony na liście projektów (bez obrazów – adresy blob: są chwilowe).
   const pierwszaStrona = kartki[0]?.wynik?.strony[0];
@@ -358,13 +430,31 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     }, 1500);
     return () => clearTimeout(z);
   }, [pierwszaStrona, projekt.id]);
+  // …i od razu przy wyjściu z edytora (zmiana tuż przed wyjściem nie czeka 1,5 s).
+  const ostatniaStrona = useRef(pierwszaStrona);
+  useEffect(() => {
+    ostatniaStrona.current = pierwszaStrona;
+  });
+  const idProjektu = projekt.id;
+  useEffect(
+    () => () => {
+      const s = ostatniaStrona.current;
+      if (s)
+        void baza()
+          .zapiszMiniature(idProjektu, scenaDoSvg(s, { przedrostekId: 'min-' }))
+          .catch(() => undefined);
+    },
+    [idProjektu],
+  );
 
   // Komunikat znika sam po chwili.
   useEffect(() => {
     if (!toast) return;
-    const z = setTimeout(() => ustawToast(undefined), 8000);
+    const z = setTimeout(() => ustawToastSurowy(undefined), 8000);
     return () => clearTimeout(z);
   }, [toast]);
+  // „Cofnij” w komunikacie dotyczy tylko zmiany, o której mówi – po kolejnej zmianie komunikat znika.
+  const toastAktualny = toast && toast.wersja === edycja.wersja ? toast : undefined;
 
   // --- Gesty myszy (delegacja zdarzeń na warstwach stron).
   const stronaPod = (x: number, y: number) => {
@@ -376,6 +466,21 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     const r = el.getBoundingClientRect();
     return { x: ((x - r.left) / r.width) * g.szer, y: ((y - r.top) / r.height) * g.wys };
   };
+
+  // Aktywne nasłuchy gestu na window – zdejmowane także przy odmontowaniu edytora.
+  const nasluchy = useRef<
+    { ruch: (e: PointerEvent) => void; koniec: () => void; anuluj: () => void } | undefined
+  >(undefined);
+  useEffect(
+    () => () => {
+      const n = nasluchy.current;
+      if (!n) return;
+      window.removeEventListener('pointermove', n.ruch);
+      window.removeEventListener('pointerup', n.koniec);
+      window.removeEventListener('pointercancel', n.anuluj);
+    },
+    [],
+  );
 
   const ustawGestOba = (g: Gest | undefined) => {
     gestRef.current = g;
@@ -403,7 +508,24 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       );
       return;
     }
-    const ruch = g.ruch || Math.hypot(e.clientX - g.x0, e.clientY - g.y0) > PROG_RUCHU;
+    const przesuniety = Math.hypot(e.clientX - g.x0, e.clientY - g.y0) > PROG_RUCHU;
+    if (g.rodzaj === 'karty' && g.dotyk && !g.ruch) {
+      // Dotyk: ruch przed przytrzymaniem przewija stronę (karta ma touch-action: none).
+      if (g.dotyk.przewijanie || (przesuniety && e.timeStamp - g.dotyk.t0 < PRZYTRZYMANIE_MS)) {
+        window.scrollBy(g.dotyk.x - e.clientX, g.dotyk.y - e.clientY);
+        gestRef.current = {
+          ...g,
+          dotyk: { ...g.dotyk, x: e.clientX, y: e.clientY, przewijanie: true },
+        };
+        return;
+      }
+    }
+    if (g.rodzaj === 'obszar' && g.dotyk && przesuniety) {
+      // Dotyk na pustym miejscu przewija stronę (przeglądarka) – bez zaznaczania prostokątem.
+      zakonczGest(true);
+      return;
+    }
+    const ruch = g.ruch || przesuniety;
     const k = kartki.find((x) => x.arkusz.id === g.arkuszId);
     const s = stronaPod(e.clientX, e.clientY);
     if (g.rodzaj === 'karty') {
@@ -431,10 +553,20 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     }
   };
 
+  /** Zdejmuje nasłuchy gestu; `przerwij` – bez skutków (np. pointercancel, odmontowanie). */
+  const zakonczGest = (przerwij = false) => {
+    const n = nasluchy.current;
+    if (n) {
+      window.removeEventListener('pointermove', n.ruch);
+      window.removeEventListener('pointerup', n.koniec);
+      window.removeEventListener('pointercancel', n.anuluj);
+      nasluchy.current = undefined;
+    }
+    if (przerwij) ustawGestOba(undefined);
+  };
+
   const koniecGestu = () => {
-    window.removeEventListener('pointermove', ruchGestu);
-    window.removeEventListener('pointerup', koniecGestu);
-    window.removeEventListener('pointercancel', koniecGestu);
+    zakonczGest();
     const g = gestRef.current;
     ustawGestOba(undefined);
     if (!g || g.rodzaj === 'obraz') return;
@@ -525,6 +657,9 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
           x0: e.clientX,
           y0: e.clientY,
           ruch: false,
+          ...(e.pointerType === 'touch'
+            ? { dotyk: { t0: e.timeStamp, x: e.clientX, y: e.clientY, przewijanie: false } }
+            : {}),
         });
       }
     } else {
@@ -541,11 +676,14 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
         x0: e.clientX,
         y0: e.clientY,
         ruch: false,
+        ...(e.pointerType === 'touch' ? { dotyk: true } : {}),
       });
     }
+    zakonczGest();
+    nasluchy.current = { ruch: ruchGestu, koniec: koniecGestu, anuluj: () => zakonczGest(true) };
     window.addEventListener('pointermove', ruchGestu);
     window.addEventListener('pointerup', koniecGestu);
-    window.addEventListener('pointercancel', koniecGestu);
+    window.addEventListener('pointercancel', nasluchy.current.anuluj);
   };
 
   // Kółko myszy nad zaznaczoną kartą z ilustracją – skala ilustracji.
@@ -605,6 +743,40 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     });
     ustawZazn({ rodzaj: 'karty', arkuszId: menu.arkuszId, ids: [proba.kartaId] });
     ustawMenu(undefined);
+    fokusPo(`[data-karta="${proba.kartaId}"]`);
+  };
+  // Przycisk „Rozmiar” na pasku nad kartą: następny (cyklicznie) rozmiar typu, który się mieści.
+  const nastepnyRozmiar = (() => {
+    const jedna = aktywne?.rodzaj === 'karty' && zaznaczoneKarty.length === 1 && zaznaczoneKarty[0];
+    if (!jedna) return undefined;
+    const rozmiary = typDlaSzablonu(pakiet, jedna.karta.szablonId)?.typ.rozmiary ?? [];
+    const ctx = kontekst(aktywne.arkuszId);
+    if (rozmiary.length < 2 || !ctx) return undefined;
+    const mozliwe = mozliweRozmiary(projekt, aktywne.arkuszId, jedna.karta.id, rozmiary, ctx);
+    const i = rozmiary.findIndex((r) => r.kolumny === jedna.kolumny && r.rzedy === jedna.rzedy);
+    for (let d = 1; d < rozmiary.length; d++) {
+      const j = (i + d) % rozmiary.length;
+      const r = rozmiary[j]!;
+      if (!mozliwe[j]) continue;
+      return {
+        etykieta: t('kartka.rozmiarNastepny', {
+          rozmiar: `${r.kolumny}×${r.rzedy}${r.nazwa ? ` ${r.nazwa}` : ''}`,
+        }),
+        zmien: () =>
+          zmien((p) => {
+            const x = zmienRozmiarKarty(p, aktywne.arkuszId, jedna.karta.id, r, ctx);
+            return 'projekt' in x ? x.projekt : p;
+          }),
+      };
+    }
+    return undefined;
+  })();
+  const zamknijMenu = () => {
+    if (!menu) return;
+    ustawMenu(undefined);
+    fokusPo(
+      `[data-arkusz="${menu.arkuszId}"][data-strona="${menu.strona}"] [data-slot="${menu.kolumna},${menu.rzad}"]`,
+    );
   };
 
   const pobierzPdf = async () => {
@@ -637,6 +809,14 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
 
   // --- Panel boczny.
   const arkuszZazn = aktywne && projekt.arkusze.find((a) => a.id === aktywne.arkuszId);
+  const nowaKartka = pakiet
+    ? () => {
+        const nazwa = t('kartka.nazwaKartki', { numer: projekt.arkusze.length + 1 });
+        const w = dodajKartke(projekt, pakiet.nowaKartka, nazwa);
+        zmien((p) => dodajKartke(p, pakiet.nowaKartka, nazwa).projekt);
+        ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
+      }
+    : undefined;
   let panel: React.ReactNode;
   if (aktywne?.rodzaj === 'karty' && arkuszZazn && kontekst(arkuszZazn.id)) {
     const ctx = kontekst(arkuszZazn.id)!;
@@ -646,6 +826,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     const mozeNaglowek = !!arkuszZazn.ustawienia.grupy && naStronie.length > 0;
     panel = (
       <PanelKart
+        key={aktywne.ids.join(',')}
         edycja={edycja}
         arkusz={arkuszZazn}
         karty={zaznaczoneKarty}
@@ -671,8 +852,18 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
                   ustawToast({ tekst: t('kartka.naglowekKoliduje') });
                   return;
                 }
-                zmienUklad(() => w.projekt);
-                ustawZazn({ rodzaj: 'naglowek', arkuszId: arkuszZazn.id, id: w.id });
+                const opis = {
+                  strona,
+                  kolumna: od,
+                  kolumny: do_ - od,
+                  naglowek: t('kartka.nowaGrupa'),
+                };
+                const ok = zmienUklad((p) => {
+                  const x = dodajNaglowek(p, arkuszZazn.id, opis, ctx);
+                  return 'projekt' in x ? x.projekt : p;
+                });
+                if (ok) ustawZazn({ rodzaj: 'naglowek', arkuszId: arkuszZazn.id, id: w.id });
+                else ustawToast({ tekst: t('kartka.zmianaNieMiesci') });
               },
             }
           : {})}
@@ -684,6 +875,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     if (h && ctx)
       panel = (
         <PanelNaglowka
+          key={h.id}
           arkusz={arkuszZazn}
           naglowek={h}
           maksKolumn={ctx.siatka.kolumny}
@@ -691,7 +883,13 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
           zmien={(z, klucz) => {
             const w = zmienNaglowek(projekt, arkuszZazn.id, h.id, z, ctx);
             if ('blad' in w) return ustawBladUkladu(t('kartka.naglowekKoliduje'));
-            zmienUklad(() => w.projekt, klucz ? `naglowek:${h.id}:${klucz}` : undefined);
+            zmienUklad(
+              (p) => {
+                const x = zmienNaglowek(p, arkuszZazn.id, h.id, z, ctx);
+                return 'projekt' in x ? x.projekt : p;
+              },
+              klucz ? `naglowek:${h.id}:${klucz}` : undefined,
+            );
           }}
           usun={usunZaznaczone}
           zamknij={() => ustawZazn(undefined)}
@@ -700,20 +898,12 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
   } else if (aktywne?.rodzaj === 'ustawienia' && arkuszZazn) {
     panel = (
       <PanelUstawien
+        key={arkuszZazn.id}
         edycja={edycja}
         arkusz={arkuszZazn}
         zmienUklad={zmienUklad}
         {...(bladUkladu ? { blad: bladUkladu } : {})}
-        {...(pakiet
-          ? {
-              nowaKartka: () => {
-                const nazwa = t('kartka.nazwaKartki', { numer: projekt.arkusze.length + 1 });
-                const w = dodajKartke(projekt, pakiet.nowaKartka, nazwa);
-                zmien(() => w.projekt);
-                ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
-              },
-            }
-          : {})}
+        {...(nowaKartka ? { nowaKartka } : {})}
         zamknij={() => ustawZazn(undefined)}
       />
     );
@@ -727,6 +917,21 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       <p className="podpis">{t('kartka.pomocDruk')}</p>
     </aside>
   );
+
+  // Ostrzeżenia kartek (nie kart): przypięcia poza siatką, nagłówki, tytuł; karty odłożone.
+  const ostrzezeniaKartek = kartki.flatMap((k) => [
+    ...(k.wynik?.ostrzezenia ?? [])
+      .filter((o) => !o.kartaId)
+      .map((o) => `${k.arkusz.nazwa}: ${tekstOstrzezeniaArkusza(o)}`),
+    ...(kartyOdlozone(projekt, k.arkusz.id).length
+      ? [
+          t('kartka.odlozone', {
+            kartka: k.arkusz.nazwa,
+            liczba: kartyOdlozone(projekt, k.arkusz.id).length,
+          }),
+        ]
+      : []),
+  ]);
 
   // Role bez czcionki – silnik użył zapasowej (zbiór uzupełniany przy budowie stron).
   const brakujaceCzcionki = useMemo(
@@ -781,13 +986,15 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       <button
         type="button"
         aria-pressed={aktywne?.rodzaj === 'ustawienia'}
-        onClick={() =>
+        disabled={projekt.arkusze.length === 0}
+        onClick={() => {
+          const arkuszId = aktywne?.arkuszId ?? projekt.arkusze[0]?.id;
           ustawZazn(
-            aktywne?.rodzaj === 'ustawienia'
+            aktywne?.rodzaj === 'ustawienia' || !arkuszId
               ? undefined
-              : { rodzaj: 'ustawienia', arkuszId: aktywne?.arkuszId ?? projekt.arkusze[0]!.id },
-          )
-        }
+              : { rodzaj: 'ustawienia', arkuszId },
+          );
+        }}
       >
         ⚙ {t('kartka.ustawienia')}
       </button>
@@ -815,15 +1022,20 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
   return (
     <div className="edytor-kartki">
       {naglowekProjektu}
-      {(edycja.ostrzezenia.length > 0 || brakujaceCzcionki.length > 0) && (
+      {(edycja.ostrzezenia.length > 0 ||
+        brakujaceCzcionki.length > 0 ||
+        ostrzezeniaKartek.length > 0) && (
         <details className="uwaga ostrzezenia-projektu">
           <summary>
             {t('projekt.ostrzezenia', {
-              liczba: edycja.ostrzezenia.length + (brakujaceCzcionki.length ? 1 : 0),
+              liczba:
+                edycja.ostrzezenia.length +
+                ostrzezeniaKartek.length +
+                (brakujaceCzcionki.length ? 1 : 0),
             })}
           </summary>
           <ul>
-            {edycja.ostrzezenia.map((o, i) => (
+            {[...edycja.ostrzezenia, ...ostrzezeniaKartek].map((o, i) => (
               <li key={i}>{o}</li>
             ))}
             {brakujaceCzcionki.length > 0 && (
@@ -839,6 +1051,16 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       <div className="uklad-edytora">
         <div className="kartki" ref={kartkiRef}>
           {!zasoby && <p>{t('arkusze.wczytywanie')}</p>}
+          {zasoby && projekt.arkusze.length === 0 && (
+            <p className="uwaga">
+              {t('kartka.brakKartek')}{' '}
+              {nowaKartka && (
+                <button type="button" onClick={nowaKartka}>
+                  {t('kartka.nowaKartka')}
+                </button>
+              )}
+            </p>
+          )}
           {kartki.map((k) => (
             <WidokKartki
               key={k.arkusz.id}
@@ -868,10 +1090,11 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
                 );
               }}
               dodaj={dodajZMenu}
-              zamknijMenu={() => ustawMenu(undefined)}
+              zamknijMenu={zamknijMenu}
               poczatekGestu={poczatekGestu}
               duplikuj={() => duplikuj(1)}
               usun={usunZaznaczone}
+              rozmiar={aktywne?.arkuszId === k.arkusz.id ? nastepnyRozmiar : undefined}
               dodajStrone={() => zmien((p) => dodajStrone(p, k.arkusz.id))}
               otworzMenu={(p) => {
                 ustawZazn(undefined);
@@ -900,10 +1123,10 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
         </div>
         <div className="kolumna-panelu">{panel}</div>
       </div>
-      {toast && (
+      {toastAktualny && (
         <div className="toast" role="status">
-          <span>{toast.tekst}</span>
-          {toast.cofnij && (
+          <span>{toastAktualny.tekst}</span>
+          {toastAktualny.cofnij && (
             <button
               type="button"
               onClick={() => {
@@ -943,6 +1166,7 @@ function WidokKartki({
   poczatekGestu,
   duplikuj,
   usun,
+  rozmiar,
   dodajStrone,
   usunStrone,
   otworzMenu,
@@ -964,6 +1188,8 @@ function WidokKartki({
   poczatekGestu: (e: React.PointerEvent, k: Kartka, strona: number) => void;
   duplikuj: () => void;
   usun: () => void;
+  /** Następny mieszczący się rozmiar zaznaczonej karty (gdy typ ma kilka rozmiarów). */
+  rozmiar?: { etykieta: string; zmien: () => void };
   dodajStrone: () => void;
   usunStrone: (s: number) => void;
 }) {
@@ -972,6 +1198,7 @@ function WidokKartki({
   const zaznaczone =
     zazn?.rodzaj === 'karty' && zazn.arkuszId === id ? new Set(zazn.ids) : new Set<string>();
   const gestTu = gest && gest.arkuszId === id ? gest : undefined;
+  const [kursor, ustawKursor] = useState<Record<number, string>>({});
   const pierwsza = karty
     .filter((x) => zaznaczone.has(x.karta.id))
     .sort((a, b) => a.strona - b.strona || a.rzad - b.rzad || a.kolumna - b.kolumna)[0];
@@ -993,6 +1220,33 @@ function WidokKartki({
           for (let i = 0; i < c.kolumny; i++)
             for (let j = 0; j < c.rzedy; j++) zajete.add(`${c.kolumna + i},${c.rzad + j}`);
         const pusta = naStronie.length === 0;
+        // Jeden przystanek Tab na stronę (pierwszy wolny slot albo ostatnio odwiedzony),
+        // pozostałe sloty osiągalne strzałkami.
+        let przystanek = kursor[s];
+        if (!przystanek || zajete.has(przystanek)) {
+          przystanek = undefined;
+          for (let r = 0; r < (g?.siatka.rzedy ?? 0) && !przystanek; r++)
+            for (let c = 0; c < (g?.siatka.kolumny ?? 0) && !przystanek; c++)
+              if (!zajete.has(`${c},${r}`)) przystanek = `${c},${r}`;
+        }
+        const ruchSlotu = (e: React.KeyboardEvent, c: number, r: number) => {
+          const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[
+            e.key
+          ];
+          if (!d || !g) return;
+          e.preventDefault();
+          for (let x = c + d[0]!, y = r + d[1]!; ; x += d[0]!, y += d[1]!) {
+            if (x < 0 || y < 0 || x >= g.siatka.kolumny || y >= g.siatka.rzedy) return;
+            if (zajete.has(`${x},${y}`)) continue;
+            ustawKursor((k) => ({ ...k, [s]: `${x},${y}` }));
+            (
+              e.currentTarget.parentElement?.querySelector(
+                `[data-slot="${x},${y}"]`,
+              ) as HTMLElement | null
+            )?.focus();
+            return;
+          }
+        };
         return (
           <div key={s} className="strona-opakowanie">
             <div className="etykieta-strony">
@@ -1023,6 +1277,12 @@ function WidokKartki({
                           type="button"
                           className={`slot${menu && menu.strona === s && menu.kolumna === c && menu.rzad === r ? ' aktywny' : ''}`}
                           data-slot={`${c},${r}`}
+                          tabIndex={przystanek === `${c},${r}` ? 0 : -1}
+                          onKeyDown={(e) => ruchSlotu(e, c, r)}
+                          onFocus={() =>
+                            kursor[s] !== `${c},${r}` &&
+                            ustawKursor((k) => ({ ...k, [s]: `${c},${r}` }))
+                          }
                           style={stylProstokata(g, s, c, r)}
                           aria-label={t('kartka.pustySlot', {
                             strona: s + 1,
@@ -1122,6 +1382,11 @@ function WidokKartki({
                       <button type="button" onClick={duplikuj}>
                         {t('kartka.duplikuj')}
                       </button>
+                      {rozmiar && (
+                        <button type="button" onClick={rozmiar.zmien}>
+                          {rozmiar.etykieta}
+                        </button>
+                      )}
                       <button type="button" className="niebezpieczny" onClick={usun}>
                         {t('kartka.usun')}
                       </button>

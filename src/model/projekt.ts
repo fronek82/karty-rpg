@@ -2,7 +2,11 @@ import type { Arkusz } from './arkusz';
 import type { Szablon, Talia, WariantCzcionki } from './szablon';
 
 /** Numer wersji schematu zapisu projektu (plik `.kartyrpg` i IndexedDB). Zwiększać z migracją. */
-export const WERSJA_SCHEMATU = 1;
+/**
+ * 1 – M1 (talie z ilościami, arkusze z przypięciami i grupami talii).
+ * 2 – edytor kartki: `liczbaStron`, ręczne nagłówki, slot w ustawieniach, `pakiet` projektu.
+ */
+export const WERSJA_SCHEMATU = 2;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

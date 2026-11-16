@@ -13,7 +13,14 @@ export function WyborGry({ id }: { id: string }) {
   const [trwa, ustawTrwa] = useState(false);
   useEffect(() => {
     let aktywny = true;
-    void gra?.pakiet?.().then((p) => aktywny && ustawPakiet(p));
+    void gra?.pakiet?.().then(
+      (p) => aktywny && ustawPakiet(p),
+      (e: unknown) =>
+        aktywny &&
+        ustawBlad(
+          t('start.bladPakietu', { szczegoly: String(e instanceof Error ? e.message : e) }),
+        ),
+    );
     return () => {
       aktywny = false;
     };

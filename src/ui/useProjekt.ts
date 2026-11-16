@@ -26,6 +26,8 @@ export interface ProjektWEdycji {
   ponow(): void;
   mozeCofnac: boolean;
   mozePonowic: boolean;
+  /** Licznik zmian dokumentu (edycja, cofnięcie, ponowienie) – np. ważność „Cofnij” w komunikacie. */
+  wersja: number;
   /**
    * Zmiana biblioteki zasobów (czcionki, obrazy). `f` dostaje NAJNOWSZY projekt i dane (nie te
    * z renderu), wynik od razu trafia do stanu, a zapis z bajtami rusza natychmiast. Obietnica
@@ -85,6 +87,7 @@ export function useProjekt(id: string): StanProjektu {
   const [zapis, ustawZapis] = useState<StanZapisu>({ stan: 'zapisano' });
   const biezacy = useRef<Biezacy | undefined>(undefined);
   const historia = useRef<Historia<Projekt>>(pustaHistoria());
+  const [wersja, ustawWersje] = useState(0);
   const [stanHistorii, ustawStanHistorii] = useState({ cofnij: false, ponow: false });
   const odswiezHistorie = () =>
     ustawStanHistorii({
@@ -133,9 +136,15 @@ export function useProjekt(id: string): StanProjektu {
         ({ projekt: wczytany, zasoby: dane }) => {
           if (!aktywny) return;
           // Projekt sprzed edytora kartki – normalizacja (wydruk bez zmian) i zapis.
-          const projekt = czyKartkaZnormalizowana(wczytany)
-            ? wczytany
-            : normalizujWczytany(wczytany, dane);
+          let projekt: Projekt;
+          try {
+            projekt = czyKartkaZnormalizowana(wczytany)
+              ? wczytany
+              : normalizujWczytany(wczytany, dane);
+          } catch (e) {
+            ustawWidok({ id, blad: t('kartka.bladNormalizacji', { szczegoly: komunikat(e) }) });
+            return;
+          }
           const brudny = projekt !== wczytany;
           biezacy.current = { id, projekt, dane, brudny, zasobyBrudne: false };
           ustawWidok({ id, projekt, dane });
@@ -168,6 +177,7 @@ export function useProjekt(id: string): StanProjektu {
     (nowy: Projekt) => {
       const b = biezacy.current;
       if (!b) return;
+      ustawWersje((w) => w + 1);
       b.projekt = nowy;
       b.brudny = true;
       odswiez();
@@ -197,8 +207,10 @@ export function useProjekt(id: string): StanProjektu {
   const cofnijZmiane = useCallback(() => {
     const b = biezacy.current;
     const w = b && cofnij(historia.current, b.projekt);
-    if (!w) return;
+    if (!w || !b) return;
     historia.current = w.historia;
+    // Zmiana biblioteki – zapis razem z bajtami (trzymanymi w pamięci).
+    if (w.stan.zasoby !== b.projekt.zasoby) b.zasobyBrudne = true;
     odswiezHistorie();
     ustawDokument(w.stan);
   }, [ustawDokument]);
@@ -206,8 +218,10 @@ export function useProjekt(id: string): StanProjektu {
   const ponowZmiane = useCallback(() => {
     const b = biezacy.current;
     const w = b && ponow(historia.current, b.projekt);
-    if (!w) return;
+    if (!w || !b) return;
     historia.current = w.historia;
+    // Zmiana biblioteki – zapis razem z bajtami (trzymanymi w pamięci).
+    if (w.stan.zasoby !== b.projekt.zasoby) b.zasobyBrudne = true;
     odswiezHistorie();
     ustawDokument(w.stan);
   }, [ustawDokument]);
@@ -217,11 +231,13 @@ export function useProjekt(id: string): StanProjektu {
       const b = biezacy.current;
       if (!b) return;
       const wynik = f(b.projekt, b.dane); // błąd z `f` – stan bez zmian
-      // Cofanie przez zmianę biblioteki mogłoby wskazać usunięte bajty – historia od nowa.
-      historia.current = pustaHistoria();
+      // Historia zostaje: bajty usuniętych zasobów zostają w pamięci (zapis bierze tylko opisane),
+      // więc „Cofnij” może przywrócić zasób razem z jego bajtami.
+      historia.current = zapamietaj(historia.current, b.projekt);
       odswiezHistorie();
+      ustawWersje((w) => w + 1);
       b.projekt = wynik.projekt;
-      b.dane = wynik.dane;
+      b.dane = new Map([...b.dane, ...wynik.dane]);
       b.brudny = true;
       b.zasobyBrudne = true;
       odswiez();
@@ -280,6 +296,7 @@ export function useProjekt(id: string): StanProjektu {
     ponow: ponowZmiane,
     mozeCofnac: stanHistorii.cofnij,
     mozePonowic: stanHistorii.ponow,
+    wersja,
   };
 }
 

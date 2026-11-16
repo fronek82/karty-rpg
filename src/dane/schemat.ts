@@ -373,11 +373,13 @@ type Migracja = (dane: Record<string, unknown>) => Record<string, unknown>;
 
 /**
  * Migracje: klucz `n` zamienia dane ze schematu `n` na `n + 1`. Projekt i plik szablonu mają
- * osobne kroki (inny kształt), ale wspólny numer wersji. Na razie brak migracji.
+ * osobne kroki (inny kształt), ale wspólny numer wersji.
  */
 export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<number, Migracja> } = {
-  projekt: {},
-  szablon: {},
+  // 1 → 2: nowe pola są opcjonalne; sprowadzenie do modelu kartki robi normalizacja przy
+  // otwarciu (potrzebuje czcionek – patrz src/druk/normalizacja.ts).
+  projekt: { 1: (d) => d },
+  szablon: { 1: (d) => d },
 };
 
 export function migruj(

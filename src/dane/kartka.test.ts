@@ -193,6 +193,20 @@ describe('kartka – strony i nagłówki', () => {
     expect(usunStrone(pusty, A, 0)).toEqual({ blad: 'strona-niepusta' });
   });
 
+  it('usunięcie strony usuwa jej nagłówki i przesuwa nagłówki dalszych stron', () => {
+    let p = dodajStrone(dodajStrone(pusty, A), A);
+    for (const strona of [0, 1, 2])
+      p = ok(
+        dodajNaglowek(p, A, { strona, kolumna: 0, kolumny: 2, naglowek: `S${strona}` }, ctx),
+      ).projekt;
+    const w = ok(usunStrone(p, A, 1));
+    const naglowki = w.projekt.arkusze.find((a) => a.id === A)!.naglowki!;
+    expect(naglowki.map((h) => [h.naglowek, h.strona])).toEqual([
+      ['S0', 0],
+      ['S2', 1],
+    ]);
+  });
+
   it('nagłówki: bez nakładania; odstęp nie przecina karty szerszej niż kolumna', () => {
     const n = ok(
       dodajNaglowek(pusty, A, { strona: 0, kolumna: 0, kolumny: 2, naglowek: 'A' }, ctx),

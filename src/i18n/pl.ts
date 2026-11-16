@@ -213,6 +213,13 @@ export const pl = {
   'kartka.nazwaKartki': 'Kartka {numer}',
   'kartka.zmianaNieMiesci':
     'Po tej zmianie karty nie zmieściłyby się na kartce – przesuń lub usuń karty z brzegu siatki.',
+  'kartka.bladNormalizacji':
+    'Nie udało się przenieść projektu do nowego edytora kartki: {szczegoly}',
+  'kartka.odlozone':
+    '{kartka}: karty odłożone (niedrukowane, ilość 0 w starym projekcie): {liczba} – zachowane w pliku projektu.',
+  'kartka.brakTypow': 'Ten projekt nie ma typów kart z pakietu gry.',
+  'kartka.brakKartek': 'Projekt nie ma kartek.',
+  'kartka.rozmiarNastepny': 'Rozmiar: {rozmiar}',
   'kartka.bladUkladu': 'Nie udało się ułożyć kartki: {szczegoly}',
   'kartka.bladPdf': 'Nie udało się utworzyć PDF: {szczegoly}',
   'kartka.nazwaProjektu': 'Nazwa projektu',
@@ -239,6 +246,7 @@ export const pl = {
   'start.pustaKartkaOpis': 'Kartka A4 z siatką slotów – klikasz w slot i dodajesz karty.',
   'start.gotowyUklad': 'Zacznij od gotowego układu',
   'start.gotowyUkladOpis': 'Karty z pakietu ułożone jak w oryginale – do dowolnej zmiany.',
+  'start.bladPakietu': 'Nie udało się wczytać danych gry ({szczegoly}). Odśwież stronę.',
   'start.tworze': 'Tworzę projekt…',
   'start.wBudowie': 'Inne gry – w budowie',
   'start.wBudowieOpis':

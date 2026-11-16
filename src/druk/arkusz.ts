@@ -252,7 +252,8 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       : undefined;
   const stylGrup = u.grupy;
   if (naglowki && stylGrup) {
-    for (const h of naglowki) {
+    // Nagłówek bez tekstu i opisu to sam odstęp przed grupą – nie zajmuje pasa nad siatką.
+    for (const h of naglowki.filter((x) => x.naglowek.trim() || x.opis?.trim())) {
       const szer = h.kolumny * slot.szerokosc;
       const wys =
         napis(h.naglowek, stylGrup.styl, szer, ctx.czcionki).wys +
@@ -409,11 +410,13 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         const szer = h.kolumny * slot.szerokosc;
         const naglowek = napis(h.naglowek, stylGrup.styl, szer, ctx.czcionki);
         const opis = napis(h.opis ?? '', stylGrup.stylOpisu, szer, ctx.czcionki);
-        glify.push(naglowek.glify, opis.glify);
         const x = poczatek.x + odstepKolumny(n, h.kolumna) + h.kolumna * slot.szerokosc;
         const y = poczatek.y - pas;
-        elementy.push({ typ: 'grupa', x, y, elementy: naglowek.elementy });
-        elementy.push({ typ: 'grupa', x, y: y + naglowek.wys, elementy: opis.elementy });
+        if (h.naglowek.trim() || h.opis?.trim()) {
+          glify.push(naglowek.glify, opis.glify);
+          elementy.push({ typ: 'grupa', x, y, elementy: naglowek.elementy });
+          elementy.push({ typ: 'grupa', x, y: y + naglowek.wys, elementy: opis.elementy });
+        }
         geometriaNaglowkow.push({
           id: h.id,
           strona: n,

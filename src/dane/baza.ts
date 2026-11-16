@@ -82,6 +82,10 @@ export class BazaProjektow {
     await this.db.miniatury.put({ id, svg });
   }
 
+  async usunMiniature(id: string): Promise<void> {
+    await this.db.miniatury.delete(id);
+  }
+
   async miniatury(): Promise<Map<string, string>> {
     return new Map((await this.db.miniatury.toArray()).map((m) => [m.id, m.svg]));
   }

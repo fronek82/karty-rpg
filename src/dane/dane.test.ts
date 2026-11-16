@@ -176,18 +176,20 @@ describe('eksport i import .kartyrpg', () => {
   });
 
   it('migracje: osobne kroki dla projektu i szablonu, brak kroku to czytelny błąd', () => {
-    MIGRACJE.szablon[1] = ({ szablonStary, ...reszta }) => ({ ...reszta, szablon: szablonStary });
+    // Fikcyjny krok 2 → 3 (prawdziwy 1 → 2 już istnieje).
+    MIGRACJE.szablon[2] = ({ szablonStary, ...reszta }) => ({ ...reszta, szablon: szablonStary });
     try {
-      expect(migruj({ wersja: 1, szablonStary: 'x' }, 'szablon', 2)).toEqual({
-        wersja: 2,
+      expect(migruj({ wersja: 1, szablonStary: 'x' }, 'szablon', 3)).toEqual({
+        wersja: 3,
         szablon: 'x',
       });
-      expect(() => migruj({ wersja: 1 }, 'projekt', 2)).toThrow(
-        /Brak migracji danych ze schematu 1/,
+      expect(() => migruj({ wersja: 2 }, 'projekt', 3)).toThrow(
+        /Brak migracji danych ze schematu 2/,
       );
     } finally {
-      delete MIGRACJE.szablon[1];
+      delete MIGRACJE.szablon[2];
     }
+    expect(migruj({ wersja: 1, a: 1 })).toEqual({ wersja: 2, a: 1 });
     expect(() => migruj({ wersja: WERSJA_SCHEMATU + 1 })).toThrow(/nowszej wersji/);
     expect(() => migruj({ wersja: 0.5 })).toThrow(/numeru wersji/);
   });

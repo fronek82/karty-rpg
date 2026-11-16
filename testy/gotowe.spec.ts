@@ -57,7 +57,7 @@ test('eksport → import jako kopia → lista z miniaturą → usunięcie', asyn
   await expect(page.getByRole('alertdialog')).toContainText('jest już w tej przeglądarce');
   await page.getByRole('button', { name: 'Zapisz jako kopię' }).click();
   await expect(page.locator('.kafelek-projektu')).toHaveCount(2);
-  await expect(page.locator('.kafelek-projektu .miniatura svg').first()).toBeVisible();
+  await expect(page.locator('.kafelek-projektu .miniatura img').first()).toBeVisible();
   await expect(page.locator('.kafelek-projektu').first()).toContainText('stron: 1, kart: 51');
   await page.getByRole('button', { name: 'Usuń projekt Broń i pancerze (kopia)' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Usuń' }).click();

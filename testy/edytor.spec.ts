@@ -136,3 +136,44 @@ test('strony: dodaj, przeciągnij kartę na drugą, usuń pustą', async ({ page
     'Ranny – strona 1, kolumna 3, rząd 3',
   );
 });
+
+test('klawiatura: Tab na slot, strzałki, Enter → menu, Escape; rozmiar z paska', async ({
+  page,
+}) => {
+  await nowaPustaKartka(page);
+  // Jeden przystanek Tab na stronę: pierwszy wolny slot.
+  await expect(slot(page, 1, 1, 1)).toHaveAttribute('tabindex', '0');
+  await expect(slot(page, 1, 2, 1)).toHaveAttribute('tabindex', '-1');
+  await slot(page, 1, 1, 1).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
+  await expect(slot(page, 1, 2, 2)).toBeFocused();
+  await page.keyboard.press('Enter');
+  const pierwsza = page.getByRole('menuitem').first();
+  await expect(pierwsza).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(pierwsza).not.toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(slot(page, 1, 2, 2)).toBeFocused();
+
+  // Enter → Broń: fokus na nowej karcie; strzałka przesuwa ją i fokus idzie za nią.
+  await page.keyboard.press('Enter');
+  await page.getByRole('menuitem', { name: /Broń/ }).press('Enter');
+  const nowa = page.locator('[data-karta].zaznaczona');
+  await expect(nowa).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(nowa).toHaveAttribute('aria-label', /kolumna 3, rząd 2/);
+  await expect(nowa).toBeFocused();
+
+  // „Rozmiar” na pasku nad kartą przełącza na następny mieszczący się rozmiar.
+  await page
+    .locator('.pasek-karty')
+    .getByRole('button', { name: /Rozmiar: 1×2/ })
+    .click();
+  const r = (await nowa.boundingBox())!;
+  expect(r.height / r.width).toBeCloseTo(2, 1);
+  await expect(
+    page.locator('.pasek-karty').getByRole('button', { name: /Rozmiar: 1×1/ }),
+  ).toBeVisible();
+});

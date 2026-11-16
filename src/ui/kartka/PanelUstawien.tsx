@@ -46,7 +46,7 @@ export function PanelUstawien({
   ];
   const A = arkusz.id;
   const polozenie = !u.tytul || !u.tytul.tekst.trim() ? 'brak' : u.tytul.polozenie;
-  // Tekst tytułu pamiętany przy „bez tytułu” (pusty tekst wyłącza pasek tytułu).
+  // Tekst tytułu w polu (także przy „bez tytułu” – pamiętany do przywrócenia).
   const [tekstTytulu, ustawTekstTytulu] = useState(u.tytul?.tekst || arkusz.nazwa);
 
   const wgraj = async (pliki: File[]) => {
@@ -96,11 +96,13 @@ export function PanelUstawien({
         <input
           id="tytul-kartki"
           type="text"
-          value={polozenie === 'brak' ? tekstTytulu : (u.tytul?.tekst ?? '')}
+          value={tekstTytulu}
           disabled={polozenie === 'brak'}
           onChange={(e) => {
             ustawTekstTytulu(e.target.value);
-            zmienUklad((p) => ustawTytulArkusza(p, A, e.target.value), 'tytul');
+            // Pusty tekst nie wyłącza tytułu (do tego jest „bez tytułu”) – czekamy na wpis.
+            if (e.target.value.trim())
+              zmienUklad((p) => ustawTytulArkusza(p, A, e.target.value), 'tytul');
           }}
         />
       </div>
@@ -120,7 +122,9 @@ export function PanelUstawien({
                     tytul: {
                       ...u.tytul!,
                       tekst:
-                        x === 'brak' ? '' : u.tytul!.tekst.trim() ? u.tytul!.tekst : tekstTytulu,
+                        x === 'brak'
+                          ? ''
+                          : u.tytul!.tekst.trim() || tekstTytulu.trim() || arkusz.nazwa,
                       ...(x === 'brak' ? {} : { polozenie: x }),
                     },
                   }),

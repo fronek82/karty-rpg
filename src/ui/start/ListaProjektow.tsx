@@ -63,6 +63,8 @@ export function ListaProjektow() {
     wykonaj(async () => {
       ustawKolizje(undefined);
       await baza().zapisz(projekt, zasoby);
+      // Zastąpiony projekt – stara miniatura nieaktualna (nowa powstanie przy otwarciu).
+      await baza().usunMiniature(projekt.id);
       return t('projekty.zaimportowano', { nazwa: projekt.nazwa });
     });
 
@@ -190,7 +192,11 @@ export function ListaProjektow() {
                 tabIndex={-1}
               >
                 {miniatury.get(p.id) ? (
-                  <span dangerouslySetInnerHTML={{ __html: miniatury.get(p.id)! }} />
+                  // Jako obrazek: identyfikatory glifów w SVG różnych miniatur się nie mieszają.
+                  <img
+                    alt=""
+                    src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(miniatury.get(p.id)!)}`}
+                  />
                 ) : (
                   <span className="bez-miniatury">🂠</span>
                 )}

@@ -15,18 +15,39 @@ import { zbudujArkusz } from './arkusz';
 
 const E = 1e-6;
 
+const unikalne = (id: string, zajete: Set<string>) => {
+  let w = id;
+  for (let n = 2; zajete.has(w); n++) w = `${id}-${n}`;
+  return w;
+};
+
 /** Czy projekt jest już w modelu kartki (nie trzeba normalizować). */
 export function czyKartkaZnormalizowana(p: Projekt): boolean {
   const uzycia = new Map<string, number>();
   for (const a of p.arkusze) uzycia.set(a.taliaId, (uzycia.get(a.taliaId) ?? 0) + 1);
-  return p.arkusze.every((a) => {
-    const t = p.talie.find((x) => x.id === a.taliaId);
-    if (!t || uzycia.get(t.id) !== 1 || t.grupy?.length) return false;
-    const przypiete = new Map<string, number>();
-    for (const x of a.przypiete ?? [])
-      przypiete.set(x.kartaId, (przypiete.get(x.kartaId) ?? 0) + 1);
-    return t.karty.every((k) => k.ilosc === 1 && przypiete.get(k.id) === 1);
-  });
+  return (
+    p.arkusze.every((a) => {
+      const t = p.talie.find((x) => x.id === a.taliaId);
+      if (!t || uzycia.get(t.id) !== 1 || t.grupy?.length) return false;
+      const przypiete = new Map<string, number>();
+      for (const x of a.przypiete ?? [])
+        przypiete.set(x.kartaId, (przypiete.get(x.kartaId) ?? 0) + 1);
+      // Karta na kartce: 1 sztuka, przypięta raz; odłożona: 0 sztuk, bez przypięcia.
+      return (
+        !!a.ustawienia.slot &&
+        t.karty.every((k) =>
+          k.ilosc === 0 ? !przypiete.has(k.id) : k.ilosc === 1 && przypiete.get(k.id) === 1,
+        )
+      );
+    }) && p.talie.every((t) => p.arkusze.some((a) => a.taliaId === t.id))
+  );
+}
+
+/** Karty odłożone (ilość 0 – nie ma ich na kartce ani na wydruku) w kartce. */
+export function kartyOdlozone(p: Projekt, arkuszId: string): Karta[] {
+  const a = p.arkusze.find((x) => x.id === arkuszId);
+  const t = a && p.talie.find((x) => x.id === a.taliaId);
+  return t?.karty.filter((k) => k.ilosc === 0) ?? [];
 }
 
 /** Pakiet gry projektu: zapisany albo rozpoznany po szablonach (projekty sprzed pola `pakiet`). */
@@ -39,7 +60,10 @@ export function pakietProjektu(p: Projekt): string | undefined {
 
 export interface WynikNormalizacji {
   projekt: Projekt;
-  /** Karty, których nie było na wydruku (ilość 0, za duże) – nie trafiają na kartkę. */
+  /**
+   * Karty, których nie było na wydruku (ilość 0, za duże, poza siatką slotów) – zostają w talii
+   * jako odłożone (ilość 0, bez przypięcia), nic nie ginie.
+   */
   pominiete: string[];
 }
 
@@ -53,7 +77,20 @@ export function normalizujKartki(
   const uzyteTalie = new Set<string>();
   const pominiete: string[] = [];
 
-  const arkusze = p.arkusze.map((a): Arkusz => {
+  // Talia bez arkusza (np. z importu) dostaje własną kartkę z ustawieniami pierwszej.
+  const wzor = p.arkusze[0];
+  const bezKartki = wzor ? p.talie.filter((t) => !p.arkusze.some((a) => a.taliaId === t.id)) : [];
+  const wejscie: Arkusz[] = [
+    ...p.arkusze,
+    ...bezKartki.map((t) => ({
+      id: unikalne(t.id, new Set(p.arkusze.map((a) => a.id))),
+      nazwa: t.nazwa,
+      taliaId: t.id,
+      ustawienia: structuredClone(wzor!.ustawienia),
+    })),
+  ];
+
+  const arkusze = wejscie.map((a): Arkusz => {
     let talia = p.talie.find((x) => x.id === a.taliaId)!;
     // Talia wspólna dla kilku arkuszy – każdy arkusz dostaje własną kopię.
     if (uzyteTalie.has(talia.id)) {
@@ -70,31 +107,44 @@ export function normalizujKartki(
       ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
     });
 
-    // Grupy → nagłówki: kolumna początkowa i odstęp przed grupą z położenia regionów.
+    // Regiony (grupy i karty spoza grup) → kolumny globalne; odstępy między nimi → nagłówki
+    // z `odstepPrzed` (region bez grupy – nagłówek z pustym tekstem, sam odstęp).
     const naglowki: NaglowekGrupy[] = [...(a.naglowki ?? [])];
-    const startGrupy = new Map<string, number>();
-    if (w.siatka.grupy) {
-      for (let s = 0; s < w.strony.length; s++) {
-        let kolumna = 0;
-        let odstepy = 0;
-        for (const r of w.rozmieszczenie.regiony
-          .filter((x) => x.strona === s)
-          .sort((x, y) => x.x - y.x)) {
-          const odstep = r.x - (kolumna * w.slot.szerokosc + odstepy);
-          odstepy += odstep;
-          startGrupy.set(`${s}|${r.grupaId}`, kolumna);
-          const g = talia.grupy?.find((x) => x.id === r.grupaId);
+    const startRegionu = new Map<string, number>();
+    const kluczX = (strona: number, x: number) => `${strona}|${Math.round(x * 1000)}`;
+    for (let s = 0; s < w.strony.length; s++) {
+      const regiony = new Map<number, { x: number; kolumny: number; grupaId?: string }>();
+      for (const r of w.rozmieszczenie.regiony.filter((x) => x.strona === s)) {
+        regiony.set(Math.round(r.x * 1000), { x: r.x, kolumny: r.kolumny, grupaId: r.grupaId });
+      }
+      for (const u of w.rozmieszczenie.karty.filter((x) => x.strona === s)) {
+        const k = Math.round(u.xRegionu * 1000);
+        const r = regiony.get(k) ?? { x: u.xRegionu, kolumny: 0 };
+        if (!r.grupaId) r.kolumny = Math.max(r.kolumny, u.kolumna + u.kolumny);
+        regiony.set(k, r);
+      }
+      let kolumna = 0;
+      let odstepy = 0;
+      for (const r of [...regiony.values()].sort((x, y) => x.x - y.x)) {
+        const odstep = r.x - (kolumna * w.slot.szerokosc + odstepy);
+        odstepy += odstep;
+        startRegionu.set(kluczX(s, r.x), kolumna);
+        const g = r.grupaId ? talia.grupy?.find((x) => x.id === r.grupaId) : undefined;
+        if (g || odstep > E) {
           naglowki.push({
-            id: s === 0 ? r.grupaId : `${r.grupaId}-s${s + 1}`,
+            id: unikalne(
+              g ? (s === 0 ? g.id : `${g.id}-s${s + 1}`) : `odstep-s${s + 1}-k${kolumna + 1}`,
+              new Set(naglowki.map((h) => h.id)),
+            ),
             strona: s,
             kolumna,
-            kolumny: r.kolumny,
+            kolumny: Math.max(1, r.kolumny),
             naglowek: g?.naglowek ?? '',
             ...(g?.opis ? { opis: g.opis } : {}),
             ...(odstep > E ? { odstepPrzed: Math.round(odstep * 1e6) / 1e6 } : {}),
           });
-          kolumna += r.kolumny;
         }
+        kolumna += r.kolumny;
       }
     }
 
@@ -110,8 +160,7 @@ export function normalizujKartki(
         zajeteId.add(id);
       }
       karty.push({ ...u.karta, id, ilosc: 1 });
-      const kolumna =
-        (u.grupaId ? (startGrupy.get(`${u.strona}|${u.grupaId}`) ?? 0) : 0) + u.kolumna;
+      const kolumna = (startRegionu.get(kluczX(u.strona, u.xRegionu)) ?? 0) + u.kolumna;
       przypiete.push({
         kartaId: id,
         kolumna,
@@ -119,8 +168,13 @@ export function normalizujKartki(
         ...(u.strona ? { strona: u.strona } : {}),
       });
     }
+    // Karty, których nie było na wydruku – odłożone (ilość 0), nie usuwane.
     const naKartce = new Set(umieszczone.map((u) => u.karta.id));
-    for (const k of talia.karty) if (!naKartce.has(k.id)) pominiete.push(k.id);
+    for (const k of talia.karty) {
+      if (naKartce.has(k.id)) continue;
+      pominiete.push(k.id);
+      karty.push({ ...k, ilosc: 0 });
+    }
 
     const { grupy: _g, ...bezGrup } = talia;
     void _g;
@@ -128,6 +182,8 @@ export function normalizujKartki(
     talieWynik[i] = { ...bezGrup, karty };
     return {
       ...a,
+      // Jawny slot – siatka znana także bez kart (pusta kartka, kontrola zmian w edytorze).
+      ustawienia: { ...a.ustawienia, slot: { ...w.slot } },
       przypiete,
       liczbaStron: Math.max(1, w.strony.length),
       ...(naglowki.length ? { naglowki } : {}),

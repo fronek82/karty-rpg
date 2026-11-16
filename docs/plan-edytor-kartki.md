@@ -85,7 +85,7 @@ Panel pokazuje pola z szablonu (klucze i parametry – jak dziś kolumny tabeli)
 | K1    | ✅   | `f9b7bc9` – model, silnik (puste strony, nagłówki, slot), normalizacja (wydruk identyczny – test), operacje, historia, rejestr gier |
 | K2–K4 | ✅   | `2e30013` – edytor kartki, gesty, panele kart / nagłówka / ustawień, gotowe układy                                                  |
 | K5    | ✅   | start z wyborem gry i miniaturami, usunięte stare widoki, teksty i style; nowe e2e                                                  |
-| K6    | 🟡   | przegląd, zrzuty, PR, scalenie                                                                                                      |
+| K6    | ✅   | przegląd (poprawki: dostępność klawiatury, „Rozmiar” na pasku, normalizacja, odrzucanie zmian czcionek), zrzuty, PR, scalenie       |
 
 ## 6. Decyzje (zatwierdzone)
 
@@ -104,3 +104,11 @@ Panel pokazuje pola z szablonu (klucze i parametry – jak dziś kolumny tabeli)
 - **Wydajność** przy pełnych stronach (60 kart stanów): przebudowa strony przy każdej zmianie. Mitygacja: przeliczanie tylko zmienionej strony, `useDeferredValue`, a podczas przeciągania – lekki podgląd karty bez przebudowy strony.
 - **Migracja** istniejących projektów – test porównujący PDF przed i po.
 - **Dotyk**: przeciąganie na tablecie wymaga `touch-action: none` na kartce i rozróżnienia przewijania od przeciągania (przytrzymanie przed przeciągnięciem).
+
+## 8. Znane ograniczenia i sprawy na później (po przeglądzie K6)
+
+- Rozmiar karty na kartce jest liczony w dwóch miejscach (`dane/kartka.ts` – sloty, silnik arkusza – mm). Na razie spójne; przy zmianach siatki warto wydzielić wspólną funkcję.
+- Nazwy typów kart i gotowych układów Mausrittera są w kodzie pakietu (po polsku), a nie w i18n – przy kolejnych językach powinny stać się danymi pakietu z tłumaczeniami.
+- „Dodaj stronę” jest jeden, pod wszystkimi kartkami (dodaje stronę do ostatniej). Przy projektach z wieloma kartkami lepszy będzie przycisk przy każdej kartce.
+- Zarządzanie biblioteką czcionek ze starego widoku (zmiana nazwy rodziny, wariant, usuwanie czcionki) nie ma jeszcze miejsca w nowym interfejsie – w ustawieniach jest tylko wgrywanie i wybór czcionek ról. Do dodania w osobnym panelu „Czcionki”.
+- Zmiany ustawień kartki, które wypchnęłyby przypięte karty poza stronę (np. większa czcionka nagłówków), są odrzucane z komunikatem – bez podpowiedzi, co przestawić.

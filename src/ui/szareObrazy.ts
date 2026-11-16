@@ -25,7 +25,7 @@ function obrazyCzarnoBialych(zrodlo: ZrodloArkuszy, z: ZasobyPakietu): Set<strin
 /**
  * Zasoby uzupełnione o szare wersje obrazów (`id#szary`) użytych na arkuszach czarno-białych.
  * Konwersje pamiętane (po obiekcie obrazu) – edycja kart nie powtarza ich; do pierwszej
- * konwersji – undefined (podgląd czeka). Adresy blob: szarych obrazów zwalniane przy odmontowaniu.
+ * konwersji – obrazy kolorowe pod szarymi id (podgląd nie znika). Adresy blob: szarych obrazów zwalniane przy odmontowaniu.
  */
 export function useZSzarymiObrazami(
   z: ZasobyPakietu | undefined,
@@ -74,7 +74,11 @@ export function useZSzarymiObrazami(
     if (!z || !potrzebne) return z;
     if (szare?.zrodlo !== z || szare.klucz !== potrzebne) {
       // Do czasu nowej konwersji – poprzednie szare obrazy (bez znikania podglądu).
-      return szare ? { ...z, obrazy: new Map([...z.obrazy, ...szare.mapa]) } : undefined;
+      // Pierwsza konwersja: kolorowe obrazy pod szarymi id – edytor nie znika na czas konwersji.
+      const zastepcze = szare
+        ? szare.mapa
+        : new Map([...z.obrazy].map(([id, o]) => [id + SUFIKS_SZARY, o] as const));
+      return { ...z, obrazy: new Map([...z.obrazy, ...zastepcze]) };
     }
     return { ...z, obrazy: new Map([...z.obrazy, ...szare.mapa]) };
   }, [z, potrzebne, szare]);

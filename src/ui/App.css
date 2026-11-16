@@ -353,7 +353,7 @@ textarea:focus-visible {
   overflow: hidden;
 }
 
-.kafelek-projektu .miniatura svg {
+.kafelek-projektu .miniatura img {
   width: 100%;
   height: auto;
   display: block;
@@ -520,7 +520,8 @@ textarea:focus-visible {
   width: 100%;
   background: #fff;
   box-shadow: var(--cien);
-  touch-action: none;
+  /* Dotyk: pionowe przewijanie palcem po stronie; karty mają własną obsługę (przytrzymanie). */
+  touch-action: pan-y;
   user-select: none;
 }
 
@@ -569,6 +570,7 @@ textarea:focus-visible {
 }
 
 .karta-na-kartce {
+  touch-action: none;
   margin: 0;
   padding: 0;
   border: 0;
