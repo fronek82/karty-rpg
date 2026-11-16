@@ -15,7 +15,7 @@ Makiety (zrzuty z HTML, strony kart wyrenderowane prawdziwym silnikiem – to, c
 
 ## 1. Przepływ
 
-1. **Start** (`#/`): duży przycisk **„Stwórz karty Mausritter”** (nowy projekt z pustą kartką), obok **„Zacznij od gotowego układu Mausrittera”** (Broń i pancerze / Wyposażenie / Stany / Wszystkie trzy), niżej **„Moje projekty”** – kafelki z miniaturą pierwszej strony, nazwą, liczbą stron i kart, datą oraz „Otwórz / Eksportuj / Usuń”. „Importuj plik .kartyrpg” w nagłówku.
+1. **Start** (`#/`): wybór gry (patrz „Uzupełnienia”), niżej **„Moje projekty”** – kafelki z miniaturą pierwszej strony, nazwą, liczbą stron i kart, datą oraz „Otwórz / Eksportuj / Usuń”. „Importuj plik .kartyrpg” w nagłówku.
 2. **Kartka** (`#/projekt/<id>`): strony A4 poziomo jedna pod drugą, w skali, z siatką 10 × 7 slotów (przerywane kratki tylko na ekranie). Bez wyboru talii i arkuszy.
 3. **Klik w pusty slot** → menu: Broń, Zbroja, Ekwipunek (przedmiot / sakiewka), Zaklęcie, Stan, Pusta karta. Karta pojawia się w slocie w domyślnym rozmiarze typu (tabela w sekcji 4). Gdy domyślny rozmiar się nie mieści (np. zbroja 1×2 w ostatnim rzędzie), wybierany jest pierwszy, który się mieści; gdy żaden – pozycja menu jest wyszarzona z podpowiedzią.
 4. **Klik w kartę** → zaznaczenie (niebieska ramka) + **panel boczny** z polami typu: nazwa, wartość/obrażenia, klasa, znaczniki (− / +), rozmiar (przyciski; niemieszczące się wyszarzone), ilustracja (wgraj / z biblioteki, skala, obrót, reset; na kartce: kółko myszy = skala, przeciąganie z Alt = przesunięcie ilustracji). Zmiany widać na kartce od razu (ta sama scena co w PDF).
@@ -27,6 +27,14 @@ Makiety (zrzuty z HTML, strony kart wyrenderowane prawdziwym silnikiem – to, c
 10. **Gotowe układy** z pakietu ładują się jako zwykłe karty na kartce (każda karta osobno, przypięta w swoim slocie) – do dowolnej edycji.
 
 **Ustawienia** (panel boczny zamiast pól karty): tytuł kartki i jego położenie (z lewej pionowo / u góry / bez), kolor / czarno-biały, czcionki ról Tytuły i Treść + „Wgraj własną czcionkę…”, papier A4 / Letter (zawsze poziomo).
+
+### Uzupełnienia po akceptacji
+
+- **Start = wybór gry.** Duże kafelki „Stwórz karty do Mausrittera” i „Stwórz karty do innej gry”, niżej „Moje projekty” z miniaturami. Mausritter → drugi ekran: „Pusta kartka” albo „Zacznij od gotowego układu” (Broń i pancerze / Wyposażenie / Stany / Wszystkie trzy) → kartka. „Inna gra” → strona „w budowie” (D&D, Warhammer, Jedyny Pierścień, własne karty – M2/M3). Gry są w rejestrze (`src/pakiety/gry.ts`): kolejna gra = kolejny wpis z pakietem (szablony, typy kart, gotowe układy) i kafelek pojawia się sam.
+- **Wiele kart naraz.** Shift+klik i zaznaczanie prostokątem (przeciągnięcie po pustym miejscu). Przy wielu kartach tego samego typu panel edytuje wspólne pola wszystkich naraz (różne wartości – pole puste z podpowiedzią „różne”; wpisanie ustawia wszystkim). Usuń, Duplikuj i przeciąganie działają na całym zaznaczeniu (zaznaczenie przesuwa się jako blok).
+- **„Duplikuj ×N”** – N kopii w kolejne wolne sloty za oryginałem (gdy brak miejsca – nowe strony).
+- **Skróty:** Delete – usuń, Ctrl+D – duplikuj, Ctrl+Z – cofnij (Ctrl+Shift+Z – ponów), strzałki – przesuń, Escape – odznacz.
+- Pusta strona ma tytuł, ale bez nożyczek (nożyczki wskazują linię cięcia, a tej bez kart nie ma).
 
 ## 2. Co znika, co zostaje
 
@@ -40,10 +48,11 @@ Mapowanie: **projekt → kartki**; kartka = `Arkusz` + jego własna `Talia` (1:1
 
 Zmiany (schemat w wersji 2, migracja z wersji 1):
 
-1. **`Arkusz.liczbaStron`** – strony mogą być puste (silnik dziś nie tworzy strony bez kart). Pusta strona: tytuł, nożyczki, bez linii cięcia.
-2. **`Arkusz.naglowki`** – ręczne nagłówki grup: `{ id, strona, kolumna, kolumny, naglowek, opis?, odstepPrzed? }`. Silnik rysuje je nad wskazanymi kolumnami (ten sam styl co dziś), a `odstepPrzed` (mm) przesuwa kolumny od tej w prawo – jak odstępy 2,9 mm między grupami w oryginalnych stanach. Automatyczne grupy talii (`Talia.grupy`) przestają być używane przez interfejs.
-3. **Ilość = 1**: każda karta na kartce to osobny egzemplarz. Migracja starych projektów: karta z `ilosc: n` → n kart; karty rozmieszczane automatycznie dostają przypięcia w miejscach, gdzie leżą teraz („zamrożenie układu”); grupy talii → nagłówki nad ich kolumnami. Wynik wygląda tak samo jak przed migracją (test: identyczny PDF).
-4. Nic nie zmienia się w szablonach, karcie (`dane`, `obrazy`, `rozmiar`) ani w bibliotece zasobów.
+1. **`Arkusz.liczbaStron`** – strony mogą być puste (silnik dziś nie tworzy strony bez kart). Pusta strona: tytuł, bez linii cięcia.
+2. **`Projekt.pakiet`** – id pakietu gry (typy kart w menu, gotowe układy); stare projekty Mausrittera rozpoznawane po szablonach.
+3. **`Arkusz.naglowki`** – ręczne nagłówki grup: `{ id, strona, kolumna, kolumny, naglowek, opis?, odstepPrzed? }`. Silnik rysuje je nad wskazanymi kolumnami (ten sam styl co dziś), a `odstepPrzed` (mm) przesuwa kolumny od tej w prawo – jak odstępy 2,9 mm między grupami w oryginalnych stanach. Automatyczne grupy talii (`Talia.grupy`) przestają być używane przez interfejs.
+4. **Ilość = 1**: każda karta na kartce to osobny egzemplarz. Normalizacja (przy tworzeniu z pakietu i przy otwieraniu starego projektu – potrzebuje czcionek, bo rozmieszczenie zależy od wysokości tytułu i nagłówków): karta z `ilosc: n` → n kart; karty rozmieszczane automatycznie dostają przypięcia w miejscach, gdzie leżą teraz („zamrożenie układu”); grupy talii → nagłówki nad ich kolumnami. Wynik wygląda tak samo jak przed migracją (test: identyczny PDF).
+5. Nic nie zmienia się w szablonach, karcie (`dane`, `obrazy`, `rozmiar`) ani w bibliotece zasobów.
 
 ## 4. Typy kart
 

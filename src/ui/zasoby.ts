@@ -41,7 +41,7 @@ function base64(dane: Uint8Array): string {
 }
 
 export async function wczytajZasobyPakietu(
-  pakiet: Pakiet,
+  pakiet: Pick<Pakiet, 'czcionki' | 'zasoby' | 'szablony'>,
   baza: string = import.meta.env.BASE_URL,
 ): Promise<ZasobyPakietu> {
   const czcionki = new RejestrCzcionek();

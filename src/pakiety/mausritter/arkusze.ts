@@ -214,3 +214,16 @@ export const arkuszStanow: Arkusz = {
 };
 
 export const arkuszeMausrittera = [arkuszBroni, arkuszWyposazenia, arkuszStanow];
+
+/**
+ * Nowa, pusta kartka edytora: A4 poziomo, tytuł pionowy z lewej, nożyczki jak na arkuszach
+ * pakietu i styl nagłówków grup ze stanów (nagłówki dodaje użytkownik). Bez ręcznego położenia
+ * siatki – liczy je silnik z marginesów, tytułu i pasa nagłówków.
+ */
+export const ustawieniaNowejKartki = (tytul: string): UstawieniaArkusza => ({
+  ...wspolne,
+  tytul: { tekst: tytul, polozenie: 'lewo', styl: stylTytuluPionowego, odstep: 1.3 },
+  nozyczki: NOZYCZKI_Z_BOKU,
+  grupy: arkuszStanow.ustawienia.grupy!,
+  slot: { szerokosc: SLOT, wysokosc: SLOT },
+});

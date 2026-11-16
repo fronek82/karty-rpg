@@ -26,6 +26,7 @@ export const pl = {
   'dane.gdzie.szablon': 'szablon {id}',
   'dane.gdzie.talia': 'talia {id}',
   'dane.gdzie.karta': 'karta {id}',
+  'dane.gdzie.arkusz': 'arkusz {id}',
   'dane.nieznanaKartaPrzypieta': 'arkusz „{arkusz}” przypina nieznaną kartę „{karta}”',
   'dane.powtorzonaCzcionka':
     'W bibliotece są dwie czcionki „{rodzina}” ({wariant}) – używana będzie ostatnia.',

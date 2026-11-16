@@ -60,6 +60,8 @@ export interface UstawieniaArkusza {
   };
   linie: LinieCiecia;
   nozyczki?: Nozyczki;
+  /** Rozmiar slotu siatki; bez tego – z pierwszej karty w trybie slotów (pusta kartka go potrzebuje). */
+  slot?: { szerokosc: Mm; wysokosc: Mm };
   /**
    * Skala szarości: kolory tekstu, linii i wypełnień zamieniane na szarości. Obrazy rastrowe
    * zamienia warstwa wczytująca zasoby (UI, E7) – silnik i PDF dostają już szare pliki.
@@ -81,10 +83,29 @@ export interface PrzypietaKarta {
   strona?: number;
 }
 
+/**
+ * Nagłówek grupy nad kolumnami (np. „Ranna” nad stanami), ustawiany ręcznie w edytorze kartki.
+ * Styl z `UstawieniaArkusza.grupy`. `odstepPrzed` przesuwa kolumny od `kolumna` w prawo
+ * (na tej stronie) – jak odstępy między grupami w oryginalnym arkuszu stanów.
+ */
+export interface NaglowekGrupy {
+  id: string;
+  strona: number;
+  kolumna: number;
+  kolumny: number;
+  naglowek: string;
+  opis?: string;
+  odstepPrzed?: Mm;
+}
+
 export interface Arkusz {
   id: string;
   nazwa: string;
   taliaId: string;
+  /** Najmniejsza liczba stron (strony mogą być puste – edytor kartki). */
+  liczbaStron?: number;
+  /** Ręczne nagłówki grup (zamiast automatycznych grup talii). */
+  naglowki?: NaglowekGrupy[];
   ustawienia: UstawieniaArkusza;
   /** Przypięte egzemplarze; pozostałe karty rozmieszczane automatycznie w wolnych miejscach. */
   przypiete?: PrzypietaKarta[];

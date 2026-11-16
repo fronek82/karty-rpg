@@ -6,7 +6,7 @@ import { wczytajZasobyPakietu } from './zasoby';
 
 const PNG = 'src/pakiety/mausritter/obrazy/zastepczy.png';
 
-const pakiet: Pakiet = {
+const pakiet: Pick<Pakiet, 'czcionki' | 'zasoby' | 'szablony'> & Record<string, unknown> = {
   id: 'p',
   nazwa: 'P',
   opis: '',

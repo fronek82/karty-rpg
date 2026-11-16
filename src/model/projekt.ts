@@ -44,6 +44,8 @@ export interface Projekt {
   szablony: Szablon[];
   talie: Talia[];
   arkusze: Arkusz[];
+  /** Pakiet gry, z którego pochodzą szablony i typy kart (np. `mausritter`). */
+  pakiet?: string;
 }
 
 /** Bajty zasobów projektu według identyfikatora. */
