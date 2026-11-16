@@ -7,9 +7,10 @@ Każdy zasób zewnętrzny dodany do repozytorium (czcionka, grafika, wzór karty
 źródło, autor, licencja i – jeśli licencja tego wymaga – treść atrybucji pokazywanej w aplikacji.
 Pakiety szablonów mają dodatkowo własny plik `LICENCJE.md` w swoim katalogu.
 
-| Zasób  | Ścieżka | Źródło | Autor | Licencja |
-| ------ | ------- | ------ | ----- | -------- |
-| _brak_ |         |        |       |          |
+| Zasób                                            | Ścieżka                               | Źródło       | Autor                                                          | Licencja                                              |
+| ------------------------------------------------ | ------------------------------------- | ------------ | -------------------------------------------------------------- | ----------------------------------------------------- |
+| EB Garamond (Regular, Bold, Italic, Bold Italic) | `public/czcionki/EBGaramond-*.ttf`    | Google Fonts | The EB Garamond Project Authors (Georg Duffner, Octavio Pardo) | SIL OFL 1.1 – `public/czcionki/OFL-EBGaramond.txt`    |
+| Grenze Gotisch (Regular, Bold)                   | `public/czcionki/GrenzeGotisch-*.ttf` | Google Fonts | The Grenze Gotisch Project Authors (Omnibus-Type)              | SIL OFL 1.1 – `public/czcionki/OFL-GrenzeGotisch.txt` |
 
 ## Materiały, których nie publikujemy
 
