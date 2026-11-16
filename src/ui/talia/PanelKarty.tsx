@@ -15,6 +15,7 @@ import {
 } from '../../model/szablon';
 import { normalizujUstawieniaObrazu, renderujKarte } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
+import { nazwaRoli } from '../czcionki/Czcionki';
 import { tekstOstrzezenia } from '../ostrzezenia';
 import type { ProjektWEdycji } from '../useProjekt';
 
@@ -74,6 +75,7 @@ export function PanelKarty({
       });
       return {
         wynik: w,
+        brakujace: [...zasoby.zasoby.czcionki.brakujace],
         svg: scenaDoSvg(w.scena, {
           adresObrazu: (id) => zasoby.zasoby.obrazy.get(id)?.adres,
           przedrostekId: 'podglad',
@@ -183,6 +185,11 @@ export function PanelKarty({
           onPointerCancel={() => (przeciaganie.current = undefined)}
           dangerouslySetInnerHTML={{ __html: render.svg ?? '' }}
         />
+      )}
+      {render.brakujace && render.brakujace.length > 0 && (
+        <p className="ostrzezenia-karty">
+          {t('czcionki.brakujace', { lista: render.brakujace.map(nazwaRoli).join(', ') })}
+        </p>
       )}
       {render.wynik && render.wynik.ostrzezenia.length > 0 && (
         <ul className="ostrzezenia-karty">

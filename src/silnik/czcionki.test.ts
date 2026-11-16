@@ -46,4 +46,14 @@ describe('RejestrCzcionek', () => {
   it('zgłasza czytelny błąd, gdy brak czcionki', () => {
     expect(() => new RejestrCzcionek().pobierz('tytul')).toThrow('Brak czcionki „tytul”');
   });
+
+  it('czcionka zapasowa zamiast błędu, z zapisem brakującej nazwy', () => {
+    const r = new RejestrCzcionek();
+    const c = czcionkaTestowa('EBGaramond-Regular.ttf');
+    r.dodaj('EB Garamond', 'normalny', c)
+      .ustawZapasowa('EB Garamond')
+      .przypiszRole('tytul', 'Nie Ma');
+    expect(r.pobierz('tytul', 'pogrubiony')).toBe(c);
+    expect([...r.brakujace]).toEqual(['tytul']);
+  });
 });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { t } from '../i18n';
 import { WidokArkuszy } from './Arkusze';
+import { Czcionki } from './czcionki/Czcionki';
 import { PanelKarty } from './talia/PanelKarty';
 import { TabelaTalii } from './talia/TabelaTalii';
 import { tekstZapisu, useProjekt, type ProjektWEdycji } from './useProjekt';
@@ -32,7 +33,13 @@ function Projekt({ edycja, podstrona }: { edycja: ProjektWEdycji; podstrona?: st
   const taliaId = rodzaj === 'talia' ? decodeURIComponent(reszta.join('/')) : undefined;
   const talia = taliaId !== undefined ? projekt.talie.find((x) => x.id === taliaId) : undefined;
   const tytulPodstrony =
-    rodzaj === 'arkusze' ? t('arkusze.tytul') : talia ? talia.nazwa : undefined;
+    rodzaj === 'arkusze'
+      ? t('arkusze.tytul')
+      : rodzaj === 'czcionki'
+        ? t('czcionki.tytul')
+        : talia
+          ? talia.nazwa
+          : undefined;
 
   return (
     <>
@@ -62,6 +69,8 @@ function Projekt({ edycja, podstrona }: { edycja: ProjektWEdycji; podstrona?: st
       )}
       {rodzaj === 'arkusze' ? (
         <WidokArkuszy zrodlo={projekt} zasoby={edycja.zasoby.zasoby} />
+      ) : rodzaj === 'czcionki' ? (
+        <Czcionki edycja={edycja} />
       ) : talia ? (
         <StronaTalii edycja={edycja} taliaId={talia.id} />
       ) : podstrona === undefined ? (
@@ -108,6 +117,14 @@ function Przeglad({ edycja, adres }: { edycja: ProjektWEdycji; adres: string }) 
           </li>
         ))}
       </ul>
+      <h2>{t('czcionki.tytul')}</h2>
+      <p>
+        <a href={`${adres}/czcionki`}>
+          {t('projekt.czcionki', {
+            liczba: projekt.zasoby.filter((z) => z.rodzaj === 'czcionka').length,
+          })}
+        </a>
+      </p>
       <h2>{t('arkusze.tytul')}</h2>
       <p>
         <a href={`${adres}/arkusze`}>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { zbudujArkusz, type WynikArkusza } from '../druk/arkusz';
-import { t } from '../i18n';
+import { t, tJesliJest } from '../i18n';
 import type { Arkusz } from '../model/arkusz';
 import { pakietMausritter } from '../pakiety/mausritter';
 import type { Pakiet } from '../pakiety/typy';
@@ -268,6 +268,15 @@ export function WidokArkuszy({
           {tekstStatusu[status]}
         </p>
       </div>
+      {wynik && zasobyPakietu && zasobyPakietu.czcionki.brakujace.size > 0 && (
+        <p className="uwaga">
+          {t('czcionki.brakujace', {
+            lista: [...zasobyPakietu.czcionki.brakujace]
+              .map((r) => tJesliJest(`rola.${r}`) ?? r)
+              .join(', '),
+          })}
+        </p>
+      )}
       {wynik && wynik.ostrzezenia.length > 0 && (
         <details className="uwaga">
           <summary>{t('arkusze.ostrzezenia', { liczba: wynik.ostrzezenia.length })}</summary>

@@ -16,6 +16,10 @@ export interface ZasobyProjektu {
  */
 export function zasobyProjektu(projekt: Projekt, dane: DaneZasobow): ZasobyProjektu {
   const { rejestr, ostrzezenia } = rejestrZProjektu(projekt, dane);
+  // Brak czcionki (np. rola bez rodziny po usunięciu pliku) nie przerywa podglądu ani PDF.
+  const rodziny = rejestr.nazwyRodzin;
+  const tresc = projekt.role.tresc;
+  rejestr.ustawZapasowa(tresc && rodziny.includes(tresc) ? tresc : rodziny[0]);
   const obrazy = new Map<string, ObrazWPamieci>();
   const adresy: string[] = [];
   for (const opis of projekt.zasoby) {

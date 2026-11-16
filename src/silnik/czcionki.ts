@@ -183,6 +183,23 @@ const ZAPASOWE: Record<WariantCzcionki, WariantCzcionki[]> = {
 export class RejestrCzcionek {
   private readonly rodziny = new Map<string, Partial<Record<WariantCzcionki, Czcionka>>>();
   private readonly role = new Map<string, string>();
+  private zapasowa: string | undefined;
+  /** Nazwy (role lub rodziny), dla których użyto czcionki zapasowej – do ostrzeżeń w UI. */
+  readonly brakujace = new Set<string>();
+
+  /**
+   * Rodzina zapasowa: gdy szukanej czcionki brak, zamiast błędu używana jest ta rodzina,
+   * a nazwa trafia do `brakujace`. Bez zapasowej brak czcionki to błąd (np. w testach).
+   */
+  ustawZapasowa(rodzina: string | undefined): this {
+    this.zapasowa = rodzina;
+    return this;
+  }
+
+  /** Rodziny z wczytanymi czcionkami. */
+  get nazwyRodzin(): string[] {
+    return [...this.rodziny.keys()];
+  }
 
   dodaj(rodzina: string, wariant: WariantCzcionki, czcionka: Czcionka): this {
     const warianty = this.rodziny.get(rodzina) ?? {};
@@ -197,14 +214,23 @@ export class RejestrCzcionek {
   }
 
   pobierz(nazwa: string, wariant: WariantCzcionki = 'normalny'): Czcionka {
-    const rodzina = this.role.get(nazwa) ?? nazwa;
-    const warianty = this.rodziny.get(rodzina);
-    if (warianty) {
-      for (const w of ZAPASOWE[wariant]) {
-        const c = warianty[w];
-        if (c) return c;
-      }
+    const znaleziona = this.znajdz(this.role.get(nazwa) ?? nazwa, wariant);
+    if (znaleziona) return znaleziona;
+    const zapasowa = this.zapasowa !== undefined ? this.znajdz(this.zapasowa, wariant) : undefined;
+    if (zapasowa) {
+      this.brakujace.add(nazwa);
+      return zapasowa;
     }
     throw new Error(`Brak czcionki „${nazwa}” (${wariant}).`);
+  }
+
+  private znajdz(rodzina: string, wariant: WariantCzcionki): Czcionka | undefined {
+    const warianty = this.rodziny.get(rodzina);
+    if (!warianty) return undefined;
+    for (const w of ZAPASOWE[wariant]) {
+      const c = warianty[w];
+      if (c) return c;
+    }
+    return undefined;
   }
 }

@@ -346,3 +346,41 @@ a {
 .wiersz-pol input[type='number'] {
   width: 4.5rem;
 }
+
+.czcionki .rodzina {
+  margin: 1rem 0;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  background: var(--tlo-panelu);
+}
+
+.czcionki .rodzina ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.czcionki .rodzina li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--obramowanie);
+}
+
+.czcionki .plik {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+.czcionki .zrodlo {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.czcionki .probka {
+  flex: 1;
+  min-width: 14rem;
+  font-size: 1.25rem;
+}

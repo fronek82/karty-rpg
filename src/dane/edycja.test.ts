@@ -15,7 +15,13 @@ import {
   ustawObrazKarty,
   ustawRozmiar,
   ustawSzablon,
+  roleProjektu,
+  ustawRole,
+  zmienNazweRodziny,
+  ustawWariantCzcionki,
+  usunZasob,
 } from './edycja';
+import { ostrzezeniaProjektu } from './schemat';
 import { projektZPakietu } from './pakiet';
 import { przygotujProjekt } from './schemat';
 
@@ -130,5 +136,36 @@ describe('operacje na kartach', () => {
     expect(talia(x, STANY).karty[0]!.obrazy).toEqual({ obraz: { skala: 2 } });
     x = ustawObrazKarty(x, STANY, k.id, 'obraz', undefined);
     expect(talia(x, STANY).karty[0]!.obrazy).toBeUndefined();
+  });
+});
+
+describe('biblioteka czcionek i role', () => {
+  it('role: przypisane i użyte w stylach szablonów oraz arkuszy', () => {
+    expect(roleProjektu(p).sort()).toEqual(['tresc', 'tytul']);
+  });
+
+  it('zmiana nazwy rodziny przenosi role; usunięcie przypisania roli', () => {
+    let x = zmienNazweRodziny(p, 'EB Garamond', 'Garamond');
+    expect(x.role.tresc).toBe('Garamond');
+    expect(
+      x.zasoby.filter((z) => z.rodzaj === 'czcionka' && z.rodzina === 'Garamond'),
+    ).toHaveLength(4);
+    expect(ostrzezeniaProjektu(x)).toEqual([]);
+    x = ustawRole(x, 'tresc', '');
+    expect(x.role.tresc).toBeUndefined();
+    expect(roleProjektu(x)).toContain('tresc');
+  });
+
+  it('wariant i usunięcie czcionki (z ostrzeżeniem, nie błędem)', () => {
+    const c = p.zasoby.find((z) => z.rodzaj === 'czcionka' && z.wariant === 'kursywa')!;
+    const x = ustawWariantCzcionki(p, c.id, 'pogrubiony');
+    expect(ostrzezeniaProjektu(x).join()).toMatch(/dwie czcionki/);
+    const grenze = p.zasoby.filter(
+      (z) => z.rodzaj === 'czcionka' && z.rodzina === 'Grenze Gotisch',
+    );
+    let y = { projekt: p, dane: new Map<string, Uint8Array>() };
+    for (const g of grenze) y = usunZasob(y.projekt, y.dane, g.id);
+    expect(() => przygotujProjekt(y.projekt)).not.toThrow();
+    expect(ostrzezeniaProjektu(y.projekt).join()).toMatch(/rola „tytul”/);
   });
 });
