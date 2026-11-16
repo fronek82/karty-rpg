@@ -1,0 +1,88 @@
+import type { Mm } from '../model/jednostki';
+import type { Kolor } from '../model/szablon';
+
+/**
+ * Scena – wspólne źródło dla podglądu (SVG) i wydruku (PDF). Wszystkie współrzędne w mm,
+ * oś Y w dół, początek w lewym górnym rogu. Serializatory tylko ją przepisują.
+ */
+
+/** Kontur glifu w jednostkach czcionki (oś Y w górę) – tylko M, L, C, Z. */
+export type KomendaKonturu =
+  | ['M', number, number]
+  | ['L', number, number]
+  | ['C', number, number, number, number, number, number]
+  | ['Z'];
+export type Kontur = KomendaKonturu[];
+
+export interface Obrys {
+  kolor: Kolor;
+  grubosc: Mm;
+  /** Wzór kreski (mm): długość kreski, przerwa, … */
+  kreska?: Mm[];
+}
+
+export interface GlifNaScenie {
+  /** Klucz w słowniku glifów sceny. */
+  klucz: string;
+  /** Położenie początku glifu na linii bazowej (mm). */
+  x: Mm;
+  y: Mm;
+  /** mm na jednostkę czcionki (rozmiar / unitsPerEm). */
+  skala: number;
+}
+
+export type ElementSceny =
+  | {
+      typ: 'prostokat';
+      x: Mm;
+      y: Mm;
+      szer: Mm;
+      wys: Mm;
+      promien?: Mm;
+      wypelnienie?: Kolor;
+      obrys?: Obrys;
+    }
+  | { typ: 'linia'; x1: Mm; y1: Mm; x2: Mm; y2: Mm; obrys: Obrys }
+  | { typ: 'okrag'; cx: Mm; cy: Mm; r: Mm; wypelnienie?: Kolor; obrys?: Obrys }
+  /** Ścieżka w mm (oś Y w dół). */
+  | { typ: 'sciezka'; kontur: Kontur; wypelnienie?: Kolor; obrys?: Obrys }
+  | { typ: 'tekst'; kolor: Kolor; glify: GlifNaScenie[] }
+  | {
+      typ: 'obraz';
+      zasob: string;
+      x: Mm;
+      y: Mm;
+      szer: Mm;
+      wys: Mm;
+      /** Obszar przycięcia (mm, w układzie sceny). */
+      przyciecie?: { x: Mm; y: Mm; szer: Mm; wys: Mm };
+    }
+  | {
+      typ: 'grupa';
+      /** Przesunięcie, potem obrót (stopnie, zgodnie z ruchem wskazówek zegara). */
+      x: Mm;
+      y: Mm;
+      obrot?: number;
+      elementy: ElementSceny[];
+    };
+
+export interface DefinicjaGlifu {
+  kontur: Kontur;
+}
+
+export interface Scena {
+  szer: Mm;
+  wys: Mm;
+  elementy: ElementSceny[];
+  /** Kontury wszystkich glifów użytych w scenie – każdy zapisany raz. */
+  glify: Record<string, DefinicjaGlifu>;
+}
+
+/** Łączy słowniki glifów (np. kart na arkuszu). Ten sam klucz = ten sam glif. */
+export function polaczGlify(
+  ...slowniki: Record<string, DefinicjaGlifu>[]
+): Record<string, DefinicjaGlifu> {
+  const wynik: Record<string, DefinicjaGlifu> = {};
+  for (const s of slowniki) Object.assign(wynik, s);
+  return wynik;
+}
