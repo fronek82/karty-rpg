@@ -4,16 +4,20 @@ Kamień milowy M1 ze `SPEC.md` (sekcja 12). Dokument opisuje ustalenia, pomiary 
 
 ## 1. Decyzje
 
-| #   | Temat          | Decyzja                                                                                                                                                                                                                                              |
-| --- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Źródła         | Arkusze referencyjne to komercyjny PDF (sklep Stinger-Prest). **Nie używamy jego grafik ani tekstów.** Odtwarzamy tylko układ (szablony), żeby użytkownik tworzył własne karty. Przykładowe dane w pakiecie są nasze i ogólne, bez ilustracji z PDF. |
-| 2   | Czcionki       | Domyślnie **EB Garamond** (zamiast Minion Pro) i **Grenze Gotisch** (zamiast Herb), obie na licencji OFL. Oryginały użytkownik wgrywa do `zasoby-prywatne/` i używa ich tylko w lokalnym teście nakładania.                                          |
-| 3   | Repozytorium   | Publiczne, wdrożenie na GitHub Pages.                                                                                                                                                                                                                |
-| 4   | Test zgodności | Porównanie z referencją na **zapisanym układzie ręcznym** (odtworzonym co do slotu). Rozmieszczanie automatyczne testujemy osobno (poprawność, brak nakładania, oszczędność papieru) i nie musi dać identycznego układu.                             |
-| 5   | PDF            | Po prototypie E1: **tekst jako krzywe** – fontkit 2 (kształtowanie, kontury) + pdf-lib (rysowanie). Każdy glif w PDF zapisany raz (XObject), test rozmiaru PDF. Szczegóły: `docs/decyzja-pdf.md`.                                                    |
-| 6   | Edycja w M1    | Tabela danych, wybór szablonu i rozmiaru karty, przypisanie czcionek do ról (tytuł, treść). Edycja stylu i układu dopiero w M2.                                                                                                                      |
-| 7   | Slot           | Domyślnie **25,75 mm** (73 pt). Użytkownik sprawdzi wydrukiem na karcie postaci.                                                                                                                                                                     |
-| 8   | Arkusz         | Tytuł poziomy i pionowy (obrócony o 90°), nagłówki grup z opisem nad kolumnami.                                                                                                                                                                      |
+| #   | Temat          | Decyzja                                                                                                                                                                                                                                                                                              |
+| --- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Źródła         | Arkusze referencyjne to komercyjny PDF (sklep Stinger-Prest). **Nie używamy jego grafik ani tekstów.** Odtwarzamy tylko układ (szablony), żeby użytkownik tworzył własne karty. Przykładowe dane w pakiecie są nasze i ogólne, bez ilustracji z PDF.                                                 |
+| 2   | Czcionki       | Domyślnie **EB Garamond** (zamiast Minion Pro) i **Grenze Gotisch** (zamiast Herb), obie na licencji OFL. Oryginały użytkownik wgrywa do `zasoby-prywatne/` i używa ich tylko w lokalnym teście nakładania.                                                                                          |
+| 3   | Repozytorium   | Publiczne, wdrożenie na GitHub Pages.                                                                                                                                                                                                                                                                |
+| 4   | Test zgodności | Porównanie z referencją na **zapisanym układzie ręcznym** (odtworzonym co do slotu). Rozmieszczanie automatyczne testujemy osobno (poprawność, brak nakładania, oszczędność papieru) i nie musi dać identycznego układu.                                                                             |
+| 5   | PDF            | Po prototypie E1: **tekst jako krzywe** – fontkit 2 (kształtowanie, kontury) + pdf-lib (rysowanie). Każdy glif w PDF zapisany raz (XObject), test rozmiaru PDF. Szczegóły: `docs/decyzja-pdf.md`.                                                                                                    |
+| 6   | Edycja w M1    | Tabela danych, wybór szablonu i rozmiaru karty, przypisanie czcionek do ról (tytuł, treść). Edycja stylu i układu dopiero w M2.                                                                                                                                                                      |
+| 7   | Slot           | Domyślnie **25,75 mm** (73 pt). Referencja drukuje slot 25,725 mm (arkusz przeskalowany do 99,89%) – test nakładania skaluje ją o 0,11%. Użytkownik sprawdzi wydrukiem na karcie postaci.                                                                                                            |
+| 8   | Arkusz         | Tytuł poziomy i pionowy (obrócony o 90°), nagłówki grup z opisem nad kolumnami.                                                                                                                                                                                                                      |
+| 9   | Treść pakietu  | Wolno: nazwy przedmiotów, kości, klasy broni, ilości, nazwy stanów, ich skutki i warunki usunięcia (mechanika gry). Opisy grup stanów – własnymi słowami (PDF nie zawiera informacji o wolnej licencji). Zamiast ilustracji – neutralny obrazek zastępczy; ilustracje użytkownik wgrywa w aplikacji. |
+| 10  | Napisy stałe   | „Usunięcie:”, „/ 250p”, „-1 obr” to **parametry szablonu** z wartością domyślną, nadpisywalne w danych karty.                                                                                                                                                                                        |
+| 11  | Klasa broni    | Biała obwódka liter (czytelność na tle ilustracji).                                                                                                                                                                                                                                                  |
+| 12  | Ilustracje     | Obraz nie nachodzi na znaczniki (poza zaklęciem) ani na ramkę wartości.                                                                                                                                                                                                                              |
 
 ## 2. Pomiary referencji (`Mausritter_kartyekwipunku.pdf`)
 
@@ -26,13 +30,14 @@ Pliki referencyjne (PDF i zrzuty ekranu) **nie są w repozytorium** – leżą l
 - **Arkusz 2 (wyposażenie):** ta sama siatka; pionowy tytuł zakończony nożyczkami.
 - **Arkusz 3 (stany):** 6 rzędów, grupy po 1–3 kolumny z odstępem ok. 2,9 mm; nad grupą nagłówek i opis; tytuł poziomy u góry; nożyczki pod siatką.
 - Rozmiary kart: 1×1, 1×2 (ciężka broń, ciężka zbroja, broń dystansowa ciężka), 2×1 (lekka zbroja, puste karty).
-- Dokładne liczby do testu geometrycznego zostaną zapisane w `testy/geometria-referencji.json` (skrypt w `narzedzia/`).
+- Pozycje linii cięcia wszystkich trzech arkuszy zapisane w `testy/geometria-referencji.json` (same liczby).
 
 ### Pomiary wektorowe (E3)
 
 Z PDF zamienionego na SVG (`pdftocairo -svg`), w mm:
 
-- Arkusz w PDF jest przeskalowany do 99,89% – slot zaprojektowany jako 73 pt (25,75 mm) drukuje się jako 25,725 mm.
+- Arkusz w PDF jest przeskalowany do 99,89% – slot zaprojektowany jako 73 pt (25,75 mm) drukuje się jako 25,725 mm (odstęp linii cięcia, np. 26,67 → 283,92 mm na 10 slotów).
+- Odstępy między grupami stanów: 2,81–2,96 mm (przyjęto średnią 2,89 mm).
 - Pasek tytułu 6,71 mm, linie 0,176 mm (0,5 pt) w kolorze `#231f20`.
 - Znaczniki: średnica zewnętrzna 2,87 mm, odstęp 0,51 mm, 1,3 mm od lewej krawędzi, 1,1 mm pod linią tytułu.
 - Ramka wartości: min. 6,87 × 6,87 mm, 1,0 mm pod linią, ~1,45 mm od prawej krawędzi; na zbroi ośmiokąt ze ściętymi rogami (3 pt).
@@ -40,31 +45,31 @@ Z PDF zamienionego na SVG (`pdftocairo -svg`), w mm:
 - Czcionki: tytuł 10 pt (stan 12 pt), wartość 10 pt (zbroja 8,5 pt), klasa 8 pt, skutek stanu 8 pt kursywą, nagłówek grupy 13 pt, opis grupy 9 pt, tytuł arkusza 32 pt.
 - Linie cięcia: 0,264 mm (0,75 pt), kreska 2,3 mm / przerwa 1,55 mm, wzór wyśrodkowany na każdej krawędzi karty.
 
-### Budowa szablonów (tylko układ)
+### Budowa szablonów (tylko układ, stan po E3)
 
-| Szablon     | Elementy                                                                                                                         |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Broń        | tytuł + linia; 3 znaczniki użycia (lewy górny róg); wartość w kwadratowej ramce (prawy górny róg); obraz; klasa (lewy dolny róg) |
-| Zbroja      | jak broń, ramka wartości z zaokrąglonymi rogami (np. „-1 obr”); warianty 1×2 i 2×1                                               |
-| Przedmiot   | tytuł + linia; znaczniki użycia (konfigurowalne N × M, np. 2 × 3); obraz                                                         |
-| Sakiewka    | jak przedmiot + pole do wpisania z sufiksem (np. „/ 250p”)                                                                       |
-| Zaklęcie    | ★ w miejscu tytułu; znaczniki; obraz pod znacznikami                                                                             |
-| Stan        | tytuł (większy, bez linii); opis kursywą; na dole „Usunięcie:” (pogrubione) + wartość                                            |
-| Pusta karta | pasek tytułu + znaczniki; „gdy puste: pokaż pustą ramkę”                                                                         |
+| Szablon     | Elementy                                                                                                                                                                                                                                            |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Broń        | pasek tytułu + linia; 3 znaczniki (lewy górny róg); wartość w kwadratowej ramce (prawy górny róg); obraz pod znacznikami, obok ramki; klasa w lewym dolnym rogu z białą obwódką. Wariant 1×2: obraz na całą szerokość pod rzędem znaczników i ramki |
+| Zbroja      | jak broń, bez klasy; ramka ośmiokątna ze ściętymi rogami, wartość z parametru `obrona` („-1 obr”); 1×2 i 2×1                                                                                                                                        |
+| Przedmiot   | pasek tytułu; znaczniki N × M (np. 6 = 3 × 2); obraz obok znaczników, po prawej                                                                                                                                                                     |
+| Sakiewka    | pasek tytułu; obraz; pole do wpisania z sufiksem z parametru `pojemnosc` („/ 250p”)                                                                                                                                                                 |
+| Zaklęcie    | ★ w pasku tytułu; znaczniki; obraz może nachodzić na znaczniki                                                                                                                                                                                      |
+| Stan        | tytuł (12 pt, bez linii); skutek kursywą; na dole etykieta z parametru `etykietaUsuniecia` („Usunięcie:”) + warunek, zawsze dwie linijki                                                                                                            |
+| Pusta karta | pasek tytułu + znaczniki („gdy puste: pokaż pustą ramkę”)                                                                                                                                                                                           |
 
 ## 3. Architektura
 
 ```
 src/
-  model/      typy: szablon, talia, karta, arkusz, projekt; walidacja (zod); wymiary w mm
+  model/      typy: szablon, talia, karta, arkusz, projekt; wymiary w mm (walidacja przy imporcie – E6)
   silnik/     układ (wiersze/kolumny), kształtowanie tekstu i kontury glifów (fontkit 2), pola M1 → scena → SVG
   druk/       model arkusza, rozmieszczanie, linie cięcia, tytuły i grupy → SVG arkusza → PDF
   dane/       Dexie (IndexedDB), biblioteka zasobów, eksport/import .kartyrpg (ZIP, fflate)
   ui/         React: projekty, talie, tabela danych, podgląd karty i arkusza, ustawienia druku
   i18n/       klucze tekstów + pl.json
 public/czcionki/      EB Garamond, Grenze Gotisch (OFL) + licencje
-src/pakiety/mausritter/  szablony i talie (TS), obrazek zastępczy, LICENCJE.md
-narzedzia/            skrypty pomocnicze (pomiar referencji)
+src/pakiety/mausritter/  szablony, talie i arkusze (TS), obrazek zastępczy, LICENCJE.md
+narzedzia/            skrypty pomocnicze (obrazek zastępczy)
 testy/                testy e2e i wizualne Playwright
 docs/                 plany i notatki
 ```
@@ -91,3 +96,28 @@ Zasady:
 | **E9** Wdrożenie         | główny + recenzent | GitHub Pages, przegląd, wydruk testowy                                                                                                                                       | strona działa, użytkownik potwierdza wydruk                                   |
 
 Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E5 → E7 → E8 → E9. Recenzent przegląda kod po E2–E7. Po każdym etapie commit i krótkie podsumowanie.
+
+## 5. Stan realizacji
+
+| Etap | Stan        | Commity                         | Uwagi                                                                                                                   |
+| ---- | ----------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| E0   | ✅          | `f116898`                       | CI na każdej gałęzi, wdrożenie Pages z `main`                                                                           |
+| E1   | ✅          | `0dcf91a`                       | decyzja: tekst jako krzywe (`docs/decyzja-pdf.md`)                                                                      |
+| E2   | ✅          | `283e6d8`, `6aac0dc`            | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                      |
+| E3   | ✅          | `e93d618`, `d362a12`, `167c5c6` | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png` |
+| E4   | ✅          | `43b257a`, `1ae47ed`            | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                              |
+| E5   | ⏳ następny |                                 | PDF wielostronicowy z obrazami już działa w testach; zostaje pobieranie w UI i podgląd w skali (razem z E7)             |
+| E6   | ⬜          |                                 |                                                                                                                         |
+| E7   | ⬜          |                                 |                                                                                                                         |
+| E8   | ⬜          |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                           |
+| E9   | ⬜          |                                 |                                                                                                                         |
+
+### Odłożone (backlog)
+
+- Brak czcionki: czcionka zapasowa z ostrzeżeniem zamiast przerwania renderu; komunikaty błędów silnika przez i18n (E6/E7).
+- Unikalne identyfikatory czcionek w projekcie (klucz glifu = id czcionki + numer glifu) (E6).
+- Limit pamięci podręcznej układu tekstu (LRU) przy długiej edycji (E7).
+- Łamanie wierszy przy `odstepLiter` minimalnie zbyt ostrożne.
+- Tryb czarno-biały dla obrazów rastrowych – konwersja przy wczytywaniu zasobów (E7).
+- Pas nagłówków grup liczony z szacunkowej szerokości grupy – przy podziale grupy na strony nagłówek może się nie zmieścić (jest ostrzeżenie).
+- Paczka aplikacji ~800 KB (fontkit + pdf-lib) – PDF ładowany na żądanie (E7).
