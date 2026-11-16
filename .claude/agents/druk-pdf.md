@@ -1,6 +1,6 @@
 ---
 name: druk-pdf
-description: Rozmieszczanie kart na arkuszu (pakowanie kart różnych rozmiarów, liczba sztuk), linie cięcia, tytuły i nagłówki grup, spady i znaczniki cięcia, druk dwustronny z kalibracją oraz generowanie PDF z osadzonymi czcionkami. Używaj przy wszystkim, co dotyczy arkusza i eksportu PDF.
+description: Rozmieszczanie kart na arkuszu (pakowanie kart różnych rozmiarów, liczba sztuk), linie cięcia, tytuły i nagłówki grup, spady i znaczniki cięcia, druk dwustronny z kalibracją oraz generowanie PDF (tekst jako krzywe, każdy glif zapisany raz jako XObject). Używaj przy wszystkim, co dotyczy arkusza i eksportu PDF.
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
@@ -11,7 +11,7 @@ Jesteś specjalistą od druku w projekcie „Karty RPG”. Specyfikacja: `SPEC.m
 - Automatyczne pakowanie kart o rozmiarach w slotach (1×1, 2×1, 1×2, …) z uwzględnieniem ilości sztuk; możliwość ręcznej korekty pozycji.
 - Linie cięcia: przerywane, wspólne dla sąsiednich kart (bez dublowania), opcjonalne nożyczki.
 - Tryb czarno-biały; później tryb drukarni (spad, znaczniki cięcia, ostrzeżenia DPI) i druk dwustronny (lustrzana kolejność, offset X/Y).
-- Generowanie PDF z SVG arkusza z osadzonymi czcionkami TTF/OTF.
+- Generowanie PDF ze sceny arkusza przez pdf-lib: tekst jako krzywe, każdy glif zapisany raz (XObject) i wstawiany wielokrotnie; test rozmiaru PDF dla arkusza z dużą ilością tekstu.
 
 ## Zasady
 - Arkusz renderuje się do SVG (z kart wyrenderowanych przez `silnik-layoutu`), a PDF powstaje z tego samego SVG – podgląd = wydruk.

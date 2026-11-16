@@ -63,5 +63,6 @@ go wyszukać – bez wpływu na wygląd.
 
 ## Status
 
-Czeka na potwierdzenie użytkownika (odstępstwo od SPEC, sekcja 8). Test porównania PDF↔SVG
-powstanie w E2 razem ze sceną i serializatorami – wtedy będzie co porównywać.
+**Przyjęte** przez użytkownika 2026-11-16; SPEC (sekcje 1 i 8) zaktualizowany. Wymaganie
+dodatkowe: każdy glif zapisany w PDF raz (XObject) i używany ponownie oraz test rozmiaru pliku
+dla arkusza z dużą ilością tekstu. Test porównania PDF↔SVG powstaje w E2 razem ze sceną.
