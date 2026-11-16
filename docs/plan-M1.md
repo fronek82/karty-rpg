@@ -82,20 +82,21 @@ Zasady:
 
 ## 4. Etapy
 
-| Etap                     | Agent              | Zakres                                                                                                                                                                       | Gotowe, gdy                                                                   |
-| ------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **E0** Szkielet          | główny             | Vite + TS + React, ESLint, Prettier, Vitest, Playwright, i18n, `LICENCJE.md`, GitHub Actions (testy + Pages), routing hash                                                   | `npm run build`, `lint`, `test`, `e2e` przechodzą; strona startowa po polsku  |
-| **E1** Prototyp PDF      | druk-pdf           | pdf-lib + fontkit: jedna karta ze sceny, czcionki OTF/TTF z podzbiorem; porównanie z jsPDF + svg2pdf                                                                         | notatka z decyzją w `docs/`, test porównania PDF↔SVG                          |
-| **E2** Model i silnik    | silnik-layoutu     | typy, układ (mm/%/auto/wypełnij, padding, gap, wyrównania, warstwy), tryb slotów, pomiar i łamanie tekstu, pola M1, „gdy puste: pokaż pustą ramkę”, serializator SVG         | testy jednostkowe + snapshoty SVG                                             |
-| **E3** Pakiet Mausritter | silnik-layoutu     | 7 szablonów (warianty rozmiarów), przykładowe talie z własnymi danymi, `LICENCJE.md`                                                                                         | każdy szablon renderuje się; snapshoty                                        |
-| **E4** Arkusz            | druk-pdf           | papier, marginesy, tytuł poziomy/pionowy, grupy z nagłówkiem i opisem, rozmieszczanie automatyczne + przypięte pozycje, wspólne linie cięcia, nożyczki, tryb cz-b            | testy rozmieszczania i linii cięcia                                           |
-| **E5** PDF               | druk-pdf           | scena arkusza → PDF A4, tekst jako krzywe                                                                                                                                    | PDF otwiera się, test zgodności z SVG, test rozmiaru PDF (glify jako XObject) |
-| **E6** Dane              | dane-import        | Dexie, schemat z wersją, zasoby jako Blob, wgrywanie czcionek, eksport/import `.kartyrpg`                                                                                    | test „round-trip”                                                             |
-| **E7** UI                | edytor-ui          | projekty, talie, tabela z „Ilość”, wybór szablonu/rozmiaru, czcionki do ról, podgląd karty i arkusza, ręczna korekta, „Pobierz PDF”                                          | testy e2e przepływu                                                           |
-| **E8** Testy wizualne    | tester             | test geometryczny względem `geometria-referencji.json` (CI); lokalny test nakładania z oryginalnymi czcionkami i referencją z `zasoby-prywatne/` (pomijany, gdy brak plików) | raport z nakładką różnic                                                      |
-| **E9** Wdrożenie         | główny + recenzent | GitHub Pages, przegląd, wydruk testowy                                                                                                                                       | strona działa, użytkownik potwierdza wydruk                                   |
+| Etap                       | Agent              | Zakres                                                                                                                                                                                   | Gotowe, gdy                                                                       |
+| -------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **E0** Szkielet            | główny             | Vite + TS + React, ESLint, Prettier, Vitest, Playwright, i18n, `LICENCJE.md`, GitHub Actions (testy + Pages), routing hash                                                               | `npm run build`, `lint`, `test`, `e2e` przechodzą; strona startowa po polsku      |
+| **E1** Prototyp PDF        | druk-pdf           | pdf-lib + fontkit: jedna karta ze sceny, czcionki OTF/TTF z podzbiorem; porównanie z jsPDF + svg2pdf                                                                                     | notatka z decyzją w `docs/`, test porównania PDF↔SVG                              |
+| **E2** Model i silnik      | silnik-layoutu     | typy, układ (mm/%/auto/wypełnij, padding, gap, wyrównania, warstwy), tryb slotów, pomiar i łamanie tekstu, pola M1, „gdy puste: pokaż pustą ramkę”, serializator SVG                     | testy jednostkowe + snapshoty SVG                                                 |
+| **E3** Pakiet Mausritter   | silnik-layoutu     | 7 szablonów (warianty rozmiarów), przykładowe talie z własnymi danymi, `LICENCJE.md`                                                                                                     | każdy szablon renderuje się; snapshoty                                            |
+| **E4** Arkusz              | druk-pdf           | papier, marginesy, tytuł poziomy/pionowy, grupy z nagłówkiem i opisem, rozmieszczanie automatyczne + przypięte pozycje, wspólne linie cięcia, nożyczki, tryb cz-b                        | testy rozmieszczania i linii cięcia                                               |
+| **E4a** Poprawki szablonów | silnik-layoutu     | duże ilustracje w broni 1×1 i zbroi 2×1 (klasa na obrazie z białą obwódką); ustawienia obrazu dla każdej karty w danych (skala, przesunięcie, obrót, dopasowanie) – szczegóły w sekcji 6 | wzorce SVG i galeria zaktualizowane; testy ustawień obrazu (SVG, PDF, przycięcie) |
+| **E5** PDF                 | druk-pdf           | scena arkusza → PDF A4, tekst jako krzywe                                                                                                                                                | PDF otwiera się, test zgodności z SVG, test rozmiaru PDF (glify jako XObject)     |
+| **E6** Dane                | dane-import        | Dexie, schemat z wersją, zasoby jako Blob, wgrywanie czcionek, eksport/import `.kartyrpg`                                                                                                | test „round-trip”                                                                 |
+| **E7** UI                  | edytor-ui          | projekty, talie, tabela z „Ilość”, wybór szablonu/rozmiaru, czcionki do ról, podgląd karty i arkusza, ręczna korekta, „Pobierz PDF”                                                      | testy e2e przepływu                                                               |
+| **E8** Testy wizualne      | tester             | test geometryczny względem `geometria-referencji.json` (CI); lokalny test nakładania z oryginalnymi czcionkami i referencją z `zasoby-prywatne/` (pomijany, gdy brak plików)             | raport z nakładką różnic                                                          |
+| **E9** Wdrożenie           | główny + recenzent | GitHub Pages, przegląd, wydruk testowy                                                                                                                                                   | strona działa, użytkownik potwierdza wydruk                                       |
 
-Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E5 → E7 → E8 → E9. Recenzent przegląda kod po E2–E7. Po każdym etapie commit i krótkie podsumowanie.
+Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E4a → E5 → E7 → E8 → E9. Recenzent przegląda kod po E2–E7. Po każdym etapie commit i krótkie podsumowanie.
 
 ## 5. Stan realizacji
 
@@ -106,11 +107,27 @@ Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E5 → E7 → E8 → E9
 | E2   | ✅          | `283e6d8`, `6aac0dc`            | po przeglądzie: pomiar wypełnianych dzieci, procenty, kolory, przedrostek id w SVG                                      |
 | E3   | ✅          | `e93d618`, `d362a12`, `167c5c6` | pakiet, parametry szablonu, warianty układu wg rozmiaru, obwódka liter; galeria `docs/obrazy/e3-galeria-mausritter.png` |
 | E4   | ✅          | `43b257a`, `1ae47ed`            | 3 arkusze zgodne z referencją ±0,3 mm; PNG w `docs/obrazy/e4-arkusz-*.png`                                              |
-| E5   | ⏳ następny |                                 | PDF wielostronicowy z obrazami już działa w testach; zostaje pobieranie w UI i podgląd w skali (razem z E7)             |
+| E4a  | ⏳ następny |                                 | poprawki szablonów z E3 – sekcja 6                                                                                      |
+| E5   | ⬜          |                                 | PDF wielostronicowy z obrazami już działa w testach; zostaje pobieranie w UI i podgląd w skali (razem z E7)             |
 | E6   | ⬜          |                                 |                                                                                                                         |
 | E7   | ⬜          |                                 |                                                                                                                         |
 | E8   | ⬜          |                                 | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                           |
 | E9   | ⬜          |                                 |                                                                                                                         |
+
+## 6. Zadania po E4 – poprawki szablonów z E3 (etap E4a)
+
+Commit i push po każdym większym kroku.
+
+1. **Większe ilustracje (broń 1×1, lekka zbroja 2×1).**
+   - Obszar obrazu zajmuje całą przestrzeń od wiersza kółek do dolnej krawędzi karty, omijając tylko ramkę wartości.
+   - Nazwa klasy broni leży **na** obrazie, z białą obwódką – jak w referencji (obraz nie kończy się nad klasą).
+   - Lekka zbroja 2×1: duża ilustracja na całą wysokość pod paskiem tytułu (znaczniki i ramka wartości nałożone na nią w rogach).
+   - Aktualizacja wzorców SVG, galerii i arkuszy; ponowna nakładka na referencję.
+2. **Ustawienia obrazu dla każdej karty osobno**, zapisywane w danych karty:
+   - skala, przesunięcie X/Y w mm, obrót (stopnie), tryb dopasowania (dopasuj / wypełnij / rozciągnij);
+   - silnik: przekształcenie obrazu wewnątrz pola z przycięciem do ramki pola – identycznie w SVG i PDF (test porównania PDF↔SVG z obrotem i przesunięciem);
+   - zapis w modelu danych karty (E6 – eksport/import razem z kartą);
+   - **E7 (interfejs):** edycja myszą w podglądzie karty – przeciąganie przesuwa, kółko skaluje – oraz pola liczbowe (skala, X, Y, obrót, dopasowanie) i przycisk „Resetuj”.
 
 ### Odłożone (backlog)
 
