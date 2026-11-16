@@ -21,6 +21,13 @@ Własne rysunki projektu (licencja jak kod, MIT), generowane skryptami z `narzed
 | Obrazek zastępczy pakietu    | `src/pakiety/mausritter/obrazy/zastepczy.png` | `narzedzia/obraz-zastepczy.py` |
 | Obrazek testowy (litera „F”) | `testy/zasoby/litera-f.png`                   | `narzedzia/obraz-testowy.py`   |
 
+## Narzędzia testowe (nie trafiają do aplikacji)
+
+| Narzędzie                 | Użycie                                                        | Licencja   |
+| ------------------------- | ------------------------------------------------------------- | ---------- |
+| pdf.js (`pdfjs-dist`)     | rasteryzacja PDF w testach (PDF↔SVG, nakładka na referencję)  | Apache-2.0 |
+| Playwright, Vitest i inne | testy i budowanie (zależności deweloperskie z `package.json`) | wg pakietu |
+
 ## Materiały, których nie publikujemy
 
 - Arkusze referencyjne Mausrittera (polskie wydanie, sklep Stinger-Prest) służą wyłącznie do

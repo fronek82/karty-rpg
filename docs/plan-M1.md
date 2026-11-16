@@ -115,8 +115,8 @@ Kolejność: E0 → E1 → (E2 ∥ E6) → E3 → E4 → E4a → E5 → E6 → E
 | E5   | ✅   | `502eb11`, przegląd                                                       | strona `#/arkusze`: podgląd (dopasuj / 1:1), „Pobierz PDF” (arkusz / wszystkie), PDF↔SVG całych arkuszy; zrzut `docs/obrazy/e5-strona-arkusze.png`                                                                                                                            |
 | E6   | ✅   | `fa91274`                                                                 | `src/dane/`: Dexie (projekty + zasoby jako Blob), schemat z wersją i migracjami (zod, bez gubienia nieznanych pól), spójność odwołań, wgrywanie czcionek, `.kartyrpg` i `.kartyrpg-szablon` (ZIP, fflate), ostrzeżenie o licencji czcionek, pakiet → projekt; test round-trip |
 | E7   | ✅   | `cfbe6a2`, `b981f15`, `4cd106f`, `2872e78`, `8f506f0`, przegląd `d2480cf` | E7a–E7e (sekcja 7): projekty, tabela danych, podgląd i obraz karty, czcionki i role, korekta i ustawienia arkusza, PDF w workerze; zrzuty `docs/obrazy/e7-*.png`                                                                                                              |
-| E8   | ⬜   |                                                                           | test geometrii linii już w CI (E4); zostaje lokalny test nakładania z oryginalnymi czcionkami                                                                                                                                                                                 |
-| E9   | ⬜   |                                                                           |                                                                                                                                                                                                                                                                               |
+| E8   | ✅   | (E8)                                                                      | test geometrii w CI (E4); `testy/nakladka-referencji.spec.ts`: nakładka na oryginał (lokalnie, `npm run test:nakladka`) z dopasowaniem skali i przesunięcia, raport PNG + JSON; autotest na referencji syntetycznej w CI                                                      |
+| E9   | 🟡   |                                                                           | Pages + sprawdzenie strony po wdrożeniu w CI, README dla użytkownika; czeka na wydruk testowy i uwagi użytkownika                                                                                                                                                             |
 
 ## 6. Zadania po E4 – poprawki szablonów z E3 (etap E4a)
 
@@ -174,11 +174,22 @@ Poprawione:
 
 Odłożone do E8/E9:
 
-- Orientacja EXIF zdjęć JPEG: podgląd w przeglądarce ją stosuje, PDF (pdf-lib) nie – normalizować przy wgrywaniu.
+- ~~Orientacja EXIF zdjęć JPEG~~ – E9: przy wgrywaniu zdjęcie z orientacją ≠ 1 przekodowywane z obrotem (`src/ui/obrazy.ts`). Obrazy wgrane wcześniej (przed poprawką) zostają bez zmian.
 - Przerwanie budowy PDF przy opuszczeniu strony (AbortSignal do workera).
 - Korekta: karta nieprzypięta upuszczona na przypiętą → „koliduje” (zamiana tylko między przypiętymi); przy zaznaczeniu wszystkie sloty w kolejności Tab.
-- Nazwa pliku PDF z `arkusz.id` (stabilna, testowana) zamiast z nazwy arkusza.
+- ~~Nazwa pliku PDF z `arkusz.id`~~ – E9: z nazwy arkusza / projektu (`nazwaPliku`).
 - Komunikaty wyjątków silnika/druku (np. `talia …`) bez i18n.
+
+### Po przeglądzie E8–E9
+
+Poprawione: test oryginału sprawdza skalę względem skali druku (±0,15%) i przesunięcie siatki (±0,5 mm), nie tylko reszty; wyszukiwanie linii dwuprzebiegowe, z profilem ważonym ciemnością i odrzucaniem szerokich plateau (pasek tytułu nie udaje linii cięcia); test negatywny (zły krok siatki wykrywany); autotest dla wszystkich trzech arkuszy; PDF podawany stronie przez trasę; kontrola obrotu strony i normalizacja TrimBox; konfiguracja scalana bezpiecznie, oryginalne czcionki nadpisują testowe (brakujące – zapasowa); testy jednostkowe analizy (Vitest, `testy/**/*.test.ts`). Obrót EXIF liczony własną macierzą (niezależnie od przeglądarki), z zabezpieczeniem, gdy przeglądarka obróci sama; duże zdjęcia zmniejszane do limitu kanwy; błąd przekodowania → komunikat zamiast zniekształconego obrazu; szare kopie bez orientacji (jak PDF); parser EXIF z bajtami wypełniającymi i granicą segmentu; e2e sprawdza kierunek obrotu po kolorach. CI po wdrożeniu sprawdza wersję (meta `wersja` = commit), skrypt główny i czcionkę. Nazwa pliku ≤ 100 znaków.
+
+Znane ograniczenia (odnotowane):
+
+- Obrazy z EXIF wgrane przed poprawką lub zaimportowane z pliku `.kartyrpg` nie są przekodowywane (import nie zmienia bajtów) – w PDF mogą być nieobrócone; wystarczy wgrać ponownie.
+- Przekodowane zdjęcie traci profil ICC (zdjęcia Display P3 z iPhone'a mogą mieć nieco inne kolory) i metadane (w tym GPS – to plus dla prywatności); jakość JPEG 0,92.
+- PNG z blokiem `eXIf` (rzadkie) nie jest obracany.
+- Test nakładania na oryginał nie był jeszcze uruchomiony na prawdziwym pliku (brak w repozytorium) – pierwszy przebieg lokalnie i przejrzenie PNG nakładki należy do weryfikacji użytkownika.
 
 ### Odłożone (backlog)
 

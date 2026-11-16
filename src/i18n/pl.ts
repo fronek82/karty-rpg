@@ -53,6 +53,8 @@ export const pl = {
   'dane.nieczytelnaCzcionka':
     'Nie udało się wczytać czcionki „{plik}” – plik jest uszkodzony albo to nie czcionka.',
   'dane.czcionkaKolekcja': 'Plik „{plik}” jest kolekcją czcionek – wybierz pojedynczą czcionkę.',
+  'dane.bladObrotu':
+    'Nie udało się obrócić zdjęcia według zapisanej orientacji – zapisz je obrócone w innym programie i wgraj ponownie.',
   'dane.zlyObraz': 'Plik „{plik}” nie jest obrazem PNG ani JPG.',
   'dane.brakProjektuWBazie': 'Nie ma projektu „{id}” w pamięci przeglądarki.',
   'dane.kolizjaZasobu':
@@ -63,7 +65,8 @@ export const pl = {
   'aplikacja.opis':
     'Projektuj i drukuj karty do gier RPG i planszowych. Wszystko działa w przeglądarce, a dane zostają na Twoim komputerze.',
   'start.wersja': 'Wersja {wersja}',
-  'start.wkrotce': 'Aplikacja jest w budowie – trwa kamień milowy M1 (Mausritter na A4).',
+  'start.wkrotce':
+    'Wersja M1: karty ekwipunku i stanów Mausrittera na A4 – projekty, edycja danych, własne obrazy i czcionki, PDF do druku.',
   'nawigacja.start': 'Start',
   'nawigacja.nieZnaleziono': 'Nie ma takiej strony.',
   'nawigacja.wrocNaStart': 'Wróć na stronę startową',

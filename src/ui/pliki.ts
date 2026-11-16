@@ -18,6 +18,8 @@ export function nazwaPliku(nazwa: string, rozszerzenie: string): string {
     .replace(/[łŁ]/g, 'l')
     .replace(/[^\w-]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .toLowerCase();
+    .toLowerCase()
+    .slice(0, 100)
+    .replace(/-+$/, '');
   return `${baza || 'projekt'}${rozszerzenie}`;
 }
