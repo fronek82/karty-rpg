@@ -19,8 +19,10 @@ import {
   rectangle,
   setDashPattern,
   setFillingRgbColor,
+  setLineJoin,
   setLineWidth,
   setStrokingRgbColor,
+  LineJoinStyle,
   stroke,
 } from 'pdf-lib';
 import { PT_NA_MM } from '../model/jednostki';
@@ -163,8 +165,13 @@ class BudowniczyPdf {
     private readonly opcje: OpcjePdf,
   ) {}
 
-  private refGlifu(scena: Scena, klucz: string): PDFRef {
-    const istniejacy = this.glifyXObject.get(klucz);
+  /**
+   * XObject glifu. Wariant `obwodka` wypełnia i obrysowuje kontur (grubość linii i kolor
+   * dziedziczy z miejsca wstawienia) – używany pod literami jako obwódka.
+   */
+  private refGlifu(scena: Scena, klucz: string, obwodka = false): PDFRef {
+    const kluczXObject = obwodka ? `${klucz}|obwodka` : klucz;
+    const istniejacy = this.glifyXObject.get(kluczXObject);
     if (istniejacy) return istniejacy;
     const kontur = scena.glify[klucz]?.kontur ?? [];
     let minX = 0;
@@ -185,14 +192,24 @@ class BudowniczyPdf {
     // XObject dziedziczy kolor wypełnienia z miejsca wstawienia.
     const ops =
       kontur.length > 0
-        ? [...operatorySciezki(kontur, (v) => Math.round(v * 100) / 100), fill()]
+        ? [
+            ...operatorySciezki(kontur, (v) => Math.round(v * 100) / 100),
+            obwodka ? fillAndStroke() : fill(),
+          ]
         : [];
+    // BBox przycina rysunek – przy obwódce poszerzony z zapasem (grubość zależy od wstawienia).
+    const zapas = obwodka ? 2000 : 0;
     const strumien = this.doc.context.formXObject(ops, {
-      BBox: [Math.floor(minX), Math.floor(minY), Math.ceil(maxX), Math.ceil(maxY)],
+      BBox: [
+        Math.floor(minX) - zapas,
+        Math.floor(minY) - zapas,
+        Math.ceil(maxX) + zapas,
+        Math.ceil(maxY) + zapas,
+      ],
     });
     const ref = this.doc.context.register(strumien);
-    this.glifyXObject.set(klucz, ref);
-    this.licznikGlifow++;
+    this.glifyXObject.set(kluczXObject, ref);
+    if (!obwodka) this.licznikGlifow++;
     return ref;
   }
 
@@ -269,7 +286,30 @@ class BudowniczyPdf {
         ];
       case 'tekst': {
         const [r, g, b] = kolorRgb(e.kolor);
-        const ops: PDFOperator[] = [pushGraphicsState(), setFillingRgbColor(r, g, b)];
+        const ops: PDFOperator[] = [];
+        if (e.obwodka && e.obwodka.grubosc > 0) {
+          const [or, og, ob] = kolorRgb(e.obwodka.kolor);
+          ops.push(
+            pushGraphicsState(),
+            setFillingRgbColor(or, og, ob),
+            setStrokingRgbColor(or, og, ob),
+            setLineJoin(LineJoinStyle.Round),
+          );
+          for (const gl of e.glify) {
+            const n = nazwa(`${gl.klucz}|obwodka`, this.refGlifu(scena, gl.klucz, true), 'O');
+            const s = Math.round(gl.skala * 1e6) / 1e6;
+            ops.push(
+              pushGraphicsState(),
+              concatTransformationMatrix(s, 0, 0, -s, r3(gl.x), r3(gl.y)),
+              // Grubość w jednostkach glifu: mm / skala.
+              setLineWidth(Math.round((e.obwodka.grubosc / s) * 100) / 100),
+              drawObject(n),
+              popGraphicsState(),
+            );
+          }
+          ops.push(popGraphicsState());
+        }
+        ops.push(pushGraphicsState(), setFillingRgbColor(r, g, b));
         for (const gl of e.glify) {
           const n = nazwa(gl.klucz, this.refGlifu(scena, gl.klucz), 'G');
           const s = Math.round(gl.skala * 1e6) / 1e6;

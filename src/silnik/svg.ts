@@ -77,17 +77,22 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
         return `<circle cx="${liczba(e.cx)}" cy="${liczba(e.cy)}" r="${liczba(e.r)}"${wypelnienie(e.wypelnienie)}${atrybutyObrysu(e.obrys)}/>`;
       case 'sciezka':
         return `<path d="${konturNaD(e.kontur)}"${wypelnienie(e.wypelnienie)}${atrybutyObrysu(e.obrys)}/>`;
-      case 'tekst':
-        return (
-          `<g fill="${kolorSceny(e.kolor)}">` +
+      case 'tekst': {
+        const uzycia = (obrys?: { grubosc: number }) =>
           e.glify
             .map((g) => {
-              const s = liczba(g.skala, 6);
-              return `<use href="#${idGlifu.get(g.klucz)}" transform="matrix(${s} 0 0 -${s} ${liczba(g.x)} ${liczba(g.y)})"/>`;
+              const sk = liczba(g.skala, 6);
+              const sw = obrys ? ` stroke-width="${liczba(obrys.grubosc / g.skala, 2)}"` : '';
+              return `<use href="#${idGlifu.get(g.klucz)}" transform="matrix(${sk} 0 0 -${sk} ${liczba(g.x)} ${liczba(g.y)})"${sw}/>`;
             })
-            .join('') +
-          '</g>'
-        );
+            .join('');
+        // Obwódka: osobna warstwa pod literami (grubość w jednostkach glifu = mm / skala).
+        const obw = e.obwodka && e.obwodka.grubosc > 0 ? e.obwodka : undefined;
+        const podklad = obw
+          ? `<g fill="${kolorSceny(obw.kolor)}" stroke="${kolorSceny(obw.kolor)}" stroke-linejoin="round">${uzycia(obw)}</g>`
+          : '';
+        return `${podklad}<g fill="${kolorSceny(e.kolor)}">${uzycia()}</g>`;
+      }
       case 'obraz': {
         const adres = opcje.adresObrazu?.(e.zasob);
         if (!adres) return '';

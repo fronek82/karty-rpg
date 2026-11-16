@@ -237,6 +237,7 @@ export function tekstNaScene(
   wyrownanie: 'lewo' | 'srodek' | 'prawo',
   wyrownaniePionowe: WyrownanieOsi,
   slownikGlifow: Record<string, DefinicjaGlifu>,
+  obwodka?: { grubosc: Mm; kolor: Kolor },
 ): ElementSceny[] {
   const wolne = ramka.wys - uklad.wysokosc;
   let y =
@@ -257,5 +258,14 @@ export function tekstNaScene(
     }
     y += w.wysokosc;
   }
-  return [...wgKoloru].map(([kolor, glify]) => ({ typ: 'tekst' as const, kolor, glify }));
+  return [...wgKoloru].map(([kolor, glify]) =>
+    obwodka && obwodka.grubosc > 0
+      ? {
+          typ: 'tekst' as const,
+          kolor,
+          glify,
+          obwodka: { kolor: obwodka.kolor, grubosc: obwodka.grubosc },
+        }
+      : { typ: 'tekst' as const, kolor, glify },
+  );
 }

@@ -46,7 +46,13 @@ export type ElementSceny =
   | { typ: 'okrag'; cx: Mm; cy: Mm; r: Mm; wypelnienie?: Kolor; obrys?: Obrys }
   /** Ścieżka w mm (oś Y w dół). */
   | { typ: 'sciezka'; kontur: Kontur; wypelnienie?: Kolor; obrys?: Obrys }
-  | { typ: 'tekst'; kolor: Kolor; glify: GlifNaScenie[] }
+  | {
+      typ: 'tekst';
+      kolor: Kolor;
+      glify: GlifNaScenie[];
+      /** Obwódka liter rysowana pod wypełnieniem (grubość całej linii, mm). */
+      obwodka?: { kolor: Kolor; grubosc: Mm };
+    }
   | {
       typ: 'obraz';
       zasob: string;

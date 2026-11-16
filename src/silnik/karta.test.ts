@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { pt } from '../model/jednostki';
 import type { Szablon } from '../model/szablon';
-import { czyPuste, konturScietego, renderujKarte, wartoscPola } from './karta';
+import { czyPuste, daneZParametrami, konturScietego, renderujKarte, wartoscPola } from './karta';
+import { korzenKarty } from '../model/szablon';
 import type { ElementSceny, Scena } from './scena';
 import { scenaDoSvg } from './svg';
 import { rejestrTestowy, szablonBroni } from './__testy__/pomoc';
@@ -244,5 +245,79 @@ describe('ramka ze ściętymi rogami', () => {
       );
     };
     expect(odlUkosu(obrys.kontur) - odlUkosu(tlo.kontur)).toBeCloseTo(0.1, 6);
+  });
+});
+
+describe('parametry szablonu i warianty układu', () => {
+  const zParametrem: Szablon = {
+    id: 'p',
+    nazwa: 'p',
+    rozmiar: { tryb: 'sloty', slot: { szerokosc: 25.75, wysokosc: 25.75 }, kolumny: 1, rzedy: 1 },
+    parametry: [{ klucz: 'etykieta', nazwa: 'Etykieta', domyslnie: 'Usunięcie:' }],
+    korzen: {
+      id: 'k',
+      typ: 'kolumna',
+      dzieci: [
+        {
+          id: 't',
+          typ: 'tekst',
+          klucz: 'wartosc',
+          etykieta: { tekst: { parametr: 'etykieta' }, pozycja: 'przed' },
+          styl: { czcionka: 'tresc', rozmiar: pt(8) },
+        },
+      ],
+    },
+    warianty: [{ kolumny: 1, rzedy: 2, korzen: { id: 'inny', typ: 'kolumna', dzieci: [] } }],
+  };
+  const liczbaGlifow = (
+    dane: Record<string, string>,
+    rozmiar?: { kolumny: number; rzedy: number },
+  ) =>
+    wszystkie(renderujKarte(zParametrem, { dane, rozmiar }, { czcionki }).scena).flatMap((e) =>
+      e.typ === 'tekst' ? e.glify : [],
+    ).length;
+
+  it('daneZParametrami: domyślna wartość, nadpisanie niepustą wartością z danych', () => {
+    expect(daneZParametrami(zParametrem, {})).toEqual({ etykieta: 'Usunięcie:' });
+    expect(daneZParametrami(zParametrem, { etykieta: '  ' })).toEqual({ etykieta: 'Usunięcie:' });
+    expect(daneZParametrami(zParametrem, { etykieta: 'Leczenie:' }).etykieta).toBe('Leczenie:');
+  });
+
+  it('etykieta z parametru i jej nadpisanie w danych karty', () => {
+    expect(liczbaGlifow({})).toBe('Usunięcie:'.length);
+    expect(liczbaGlifow({ etykieta: 'Leczenie:' })).toBe('Leczenie:'.length);
+    expect(liczbaGlifow({ etykieta: 'Ok:', wartosc: 'sen' })).toBe('Ok:sen'.length);
+  });
+
+  it('wariant układu wybierany wg rozmiaru karty w slotach', () => {
+    expect(korzenKarty(zParametrem).id).toBe('k');
+    expect(korzenKarty(zParametrem, { rozmiar: { kolumny: 1, rzedy: 2 } }).id).toBe('inny');
+    expect(liczbaGlifow({}, { kolumny: 1, rzedy: 2 })).toBe(0);
+  });
+
+  it('obwódka trafia do elementu tekstu sceny', () => {
+    const s: Szablon = {
+      ...zParametrem,
+      korzen: {
+        id: 'k',
+        typ: 'kolumna',
+        dzieci: [
+          {
+            id: 't',
+            typ: 'tekst',
+            tekst: 'Lekka',
+            styl: {
+              czcionka: 'tresc',
+              rozmiar: pt(8),
+              obwodka: { grubosc: 0.7, kolor: '#ffffff' },
+            },
+          },
+        ],
+      },
+    };
+    const [tekst] = wszystkie(renderujKarte(s, { dane: {} }, { czcionki }).scena).filter(
+      (e) => e.typ === 'tekst',
+    );
+    expect(tekst).toMatchObject({ obwodka: { grubosc: 0.7, kolor: '#ffffff' } });
   });
 });

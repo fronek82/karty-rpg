@@ -1,6 +1,8 @@
 import type { Mm } from '../model/jednostki';
 import {
   czyKontener,
+  korzenKarty,
+  type NapisSzablonu,
   rozwinOdstepy,
   wymiaryKarty,
   type Karta,
@@ -48,6 +50,26 @@ export interface WyrenderowanaKarta {
 
 const CZARNY = '#000000';
 
+/**
+ * Dane karty uzupełnione o wartości domyślne parametrów szablonu.
+ * Niepusta wartość w danych karty ma pierwszeństwo.
+ */
+export function daneZParametrami(
+  szablon: Szablon,
+  dane: Record<string, string>,
+): Record<string, string> {
+  const wynik: Record<string, string> = {};
+  for (const p of szablon.parametry ?? []) wynik[p.klucz] = p.domyslnie;
+  for (const [k, v] of Object.entries(dane)) if (v.trim() !== '' || !(k in wynik)) wynik[k] = v;
+  return wynik;
+}
+
+/** Napis z szablonu: stały albo wartość parametru (z danych karty lub domyślna). */
+export function napis(n: NapisSzablonu | undefined, dane: Record<string, string>): string {
+  if (n === undefined) return '';
+  return typeof n === 'string' ? n : (dane[n.parametr] ?? '');
+}
+
 /** Wartość pola z danych karty albo wartość stała/domyślna z szablonu. */
 export function wartoscPola(pole: Pole, dane: Record<string, string>): string {
   const zDanych = pole.klucz !== undefined ? dane[pole.klucz] : undefined;
@@ -55,7 +77,7 @@ export function wartoscPola(pole: Pole, dane: Record<string, string>): string {
   switch (pole.typ) {
     case 'tekst':
     case 'wartosc':
-      return pole.tekst ?? '';
+      return napis(pole.tekst, dane);
     case 'obraz':
       return pole.zasob ?? '';
     case 'znaczniki':
@@ -76,12 +98,17 @@ export function czyPuste(pole: Pole, dane: Record<string, string>): boolean {
   return v === '';
 }
 
-function fragmentyTekstu(pole: PoleTekst, wartosc: string): Fragment[] {
+function fragmentyTekstu(
+  pole: PoleTekst,
+  wartosc: string,
+  dane: Record<string, string>,
+): Fragment[] {
   const fr: Fragment[] = [];
-  if (pole.etykieta) {
+  const etykieta = pole.etykieta ? napis(pole.etykieta.tekst, dane) : '';
+  if (pole.etykieta && etykieta !== '') {
     const styl = { ...pole.styl, ...pole.etykieta.styl };
     const odstep = pole.etykieta.pozycja === 'nad' ? '\n' : ' ';
-    fr.push({ tekst: pole.etykieta.tekst + (wartosc === '' ? '' : odstep), styl });
+    fr.push({ tekst: etykieta + (wartosc === '' ? '' : odstep), styl });
   }
   if (wartosc !== '') fr.push({ tekst: wartosc, styl: pole.styl });
   return fr;
@@ -124,7 +151,7 @@ export function renderujKarte(
   ctx: KontekstRenderowania,
 ): WyrenderowanaKarta {
   const { szer, wys } = wymiaryKarty(szablon, karta);
-  const dane = karta.dane;
+  const dane = daneZParametrami(szablon, karta.dane);
   const glify: Record<string, DefinicjaGlifu> = {};
   const elementy: ElementSceny[] = [];
   const ostrzezenia: Ostrzezenie[] = [];
@@ -146,7 +173,7 @@ export function renderujKarte(
       wypelnienie: szablon.tlo,
     });
   }
-  const korzen = rozmiesc(szablon.korzen, 0, 0, szer, wys, kontekst);
+  const korzen = rozmiesc(korzenKarty(szablon, karta), 0, 0, szer, wys, kontekst);
 
   const rysuj = (u: UlozonyWezel) => {
     const w = u.wezel;
@@ -185,7 +212,7 @@ export function renderujKarte(
         szer: Math.max(0, u.szer - p.lewo - p.prawo),
         wys: Math.max(0, u.wys - p.gora - p.dol),
       };
-      elementy.push(...rysujTekst(w, '', ramka, ctx, glify, ostrzezenia));
+      elementy.push(...rysujTekst(w, '', dane, ramka, ctx, glify, ostrzezenia));
     }
     u.dzieci.forEach(rysuj);
     if (w.obramowanie) elementy.push(...rysujObramowanie(w.obramowanie, u, promien, sciety));
@@ -280,7 +307,7 @@ function zmierzPole(
   const wartosc = wartoscPola(pole, dane);
   switch (pole.typ) {
     case 'tekst': {
-      const fr = fragmentyTekstu(pole, wartosc);
+      const fr = fragmentyTekstu(pole, wartosc, dane);
       if (fr.length === 0) return { szer: 0, wys: 0 };
       const naturalny = ulozTekst(fr, undefined, ctx.czcionki);
       if (
@@ -312,7 +339,7 @@ function zmierzPole(
     }
     case 'wpis': {
       const u = ulozTekst(
-        [{ tekst: pole.sufiks || ' ', styl: pole.styl }],
+        [{ tekst: napis(pole.sufiks, dane) || ' ', styl: pole.styl }],
         undefined,
         ctx.czcionki,
       );
@@ -328,12 +355,13 @@ type Ramka = { x: Mm; y: Mm; szer: Mm; wys: Mm };
 function rysujTekst(
   pole: PoleTekst,
   wartosc: string,
+  dane: Record<string, string>,
   ramka: Ramka,
   ctx: KontekstRenderowania,
   glify: Record<string, DefinicjaGlifu>,
   ostrzezenia: Ostrzezenie[],
 ): ElementSceny[] {
-  const fr = fragmentyTekstu(pole, wartosc);
+  const fr = fragmentyTekstu(pole, wartosc, dane);
   if (fr.length === 0) return [];
   const wieleWierszy = pole.wieleWierszy !== false;
   const minSkala = minimalnaSkala(pole.styl);
@@ -346,6 +374,7 @@ function rysujTekst(
     pole.styl.wyrownanie ?? 'lewo',
     pole.styl.wyrownaniePionowe ?? 'poczatek',
     glify,
+    pole.styl.obwodka,
   );
 }
 
@@ -382,7 +411,7 @@ function rysujPole(
   const wartosc = wartoscPola(pole, dane);
   switch (pole.typ) {
     case 'tekst':
-      return rysujTekst(pole, wartosc, ramka, ctx, glify, ostrzezenia);
+      return rysujTekst(pole, wartosc, dane, ramka, ctx, glify, ostrzezenia);
     case 'wartosc': {
       const fr = [{ tekst: wartosc, styl: pole.styl }];
       const minSkala = minimalnaSkala(pole.styl);
@@ -396,6 +425,7 @@ function rysujPole(
         pole.styl.wyrownanie ?? 'srodek',
         pole.styl.wyrownaniePionowe ?? 'srodek',
         glify,
+        pole.styl.obwodka,
       );
     }
     case 'obraz': {
@@ -436,10 +466,18 @@ function rysujPole(
     }
     case 'wpis': {
       const wynik: ElementSceny[] = [];
-      if (pole.sufiks) {
-        const u = ulozTekst([{ tekst: pole.sufiks, styl: pole.styl }], undefined, ctx.czcionki);
+      const sufiks = napis(pole.sufiks, dane);
+      if (sufiks) {
+        const u = ulozTekst([{ tekst: sufiks, styl: pole.styl }], undefined, ctx.czcionki);
         wynik.push(
-          ...tekstNaScene(u, ramka, 'prawo', pole.styl.wyrownaniePionowe ?? 'srodek', glify),
+          ...tekstNaScene(
+            u,
+            ramka,
+            'prawo',
+            pole.styl.wyrownaniePionowe ?? 'srodek',
+            glify,
+            pole.styl.obwodka,
+          ),
         );
       }
       // Tekst wpisany w danych (np. stan sakiewki); bez klucza ramka zostaje pusta.
@@ -447,7 +485,14 @@ function rysujPole(
       if (wpisany !== '') {
         const u = ulozTekst([{ tekst: wpisany, styl: pole.styl }], undefined, ctx.czcionki);
         wynik.push(
-          ...tekstNaScene(u, ramka, 'lewo', pole.styl.wyrownaniePionowe ?? 'srodek', glify),
+          ...tekstNaScene(
+            u,
+            ramka,
+            'lewo',
+            pole.styl.wyrownaniePionowe ?? 'srodek',
+            glify,
+            pole.styl.obwodka,
+          ),
         );
       }
       return wynik;

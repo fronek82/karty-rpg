@@ -85,7 +85,15 @@ export interface StylTekstu {
   wielkieLitery?: boolean;
   /** Dodatkowy odstęp między literami (mm). */
   odstepLiter?: Mm;
+  /** Obwódka wokół liter (np. biała, żeby napis był czytelny na tle ilustracji). */
+  obwodka?: { grubosc: Mm; kolor: Kolor };
 }
+
+/**
+ * Napis w szablonie: stały albo parametr szablonu (`{ parametr: 'klucz' }`) – wtedy wartością jest
+ * `dane[klucz]` karty, a gdy pusto – wartość domyślna parametru z `Szablon.parametry`.
+ */
+export type NapisSzablonu = string | { parametr: string };
 
 export type GdyPuste = 'pokaz-ramke' | 'ukryj';
 
@@ -102,12 +110,12 @@ interface PoleBazowe extends WezelBazowy {
 export interface PoleTekst extends PoleBazowe {
   typ: 'tekst';
   /** Tekst stały (gdy brak klucza) albo domyślny (gdy w danych pusto). */
-  tekst?: string;
+  tekst?: NapisSzablonu;
   styl: StylTekstu;
   /** Łamanie na wiele wierszy (domyślnie tak). */
   wieleWierszy?: boolean;
   etykieta?: {
-    tekst: string;
+    tekst: NapisSzablonu;
     /** `nad` – osobny wiersz nad wartością; `przed` – w tej samej linii przed tekstem. */
     pozycja: 'nad' | 'przed';
     styl?: Partial<StylTekstu>;
@@ -117,7 +125,7 @@ export interface PoleTekst extends PoleBazowe {
 /** Krótka wartość (np. `k6`, `-1 obr`) w ramce o zadanym kształcie. */
 export interface PoleWartosc extends PoleBazowe {
   typ: 'wartosc';
-  tekst?: string;
+  tekst?: NapisSzablonu;
   styl: StylTekstu;
   /** `sciety` – prostokąt ze ściętymi rogami (wielkość ścięcia w `promien`). */
   ksztalt: 'prostokat' | 'kolo' | 'sciety';
@@ -147,7 +155,7 @@ export interface PoleZnaczniki extends PoleBazowe {
 /** Pusta ramka do pisania ołówkiem z opcjonalnym stałym sufiksem (np. `/ 250p`). */
 export interface PoleWpis extends PoleBazowe {
   typ: 'wpis';
-  sufiks?: string;
+  sufiks?: NapisSzablonu;
   styl: StylTekstu;
 }
 
@@ -173,13 +181,41 @@ export type RozmiarKarty =
     }
   | { tryb: 'mm'; szerokosc: Mm; wysokosc: Mm };
 
+/** Parametr szablonu – napis z wartością domyślną, który karta może nadpisać w danych. */
+export interface ParametrSzablonu {
+  /** Klucz w danych karty. */
+  klucz: string;
+  /** Nazwa dla użytkownika (kolumna w tabeli danych). */
+  nazwa: string;
+  domyslnie: string;
+}
+
 export interface Szablon {
   id: string;
+  /** Napisy stałe z wartościami domyślnymi (np. „Usunięcie:”, „/ 250p”). */
+  parametry?: ParametrSzablonu[];
   nazwa: string;
   rozmiar: RozmiarKarty;
   promienRogow?: Mm;
   tlo?: Kolor;
   korzen: Kontener;
+  /**
+   * Inny układ dla wybranego rozmiaru karty w slotach (np. ciężka broń 1×2 z ilustracją na całą
+   * szerokość). Bez pasującego wariantu karta używa `korzen`.
+   */
+  warianty?: { kolumny: number; rzedy: number; korzen: Kontener }[];
+}
+
+/** Korzeń układu dla danej karty – wariant pasujący do jej rozmiaru albo domyślny. */
+export function korzenKarty(szablon: Szablon, karta?: Pick<Karta, 'rozmiar'>): Kontener {
+  const r = szablon.rozmiar;
+  if (r.tryb !== 'sloty' || !szablon.warianty) return szablon.korzen;
+  const kolumny = karta?.rozmiar?.kolumny ?? r.kolumny;
+  const rzedy = karta?.rozmiar?.rzedy ?? r.rzedy;
+  return (
+    szablon.warianty.find((w) => w.kolumny === kolumny && w.rzedy === rzedy)?.korzen ??
+    szablon.korzen
+  );
 }
 
 export interface Karta {

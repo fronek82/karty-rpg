@@ -74,20 +74,8 @@ export const taliaBroni: Talia = {
       3,
     ),
     karta('amunicja-strzaly', szablonBron.id, { nazwa: 'Strzały', klasa: 'Amunicja', obraz: Z }, 3),
-    karta(
-      'zbroja-ciezka',
-      szablonZbroja.id,
-      { nazwa: 'Ciężka zbroja', wartosc: '-1 obr', obraz: Z },
-      3,
-      PIONOWA,
-    ),
-    karta(
-      'zbroja-lekka',
-      szablonZbroja.id,
-      { nazwa: 'Lekka zbroja', wartosc: '-1 obr', obraz: Z },
-      4,
-      POZIOMA,
-    ),
+    karta('zbroja-ciezka', szablonZbroja.id, { nazwa: 'Ciężka zbroja', obraz: Z }, 3, PIONOWA),
+    karta('zbroja-lekka', szablonZbroja.id, { nazwa: 'Lekka zbroja', obraz: Z }, 4, POZIOMA),
   ],
 };
 

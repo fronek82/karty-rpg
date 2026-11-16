@@ -6,6 +6,10 @@ import type { Szablon } from '../src/model/szablon';
 import { renderujKarte } from '../src/silnik/karta';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy, szablonBroni } from '../src/silnik/__testy__/pomoc';
+import { szablonBron } from '../src/pakiety/mausritter/szablony';
+import { OBRAZ_ZASTEPCZY } from '../src/pakiety/mausritter/talie';
+
+const PNG_ZASTEPCZY = readFileSync('src/pakiety/mausritter/obrazy/zastepczy.png');
 
 /**
  * Podgląd = wydruk: ta sama scena zapisana jako SVG (rysuje Chromium) i jako PDF (rysuje pdf.js)
@@ -126,7 +130,16 @@ const szablonOpisu: Szablon = {
   },
 };
 
-const PRZYPADKI = [
+const PRZYPADKI: { nazwa: string; wynik: () => ReturnType<typeof renderujKarte> }[] = [
+  {
+    nazwa: 'Mausritter: broń z obrazkiem i białą obwódką klasy',
+    wynik: () =>
+      renderujKarte(
+        szablonBron,
+        { dane: { nazwa: 'Igła', wartosc: 'k6', klasa: 'Lekka', obraz: OBRAZ_ZASTEPCZY } },
+        { czcionki, obraz: () => ({ szerokosc: 512, wysokosc: 512 }) },
+      ),
+  },
   {
     nazwa: 'karta broni 1×2',
     wynik: () =>
@@ -160,8 +173,17 @@ for (const p of PRZYPADKI) {
     await przygotujStrone(page);
     const { scena, ostrzezenia } = p.wynik();
     expect(ostrzezenia).toEqual([]);
-    const { bajty } = await scenyDoPdf([scena]);
-    const w = await porownaj(page, scenaDoSvg(scena), bajty);
+    const { bajty } = await scenyDoPdf([scena], {
+      obraz: (z) =>
+        z === OBRAZ_ZASTEPCZY ? { dane: new Uint8Array(PNG_ZASTEPCZY), format: 'png' } : undefined,
+    });
+    const svg = scenaDoSvg(scena, {
+      adresObrazu: (z) =>
+        z === OBRAZ_ZASTEPCZY
+          ? 'data:image/png;base64,' + PNG_ZASTEPCZY.toString('base64')
+          : undefined,
+    });
+    const w = await porownaj(page, svg, bajty);
     test.info().annotations.push({ type: 'porównanie', description: JSON.stringify(w) });
     console.info(p.nazwa, w);
     // Coś narysowano i oba obrazy mają podobną ilość „tuszu”.

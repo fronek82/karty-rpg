@@ -1,5 +1,13 @@
 import { pt, type Mm } from '../../model/jednostki';
-import type { Kontener, Obramowanie, Pole, Szablon, StylTekstu } from '../../model/szablon';
+import type {
+  Kontener,
+  NapisSzablonu,
+  Obramowanie,
+  ParametrSzablonu,
+  Pole,
+  StylTekstu,
+  Szablon,
+} from '../../model/szablon';
 
 /**
  * Szablony kart Mausrittera. Wymiary zmierzone z arkuszy referencyjnych (wektorowo, w mm);
@@ -101,11 +109,12 @@ function obraz(margines: { gora: Mm; dol: Mm }): Pole {
   };
 }
 
-function wartosc(ksztalt: 'prostokat' | 'sciety', rozmiar: number): Pole {
+function wartosc(ksztalt: 'prostokat' | 'sciety', rozmiar: number, tekst?: NapisSzablonu): Pole {
   return {
     id: 'wartosc',
     typ: 'wartosc',
     klucz: 'wartosc',
+    tekst,
     ksztalt,
     promien: ksztalt === 'sciety' ? pt(3) : undefined,
     gdyPuste: 'ukryj',
@@ -114,11 +123,12 @@ function wartosc(ksztalt: 'prostokat' | 'sciety', rozmiar: number): Pole {
     padding: { lewo: 1.2, prawo: 1.2 },
     obramowanie: LINIA,
     tlo: '#ffffff',
-    wyrownanie: { poziomo: 'koniec', pionowo: 'poczatek' },
+    wyrownanie: { pionowo: 'poczatek' },
     styl: tresc(rozmiar),
   };
 }
 
+/** Klasa broni w lewym dolnym rogu, z białą obwódką – czytelna na tle ilustracji. */
 function klasa(): Pole {
   return {
     id: 'klasa',
@@ -129,18 +139,65 @@ function klasa(): Pole {
     margines: { lewo: 0.3, dol: 0.4 },
     wieleWierszy: false,
     wyrownanie: { poziomo: 'poczatek', pionowo: 'koniec' },
-    styl: tresc(8),
+    styl: { ...tresc(8), obwodka: { grubosc: 0.7, kolor: '#ffffff' } },
   };
 }
 
-/** Obszar pod paskiem tytułu: warstwy (obraz pod spodem, reszta w rogach). */
-function tresckarty(dzieci: (Pole | Kontener)[]): Kontener {
+const WNETRZE = { gora: POD_LINIA, ...WCIECIE };
+
+/**
+ * Broń i zbroja 1×1 i 2×1: po lewej znaczniki, pod nimi ilustracja; po prawej ramka wartości.
+ * Ilustracja nigdy nie wchodzi pod ramkę. Klasa nałożona w lewym dolnym rogu (biała obwódka).
+ */
+function trescUzbrojenia(ramka: Pole, zKlasa: boolean): Kontener {
   return {
     id: 'tresc',
     typ: 'warstwy',
     wysokosc: { wypelnij: 1 },
-    padding: { gora: POD_LINIA, ...WCIECIE },
-    dzieci,
+    padding: WNETRZE,
+    dzieci: [
+      {
+        id: 'uklad',
+        typ: 'wiersz',
+        odstep: 0.6,
+        dzieci: [
+          {
+            id: 'lewa',
+            typ: 'kolumna',
+            szerokosc: { wypelnij: 1 },
+            odstep: 0.5,
+            dzieci: [
+              { ...znaczniki(), wyrownanie: { poziomo: 'poczatek' } },
+              { ...obraz({ gora: 0, dol: 0 }), wysokosc: { wypelnij: 1 } },
+            ],
+          },
+          ramka,
+        ],
+      },
+      ...(zKlasa ? [klasa()] : []),
+    ],
+  };
+}
+
+/** Wariant pionowy (1×2): rząd znaczników i ramki u góry, ilustracja na całą szerokość pod nim. */
+function trescUzbrojeniaPionowa(ramka: Pole, zKlasa: boolean): Kontener {
+  return {
+    id: 'tresc',
+    typ: 'warstwy',
+    wysokosc: { wypelnij: 1 },
+    padding: WNETRZE,
+    dzieci: [
+      {
+        id: 'uklad',
+        typ: 'kolumna',
+        odstep: 0.8,
+        dzieci: [
+          { id: 'gora', typ: 'wiersz', rozklad: 'miedzy', dzieci: [znaczniki(), ramka] },
+          { ...obraz({ gora: 0, dol: 0 }), wysokosc: { wypelnij: 1 } },
+        ],
+      },
+      ...(zKlasa ? [klasa()] : []),
+    ],
   };
 }
 
@@ -150,68 +207,122 @@ const karta = (
   kolumny: number,
   rzedy: number,
   dzieci: (Pole | Kontener)[],
+  parametry?: ParametrSzablonu[],
+  pionowa?: (Pole | Kontener)[],
 ): Szablon => ({
   id,
   nazwa,
   rozmiar: rozmiarSlotow(kolumny, rzedy),
   tlo: '#ffffff',
+  ...(parametry ? { parametry } : {}),
   korzen: { id: 'korzen', typ: 'kolumna', dzieci },
+  ...(pionowa
+    ? {
+        warianty: [
+          { kolumny: 1, rzedy: 2, korzen: { id: 'korzen', typ: 'kolumna', dzieci: pionowa } },
+        ],
+      }
+    : {}),
 });
 
-export const szablonBron = karta('mausritter-bron', 'Broń', 1, 1, [
-  pasekTytulu(),
-  tresckarty([obraz({ gora: 3.3, dol: 3.6 }), znaczniki(), wartosc('prostokat', 10), klasa()]),
-]);
+export const szablonBron = karta(
+  'mausritter-bron',
+  'Broń',
+  1,
+  1,
+  [pasekTytulu(), trescUzbrojenia(wartosc('prostokat', 10), true)],
+  undefined,
+  [pasekTytulu(), trescUzbrojeniaPionowa(wartosc('prostokat', 10), true)],
+);
 
-export const szablonZbroja = karta('mausritter-zbroja', 'Zbroja', 1, 2, [
-  pasekTytulu(),
-  tresckarty([obraz({ gora: 3.3, dol: 0.5 }), znaczniki(), wartosc('sciety', 8.5)]),
-]);
+export const szablonZbroja = karta(
+  'mausritter-zbroja',
+  'Zbroja',
+  1,
+  2,
+  [pasekTytulu(), trescUzbrojenia(wartosc('sciety', 8.5, { parametr: 'obrona' }), false)],
+  [{ klucz: 'obrona', nazwa: 'Obrona', domyslnie: '-1 obr' }],
+  [pasekTytulu(), trescUzbrojeniaPionowa(wartosc('sciety', 8.5, { parametr: 'obrona' }), false)],
+);
 
+/** Przedmiot: znaczniki w lewym górnym rogu, ilustracja obok nich po prawej. */
 export const szablonPrzedmiot = karta('mausritter-przedmiot', 'Przedmiot', 1, 1, [
-  pasekTytulu(),
-  tresckarty([obraz({ gora: 0.5, dol: 0.5 }), znaczniki()]),
-]);
-
-export const szablonSakiewka = karta('mausritter-sakiewka', 'Sakiewka', 1, 1, [
   pasekTytulu(),
   {
     id: 'tresc',
-    typ: 'kolumna',
+    typ: 'wiersz',
     wysokosc: { wypelnij: 1 },
-    padding: { gora: POD_LINIA, lewo: 1.63, prawo: 1.87, dol: 1.38 },
-    odstep: 0.5,
+    padding: WNETRZE,
+    odstep: 0.6,
     dzieci: [
-      { ...obraz({ gora: 0, dol: 0 }), wysokosc: { wypelnij: 1 } },
-      {
-        id: 'zawartosc',
-        typ: 'wpis',
-        klucz: 'zawartosc',
-        sufiks: '/ 250p',
-        wysokosc: { mm: 6.36 },
-        padding: { lewo: 1, prawo: 1.1 },
-        obramowanie: LINIA,
-        styl: tresc(9),
-      },
+      { ...znaczniki(), wyrownanie: { pionowo: 'poczatek' } },
+      { ...obraz({ gora: 0, dol: 0 }), szerokosc: { wypelnij: 1 } },
     ],
   },
 ]);
 
+export const szablonSakiewka = karta(
+  'mausritter-sakiewka',
+  'Sakiewka',
+  1,
+  1,
+  [
+    pasekTytulu(),
+    {
+      id: 'tresc',
+      typ: 'kolumna',
+      wysokosc: { wypelnij: 1 },
+      padding: { gora: POD_LINIA, lewo: 1.63, prawo: 1.87, dol: 1.38 },
+      odstep: 0.5,
+      dzieci: [
+        { ...obraz({ gora: 0, dol: 0 }), wysokosc: { wypelnij: 1 } },
+        {
+          id: 'zawartosc',
+          typ: 'wpis',
+          klucz: 'zawartosc',
+          sufiks: { parametr: 'pojemnosc' },
+          wysokosc: { mm: 6.36 },
+          padding: { lewo: 1, prawo: 1.1 },
+          obramowanie: LINIA,
+          styl: tresc(9),
+        },
+      ],
+    },
+  ],
+  [{ klucz: 'pojemnosc', nazwa: 'Pojemność', domyslnie: '/ 250p' }],
+);
+
+/** Zaklęcie: gwiazdka zamiast nazwy; ilustracja może nachodzić na znaczniki. */
 export const szablonZaklecie = karta('mausritter-zaklecie', 'Zaklęcie', 1, 1, [
   pasekGwiazdki(),
-  tresckarty([obraz({ gora: 0.5, dol: 0.5 }), znaczniki()]),
+  {
+    id: 'tresc',
+    typ: 'warstwy',
+    wysokosc: { wypelnij: 1 },
+    padding: WNETRZE,
+    dzieci: [obraz({ gora: 0.5, dol: 0.5 }), znaczniki()],
+  },
 ]);
 
 export const szablonPusta = karta('mausritter-pusta', 'Pusta karta', 1, 1, [
   pasekTytulu(),
-  tresckarty([znaczniki()]),
+  {
+    id: 'tresc',
+    typ: 'warstwy',
+    wysokosc: { wypelnij: 1 },
+    padding: WNETRZE,
+    dzieci: [znaczniki()],
+  },
 ]);
+
+const STAN_TRESC = 8;
 
 /** Karta stanu: tytuł, skutek kursywą, na dole „Usunięcie:” z warunkiem. */
 export const szablonStan: Szablon = {
   id: 'mausritter-stan',
   nazwa: 'Stan',
   rozmiar: rozmiarSlotow(1, 1),
+  parametry: [{ klucz: 'etykietaUsuniecia', nazwa: 'Etykieta usunięcia', domyslnie: 'Usunięcie:' }],
   tlo: '#ffffff',
   korzen: {
     id: 'korzen',
@@ -232,14 +343,21 @@ export const szablonStan: Szablon = {
         klucz: 'skutek',
         wysokosc: { wypelnij: 1 },
         margines: { gora: 0.3 },
-        styl: { ...tresc(8, 'kursywa'), minRozmiar: pt(6.5) },
+        styl: { ...tresc(STAN_TRESC, 'kursywa'), minRozmiar: pt(6.5) },
       },
       {
         id: 'usuniecie',
         typ: 'tekst',
         klucz: 'usuniecie',
-        etykieta: { tekst: 'Usunięcie:', pozycja: 'nad', styl: { wariant: 'pogrubiony' } },
-        styl: { ...tresc(8, 'normalny'), minRozmiar: pt(6.5) },
+        etykieta: {
+          tekst: { parametr: 'etykietaUsuniecia' },
+          pozycja: 'nad',
+          styl: { wariant: 'pogrubiony' },
+        },
+        // Zawsze dwa wiersze: przy pustej wartości zostaje linijka do wpisania ręcznie,
+        // a „Usunięcie:” jest na tej samej wysokości co na pozostałych kartach.
+        minWysokosc: 2 * pt(STAN_TRESC) * 1.2,
+        styl: { ...tresc(STAN_TRESC, 'normalny'), minRozmiar: pt(6.5) },
       },
     ],
   },

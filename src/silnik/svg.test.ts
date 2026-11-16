@@ -55,3 +55,26 @@ describe('scenaDoSvg', () => {
     expect(svg).toContain('fill="#ffffff"');
   });
 });
+
+describe('obwódka tekstu w SVG', () => {
+  it('rysuje warstwę obrysu pod literami, grubość przeliczona na jednostki glifu', () => {
+    const svg = scenaDoSvg(
+      scena(
+        [
+          {
+            typ: 'tekst',
+            kolor: '#000000',
+            obwodka: { kolor: '#ffffff', grubosc: 0.5 },
+            glify: [{ klucz: 'f#1', x: 1, y: 5, skala: 0.005 }],
+          },
+        ],
+        { 'f#1': { kontur: [['M', 0, 0], ['L', 100, 0], ['L', 0, 100], ['Z']] } },
+      ),
+    );
+    const podklad = svg.indexOf('stroke="#ffffff"');
+    const litery = svg.indexOf('<g fill="#000000">');
+    expect(podklad).toBeGreaterThan(-1);
+    expect(podklad).toBeLessThan(litery);
+    expect(svg).toContain('stroke-width="100"');
+  });
+});
