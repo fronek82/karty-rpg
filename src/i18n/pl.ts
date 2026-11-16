@@ -12,6 +12,25 @@ export const pl = {
   'nawigacja.start': 'Start',
   'nawigacja.nieZnaleziono': 'Nie ma takiej strony.',
   'nawigacja.wrocNaStart': 'Wróć na stronę startową',
+  'nawigacja.arkusze': 'Arkusze do druku',
+  'start.arkusze': 'Zobacz arkusze Mausrittera i pobierz PDF do druku',
+  'arkusze.tytul': 'Arkusze do druku',
+  'arkusze.opis':
+    'Arkusze z pakietu „{pakiet}”. Drukuj w skali 100% (bez „dopasuj do strony”) – wtedy karty pasują do slotów na karcie postaci.',
+  'arkusze.wybor': 'Arkusz:',
+  'arkusze.podglad': 'Podgląd',
+  'arkusze.skalaDopasuj': 'dopasuj do szerokości',
+  'arkusze.skalaRzeczywista': 'rozmiar rzeczywisty (1:1)',
+  'arkusze.uwagaSkali':
+    'Rozmiar rzeczywisty zależy od ustawień ekranu – do sprawdzenia wymiarów użyj wydruku.',
+  'arkusze.pobierzPdf': 'Pobierz PDF',
+  'arkusze.pobierzWszystkie': 'Pobierz wszystkie arkusze (PDF)',
+  'arkusze.generowanie': 'Tworzę PDF…',
+  'arkusze.wczytywanie': 'Wczytuję czcionki i obrazy…',
+  'arkusze.blad': 'Coś poszło nie tak: {blad}',
+  'arkusze.ostrzezenia': 'Ostrzeżenia ({liczba})',
+  'arkusze.liczbaStron': 'Stron: {liczba}.',
+  'arkusze.strona': 'Strona {numer}',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;

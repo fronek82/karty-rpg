@@ -1,13 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { zbudujArkusz } from '../src/druk/arkusz';
 import { scenyDoPdf } from '../src/druk/pdf';
+import { arkuszeMausrittera } from '../src/pakiety/mausritter/arkusze';
 import { pt } from '../src/model/jednostki';
 import type { Szablon } from '../src/model/szablon';
 import { renderujKarte } from '../src/silnik/karta';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy, szablonBroni } from '../src/silnik/__testy__/pomoc';
-import { szablonBron } from '../src/pakiety/mausritter/szablony';
-import { OBRAZ_ZASTEPCZY } from '../src/pakiety/mausritter/talie';
+import { szablonBron, szablonyMausrittera } from '../src/pakiety/mausritter/szablony';
+import { OBRAZ_ZASTEPCZY, talieMausrittera } from '../src/pakiety/mausritter/talie';
 
 const PNG_ZASTEPCZY = readFileSync('src/pakiety/mausritter/obrazy/zastepczy.png');
 /** Ciemna, niesymetryczna litera „F” – obrót lub odbicie od razu widać w porównaniu. */
@@ -203,6 +205,35 @@ for (const p of PRZYPADKI) {
     expect(w.ciemneSvg).toBeGreaterThan(w.wszystkie * 0.01);
     expect(Math.abs(w.ciemnePdf - w.ciemneSvg) / w.ciemneSvg).toBeLessThan(0.05);
     // Piksele wyraźnie różne: tylko krawędzie po wygładzaniu.
+    expect(w.rozne / w.wszystkie).toBeLessThan(0.001);
+  });
+}
+
+for (const arkusz of arkuszeMausrittera) {
+  test(`PDF wygląda jak SVG: cały arkusz „${arkusz.nazwa}”`, async ({ page }) => {
+    await przygotujStrone(page);
+    const wynik = zbudujArkusz(
+      arkusz,
+      talieMausrittera.find((t) => t.id === arkusz.taliaId)!,
+      {
+        czcionki,
+        szablony: new Map(szablonyMausrittera.map((s) => [s.id, s])),
+        obraz: (z) => (z === OBRAZ_ZASTEPCZY ? { szerokosc: 512, wysokosc: 512 } : undefined),
+      },
+    );
+    expect(wynik.ostrzezenia).toEqual([]);
+    const scena = wynik.strony[0]!;
+    const { bajty } = await scenyDoPdf([scena], {
+      obraz: (z) => (PNGI[z] ? { dane: new Uint8Array(PNGI[z]), format: 'png' } : undefined),
+    });
+    const svg = scenaDoSvg(scena, {
+      adresObrazu: (z) =>
+        PNGI[z] ? 'data:image/png;base64,' + PNGI[z].toString('base64') : undefined,
+    });
+    const w = await porownaj(page, svg, bajty);
+    console.info(arkusz.nazwa, w);
+    expect(w.ciemneSvg).toBeGreaterThan(w.wszystkie * 0.005);
+    expect(Math.abs(w.ciemnePdf - w.ciemneSvg) / w.ciemneSvg).toBeLessThan(0.05);
     expect(w.rozne / w.wszystkie).toBeLessThan(0.001);
   });
 }

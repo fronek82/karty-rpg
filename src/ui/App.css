@@ -45,6 +45,10 @@ a {
 }
 
 .naglowek {
+  display: flex;
+  gap: 1.5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--obramowanie);
   background: var(--tlo-panelu);
@@ -74,4 +78,66 @@ a {
   padding: 0.75rem 1rem;
   font-size: 0.85rem;
   opacity: 0.7;
+}
+
+.pasek-narzedzi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.przelacznik {
+  display: flex;
+  gap: 0.75rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.przelacznik legend {
+  float: left;
+  margin-right: 0.5rem;
+}
+
+.pasek-narzedzi button {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--akcent);
+  border-radius: 0.4rem;
+  background: var(--tlo-panelu);
+  color: var(--tekst);
+  cursor: pointer;
+}
+
+.pasek-narzedzi button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.podpis {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.podglad-arkusza {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.podglad-arkusza.rzeczywista {
+  overflow-x: auto;
+}
+
+.strona-arkusza svg {
+  display: block;
+  background: #ffffff;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 25%);
+}
+
+.podglad-arkusza.dopasuj .strona-arkusza svg {
+  width: 100%;
+  height: auto;
 }
