@@ -3,6 +3,7 @@ import { wymiaryKarty, type Szablon } from '../../model/szablon';
 import { renderujKarte } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
 import { rejestrTestowy } from '../../silnik/__testy__/pomoc';
+import { zbudujArkusz } from '../../druk/arkusz';
 import { pakietMausritter } from './index';
 import { SLOT } from './szablony';
 import { OBRAZ_ZASTEPCZY, taliaBroni, taliaStanow, taliaWyposazenia } from './talie';
@@ -72,4 +73,59 @@ describe('pakiet Mausritter', () => {
       );
     });
   }
+});
+
+describe('pakiet Mausritter – edytor kartki', () => {
+  const szablony = new Map(pakietMausritter.szablony.map((s) => [s.id, s]));
+
+  it('typy kart wskazują istniejące szablony; rozmiar domyślny pierwszy, bez powtórzeń', () => {
+    for (const typ of pakietMausritter.typyKart) {
+      for (const w of typ.warianty) expect(szablony.has(w.szablonId), w.szablonId).toBe(true);
+      const r = typ.rozmiary.map((x) => `${x.kolumny}x${x.rzedy}`);
+      expect(new Set(r).size).toBe(r.length);
+    }
+    expect(pakietMausritter.typyKart.map((t) => t.nazwa)).toEqual([
+      'Broń',
+      'Zbroja',
+      'Ekwipunek',
+      'Zaklęcie',
+      'Stan',
+      'Pusta karta',
+    ]);
+  });
+
+  it('gotowe układy wskazują arkusze pakietu', () => {
+    const arkusze = new Set(pakietMausritter.arkusze.map((a) => a.id));
+    for (const u of pakietMausritter.gotoweUklady)
+      for (const a of u.arkusze) expect(arkusze.has(a), a).toBe(true);
+  });
+
+  it('nowa kartka: jedna pusta strona 10 × 7, bez ostrzeżeń; nagłówek grupy przesuwa siatkę w dół', () => {
+    const arkusz = {
+      id: 'k',
+      nazwa: 'Moje karty',
+      taliaId: 't',
+      liczbaStron: 1,
+      ustawienia: pakietMausritter.nowaKartka.ustawienia,
+    };
+    const talia = { id: 't', nazwa: 'Moje karty', karty: [] };
+    const kontekst = { czcionki: rejestrTestowy(), szablony };
+    const w = zbudujArkusz(arkusz, talia, kontekst);
+    expect(w.strony).toHaveLength(1);
+    expect(w.ostrzezenia).toEqual([]);
+    expect(w.siatka).toMatchObject({ kolumny: 10, rzedy: 7 });
+    const zNaglowkiem = zbudujArkusz(
+      {
+        ...arkusz,
+        naglowki: [{ id: 'g', strona: 0, kolumna: 0, kolumny: 2, naglowek: 'Ranna', opis: 'Opis' }],
+      },
+      talia,
+      kontekst,
+    );
+    // Pas nagłówka (~12 mm) mieści się w zapasie strony – siatka zostaje 10 × 7, niżej.
+    expect(zNaglowkiem.siatka).toMatchObject({ kolumny: 10, rzedy: 7 });
+    expect(zNaglowkiem.poczatekSiatki.y).toBeGreaterThan(w.poczatekSiatki.y + 8);
+    expect(zNaglowkiem.ostrzezenia).toEqual([]);
+    expect(zNaglowkiem.naglowki).toHaveLength(1);
+  });
 });

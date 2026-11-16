@@ -30,6 +30,12 @@ export interface KontekstArkusza {
   czcionki: RejestrCzcionek;
   szablony: Map<string, Szablon>;
   obraz?: (zasob: string) => InformacjaOObrazie | undefined;
+  /**
+   * Pamięć wyrenderowanych kart między wywołaniami (edytor: zmiana jednej karty nie renderuje
+   * pozostałych). Klucz – obiekt karty (niezmienny); ważna tylko dla tych samych czcionek,
+   * szablonów i obrazów – przy ich zmianie wołający tworzy nową.
+   */
+  pamiecKart?: WeakMap<Karta, { scena: Scena; ostrzezenia: Ostrzezenie[] }>;
 }
 
 export interface OstrzezenieArkusza {
@@ -45,6 +51,10 @@ export interface WynikArkusza {
   slot: { szerokosc: Mm; wysokosc: Mm };
   /** Siatka w slotach; `grupy` – karty w kolumnach grup (przypięcia wtedy nie działają). */
   siatka: { kolumny: number; rzedy: number; grupy: boolean };
+  /** Przesunięcie (mm) kolumny `kolumna` na stronie `strona` przez odstępy nagłówków grup. */
+  odstepKolumny: (strona: number, kolumna: number) => Mm;
+  /** Ręczne nagłówki grup na stronach (mm od rogu strony) – do warstwy edytora. */
+  naglowki: { id: string; strona: number; x: Mm; y: Mm; szer: Mm; wys: Mm }[];
   /** Tytuł po dopasowaniu: rozmiar czcionki i długość napisu (mm). */
   tytul?: { rozmiar: Mm; dlugosc: Mm };
   ostrzezenia: OstrzezenieArkusza[];
@@ -171,8 +181,9 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
 
   // Slot z pierwszego szablonu w trybie slotów (M1: wszystkie karty arkusza w siatce slotów).
   const zSlotem = talia.karty.map(szablon).find((s) => s?.rozmiar.tryb === 'sloty');
-  const slot =
-    zSlotem && zSlotem.rozmiar.tryb === 'sloty'
+  const slot = u.slot
+    ? u.slot
+    : zSlotem && zSlotem.rozmiar.tryb === 'sloty'
       ? zSlotem.rozmiar.slot
       : { szerokosc: 63, wysokosc: 88 };
   const karty = talia.karty.filter((k) => {
@@ -184,7 +195,11 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   });
 
   // Tytuł.
-  let tytul = u.tytul ? napis(u.tytul.tekst, u.tytul.styl, undefined, ctx.czcionki) : undefined;
+  // Pusty tytuł („bez tytułu” w edytorze) – bez paska tytułu.
+  let tytul =
+    u.tytul && u.tytul.tekst.trim()
+      ? napis(u.tytul.tekst, u.tytul.styl, undefined, ctx.czcionki)
+      : undefined;
   const obszar = {
     x: u.marginesy.lewo,
     y: u.marginesy.gora,
@@ -230,9 +245,35 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     }
   }
 
+  // Ręczne nagłówki grup (edytor kartki): pas nad siatką i odstępy przesuwające kolumny.
+  const naglowki =
+    !grupy && u.grupy && arkusz.naglowki && arkusz.naglowki.length > 0
+      ? arkusz.naglowki
+      : undefined;
+  const stylGrup = u.grupy;
+  if (naglowki && stylGrup) {
+    // Nagłówek bez tekstu i opisu to sam odstęp przed grupą – nie zajmuje pasa nad siatką.
+    for (const h of naglowki.filter((x) => x.naglowek.trim() || x.opis?.trim())) {
+      const szer = h.kolumny * slot.szerokosc;
+      const wys =
+        napis(h.naglowek, stylGrup.styl, szer, ctx.czcionki).wys +
+        napis(h.opis ?? '', stylGrup.stylOpisu, szer, ctx.czcionki).wys;
+      pas = Math.max(pas, wys + stylGrup.odstepOdKart);
+    }
+  }
+  const odstepKolumny = (s: number, kolumna: number): Mm =>
+    (naglowki ?? [])
+      .filter((h) => h.strona === s && h.kolumna <= kolumna)
+      .reduce((suma, h) => suma + (h.odstepPrzed ?? 0), 0);
+  const najwiekszyOdstep = Math.max(
+    0,
+    ...(naglowki ?? []).map((h) => odstepKolumny(h.strona, Number.MAX_SAFE_INTEGER)),
+  );
+
   const poczatek = u.poczatekSiatki ?? { x: obszar.x, y: obszar.y + pas };
   const siatka = {
-    szer: strona.szer - u.marginesy.prawo - poczatek.x,
+    // Odstępy między grupami zabierają miejsce w poziomie (najwięcej na którejkolwiek stronie).
+    szer: strona.szer - u.marginesy.prawo - poczatek.x - najwiekszyOdstep,
     wys: strona.wys - u.marginesy.dol - poczatek.y,
     slot,
   };
@@ -286,10 +327,14 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   const scenaKarty = (k: Karta) => {
     let s = pamiec.get(k.id);
     if (!s) {
-      const w = renderujKarte(szablon(k)!, k, {
-        czcionki: ctx.czcionki,
-        ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
-      });
+      let w = ctx.pamiecKart?.get(k);
+      if (!w) {
+        w = renderujKarte(szablon(k)!, k, {
+          czcionki: ctx.czcionki,
+          ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
+        });
+        ctx.pamiecKart?.set(k, w);
+      }
       for (const o of w.ostrzezenia) ostrzezenia.push(ostrzezenieKarty(k, o));
       s = w.scena;
       pamiec.set(k.id, s);
@@ -298,12 +343,14 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   };
 
   const strony: Scena[] = [];
-  for (let n = 0; n < rozmieszczenie.liczbaStron; n++) {
+  const geometriaNaglowkow: WynikArkusza['naglowki'] = [];
+  const liczbaStron = Math.max(rozmieszczenie.liczbaStron, arkusz.liczbaStron ?? 0);
+  for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
     const glify: Record<string, DefinicjaGlifu>[] = [];
     const naStronie = rozmieszczenie.karty.filter((c) => c.strona === n);
     const prostokaty = naStronie.map((c) => ({
-      x: poczatek.x + c.xRegionu + c.kolumna * slot.szerokosc,
+      x: poczatek.x + c.xRegionu + odstepKolumny(n, c.kolumna) + c.kolumna * slot.szerokosc,
       y: poczatek.y + c.rzad * slot.wysokosc,
       kolumny: c.kolumny,
       rzedy: c.rzedy,
@@ -358,6 +405,28 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         elementy.push({ typ: 'grupa', x, y: y + naglowek.wys, elementy: opis.elementy });
       }
     }
+    if (naglowki && stylGrup) {
+      for (const h of naglowki.filter((x) => x.strona === n)) {
+        const szer = h.kolumny * slot.szerokosc;
+        const naglowek = napis(h.naglowek, stylGrup.styl, szer, ctx.czcionki);
+        const opis = napis(h.opis ?? '', stylGrup.stylOpisu, szer, ctx.czcionki);
+        const x = poczatek.x + odstepKolumny(n, h.kolumna) + h.kolumna * slot.szerokosc;
+        const y = poczatek.y - pas;
+        if (h.naglowek.trim() || h.opis?.trim()) {
+          glify.push(naglowek.glify, opis.glify);
+          elementy.push({ typ: 'grupa', x, y, elementy: naglowek.elementy });
+          elementy.push({ typ: 'grupa', x, y: y + naglowek.wys, elementy: opis.elementy });
+        }
+        geometriaNaglowkow.push({
+          id: h.id,
+          strona: n,
+          x,
+          y,
+          szer,
+          wys: Math.max(pas - stylGrup.odstepOdKart, naglowek.wys + opis.wys),
+        });
+      }
+    }
     if (u.nozyczki && odcinki.length > 0) {
       const n = nozyczkiNaScenie(u.nozyczki, odcinki, pas, u.linie);
       if (n) elementy.push(...n);
@@ -378,6 +447,8 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     rozmieszczenie,
     poczatekSiatki: poczatek,
     slot,
+    odstepKolumny,
+    naglowki: geometriaNaglowkow,
     siatka: {
       kolumny: Math.floor(siatka.szer / slot.szerokosc + 1e-6),
       rzedy: rzedySiatki,

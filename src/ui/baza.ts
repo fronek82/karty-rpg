@@ -1,5 +1,4 @@
 import { BazaProjektow } from '../dane/baza';
-import { projektZPakietu } from '../dane/pakiet';
 import type { Pakiet } from '../pakiety/typy';
 
 let instancja: BazaProjektow | undefined;
@@ -16,15 +15,19 @@ async function pobierz(adres: string): Promise<Uint8Array> {
   return new Uint8Array(await odp.arrayBuffer());
 }
 
-/** Nowy projekt z pakietu wbudowanego – zapisany w bazie; zwraca id. */
+/** Nowy projekt gry (pusta kartka albo gotowy układ) – zapisany w bazie; zwraca id. */
 export async function nowyProjektZPakietu(
   pakiet: Pakiet,
+  uklad?: string,
   bazaUrl: string = import.meta.env.BASE_URL,
 ): Promise<string> {
-  const { projekt, zasoby } = await projektZPakietu(
+  // Silnik (fontkit) potrzebny do ułożenia gotowego układu – ładowany dopiero tutaj.
+  const { nowyProjektGry } = await import('../dane/nowyProjekt');
+  const { projekt, zasoby } = await nowyProjektGry(
     pakiet,
     (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
     pobierz,
+    uklad ? { uklad } : {},
   );
   await baza().zapisz(projekt, zasoby);
   return projekt.id;

@@ -20,11 +20,21 @@ export interface PodsumowanieProjektu {
   id: string;
   nazwa: string;
   zmieniono: string;
+  liczbaKart: number;
+  liczbaStron: number;
+  pakiet?: string;
+}
+
+interface WpisMiniatury {
+  id: string;
+  /** SVG pierwszej strony (bez obrazów rastrowych – adresy blob: nie przeżywają sesji). */
+  svg: string;
 }
 
 class BazaDexie extends Dexie {
   projekty!: EntityTable<WpisProjektu, 'id'>;
   zasoby!: Dexie.Table<WpisZasobu, [string, string]>;
+  miniatury!: EntityTable<WpisMiniatury, 'id'>;
 
   constructor(nazwa: string) {
     super(nazwa);
@@ -33,6 +43,12 @@ class BazaDexie extends Dexie {
     this.version(1).stores({
       projekty: 'id, zmieniono',
       zasoby: '[projektId+id], projektId',
+    });
+    // Wersja 2: miniatury pierwszej strony na liście projektów.
+    this.version(2).stores({
+      projekty: 'id, zmieniono',
+      zasoby: '[projektId+id], projektId',
+      miniatury: 'id',
     });
   }
 }
@@ -47,7 +63,31 @@ export class BazaProjektow {
 
   async lista(): Promise<PodsumowanieProjektu[]> {
     const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
-    return wpisy.map((w) => ({ id: w.id, nazwa: w.projekt.nazwa, zmieniono: w.zmieniono }));
+    return wpisy.map((w) => ({
+      id: w.id,
+      nazwa: w.projekt.nazwa,
+      zmieniono: w.zmieniono,
+      liczbaKart: w.projekt.talie.reduce((s, t) => s + t.karty.reduce((a, k) => a + k.ilosc, 0), 0),
+      liczbaStron: w.projekt.arkusze.reduce(
+        (s, a) =>
+          s +
+          Math.max(1, a.liczbaStron ?? 1, ...(a.przypiete ?? []).map((x) => (x.strona ?? 0) + 1)),
+        0,
+      ),
+      ...(w.projekt.pakiet ? { pakiet: w.projekt.pakiet } : {}),
+    }));
+  }
+
+  async zapiszMiniature(id: string, svg: string): Promise<void> {
+    await this.db.miniatury.put({ id, svg });
+  }
+
+  async usunMiniature(id: string): Promise<void> {
+    await this.db.miniatury.delete(id);
+  }
+
+  async miniatury(): Promise<Map<string, string>> {
+    return new Map((await this.db.miniatury.toArray()).map((m) => [m.id, m.svg]));
   }
 
   async istnieje(id: string): Promise<boolean> {
@@ -117,10 +157,15 @@ export class BazaProjektow {
   }
 
   async usun(id: string): Promise<void> {
-    await this.db.transaction('rw', [this.db.projekty, this.db.zasoby], async () => {
-      await this.db.zasoby.where('projektId').equals(id).delete();
-      await this.db.projekty.delete(id);
-    });
+    await this.db.transaction(
+      'rw',
+      [this.db.projekty, this.db.zasoby, this.db.miniatury],
+      async () => {
+        await this.db.zasoby.where('projektId').equals(id).delete();
+        await this.db.projekty.delete(id);
+        await this.db.miniatury.delete(id);
+      },
+    );
   }
 
   zamknij(): void {

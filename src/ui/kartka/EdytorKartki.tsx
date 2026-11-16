@@ -1,0 +1,1423 @@
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
+import {
+  dodajKarteWSlocie,
+  dodajKartke,
+  dodajNaglowek,
+  dodajStrone,
+  duplikujKarty,
+  kartyKartki,
+  kartyWObszarze,
+  liczbaStronKartki,
+  mozliweRozmiary,
+  przesunKarty,
+  usunKarty,
+  usunNaglowek,
+  usunStrone,
+  zmienNaglowek,
+  zmienRozmiarKarty,
+  type BladKartki,
+  type KartaNaKartce,
+  type KontekstKartki,
+  type Polozenie,
+} from '../../dane/kartka';
+import { zbudujArkusz, zSzarymiObrazami, type WynikArkusza } from '../../druk/arkusz';
+import { kartyOdlozone, pakietProjektu } from '../../druk/normalizacja';
+import { t, tJesliJest } from '../../i18n';
+import type { Arkusz } from '../../model/arkusz';
+import type { Projekt } from '../../model/projekt';
+import {
+  czyKontener,
+  korzenKarty,
+  type Karta,
+  type PoleObraz,
+  type Talia,
+  type Wezel,
+} from '../../model/szablon';
+import { gry } from '../../pakiety/gry';
+import type { Pakiet, TypKarty } from '../../pakiety/typy';
+import type { Ostrzezenie } from '../../silnik/karta';
+import type { Scena } from '../../silnik/scena';
+import { scenaDoSvg } from '../../silnik/svg';
+import { baza } from '../baza';
+import { tekstOstrzezeniaArkusza } from '../ostrzezenia';
+import { pdfWWatku } from '../pdfWWatku';
+import { nazwaPliku, zapiszPlik } from '../pliki';
+import { useZSzarymiObrazami } from '../szareObrazy';
+import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
+import type { ZasobyPakietu } from '../zasoby';
+import { geometria, slotPodPunktem, stylMm, stylProstokata, type Geometria } from './geometria';
+import { MenuTypu } from './MenuTypu';
+import { skalaZKolka, zaokr, zmienObrazKarty } from './obrazKarty';
+import { PanelKart, typDlaSzablonu } from './PanelKart';
+import { PanelNaglowka } from './PanelNaglowka';
+import { PanelUstawien } from './PanelUstawien';
+
+type Zaznaczenie =
+  | { rodzaj: 'karty'; arkuszId: string; ids: string[] }
+  | { rodzaj: 'naglowek'; arkuszId: string; id: string }
+  | { rodzaj: 'ustawienia'; arkuszId: string }
+  | undefined;
+
+type Gest =
+  | {
+      rodzaj: 'karty';
+      arkuszId: string;
+      stronaStart: number;
+      slotStart: { kolumna: number; rzad: number };
+      ids: string[];
+      klik: string;
+      x0: number;
+      y0: number;
+      ruch: boolean;
+      o?: Polozenie;
+      blad?: BladKartki;
+      /** Dotyk: przeciąganie dopiero po przytrzymaniu; wcześniejszy ruch przewija stronę. */
+      dotyk?: { t0: number; x: number; y: number; przewijanie: boolean };
+    }
+  | {
+      rodzaj: 'obszar';
+      arkuszId: string;
+      strona: number;
+      start?: { kolumna: number; rzad: number };
+      koniec?: { kolumna: number; rzad: number };
+      slot?: { kolumna: number; rzad: number };
+      shift: boolean;
+      x0: number;
+      y0: number;
+      ruch: boolean;
+      dotyk?: boolean;
+    }
+  | {
+      rodzaj: 'obraz';
+      arkuszId: string;
+      taliaId: string;
+      kartaId: string;
+      poleId: string;
+      x0: number;
+      y0: number;
+      mmNaPx: number;
+    };
+
+interface Kartka {
+  arkusz: Arkusz;
+  talia: Talia;
+  wynik?: WynikArkusza;
+  geometria?: Geometria;
+  svg: string[];
+  blad?: string;
+}
+
+const PROG_RUCHU = 4;
+/** Na dotyku karta „podnosi się” po tylu ms przytrzymania (wcześniejszy ruch przewija). */
+const PRZYTRZYMANIE_MS = 300;
+
+/** Pakiet gry projektu (typy kart, gotowe układy) – ładowany z rejestru gier. */
+function usePakiet(id: string | undefined): Pakiet | undefined {
+  const [pakiet, ustawPakiet] = useState<{ id: string; p: Pakiet }>();
+  useEffect(() => {
+    const gra = gry.find((g) => g.id === id);
+    if (!gra?.pakiet) return;
+    let aktywny = true;
+    void gra.pakiet().then((p) => aktywny && ustawPakiet({ id: gra.id, p }));
+    return () => {
+      aktywny = false;
+    };
+  }, [id]);
+  return pakiet && pakiet.id === id ? pakiet.p : undefined;
+}
+
+function poleObrazu(k: Karta, z: ZasobyPakietu): PoleObraz | undefined {
+  const s = z.szablony.get(k.szablonId);
+  if (!s) return undefined;
+  const szukaj = (w: Wezel): PoleObraz | undefined =>
+    czyKontener(w) ? w.dzieci.map(szukaj).find(Boolean) : w.typ === 'obraz' ? w : undefined;
+  return szukaj(korzenKarty(s, k));
+}
+
+/** Fokus na elemencie po najbliższym odświeżeniu widoku (np. nowa karta, slot po zamknięciu menu). */
+const fokusPo = (selektor: string) =>
+  requestAnimationFrame(() => document.querySelector<HTMLElement>(selektor)?.focus());
+
+const wPolu = (e: Element | null) =>
+  !!e &&
+  (e.matches('input, textarea, select, [contenteditable="true"]') || !!e.closest('[role="menu"]'));
+
+/** Edytor kartki: strony A4 z siatką slotów, karty klikane, przeciągane i edytowane w panelu. */
+export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
+  const { projekt, zmien } = edycja;
+  const pakiet = usePakiet(pakietProjektu(projekt));
+  const zasoby = useZSzarymiObrazami(edycja.zasoby.zasoby, projekt);
+  const [zazn, ustawZaznSurowe] = useState<Zaznaczenie>();
+  const [menu, ustawMenu] = useState<{ arkuszId: string } & Polozenie>();
+  const [gest, ustawGest] = useState<Gest>();
+  const gestRef = useRef<Gest | undefined>(undefined);
+  const [toast, ustawToastSurowy] = useState<{ tekst: string; cofnij?: boolean; wersja: number }>();
+  /** Komunikat o zmianie właśnie wykonanej (`zmian` – ile zmian dokumentu ją tworzy). */
+  const ustawToast = useCallback(
+    (x: { tekst: string; cofnij?: boolean } | undefined, zmian = 1) =>
+      ustawToastSurowy(x && { ...x, wersja: edycja.wersja + (x.cofnij ? zmian : 0) }),
+    [edycja.wersja],
+  );
+  const [bladUkladu, ustawBladUkladu] = useState<string>();
+  /** Zmiana zaznaczenia czyści komunikat o odrzuconej zmianie układu (należał do innego panelu). */
+  const ustawZazn = useCallback((z: Zaznaczenie) => {
+    ustawZaznSurowe(z);
+    ustawBladUkladu(undefined);
+  }, []);
+  const [statusPdf, ustawStatusPdf] = useState('');
+  const kartkiRef = useRef<HTMLDivElement>(null);
+
+  // --- Budowa stron (ta sama scena co w PDF), z pamięcią kart i kartek między renderami.
+  // Nowa pamięć kart przy każdej zmianie zasobów (czcionki, obrazy, szablony).
+  const pamiecKart = useMemo(
+    () => (zasoby ? new WeakMap<Karta, { scena: Scena; ostrzezenia: Ostrzezenie[] }>() : undefined),
+    [zasoby],
+  );
+  // Pamięć zbudowanych kartek (po id – tylko ostatnia wersja, historia nie trzyma starych SVG);
+  // zmiana jednej kartki nie buduje pozostałych.
+  const [pamiecKartek] = useState(
+    () => new Map<string, { arkusz: Arkusz; talia: Talia; zasoby: unknown; k: Kartka }>(),
+  );
+  const arkusze = useDeferredValue(projekt.arkusze);
+  const talie = useDeferredValue(projekt.talie);
+  const kartki = useMemo((): Kartka[] => {
+    if (!zasoby || !pamiecKart) return [];
+    return arkusze.map((arkusz) => {
+      const talia = talie.find((x) => x.id === arkusz.taliaId)!;
+      const z = pamiecKartek.get(arkusz.id);
+      if (z && z.arkusz === arkusz && z.talia === talia && z.zasoby === zasoby) return z.k;
+      let k: Kartka;
+      try {
+        const wynik = zbudujArkusz(arkusz, talia, {
+          czcionki: zasoby.czcionki,
+          szablony: zasoby.szablony,
+          obraz: (id) => zasoby.obrazy.get(id)?.info,
+          pamiecKart,
+        });
+        k = {
+          arkusz,
+          talia,
+          wynik,
+          ...(geometria(wynik) ? { geometria: geometria(wynik)! } : {}),
+          svg: wynik.strony.map((s, i) =>
+            scenaDoSvg(arkusz.ustawienia.czarnoBialy ? zSzarymiObrazami(s) : s, {
+              adresObrazu: (id) => zasoby.obrazy.get(id)?.adres,
+              przedrostekId: `${arkusz.id}-s${i}-`,
+              atrybuty: { 'aria-hidden': 'true', class: 'svg-strony' },
+            }),
+          ),
+        };
+      } catch (e) {
+        k = { arkusz, talia, svg: [], blad: e instanceof Error ? e.message : String(e) };
+      }
+      pamiecKartek.set(arkusz.id, { arkusz, talia, zasoby, k });
+      return k;
+    });
+  }, [arkusze, talie, zasoby, pamiecKart, pamiecKartek]);
+
+  // Siatka z BIEŻĄCYCH ustawień (podgląd stron jest odroczony): budowa bez kart – tania.
+  const siatkiNaZywo = useMemo(() => {
+    const m = new Map<string, { kolumny: number; rzedy: number }>();
+    if (!zasoby) return m;
+    for (const a of projekt.arkusze) {
+      if (!a.ustawienia.slot) continue;
+      try {
+        const w = zbudujArkusz(
+          { ...a, przypiete: [], liczbaStron: 1 },
+          { id: a.taliaId, nazwa: '', karty: [] },
+          { czcionki: zasoby.czcionki, szablony: zasoby.szablony },
+        );
+        m.set(a.id, { kolumny: w.siatka.kolumny, rzedy: w.siatka.rzedy });
+      } catch {
+        // Błąd układu pokaże podgląd strony.
+      }
+    }
+    return m;
+  }, [projekt.arkusze, zasoby]);
+
+  const kontekst = useCallback(
+    (arkuszId: string): KontekstKartki | undefined => {
+      const siatka =
+        siatkiNaZywo.get(arkuszId) ?? kartki.find((x) => x.arkusz.id === arkuszId)?.wynik?.siatka;
+      return siatka && zasoby ? { szablony: zasoby.szablony, siatka } : undefined;
+    },
+    [kartki, zasoby, siatkiNaZywo],
+  );
+
+  // Karty na żywo (z bieżącego projektu – przeciąganie i zaznaczenie bez opóźnienia).
+  const kartyNaKartkach = useMemo(() => {
+    const m = new Map<string, KartaNaKartce[]>();
+    if (zasoby)
+      for (const a of projekt.arkusze) m.set(a.id, kartyKartki(projekt, a.id, zasoby.szablony));
+    return m;
+  }, [projekt, zasoby]);
+
+  const zaznaczoneKarty = useMemo(() => {
+    if (zazn?.rodzaj !== 'karty') return [];
+    const ids = new Set(zazn.ids);
+    return (kartyNaKartkach.get(zazn.arkuszId) ?? []).filter((k) => ids.has(k.karta.id));
+  }, [zazn, kartyNaKartkach]);
+
+  // Zaznaczenie wskazujące usunięte elementy (np. po „Cofnij”) – czyścimy.
+  const zaznaczenieAktualne =
+    zazn?.rodzaj === 'karty'
+      ? zaznaczoneKarty.length > 0
+      : zazn?.rodzaj === 'naglowek'
+        ? !!projekt.arkusze
+            .find((a) => a.id === zazn.arkuszId)
+            ?.naglowki?.some((h) => h.id === zazn.id)
+        : true;
+  const aktywne = zaznaczenieAktualne ? zazn : undefined;
+
+  /**
+   * Zmiana wpływająca na siatkę (tytuł, papier, nagłówki, czcionki): odrzucona, gdy karty
+   * przestałyby się mieścić albo zaczęły nachodzić na siebie.
+   */
+  const zmienUklad = useCallback(
+    (f: (p: Projekt) => Projekt, klucz?: string): boolean => {
+      if (!zasoby) return false;
+      const nowy = f(projekt);
+      // Sprawdzenie z NOWYMI rolami czcionek (tymczasowo na wspólnym rejestrze – przywracane).
+      const z = nowy.role === projekt.role ? zasoby : edycja.zasoby.zRolami(nowy.role).zasoby;
+      let ok = true;
+      try {
+        for (const a of nowy.arkusze) {
+          if (
+            projekt.arkusze.includes(a) &&
+            nowy.talie === projekt.talie &&
+            nowy.role === projekt.role
+          )
+            continue;
+          const talia = nowy.talie.find((x) => x.id === a.taliaId)!;
+          const w = zbudujArkusz(a, talia, {
+            czcionki: z.czcionki,
+            szablony: z.szablony,
+            obraz: (id) => z.obrazy.get(id)?.info,
+            // Zapamiętane karty są wyrenderowane starymi czcionkami – przy zmianie ról bez pamięci.
+            ...(nowy.role === projekt.role && pamiecKart ? { pamiecKart } : {}),
+          });
+          const przypietych = (a.przypiete ?? []).length;
+          if (
+            w.rozmieszczenie.karty.length < przypietych ||
+            w.ostrzezenia.some((o) =>
+              /^(przypiecie-|siatka-za-mala|karta-wieksza-niz-strona)/.test(o.komunikat),
+            ) ||
+            (a.naglowki ?? []).some((h) => h.kolumna + h.kolumny > w.siatka.kolumny)
+          ) {
+            ok = false;
+            break;
+          }
+        }
+      } finally {
+        if (nowy.role !== projekt.role) edycja.zasoby.zRolami(projekt.role);
+      }
+      if (!ok) {
+        ustawBladUkladu(t('kartka.zmianaNieMiesci'));
+        return false;
+      }
+      ustawBladUkladu(undefined);
+      zmien(f, klucz ? { klucz: `uklad:${klucz}` } : {});
+      return true;
+    },
+    [projekt, zasoby, zmien, pamiecKart, edycja.zasoby],
+  );
+
+  // --- Akcje na zaznaczeniu.
+  const usunZaznaczone = useCallback(() => {
+    if (aktywne?.rodzaj === 'naglowek') {
+      if (zmienUklad((p) => usunNaglowek(p, aktywne.arkuszId, aktywne.id))) {
+        ustawZazn(undefined);
+        ustawToast({ tekst: t('kartka.usunietoNaglowek'), cofnij: true });
+      }
+      return;
+    }
+    if (aktywne?.rodzaj !== 'karty' || zaznaczoneKarty.length === 0) return;
+    const n = zaznaczoneKarty.length;
+    const nazwa = zaznaczoneKarty[0]!.karta.dane.nazwa;
+    zmien((p) => usunKarty(p, aktywne.arkuszId, aktywne.ids));
+    ustawZazn(undefined);
+    ustawToast({
+      tekst:
+        n === 1
+          ? t('kartka.usunietoKarte', { nazwa: nazwa || t('karta.bezNazwy') })
+          : t('kartka.usunietoKarty', { liczba: n }),
+      cofnij: true,
+    });
+  }, [aktywne, zaznaczoneKarty, zmien, zmienUklad, ustawZazn, ustawToast]);
+
+  const duplikuj = useCallback(
+    (n: number) => {
+      if (aktywne?.rodzaj !== 'karty') return;
+      const ctx = kontekst(aktywne.arkuszId);
+      if (!ctx) return;
+      const ids = zaznaczoneKarty.map((k) => k.karta.id);
+      const { kopie } = duplikujKarty(projekt, aktywne.arkuszId, ids, n, ctx);
+      zmien((p) => duplikujKarty(p, aktywne.arkuszId, ids, n, ctx).projekt);
+      if (kopie.length) ustawZazn({ rodzaj: 'karty', arkuszId: aktywne.arkuszId, ids: kopie });
+      ustawToast({ tekst: t('kartka.zduplikowano', { liczba: kopie.length }), cofnij: true });
+    },
+    [aktywne, kontekst, projekt, zaznaczoneKarty, zmien, ustawZazn, ustawToast],
+  );
+
+  const przesunZaznaczone = useCallback(
+    (o: Polozenie) => {
+      if (aktywne?.rodzaj !== 'karty') return;
+      const ctx = kontekst(aktywne.arkuszId);
+      if (!ctx) return;
+      const w = przesunKarty(projekt, aktywne.arkuszId, aktywne.ids, o, ctx);
+      if ('blad' in w) return;
+      zmien((p) => {
+        const x = przesunKarty(p, aktywne.arkuszId, aktywne.ids, o, ctx);
+        return 'projekt' in x ? x.projekt : p;
+      });
+      // Przycisk karty jest renderowany od nowa w nowym miejscu – fokus idzie za nią.
+      if (document.activeElement?.matches('.karta-na-kartce'))
+        fokusPo(`[data-karta="${aktywne.ids[0]}"]`);
+    },
+    [aktywne, kontekst, projekt, zmien],
+  );
+
+  // --- Skróty klawiszowe.
+  useEffect(() => {
+    const klawisz = (e: KeyboardEvent) => {
+      if (wPolu(document.activeElement)) return;
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) edycja.ponow();
+        else edycja.cofnij();
+      } else if (ctrl && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        edycja.ponow();
+      } else if (ctrl && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        duplikuj(1);
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (aktywne?.rodzaj === 'karty' || aktywne?.rodzaj === 'naglowek') {
+          e.preventDefault();
+          usunZaznaczone();
+        }
+      } else if (e.key === 'Escape') {
+        ustawMenu(undefined);
+        ustawZazn(undefined);
+      } else if (
+        aktywne?.rodzaj === 'karty' &&
+        e.key.startsWith('Arrow') &&
+        !document.activeElement?.classList.contains('slot')
+      ) {
+        e.preventDefault();
+        const o = { strona: 0, kolumna: 0, rzad: 0 };
+        if (e.key === 'ArrowLeft') o.kolumna = -1;
+        if (e.key === 'ArrowRight') o.kolumna = 1;
+        if (e.key === 'ArrowUp') o.rzad = -1;
+        if (e.key === 'ArrowDown') o.rzad = 1;
+        przesunZaznaczone(o);
+      }
+    };
+    window.addEventListener('keydown', klawisz);
+    return () => window.removeEventListener('keydown', klawisz);
+  }, [aktywne, duplikuj, edycja, przesunZaznaczone, usunZaznaczone, ustawZazn]);
+
+  // Miniatura pierwszej strony na liście projektów (bez obrazów – adresy blob: są chwilowe).
+  const pierwszaStrona = kartki[0]?.wynik?.strony[0];
+  useEffect(() => {
+    if (!pierwszaStrona) return;
+    const z = setTimeout(() => {
+      void baza()
+        .zapiszMiniature(projekt.id, scenaDoSvg(pierwszaStrona, { przedrostekId: 'min-' }))
+        .catch(() => undefined);
+    }, 1500);
+    return () => clearTimeout(z);
+  }, [pierwszaStrona, projekt.id]);
+  // …i od razu przy wyjściu z edytora (zmiana tuż przed wyjściem nie czeka 1,5 s).
+  const ostatniaStrona = useRef(pierwszaStrona);
+  useEffect(() => {
+    ostatniaStrona.current = pierwszaStrona;
+  });
+  const idProjektu = projekt.id;
+  useEffect(
+    () => () => {
+      const s = ostatniaStrona.current;
+      if (s)
+        void baza()
+          .zapiszMiniature(idProjektu, scenaDoSvg(s, { przedrostekId: 'min-' }))
+          .catch(() => undefined);
+    },
+    [idProjektu],
+  );
+
+  // Komunikat znika sam po chwili.
+  useEffect(() => {
+    if (!toast) return;
+    const z = setTimeout(() => ustawToastSurowy(undefined), 8000);
+    return () => clearTimeout(z);
+  }, [toast]);
+  // „Cofnij” w komunikacie dotyczy tylko zmiany, o której mówi – po kolejnej zmianie komunikat znika.
+  const toastAktualny = toast && toast.wersja === edycja.wersja ? toast : undefined;
+
+  // --- Gesty myszy (delegacja zdarzeń na warstwach stron).
+  const stronaPod = (x: number, y: number) => {
+    const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('.strona-kartki');
+    if (!el) return undefined;
+    return { el, arkuszId: el.dataset.arkusz!, strona: Number(el.dataset.strona) };
+  };
+  const mmNaStronie = (el: HTMLElement, g: Geometria, x: number, y: number) => {
+    const r = el.getBoundingClientRect();
+    return { x: ((x - r.left) / r.width) * g.szer, y: ((y - r.top) / r.height) * g.wys };
+  };
+
+  // Aktywne nasłuchy gestu na window – zdejmowane także przy odmontowaniu edytora.
+  const nasluchy = useRef<
+    { ruch: (e: PointerEvent) => void; koniec: () => void; anuluj: () => void } | undefined
+  >(undefined);
+  useEffect(
+    () => () => {
+      const n = nasluchy.current;
+      if (!n) return;
+      window.removeEventListener('pointermove', n.ruch);
+      window.removeEventListener('pointerup', n.koniec);
+      window.removeEventListener('pointercancel', n.anuluj);
+    },
+    [],
+  );
+
+  const ustawGestOba = (g: Gest | undefined) => {
+    gestRef.current = g;
+    ustawGest(g);
+  };
+
+  const ruchGestu = (e: PointerEvent) => {
+    const g = gestRef.current;
+    if (!g) return;
+    if (g.rodzaj === 'obraz') {
+      const dx = (e.clientX - g.x0) * g.mmNaPx;
+      const dy = (e.clientY - g.y0) * g.mmNaPx;
+      if (Math.abs(dx) + Math.abs(dy) < 0.05) return;
+      gestRef.current = { ...g, x0: e.clientX, y0: e.clientY };
+      zmien(
+        (p) =>
+          zmienObrazKarty(p, g.taliaId, g.kartaId, g.poleId, (u) => ({
+            ...u,
+            przesuniecie: {
+              x: zaokr((u.przesuniecie?.x ?? 0) + dx),
+              y: zaokr((u.przesuniecie?.y ?? 0) + dy),
+            },
+          })),
+        { klucz: `obraz:${g.kartaId}:przesun` },
+      );
+      return;
+    }
+    const przesuniety = Math.hypot(e.clientX - g.x0, e.clientY - g.y0) > PROG_RUCHU;
+    if (g.rodzaj === 'karty' && g.dotyk && !g.ruch) {
+      // Dotyk: ruch przed przytrzymaniem przewija stronę (karta ma touch-action: none).
+      if (g.dotyk.przewijanie || (przesuniety && e.timeStamp - g.dotyk.t0 < PRZYTRZYMANIE_MS)) {
+        window.scrollBy(g.dotyk.x - e.clientX, g.dotyk.y - e.clientY);
+        gestRef.current = {
+          ...g,
+          dotyk: { ...g.dotyk, x: e.clientX, y: e.clientY, przewijanie: true },
+        };
+        return;
+      }
+    }
+    if (g.rodzaj === 'obszar' && g.dotyk && przesuniety) {
+      // Dotyk na pustym miejscu przewija stronę (przeglądarka) – bez zaznaczania prostokątem.
+      zakonczGest(true);
+      return;
+    }
+    const ruch = g.ruch || przesuniety;
+    const k = kartki.find((x) => x.arkusz.id === g.arkuszId);
+    const s = stronaPod(e.clientX, e.clientY);
+    if (g.rodzaj === 'karty') {
+      if (!ruch || !k?.geometria) return ustawGestOba({ ...g, ruch });
+      if (!s || s.arkuszId !== g.arkuszId) return ustawGestOba({ ...g, ruch, blad: 'poza-siatka' });
+      const pt = mmNaStronie(s.el, k.geometria, e.clientX, e.clientY);
+      const slot = slotPodPunktem(k.geometria, s.strona, pt.x, pt.y, true)!;
+      const o = {
+        strona: s.strona - g.stronaStart,
+        kolumna: slot.kolumna - g.slotStart.kolumna,
+        rzad: slot.rzad - g.slotStart.rzad,
+      };
+      const ctx = kontekst(g.arkuszId);
+      const w = ctx && przesunKarty(projekt, g.arkuszId, g.ids, o, ctx);
+      const blad = !w ? 'poza-siatka' : 'blad' in w ? w.blad : undefined;
+      ustawGestOba({ ...g, ruch, o, ...(blad ? { blad } : { blad: undefined }) });
+    } else {
+      if (!k?.geometria) return;
+      let koniec = g.koniec;
+      if (s && s.arkuszId === g.arkuszId && s.strona === g.strona) {
+        const pt = mmNaStronie(s.el, k.geometria, e.clientX, e.clientY);
+        koniec = slotPodPunktem(k.geometria, g.strona, pt.x, pt.y, true);
+      }
+      ustawGestOba({ ...g, ruch, ...(koniec ? { koniec } : {}) });
+    }
+  };
+
+  /** Zdejmuje nasłuchy gestu; `przerwij` – bez skutków (np. pointercancel, odmontowanie). */
+  const zakonczGest = (przerwij = false) => {
+    const n = nasluchy.current;
+    if (n) {
+      window.removeEventListener('pointermove', n.ruch);
+      window.removeEventListener('pointerup', n.koniec);
+      window.removeEventListener('pointercancel', n.anuluj);
+      nasluchy.current = undefined;
+    }
+    if (przerwij) ustawGestOba(undefined);
+  };
+
+  const koniecGestu = () => {
+    zakonczGest();
+    const g = gestRef.current;
+    ustawGestOba(undefined);
+    if (!g || g.rodzaj === 'obraz') return;
+    if (g.rodzaj === 'karty') {
+      if (g.ruch && g.o && !g.blad && (g.o.strona || g.o.kolumna || g.o.rzad)) {
+        const ctx = kontekst(g.arkuszId);
+        if (ctx) {
+          zmien((p) => {
+            const x = przesunKarty(p, g.arkuszId, g.ids, g.o!, ctx);
+            return 'projekt' in x ? x.projekt : p;
+          });
+        }
+      } else if (!g.ruch && g.ids.length > 1) {
+        ustawZazn({ rodzaj: 'karty', arkuszId: g.arkuszId, ids: [g.klik] });
+      }
+      return;
+    }
+    if (!g.ruch) {
+      // Klik w pusty slot – menu typu karty; obok siatki – odznaczenie.
+      ustawZazn(undefined);
+      if (g.slot) ustawMenu({ arkuszId: g.arkuszId, strona: g.strona, ...g.slot });
+      return;
+    }
+    if (g.start && g.koniec) {
+      const ids = kartyWObszarze(
+        kartyNaKartkach.get(g.arkuszId) ?? [],
+        g.strona,
+        g.start,
+        g.koniec,
+      );
+      const poprzednie =
+        g.shift && aktywne?.rodzaj === 'karty' && aktywne.arkuszId === g.arkuszId
+          ? aktywne.ids
+          : [];
+      const wszystkie = [...new Set([...poprzednie, ...ids])];
+      ustawZazn(
+        wszystkie.length ? { rodzaj: 'karty', arkuszId: g.arkuszId, ids: wszystkie } : undefined,
+      );
+    }
+  };
+
+  const poczatekGestu = (e: React.PointerEvent, k: Kartka, strona: number) => {
+    if (e.button !== 0 || !k.geometria || !zasoby) return;
+    const cel = e.target as HTMLElement;
+    if (cel.closest('.pasek-karty, .menu-typu, .usun-strone')) return;
+    ustawMenu(undefined);
+    const stronaEl = e.currentTarget.closest<HTMLElement>('.strona-kartki')!;
+    const pt = mmNaStronie(stronaEl, k.geometria, e.clientX, e.clientY);
+    const kartaEl = cel.closest<HTMLElement>('[data-karta]');
+    const naglowekEl = cel.closest<HTMLElement>('[data-naglowek]');
+    if (naglowekEl) {
+      ustawZazn({ rodzaj: 'naglowek', arkuszId: k.arkusz.id, id: naglowekEl.dataset.naglowek! });
+      return;
+    }
+    if (kartaEl) {
+      e.preventDefault();
+      const id = kartaEl.dataset.karta!;
+      const obecne =
+        aktywne?.rodzaj === 'karty' && aktywne.arkuszId === k.arkusz.id ? aktywne.ids : [];
+      if (e.shiftKey) {
+        const ids = obecne.includes(id) ? obecne.filter((x) => x !== id) : [...obecne, id];
+        ustawZazn(ids.length ? { rodzaj: 'karty', arkuszId: k.arkusz.id, ids } : undefined);
+        return;
+      }
+      const ids = obecne.includes(id) ? obecne : [id];
+      ustawZazn({ rodzaj: 'karty', arkuszId: k.arkusz.id, ids });
+      const karta = (kartyNaKartkach.get(k.arkusz.id) ?? []).find((x) => x.karta.id === id)?.karta;
+      const pole = karta && poleObrazu(karta, zasoby);
+      if (e.altKey && karta && pole && ids.length === 1) {
+        ustawGestOba({
+          rodzaj: 'obraz',
+          arkuszId: k.arkusz.id,
+          taliaId: k.talia.id,
+          kartaId: id,
+          poleId: pole.id,
+          x0: e.clientX,
+          y0: e.clientY,
+          mmNaPx: k.geometria.szer / stronaEl.getBoundingClientRect().width,
+        });
+      } else {
+        ustawGestOba({
+          rodzaj: 'karty',
+          arkuszId: k.arkusz.id,
+          stronaStart: strona,
+          slotStart: slotPodPunktem(k.geometria, strona, pt.x, pt.y, true)!,
+          ids,
+          klik: id,
+          x0: e.clientX,
+          y0: e.clientY,
+          ruch: false,
+          ...(e.pointerType === 'touch'
+            ? { dotyk: { t0: e.timeStamp, x: e.clientX, y: e.clientY, przewijanie: false } }
+            : {}),
+        });
+      }
+    } else {
+      const slotEl = cel.closest<HTMLElement>('[data-slot]');
+      const slot = slotEl ? slotEl.dataset.slot!.split(',').map(Number) : undefined;
+      const start = slotPodPunktem(k.geometria, strona, pt.x, pt.y, true);
+      ustawGestOba({
+        rodzaj: 'obszar',
+        arkuszId: k.arkusz.id,
+        strona,
+        ...(start ? { start, koniec: start } : {}),
+        ...(slot ? { slot: { kolumna: slot[0]!, rzad: slot[1]! } } : {}),
+        shift: e.shiftKey,
+        x0: e.clientX,
+        y0: e.clientY,
+        ruch: false,
+        ...(e.pointerType === 'touch' ? { dotyk: true } : {}),
+      });
+    }
+    zakonczGest();
+    nasluchy.current = { ruch: ruchGestu, koniec: koniecGestu, anuluj: () => zakonczGest(true) };
+    window.addEventListener('pointermove', ruchGestu);
+    window.addEventListener('pointerup', koniecGestu);
+    window.addEventListener('pointercancel', nasluchy.current.anuluj);
+  };
+
+  // Kółko myszy nad zaznaczoną kartą z ilustracją – skala ilustracji.
+  const kolkoRef = useRef<(e: WheelEvent) => void>(() => undefined);
+  useEffect(() => {
+    kolkoRef.current = (e: WheelEvent) => {
+      const el = (e.target as HTMLElement).closest<HTMLElement>('[data-karta]');
+      if (
+        !el ||
+        aktywne?.rodzaj !== 'karty' ||
+        aktywne.ids.length !== 1 ||
+        aktywne.ids[0] !== el.dataset.karta ||
+        !zasoby
+      )
+        return;
+      const k = zaznaczoneKarty[0];
+      const pole = k && poleObrazu(k.karta, zasoby);
+      const talia = projekt.arkusze.find((a) => a.id === aktywne.arkuszId)?.taliaId;
+      if (!k || !pole || !talia) return;
+      e.preventDefault();
+      zmien(
+        (p) =>
+          zmienObrazKarty(p, talia, k.karta.id, pole.id, (u) => ({
+            ...u,
+            skala: skalaZKolka(u.skala ?? 1, e.deltaY),
+          })),
+        {
+          klucz: `obraz:${k.karta.id}:skala`,
+        },
+      );
+    };
+  });
+  useEffect(() => {
+    const el = kartkiRef.current;
+    if (!el) return;
+    const f = (e: WheelEvent) => kolkoRef.current(e);
+    el.addEventListener('wheel', f, { passive: false });
+    return () => el.removeEventListener('wheel', f);
+  }, []);
+
+  // --- Dodawanie karty z menu.
+  const dodajZMenu = (typ: TypKarty, wariant: number) => {
+    if (!menu) return;
+    const ctx = kontekst(menu.arkuszId);
+    if (!ctx) return;
+    const w = typ.warianty[wariant]!;
+    const opis = {
+      szablonId: w.szablonId,
+      rozmiary: typ.rozmiary,
+      ...(w.dane ? { dane: w.dane } : {}),
+    };
+    const proba = dodajKarteWSlocie(projekt, menu.arkuszId, menu, opis, ctx);
+    if ('blad' in proba) return;
+    zmien((p) => {
+      const x = dodajKarteWSlocie(p, menu.arkuszId, menu, opis, ctx);
+      return 'projekt' in x ? x.projekt : p;
+    });
+    ustawZazn({ rodzaj: 'karty', arkuszId: menu.arkuszId, ids: [proba.kartaId] });
+    ustawMenu(undefined);
+    fokusPo(`[data-karta="${proba.kartaId}"]`);
+  };
+  // Przycisk „Rozmiar” na pasku nad kartą: następny (cyklicznie) rozmiar typu, który się mieści.
+  const nastepnyRozmiar = (() => {
+    const jedna = aktywne?.rodzaj === 'karty' && zaznaczoneKarty.length === 1 && zaznaczoneKarty[0];
+    if (!jedna) return undefined;
+    const rozmiary = typDlaSzablonu(pakiet, jedna.karta.szablonId)?.typ.rozmiary ?? [];
+    const ctx = kontekst(aktywne.arkuszId);
+    if (rozmiary.length < 2 || !ctx) return undefined;
+    const mozliwe = mozliweRozmiary(projekt, aktywne.arkuszId, jedna.karta.id, rozmiary, ctx);
+    const i = rozmiary.findIndex((r) => r.kolumny === jedna.kolumny && r.rzedy === jedna.rzedy);
+    for (let d = 1; d < rozmiary.length; d++) {
+      const j = (i + d) % rozmiary.length;
+      const r = rozmiary[j]!;
+      if (!mozliwe[j]) continue;
+      return {
+        etykieta: t('kartka.rozmiarNastepny', {
+          rozmiar: `${r.kolumny}×${r.rzedy}${r.nazwa ? ` ${r.nazwa}` : ''}`,
+        }),
+        zmien: () =>
+          zmien((p) => {
+            const x = zmienRozmiarKarty(p, aktywne.arkuszId, jedna.karta.id, r, ctx);
+            return 'projekt' in x ? x.projekt : p;
+          }),
+      };
+    }
+    return undefined;
+  })();
+  const zamknijMenu = () => {
+    if (!menu) return;
+    ustawMenu(undefined);
+    fokusPo(
+      `[data-arkusz="${menu.arkuszId}"][data-strona="${menu.strona}"] [data-slot="${menu.kolumna},${menu.rzad}"]`,
+    );
+  };
+
+  const pobierzPdf = async () => {
+    if (!zasoby) return;
+    ustawStatusPdf(t('arkusze.generowanie'));
+    try {
+      const bajty = await pdfWWatku({
+        tytul: projekt.nazwa,
+        arkusze: projekt.arkusze,
+        talie: projekt.talie,
+        szablony: [...zasoby.szablony.values()],
+        czcionki: zasoby.plikiCzcionek,
+        role: zasoby.role,
+        ...(zasoby.zapasowa !== undefined ? { zapasowa: zasoby.zapasowa } : {}),
+        obrazy: [...zasoby.obrazy].map(([id, o]) => ({
+          id,
+          info: o.info,
+          dane: o.dane,
+          format: o.format,
+        })),
+      });
+      zapiszPlik(bajty, 'application/pdf', nazwaPliku(projekt.nazwa, '.pdf'));
+      ustawStatusPdf(t('arkusze.pdfGotowy'));
+    } catch (e) {
+      ustawStatusPdf(
+        t('kartka.bladPdf', { szczegoly: e instanceof Error ? e.message : String(e) }),
+      );
+    }
+  };
+
+  // --- Panel boczny.
+  const arkuszZazn = aktywne && projekt.arkusze.find((a) => a.id === aktywne.arkuszId);
+  const nowaKartka = pakiet
+    ? () => {
+        const nazwa = t('kartka.nazwaKartki', { numer: projekt.arkusze.length + 1 });
+        const w = dodajKartke(projekt, pakiet.nowaKartka, nazwa);
+        zmien((p) => dodajKartke(p, pakiet.nowaKartka, nazwa).projekt);
+        ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
+      }
+    : undefined;
+  let panel: React.ReactNode;
+  if (aktywne?.rodzaj === 'karty' && arkuszZazn && kontekst(arkuszZazn.id)) {
+    const ctx = kontekst(arkuszZazn.id)!;
+    const naStronie = zaznaczoneKarty.filter((k) => k.strona === zaznaczoneKarty[0]?.strona);
+    const od = Math.min(...naStronie.map((k) => k.kolumna));
+    const do_ = Math.max(...naStronie.map((k) => k.kolumna + k.kolumny));
+    const mozeNaglowek = !!arkuszZazn.ustawienia.grupy && naStronie.length > 0;
+    panel = (
+      <PanelKart
+        key={aktywne.ids.join(',')}
+        edycja={edycja}
+        arkusz={arkuszZazn}
+        karty={zaznaczoneKarty}
+        pakiet={pakiet}
+        ctx={ctx}
+        duplikuj={duplikuj}
+        usun={usunZaznaczone}
+        zamknij={() => ustawZazn(undefined)}
+        ostrzezenia={(kartki.find((x) => x.arkusz.id === arkuszZazn.id)?.wynik?.ostrzezenia ?? [])
+          .filter((o) => o.kartaId && aktywne.ids.includes(o.kartaId))
+          .map((o) => tekstOstrzezeniaArkusza(o))}
+        {...(mozeNaglowek
+          ? {
+              dodajNaglowek: () => {
+                const strona = naStronie[0]!.strona;
+                const w = dodajNaglowek(
+                  projekt,
+                  arkuszZazn.id,
+                  { strona, kolumna: od, kolumny: do_ - od, naglowek: t('kartka.nowaGrupa') },
+                  ctx,
+                );
+                if ('blad' in w) {
+                  ustawToast({ tekst: t('kartka.naglowekKoliduje') });
+                  return;
+                }
+                const opis = {
+                  strona,
+                  kolumna: od,
+                  kolumny: do_ - od,
+                  naglowek: t('kartka.nowaGrupa'),
+                };
+                const ok = zmienUklad((p) => {
+                  const x = dodajNaglowek(p, arkuszZazn.id, opis, ctx);
+                  return 'projekt' in x ? x.projekt : p;
+                });
+                if (ok) ustawZazn({ rodzaj: 'naglowek', arkuszId: arkuszZazn.id, id: w.id });
+                else ustawToast({ tekst: t('kartka.zmianaNieMiesci') });
+              },
+            }
+          : {})}
+      />
+    );
+  } else if (aktywne?.rodzaj === 'naglowek' && arkuszZazn) {
+    const h = arkuszZazn.naglowki?.find((x) => x.id === aktywne.id);
+    const ctx = kontekst(arkuszZazn.id);
+    if (h && ctx)
+      panel = (
+        <PanelNaglowka
+          key={h.id}
+          arkusz={arkuszZazn}
+          naglowek={h}
+          maksKolumn={ctx.siatka.kolumny}
+          {...(bladUkladu ? { blad: bladUkladu } : {})}
+          zmien={(z, klucz) => {
+            const w = zmienNaglowek(projekt, arkuszZazn.id, h.id, z, ctx);
+            if ('blad' in w) return ustawBladUkladu(t('kartka.naglowekKoliduje'));
+            zmienUklad(
+              (p) => {
+                const x = zmienNaglowek(p, arkuszZazn.id, h.id, z, ctx);
+                return 'projekt' in x ? x.projekt : p;
+              },
+              klucz ? `naglowek:${h.id}:${klucz}` : undefined,
+            );
+          }}
+          usun={usunZaznaczone}
+          zamknij={() => ustawZazn(undefined)}
+        />
+      );
+  } else if (aktywne?.rodzaj === 'ustawienia' && arkuszZazn) {
+    panel = (
+      <PanelUstawien
+        key={arkuszZazn.id}
+        edycja={edycja}
+        arkusz={arkuszZazn}
+        zmienUklad={zmienUklad}
+        {...(bladUkladu ? { blad: bladUkladu } : {})}
+        {...(nowaKartka ? { nowaKartka } : {})}
+        zamknij={() => ustawZazn(undefined)}
+      />
+    );
+  }
+  panel ??= (
+    <aside className="panel-edytora" aria-label={t('kartka.pomoc')}>
+      <h2>{t('kartka.nicNieZaznaczono')}</h2>
+      <p className="podpis">{t('kartka.pomocDodawanie')}</p>
+      <p className="podpis">{t('kartka.pomocZaznaczanie')}</p>
+      <p className="podpis">{t('kartka.pomocSkroty')}</p>
+      <p className="podpis">{t('kartka.pomocDruk')}</p>
+    </aside>
+  );
+
+  // Ostrzeżenia kartek (nie kart): przypięcia poza siatką, nagłówki, tytuł; karty odłożone.
+  const ostrzezeniaKartek = kartki.flatMap((k) => [
+    ...(k.wynik?.ostrzezenia ?? [])
+      .filter((o) => !o.kartaId)
+      .map((o) => `${k.arkusz.nazwa}: ${tekstOstrzezeniaArkusza(o)}`),
+    ...(kartyOdlozone(projekt, k.arkusz.id).length
+      ? [
+          t('kartka.odlozone', {
+            kartka: k.arkusz.nazwa,
+            liczba: kartyOdlozone(projekt, k.arkusz.id).length,
+          }),
+        ]
+      : []),
+  ]);
+
+  // Role bez czcionki – silnik użył zapasowej (zbiór uzupełniany przy budowie stron).
+  const brakujaceCzcionki = useMemo(
+    () => (kartki.length && zasoby ? [...zasoby.czcionki.brakujace] : []),
+    [kartki, zasoby],
+  );
+
+  // --- Widok.
+  const naglowekProjektu = (
+    <header className="pasek-gorny">
+      <a href="#/" className="logo">
+        {t('aplikacja.nazwa')}
+      </a>
+      <input
+        className="nazwa-projektu"
+        aria-label={t('kartka.nazwaProjektu')}
+        value={projekt.nazwa}
+        onChange={(e) =>
+          zmien((p) => ({ ...p, nazwa: e.target.value, zmieniono: new Date().toISOString() }), {
+            klucz: 'nazwa',
+          })
+        }
+      />
+      <span
+        role="status"
+        aria-live="polite"
+        className={`status-zapisu ${edycja.zapis.stan === 'blad' ? 'blad' : ''}`}
+      >
+        {tekstZapisu(edycja.zapis)}
+      </span>
+      <span className="odstep" />
+      <button
+        type="button"
+        className="ikonowy"
+        aria-label={t('kartka.cofnij')}
+        title={t('kartka.cofnij')}
+        disabled={!edycja.mozeCofnac}
+        onClick={edycja.cofnij}
+      >
+        ↶
+      </button>
+      <button
+        type="button"
+        className="ikonowy"
+        aria-label={t('kartka.ponow')}
+        title={t('kartka.ponow')}
+        disabled={!edycja.mozePonowic}
+        onClick={edycja.ponow}
+      >
+        ↷
+      </button>
+      <button
+        type="button"
+        aria-pressed={aktywne?.rodzaj === 'ustawienia'}
+        disabled={projekt.arkusze.length === 0}
+        onClick={() => {
+          const arkuszId = aktywne?.arkuszId ?? projekt.arkusze[0]?.id;
+          ustawZazn(
+            aktywne?.rodzaj === 'ustawienia' || !arkuszId
+              ? undefined
+              : { rodzaj: 'ustawienia', arkuszId },
+          );
+        }}
+      >
+        ⚙ {t('kartka.ustawienia')}
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          zapiszPlik(
+            eksportujProjekt(projekt, edycja.dane),
+            'application/zip',
+            nazwaPliku(projekt.nazwa, ROZSZERZENIE_PROJEKTU),
+          )
+        }
+      >
+        ⤓ {t('projekty.eksportuj')}
+      </button>
+      <button type="button" className="glowny" disabled={!zasoby} onClick={() => void pobierzPdf()}>
+        ⎙ {t('arkusze.pobierzPdf')}
+      </button>
+      <span role="status" aria-live="polite" className="status-pdf">
+        {statusPdf}
+      </span>
+    </header>
+  );
+
+  return (
+    <div className="edytor-kartki">
+      {naglowekProjektu}
+      {(edycja.ostrzezenia.length > 0 ||
+        brakujaceCzcionki.length > 0 ||
+        ostrzezeniaKartek.length > 0) && (
+        <details className="uwaga ostrzezenia-projektu">
+          <summary>
+            {t('projekt.ostrzezenia', {
+              liczba:
+                edycja.ostrzezenia.length +
+                ostrzezeniaKartek.length +
+                (brakujaceCzcionki.length ? 1 : 0),
+            })}
+          </summary>
+          <ul>
+            {[...edycja.ostrzezenia, ...ostrzezeniaKartek].map((o, i) => (
+              <li key={i}>{o}</li>
+            ))}
+            {brakujaceCzcionki.length > 0 && (
+              <li>
+                {t('czcionki.brakujace', {
+                  lista: brakujaceCzcionki.map((r) => tJesliJest(`rola.${r}`) ?? r).join(', '),
+                })}
+              </li>
+            )}
+          </ul>
+        </details>
+      )}
+      <div className="uklad-edytora">
+        <div className="kartki" ref={kartkiRef}>
+          {!zasoby && <p>{t('arkusze.wczytywanie')}</p>}
+          {zasoby && projekt.arkusze.length === 0 && (
+            <p className="uwaga">
+              {t('kartka.brakKartek')}{' '}
+              {nowaKartka && (
+                <button type="button" onClick={nowaKartka}>
+                  {t('kartka.nowaKartka')}
+                </button>
+              )}
+            </p>
+          )}
+          {kartki.map((k) => (
+            <WidokKartki
+              key={k.arkusz.id}
+              k={k}
+              wiele={kartki.length > 1}
+              karty={kartyNaKartkach.get(k.arkusz.id) ?? []}
+              liczbaStron={liczbaStronKartki(projekt, k.arkusz.id)}
+              zazn={aktywne}
+              gest={gest}
+              menu={menu?.arkuszId === k.arkusz.id ? menu : undefined}
+              typy={pakiet?.typyKart ?? []}
+              miesciSie={(typ) => {
+                const ctx = kontekst(k.arkusz.id);
+                return (
+                  !!menu &&
+                  !!ctx &&
+                  !(
+                    'blad' in
+                    dodajKarteWSlocie(
+                      projekt,
+                      k.arkusz.id,
+                      menu,
+                      { szablonId: typ.warianty[0]!.szablonId, rozmiary: typ.rozmiary },
+                      ctx,
+                    )
+                  )
+                );
+              }}
+              dodaj={dodajZMenu}
+              zamknijMenu={zamknijMenu}
+              poczatekGestu={poczatekGestu}
+              duplikuj={() => duplikuj(1)}
+              usun={usunZaznaczone}
+              rozmiar={aktywne?.arkuszId === k.arkusz.id ? nastepnyRozmiar : undefined}
+              dodajStrone={() => zmien((p) => dodajStrone(p, k.arkusz.id))}
+              otworzMenu={(p) => {
+                ustawZazn(undefined);
+                ustawMenu({ arkuszId: k.arkusz.id, ...p });
+              }}
+              wybierzKarte={(id, shift) => {
+                const obecne =
+                  aktywne?.rodzaj === 'karty' && aktywne.arkuszId === k.arkusz.id
+                    ? aktywne.ids
+                    : [];
+                const ids = shift
+                  ? obecne.includes(id)
+                    ? obecne.filter((x) => x !== id)
+                    : [...obecne, id]
+                  : [id];
+                ustawZazn(ids.length ? { rodzaj: 'karty', arkuszId: k.arkusz.id, ids } : undefined);
+              }}
+              usunStrone={(s) =>
+                zmien((p) => {
+                  const w = usunStrone(p, k.arkusz.id, s);
+                  return 'projekt' in w ? w.projekt : p;
+                })
+              }
+            />
+          ))}
+        </div>
+        <div className="kolumna-panelu">{panel}</div>
+      </div>
+      {toastAktualny && (
+        <div className="toast" role="status">
+          <span>{toastAktualny.tekst}</span>
+          {toastAktualny.cofnij && (
+            <button
+              type="button"
+              onClick={() => {
+                edycja.cofnij();
+                ustawToast(undefined);
+              }}
+            >
+              {t('kartka.cofnij')}
+            </button>
+          )}
+          <button
+            type="button"
+            aria-label={t('kartka.zamknijKomunikat')}
+            onClick={() => ustawToast(undefined)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Jedna kartka: jej strony (SVG z silnika) z warstwą slotów, kart, nagłówków i podglądów. */
+function WidokKartki({
+  k,
+  wiele,
+  karty,
+  liczbaStron,
+  zazn,
+  gest,
+  menu,
+  typy,
+  miesciSie,
+  dodaj,
+  zamknijMenu,
+  poczatekGestu,
+  duplikuj,
+  usun,
+  rozmiar,
+  dodajStrone,
+  usunStrone,
+  otworzMenu,
+  wybierzKarte,
+}: {
+  otworzMenu: (p: Polozenie) => void;
+  wybierzKarte: (id: string, shift: boolean) => void;
+  k: Kartka;
+  wiele: boolean;
+  karty: KartaNaKartce[];
+  liczbaStron: number;
+  zazn: Zaznaczenie;
+  gest: Gest | undefined;
+  menu: Polozenie | undefined;
+  typy: TypKarty[];
+  miesciSie: (typ: TypKarty) => boolean;
+  dodaj: (typ: TypKarty, wariant: number) => void;
+  zamknijMenu: () => void;
+  poczatekGestu: (e: React.PointerEvent, k: Kartka, strona: number) => void;
+  duplikuj: () => void;
+  usun: () => void;
+  /** Następny mieszczący się rozmiar zaznaczonej karty (gdy typ ma kilka rozmiarów). */
+  rozmiar?: { etykieta: string; zmien: () => void };
+  dodajStrone: () => void;
+  usunStrone: (s: number) => void;
+}) {
+  const g = k.geometria;
+  const id = k.arkusz.id;
+  const zaznaczone =
+    zazn?.rodzaj === 'karty' && zazn.arkuszId === id ? new Set(zazn.ids) : new Set<string>();
+  const gestTu = gest && gest.arkuszId === id ? gest : undefined;
+  const [kursor, ustawKursor] = useState<Record<number, string>>({});
+  const pierwsza = karty
+    .filter((x) => zaznaczone.has(x.karta.id))
+    .sort((a, b) => a.strona - b.strona || a.rzad - b.rzad || a.kolumna - b.kolumna)[0];
+
+  if (k.blad) {
+    return (
+      <p role="alert" className="uwaga">
+        {t('kartka.bladUkladu', { szczegoly: k.blad })}
+      </p>
+    );
+  }
+  return (
+    <section className="kartka" aria-label={k.arkusz.nazwa}>
+      {wiele && <h2 className="tytul-kartki">{k.arkusz.nazwa}</h2>}
+      {Array.from({ length: Math.max(liczbaStron, k.svg.length) }, (_, s) => {
+        const naStronie = karty.filter((x) => x.strona === s);
+        const zajete = new Set<string>();
+        for (const c of naStronie)
+          for (let i = 0; i < c.kolumny; i++)
+            for (let j = 0; j < c.rzedy; j++) zajete.add(`${c.kolumna + i},${c.rzad + j}`);
+        const pusta = naStronie.length === 0;
+        // Jeden przystanek Tab na stronę (pierwszy wolny slot albo ostatnio odwiedzony),
+        // pozostałe sloty osiągalne strzałkami.
+        let przystanek = kursor[s];
+        if (!przystanek || zajete.has(przystanek)) {
+          przystanek = undefined;
+          for (let r = 0; r < (g?.siatka.rzedy ?? 0) && !przystanek; r++)
+            for (let c = 0; c < (g?.siatka.kolumny ?? 0) && !przystanek; c++)
+              if (!zajete.has(`${c},${r}`)) przystanek = `${c},${r}`;
+        }
+        const ruchSlotu = (e: React.KeyboardEvent, c: number, r: number) => {
+          const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[
+            e.key
+          ];
+          if (!d || !g) return;
+          e.preventDefault();
+          for (let x = c + d[0]!, y = r + d[1]!; ; x += d[0]!, y += d[1]!) {
+            if (x < 0 || y < 0 || x >= g.siatka.kolumny || y >= g.siatka.rzedy) return;
+            if (zajete.has(`${x},${y}`)) continue;
+            ustawKursor((k) => ({ ...k, [s]: `${x},${y}` }));
+            (
+              e.currentTarget.parentElement?.querySelector(
+                `[data-slot="${x},${y}"]`,
+              ) as HTMLElement | null
+            )?.focus();
+            return;
+          }
+        };
+        return (
+          <div key={s} className="strona-opakowanie">
+            <div className="etykieta-strony">
+              {t('kartka.strona', { numer: s + 1, liczba: liczbaStron })}
+              {pusta && liczbaStron > 1 && (
+                <button type="button" className="usun-strone" onClick={() => usunStrone(s)}>
+                  {t('kartka.usunStrone')}
+                </button>
+              )}
+            </div>
+            <div
+              className="strona-kartki"
+              data-arkusz={id}
+              data-strona={s}
+              style={g ? { aspectRatio: `${g.szer} / ${g.wys}` } : undefined}
+            >
+              <div
+                className="svg-opakowanie"
+                dangerouslySetInnerHTML={{ __html: k.svg[s] ?? '' }}
+              />
+              {g && (
+                <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
+                  {Array.from({ length: g.siatka.rzedy }, (_, r) =>
+                    Array.from({ length: g.siatka.kolumny }, (_, c) =>
+                      zajete.has(`${c},${r}`) ? null : (
+                        <button
+                          key={`${c},${r}`}
+                          type="button"
+                          className={`slot${menu && menu.strona === s && menu.kolumna === c && menu.rzad === r ? ' aktywny' : ''}`}
+                          data-slot={`${c},${r}`}
+                          tabIndex={przystanek === `${c},${r}` ? 0 : -1}
+                          onKeyDown={(e) => ruchSlotu(e, c, r)}
+                          onFocus={() =>
+                            kursor[s] !== `${c},${r}` &&
+                            ustawKursor((k) => ({ ...k, [s]: `${c},${r}` }))
+                          }
+                          style={stylProstokata(g, s, c, r)}
+                          aria-label={t('kartka.pustySlot', {
+                            strona: s + 1,
+                            kolumna: c + 1,
+                            rzad: r + 1,
+                          })}
+                          onClick={(e) =>
+                            e.detail === 0 && otworzMenu({ strona: s, kolumna: c, rzad: r })
+                          }
+                        />
+                      ),
+                    ),
+                  )}
+                  {(k.wynik?.naglowki ?? [])
+                    .filter((h) => h.strona === s)
+                    .map((h) => {
+                      const n = k.arkusz.naglowki?.find((x) => x.id === h.id);
+                      return (
+                        <button
+                          key={h.id}
+                          type="button"
+                          className={`naglowek-grupy${zazn?.rodzaj === 'naglowek' && zazn.id === h.id ? ' zaznaczony' : ''}`}
+                          data-naglowek={h.id}
+                          style={stylMm(g, h.x, h.y, h.szer, h.wys)}
+                          aria-label={t('kartka.naglowekEtykieta', { tekst: n?.naglowek ?? '' })}
+                        />
+                      );
+                    })}
+                  {naStronie.map((c) => {
+                    const podnoszona =
+                      gestTu?.rodzaj === 'karty' && gestTu.ruch && gestTu.ids.includes(c.karta.id);
+                    return (
+                      <button
+                        key={c.karta.id}
+                        type="button"
+                        className={`karta-na-kartce${zaznaczone.has(c.karta.id) ? ' zaznaczona' : ''}${podnoszona ? ' podnoszona' : ''}`}
+                        data-karta={c.karta.id}
+                        style={stylProstokata(g, s, c.kolumna, c.rzad, c.kolumny, c.rzedy)}
+                        aria-pressed={zaznaczone.has(c.karta.id)}
+                        onClick={(e) => e.detail === 0 && wybierzKarte(c.karta.id, e.shiftKey)}
+                        aria-label={t('kartka.kartaEtykieta', {
+                          nazwa: c.karta.dane.nazwa || t('karta.bezNazwy'),
+                          strona: s + 1,
+                          kolumna: c.kolumna + 1,
+                          rzad: c.rzad + 1,
+                        })}
+                      />
+                    );
+                  })}
+                  {gestTu?.rodzaj === 'karty' &&
+                    gestTu.ruch &&
+                    gestTu.o &&
+                    karty
+                      .filter(
+                        (c) => gestTu.ids.includes(c.karta.id) && c.strona + gestTu.o!.strona === s,
+                      )
+                      .map((c) => (
+                        <div
+                          key={`p-${c.karta.id}`}
+                          className={`podglad-celu${gestTu.blad ? ' zly' : ''}`}
+                          style={stylProstokata(
+                            g,
+                            s,
+                            c.kolumna + gestTu.o!.kolumna,
+                            c.rzad + gestTu.o!.rzad,
+                            c.kolumny,
+                            c.rzedy,
+                          )}
+                        />
+                      ))}
+                  {gestTu?.rodzaj === 'obszar' &&
+                    gestTu.ruch &&
+                    gestTu.strona === s &&
+                    gestTu.start &&
+                    gestTu.koniec && (
+                      <div
+                        className="obszar-zaznaczenia"
+                        style={stylProstokata(
+                          g,
+                          s,
+                          Math.min(gestTu.start.kolumna, gestTu.koniec.kolumna),
+                          Math.min(gestTu.start.rzad, gestTu.koniec.rzad),
+                          Math.abs(gestTu.start.kolumna - gestTu.koniec.kolumna) + 1,
+                          Math.abs(gestTu.start.rzad - gestTu.koniec.rzad) + 1,
+                        )}
+                      />
+                    )}
+                  {pierwsza && pierwsza.strona === s && !gestTu && (
+                    <div
+                      className="pasek-karty"
+                      style={{
+                        ...stylProstokata(g, s, pierwsza.kolumna, pierwsza.rzad),
+                        width: 'auto',
+                        height: 'auto',
+                      }}
+                    >
+                      <button type="button" onClick={duplikuj}>
+                        {t('kartka.duplikuj')}
+                      </button>
+                      {rozmiar && (
+                        <button type="button" onClick={rozmiar.zmien}>
+                          {rozmiar.etykieta}
+                        </button>
+                      )}
+                      <button type="button" className="niebezpieczny" onClick={usun}>
+                        {t('kartka.usun')}
+                      </button>
+                    </div>
+                  )}
+                  {menu && menu.strona === s && (
+                    <MenuTypu
+                      typy={typy}
+                      styl={(() => {
+                        const p = stylProstokata(g, s, menu.kolumna + 1, menu.rzad);
+                        return menu.kolumna > g.siatka.kolumny - 4
+                          ? {
+                              right: `${100 - parseFloat(stylProstokata(g, s, menu.kolumna, menu.rzad).left)}%`,
+                              top: p.top,
+                            }
+                          : { left: p.left, top: p.top };
+                      })()}
+                      miesciSie={miesciSie}
+                      wybierz={dodaj}
+                      zamknij={zamknijMenu}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+      <button type="button" className="dodaj-strone" onClick={dodajStrone}>
+        ＋ {t('kartka.dodajStrone')}
+      </button>
+    </section>
+  );
+}

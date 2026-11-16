@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { cofnij, ponow, pustaHistoria, zapamietaj, type Historia } from '../dane/historia';
 import { BladDanych, ostrzezeniaProjektu } from '../dane/schemat';
+import { rejestrZProjektu } from '../dane/pakiet';
+import { czyKartkaZnormalizowana, normalizujKartki } from '../druk/normalizacja';
 import { t } from '../i18n';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import { baza } from './baza';
@@ -14,8 +17,17 @@ export interface ProjektWEdycji {
   zasoby: ZasobyProjektu;
   ostrzezenia: string[];
   zapis: StanZapisu;
-  /** Zmiana samego dokumentu (dane kart, układ) – zapis do bazy z opóźnieniem. */
-  zmien(f: (p: Projekt) => Projekt): void;
+  /**
+   * Zmiana samego dokumentu (dane kart, układ) – zapis do bazy z opóźnieniem. `klucz` scala
+   * serię zmian (np. pisanie w jednym polu) w jeden krok „Cofnij”.
+   */
+  zmien(f: (p: Projekt) => Projekt, opcje?: { klucz?: string }): void;
+  cofnij(): void;
+  ponow(): void;
+  mozeCofnac: boolean;
+  mozePonowic: boolean;
+  /** Licznik zmian dokumentu (edycja, cofnięcie, ponowienie) – np. ważność „Cofnij” w komunikacie. */
+  wersja: number;
   /**
    * Zmiana biblioteki zasobów (czcionki, obrazy). `f` dostaje NAJNOWSZY projekt i dane (nie te
    * z renderu), wynik od razu trafia do stanu, a zapis z bajtami rusza natychmiast. Obietnica
@@ -35,6 +47,17 @@ const OPOZNIENIE_ZAPISU = 500;
 
 const komunikat = (e: unknown) =>
   e instanceof BladDanych ? e.message : String(e instanceof Error ? e.message : e);
+
+/** Normalizacja do modelu kartki z czcionkami z biblioteki projektu (zapasowa jak w podglądzie). */
+function normalizujWczytany(p: Projekt, dane: DaneZasobow): Projekt {
+  const { rejestr } = rejestrZProjektu(p, dane);
+  const rodziny = rejestr.nazwyRodzin;
+  rejestr.ustawZapasowa(p.role.tresc && rodziny.includes(p.role.tresc) ? p.role.tresc : rodziny[0]);
+  const obrazy = new Map(
+    p.zasoby.flatMap((z) => (z.rodzaj === 'obraz' ? [[z.id, z] as const] : [])),
+  );
+  return normalizujKartki(p, { czcionki: rejestr, obraz: (id) => obrazy.get(id) }).projekt;
+}
 
 /** Ostatni zaplanowany zapis dowolnego projektu – lista projektów czeka na niego przed odczytem. */
 let ostatniZapis: Promise<void> = Promise.resolve();
@@ -63,25 +86,16 @@ export function useProjekt(id: string): StanProjektu {
   const [zasoby, ustawZasoby] = useState<ZasobyProjektu>();
   const [zapis, ustawZapis] = useState<StanZapisu>({ stan: 'zapisano' });
   const biezacy = useRef<Biezacy | undefined>(undefined);
+  const historia = useRef<Historia<Projekt>>(pustaHistoria());
+  const [wersja, ustawWersje] = useState(0);
+  const [stanHistorii, ustawStanHistorii] = useState({ cofnij: false, ponow: false });
+  const odswiezHistorie = () =>
+    ustawStanHistorii({
+      cofnij: historia.current.przeszle.length > 0,
+      ponow: historia.current.przyszle.length > 0,
+    });
   const zegar = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const kolejka = useRef<Promise<void>>(Promise.resolve());
-
-  useEffect(() => {
-    let aktywny = true;
-    baza()
-      .wczytaj(id)
-      .then(
-        ({ projekt, zasoby: dane }) => {
-          if (!aktywny) return;
-          biezacy.current = { id, projekt, dane, brudny: false, zasobyBrudne: false };
-          ustawWidok({ id, projekt, dane });
-        },
-        (e: unknown) => aktywny && ustawWidok({ id, blad: komunikat(e) }),
-      );
-    return () => {
-      aktywny = false;
-    };
-  }, [id]);
 
   const odswiez = () => {
     const b = biezacy.current;
@@ -114,6 +128,35 @@ export function useProjekt(id: string): StanProjektu {
     return zadanie;
   }, []);
 
+  useEffect(() => {
+    let aktywny = true;
+    baza()
+      .wczytaj(id)
+      .then(
+        ({ projekt: wczytany, zasoby: dane }) => {
+          if (!aktywny) return;
+          // Projekt sprzed edytora kartki – normalizacja (wydruk bez zmian) i zapis.
+          let projekt: Projekt;
+          try {
+            projekt = czyKartkaZnormalizowana(wczytany)
+              ? wczytany
+              : normalizujWczytany(wczytany, dane);
+          } catch (e) {
+            ustawWidok({ id, blad: t('kartka.bladNormalizacji', { szczegoly: komunikat(e) }) });
+            return;
+          }
+          const brudny = projekt !== wczytany;
+          biezacy.current = { id, projekt, dane, brudny, zasobyBrudne: false };
+          ustawWidok({ id, projekt, dane });
+          if (brudny) void zapiszTeraz().catch(() => undefined);
+        },
+        (e: unknown) => aktywny && ustawWidok({ id, blad: komunikat(e) }),
+      );
+    return () => {
+      aktywny = false;
+    };
+  }, [id, zapiszTeraz]);
+
   // Zapis przy zamknięciu projektu; ostrzeżenie przeglądarki przy zamykaniu karty z niezapisanymi zmianami.
   useEffect(() => {
     const przedZamknieciem = (e: BeforeUnloadEvent) => {
@@ -129,12 +172,12 @@ export function useProjekt(id: string): StanProjektu {
     };
   }, [zapiszTeraz]);
 
-  const zmien = useCallback(
-    (f: (p: Projekt) => Projekt) => {
+  /** Ustawia nowy dokument (z edycji, cofnięcia albo normalizacji) i planuje zapis. */
+  const ustawDokument = useCallback(
+    (nowy: Projekt) => {
       const b = biezacy.current;
       if (!b) return;
-      const nowy = f(b.projekt);
-      if (nowy === b.projekt) return;
+      ustawWersje((w) => w + 1);
       b.projekt = nowy;
       b.brudny = true;
       odswiez();
@@ -148,13 +191,53 @@ export function useProjekt(id: string): StanProjektu {
     [zapiszTeraz],
   );
 
+  const zmien = useCallback(
+    (f: (p: Projekt) => Projekt, opcje: { klucz?: string } = {}) => {
+      const b = biezacy.current;
+      if (!b) return;
+      const nowy = f(b.projekt);
+      if (nowy === b.projekt) return;
+      historia.current = zapamietaj(historia.current, b.projekt, opcje);
+      odswiezHistorie();
+      ustawDokument(nowy);
+    },
+    [ustawDokument],
+  );
+
+  const cofnijZmiane = useCallback(() => {
+    const b = biezacy.current;
+    const w = b && cofnij(historia.current, b.projekt);
+    if (!w || !b) return;
+    historia.current = w.historia;
+    // Zmiana biblioteki – zapis razem z bajtami (trzymanymi w pamięci).
+    if (w.stan.zasoby !== b.projekt.zasoby) b.zasobyBrudne = true;
+    odswiezHistorie();
+    ustawDokument(w.stan);
+  }, [ustawDokument]);
+
+  const ponowZmiane = useCallback(() => {
+    const b = biezacy.current;
+    const w = b && ponow(historia.current, b.projekt);
+    if (!w || !b) return;
+    historia.current = w.historia;
+    // Zmiana biblioteki – zapis razem z bajtami (trzymanymi w pamięci).
+    if (w.stan.zasoby !== b.projekt.zasoby) b.zasobyBrudne = true;
+    odswiezHistorie();
+    ustawDokument(w.stan);
+  }, [ustawDokument]);
+
   const zmienZZasobami = useCallback<ProjektWEdycji['zmienZZasobami']>(
     async (f) => {
       const b = biezacy.current;
       if (!b) return;
       const wynik = f(b.projekt, b.dane); // błąd z `f` – stan bez zmian
+      // Historia zostaje: bajty usuniętych zasobów zostają w pamięci (zapis bierze tylko opisane),
+      // więc „Cofnij” może przywrócić zasób razem z jego bajtami.
+      historia.current = zapamietaj(historia.current, b.projekt);
+      odswiezHistorie();
+      ustawWersje((w) => w + 1);
       b.projekt = wynik.projekt;
-      b.dane = wynik.dane;
+      b.dane = new Map([...b.dane, ...wynik.dane]);
       b.brudny = true;
       b.zasobyBrudne = true;
       odswiez();
@@ -209,6 +292,11 @@ export function useProjekt(id: string): StanProjektu {
     zapis,
     zmien,
     zmienZZasobami,
+    cofnij: cofnijZmiane,
+    ponow: ponowZmiane,
+    mozeCofnac: stanHistorii.cofnij,
+    mozePonowic: stanHistorii.ponow,
+    wersja,
   };
 }
 

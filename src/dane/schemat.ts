@@ -209,6 +209,20 @@ const arkusz = obj({
   id: identyfikator,
   nazwa: z.string(),
   taliaId: identyfikator,
+  liczbaStron: opc(calkowita.min(1).max(500)),
+  naglowki: opc(
+    z.array(
+      obj({
+        id: identyfikator,
+        strona: calkowita.min(0),
+        kolumna: calkowita.min(0),
+        kolumny: calkowita.min(1),
+        naglowek: z.string(),
+        opis: opc(z.string()),
+        odstepPrzed: opc(nieujemna),
+      }),
+    ),
+  ),
   ustawienia: obj({
     papier: z.enum(['A4', 'Letter']),
     orientacja: z.enum(['pionowa', 'pozioma']),
@@ -235,6 +249,7 @@ const arkusz = obj({
       }),
     ),
     czarnoBialy: opc(z.boolean()),
+    slot: opc(obj({ szerokosc: dodatnia, wysokosc: dodatnia })),
     poczatekSiatki: opc(xy),
   }),
   przypiete: opc(
@@ -280,6 +295,7 @@ export const schematProjektu = obj({
   szablony: z.array(szablon),
   talie: z.array(talia),
   arkusze: z.array(arkusz),
+  pakiet: opc(z.string()),
 });
 
 export const schematPlikuSzablonu = obj({
@@ -357,11 +373,13 @@ type Migracja = (dane: Record<string, unknown>) => Record<string, unknown>;
 
 /**
  * Migracje: klucz `n` zamienia dane ze schematu `n` na `n + 1`. Projekt i plik szablonu mają
- * osobne kroki (inny kształt), ale wspólny numer wersji. Na razie brak migracji.
+ * osobne kroki (inny kształt), ale wspólny numer wersji.
  */
 export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<number, Migracja> } = {
-  projekt: {},
-  szablon: {},
+  // 1 → 2: nowe pola są opcjonalne; sprowadzenie do modelu kartki robi normalizacja przy
+  // otwarciu (potrzebuje czcionek – patrz src/druk/normalizacja.ts).
+  projekt: { 1: (d) => d },
+  szablon: { 1: (d) => d },
 };
 
 export function migruj(
@@ -477,6 +495,10 @@ export function sprawdzSpojnosc(p: Projekt): void {
     }
   }
   for (const a of p.arkusze) {
+    powtorzony(
+      (a.naglowki ?? []).map((n) => n.id),
+      t('dane.gdzie.arkusz', { id: a.id }),
+    );
     const karty = talie.get(a.taliaId);
     if (!karty) return blad(t('dane.nieznanaTalia', { arkusz: a.id, talia: a.taliaId }));
     for (const pp of a.przypiete ?? []) {
