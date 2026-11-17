@@ -25,6 +25,12 @@ export const LIMITY_SVG = {
   ksztalty: 5000,
   /** Liczba rozwinięć `use`. */
   uzycia: 2000,
+  /** Łączna liczba odwiedzonych węzłów (z rozwinięciem `use`). */
+  wezly: 100000,
+  /** Najgłębszy łańcuch `use` → `use`. */
+  glebokoscUse: 32,
+  /** Największa dopuszczalna współrzędna po normalizacji (jednostki pola). */
+  zakres: 1e6,
 };
 
 /** Wysokość rysunku po imporcie (jednostki pola) – jak w elementach wbudowanych. */
@@ -49,7 +55,8 @@ export type KodPominiecia =
   | 'kreskowanie'
   | 'nieznany-element'
   | 'nieznany-kolor'
-  | 'bledna-sciezka';
+  | 'bledna-sciezka'
+  | 'bledna-transformacja';
 
 export interface Pominiecie {
   kod: KodPominiecia;
@@ -100,6 +107,15 @@ export interface OpcjeImportuSvg {
 
 const TOZSAMOSC: Macierz = [1, 0, 0, 1, 0, 0];
 
+const RE_LICZBA = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+
+/** Liczba w zapisie SVG (bez szesnastkowych, `Infinity`, `NaN`); inaczej `undefined`. */
+export function liczbaScisla(s: string): number | undefined {
+  if (!RE_LICZBA.test(s.trim())) return undefined;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 /** Złożenie: najpierw `b`, potem `a` (punkt p → a(b(p))). */
 export function zlozMacierze(a: Macierz, b: Macierz): Macierz {
   return [
@@ -114,7 +130,20 @@ export function zlozMacierze(a: Macierz, b: Macierz): Macierz {
 
 /** Atrybut `transform` SVG → macierz (matrix, translate, scale, rotate, skewX, skewY); błąd = tożsamość. */
 export function parsujTransformacje(tekst: string | undefined): Macierz {
-  if (!tekst) return TOZSAMOSC;
+  return parsujTransformacjeZBledem(tekst).m;
+}
+
+/** Jak `parsujTransformacje`, ale z informacją, że zapis był błędny (wynik wtedy: tożsamość). */
+export function parsujTransformacjeZBledem(tekst: string | undefined): {
+  m: Macierz;
+  blad: boolean;
+} {
+  if (!tekst || tekst.trim() === '') return { m: TOZSAMOSC, blad: false };
+  const m = parsujTransformacjeWewn(tekst);
+  return m ? { m, blad: false } : { m: TOZSAMOSC, blad: true };
+}
+
+function parsujTransformacjeWewn(tekst: string): Macierz | undefined {
   let m: Macierz = TOZSAMOSC;
   const re = /\s*(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^)]*)\)\s*,?/gy;
   let kon = 0;
@@ -123,13 +152,13 @@ export function parsujTransformacje(tekst: string | undefined): Macierz {
     const a = (w[2] ?? '')
       .split(/[\s,]+/)
       .filter((x) => x !== '')
-      .map(Number);
-    if (a.some((x) => !Number.isFinite(x))) return TOZSAMOSC;
+      .map(liczbaScisla);
+    if (a.some((x) => x === undefined)) return undefined;
     const rad = (st: number) => (st * Math.PI) / 180;
     let n: Macierz | undefined;
     switch (w[1]) {
       case 'matrix':
-        if (a.length === 6) n = a as Macierz;
+        if (a.length === 6) n = a as number[] as Macierz;
         break;
       case 'translate':
         if (a.length === 1 || a.length === 2) n = [1, 0, 0, 1, a[0]!, a[1] ?? 0];
@@ -162,11 +191,11 @@ export function parsujTransformacje(tekst: string | undefined): Macierz {
         if (a.length === 1) n = [1, Math.tan(rad(a[0]!)), 0, 1, 0, 0];
         break;
     }
-    if (!n) return TOZSAMOSC;
+    if (!n) return undefined;
     m = zlozMacierze(m, n);
   }
   // Niedopasowana reszta tekstu (nieznana transformacja) – całość ignorowana.
-  return tekst.slice(kon).trim() === '' ? m : TOZSAMOSC;
+  return tekst.slice(kon).trim() === '' ? m : undefined;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -230,6 +259,9 @@ export function splaszczSciezke(d: string, m: Macierz = TOZSAMOSC): Kontur {
         y = ey;
         break;
       }
+      case 'A':
+        // `unarc` powinien usunąć wszystkie łuki – reszta to niepoprawne dane.
+        throw new Error('nierozwinięty łuk');
       case 'Z':
         if (otwarty) wynik.push(['Z']);
         otwarty = false;
@@ -337,7 +369,7 @@ export function kolorSvg(v: string): string | undefined | null {
     const h = [kanal(rgb[1]!, rgb[2]!), kanal(rgb[3]!, rgb[4]!), kanal(rgb[5]!, rgb[6]!)];
     return '#' + h.map((c) => c.toString(16).padStart(2, '0')).join('');
   }
-  return NAZWANE[s] ?? null;
+  return Object.hasOwn(NAZWANE, s) ? NAZWANE[s]! : null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -385,7 +417,7 @@ const ANIMACJE = new Set(['animate', 'animateTransform', 'animateMotion', 'set',
 
 /** Właściwości z atrybutu `style="a:b;c:d"`. */
 function wlasciwosciStylu(s: string | undefined): Record<string, string> {
-  const w: Record<string, string> = {};
+  const w: Record<string, string> = Object.create(null) as Record<string, string>;
   if (!s) return w;
   for (const czesc of s.split(';')) {
     const i = czesc.indexOf(':');
@@ -394,10 +426,13 @@ function wlasciwosciStylu(s: string | undefined): Record<string, string> {
   return w;
 }
 
+/** Wartość liczbowa atrybutu (opcjonalna jednostka `px`/`mm`/`%`…); błędny zapis = `domyslna`. */
 const liczba = (v: string | undefined, domyslna = 0): number => {
   if (v === undefined) return domyslna;
-  const n = parseFloat(v);
-  return Number.isFinite(n) ? n : domyslna;
+  const pelna = liczbaScisla(v);
+  if (pelna !== undefined) return pelna;
+  const m = /^\s*(.*?)\s*(?:px|pt|pc|mm|cm|in|em|ex|%)\s*$/.exec(v);
+  return (m && liczbaScisla(m[1]!)) ?? domyslna;
 };
 
 function bajtyNaTekst(zrodlo: string | Uint8Array): string {
@@ -513,7 +548,7 @@ export function importujSvg(
   const vb = (korzen.atr.viewBox ?? '')
     .trim()
     .split(/[\s,]+/)
-    .map(Number);
+    .map((x) => liczbaScisla(x) ?? NaN);
   if (vb.length === 4 && vb.every(Number.isFinite) && vb[2]! > 0 && vb[3]! > 0)
     widok = { x: vb[0]!, y: vb[1]!, szer: vb[2]!, wys: vb[3]! };
   else {
@@ -526,6 +561,7 @@ export function importujSvg(
   const surowe: Surowy[] = [];
   let ksztalty = 0;
   let uzyciaUse = 0;
+  let odwiedzone = 0;
 
   const kolorWypelnienia = (v: string): string | undefined => {
     const g = /^url\(\s*['"]?#([^'")\s]+)['"]?\s*\)/i.exec(v.trim());
@@ -599,7 +635,14 @@ export function importujSvg(
     const grubosc = s.szerObrysu * skala;
     const maObrys = obr !== undefined && grubosc > 0;
     if (wyp === undefined && !maObrys) return;
-    const podsciezki = kontur.filter((k) => k[0] === 'M').length;
+    // Samotne `M` (bez rysowania po nim) nie jest podścieżką.
+    const podsciezki = kontur.filter(
+      (k, i) =>
+        k[0] === 'M' &&
+        kontur[i + 1] !== undefined &&
+        kontur[i + 1]![0] !== 'M' &&
+        kontur[i + 1]![0] !== 'Z',
+    ).length;
     surowe.push({
       kontur,
       ...(wyp !== undefined ? { wypelnienie: wyp } : {}),
@@ -608,14 +651,20 @@ export function importujSvg(
     });
   };
 
-  const przejdz = (w: WezelXml, m: Macierz, rodzic: Styl, uzywane: string[]) => {
+  const przejdz = (w: WezelXml, m: Macierz, rodzic: Styl, uzywane: string[], przezUse = false) => {
+    // Wspólny licznik odwiedzonych węzłów (z rozwinięciem `use`) – ochrona przed bombami.
+    if (++odwiedzone > LIMITY_SVG.wezly)
+      throw new BladImportuSvg('za-duzo-ksztaltow', `Więcej niż ${LIMITY_SVG.wezly} węzłów.`);
     if (w.przestrzen !== '' && w.przestrzen !== 'svg') return;
     const n = w.nazwa;
     if (n === 'foreignObject' || n === 'script' || n === 'image' || n === 'text') return;
     const s = styl(w, rodzic);
     if (s.niewidoczny) return;
-    const mw = zlozMacierze(m, parsujTransformacje(w.atr.transform));
-    if (GRUPY.has(n) || n === 'symbol') {
+    const tr = parsujTransformacjeZBledem(w.atr.transform);
+    if (tr.blad) zglos('bledna-transformacja');
+    const mw = zlozMacierze(m, tr.m);
+    // `symbol` rysuje się tylko przez `use`.
+    if (GRUPY.has(n) || (n === 'symbol' && przezUse)) {
       for (const d of w.dzieci) przejdz(d, mw, s, uzywane);
       return;
     }
@@ -630,8 +679,9 @@ export function importujSvg(
       const id = ref.slice(1);
       const cel = poId.get(id);
       if (!cel || uzywane.includes(id)) return; // brak celu albo pętla
+      if (uzywane.length >= LIMITY_SVG.glebokoscUse) return; // zbyt głębokie łańcuchy `use`
       const mu = zlozMacierze(mw, [1, 0, 0, 1, liczba(w.atr.x), liczba(w.atr.y)]);
-      przejdz(cel, mu, s, [...uzywane, id]);
+      przejdz(cel, mu, s, [...uzywane, id], true);
       return;
     }
     if (KSZTALTY.has(n)) {
@@ -673,11 +723,16 @@ export function importujSvg(
           );
           break;
         default: {
-          const p = (a.points ?? '')
+          const surowo = (a.points ?? '')
             .trim()
             .split(/[\s,]+/)
-            .map(Number)
-            .filter((v) => Number.isFinite(v));
+            .filter((x) => x !== '');
+          const p = surowo.map((x) => liczbaScisla(x));
+          // Błędna wartość – kształt odrzucony (nie zgadujemy, co autor miał na myśli).
+          if (p.some((v) => v === undefined)) {
+            zglos('bledna-sciezka');
+            break;
+          }
           if (p.length < 4) break;
           let d = `M${f(p[0]!)} ${f(p[1]!)}`;
           for (let i = 2; i + 1 < p.length; i += 2) d += `L${f(p[i]!)} ${f(p[i + 1]!)}`;
@@ -753,11 +808,25 @@ export function importujSvg(
   });
   if (komendy > LIMITY_SVG.komendy)
     throw new BladImportuSvg('za-duzo-komend', `Więcej niż ${LIMITY_SVG.komendy} komend.`);
+  const szerokosc = zaokr(widok.szer * sk);
+  // Wszystkie liczby muszą być skończone i w rozsądnym zakresie (zdenormalizowany viewBox,
+  // gigantyczne współrzędne) – inaczej plik jest odrzucany.
+  const wRozsadnym = (v: number) => Number.isFinite(v) && Math.abs(v) <= LIMITY_SVG.zakres;
+  const zle =
+    !wRozsadnym(szerokosc) ||
+    !(szerokosc > 0) ||
+    kontury.some(
+      (k) =>
+        (k.obrys !== undefined && !wRozsadnym(k.obrys.grubosc)) ||
+        k.kontur.some((c) => c.slice(1).some((v) => !wRozsadnym(v as number))),
+    );
+  if (zle)
+    throw new BladImportuSvg('wymiary', 'Rysunek ma zbyt duże, zbyt małe lub niepoprawne wymiary.');
 
   return {
     element: {
       rodzaj: opcje.rodzaj ?? 'naroznik',
-      szer: zaokr(widok.szer * sk),
+      szer: szerokosc,
       wys: WYSOKOSC_IMPORTU,
       kontury,
       kolorowanie: opcje.kolorowanie ?? (kolory.size <= 1 ? 'jednolity' : 'oryginal'),

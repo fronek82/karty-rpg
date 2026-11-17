@@ -5,7 +5,7 @@ import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
 import type { Kontener, Szablon, Wezel } from '../model/szablon';
 import { znajdzElement } from '../ozdobniki/katalog';
 import { LIMITY_SVG } from '../ozdobniki/svgImport';
-import { odwolaniaDoElementow } from './biblioteka';
+import { MAKS_ELEMENTOW_BIBLIOTEKI, odwolaniaDoElementow } from './biblioteka';
 
 /** Błąd wczytywania danych z komunikatem po polsku, gotowym do pokazania użytkownikowi. */
 export class BladDanych extends Error {
@@ -409,18 +409,33 @@ const arkusz = obj({
 });
 
 const kolorSymbolu = z.string().regex(/^(#[0-9a-fA-F]{6}|kolor)$/);
+// Współrzędne własnych elementów: skończone i w rozsądnym zakresie (jak przy imporcie SVG).
+const wspolrzedna = liczba.min(-LIMITY_SVG.zakres).max(LIMITY_SVG.zakres);
 const komendaKonturu = z.union([
-  z.tuple([z.literal('M'), liczba, liczba]),
-  z.tuple([z.literal('L'), liczba, liczba]),
-  z.tuple([z.literal('C'), liczba, liczba, liczba, liczba, liczba, liczba]),
+  z.tuple([z.literal('M'), wspolrzedna, wspolrzedna]),
+  z.tuple([z.literal('L'), wspolrzedna, wspolrzedna]),
+  z.tuple([
+    z.literal('C'),
+    wspolrzedna,
+    wspolrzedna,
+    wspolrzedna,
+    wspolrzedna,
+    wspolrzedna,
+    wspolrzedna,
+  ]),
   z.tuple([z.literal('Z')]),
 ]);
 const konturSymbolu = obj({
   kontur: z.array(komendaKonturu),
   wypelnienie: opc(kolorSymbolu),
-  obrys: opc(obj({ grubosc: nieujemna, kolor: kolorSymbolu })),
+  obrys: opc(obj({ grubosc: nieujemna.max(LIMITY_SVG.zakres), kolor: kolorSymbolu })),
   evenodd: opc(z.boolean()),
 });
+const komendyWSumie = (k: { kontur: unknown[] }[]) => k.reduce((n, c) => n + c.kontur.length, 0);
+const limitKomend = [
+  (k: { kontur: unknown[] }[]) => komendyWSumie(k) <= LIMITY_SVG.komendy,
+  `za dużo komend (najwyżej ${LIMITY_SVG.komendy})`,
+] as const;
 const ulamek = liczba.min(0).max(1);
 
 /** Własny element biblioteki ozdobników (z importu SVG); wbudowane (`wb:`) żyją w kodzie. */
@@ -428,18 +443,28 @@ const elementOzdobny = obj({
   id: z.string().regex(/^wl:[\w.-]{1,100}$/),
   nazwa: opc(z.string().max(200)),
   rodzaj: z.enum(['motyw', 'naroznik', 'zakonczenie', 'srodek', 'ksztalt', 'ramka9']),
-  szer: dodatnia,
-  wys: dodatnia,
+  szer: dodatnia.max(LIMITY_SVG.zakres),
+  wys: dodatnia.max(LIMITY_SVG.zakres),
   kontury: z
     .array(konturSymbolu)
     .max(LIMITY_SVG.ksztalty)
-    .refine(
-      (k) => k.reduce((n, c) => n + c.kontur.length, 0) <= LIMITY_SVG.komendy,
-      `za dużo komend (najwyżej ${LIMITY_SVG.komendy})`,
-    ),
-  kostka: opc(z.array(konturSymbolu).max(LIMITY_SVG.ksztalty)),
+    .refine(...limitKomend),
+  kostka: opc(
+    z
+      .array(konturSymbolu)
+      .max(LIMITY_SVG.ksztalty)
+      .refine(...limitKomend),
+  ),
   kolorowanie: opc(z.enum(['jednolity', 'oryginal'])),
-  tresc: opc(obj({ x: ulamek, y: ulamek, szer: ulamek, wys: ulamek })),
+  // Prostokąt na tekst: dodatnie wymiary (UI: co najmniej 1 %), całość w obrębie rysunku.
+  tresc: opc(
+    obj({
+      x: ulamek,
+      y: ulamek,
+      szer: ulamek.min(0.01),
+      wys: ulamek.min(0.01),
+    }).refine((r) => r.x + r.szer <= 1 + 1e-9 && r.y + r.wys <= 1 + 1e-9, 'poza rysunkiem'),
+  ),
 });
 
 const opisZasobu = z.discriminatedUnion('rodzaj', [
@@ -474,7 +499,7 @@ export const schematProjektu = obj({
   talie: z.array(talia),
   arkusze: z.array(arkusz),
   pakiet: opc(z.string()),
-  biblioteka: opc(obj({ ozdobniki: z.array(elementOzdobny) })),
+  biblioteka: opc(obj({ ozdobniki: z.array(elementOzdobny).max(MAKS_ELEMENTOW_BIBLIOTEKI) })),
 });
 
 export const schematPlikuSzablonu = obj({
@@ -483,7 +508,7 @@ export const schematPlikuSzablonu = obj({
   role: z.record(z.string(), z.string()),
   zasoby: z.array(opisZasobu),
   /** Własne elementy biblioteki ozdobników użyte przez szablon. */
-  biblioteka: opc(z.array(elementOzdobny)),
+  biblioteka: opc(z.array(elementOzdobny).max(MAKS_ELEMENTOW_BIBLIOTEKI)),
 });
 
 /**

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   kolorSvg,
   importujSvg,
+  liczbaScisla,
   parsujTransformacje,
   splaszczSciezke,
   LIMITY_SVG,
@@ -409,15 +410,111 @@ describe('bomby i limity', () => {
     );
     expect(wszystkie.every((v) => Number.isFinite(v as number))).toBe(true);
   });
-  it('gigantyczne łuki i skale nie zwracają NaN', () => {
+  it('gigantyczne łuki i skale: błąd wymiarów albo skończone liczby w zakresie', () => {
+    try {
+      const w = importujSvg(
+        svg(
+          '<path d="M0 0A1e9 1e9 0 1 1 10 10"/><rect width="5" height="5"/>',
+          'viewBox="0 0 20 20"',
+        ),
+      );
+      for (const k of w.element.kontury)
+        for (const c of k.kontur)
+          for (const v of c.slice(1)) {
+            expect(Number.isFinite(v as number)).toBe(true);
+            expect(Math.abs(v as number)).toBeLessThanOrEqual(LIMITY_SVG.zakres);
+          }
+    } catch (e) {
+      expect((e as BladImportuSvg).kod).toBe('wymiary');
+    }
+  });
+});
+
+describe('poprawki po przeglądzie', () => {
+  it('symbol rysuje się tylko przez use', () => {
+    const sym = '<symbol id="s"><rect width="5" height="5"/></symbol>';
+    expect(() => importujSvg(svg(sym))).toThrow(/nie ma kształtów/);
+    expect(importujSvg(svg(`${sym}<use href="#s"/>`)).liczbaSciezek).toBe(1);
+  });
+
+  it('zdenormalizowany viewBox i gigantyczne współrzędne – błąd wymiarów, nie NaN', () => {
+    const kodBledu = (s: string) => {
+      try {
+        importujSvg(s);
+      } catch (e) {
+        return (e as BladImportuSvg).kod;
+      }
+      return 'ok';
+    };
+    expect(kodBledu(svg('<rect width="1" height="1"/>', 'viewBox="0 0 1e-320 1e-320"'))).toBe(
+      'wymiary',
+    );
+    expect(kodBledu(svg('<rect width="1" height="1"/>', 'viewBox="0 0 1e-9 1e-9"'))).toBe(
+      'wymiary',
+    );
+    expect(kodBledu(svg('<path d="M0 0L1e12 5Z"/>', 'viewBox="0 0 20 10"'))).toBe('wymiary');
+    expect(kodBledu(svg('<rect width="10" height="10" stroke="red" stroke-width="1e12"/>'))).toBe(
+      'wymiary',
+    );
+    expect(kodBledu(svg('<rect width="10" height="10"/>'))).toBe('ok');
+  });
+
+  it('wspólny licznik węzłów: szeroka bomba use kończy się błędem', () => {
+    // 3 poziomy po 60 użyć: 216 000 węzłów mimo limitu 2 000 użyć na poziom nie jest możliwe –
+    // limit użyć i licznik węzłów zatrzymują import.
+    let defs = '<rect id="u0" width="1" height="1"/>';
+    for (let i = 1; i <= 3; i++)
+      defs += `<g id="u${i}">${`<use href="#u${i - 1}"/>`.repeat(60)}</g>`;
+    expect(() => importujSvg(svg(`<defs>${defs}</defs><use href="#u3"/>`))).toThrow(BladImportuSvg);
+  });
+
+  it('głęboki łańcuch use jest obcinany, nie zawiesza importu', () => {
+    let defs = '<rect id="u0" width="5" height="5"/>';
+    for (let i = 1; i <= 50; i++) defs += `<g id="u${i}"><use href="#u${i - 1}"/></g>`;
+    const w = importujSvg(
+      svg(`<defs>${defs}</defs><rect width="2" height="2"/><use href="#u50"/>`),
+    );
+    expect(w.liczbaSciezek).toBe(1);
+  });
+
+  it('lista punktów z błędną wartością odrzuca cały kształt; błędna transformacja trafia do raportu', () => {
     const w = importujSvg(
       svg(
-        '<path d="M0 0A1e9 1e9 0 1 1 10 10"/><rect width="5" height="5"/>',
-        'viewBox="0 0 20 20"',
+        '<polygon points="0,0 5,0 abc,5"/><polyline points="0x10,0 5,5"/><rect width="5" height="5" transform="rotate(zly)"/>',
       ),
     );
-    for (const k of w.element.kontury)
-      for (const c of k.kontur)
-        for (const v of c.slice(1)) expect(Number.isFinite(v as number)).toBe(true);
+    expect(w.liczbaSciezek).toBe(1);
+    expect(w.raport.find((r) => r.kod === 'bledna-sciezka')!.ile).toBe(2);
+    expect(w.raport.map((r) => r.kod)).toContain('bledna-transformacja');
+  });
+
+  it('liczby: bez zapisu szesnastkowego i Infinity', () => {
+    expect(liczbaScisla('0x10')).toBeUndefined();
+    expect(liczbaScisla('Infinity')).toBeUndefined();
+    expect(liczbaScisla('1e999')).toBeUndefined();
+    expect(liczbaScisla('-.5e1')).toBe(-5);
+    expect(liczbaScisla('3.')).toBe(3);
+    const w = importujSvg(svg('<rect width="0x10" height="5"/><rect width="5mm" height="5"/>'));
+    expect(w.liczbaSciezek).toBe(1);
+  });
+
+  it('samotne M nie liczy się do podścieżek (evenodd zostaje wyłączony)', () => {
+    const w = importujSvg(svg('<path fill-rule="evenodd" d="M0 0H10V10H0ZM5 5"/>'));
+    expect(w.element.kontury[0]!.evenodd).toBeUndefined();
+  });
+
+  it('nazwa koloru z prototypu Object nie jest kolorem', () => {
+    expect(kolorSvg('constructor')).toBeNull();
+    expect(kolorSvg('__proto__')).toBeNull();
+    const w = importujSvg(
+      svg('<rect width="5" height="5" fill="&constructor;" style="__proto__:x"/>'),
+    );
+    expect(w.raport.find((r) => r.kod === 'nieznany-kolor')).toBeDefined();
+  });
+
+  it('nierozwinięty łuk w danych: ścieżka błędna, nie wyjątek', () => {
+    expect(() =>
+      importujSvg(svg('<path d="M0 0A5 5 0 1"/><rect width="3" height="3"/>')),
+    ).not.toThrow();
   });
 });

@@ -1,3 +1,4 @@
+import { PDFArray, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { scenyDoPdf } from '../druk/pdf';
 import { pt } from '../model/jednostki';
@@ -176,5 +177,62 @@ describe('własne elementy w silniku', () => {
     expect(scenaDoSvg(w.scena)).toContain('fill-rule="evenodd"');
     const pdf = await scenyDoPdf([w.scena]);
     expect(pdf.liczbaSymboli).toBe(1);
+  });
+});
+
+/** Dekodowana treść strumieni strony i wszystkich XObjectów formularzy. */
+async function tresciPdf(bajty: Uint8Array): Promise<string> {
+  const doc = await PDFDocument.load(bajty);
+  const tekst = (x: unknown) =>
+    Buffer.from(decodePDFRawStream(x as PDFRawStream).decode()).toString('latin1');
+  const tresc = doc.getPage(0).node.Contents();
+  const glowny =
+    tresc instanceof PDFRawStream ? tresc : (tresc as PDFArray).lookup(0, PDFRawStream);
+  const czesci = [tekst(glowny)];
+  for (const [, o] of doc.context.enumerateIndirectObjects())
+    if (o instanceof PDFRawStream && o.dict.get(PDFName.of('Subtype')) === PDFName.of('Form'))
+      czesci.push(tekst(o));
+  return czesci.join('\n');
+}
+
+describe('evenodd w PDF i w tle własnego kształtu', () => {
+  const dziury = '<path fill-rule="evenodd" d="M0 0H20V10H0ZM5 3H15V7H5Z"/>';
+
+  it('symbol z evenodd: XObject używa f*, bez evenodd – f', async () => {
+    const e = wlasny('wl:o', 'naroznik', dziury);
+    const sz = szablon({
+      ramka: { grubosc: 0.3, kolor: '#000000', narozniki: { element: e.id, rozmiar: 8 } },
+    });
+    const pdf = await scenyDoPdf([renderujKarte(sz, { dane: {} }, ctx([e])).scena]);
+    const tresc = await tresciPdf(pdf.bajty);
+    expect(tresc).toMatch(/\bf\*/);
+    const zwykly = wlasny('wl:z', 'naroznik', '<path d="M0 0H20V10H0Z"/>');
+    const sz2 = szablon({
+      ramka: { grubosc: 0.3, kolor: '#000000', narozniki: { element: zwykly.id, rozmiar: 8 } },
+    });
+    const pdf2 = await scenyDoPdf([renderujKarte(sz2, { dane: {} }, ctx([zwykly])).scena]);
+    expect(await tresciPdf(pdf2.bajty)).not.toMatch(/\bf\*/);
+  });
+
+  it('tło własnego kształtu z dziurą: ścieżka sceny ma evenodd (SVG fill-rule, PDF f*)', async () => {
+    const e = wlasny('wl:ks', 'ksztalt', dziury);
+    const sz = szablon({}, [
+      {
+        id: 'w',
+        typ: 'wartosc',
+        tekst: '1',
+        ksztalt: 'wlasny',
+        ksztaltElement: e.id,
+        minSzerokosc: 20,
+        minWysokosc: 20,
+        tlo: '#ffeecc',
+        styl: { czcionka: 'tresc', rozmiar: pt(10) },
+      },
+    ]);
+    const w = renderujKarte(sz, { dane: {} }, ctx([e]));
+    const tlo = w.scena.elementy.find((x) => x.typ === 'sciezka' && x.wypelnienie === '#ffeecc');
+    expect(tlo && tlo.typ === 'sciezka' && tlo.evenodd).toBe(true);
+    expect(scenaDoSvg(w.scena)).toContain('fill-rule="evenodd"');
+    expect(await tresciPdf((await scenyDoPdf([w.scena])).bajty)).toMatch(/\bf\*/);
   });
 });

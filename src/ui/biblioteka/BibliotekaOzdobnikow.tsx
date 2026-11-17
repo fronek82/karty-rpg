@@ -14,6 +14,8 @@ import {
   BladImportuSvg,
   TRESC_DOMYSLNA,
   importujSvg,
+  LIMITY_SVG,
+  LIMITY_XML,
   type ElementOzdobny,
   type RodzajElementu,
   type WynikImportuSvg,
@@ -134,7 +136,14 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
       ustawWczytany(undefined);
       const powod =
         e instanceof BladImportuSvg
-          ? t(`biblioteka.blad.${e.kod}`, { szczegoly: e.message })
+          ? t(`biblioteka.blad.${e.kod}`, {
+              szczegoly: e.message,
+              limit: LIMITY_SVG.bajty / 1024,
+              limitElementow: LIMITY_XML.elementy,
+              limitGlebokosci: LIMITY_XML.glebokosc,
+              limitKsztaltow: LIMITY_SVG.ksztalty,
+              limitKomend: LIMITY_SVG.komendy,
+            })
           : String(e instanceof Error ? e.message : e);
       ustawBlad(t('biblioteka.import.blad', { plik: f.name, powod }));
     }
@@ -366,7 +375,7 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
                         key={k}
                         etykieta={t(`biblioteka.tresc.${k}`)}
                         wartosc={Math.round((element.tresc ?? TRESC_DOMYSLNA)[k] * 100)}
-                        min={0}
+                        min={k === 'szer' || k === 'wys' ? 1 : 0}
                         max={100}
                         krok={1}
                         zmien={(v) =>

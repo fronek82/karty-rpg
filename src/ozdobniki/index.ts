@@ -7,3 +7,4 @@ export * from './separatory';
 export * from './separator';
 export * from './ksztalt';
 export * from './svgImport';
+export { LIMITY_XML } from './svgXml';

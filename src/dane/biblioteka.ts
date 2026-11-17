@@ -2,7 +2,9 @@ import type { Projekt } from '../model/projekt';
 import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
 import { czyWbudowany } from '../ozdobniki/katalog';
 import type { ElementOzdobny } from '../ozdobniki/typy';
-import { identyfikatorZNazwy, unikalneId } from './czcionki';
+import { t } from '../i18n';
+import { identyfikatorZNazwy } from './czcionki';
+import { BladDanych } from './schemat';
 
 /** Najwięcej własnych elementów w bibliotece projektu (ochrona przed rozdęciem projektu). */
 export const MAKS_ELEMENTOW_BIBLIOTEKI = 200;
@@ -88,10 +90,24 @@ export function szablonyUzywajace(p: Projekt, id: string): Szablon[] {
   return p.szablony.filter((s) => odwolaniaDoElementow(s).includes(id));
 }
 
+/** Najdłuższa nazwa elementu (jak w schemacie). */
+const MAKS_NAZWA = 200;
+const MAKS_DLUGOSC_ID = 103; // `wl:` + 100 znaków (jak w schemacie)
+
+/** `id`, a przy kolizji `id-2`, `id-3`… – z obcięciem tak, by całość mieściła się w limicie. */
+function unikalneIdElementu(id: string, zajete: ReadonlySet<string>): string {
+  let wynik = id.slice(0, MAKS_DLUGOSC_ID);
+  for (let n = 2; zajete.has(wynik); n++) {
+    const przyrostek = `-${n}`;
+    wynik = id.slice(0, MAKS_DLUGOSC_ID - przyrostek.length) + przyrostek;
+  }
+  return wynik;
+}
+
 /** Identyfikator nowego własnego elementu: `wl:<nazwa>`, unikalny w bibliotece. */
 export function noweIdElementu(nazwa: string, p: Pick<Projekt, 'biblioteka'>): string {
   const baza = identyfikatorZNazwy(nazwa.replace(/\.[^.]+$/, ''), 'wl').replace(/^wl-/, 'wl:');
-  return unikalneId(baza, new Set(elementyProjektu(p).map((e) => e.id)));
+  return unikalneIdElementu(baza, new Set(elementyProjektu(p).map((e) => e.id)));
 }
 
 /** Dodaje element do biblioteki projektu (zwraca nowy projekt i nadane id). */
@@ -101,7 +117,7 @@ export function dodajElementDoBiblioteki(
   element: Omit<ElementOzdobny, 'id' | 'nazwa'>,
 ): { projekt: Projekt; id: string } {
   const id = noweIdElementu(nazwa, p);
-  const nowy: ElementOzdobny = { ...element, id, nazwa };
+  const nowy: ElementOzdobny = { ...element, id, nazwa: nazwa.slice(0, MAKS_NAZWA) };
   return {
     projekt: {
       ...p,
@@ -129,10 +145,23 @@ export type ZmianaElementu = Partial<
   Pick<ElementOzdobny, 'nazwa' | 'rodzaj' | 'kolorowanie' | 'tresc'>
 >;
 
+/** Prostokąt treści w obrębie rysunku: wymiary co najmniej 1 %, całość w zakresie 0–1. */
+export function przytnijTresc(
+  t: NonNullable<ElementOzdobny['tresc']>,
+): NonNullable<ElementOzdobny['tresc']> {
+  const ogranicz = (v: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, Number.isFinite(v) ? v : min));
+  const szer = ogranicz(t.szer, 0.01, 1);
+  const wys = ogranicz(t.wys, 0.01, 1);
+  return { x: ogranicz(t.x, 0, 1 - szer), y: ogranicz(t.y, 0, 1 - wys), szer, wys };
+}
+
 /** Zmienia nazwę, rodzaj, kolorowanie albo prostokąt treści własnego elementu. */
 export function zmienElementBiblioteki(p: Projekt, id: string, zmiana: ZmianaElementu): Projekt {
   const lista = elementyProjektu(p);
   if (!lista.some((e) => e.id === id)) return p;
+  if (zmiana.nazwa !== undefined) zmiana = { ...zmiana, nazwa: zmiana.nazwa.slice(0, MAKS_NAZWA) };
+  if (zmiana.tresc) zmiana = { ...zmiana, tresc: przytnijTresc(zmiana.tresc) };
   return {
     ...p,
     biblioteka: { ozdobniki: lista.map((e) => (e.id === id ? { ...e, ...zmiana } : e)) },
@@ -148,17 +177,28 @@ export function zmienElementBiblioteki(p: Projekt, id: string, zmiana: ZmianaEle
 export function dolaczElementy(
   p: Projekt,
   nowe: readonly ElementOzdobny[],
+  /** Tylko te elementy z paczki są dołączane (np. używane przez szablon); domyślnie wszystkie. */
+  uzyte?: ReadonlySet<string>,
 ): { lista: ElementOzdobny[]; mapa: Map<string, string> } {
   const lista = [...elementyProjektu(p)];
   const mapa = new Map<string, string>();
   const zajete = new Set(lista.map((e) => e.id));
+  const wPaczce = new Set<string>();
   for (const e of nowe) {
+    if (wPaczce.has(e.id))
+      throw new BladDanych(t('dane.powtorzonyId', { id: e.id, gdzie: t('dane.gdzie.biblioteka') }));
+    wPaczce.add(e.id);
+  }
+  for (const e of nowe) {
+    if (uzyte && !uzyte.has(e.id)) continue;
     const istniejacy = lista.find((x) => x.id === e.id);
     if (istniejacy && stabilnyJson(istniejacy) === stabilnyJson(e)) continue;
-    const id = unikalneId(e.id, zajete);
+    const id = unikalneIdElementu(e.id, zajete);
     zajete.add(id);
     if (id !== e.id) mapa.set(e.id, id);
     lista.push({ ...e, id });
   }
+  if (lista.length > MAKS_ELEMENTOW_BIBLIOTEKI)
+    throw new BladDanych(t('dane.zaDuzoElementow', { limit: MAKS_ELEMENTOW_BIBLIOTEKI }));
   return { lista, mapa };
 }

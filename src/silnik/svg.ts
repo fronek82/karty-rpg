@@ -102,7 +102,7 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
       case 'okrag':
         return `<circle cx="${liczba(e.cx)}" cy="${liczba(e.cy)}" r="${liczba(e.r)}"${wypelnienie(e.wypelnienie)}${atrybutyObrysu(e.obrys)}/>`;
       case 'sciezka':
-        return `<path d="${konturNaD(e.kontur)}"${wypelnienie(e.wypelnienie)}${atrybutyObrysu(e.obrys)}/>`;
+        return `<path d="${konturNaD(e.kontur)}"${wypelnienie(e.wypelnienie)}${e.evenodd && e.wypelnienie !== undefined ? ' fill-rule="evenodd"' : ''}${atrybutyObrysu(e.obrys)}/>`;
       case 'tekst': {
         const uzycia = (obrys?: { grubosc: number }) =>
           e.glify

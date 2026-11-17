@@ -138,10 +138,19 @@ function ustawObrys(o: Obrys): PDFOperator[] {
   ];
 }
 
+/** Operator malujący ścieżkę: wypełnienie (nonzero albo parzysto-nieparzyste) i/lub obrys. */
+function operatorMalowania(wypelnione: boolean, obrys: boolean, evenodd: boolean): PDFOperator {
+  if (wypelnione && obrys)
+    return evenodd ? PDFOperator.of(PDFOperatorNames.FillEvenOddAndStroke) : fillAndStroke();
+  if (wypelnione) return evenodd ? PDFOperator.of(PDFOperatorNames.FillEvenOdd) : fill();
+  return stroke();
+}
+
 function rysujKsztalt(
   kontur: Kontur,
   wyp: Kolor | undefined,
   obrys: Obrys | undefined,
+  evenodd = false,
 ): PDFOperator[] {
   const o = czyObrys(obrys) ? obrys : undefined;
   if (!wyp && !o) return [];
@@ -152,7 +161,7 @@ function rysujKsztalt(
   }
   if (o) ops.push(...ustawObrys(o));
   ops.push(...operatorySciezki(kontur));
-  ops.push(wyp && o ? fillAndStroke() : wyp ? fill() : stroke());
+  ops.push(operatorMalowania(!!wyp, !!o, evenodd));
   ops.push(popGraphicsState());
   return ops;
 }
@@ -254,19 +263,7 @@ class BudowniczyPdf {
         zapas = Math.max(zapas, o.grubosc);
       }
       ops.push(...operatorySciezki(c.kontur, (v) => Math.round(v * 1e4) / 1e4));
-      const wyp = c.wypelnienie !== undefined;
-      const eo = !!c.evenodd;
-      ops.push(
-        wyp && o
-          ? eo
-            ? PDFOperator.of(PDFOperatorNames.FillEvenOddAndStroke)
-            : fillAndStroke()
-          : wyp
-            ? eo
-              ? PDFOperator.of(PDFOperatorNames.FillEvenOdd)
-              : fill()
-            : stroke(),
-      );
+      ops.push(operatorMalowania(c.wypelnienie !== undefined, !!o, !!c.evenodd));
       ops.push(popGraphicsState());
     }
     const m = Math.ceil(zapas) + 1;
@@ -334,7 +331,7 @@ class BudowniczyPdf {
       case 'okrag':
         return rysujKsztalt(konturOkregu(e.cx, e.cy, e.r), e.wypelnienie, e.obrys);
       case 'sciezka':
-        return rysujKsztalt(e.kontur, e.wypelnienie, e.obrys);
+        return rysujKsztalt(e.kontur, e.wypelnienie, e.obrys, e.evenodd);
       case 'linia':
         if (!czyObrys(e.obrys)) return [];
         return [

@@ -21,6 +21,9 @@ export const pl = {
   'dane.zod.inne': 'niepoprawna wartość',
   'dane.gdzie.zasoby': 'zasoby',
   'dane.gdzie.biblioteka': 'biblioteka ozdobników',
+  'dane.zaDuzoElementow': 'Biblioteka ozdobników przekroczyłaby limit {limit} elementów.',
+  'dane.elementZProjektu':
+    'Szablon odwołuje się do elementu ozdobnego „{id}”, którego nie ma w pliku – użyto elementu o tym id z projektu.',
   'dane.nieznanyElement':
     '{gdzie}: element ozdobny „{id}” nie istnieje w bibliotece (ozdoba zostanie pominięta).',
   'dane.gdzie.szablony': 'szablony',
@@ -749,15 +752,17 @@ export const pl = {
   'biblioteka.import.dodaj': 'Dodaj do biblioteki',
   'biblioteka.import.anuluj': 'Anuluj',
   'biblioteka.import.blad': 'Nie udało się zaimportować „{plik}”: {powod}',
-  'biblioteka.blad.za-duzy': 'plik jest większy niż 512 KB.',
+  'biblioteka.blad.za-duzy': 'plik jest większy niż {limit} KB.',
   'biblioteka.blad.xml': 'plik nie jest poprawnym XML-em ({szczegoly}).',
   'biblioteka.blad.nie-svg': 'to nie jest plik SVG.',
-  'biblioteka.blad.za-duzo-elementow': 'plik ma zbyt wiele elementów.',
-  'biblioteka.blad.za-gleboko': 'elementy są zagnieżdżone zbyt głęboko.',
-  'biblioteka.blad.za-duzo-ksztaltow': 'rysunek ma zbyt wiele kształtów.',
-  'biblioteka.blad.za-duzo-komend': 'rysunek ma zbyt wiele komend (limit 20 000 po spłaszczeniu).',
+  'biblioteka.blad.za-duzo-elementow': 'plik ma zbyt wiele elementów (limit {limitElementow}).',
+  'biblioteka.blad.za-gleboko': 'elementy są zagnieżdżone zbyt głęboko (limit {limitGlebokosci}).',
+  'biblioteka.blad.za-duzo-ksztaltow':
+    'rysunek ma zbyt wiele kształtów lub użyć <use> (limit kształtów {limitKsztaltow}).',
+  'biblioteka.blad.za-duzo-komend':
+    'rysunek ma zbyt wiele komend (limit {limitKomend} po spłaszczeniu).',
   'biblioteka.blad.pusty': 'w pliku nie ma kształtów, które da się zaimportować.',
-  'biblioteka.blad.wymiary': 'rysunek ma zerowy rozmiar.',
+  'biblioteka.blad.wymiary': 'rysunek ma zerowy, zbyt duży lub niepoprawny rozmiar.',
   'biblioteka.limit': 'Biblioteka może mieć najwyżej {limit} własnych elementów.',
   'biblioteka.uzyjJako': 'Użyj jako',
   'biblioteka.kolor': 'Kolor',
@@ -796,7 +801,8 @@ export const pl = {
   'svg.pominieto.kreskowanie': 'kreskowanie linii – linie są ciągłe',
   'svg.pominieto.nieznany-element': 'nieznany element <{szczegoly}>',
   'svg.pominieto.nieznany-kolor': 'nieznany kolor „{szczegoly}” – użyto czarnego',
-  'svg.pominieto.bledna-sciezka': 'uszkodzona ścieżka',
+  'svg.pominieto.bledna-sciezka': 'uszkodzona ścieżka lub lista punktów',
+  'svg.pominieto.bledna-transformacja': 'niepoprawny zapis transform – użyto braku przekształcenia',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;

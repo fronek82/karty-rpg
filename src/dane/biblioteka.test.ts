@@ -19,6 +19,7 @@ import {
   dolaczElementy,
   elementyUzyteWSzablonie,
   noweIdElementu,
+  przytnijTresc,
   odwolaniaDoElementow,
   przepiszOdwolania,
   szablonyUzywajace,
@@ -247,5 +248,125 @@ describe('walidacja i migracja (schemat 13)', () => {
     expect(() =>
       importujSzablon(zipSync({ ...pliki, 'szablon.json': strToU8(JSON.stringify(j)) })),
     ).toThrow();
+  });
+});
+
+describe('poprawki po przeglądzie (paczka, limity, walidacja)', () => {
+  const paczkaZ = (p: Projekt, szablon: Szablon) =>
+    importujSzablon(eksportujSzablon(p, zasoby, szablon.id).bajty);
+
+  it('duplikat id elementu w paczce jest odrzucany', () => {
+    const { p, szablon } = projektZElementami();
+    const pliki = unzipSync(eksportujSzablon(p, zasoby, szablon.id).bajty);
+    const j = JSON.parse(strFromU8(pliki['szablon.json']!));
+    j.biblioteka.push(structuredClone(j.biblioteka[0]));
+    expect(() =>
+      importujSzablon(zipSync({ ...pliki, 'szablon.json': strToU8(JSON.stringify(j)) })),
+    ).toThrow(/powtórzony/);
+    const e = j.biblioteka[0] as ElementOzdobny;
+    expect(() => dolaczElementy(baza, [e, e])).toThrow(/powtórzony/);
+  });
+
+  it('limit 200 elementów w projekcie i w paczce (schemat) oraz po dołączeniu', () => {
+    const { p } = projektZElementami();
+    const e = p.biblioteka!.ozdobniki[0]!;
+    const wiele = (n: number): ElementOzdobny[] =>
+      Array.from({ length: n }, (_, i) => ({ ...e, id: `wl:e${i}` }));
+    expect(() => przygotujProjekt({ ...p, biblioteka: { ozdobniki: wiele(200) } })).not.toThrow();
+    expect(() => przygotujProjekt({ ...p, biblioteka: { ozdobniki: wiele(201) } })).toThrow();
+    // Po dołączeniu do pełnej biblioteki limit też obowiązuje.
+    const pelny: Projekt = { ...baza, biblioteka: { ozdobniki: wiele(200) } };
+    expect(() => dolaczElementy(pelny, [{ ...e, id: 'wl:nowy' }])).toThrow(/limit/);
+    const pliki = unzipSync(eksportujSzablon(p, zasoby, 'ozdobny').bajty);
+    const j = JSON.parse(strFromU8(pliki['szablon.json']!));
+    j.biblioteka = wiele(201);
+    expect(() =>
+      importujSzablon(zipSync({ ...pliki, 'szablon.json': strToU8(JSON.stringify(j)) })),
+    ).toThrow();
+  });
+
+  it('dodajSzablon dołącza tylko elementy używane przez szablon', () => {
+    const { p, szablon } = projektZElementami();
+    const paczka = paczkaZ(p, szablon);
+    const nadmiar = { ...paczka.biblioteka![0]!, id: 'wl:zbedny' };
+    const w = dodajSzablon(baza, zasoby, {
+      ...paczka,
+      biblioteka: [...paczka.biblioteka!, nadmiar],
+    });
+    expect(w.projekt.biblioteka!.ozdobniki.map((x) => x.id)).not.toContain('wl:zbedny');
+    expect(w.projekt.biblioteka!.ozdobniki).toHaveLength(2);
+  });
+
+  it('ostrzega, gdy szablon odwołuje się do elementu spoza paczki, a projekt go ma', () => {
+    const { p, szablon } = projektZElementami();
+    const paczka = paczkaZ(p, szablon);
+    const bez = { ...paczka, biblioteka: paczka.biblioteka!.filter((e) => e.id !== 'wl:Rog') };
+    const w = dodajSzablon(p, zasoby, bez);
+    expect(w.ostrzezenia.some((o) => o.includes('wl:Rog'))).toBe(true);
+    // Brak także w projekcie – tylko ostrzeżenie projektu (nie ostrzeżenie importu).
+    const w2 = dodajSzablon(baza, zasoby, bez);
+    expect(w2.ostrzezenia.some((o) => o.includes('wl:Rog'))).toBe(false);
+    expect(ostrzezeniaProjektu(w2.projekt).some((o) => o.includes('wl:Rog'))).toBe(true);
+  });
+
+  it('id: bardzo długa nazwa jest obcinana tak, by wl: + id mieściło się w 103 znakach', () => {
+    const dluga = 'a'.repeat(300);
+    const id = noweIdElementu(dluga, baza);
+    expect(id.length).toBeLessThanOrEqual(103);
+    // Kolizje nie wydłużają id ponad limit i dają poprawny element.
+    const p1 = dodajElementDoBiblioteki(baza, dluga, nowy());
+    const kopie = dolaczElementy(p1.projekt, [
+      { ...p1.projekt.biblioteka!.ozdobniki[0]!, nazwa: 'inny' },
+    ]);
+    expect(kopie.lista.every((e) => e.id.length <= 103)).toBe(true);
+    expect(() =>
+      przygotujProjekt({ ...p1.projekt, biblioteka: { ozdobniki: kopie.lista } }),
+    ).not.toThrow();
+  });
+
+  it('schemat: kostka z limitem komend, zakres liczb, grubość obrysu, prostokąt treści', () => {
+    const { p } = projektZElementami();
+    const e = p.biblioteka!.ozdobniki[0]!;
+    const z = (zmiana: Partial<ElementOzdobny>): Projekt => ({
+      ...p,
+      biblioteka: { ozdobniki: [{ ...e, ...zmiana }] },
+    });
+    const duzo = Array.from({ length: 20001 }, () => ['L', 1, 1] as ['L', number, number]);
+    expect(() =>
+      przygotujProjekt(z({ kostka: [{ kontur: duzo, wypelnienie: 'kolor' }] })),
+    ).toThrow();
+    expect(() =>
+      przygotujProjekt(z({ kontury: [{ kontur: [['M', 2e6, 0]], wypelnienie: 'kolor' }] })),
+    ).toThrow();
+    expect(() =>
+      przygotujProjekt(
+        z({ kontury: [{ kontur: [['M', 0, 0]], obrys: { grubosc: 2e6, kolor: 'kolor' } }] }),
+      ),
+    ).toThrow();
+    expect(() => przygotujProjekt(z({ szer: 2e6 }))).toThrow();
+    for (const tresc of [
+      { x: 0.1, y: 0.1, szer: 0, wys: 0.5 },
+      { x: 0.1, y: 0.1, szer: 0.5, wys: 0.005 },
+      { x: 0.6, y: 0, szer: 0.6, wys: 0.5 },
+      { x: 0, y: 0.7, szer: 0.5, wys: 0.5 },
+    ])
+      expect(() => przygotujProjekt(z({ tresc })), JSON.stringify(tresc)).toThrow();
+    expect(() =>
+      przygotujProjekt(z({ tresc: { x: 0.5, y: 0.5, szer: 0.5, wys: 0.5 } })),
+    ).not.toThrow();
+  });
+
+  it('przytnijTresc: wymiary ≥ 1 %, całość w zakresie 0–1', () => {
+    expect(przytnijTresc({ x: 0.9, y: -1, szer: 0.5, wys: 0 })).toEqual({
+      x: 0.5,
+      y: 0,
+      szer: 0.5,
+      wys: 0.01,
+    });
+    const a = dodajElementDoBiblioteki(baza, 'G', nowy());
+    const p = zmienElementBiblioteki(a.projekt, a.id, {
+      tresc: { x: 0.9, y: 0.9, szer: 0.5, wys: 0.5 },
+    });
+    expect(() => przygotujProjekt(p)).not.toThrow();
   });
 });

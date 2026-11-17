@@ -39,7 +39,7 @@ export function rozwinEncje(s: string): string {
       const kod = n[1] === 'x' ? parseInt(n.slice(2), 16) : parseInt(n.slice(1), 10);
       return kod > 0 && kod <= 0x10ffff ? String.fromCodePoint(kod) : calosc;
     }
-    return ENCJE[n] ?? calosc;
+    return Object.hasOwn(ENCJE, n) ? ENCJE[n]! : calosc;
   });
 }
 
@@ -76,6 +76,8 @@ export function parsujXml(zrodlo: string, limity = LIMITY_XML): WezelXml {
       if (s.slice(i).trim() !== '' && stos.length === 0) blad('tekst poza elementem głównym');
       break;
     }
+    if (lt > i && stos.length === 0 && s.slice(i, lt).trim() !== '')
+      blad('tekst poza elementem głównym');
     // Tekst między znacznikami: zapamiętany tylko dla `style` / `script`.
     if (lt > i && stos.length > 0) {
       const g = stos[stos.length - 1]!;
@@ -131,7 +133,8 @@ export function parsujXml(zrodlo: string, limity = LIMITY_XML): WezelXml {
       while (i < n && !SPACJA.test(s[i]!) && s[i] !== '>' && s[i] !== '/') i++;
       const pelna = s.slice(odNazwy, i);
       if (pelna === '') blad('pusta nazwa znacznika');
-      const atr: Record<string, string> = {};
+      // Bez prototypu: nazwy jak `__proto__` czy `constructor` to zwykłe klucze.
+      const atr: Record<string, string> = Object.create(null) as Record<string, string>;
       let samozamykajacy = false;
       for (;;) {
         while (i < n && SPACJA.test(s[i]!)) i++;
@@ -158,7 +161,7 @@ export function parsujXml(zrodlo: string, limity = LIMITY_XML): WezelXml {
         const koniec = s.indexOf(q, i + 1);
         if (koniec < 0) blad('niezamknięta wartość atrybutu');
         // Pierwszy zapis atrybutu wygrywa (powtórzenie to błąd XML – tu łagodnie).
-        if (!(nazwaAtr in atr)) atr[nazwaAtr] = rozwinEncje(s.slice(i + 1, koniec));
+        if (!Object.hasOwn(atr, nazwaAtr)) atr[nazwaAtr] = rozwinEncje(s.slice(i + 1, koniec));
         i = koniec + 1;
       }
       if (++liczba > limity.elementy)

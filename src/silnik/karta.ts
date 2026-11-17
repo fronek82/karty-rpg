@@ -378,7 +378,13 @@ export function renderujKarte(
     if (w.tlo) {
       elementy.push(
         ksztalt === 'wlasny'
-          ? { typ: 'sciezka', kontur: konturWlasnegoKsztaltu(wlasny!, obszar), wypelnienie: w.tlo }
+          ? {
+              typ: 'sciezka',
+              kontur: konturWlasnegoKsztaltu(wlasny!, obszar),
+              wypelnienie: w.tlo,
+              // Dziury z pliku (fill-rule evenodd) zostają także w tle pola.
+              ...(wlasny!.kontury.some((c) => c.evenodd) ? { evenodd: true } : {}),
+            }
           : ksztalt === 'sciety'
             ? { typ: 'sciezka', kontur: konturScietego(obszar, promien ?? 0), wypelnienie: w.tlo }
             : ksztalt
