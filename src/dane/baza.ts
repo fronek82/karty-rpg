@@ -2,7 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 import { t } from '../i18n';
 import type { PresetUkladu } from '../model/arkusz';
 import type { DaneZasobow, Projekt } from '../model/projekt';
-import { BladDanych, przygotujProjekt } from './schemat';
+import { BladDanych, presetUkladu, przygotujProjekt } from './schemat';
 
 interface WpisZasobu {
   projektId: string;
@@ -99,9 +99,14 @@ export class BazaProjektow {
     return new Map((await this.db.miniatury.toArray()).map((m) => [m.id, m.svg]));
   }
 
-  /** „Moje układy” arkuszy, alfabetycznie. */
+  /**
+   * „Moje układy” arkuszy, alfabetycznie. Rekordy niezgodne ze schematem (uszkodzone, z nowszej
+   * wersji aplikacji) są pomijane – preset trafia potem wprost do ustawień kartki.
+   */
   async uklady(): Promise<PresetUkladu[]> {
-    return (await this.db.uklady.toArray()).sort((a, b) => a.nazwa.localeCompare(b.nazwa, 'pl'));
+    return (await this.db.uklady.toArray())
+      .filter((u) => presetUkladu.safeParse(u).success)
+      .sort((a, b) => a.nazwa.localeCompare(b.nazwa));
   }
 
   async zapiszUklad(u: PresetUkladu): Promise<void> {

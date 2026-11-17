@@ -104,7 +104,14 @@ function napis(
 
 /** Odcinki cięcia: każdy bok slotu osobno, wspólne boki sąsiednich kart tylko raz. */
 export function odcinkiCiecia(
-  karty: { x: Mm; y: Mm; kolumny: number; rzedy: number }[],
+  karty: {
+    x: Mm;
+    y: Mm;
+    kolumny: number;
+    rzedy: number;
+    /** Położenie i wymiar samej karty – przy odstępach obrys biegnie wokół niej. */
+    karta?: { x: Mm; y: Mm; szer: Mm; wys: Mm };
+  }[],
   slot: { szerokosc: Mm; wysokosc: Mm },
   /** Odstępy między kartami własnego układu – karta zajmująca kilka slotów obejmuje też odstępy. */
   odstep: { x: Mm; y: Mm } = { x: 0, y: 0 },
@@ -119,13 +126,17 @@ export function odcinkiCiecia(
     const sz = slot.szerokosc;
     const wy = slot.wysokosc;
     if (odstep.x > 0 || odstep.y > 0) {
-      // Karty z odstępami nie mają wspólnych boków – obrys każdej osobno.
-      const w = c.kolumny * sz + (c.kolumny - 1) * odstep.x;
-      const h = c.rzedy * wy + (c.rzedy - 1) * odstep.y;
-      dodaj(c.x, c.y, c.x + w, c.y);
-      dodaj(c.x, c.y + h, c.x + w, c.y + h);
-      dodaj(c.x, c.y, c.x, c.y + h);
-      dodaj(c.x + w, c.y, c.x + w, c.y + h);
+      // Karty z odstępami nie mają wspólnych boków – obrys każdej osobno, wokół samej karty.
+      const r = c.karta ?? {
+        x: c.x,
+        y: c.y,
+        szer: c.kolumny * sz + (c.kolumny - 1) * odstep.x,
+        wys: c.rzedy * wy + (c.rzedy - 1) * odstep.y,
+      };
+      dodaj(r.x, r.y, r.x + r.szer, r.y);
+      dodaj(r.x, r.y + r.wys, r.x + r.szer, r.y + r.wys);
+      dodaj(r.x, r.y, r.x, r.y + r.wys);
+      dodaj(r.x + r.szer, r.y, r.x + r.szer, r.y + r.wys);
       continue;
     }
     for (let i = 0; i < c.kolumny; i++) {
@@ -421,37 +432,43 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     const elementy: ElementSceny[] = [];
     const glify: Record<string, DefinicjaGlifu>[] = [];
     const naStronie = rozmieszczenie.karty.filter((c) => c.strona === n);
-    const prostokaty = naStronie.map((c) => ({
-      x: poczatek.x + c.xRegionu + odstepKolumny(n, c.kolumna) + c.kolumna * slot.szerokosc,
-      y: poczatek.y + c.rzad * slot.wysokosc + odstepRzedu(c.rzad),
-      kolumny: c.kolumny,
-      rzedy: c.rzedy,
-    }));
+    const prostokaty = naStronie.map((c) => {
+      const x = poczatek.x + c.xRegionu + odstepKolumny(n, c.kolumna) + c.kolumna * slot.szerokosc;
+      const y = poczatek.y + c.rzad * slot.wysokosc + odstepRzedu(c.rzad);
+      // Karta na środku obszaru swoich slotów (z odstępami między nimi) – bez skalowania:
+      // karta w mm mniejsza niż slot albo karta wieloslotowa przy odstępach własnego układu.
+      const { szer, wys } = wymiaryKarty(szablon(c.karta)!, c.karta);
+      const obszarX = c.kolumny * slot.szerokosc + (c.kolumny - 1) * odstep.x;
+      const obszarY = c.rzedy * slot.wysokosc + (c.rzedy - 1) * odstep.y;
+      return {
+        x,
+        y,
+        kolumny: c.kolumny,
+        rzedy: c.rzedy,
+        karta: {
+          x: x + Math.max(0, (obszarX - szer) / 2),
+          y: y + Math.max(0, (obszarY - wys) / 2),
+          szer,
+          wys,
+        },
+      };
+    });
     naStronie.forEach((c, i) => {
       const s = scenaKarty(c.karta);
       glify.push(s.glify);
-      // Karta w mm mniejsza niż slot – na środku slotu (bez skalowania).
-      const sz = szablon(c.karta)!;
-      const dx = sz.rozmiar.tryb === 'mm' ? Math.max(0, (slot.szerokosc - s.szer) / 2) : 0;
-      const dy = sz.rozmiar.tryb === 'mm' ? Math.max(0, (slot.wysokosc - s.wys) / 2) : 0;
-      elementy.push({
-        typ: 'grupa',
-        x: prostokaty[i]!.x + dx,
-        y: prostokaty[i]!.y + dy,
-        elementy: s.elementy,
-      });
+      const k = prostokaty[i]!.karta;
+      elementy.push({ typ: 'grupa', x: k.x, y: k.y, elementy: s.elementy });
     });
     // Strefa bezpieczeństwa (np. przycięcie w punkcie foto): karta nie powinna w nią wchodzić.
     const mb = u.marginesBezpieczenstwa ?? 0;
     if (mb > 0) {
       naStronie.forEach((c, i) => {
-        const p = prostokaty[i]!;
-        const { szer, wys } = wymiaryKarty(szablon(c.karta)!, c.karta);
+        const k = prostokaty[i]!.karta;
         if (
-          p.x < mb - 1e-6 ||
-          p.y < mb - 1e-6 ||
-          p.x + szer > strona.szer - mb + 1e-6 ||
-          p.y + wys > strona.wys - mb + 1e-6
+          k.x < mb - 1e-6 ||
+          k.y < mb - 1e-6 ||
+          k.x + k.szer > strona.szer - mb + 1e-6 ||
+          k.y + k.wys > strona.wys - mb + 1e-6
         )
           ostrzezenia.push({ kartaId: c.karta.id, komunikat: 'karta-w-strefie-przyciecia' });
       });
@@ -653,34 +670,51 @@ export function zSzarymiObrazami(scena: Scena): Scena {
  * kart same obrysy slotów z numerami i krzyżykami na środkach – do sprawdzenia, czy wydruk trafia
  * w perforację (z kalibracją przesunięcia jak zwykły PDF). Jedna strona.
  */
-export function stronaTestowa(arkusz: Arkusz, ctx: KontekstArkusza): Scena {
-  const pusta = zbudujArkusz(
-    { ...arkusz, liczbaStron: 1, przypiete: [] },
-    { id: '', nazwa: '', karty: [] },
-    ctx,
-  );
+export function stronaTestowa(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza): Scena {
+  // Prawdziwa talia: ten sam slot (z szablonu kart) i ten sam pas nagłówków co na kartce.
+  const w = zbudujArkusz({ ...arkusz, liczbaStron: 1 }, talia, ctx);
   const { szer, wys } = wymiaryStrony(arkusz.ustawienia);
   const elementy: ElementSceny[] = [];
   const glify: Record<string, DefinicjaGlifu>[] = [];
   const obrys = { kolor: '#000000', grubosc: 0.2 };
   const krzyzyk = { kolor: '#000000', grubosc: 0.15 };
   const styl: StylTekstu = { czcionka: 'tytul', rozmiar: 4, kolor: '#000000' };
-  const { kolumny, rzedy } = pusta.siatka;
-  const s = pusta.slot;
-  for (let r = 0; r < rzedy; r++)
-    for (let k = 0; k < kolumny; k++) {
-      const x = pusta.poczatekSiatki.x + pusta.odstepKolumny(0, k) + k * s.szerokosc;
-      const y = pusta.poczatekSiatki.y + r * s.wysokosc + pusta.odstepRzedu(r);
-      elementy.push({ typ: 'prostokat', x, y, szer: s.szerokosc, wys: s.wysokosc, obrys });
-      const cx = x + s.szerokosc / 2;
-      const cy = y + s.wysokosc / 2;
-      const d = Math.min(5, s.szerokosc / 6, s.wysokosc / 6);
-      elementy.push({ typ: 'linia', x1: cx - d, y1: cy, x2: cx + d, y2: cy, obrys: krzyzyk });
-      elementy.push({ typ: 'linia', x1: cx, y1: cy - d, x2: cx, y2: cy + d, obrys: krzyzyk });
-      const nr = napis(String(r * kolumny + k + 1), styl, undefined, ctx.czcionki);
-      glify.push(nr.glify);
-      elementy.push({ typ: 'grupa', x: x + 1.5, y: y + 1, elementy: nr.elementy });
-    }
+  const s = w.slot;
+  // Pola: cała siatka; przy grupach talii (kolumny przesunięte regionami) – miejsca kart strony 1.
+  const pola = w.siatka.grupy
+    ? w.rozmieszczenie.karty
+        .filter((c) => c.strona === 0)
+        .map((c) => ({
+          x:
+            w.poczatekSiatki.x +
+            c.xRegionu +
+            w.odstepKolumny(0, c.kolumna) +
+            c.kolumna * s.szerokosc,
+          y: w.poczatekSiatki.y + c.rzad * s.wysokosc + w.odstepRzedu(c.rzad),
+          szer: c.kolumny * s.szerokosc,
+          wys: c.rzedy * s.wysokosc,
+        }))
+    : Array.from({ length: w.siatka.rzedy * w.siatka.kolumny }, (_, i) => {
+        const k = i % w.siatka.kolumny;
+        const r = Math.floor(i / w.siatka.kolumny);
+        return {
+          x: w.poczatekSiatki.x + w.odstepKolumny(0, k) + k * s.szerokosc,
+          y: w.poczatekSiatki.y + r * s.wysokosc + w.odstepRzedu(r),
+          szer: s.szerokosc,
+          wys: s.wysokosc,
+        };
+      });
+  pola.forEach((p, i) => {
+    elementy.push({ typ: 'prostokat', ...p, obrys });
+    const cx = p.x + p.szer / 2;
+    const cy = p.y + p.wys / 2;
+    const d = Math.min(5, p.szer / 6, p.wys / 6);
+    elementy.push({ typ: 'linia', x1: cx - d, y1: cy, x2: cx + d, y2: cy, obrys: krzyzyk });
+    elementy.push({ typ: 'linia', x1: cx, y1: cy - d, x2: cx, y2: cy + d, obrys: krzyzyk });
+    const nr = napis(String(i + 1), styl, undefined, ctx.czcionki);
+    glify.push(nr.glify);
+    elementy.push({ typ: 'grupa', x: p.x + 1.5, y: p.y + 1, elementy: nr.elementy });
+  });
   return { szer, wys, elementy, glify: polaczGlify(...glify) };
 }
 

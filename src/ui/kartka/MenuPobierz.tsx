@@ -67,13 +67,21 @@ export function MenuPobierz({
         disabled={wylaczone}
         aria-haspopup="menu"
         aria-expanded={otwarte}
+        aria-controls={otwarte ? 'menu-pobierz' : undefined}
         onClick={() => ustawOtwarte((x) => !x)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            ustawOtwarte(true);
+          }
+        }}
       >
-        {t('pobierz.menu')} ▾
+        {t('pobierz.menu')} <span aria-hidden="true">▾</span>
       </button>
       {otwarte && (
         <div
           ref={menu}
+          id="menu-pobierz"
           className="menu-typu"
           role="menu"
           aria-label={t('pobierz.menu')}

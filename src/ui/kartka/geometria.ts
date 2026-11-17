@@ -86,9 +86,9 @@ export function slotPodPunktem(
     if (y >= y0 && y < y0 + g.slot.wysokosc) rzad = r;
   }
   if (przytnij) {
+    if (g.siatka.kolumny < 1 || g.siatka.rzedy < 1) return undefined;
     if (kolumna === undefined) {
-      const x0 = rogSlotu(g, strona, 0, 0).x;
-      kolumna = x < x0 ? 0 : g.siatka.kolumny - 1;
+      kolumna = 0;
       for (let k = 0; k < g.siatka.kolumny; k++) if (rogSlotu(g, strona, k, 0).x <= x) kolumna = k;
     }
     if (rzad === undefined) {

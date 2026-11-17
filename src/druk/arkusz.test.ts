@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { wymiaryUkladu, type Arkusz, type UkladArkusza } from '../model/arkusz';
 import { ustawieniaKartkiDla } from '../dane/wlasneKarty';
-import { daneCzaru, szablonCzaru } from '../silnik/__testy__/przyklady';
+import { daneCzaru, szablonCzaru, szablonStatystyk } from '../silnik/__testy__/przyklady';
 import type { Szablon, Talia } from '../model/szablon';
 import { arkuszeMausrittera } from '../pakiety/mausritter/arkusze';
 import { SLOT, szablonyMausrittera } from '../pakiety/mausritter/szablony';
@@ -395,6 +395,42 @@ describe('zbudujArkusz – własny układ arkusza', () => {
     });
   });
 
+  it('karta wieloslotowa przy odstępach: na środku swoich slotów, obrys wokół samej karty', () => {
+    const wielo: Szablon = {
+      ...s,
+      id: 'wielo',
+      rozmiar: { tryb: 'sloty', slot: { szerokosc: 30, wysokosc: 40 }, kolumny: 2, rzedy: 1 },
+    };
+    const a = arkuszW({ ...uklad, kolumny: 4, rzedy: 2 });
+    a.ustawienia.slot = { szerokosc: 30, wysokosc: 40 };
+    const w = zbudujArkusz(
+      a,
+      { id: 't', nazwa: 't', karty: [{ id: 'w', szablonId: 'wielo', dane: {}, ilosc: 1 }] },
+      { ...ctxW, szablony: new Map([['wielo', wielo]]) },
+    );
+    const k = w.strony[0]!.elementy.find((e) => e.typ === 'grupa')!;
+    // Obszar 2 slotów z odstępem 4 mm = 64 mm, karta 60 mm → 2 mm z każdej strony.
+    expect(k.x).toBeCloseTo(8 + 2);
+    const poziome = linie(w.strony[0]!).filter((l) => l.y1 === l.y2);
+    expect(poziome.map((l) => [l.x1, l.x2])).toEqual([
+      [10, 70],
+      [10, 70],
+    ]);
+  });
+
+  it('strefa bezpieczeństwa liczona od położenia karty (wyśrodkowanej), nie od rogu slotu', () => {
+    const a = arkuszW({ ...uklad, kolumny: 1, rzedy: 1, lewo: 0, gora: 0 });
+    a.ustawienia.slot = { szerokosc: 63.4, wysokosc: 88.4 };
+    a.ustawienia.marginesBezpieczenstwa = 0.1;
+    const t1: Talia = { ...taliaW, karty: [taliaW.karty[0]!] };
+    expect(zbudujArkusz(a, t1, ctxW).ostrzezenia).toEqual([]);
+    a.ustawienia.marginesBezpieczenstwa = 0.3;
+    expect(zbudujArkusz(a, t1, ctxW).ostrzezenia).toContainEqual({
+      kartaId: 'k1',
+      komunikat: 'karta-w-strefie-przyciecia',
+    });
+  });
+
   it('karta mniejsza niż slot – na środku slotu, bez skalowania', () => {
     const a = arkuszW({ ...uklad, kolumny: 2, rzedy: 2 });
     a.ustawienia.slot = { szerokosc: 63.4, wysokosc: 88.4 };
@@ -428,8 +464,26 @@ describe('wydruk testowy i kalibracja', () => {
     },
   };
 
+  const pusta: Talia = { id: 't', nazwa: 't', karty: [] };
+
+  it('bez slotu w ustawieniach – slot z szablonu kart talii, jak na kartce', () => {
+    const bezSlotu: Arkusz = { ...a, ustawienia: { ...a.ustawienia } };
+    delete bezSlotu.ustawienia.slot;
+    const talia: Talia = {
+      id: 't',
+      nazwa: 't',
+      karty: [{ id: 'k', szablonId: szablonStatystyk.id, dane: {}, ilosc: 1 }],
+    };
+    const s = stronaTestowa(bezSlotu, talia, {
+      ...ctxT,
+      szablony: new Map([[szablonStatystyk.id, szablonStatystyk]]),
+    });
+    const p = s.elementy.find((e) => e.typ === 'prostokat')!;
+    expect([p.szer, p.wys]).toEqual([88, 63]);
+  });
+
   it('obrysy slotów z numerami i krzyżykami w siatce kartki', () => {
-    const s = stronaTestowa(a, ctxT);
+    const s = stronaTestowa(a, pusta, ctxT);
     const prost = s.elementy.filter((e) => e.typ === 'prostokat');
     expect(prost.map((p) => [p.x, p.y])).toEqual([
       [10, 10],
@@ -442,7 +496,7 @@ describe('wydruk testowy i kalibracja', () => {
   });
 
   it('przesunięcie kalibracji przesuwa całą zawartość strony', () => {
-    const s = stronaTestowa(a, ctxT);
+    const s = stronaTestowa(a, pusta, ctxT);
     expect(przesunScene(s, { x: 0, y: 0 })).toBe(s);
     const p = przesunScene(s, { x: 1.5, y: -0.5 });
     expect(p.elementy).toEqual([{ typ: 'grupa', x: 1.5, y: -0.5, elementy: s.elementy }]);

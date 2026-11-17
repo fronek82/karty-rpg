@@ -54,13 +54,16 @@ export async function zbudujPdf(z: ZadaniePdf): Promise<Uint8Array> {
   const ctx = { czcionki: rejestr, szablony, obraz: (id: string) => obrazy.get(id)?.info };
   const testowa = z.testowy ? z.arkusze.find((a) => a.id === z.testowy) : undefined;
   if (z.testowy && !testowa) throw new Error(`kartka ${z.testowy}`);
+  const taliaKartki = (a: Arkusz) => {
+    const t = z.talie.find((x) => x.id === a.taliaId);
+    if (!t) throw new Error(`talia ${a.taliaId}`);
+    return t;
+  };
   const sceny = (
     testowa
-      ? [stronaTestowa(testowa, ctx)]
+      ? [stronaTestowa(testowa, taliaKartki(testowa), ctx)]
       : z.arkusze.flatMap((a) => {
-          const talia = z.talie.find((x) => x.id === a.taliaId);
-          if (!talia) throw new Error(`talia ${a.taliaId}`);
-          const strony = zbudujArkusz(a, talia, ctx).strony;
+          const strony = zbudujArkusz(a, taliaKartki(a), ctx).strony;
           return a.ustawienia.czarnoBialy ? strony.map(zSzarymiObrazami) : strony;
         })
   ).map((s) => (z.przesuniecie ? przesunScene(s, z.przesuniecie) : s));

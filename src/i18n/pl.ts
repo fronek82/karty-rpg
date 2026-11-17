@@ -241,7 +241,7 @@ export const pl = {
   'uklad.odstepPoziomy': 'Odstęp poziomy (mm)',
   'uklad.odstepPionowy': 'Odstęp pionowy (mm)',
   'uklad.linieCiecia': 'Linie cięcia wokół kart',
-  'uklad.wynik': '{liczba} kart na stronie · prawy margines {prawo} mm · dolny {dol} mm',
+  'uklad.wynik': 'Kart na stronie: {liczba} · prawy margines {prawo} mm · dolny {dol} mm',
   'uklad.pozaPapierem':
     'Siatka wychodzi poza papier (prawy margines {prawo} mm, dolny {dol} mm) – zmniejsz liczbę kart, odstępy albo marginesy.',
   'uklad.moje': 'Moje układy',
@@ -252,6 +252,9 @@ export const pl = {
   'uklad.zapisz': 'Zapisz jako mój układ',
   'uklad.zapisano': 'Zapisano układ „{nazwa}”.',
   'uklad.uzyj': 'Użyj',
+  'uklad.zatwierdz': 'Zapisz',
+  'uklad.bladBazy':
+    'Nie udało się odczytać ani zapisać „Moich układów” w tej przeglądarce (np. okno prywatne albo zablokowane dane strony). Układ kartki działa dalej.',
   'uklad.zmienNazwe': 'Zmień nazwę',
   'uklad.usun': 'Usuń',
   'uklad.uzyjEtykieta': 'Użyj układu {nazwa}',
@@ -593,7 +596,14 @@ export const pl = {
   'pobierz.obrazyGotowe': 'Obrazy gotowe – sprawdź pobrane pliki.',
   'pobierz.bladObrazow': 'Nie udało się utworzyć obrazów: {szczegoly}',
   'pobierz.ostrzezenieStrefy':
-    'Uwaga: {liczba} kart wchodzi w strefę przycięcia przy krawędzi – punkt foto może je przyciąć.',
+    'Uwaga – kart w strefie przycięcia przy krawędzi (punkt foto może je przyciąć): {liczba}.',
+  'pobierz.nicDoEksportu': 'Brak stron albo kart do eksportu.',
+  'pobierz.zaDuze':
+    'Strona {szer} × {wys} mm to za dużo pikseli przy 300 dpi dla przeglądarki – użyj PDF albo mniejszego papieru.',
+  'pobierz.bladRasteryzacji': 'przeglądarka nie utworzyła obrazu',
+  'pobierz.plikStrony': 'strony',
+  'pobierz.plikKarty': 'karty',
+  'pobierz.plikTestowy': 'wydruk-testowy',
   'pobierz.wydrukTestowyGotowy': 'Wydruk testowy gotowy – drukuj w skali 100%.',
   'arkusze.generowanie': 'Tworzę PDF…',
   'arkusze.wczytywanie': 'Wczytuję czcionki i obrazy…',

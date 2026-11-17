@@ -266,6 +266,27 @@ const talia = obj({
   ),
 });
 
+const ukladArkusza = obj({
+  kolumny: calkowita.min(1).max(50),
+  rzedy: calkowita.min(1).max(50),
+  gora: nieujemna,
+  lewo: nieujemna,
+  odstepPoziomy: nieujemna,
+  odstepPionowy: nieujemna,
+  linieCiecia: z.boolean(),
+});
+
+/** Preset „Moje układy” z bazy przeglądarki (sprawdzany przy odczycie – trafia do projektu). */
+export const presetUkladu = obj({
+  id: z.string().min(1),
+  nazwa: z.string().min(1),
+  papier: z.enum([...(Object.keys(PAPIERY) as (keyof typeof PAPIERY)[]), 'wlasny']),
+  wymiaryPapieru: opc(obj({ szer: liczba.min(20).max(1000), wys: liczba.min(20).max(1000) })),
+  orientacja: z.enum(['pionowa', 'pozioma']),
+  slot: obj({ szerokosc: dodatnia, wysokosc: dodatnia }),
+  uklad: ukladArkusza,
+}).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined);
+
 const arkusz = obj({
   id: identyfikator,
   nazwa: z.string(),
@@ -314,17 +335,7 @@ const arkusz = obj({
     czarnoBialy: opc(z.boolean()),
     slot: opc(obj({ szerokosc: dodatnia, wysokosc: dodatnia })),
     poczatekSiatki: opc(xy),
-    uklad: opc(
-      obj({
-        kolumny: calkowita.min(1).max(50),
-        rzedy: calkowita.min(1).max(50),
-        gora: nieujemna,
-        lewo: nieujemna,
-        odstepPoziomy: nieujemna,
-        odstepPionowy: nieujemna,
-        linieCiecia: z.boolean(),
-      }),
-    ),
+    uklad: opc(ukladArkusza),
   }).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined, {
     message: t('dane.wymiaryPapieru'),
     path: ['wymiaryPapieru'],

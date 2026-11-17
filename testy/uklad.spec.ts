@@ -69,7 +69,7 @@ test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem,
   await ust.getByLabel('Margines górny (mm)').fill('12');
   await ust.getByLabel('Odstęp poziomy (mm)').fill('4');
   await ust.getByLabel('Odstęp pionowy (mm)').fill('3');
-  await expect(ust).toContainText('9 kart na stronie · prawy margines 5 mm · dolny 15 mm');
+  await expect(ust).toContainText('Kart na stronie: 9 · prawy margines 5 mm · dolny 15 mm');
   // Slot (2, 1) przesunięty o kartę i odstęp: (8 + 63 + 4) / 210.
   const s21 = slot(page, 1, 2, 1);
   const s11 = page.locator('[data-karta]');
@@ -133,7 +133,7 @@ test('kalibracja zapamiętana w przeglądarce, wydruk testowy, eksport PNG/JPG 3
 
   // Obrazy stron: jedna strona A4 → jeden PNG 2480×3508 px (300 dpi).
   const pobierz = async (pozycja: string) => {
-    await page.getByRole('button', { name: 'Pobierz ▾' }).click();
+    await page.getByRole('button', { name: 'Pobierz', exact: true }).click();
     const [p] = await Promise.all([
       page.waitForEvent('download'),
       page.getByRole('menuitem', { name: pozycja }).click(),

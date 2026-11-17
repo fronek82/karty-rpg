@@ -207,6 +207,13 @@ export function EdytorKartki({
     ustawBladUkladu(undefined);
   }, []);
   const [statusPdf, ustawStatusPdf] = useState('');
+  /** Trwa tworzenie PDF albo obrazów – kolejne pobranie czeka (przyciski wyłączone). */
+  const [zajete, ustawZajete] = useState(false);
+  const wTle = (f: () => Promise<void>) => {
+    if (zajete) return;
+    ustawZajete(true);
+    void f().finally(() => ustawZajete(false));
+  };
   const kartkiRef = useRef<HTMLDivElement>(null);
 
   // --- Budowa stron (ta sama scena co w PDF), z pamięcią kart i kartek między renderami.
@@ -349,7 +356,9 @@ export function EdytorKartki({
             w.ostrzezenia.some((o) =>
               /^(przypiecie-|siatka-za-mala|karta-wieksza-niz-strona)/.test(o.komunikat),
             ) ||
-            (a.naglowki ?? []).some((h) => h.kolumna + h.kolumny > w.siatka.kolumny)
+            // Nagłówki grup nie są rysowane przy własnym układzie – nie blokują jego zmian.
+            (!a.ustawienia.uklad &&
+              (a.naglowki ?? []).some((h) => h.kolumna + h.kolumny > w.siatka.kolumny))
           ) {
             ok = false;
             break;
@@ -886,7 +895,7 @@ export function EdytorKartki({
       zapiszPlik(
         bajty,
         'application/pdf',
-        nazwaPliku(`${arkusz.nazwa}-${t('uklad.wydrukTestowy')}`, '.pdf'),
+        nazwaPliku(`${arkusz.nazwa}-${t('pobierz.plikTestowy')}`, '.pdf'),
       );
       ustawStatusPdf(t('pobierz.wydrukTestowyGotowy'));
     } catch (e) {
@@ -904,10 +913,17 @@ export function EdytorKartki({
       postep(0, 1);
       const sceny =
         rodzaj === 'strony' ? scenyStron(kartki, format) : scenyKart(kartki, zasoby, format);
+      if (sceny.length === 0) {
+        ustawStatusPdf(t('pobierz.nicDoEksportu'));
+        return;
+      }
       const pliki = await obrazyScen(sceny, zasoby.obrazy, format, postep);
       const wynik = spakuj(
         pliki,
-        nazwaPliku(`${projekt.nazwa}-${rodzaj === 'strony' ? 'strony' : 'karty'}`, '.zip'),
+        nazwaPliku(
+          `${projekt.nazwa}-${t(rodzaj === 'strony' ? 'pobierz.plikStrony' : 'pobierz.plikKarty')}`,
+          '.zip',
+        ),
       );
       zapiszPlik(wynik.bajty, wynik.typ, wynik.nazwa);
       ustawStatusPdf(zStrefa(t('pobierz.obrazyGotowe')));
@@ -950,7 +966,8 @@ export function EdytorKartki({
     const naStronie = zaznaczoneKarty.filter((k) => k.strona === zaznaczoneKarty[0]?.strona);
     const od = Math.min(...naStronie.map((k) => k.kolumna));
     const do_ = Math.max(...naStronie.map((k) => k.kolumna + k.kolumny));
-    const mozeNaglowek = !!arkuszZazn.ustawienia.grupy && naStronie.length > 0;
+    const mozeNaglowek =
+      !!arkuszZazn.ustawienia.grupy && !arkuszZazn.ustawienia.uklad && naStronie.length > 0;
     panel = (
       <PanelKart
         key={aktywne.ids.join(',')}
@@ -1047,7 +1064,7 @@ export function EdytorKartki({
         arkusz={arkuszZazn}
         zmienUklad={zmienUklad}
         {...(wynikZazn ? { wynik: wynikZazn } : {})}
-        wydrukTestowy={() => void wydrukTestowy(arkuszZazn)}
+        wydrukTestowy={() => wTle(() => wydrukTestowy(arkuszZazn))}
         {...(bladUkladu ? { blad: bladUkladu } : {})}
         {...(nowaKartka ? { nowaKartka } : {})}
         {...(bezGry ? { kartkaDlaSzablonu: nowaKartkaDlaSzablonu } : {})}
@@ -1189,13 +1206,18 @@ export function EdytorKartki({
       >
         ⤓ {t('projekty.eksportuj')}
       </button>
-      <button type="button" className="glowny" disabled={!zasoby} onClick={() => void pobierzPdf()}>
+      <button
+        type="button"
+        className="glowny"
+        disabled={!zasoby || zajete}
+        onClick={() => wTle(pobierzPdf)}
+      >
         ⎙ {t('arkusze.pobierzPdf')}
       </button>
       <MenuPobierz
-        wylaczone={!zasoby}
+        wylaczone={!zasoby || zajete}
         pobierz={(co) =>
-          void (co.rodzaj === 'pdf' ? pobierzPdf() : pobierzObrazy(co.rodzaj, co.format))
+          wTle(() => (co.rodzaj === 'pdf' ? pobierzPdf() : pobierzObrazy(co.rodzaj, co.format)))
         }
       />
       <span role="status" aria-live="polite" className="status-pdf">

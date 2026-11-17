@@ -42,6 +42,7 @@ export function PanelUkladu({
   const [moje, ustawMoje] = useState<PresetUkladu[]>();
   const [nazwa, ustawNazwe] = useState('');
   const [status, ustawStatus] = useState('');
+  const [bladBazy, ustawBladBazy] = useState(false);
   const [kalibracja, ustawKalibracje] = useState(odczytajKalibracje);
 
   useEffect(() => {
@@ -49,12 +50,22 @@ export function PanelUkladu({
     void baza()
       .uklady()
       .then((l) => aktywny && ustawMoje(l))
-      .catch(() => aktywny && ustawMoje([]));
+      .catch(() => {
+        if (!aktywny) return;
+        ustawMoje([]);
+        ustawBladBazy(true);
+      });
     return () => {
       aktywny = false;
     };
   }, []);
   const odswiez = async () => ustawMoje(await baza().uklady());
+  /** Operacja na „Moich układach”; niedostępna baza (np. tryb prywatny) – komunikat. */
+  const wykonaj = (f: () => Promise<unknown>) =>
+    void f().catch(() => {
+      ustawBladBazy(true);
+      ustawStatus(t('uklad.bladBazy'));
+    });
 
   const zmienSiatke = (z: Partial<UkladArkusza>, klucz: string) =>
     uklad && zmienUklad((p) => ustawUstawieniaArkusza(p, A, { uklad: { ...uklad, ...z } }), klucz);
@@ -95,6 +106,7 @@ export function PanelUkladu({
       uklad,
     };
     await baza().zapiszUklad(preset);
+    ustawBladBazy(false);
     ustawNazwe('');
     ustawStatus(t('uklad.zapisano', { nazwa: preset.nazwa }));
     await odswiez();
@@ -221,17 +233,21 @@ export function PanelUkladu({
             />
             {t('uklad.linieCiecia')}
           </label>
-          {wymiary && (
-            <p className={poza ? 'blad-pola' : 'podpis'} role={poza ? 'alert' : 'status'}>
-              {poza
-                ? t('uklad.pozaPapierem', { prawo: zaokr(wymiary.prawo), dol: zaokr(wymiary.dol) })
-                : t('uklad.wynik', {
-                    liczba: uklad.kolumny * uklad.rzedy,
-                    prawo: zaokr(wymiary.prawo),
-                    dol: zaokr(wymiary.dol),
-                  })}
-            </p>
-          )}
+          {/* Dwa stałe elementy (alert i status) – zmiana roli w locie bywa źle ogłaszana. */}
+          <p className="blad-pola" role="alert">
+            {wymiary && poza
+              ? t('uklad.pozaPapierem', { prawo: zaokr(wymiary.prawo), dol: zaokr(wymiary.dol) })
+              : ''}
+          </p>
+          <p className="podpis" role="status">
+            {wymiary && !poza
+              ? t('uklad.wynik', {
+                  liczba: uklad.kolumny * uklad.rzedy,
+                  prawo: zaokr(wymiary.prawo),
+                  dol: zaokr(wymiary.dol),
+                })
+              : ''}
+          </p>
           <div className="pole-panelu zapis-ukladu">
             <label htmlFor="nazwa-ukladu">{t('uklad.nazwa')}</label>
             <input
@@ -240,13 +256,19 @@ export function PanelUkladu({
               value={nazwa}
               onChange={(e) => ustawNazwe(e.target.value)}
             />
-            <button type="button" disabled={!nazwa.trim()} onClick={() => void zapisz()}>
+            <button type="button" disabled={!nazwa.trim()} onClick={() => wykonaj(zapisz)}>
               {t('uklad.zapisz')}
             </button>
           </div>
         </>
       )}
-      <ListaUkladow moje={moje} uzyj={uzyj} odswiez={odswiez} />
+      <ListaUkladow
+        moje={moje}
+        bladBazy={bladBazy}
+        uzyj={uzyj}
+        odswiez={odswiez}
+        wykonaj={wykonaj}
+      />
       <p role="status" aria-live="polite" className="podpis">
         {status}
       </p>
@@ -285,12 +307,16 @@ export function PanelUkladu({
 /** „Moje układy”: Użyj / Zmień nazwę / Usuń. */
 function ListaUkladow({
   moje,
+  bladBazy,
   uzyj,
   odswiez,
+  wykonaj,
 }: {
   moje: PresetUkladu[] | undefined;
+  bladBazy: boolean;
   uzyj: (p: PresetUkladu) => void;
   odswiez: () => Promise<void>;
+  wykonaj: (f: () => Promise<unknown>) => void;
 }) {
   const [zmieniany, ustawZmieniany] = useState<{ id: string; nazwa: string }>();
   if (!moje) return null;
@@ -299,7 +325,7 @@ function ListaUkladow({
       <h3>{t('uklad.moje')}</h3>
       <p className="podpis">{t('uklad.mojeOpis')}</p>
       {moje.length === 0 ? (
-        <p className="podpis">{t('uklad.brakMoich')}</p>
+        <p className="podpis">{t(bladBazy ? 'uklad.bladBazy' : 'uklad.brakMoich')}</p>
       ) : (
         <ul>
           {moje.map((p) => (
@@ -310,10 +336,12 @@ function ListaUkladow({
                     e.preventDefault();
                     const n = zmieniany.nazwa.trim();
                     if (!n) return;
-                    void baza()
-                      .zapiszUklad({ ...p, nazwa: n })
-                      .then(odswiez)
-                      .then(() => ustawZmieniany(undefined));
+                    wykonaj(() =>
+                      baza()
+                        .zapiszUklad({ ...p, nazwa: n })
+                        .then(odswiez)
+                        .then(() => ustawZmieniany(undefined)),
+                    );
                   }}
                 >
                   <input
@@ -324,7 +352,7 @@ function ListaUkladow({
                     onChange={(e) => ustawZmieniany({ id: p.id, nazwa: e.target.value })}
                     onKeyDown={(e) => e.key === 'Escape' && ustawZmieniany(undefined)}
                   />
-                  <button type="submit">OK</button>
+                  <button type="submit">{t('uklad.zatwierdz')}</button>
                 </form>
               ) : (
                 <>
@@ -361,7 +389,7 @@ function ListaUkladow({
                       type="button"
                       className="maly"
                       aria-label={t('uklad.usunEtykieta', { nazwa: p.nazwa })}
-                      onClick={() => void baza().usunUklad(p.id).then(odswiez)}
+                      onClick={() => wykonaj(() => baza().usunUklad(p.id).then(odswiez))}
                     >
                       {t('uklad.usun')}
                     </button>

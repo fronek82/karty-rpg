@@ -6,6 +6,7 @@ import type { Karta, Talia } from '../model/szablon';
 import { renderujKarte } from '../silnik/karta';
 import type { Scena } from '../silnik/scena';
 import { scenaDoSvg } from '../silnik/svg';
+import { t } from '../i18n';
 import { nazwaPliku } from './pliki';
 import type { ObrazWPamieci, ZasobyPakietu } from './zasoby';
 
@@ -24,6 +25,12 @@ export interface PlikWyjsciowy {
   nazwa: string;
   bajty: Uint8Array;
 }
+
+/**
+ * Największa liczba pikseli obrazu – bezpieczna dla canvas we wszystkich przeglądarkach
+ * (Safari: ok. 16,7 Mpx); większa strona dostaje komunikat zamiast pustego pliku.
+ */
+export const MAKS_PIKSELI = 16_000_000;
 
 /** Wymiar w pikselach dla wymiaru w mm przy danej rozdzielczości. */
 export const piksele = (mm: number, dpi = DPI) => Math.max(1, Math.round((mm / 25.4) * dpi));
@@ -59,24 +66,37 @@ export async function rasteryzuj(
 ): Promise<Uint8Array> {
   const w = piksele(szer);
   const h = piksele(wys);
-  const img = new Image(w, h);
-  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-  await img.decode();
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('canvas 2d');
-  if (format === 'jpg') {
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, w, h);
+  if (w * h > MAKS_PIKSELI)
+    throw new Error(
+      t('pobierz.zaDuze', {
+        szer: String(Math.round(szer)),
+        wys: String(Math.round(wys)),
+      }),
+    );
+  // SVG jako Blob (bez kodowania całego pliku z obrazami base64 w adresie).
+  const adres = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  try {
+    const img = new Image(w, h);
+    img.src = adres;
+    await img.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error(t('pobierz.bladRasteryzacji'));
+    if (format === 'jpg') {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+    }
+    ctx.drawImage(img, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((ok) =>
+      canvas.toBlob(ok, format === 'jpg' ? 'image/jpeg' : 'image/png', JAKOSC_JPG),
+    );
+    if (!blob) throw new Error(t('pobierz.bladRasteryzacji'));
+    return new Uint8Array(await blob.arrayBuffer());
+  } finally {
+    URL.revokeObjectURL(adres);
   }
-  ctx.drawImage(img, 0, 0, w, h);
-  const blob = await new Promise<Blob | null>((ok) =>
-    canvas.toBlob(ok, format === 'jpg' ? 'image/jpeg' : 'image/png', JAKOSC_JPG),
-  );
-  if (!blob) throw new Error('toBlob');
-  return new Uint8Array(await blob.arrayBuffer());
 }
 
 const nr = (i: number, razem: number) => String(i + 1).padStart(String(razem).length, '0');
