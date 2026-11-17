@@ -40,7 +40,8 @@ const odstepy = (wartosc: z.ZodNumber) =>
     wartosc,
     obj({ gora: opc(wartosc), prawo: opc(wartosc), dol: opc(wartosc), lewo: opc(wartosc) }),
   ]);
-const stylLinii = z.enum(['ciagla', 'przerywana', 'kropkowana']);
+const stylLinii = z.enum(['ciagla', 'przerywana', 'kropkowana', 'podwojna']);
+const narozniki = obj({ element: identyfikator, rozmiar: dodatnia, kolor: opc(z.string()) });
 const krawedzie = obj({
   gora: opc(z.boolean()),
   prawo: opc(z.boolean()),
@@ -62,9 +63,11 @@ const baza = {
       grubosc: nieujemna,
       kolor: z.string(),
       styl: opc(stylLinii),
+      przerwa: opc(nieujemna),
       krawedzie: opc(krawedzie),
     }),
   ),
+  narozniki: opc(narozniki),
   promien: opc(nieujemna),
   minSzerokosc: opc(nieujemna),
   minWysokosc: opc(nieujemna),
@@ -160,6 +163,7 @@ const pole = z.discriminatedUnion('typ', [
     grubosc: nieujemna,
     kolor: opc(z.string()),
     stylLinii: opc(stylLinii),
+    przerwa: opc(nieujemna),
   }),
   obj({
     ...bazaPola,
@@ -184,6 +188,7 @@ const pole = z.discriminatedUnion('typ', [
         grubosc: nieujemna,
         kolor: z.string(),
         styl: opc(stylLinii),
+        przerwa: opc(nieujemna),
         zewnetrzne: opc(z.boolean()),
       }),
     ),
@@ -225,6 +230,8 @@ const szablon = obj({
       grubosc: nieujemna,
       kolor: z.string(),
       styl: opc(stylLinii),
+      przerwa: opc(nieujemna),
+      narozniki: opc(narozniki),
       odsuniecie: opc(nieujemna),
       promien: opc(nieujemna),
     }),
@@ -494,6 +501,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // kartki bez tego pola zachowują tolerancję 0,5 mm.
   // 8→9: `ustawienia.rozmiary` / `ustawienia.mieszane` (mieszane rozmiary kart) i `Arkusz.kolejnosc` –
   // bez zmian danych; kartki bez pól mają jeden rozmiar (siatka) jak dotąd.
+  // 9→10: styl linii `podwojna`, `przerwa`, `narozniki` (ramka karty i węzły szablonu) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -503,6 +511,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     6: (d) => d,
     7: (d) => d,
     8: (d) => d,
+    9: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -513,6 +522,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     6: (d) => d,
     7: (d) => d,
     8: (d) => d,
+    9: (d) => d,
   },
 };
 

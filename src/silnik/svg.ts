@@ -1,6 +1,8 @@
 import {
   czyObrys,
   kolorSceny,
+  type DefinicjaSymbolu,
+  type KolorSymbolu,
   type ElementSceny,
   type Kontur,
   type Obrys,
@@ -56,11 +58,33 @@ function atrybutyObrysu(o: Obrys | undefined): string {
 const wypelnienie = (k: string | undefined) =>
   ` fill="${k === undefined ? 'none' : kolorSceny(k)}"`;
 
+function macierzSvg(m: readonly number[]): string {
+  return `matrix(${m.map((v, i) => liczba(v, i < 4 ? 6 : 3)).join(' ')})`;
+}
+
+/** Kolor w SVG symbolu: `'kolor'` = `currentColor` (kolor ustawia `<use color>`). */
+const kolorWSymbolu = (k: KolorSymbolu) => (k === 'kolor' ? 'currentColor' : kolorSceny(k));
+
+function tresciSymbolu(d: DefinicjaSymbolu): string {
+  return d.kontury
+    .map((c) => {
+      const wyp = c.wypelnienie === undefined ? 'none' : kolorWSymbolu(c.wypelnienie);
+      const obrys = c.obrys && c.obrys.grubosc > 0 ? c.obrys : undefined;
+      const lin = obrys
+        ? ` stroke="${kolorWSymbolu(obrys.kolor)}" stroke-width="${liczba(obrys.grubosc, 3)}" stroke-linejoin="round" stroke-linecap="round"`
+        : '';
+      return `<path d="${konturNaD(c.kontur, 3)}" fill="${wyp}"${lin}/>`;
+    })
+    .join('');
+}
+
 export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
   // Identyfikatory glifów: kolejne numery w posortowanej kolejności kluczy – wynik deterministyczny.
   const klucze = Object.keys(scena.glify).sort();
   const px = opcje.przedrostekId ?? '';
   const idGlifu = new Map(klucze.map((k, i) => [k, `${px}g${i}`]));
+  const kluczeSymboli = Object.keys(scena.symbole ?? {}).sort();
+  const idSymbolu = new Map(kluczeSymboli.map((k, i) => [k, `${px}s${i}`]));
   let licznikPrzyciec = 0;
   const przyciecia: string[] = [];
 
@@ -113,9 +137,23 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
         // Przycięcie na grupie: na samym <image> obracałoby się razem z obrazem.
         return clip ? `<g${clip}>${obraz}</g>` : obraz;
       }
+      case 'symbol': {
+        const id = idSymbolu.get(e.klucz);
+        if (!id) return '';
+        return `<use href="#${id}" transform="${macierzSvg(e.macierz)}" color="${kolorSceny(e.kolor)}"/>`;
+      }
       case 'grupa': {
         const obrot = e.obrot ? ` rotate(${liczba(e.obrot)})` : '';
-        return `<g transform="translate(${liczba(e.x)} ${liczba(e.y)})${obrot}">${e.elementy.map(element).join('')}</g>`;
+        const macierz = e.macierz ? ` ${macierzSvg(e.macierz)}` : '';
+        const g = `<g transform="translate(${liczba(e.x)} ${liczba(e.y)})${obrot}${macierz}">${e.elementy.map(element).join('')}</g>`;
+        if (!e.przyciecie) return g;
+        // Przycięcie na zewnętrznej grupie – w układzie otaczającym, bez przekształcenia grupy.
+        const id = `${px}p${licznikPrzyciec++}`;
+        const p = e.przyciecie;
+        przyciecia.push(
+          `<clipPath id="${id}"><rect x="${liczba(p.x)}" y="${liczba(p.y)}" width="${liczba(p.szer)}" height="${liczba(p.wys)}"/></clipPath>`,
+        );
+        return `<g clip-path="url(#${id})">${g}</g>`;
       }
     }
   };
@@ -124,12 +162,15 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
   const glify = klucze
     .map((k) => `<path id="${idGlifu.get(k)}" d="${konturNaD(scena.glify[k]!.kontur, 2)}"/>`)
     .join('');
+  const symbole = kluczeSymboli
+    .map((k) => `<g id="${idSymbolu.get(k)}">${tresciSymbolu(scena.symbole![k]!)}</g>`)
+    .join('');
   const dodatkowe = Object.entries(opcje.atrybuty ?? {})
     .map(([k, v]) => ` ${k}="${esc(v)}"`)
     .join('');
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${liczba(scena.szer)}mm" height="${liczba(scena.wys)}mm" viewBox="0 0 ${liczba(scena.szer)} ${liczba(scena.wys)}"${dodatkowe}>` +
-    `<defs>${glify}${przyciecia.join('')}</defs>` +
+    `<defs>${glify}${symbole}${przyciecia.join('')}</defs>` +
     tresc +
     '</svg>'
   );
