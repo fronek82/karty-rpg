@@ -1180,3 +1180,73 @@ input[type='color'] {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+details.sekcja-panelu > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 0.15rem 0;
+}
+details.sekcja-panelu[open] > summary {
+  margin-bottom: 0.4rem;
+}
+.cztery-pola {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+.odstepy,
+.krawedzie {
+  border: 0;
+  padding: 0;
+  margin: 0.4rem 0;
+}
+.odstepy legend,
+.krawedzie legend {
+  font-size: 0.85rem;
+  color: #555;
+}
+.krawedzie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.kolumny-tabeli {
+  padding-left: 1.2rem;
+  margin: 0 0 0.5rem;
+  display: grid;
+  gap: 0.6rem;
+}
+.kolumny-tabeli li {
+  border-bottom: 1px solid var(--obramowanie);
+  padding-bottom: 0.5rem;
+}
+.akcje-kolumny,
+.akcje-stylu {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+.wiersz-stylu {
+  margin: 0.4rem 0;
+}
+button.maly {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  align-self: end;
+}
+.pole-koloru .wiersz-pola input[type='color'] {
+  display: inline-block;
+}
+.panel-edytora label:has(> input[type='number']) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+.panel-edytora label > input[type='number'] {
+  width: 100%;
+}
+.pole-koloru .wiersz-pola {
+  justify-content: flex-start;
+}

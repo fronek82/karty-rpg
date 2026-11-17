@@ -2,6 +2,7 @@ import { pt, type Mm } from '../model/jednostki';
 import type { Projekt } from '../model/projekt';
 import {
   czyKontener,
+  kluczeTabeli,
   type Kolor,
   type Kontener,
   type Pole,
@@ -38,7 +39,7 @@ export function kluczeSzablonu(s: Szablon): Set<string> {
   for (const w of wszystkieWezly(s)) {
     if (czyKontener(w)) continue;
     if (w.klucz) k.add(w.klucz);
-    if (w.typ === 'tabela') for (const c of w.kolumny) k.add(c.klucz);
+    if (w.typ === 'tabela') for (const c of kluczeTabeli(w)) k.add(c);
   }
   for (const p of s.parametry ?? []) k.add(p.klucz);
   return k;
@@ -93,12 +94,9 @@ export function nowyWezel(
         nazwa,
         typ: 'tekst',
         klucz: klucz(),
-        styl: { ...tresc(9), wyrownanie: 'srodek' },
-        etykieta: {
-          tekst: nazwa,
-          pozycja: 'nad',
-          styl: { rozmiar: pt(6), wariant: 'pogrubiony', wielkieLitery: true },
-        },
+        styl: tresc(9),
+        // Etykieta mniejsza od wartości – bez innych upiększeń (kolor, wersaliki ustawia użytkownik).
+        etykieta: { tekst: nazwa, pozycja: 'nad', styl: { rozmiar: pt(7) } },
       };
     case 'wartosc':
       return {
@@ -107,6 +105,8 @@ export function nowyWezel(
         typ: 'wartosc',
         klucz: klucz(),
         ksztalt: 'prostokat',
+        // Rozmiar wg treści (bez rozciągania na całą szerokość / wysokość rodzica).
+        wyrownanie: { poziomo: 'poczatek', pionowo: 'poczatek' },
         padding: 0.8,
         obramowanie: { grubosc: 0.3, kolor: CZARNY },
         styl: tresc(9),
@@ -472,7 +472,7 @@ export function danePodgladu(s: Szablon): Record<string, string> {
   for (const w of wszystkieWezly(s)) {
     if (czyKontener(w)) continue;
     if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.klucz) dane[w.klucz] = w.nazwa || w.klucz;
-    if (w.typ === 'tabela') for (const k of w.kolumny) dane[k.klucz] = '–';
+    if (w.typ === 'tabela') for (const k of kluczeTabeli(w)) dane[k] = '–';
   }
   return {
     ...dane,
@@ -491,4 +491,144 @@ export function nazwaKarty(dane: Record<string, string>, s: Szablon | undefined)
       return dane[w.klucz]!;
   }
   return '';
+}
+
+/** Rodzaje pól, na które można zmienić typ elementu w panelu. */
+export const TYPY_POL = [
+  'tekst',
+  'wartosc',
+  'obraz',
+  'znaczniki',
+  'wpis',
+  'ikona',
+  'separator',
+  'tabela',
+] as const satisfies readonly Pole['typ'][];
+
+/**
+ * Zmiana typu pola: zostają id, nazwa, rozmiar, odstępy, tło, ramka i „gdy puste”; pole z danych
+ * zostaje z danych (ten sam klucz), pole stałe – stałe (z tym samym tekstem). Styl tekstu
+ * przechodzi między typami, które go mają; etykieta – między tekstem a wartością w kształcie.
+ */
+export function zmienTypPola(
+  s: Szablon,
+  id: string,
+  typ: Pole['typ'],
+  nazwaTypu: string = typ,
+  zajete: Iterable<string> = [],
+): Szablon {
+  const w = znajdzWezel(s, id);
+  if (!w || czyKontener(w) || w.typ === typ) return s;
+  const r = rodzicWezla(s, id);
+  const nowy = nowyWezel(s, typ, w.nazwa || nazwaTypu, {
+    wWierszu: r?.rodzic.typ === 'wiersz',
+    zajete,
+  }) as Pole;
+  const wspolne = (
+    [
+      'nazwa',
+      'szerokosc',
+      'wysokosc',
+      'margines',
+      'padding',
+      'wyrownanie',
+      'tlo',
+      'obramowanie',
+      'promien',
+      'minSzerokosc',
+      'minWysokosc',
+      'gdyPuste',
+    ] as const
+  ).reduce<Record<string, unknown>>((a, k) => (w[k] !== undefined ? { ...a, [k]: w[k] } : a), {});
+  const x = { ...nowy, ...wspolne, id } as Pole;
+  if ('klucz' in nowy && nowy.klucz !== undefined) {
+    if (w.klucz) x.klucz = w.klucz;
+    else if (x.typ === 'tekst' || x.typ === 'wartosc') {
+      // Pole stałe zostaje stałe.
+      delete x.klucz;
+      if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.tekst !== undefined) x.tekst = w.tekst;
+    }
+  }
+  if ('styl' in w && 'styl' in x && typeof w.styl === 'object' && typeof x.styl === 'object')
+    (x as { styl: unknown }).styl = w.styl;
+  if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta) {
+    if (x.typ === 'tekst') x.etykieta = w.etykieta;
+    if (x.typ === 'wartosc')
+      x.etykieta = {
+        ...w.etykieta,
+        pozycja: w.etykieta.pozycja === 'pod' ? 'pod' : 'nad',
+      };
+  }
+  return zmienWezel(s, id, () => x);
+}
+
+/** Zmiana typu kontenera; separatory w nim obracają się (w wierszu – pionowe, w kolumnie – poziome). */
+export function zmienTypKontenera(s: Szablon, id: string, typ: Kontener['typ']): Szablon {
+  const w = znajdzWezel(s, id);
+  if (!w || !czyKontener(w) || w.typ === typ) return s;
+  const kierunek = typ === 'wiersz' ? 'pionowy' : typ === 'kolumna' ? 'poziomy' : undefined;
+  return zmienWezel(s, id, () => ({
+    ...w,
+    typ,
+    dzieci: w.dzieci.map((d) =>
+      kierunek && !czyKontener(d) && d.typ === 'separator' ? { ...d, kierunek } : d,
+    ),
+  }));
+}
+
+/** Styl elementu do schowka „Kopiuj styl”: wygląd, odstępy, styl tekstu i etykiety, kształt, linie. */
+export type SkopiowanyStyl = Record<string, unknown> & { stylEtykiety?: unknown };
+
+/** Właściwości wyglądu wspólne dla elementów (bez treści, kluczy i struktury). */
+const WYGLAD = ['tlo', 'obramowanie', 'promien', 'padding', 'margines'] as const;
+/** Właściwości wyglądu zależne od typu – kopiowane tylko do elementu, który je ma. */
+const WYGLAD_TYPU = [
+  'styl',
+  'ksztalt',
+  'linie',
+  'stylNaglowka',
+  'tloNaglowka',
+  'paddingKomorki',
+  'kolor',
+  'grubosc',
+  'stylLinii',
+  'srednica',
+  'odstep',
+] as const;
+
+export function skopiujStyl(w: Wezel): SkopiowanyStyl {
+  const x: SkopiowanyStyl = { typ: w.typ };
+  const z = w as unknown as Record<string, unknown>;
+  for (const k of [...WYGLAD, ...WYGLAD_TYPU]) if (z[k] !== undefined) x[k] = structuredClone(z[k]);
+  if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta?.styl)
+    x.stylEtykiety = structuredClone(w.etykieta.styl);
+  return x;
+}
+
+/**
+ * Wkleja styl: wygląd (tło, ramka, rogi, odstępy) – do każdego elementu; reszta – tylko tam, gdzie
+ * dany typ ją ma (np. styl tekstu do pól z tekstem, kształt do wartości, linie do tabeli).
+ */
+export function wklejStyl(w: Wezel, st: SkopiowanyStyl): Wezel {
+  const x = { ...w } as unknown as Record<string, unknown>;
+  for (const k of WYGLAD) {
+    if (st[k] !== undefined) x[k] = structuredClone(st[k]);
+    else delete x[k];
+  }
+  // Właściwości typu: z tego samego typu – wszystkie; z innego – tylko styl tekstu.
+  const ten = st.typ === w.typ;
+  for (const k of WYGLAD_TYPU) {
+    const ma = k in x || (ten && st[k] !== undefined);
+    if (!ma || (!ten && k !== 'styl')) continue;
+    if (k === 'styl' && (typeof x.styl !== 'object' || typeof st.styl !== 'object')) continue;
+    if (st[k] !== undefined) x[k] = structuredClone(st[k]);
+    else if (ten) delete x[k];
+  }
+  if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta) {
+    const e = { ...w.etykieta };
+    if (st.stylEtykiety !== undefined) e.styl = structuredClone(st.stylEtykiety) as typeof e.styl;
+    else delete e.styl;
+    x.etykieta = e;
+  }
+  return x as unknown as Wezel;
 }

@@ -115,7 +115,7 @@ const pole = z.discriminatedUnion('typ', [
     typ: z.literal('wartosc'),
     styl: stylTekstu,
     tekst: opc(napis),
-    ksztalt: z.enum(['prostokat', 'kolo', 'sciety', 'romb']),
+    ksztalt: z.enum(['prostokat', 'kwadrat', 'kolo', 'sciety', 'romb', 'tarcza', 'szesciokat']),
     etykieta: opc(
       obj({
         tekst: napis,
@@ -171,8 +171,11 @@ const pole = z.discriminatedUnion('typ', [
         szerokosc: opc(
           z.union([z.literal('auto'), obj({ mm: nieujemna }), obj({ wypelnij: dodatnia })]),
         ),
+        wyrownanie: opc(z.enum(['lewo', 'srodek', 'prawo'])),
       }),
     ),
+    wiersze: opc(calkowita.min(1).max(50)),
+    naglowki: opc(z.boolean()),
     styl: stylTekstu,
     stylNaglowka: opc(stylCzesciowy),
     tloNaglowka: opc(z.string()),
@@ -444,8 +447,9 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 2→3: nowe, opcjonalne pola (ramka karty, romb, separator, tabela, formatowanie) – bez zmian danych.
   // 3→4: nowe formaty papieru, własny papier, margines bezpieczeństwa – bez zmian danych.
   // 4→5: nazwy węzłów i dane przykładowe szablonu (edytor szablonu) – bez zmian danych.
-  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d },
-  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d },
+  // 5→6: tabela (wiersze, nagłówki, wyrównanie kolumn), nowe kształty – bez zmian danych.
+  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d },
+  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d },
 };
 
 export function migruj(

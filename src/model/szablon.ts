@@ -160,7 +160,12 @@ export interface PoleWartosc extends PoleBazowe {
   };
 }
 
-export type KsztaltWartosci = 'prostokat' | 'kolo' | 'sciety' | 'romb';
+/**
+ * Kształt ramki wartości. Prostokąt z zaokrągleniem (`promien`) to „zaokrąglony prostokąt”;
+ * kwadrat – równe boki wg dłuższego wymiaru treści.
+ */
+export type KsztaltWartosci =
+  'prostokat' | 'kwadrat' | 'kolo' | 'sciety' | 'romb' | 'tarcza' | 'szesciokat';
 
 export interface PoleObraz extends PoleBazowe {
   typ: 'obraz';
@@ -241,12 +246,18 @@ export interface KolumnaTabeli {
   klucz: string;
   /** `auto` (domyślnie) – wg najszerszej komórki; `wypelnij` – udział w wolnym miejscu. */
   szerokosc?: 'auto' | { mm: Mm } | { wypelnij: number };
+  /** Wyrównanie tekstu w kolumnie (domyślnie – ze stylu tabeli). */
+  wyrownanie?: 'lewo' | 'srodek' | 'prawo';
 }
 
-/** Tabela: wiersz nagłówków i wiersz wartości (np. cechy w bloku statystyk). */
+/** Tabela: opcjonalny wiersz nagłówków i 1–N wierszy wartości; każda komórka to pole danych. */
 export interface PoleTabela extends PoleBazowe {
   typ: 'tabela';
   kolumny: KolumnaTabeli[];
+  /** Liczba wierszy wartości (domyślnie 1). */
+  wiersze?: number;
+  /** Wiersz nagłówków widoczny (domyślnie tak). */
+  naglowki?: boolean;
   /** Styl wartości; nagłówki – ten sam z nadpisaniami `stylNaglowka` (domyślnie pogrubiony). */
   styl: StylTekstu;
   stylNaglowka?: Partial<StylTekstu>;
@@ -398,4 +409,17 @@ export function stylePola(w: Wezel): Partial<StylTekstu>[] {
     default:
       return [];
   }
+}
+
+/**
+ * Klucz danych komórki tabeli: wiersz 1 – klucz kolumny, dalsze – `klucz.2`, `klucz.3`… (kropki
+ * nie ma w kluczach tworzonych z nazw, więc komórki nie zderzą się z innymi polami).
+ */
+export const kluczKomorki = (k: KolumnaTabeli, wiersz: number) =>
+  wiersz === 0 ? k.klucz : `${k.klucz}.${wiersz + 1}`;
+
+/** Klucze wszystkich komórek tabeli (wiersz po wierszu). */
+export function kluczeTabeli(t: PoleTabela): string[] {
+  const n = Math.max(1, Math.floor(t.wiersze ?? 1));
+  return Array.from({ length: n }, (_, r) => t.kolumny.map((k) => kluczKomorki(k, r))).flat();
 }

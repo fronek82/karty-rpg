@@ -10,6 +10,8 @@ import {
   type Obramowanie,
   type Pole,
   type PoleObraz,
+  kluczeTabeli,
+  kluczKomorki,
   type PoleTabela,
   type PoleTekst,
   type PoleWartosc,
@@ -112,7 +114,9 @@ export function wartoscPola(pole: Pole, dane: Record<string, string>): string {
       return '1';
     case 'tabela':
       // Tabela jest „pusta”, gdy wszystkie komórki wartości są puste.
-      return pole.kolumny.map((k) => dane[k.klucz] ?? '').join('');
+      return kluczeTabeli(pole)
+        .map((k) => dane[k] ?? '')
+        .join('');
   }
 }
 
@@ -268,18 +272,32 @@ export function renderujKarte(
     // Wartość z etykietą: tło, ramka i treść – tylko w obszarze kształtu, etykieta osobno.
     const podzial =
       !czyKontener(w) && w.typ === 'wartosc' ? podzialWartosci(w, u, dane, ctx) : undefined;
-    const obszar: Ramka = podzial?.ksztalt ?? u;
+    let obszar: Ramka = podzial?.ksztalt ?? u;
+    // Kwadrat i koło zostają równoboczne także w szerszym polu (np. z szeroką etykietą).
+    if (
+      !czyKontener(w) &&
+      w.typ === 'wartosc' &&
+      (w.ksztalt === 'kwadrat' || w.ksztalt === 'kolo')
+    ) {
+      const bok = Math.min(obszar.szer, obszar.wys);
+      obszar = {
+        x: obszar.x + (obszar.szer - bok) / 2,
+        y: obszar.y + (obszar.wys - bok) / 2,
+        szer: bok,
+        wys: bok,
+      };
+    }
     const promien = promienWezla(w, obszar);
     const ksztalt =
-      !czyKontener(w) && w.typ === 'wartosc' && (w.ksztalt === 'sciety' || w.ksztalt === 'romb')
-        ? w.ksztalt
+      !czyKontener(w) && w.typ === 'wartosc' && KSZTALTY_SCIEZKI.has(w.ksztalt)
+        ? (w.ksztalt as KsztaltSciezki)
         : undefined;
     if (w.tlo) {
       elementy.push(
         ksztalt === 'sciety'
           ? { typ: 'sciezka', kontur: konturScietego(obszar, promien ?? 0), wypelnienie: w.tlo }
-          : ksztalt === 'romb'
-            ? { typ: 'sciezka', kontur: konturRombu(obszar), wypelnienie: w.tlo }
+          : ksztalt
+            ? { typ: 'sciezka', kontur: konturKsztaltu(ksztalt, obszar), wypelnienie: w.tlo }
             : {
                 typ: 'prostokat',
                 x: obszar.x,
@@ -397,6 +415,61 @@ function rysujRamkeKarty(
  * Romb wpisany w prostokąt; `wciecie` przesuwa boki do środka (prostopadle) – np. o pół grubości
  * linii, żeby zewnętrzna krawędź obrysu pokrywała się z tłem.
  */
+type KsztaltSciezki = 'sciety' | 'romb' | 'tarcza' | 'szesciokat';
+const KSZTALTY_SCIEZKI = new Set<string>(['sciety', 'romb', 'tarcza', 'szesciokat']);
+
+/** Prostokąt treści wpisany w kształt – ułamki wymiarów kształtu (x, y, szerokość, wysokość). */
+const WNETRZA: Partial<
+  Record<PoleWartosc['ksztalt'], { x: number; y: number; szer: number; wys: number }>
+> = {
+  romb: { x: 0.25, y: 0.25, szer: 0.5, wys: 0.5 },
+  // Kwadrat wpisany w okrąg: bok = średnica / √2.
+  kolo: {
+    x: (1 - Math.SQRT1_2) / 2,
+    y: (1 - Math.SQRT1_2) / 2,
+    szer: Math.SQRT1_2,
+    wys: Math.SQRT1_2,
+  },
+  szesciokat: { x: 0.25, y: 0, szer: 0.5, wys: 1 },
+  tarcza: { x: 0.15, y: 0.08, szer: 0.7, wys: 0.55 },
+};
+
+/** Kontur kształtu wartości (romb, tarcza, sześciokąt) przesunięty do środka o `wciecie`. */
+export function konturKsztaltu(
+  k: Exclude<KsztaltSciezki, 'sciety'>,
+  r: Ramka,
+  wciecie: Mm = 0,
+): Kontur {
+  if (k === 'romb') return konturRombu(r, wciecie);
+  const x = r.x + wciecie;
+  const y = r.y + wciecie;
+  const w = Math.max(0, r.szer - 2 * wciecie);
+  const h = Math.max(0, r.wys - 2 * wciecie);
+  if (k === 'szesciokat') {
+    // Płaska góra i dół, ścięte boki (ścięcie = ćwierć szerokości).
+    const c = w / 4;
+    return [
+      ['M', x + c, y],
+      ['L', x + w - c, y],
+      ['L', x + w, y + h / 2],
+      ['L', x + w - c, y + h],
+      ['L', x + c, y + h],
+      ['L', x, y + h / 2],
+      ['Z'],
+    ];
+  }
+  // Tarcza: prosta góra, boki do 55% wysokości, łuki do szpica na dole.
+  const bok = y + h * 0.55;
+  return [
+    ['M', x, y],
+    ['L', x + w, y],
+    ['L', x + w, bok],
+    ['C', x + w, y + h * 0.8, x + w * 0.75, y + h * 0.92, x + w / 2, y + h],
+    ['C', x + w * 0.25, y + h * 0.92, x, y + h * 0.8, x, bok],
+    ['Z'],
+  ];
+}
+
 export function konturRombu(r: Ramka, wciecie: Mm = 0): Kontur {
   const a = r.szer / 2;
   const b = r.wys / 2;
@@ -418,13 +491,14 @@ function rysujObramowanie(
   o: Obramowanie,
   u: Ramka,
   promien: Mm | undefined,
-  ksztalt?: 'sciety' | 'romb',
+  ksztalt?: KsztaltSciezki,
 ): ElementSceny[] {
   const g = o.grubosc;
   const s = obrys(o);
   if (!s) return [];
-  // Romb ma zawsze pełny obrys (wybór krawędzi dotyczy prostokątów).
-  if (ksztalt === 'romb') return [{ typ: 'sciezka', kontur: konturRombu(u, g / 2), obrys: s }];
+  // Romb, tarcza, sześciokąt – zawsze pełny obrys (wybór krawędzi dotyczy prostokątów).
+  if (ksztalt && ksztalt !== 'sciety')
+    return [{ typ: 'sciezka', kontur: konturKsztaltu(ksztalt, u, g / 2), obrys: s }];
   const k = o.krawedzie;
   if (!k && ksztalt === 'sciety') {
     const wew = {
@@ -511,13 +585,17 @@ function zmierzPole(
     case 'wartosc': {
       const u = ulozTekst([{ tekst: wartosc, styl: pole.styl }], undefined, ctx.czcionki);
       let k: Wymiary = { szer: u.szerokosc, wys: u.wysokosc };
-      if (pole.ksztalt === 'kolo') {
+      if (pole.ksztalt === 'kolo' || pole.ksztalt === 'kwadrat') {
         const bok = Math.max(u.szerokosc, u.wysokosc);
         k = { szer: bok, wys: bok };
-      } else if (pole.ksztalt === 'romb') {
-        // Tekst w prostokącie o połowie przekątnych rombu, odsunięty od obrysu (jak przy rysowaniu).
-        const m = marginesRombu(pole);
-        k = { szer: 2 * (u.szerokosc + 2 * m), wys: 2 * (u.wysokosc + 2 * m) };
+      } else {
+        // Kształt z wnętrzem mniejszym niż obrys: rozmiar taki, żeby tekst (z odsunięciem od
+        // obrysu) zmieścił się we wnętrzu – odwrotność `wnetrzeKsztaltu`.
+        const w = WNETRZA[pole.ksztalt];
+        if (w) {
+          const m = marginesRombu(pole);
+          k = { szer: (u.szerokosc + 2 * m) / w.szer, wys: (u.wysokosc + 2 * m) / w.wys };
+        }
       }
       const e = etykietaWartosci(pole, dane, ctx);
       return e
@@ -623,14 +701,15 @@ function rysujPole(
     case 'wartosc': {
       const fr = [{ tekst: wartosc, styl: pole.styl }];
       const minSkala = minimalnaSkala(pole.styl);
-      if (pole.ksztalt === 'romb') {
-        // Treść w prostokącie wpisanym w romb (połowa przekątnych), odsunięta od obrysu.
+      const w = WNETRZA[pole.ksztalt];
+      if (w) {
+        // Treść w prostokącie wpisanym w kształt, odsunięta od obrysu.
         const m = marginesRombu(pole);
         ramka = {
-          x: ramka.x + ramka.szer / 4 + m,
-          y: ramka.y + ramka.wys / 4 + m,
-          szer: Math.max(0, ramka.szer / 2 - 2 * m),
-          wys: Math.max(0, ramka.wys / 2 - 2 * m),
+          x: ramka.x + ramka.szer * w.x + m,
+          y: ramka.y + ramka.wys * w.y + m,
+          szer: Math.max(0, ramka.szer * w.szer - 2 * m),
+          wys: Math.max(0, ramka.wys * w.wys - 2 * m),
         };
       }
       const uklad = ulozDopasowany(fr, ramka.szer, ramka.wys, ctx.czcionki, false, minSkala);
@@ -747,13 +826,19 @@ interface UkladTabeli {
   wys: Mm;
   /** Szerokości kolumn (mm) – naturalne albo rozciągnięte do zadanej szerokości. */
   kolumny: Mm[];
+  /** Wysokość wiersza nagłówków (0 – bez nagłówków). */
   wysNaglowka: Mm;
-  wysWartosci: Mm;
+  /** Wysokości wierszy wartości. */
+  wysWierszy: Mm[];
   naglowki: UkladTekstu[];
-  wartosci: UkladTekstu[];
+  /** Komórki wartości: [wiersz][kolumna]. */
+  wartosci: UkladTekstu[][];
   styl: StylTekstu;
   stylNaglowka: StylTekstu;
 }
+
+/** Liczba wierszy wartości tabeli (co najmniej 1). */
+const wierszeTabeli = (pole: PoleTabela) => Math.max(1, Math.floor(pole.wiersze ?? 1));
 
 /**
  * Układ tabeli w skali `skala`. Z `szerokosc` – kolumny rozciągnięte: wolne miejsce dostają kolumny
@@ -769,16 +854,27 @@ function ukladTabeli(
   const pad = pole.paddingKomorki ?? PADDING_KOMORKI;
   const styl = pole.styl;
   const stylNaglowka: StylTekstu = { ...pole.styl, wariant: 'pogrubiony', ...pole.stylNaglowka };
+  const zNaglowkami = pole.naglowki !== false;
   const naglowki = pole.kolumny.map((k) =>
-    ulozTekst([{ tekst: k.naglowek, styl: stylNaglowka }], undefined, ctx.czcionki, skala),
+    ulozTekst(
+      [{ tekst: zNaglowkami ? k.naglowek : '', styl: stylNaglowka }],
+      undefined,
+      ctx.czcionki,
+      skala,
+    ),
   );
-  const wartosci = pole.kolumny.map((k) =>
-    ulozTekst([{ tekst: dane[k.klucz] ?? '', styl }], undefined, ctx.czcionki, skala),
+  const wartosci = Array.from({ length: wierszeTabeli(pole) }, (_, r) =>
+    pole.kolumny.map((k) =>
+      ulozTekst([{ tekst: dane[kluczKomorki(k, r)] ?? '', styl }], undefined, ctx.czcionki, skala),
+    ),
   );
   const kolumny = pole.kolumny.map((k, i) => {
     const sz = k.szerokosc;
     if (sz && sz !== 'auto' && 'mm' in sz) return sz.mm;
-    return Math.max(naglowki[i]!.szerokosc, wartosci[i]!.szerokosc) + 2 * pad;
+    return (
+      Math.max(zNaglowkami ? naglowki[i]!.szerokosc : 0, ...wartosci.map((w) => w[i]!.szerokosc)) +
+      2 * pad
+    );
   });
   const naturalna = kolumny.reduce((a, b) => a + b, 0);
   if (szerokosc !== undefined && szerokosc > naturalna + 1e-6) {
@@ -794,14 +890,14 @@ function ukladTabeli(
       else if (ileAuto > 0) kolumny[i]! += (wolne * auto[i]!) / ileAuto;
     });
   }
-  const wysNaglowka = Math.max(0, ...naglowki.map((u) => u.wysokosc)) + 2 * pad;
-  const wysWartosci = Math.max(0, ...wartosci.map((u) => u.wysokosc)) + 2 * pad;
+  const wysNaglowka = zNaglowkami ? Math.max(0, ...naglowki.map((u) => u.wysokosc)) + 2 * pad : 0;
+  const wysWierszy = wartosci.map((w) => Math.max(0, ...w.map((u) => u.wysokosc)) + 2 * pad);
   return {
     szer: kolumny.reduce((a, b) => a + b, 0),
-    wys: wysNaglowka + wysWartosci,
+    wys: wysNaglowka + wysWierszy.reduce((a, b) => a + b, 0),
     kolumny,
     wysNaglowka,
-    wysWartosci,
+    wysWierszy,
     naglowki,
     wartosci,
     styl,
@@ -853,16 +949,22 @@ function rysujTabele(
   const skala = skalaTabeli(pole, dane, ctx, ramka.szer);
   const t = ukladTabeli(pole, dane, ctx, skala, ramka.szer);
   const pad = pole.paddingKomorki ?? PADDING_KOMORKI;
+  const zNaglowkami = t.wysNaglowka > 0;
   // Za szeroka mimo zmniejszenia, za niska albo komórka (np. kolumna o stałej szerokości)
   // węższa niż jej treść – tekst wyszedłby poza siatkę.
   const zaWaskaKomorka = t.kolumny.some(
-    (sz, i) => Math.max(t.naglowki[i]!.szerokosc, t.wartosci[i]!.szerokosc) > sz - 2 * pad + 1e-6,
+    (sz, i) =>
+      Math.max(
+        zNaglowkami ? t.naglowki[i]!.szerokosc : 0,
+        ...t.wartosci.map((w) => w[i]!.szerokosc),
+      ) >
+      sz - 2 * pad + 1e-6,
   );
   if (t.szer > ramka.szer + 1e-6 || t.wys > ramka.wys + 1e-6 || zaWaskaKomorka)
     ostrzezenia.push({ pole: pole.id, komunikat: 'tekst-nie-miesci-sie' });
   const wynik: ElementSceny[] = [];
   const { x, y } = ramka;
-  if (pole.tloNaglowka)
+  if (pole.tloNaglowka && zNaglowkami)
     wynik.push({
       typ: 'prostokat',
       x,
@@ -877,39 +979,47 @@ function rysujTabele(
     const kom = (yy: Mm, h: Mm) => ({
       x: kx + pad,
       y: yy + pad,
-      szer: sz - 2 * pad,
-      wys: h - 2 * pad,
+      szer: Math.max(0, sz - 2 * pad),
+      wys: Math.max(0, h - 2 * pad),
     });
-    wynik.push(
-      ...tekstNaScene(
-        t.naglowki[i]!,
-        kom(y, t.wysNaglowka),
-        t.stylNaglowka.wyrownanie ?? wyrownanie,
-        'srodek',
-        glify,
-        t.stylNaglowka.obwodka,
-      ),
-      ...tekstNaScene(
-        t.wartosci[i]!,
-        kom(y + t.wysNaglowka, t.wysWartosci),
-        wyrownanie,
-        'srodek',
-        glify,
-        t.styl.obwodka,
-      ),
-    );
+    const wyrKolumny = pole.kolumny[i]!.wyrownanie ?? wyrownanie;
+    if (zNaglowkami)
+      wynik.push(
+        ...tekstNaScene(
+          t.naglowki[i]!,
+          kom(y, t.wysNaglowka),
+          pole.kolumny[i]!.wyrownanie ?? t.stylNaglowka.wyrownanie ?? wyrownanie,
+          'srodek',
+          glify,
+          t.stylNaglowka.obwodka,
+        ),
+      );
+    let ry = y + t.wysNaglowka;
+    t.wartosci.forEach((w, r) => {
+      wynik.push(
+        ...tekstNaScene(
+          w[i]!,
+          kom(ry, t.wysWierszy[r]!),
+          wyrKolumny,
+          'srodek',
+          glify,
+          t.styl.obwodka,
+        ),
+      );
+      ry += t.wysWierszy[r]!;
+    });
     kx += sz;
   });
   dodajOstrzezenieZnakow(
     pole.id,
     pole.kolumny.flatMap((k) => [
-      { tekst: k.naglowek, styl: t.stylNaglowka },
-      { tekst: dane[k.klucz] ?? '', styl: t.styl },
+      ...(zNaglowkami ? [{ tekst: k.naglowek, styl: t.stylNaglowka }] : []),
+      ...t.wartosci.map((_, r) => ({ tekst: dane[kluczKomorki(k, r)] ?? '', styl: t.styl })),
     ]),
     ctx,
     ostrzezenia,
   );
-  // Linie siatki: między kolumnami, pod nagłówkiem i (domyślnie) obwódka.
+  // Linie siatki: między kolumnami, między wierszami (także pod nagłówkiem) i (domyślnie) obwódka.
   const l = pole.linie;
   const s = l ? obrys({ grubosc: l.grubosc, kolor: l.kolor, styl: l.styl }) : undefined;
   if (l && s) {
@@ -919,8 +1029,11 @@ function rysujTabele(
       lx += sz;
       wynik.push({ typ: 'linia', x1: lx, y1: y, x2: lx, y2: y + t.wys, obrys: s });
     }
-    const ly = y + t.wysNaglowka;
-    wynik.push({ typ: 'linia', x1: x, y1: ly, x2: x + t.szer, y2: ly, obrys: s });
+    let ly = y;
+    for (const h of [...(zNaglowkami ? [t.wysNaglowka] : []), ...t.wysWierszy].slice(0, -1)) {
+      ly += h;
+      wynik.push({ typ: 'linia', x1: x, y1: ly, x2: x + t.szer, y2: ly, obrys: s });
+    }
     if (l.zewnetrzne !== false)
       wynik.push({
         typ: 'prostokat',

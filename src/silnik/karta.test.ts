@@ -11,7 +11,7 @@ import {
   normalizujUstawieniaObrazu,
   wolnyObszar,
 } from './karta';
-import { korzenKarty } from '../model/szablon';
+import { kluczeTabeli, korzenKarty } from '../model/szablon';
 import type { ElementSceny, Scena } from './scena';
 import { scenaDoSvg } from './svg';
 import { rejestrTestowy, szablonBroni } from './__testy__/pomoc';
@@ -778,5 +778,114 @@ describe('klocki M2: ramka karty, romb, etykiety, separator, tabela', () => {
     if (l?.typ !== 'linia') throw new Error();
     expect(l.x1).toBe(l.x2);
     expect(l.obrys.kreska).toBeDefined();
+  });
+});
+
+describe('M2-4: tabela N wierszy, kształty', () => {
+  const zTabela = (tab: Partial<Extract<Szablon['korzen']['dzieci'][number], { typ: 'tabela' }>>) =>
+    ({
+      id: 't',
+      nazwa: 't',
+      rozmiar: { tryb: 'mm', szerokosc: 60, wysokosc: 40 },
+      korzen: {
+        id: 'k',
+        typ: 'kolumna',
+        dzieci: [
+          {
+            id: 'tab',
+            typ: 'tabela',
+            kolumny: [
+              { naglowek: 'A', klucz: 'a' },
+              { naglowek: 'B', klucz: 'b', wyrownanie: 'prawo' },
+            ],
+            styl: { czcionka: 'tresc', rozmiar: pt(8) },
+            linie: { grubosc: 0.2, kolor: '#000000' },
+            ...tab,
+          },
+        ],
+      },
+    }) as Szablon;
+
+  it('trzy wiersze wartości: klucze komórek, linie między wierszami', () => {
+    const s = zTabela({ wiersze: 3 });
+    const tab = s.korzen.dzieci[0]!;
+    if (tab.typ !== 'tabela') throw new Error();
+    expect(kluczeTabeli(tab)).toEqual(['a', 'b', 'a.2', 'b.2', 'a.3', 'b.3']);
+    const { scena } = renderujKarte(s, { dane: { a: '1', 'b.3': '9' } }, ctx);
+    const poziome = scena.elementy.filter((e) => e.typ === 'linia' && e.y1 === e.y2);
+    expect(poziome).toHaveLength(3); // pod nagłówkiem i między trzema wierszami
+    expect(czyPuste(tab, { 'b.3': '9' })).toBe(false);
+  });
+
+  it('bez wiersza nagłówków – tylko wiersze wartości', () => {
+    const z = renderujKarte(zTabela({ naglowki: false, wiersze: 2 }), { dane: { a: '1' } }, ctx);
+    const poziome = z.scena.elementy.filter((e) => e.typ === 'linia' && e.y1 === e.y2);
+    expect(poziome).toHaveLength(1);
+    const wys = z.wezly.find((w) => w.id === 'tab')!.wys;
+    const zNagl = renderujKarte(zTabela({ wiersze: 2 }), { dane: { a: '1' } }, ctx);
+    expect(zNagl.wezly.find((w) => w.id === 'tab')!.wys).toBeGreaterThan(wys + 1);
+  });
+
+  it('kształty: kwadrat równoboczny, tarcza i sześciokąt jako ścieżki z treścią w środku', () => {
+    for (const ksztalt of ['kwadrat', 'tarcza', 'szesciokat'] as const) {
+      const s: Szablon = {
+        id: 's',
+        nazwa: 's',
+        rozmiar: { tryb: 'mm', szerokosc: 40, wysokosc: 40 },
+        korzen: {
+          id: 'k',
+          typ: 'kolumna',
+          dzieci: [
+            {
+              id: 'v',
+              typ: 'wartosc',
+              klucz: 'v',
+              ksztalt,
+              wyrownanie: { poziomo: 'srodek' },
+              tlo: '#eeeeee',
+              obramowanie: { grubosc: 0.3, kolor: '#000000' },
+              styl: { czcionka: 'tresc', rozmiar: pt(9) },
+            },
+          ],
+        },
+      };
+      const { scena, wezly, ostrzezenia } = renderujKarte(s, { dane: { v: '12' } }, ctx);
+      expect(ostrzezenia, ksztalt).toEqual([]);
+      const v = wezly.find((w) => w.id === 'v')!;
+      if (ksztalt === 'kwadrat') expect(v.szer).toBeCloseTo(v.wys, 6);
+      else expect(scena.elementy.filter((e) => e.typ === 'sciezka')).toHaveLength(2);
+    }
+  });
+});
+
+describe('kwadrat i koło z szeroką etykietą', () => {
+  it('kształt zostaje równoboczny (obszar wyśrodkowany), treść koła we wnętrzu okręgu', () => {
+    for (const ksztalt of ['kwadrat', 'kolo'] as const) {
+      const s: Szablon = {
+        id: 's',
+        nazwa: 's',
+        rozmiar: { tryb: 'mm', szerokosc: 60, wysokosc: 30 },
+        korzen: {
+          id: 'k',
+          typ: 'kolumna',
+          dzieci: [
+            {
+              id: 'v',
+              typ: 'wartosc',
+              klucz: 'v',
+              ksztalt,
+              wyrownanie: { poziomo: 'poczatek' },
+              tlo: '#eeeeee',
+              styl: { czcionka: 'tresc', rozmiar: pt(9) },
+              etykieta: { tekst: 'BARDZO DŁUGA ETYKIETA NAD', pozycja: 'nad' },
+            },
+          ],
+        },
+      };
+      const { scena } = renderujKarte(s, { dane: { v: '5' } }, ctx);
+      const tlo = scena.elementy.find((e) => e.typ === 'prostokat' && e.wypelnienie === '#eeeeee');
+      if (tlo?.typ !== 'prostokat') throw new Error(ksztalt);
+      expect(tlo.szer).toBeCloseTo(tlo.wys, 6);
+    }
   });
 });
