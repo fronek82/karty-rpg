@@ -51,11 +51,15 @@ import { scenaDoSvg } from '../../silnik/svg';
 import { baza } from '../baza';
 import { tekstOstrzezeniaArkusza } from '../ostrzezenia';
 import { pdfWWatku } from '../pdfWWatku';
+import { odczytajKalibracje } from '../kalibracja';
+import { obrazyScen, scenyKart, scenyStron, spakuj, type FormatObrazu } from '../eksportObrazow';
+import type { ZadaniePdf } from '../../druk/budowaPdf';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import { useZSzarymiObrazami } from '../szareObrazy';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
 import type { ZasobyPakietu } from '../zasoby';
 import { geometria, slotPodPunktem, stylMm, stylProstokata, type Geometria } from './geometria';
+import { MenuPobierz } from './MenuPobierz';
 import { MenuTypu } from './MenuTypu';
 import { skalaZKolka, zaokr, zmienObrazKarty } from './obrazKarty';
 import { PanelKart, typDlaSzablonu } from './PanelKart';
@@ -203,6 +207,13 @@ export function EdytorKartki({
     ustawBladUkladu(undefined);
   }, []);
   const [statusPdf, ustawStatusPdf] = useState('');
+  /** Trwa tworzenie PDF albo obrazów – kolejne pobranie czeka (przyciski wyłączone). */
+  const [zajete, ustawZajete] = useState(false);
+  const wTle = (f: () => Promise<void>) => {
+    if (zajete) return;
+    ustawZajete(true);
+    void f().finally(() => ustawZajete(false));
+  };
   const kartkiRef = useRef<HTMLDivElement>(null);
 
   // --- Budowa stron (ta sama scena co w PDF), z pamięcią kart i kartek między renderami.
@@ -345,7 +356,9 @@ export function EdytorKartki({
             w.ostrzezenia.some((o) =>
               /^(przypiecie-|siatka-za-mala|karta-wieksza-niz-strona)/.test(o.komunikat),
             ) ||
-            (a.naglowki ?? []).some((h) => h.kolumna + h.kolumny > w.siatka.kolumny)
+            // Nagłówki grup nie są rysowane przy własnym układzie – nie blokują jego zmian.
+            (!a.ustawienia.uklad &&
+              (a.naglowki ?? []).some((h) => h.kolumna + h.kolumny > w.siatka.kolumny))
           ) {
             ok = false;
             break;
@@ -825,30 +838,98 @@ export function EdytorKartki({
     );
   };
 
+  const zadaniePdf = (z: NonNullable<typeof zasoby>, dodatki: Partial<ZadaniePdf> = {}) => {
+    const k = odczytajKalibracje();
+    return {
+      tytul: projekt.nazwa,
+      arkusze: projekt.arkusze,
+      talie: projekt.talie,
+      szablony: [...z.szablony.values()],
+      czcionki: z.plikiCzcionek,
+      role: z.role,
+      ...(z.zapasowa !== undefined ? { zapasowa: z.zapasowa } : {}),
+      obrazy: [...z.obrazy].map(([id, o]) => ({
+        id,
+        info: o.info,
+        dane: o.dane,
+        format: o.format,
+      })),
+      // Kalibracja drukarki (ta przeglądarka) – tylko PDF.
+      ...(k.x || k.y ? { przesuniecie: k } : {}),
+      ...dodatki,
+    };
+  };
+  /** Liczba kart w strefie przycięcia (formaty zdjęciowe) – ostrzeżenie przy eksporcie. */
+  const wStrefie = () =>
+    kartki.reduce(
+      (n, k) =>
+        n +
+        (k.wynik?.ostrzezenia.filter((o) => o.komunikat === 'karta-w-strefie-przyciecia').length ??
+          0),
+      0,
+    );
+  const zStrefa = (tekst: string) => {
+    const n = wStrefie();
+    return n > 0 ? `${tekst} ${t('pobierz.ostrzezenieStrefy', { liczba: n })}` : tekst;
+  };
+
   const pobierzPdf = async () => {
     if (!zasoby) return;
     ustawStatusPdf(t('arkusze.generowanie'));
     try {
-      const bajty = await pdfWWatku({
-        tytul: projekt.nazwa,
-        arkusze: projekt.arkusze,
-        talie: projekt.talie,
-        szablony: [...zasoby.szablony.values()],
-        czcionki: zasoby.plikiCzcionek,
-        role: zasoby.role,
-        ...(zasoby.zapasowa !== undefined ? { zapasowa: zasoby.zapasowa } : {}),
-        obrazy: [...zasoby.obrazy].map(([id, o]) => ({
-          id,
-          info: o.info,
-          dane: o.dane,
-          format: o.format,
-        })),
-      });
+      const bajty = await pdfWWatku(zadaniePdf(zasoby));
       zapiszPlik(bajty, 'application/pdf', nazwaPliku(projekt.nazwa, '.pdf'));
-      ustawStatusPdf(t('arkusze.pdfGotowy'));
+      ustawStatusPdf(zStrefa(t('arkusze.pdfGotowy')));
     } catch (e) {
       ustawStatusPdf(
         t('kartka.bladPdf', { szczegoly: e instanceof Error ? e.message : String(e) }),
+      );
+    }
+  };
+
+  const wydrukTestowy = async (arkusz: Arkusz) => {
+    if (!zasoby) return;
+    ustawStatusPdf(t('arkusze.generowanie'));
+    try {
+      const bajty = await pdfWWatku(zadaniePdf(zasoby, { testowy: arkusz.id }));
+      zapiszPlik(
+        bajty,
+        'application/pdf',
+        nazwaPliku(`${arkusz.nazwa}-${t('pobierz.plikTestowy')}`, '.pdf'),
+      );
+      ustawStatusPdf(t('pobierz.wydrukTestowyGotowy'));
+    } catch (e) {
+      ustawStatusPdf(
+        t('kartka.bladPdf', { szczegoly: e instanceof Error ? e.message : String(e) }),
+      );
+    }
+  };
+
+  const pobierzObrazy = async (rodzaj: 'strony' | 'karty', format: FormatObrazu) => {
+    if (!zasoby) return;
+    const postep = (gotowe: number, razem: number) =>
+      ustawStatusPdf(t('pobierz.rasteryzacja', { gotowe, razem }));
+    try {
+      postep(0, 1);
+      const sceny =
+        rodzaj === 'strony' ? scenyStron(kartki, format) : scenyKart(kartki, zasoby, format);
+      if (sceny.length === 0) {
+        ustawStatusPdf(t('pobierz.nicDoEksportu'));
+        return;
+      }
+      const pliki = await obrazyScen(sceny, zasoby.obrazy, format, postep);
+      const wynik = spakuj(
+        pliki,
+        nazwaPliku(
+          `${projekt.nazwa}-${t(rodzaj === 'strony' ? 'pobierz.plikStrony' : 'pobierz.plikKarty')}`,
+          '.zip',
+        ),
+      );
+      zapiszPlik(wynik.bajty, wynik.typ, wynik.nazwa);
+      ustawStatusPdf(zStrefa(t('pobierz.obrazyGotowe')));
+    } catch (e) {
+      ustawStatusPdf(
+        t('pobierz.bladObrazow', { szczegoly: e instanceof Error ? e.message : String(e) }),
       );
     }
   };
@@ -885,7 +966,8 @@ export function EdytorKartki({
     const naStronie = zaznaczoneKarty.filter((k) => k.strona === zaznaczoneKarty[0]?.strona);
     const od = Math.min(...naStronie.map((k) => k.kolumna));
     const do_ = Math.max(...naStronie.map((k) => k.kolumna + k.kolumny));
-    const mozeNaglowek = !!arkuszZazn.ustawienia.grupy && naStronie.length > 0;
+    const mozeNaglowek =
+      !!arkuszZazn.ustawienia.grupy && !arkuszZazn.ustawienia.uklad && naStronie.length > 0;
     panel = (
       <PanelKart
         key={aktywne.ids.join(',')}
@@ -974,12 +1056,15 @@ export function EdytorKartki({
         />
       );
   } else if (aktywne?.rodzaj === 'ustawienia' && arkuszZazn) {
+    const wynikZazn = kartki.find((k) => k.arkusz.id === arkuszZazn.id)?.wynik;
     panel = (
       <PanelUstawien
         key={arkuszZazn.id}
         edycja={edycja}
         arkusz={arkuszZazn}
         zmienUklad={zmienUklad}
+        {...(wynikZazn ? { wynik: wynikZazn } : {})}
+        wydrukTestowy={() => wTle(() => wydrukTestowy(arkuszZazn))}
         {...(bladUkladu ? { blad: bladUkladu } : {})}
         {...(nowaKartka ? { nowaKartka } : {})}
         {...(bezGry ? { kartkaDlaSzablonu: nowaKartkaDlaSzablonu } : {})}
@@ -1121,9 +1206,20 @@ export function EdytorKartki({
       >
         ⤓ {t('projekty.eksportuj')}
       </button>
-      <button type="button" className="glowny" disabled={!zasoby} onClick={() => void pobierzPdf()}>
+      <button
+        type="button"
+        className="glowny"
+        disabled={!zasoby || zajete}
+        onClick={() => wTle(pobierzPdf)}
+      >
         ⎙ {t('arkusze.pobierzPdf')}
       </button>
+      <MenuPobierz
+        wylaczone={!zasoby || zajete}
+        pobierz={(co) =>
+          wTle(() => (co.rodzaj === 'pdf' ? pobierzPdf() : pobierzObrazy(co.rodzaj, co.format)))
+        }
+      />
       <span role="status" aria-live="polite" className="status-pdf">
         {statusPdf}
       </span>

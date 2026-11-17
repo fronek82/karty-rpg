@@ -18,6 +18,8 @@ import {
   type Papier,
   type UstawieniaArkusza,
 } from '../../model/arkusz';
+import type { WynikArkusza } from '../../druk/arkusz';
+import { PanelUkladu } from './PanelUkladu';
 import { PoleLiczby } from './PoleLiczby';
 import { SzablonyProjektu } from './SzablonyProjektu';
 import type { Projekt } from '../../model/projekt';
@@ -66,12 +68,17 @@ export function PanelUstawien({
   kartkaDlaSzablonu,
   zamknij,
   blad,
+  wynik,
+  wydrukTestowy,
 }: {
+  /** Ostatnio zbudowana kartka (siatka startowa własnego układu). */
+  wynik?: WynikArkusza;
+  wydrukTestowy: () => void;
   /** Własne karty: nowa kartka dopasowana do rozmiaru szablonu. */
   kartkaDlaSzablonu?: (szablonId: string) => void;
   edycja: ProjektWEdycji;
   arkusz: Arkusz;
-  zmienUklad: (f: (p: Projekt) => Projekt, klucz?: string) => void;
+  zmienUklad: (f: (p: Projekt) => Projekt, klucz?: string) => boolean;
   nowaKartka?: () => void;
   zamknij: () => void;
   blad?: string;
@@ -267,6 +274,12 @@ export function PanelUstawien({
         />
         <p className="podpis">{t('kartka.marginesBezpieczenstwaOpis')}</p>
       </div>
+      <PanelUkladu
+        arkusz={arkusz}
+        {...(wynik ? { wynik } : {})}
+        zmienUklad={zmienUklad}
+        wydrukTestowy={wydrukTestowy}
+      />
       <fieldset className="sekcja-czcionek">
         <legend>{t('czcionki.tytul')}</legend>
         {roleProjektu(projekt).map((rola) => (

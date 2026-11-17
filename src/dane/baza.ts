@@ -1,7 +1,8 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { t } from '../i18n';
+import type { PresetUkladu } from '../model/arkusz';
 import type { DaneZasobow, Projekt } from '../model/projekt';
-import { BladDanych, przygotujProjekt } from './schemat';
+import { BladDanych, presetUkladu, przygotujProjekt } from './schemat';
 
 interface WpisZasobu {
   projektId: string;
@@ -35,6 +36,7 @@ class BazaDexie extends Dexie {
   projekty!: EntityTable<WpisProjektu, 'id'>;
   zasoby!: Dexie.Table<WpisZasobu, [string, string]>;
   miniatury!: EntityTable<WpisMiniatury, 'id'>;
+  uklady!: EntityTable<PresetUkladu, 'id'>;
 
   constructor(nazwa: string) {
     super(nazwa);
@@ -49,6 +51,13 @@ class BazaDexie extends Dexie {
       projekty: 'id, zmieniono',
       zasoby: '[projektId+id], projektId',
       miniatury: 'id',
+    });
+    // Wersja 3: „Moje układy” arkuszy (presety użytkownika, wspólne dla projektów w przeglądarce).
+    this.version(3).stores({
+      projekty: 'id, zmieniono',
+      zasoby: '[projektId+id], projektId',
+      miniatury: 'id',
+      uklady: 'id, nazwa',
     });
   }
 }
@@ -88,6 +97,24 @@ export class BazaProjektow {
 
   async miniatury(): Promise<Map<string, string>> {
     return new Map((await this.db.miniatury.toArray()).map((m) => [m.id, m.svg]));
+  }
+
+  /**
+   * „Moje układy” arkuszy, alfabetycznie. Rekordy niezgodne ze schematem (uszkodzone, z nowszej
+   * wersji aplikacji) są pomijane – preset trafia potem wprost do ustawień kartki.
+   */
+  async uklady(): Promise<PresetUkladu[]> {
+    return (await this.db.uklady.toArray())
+      .filter((u) => presetUkladu.safeParse(u).success)
+      .sort((a, b) => a.nazwa.localeCompare(b.nazwa));
+  }
+
+  async zapiszUklad(u: PresetUkladu): Promise<void> {
+    await this.db.uklady.put(u);
+  }
+
+  async usunUklad(id: string): Promise<void> {
+    await this.db.uklady.delete(id);
   }
 
   async istnieje(id: string): Promise<boolean> {

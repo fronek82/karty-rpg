@@ -46,7 +46,9 @@ test('tytuł, położenie tytułu, czarno-biały, czcionki; zmiana papieru odrzu
     mimeType: 'font/ttf',
     buffer: readFileSync('public/czcionki/EBGaramond-Bold.ttf'),
   });
-  await expect(ustawienia(page).getByRole('status')).toContainText('Wgrano: EB Garamond');
+  await expect(
+    ustawienia(page).getByRole('group', { name: 'Czcionki' }).getByRole('status'),
+  ).toContainText('Wgrano: EB Garamond');
   await ustawienia(page).getByLabel('Rodzina dla roli „Tytuł”').selectOption('EB Garamond');
   await zapisano(page);
 });

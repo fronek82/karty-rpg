@@ -1250,3 +1250,61 @@ button.maly {
 .pole-koloru .wiersz-pola {
   justify-content: flex-start;
 }
+
+/* M2-6: menu „Pobierz”, układ arkusza. */
+.menu-pobierz {
+  position: relative;
+  display: inline-block;
+}
+.menu-pobierz .menu-typu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.3rem);
+  z-index: 30;
+}
+.sekcja-ukladu,
+.sekcja-ukladu .kalibracja {
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  margin: 0.75rem 0;
+}
+.sekcja-ukladu label.wybor {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.zapis-ukladu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.zapis-ukladu input {
+  flex: 1 1 8rem;
+}
+.moje-uklady h3 {
+  font-size: 0.9rem;
+  margin: 0.75rem 0 0.25rem;
+}
+.moje-uklady ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.moje-uklady li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.3rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--obramowanie);
+}
+.nazwa-ukladu {
+  display: flex;
+  flex-direction: column;
+}
+.przyciski-ukladu {
+  display: flex;
+  gap: 0.25rem;
+}

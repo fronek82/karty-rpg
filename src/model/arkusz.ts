@@ -60,6 +60,47 @@ export interface Nozyczki {
   odstep: Mm;
 }
 
+/**
+ * Własny układ arkusza (np. gotowe arkusze z perforowanymi kartami): stała siatka kolumny × rzędy,
+ * położenie pierwszej karty od lewego górnego rogu kartki i odstępy między kartami. Rozmiar
+ * karty – `UstawieniaArkusza.slot`. Tytuł, nagłówki grup i nożyczki nie są wtedy rysowane.
+ */
+export interface UkladArkusza {
+  kolumny: number;
+  rzedy: number;
+  /** Od górnej i lewej krawędzi kartki do pierwszej karty (mm). */
+  gora: Mm;
+  lewo: Mm;
+  /** Odstęp między kolumnami i między rzędami (mm). */
+  odstepPoziomy: Mm;
+  odstepPionowy: Mm;
+  /** Linie cięcia wokół każdej karty (arkusze perforowane zwykle ich nie potrzebują). */
+  linieCiecia: boolean;
+}
+
+/** Zapisany układ użytkownika („Moje układy”): papier, rozmiar karty i siatka. */
+export interface PresetUkladu {
+  id: string;
+  nazwa: string;
+  papier: Papier;
+  wymiaryPapieru?: { szer: Mm; wys: Mm };
+  orientacja: 'pionowa' | 'pozioma';
+  slot: { szerokosc: Mm; wysokosc: Mm };
+  uklad: UkladArkusza;
+}
+
+/** Wymiary siatki własnego układu (mm) i marginesy, które zostają po prawej i na dole. */
+export function wymiaryUkladu(
+  uklad: UkladArkusza,
+  slot: { szerokosc: Mm; wysokosc: Mm },
+  strona: { szer: Mm; wys: Mm },
+): { szer: Mm; wys: Mm; prawo: Mm; dol: Mm } {
+  const szer =
+    uklad.kolumny * slot.szerokosc + Math.max(0, uklad.kolumny - 1) * uklad.odstepPoziomy;
+  const wys = uklad.rzedy * slot.wysokosc + Math.max(0, uklad.rzedy - 1) * uklad.odstepPionowy;
+  return { szer, wys, prawo: strona.szer - uklad.lewo - szer, dol: strona.wys - uklad.gora - wys };
+}
+
 export interface UstawieniaArkusza {
   papier: Papier;
   /** Wymiary własnego papieru (w orientacji pionowej) – gdy `papier` to `wlasny`. */
@@ -95,6 +136,8 @@ export interface UstawieniaArkusza {
    * w lewym górnym rogu obszaru po marginesach, tytule i pasie nagłówków grup.
    */
   poczatekSiatki?: { x: Mm; y: Mm };
+  /** Własny układ arkusza (stała siatka z odstępami); bez tego – układ automatyczny. */
+  uklad?: UkladArkusza;
 }
 
 /** Ręczne przypięcie egzemplarza karty do pozycji (w slotach). */

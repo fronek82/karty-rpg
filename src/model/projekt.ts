@@ -10,7 +10,7 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  * 5 – M2-3: nazwy węzłów szablonu, dane przykładowe szablonu.
  * 6 – M2-4: tabela z wieloma wierszami i opcjonalnymi nagłówkami, kształty kwadrat/tarcza/sześciokąt.
  */
-export const WERSJA_SCHEMATU = 6;
+export const WERSJA_SCHEMATU = 7;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

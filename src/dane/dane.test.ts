@@ -178,6 +178,32 @@ describe('eksport i import .kartyrpg', () => {
     expect(() => importujProjekt(eksportujProjekt(zly4, zasoby))).toThrow(/szablon mausritter/);
   });
 
+  it('własny układ arkusza: poprawny przechodzi, zły (0 kolumn, ujemny odstęp, brak linii) – błąd', () => {
+    const uklad = {
+      kolumny: 3,
+      rzedy: 3,
+      gora: 10,
+      lewo: 10,
+      odstepPoziomy: 2,
+      odstepPionowy: 2,
+      linieCiecia: true,
+    };
+    const ok = structuredClone(projekt);
+    ok.arkusze[0]!.ustawienia.uklad = uklad;
+    expect(
+      importujProjekt(eksportujProjekt(ok, zasoby)).projekt.arkusze[0]!.ustawienia.uklad,
+    ).toEqual(uklad);
+    for (const zle of [
+      { ...uklad, kolumny: 0 },
+      { ...uklad, odstepPoziomy: -1 },
+      { ...uklad, linieCiecia: undefined },
+    ]) {
+      const p = structuredClone(projekt);
+      p.arkusze[0]!.ustawienia.uklad = zle as never;
+      expect(() => importujProjekt(eksportujProjekt(p, zasoby))).toThrow(BladDanych);
+    }
+  });
+
   it('miękkie odwołania (rola, obraz) nie blokują otwarcia – są ostrzeżeniami', () => {
     const p = structuredClone(projekt);
     p.role.ozdobna = 'Nie Ma Takiej';
@@ -238,6 +264,35 @@ describe('baza IndexedDB', () => {
     const wynik = await baza.wczytaj('p1');
     expect(wynik.projekt).toEqual(projekt);
     rowne(zasoby, wynik.zasoby);
+  });
+
+  it('„Moje układy”: zapis, lista alfabetycznie, nadpisanie, usunięcie', async () => {
+    baza = new BazaProjektow('test-uklady');
+    const u = {
+      id: 'u1',
+      nazwa: 'Perforacja 3×3',
+      papier: 'A4' as const,
+      orientacja: 'pionowa' as const,
+      slot: { szerokosc: 63, wysokosc: 88 },
+      uklad: {
+        kolumny: 3,
+        rzedy: 3,
+        gora: 12,
+        lewo: 8,
+        odstepPoziomy: 4,
+        odstepPionowy: 3,
+        linieCiecia: false,
+      },
+    };
+    await baza.zapiszUklad(u);
+    await baza.zapiszUklad({ ...u, id: 'u2', nazwa: 'Arkusz A' });
+    expect((await baza.uklady()).map((x) => x.nazwa)).toEqual(['Arkusz A', 'Perforacja 3×3']);
+    await baza.zapiszUklad({ ...u, nazwa: 'Zdjęcie' });
+    await baza.usunUklad('u2');
+    expect(await baza.uklady()).toEqual([{ ...u, nazwa: 'Zdjęcie' }]);
+    // Rekord niezgodny ze schematem (np. 0 kolumn) jest pomijany.
+    await baza.zapiszUklad({ ...u, id: 'zly', uklad: { ...u.uklad, kolumny: 0 } });
+    expect((await baza.uklady()).map((x) => x.id)).toEqual(['u1']);
   });
 
   it('lista, zmiana samego dokumentu, usuwanie', async () => {

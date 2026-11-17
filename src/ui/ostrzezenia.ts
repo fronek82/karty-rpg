@@ -16,6 +16,7 @@ const KODY: Record<string, KluczTekstu> = {
   'karta-inny-rozmiar': 'ostrzezenie.kartaInnyRozmiar',
   'brak-slotow-na-stronie': 'ostrzezenie.brakSlotow',
   'karta-w-strefie-przyciecia': 'ostrzezenie.kartaWStrefiePrzyciecia',
+  'uklad-poza-papierem': 'ostrzezenie.ukladPozaPapierem',
   'tytul-nie-miesci-sie': 'ostrzezenie.tytulNieMiesciSie',
   'naglowek-grupy-nie-miesci-sie': 'ostrzezenie.naglowekGrupy',
   'nozyczki-poza-siatka': 'ostrzezenie.nozyczki',
