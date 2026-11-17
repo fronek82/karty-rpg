@@ -28,6 +28,7 @@ import {
 import type { RejestrCzcionek } from './czcionki';
 import { konturIkony } from './ikony';
 import { ramkaZMotywu } from '../ozdobniki/motyw';
+import { rysujSeparatorOzdobny, wysokoscOzdobySeparatora } from '../ozdobniki/separator';
 import { narozniki as rysujNarozniki, type WynikNarozniki } from '../ozdobniki/narozniki';
 import {
   symboleSceny,
@@ -418,7 +419,7 @@ export function renderujKarte(
         elementy.push(
           ...rysujPoleObrazu(w, ramka, dane, ctx, ostrzezenia, przeszkody, karta.obrazy?.[w.id]),
         );
-      } else elementy.push(...rysujPole(w, ramka, dane, ctx, glify, ostrzezenia));
+      } else elementy.push(...rysujPole(w, ramka, dane, ctx, glify, ostrzezenia, symbole));
     } else if (!czyKontener(w) && w.typ === 'tekst' && w.etykieta) {
       // Pusta wartość z „pokaż pustą ramkę”: etykieta (np. „Usunięcie:”) zostaje.
       const p = rozwinOdstepy(w.padding);
@@ -721,12 +722,16 @@ function zmierzPole(
         ? { szer: Math.max(k.szer, e.uklad.szerokosc), wys: k.wys + e.uklad.wysokosc + e.odstep }
         : k;
     }
-    case 'separator':
-      // Długość 0 – linię wydłuża rozciągnięcie w rodzicu; inaczej separator rozpychałby
-      // kontenery mierzone wg treści.
-      return pole.kierunek === 'poziomy'
-        ? { szer: 0, wys: pelnaGrubosc({ ...pole, styl: pole.stylLinii }) }
-        : { szer: pelnaGrubosc({ ...pole, styl: pole.stylLinii }), wys: 0 };
+    case 'separator': // Długość 0 – linię wydłuża rozciągnięcie w rodzicu; inaczej separator rozpychałby
+    // kontenery mierzone wg treści.
+    {
+      // Ozdoby (zakończenia, środek, motyw) wyznaczają wysokość w poprzek linii.
+      const w = Math.max(
+        pelnaGrubosc({ ...pole, styl: pole.stylLinii }),
+        wysokoscOzdobySeparatora(pole),
+      );
+      return pole.kierunek === 'poziomy' ? { szer: 0, wys: w } : { szer: w, wys: 0 };
+    }
     case 'tabela': {
       if (pole.kolumny.length === 0) return { szer: 0, wys: 0 };
       const t = ukladTabeli(pole, dane, ctx, skalaTabeli(pole, dane, ctx, ogr.szer));
@@ -811,6 +816,7 @@ function rysujPole(
   ctx: KontekstRenderowania,
   glify: Record<string, DefinicjaGlifu>,
   ostrzezenia: Ostrzezenie[],
+  symbole: Record<string, DefinicjaSymbolu>,
 ): ElementSceny[] {
   const wartosc = wartoscPola(pole, dane);
   let ramka = ramkaPola;
@@ -908,32 +914,20 @@ function rysujPole(
       return wynik;
     }
     case 'separator': {
-      const s = obrys({ grubosc: pole.grubosc, kolor: pole.kolor ?? CZARNY, styl: pole.stylLinii });
-      if (!s) return [];
-      const cx = ramka.x + ramka.szer / 2;
-      const cy = ramka.y + ramka.wys / 2;
+      const kolor = pole.kolor ?? CZARNY;
+      const s = obrys({ grubosc: pole.grubosc, kolor, styl: pole.stylLinii });
       // Linia podwójna: dwie linie symetrycznie względem środka pola.
       const polowa = (pelnaGrubosc({ ...pole, styl: pole.stylLinii }) - pole.grubosc) / 2;
-      const odsuniecia = pole.stylLinii === 'podwojna' ? [-polowa, polowa] : [0];
-      return odsuniecia.map((d) =>
-        pole.kierunek === 'poziomy'
-          ? {
-              typ: 'linia',
-              x1: ramka.x,
-              y1: cy + d,
-              x2: ramka.x + ramka.szer,
-              y2: cy + d,
-              obrys: s,
-            }
-          : {
-              typ: 'linia',
-              x1: cx + d,
-              y1: ramka.y,
-              x2: cx + d,
-              y2: ramka.y + ramka.wys,
-              obrys: s,
-            },
+      const w = rysujSeparatorOzdobny(
+        pole,
+        ramka,
+        { obrys: s, odsuniecia: pole.stylLinii === 'podwojna' ? [-polowa, polowa] : [0] },
+        kolor,
       );
+      Object.assign(symbole, w.symbole);
+      for (const id of w.nieznane)
+        ostrzezenia.push({ pole: pole.id, komunikat: 'nieznany-element-ozdobny', szczegoly: id });
+      return w.elementy;
     }
     case 'tabela':
       return rysujTabele(pole, ramka, dane, ctx, glify, ostrzezenia);

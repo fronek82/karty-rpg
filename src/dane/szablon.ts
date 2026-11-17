@@ -603,6 +603,11 @@ const WYGLAD_TYPU = [
   'grubosc',
   'stylLinii',
   'przerwa',
+  'rysunek',
+  'zakonczenia',
+  'srodek',
+  'dlugosc',
+  'odstepOdOzdoby',
   'srednica',
   'odstep',
 ] as const;
