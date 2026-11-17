@@ -83,6 +83,51 @@ export interface Obramowanie {
   krawedzie?: Partial<Record<keyof Odstepy, boolean>>;
 }
 
+/**
+ * Punkt zaczepienia w trybie swobodnym: 9 punktów prostokąta (kolumna: lewy / środek / prawy,
+ * wiersz: górny / środek / dolny). `x`, `y` liczone są od tego punktu kontenera do tego samego
+ * punktu elementu – element „przyklejony” do prawego dolnego rogu zostaje tam po zmianie rozmiaru karty.
+ */
+export type Kotwica =
+  | 'lewy-gorny'
+  | 'gorny'
+  | 'prawy-gorny'
+  | 'lewy'
+  | 'srodek'
+  | 'prawy'
+  | 'lewy-dolny'
+  | 'dolny'
+  | 'prawy-dolny';
+
+export const KOTWICE: readonly Kotwica[] = [
+  'lewy-gorny',
+  'gorny',
+  'prawy-gorny',
+  'lewy',
+  'srodek',
+  'prawy',
+  'lewy-dolny',
+  'dolny',
+  'prawy-dolny',
+];
+
+/** Obroty dozwolone w trybie swobodnym (R9) – pomiar, przyciąganie i trafienia zostają prostokątne. */
+export type ObrotSwobodny = 0 | 90 | 180 | 270;
+
+/**
+ * Położenie elementu w kontenerze swobodnym (czytane tylko wtedy, gdy rodzic jest swobodny).
+ * `x`, `y` (mm, ze znakiem: w prawo / w dół) – przesunięcie punktu `kotwica` elementu względem tego
+ * samego punktu wnętrza kontenera (domyślnie `lewy-gorny`). Wymiary elementu to jego `szerokosc`
+ * i `wysokosc` (przy obrocie 90° / 270° – wymiary przed obrotem; na karcie zajmuje prostokąt
+ * z zamienionymi bokami, obrócony wokół swojego środka).
+ */
+export interface Pozycja {
+  x: Mm;
+  y: Mm;
+  kotwica?: Kotwica;
+  obrot?: ObrotSwobodny;
+}
+
 interface WezelBazowy {
   /** Identyfikator unikalny w obrębie szablonu. */
   id: string;
@@ -116,11 +161,17 @@ interface WezelBazowy {
    */
   minSzerokosc?: Mm;
   minWysokosc?: Mm;
+  /** Położenie w rodzicu swobodnym (R10); w innych kontenerach ignorowane, ale zostaje w modelu. */
+  pozycja?: Pozycja;
 }
 
-/** Wiersz (dzieci obok siebie), kolumna (jedno pod drugim) lub warstwy (jedno na drugim). */
+/**
+ * Wiersz (dzieci obok siebie), kolumna (jedno pod drugim), warstwy (jedno na drugim) lub
+ * swobodny (dzieci z `pozycja`: położenie w mm od kotwicy, obrót co 90°; kolejność w drzewie =
+ * kolejność rysowania, ostatnie na wierzchu).
+ */
 export interface Kontener extends WezelBazowy {
-  typ: 'wiersz' | 'kolumna' | 'warstwy';
+  typ: 'wiersz' | 'kolumna' | 'warstwy' | 'swobodny';
   dzieci: Wezel[];
   /** Odstęp między dziećmi (mm). */
   odstep?: Mm;
@@ -459,7 +510,12 @@ export interface Talia {
 }
 
 export function czyKontener(wezel: Wezel): wezel is Kontener {
-  return wezel.typ === 'wiersz' || wezel.typ === 'kolumna' || wezel.typ === 'warstwy';
+  return (
+    wezel.typ === 'wiersz' ||
+    wezel.typ === 'kolumna' ||
+    wezel.typ === 'warstwy' ||
+    wezel.typ === 'swobodny'
+  );
 }
 
 /** Wymiary karty w mm. */
