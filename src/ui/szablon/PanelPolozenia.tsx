@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { zmienKotwice, type ZmianaKolejnosci } from '../../dane/szablon';
 import { t } from '../../i18n';
 import { KOTWICE, type Kotwica, type ObrotSwobodny, type Pozycja } from '../../model/szablon';
@@ -29,6 +29,7 @@ export function PanelPolozenia({
   zmien,
   rozmiary,
   kolejnosc,
+  children,
 }: {
   /** Nazwa kontenera swobodnego (do nagłówka). */
   kontener: string;
@@ -39,6 +40,8 @@ export function PanelPolozenia({
   rozmiary: (id: string) => RozmiaryKotwicy | undefined;
   /** Zmiana kolejności rysowania – tylko dla jednego elementu. */
   kolejnosc?: (jak: ZmianaKolejnosci) => void;
+  /** Dodatkowe sekcje na końcu (wyrównanie zaznaczonych). */
+  children?: ReactNode;
 }) {
   const p: Pozycja = pozycja ?? { x: 0, y: 0 };
   const kotwica = p.kotwica ?? 'lewy-gorny';
@@ -142,6 +145,7 @@ export function PanelPolozenia({
           </div>
         </div>
       )}
+      {children}
     </fieldset>
   );
 }

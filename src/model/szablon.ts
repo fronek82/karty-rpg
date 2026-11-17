@@ -471,6 +471,14 @@ export interface ParametrSzablonu {
   domyslnie: string;
 }
 
+/** Podkład szablonu: obraz z biblioteki projektu, przezroczystość 0–100 % (50 = pół na pół) i widoczność. */
+export interface PodkladSzablonu {
+  zasob: string;
+  /** Przezroczystość w procentach: 0 – obraz w pełni widoczny, 100 – niewidoczny. */
+  przezroczystosc: number;
+  widoczny: boolean;
+}
+
 export interface Szablon {
   id: string;
   /** Napisy stałe z wartościami domyślnymi (np. „Usunięcie:”, „/ 250p”). */
@@ -484,6 +492,12 @@ export interface Szablon {
   /** Ramka całej karty – linia w odległości `odsuniecie` od krawędzi (0 = po krawędzi). */
   ramka?: RamkaKarty;
   korzen: Kontener;
+  /**
+   * Podkład ze wzoru (zdjęcie lub skan karty) pod podglądem w edytorze – pomoc przy układaniu pól.
+   * Nigdy nie jest drukowany, rysowany w scenie karty ani eksportowany do obrazów; nie trafia też
+   * do pliku szablonu (tylko do eksportu całego projektu – zasób jest w `Projekt.zasoby`).
+   */
+  podklad?: PodkladSzablonu;
   /**
    * Inny układ dla wybranego rozmiaru karty w slotach (np. ciężka broń 1×2 z ilustracją na całą
    * szerokość). Bez pasującego wariantu karta używa `korzen`.

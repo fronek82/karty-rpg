@@ -339,7 +339,7 @@ describe('kolejność rysowania i kotwica w panelu', () => {
   });
 });
 
-describe('schemat 15', () => {
+describe('schemat 15 i 16', () => {
   it('przyjmuje kontener swobodny z pozycją i odrzuca obrót spoza 0/90/180/270 oraz absurdalne X', () => {
     let s = startowy('swobodny');
     s = wstawWezel(s, 'karta', {
@@ -368,10 +368,10 @@ describe('schemat 15', () => {
     expect(JSON.parse(JSON.stringify(s))).toEqual(s);
   });
 
-  it('wersja schematu to 15, a eksport i import szablonu zachowuje swobodny korzeń i pozycje', () => {
-    expect(WERSJA_SCHEMATU).toBe(15);
-    expect(migruj({ wersja: 14, a: 1 }, 'projekt')).toEqual({ wersja: 15, a: 1 });
-    expect(migruj({ wersja: 14, a: 1 }, 'szablon')).toEqual({ wersja: 15, a: 1 });
+  it('wersja schematu to 16 (migracja z 14 tożsamościowa), a eksport i import szablonu zachowuje swobodny korzeń i pozycje', () => {
+    expect(WERSJA_SCHEMATU).toBe(16);
+    expect(migruj({ wersja: 14, a: 1 }, 'projekt')).toEqual({ wersja: 16, a: 1 });
+    expect(migruj({ wersja: 14, a: 1 }, 'szablon')).toEqual({ wersja: 16, a: 1 });
     let s = startowy('swobodny');
     s = wstawWezel(s, 'karta', {
       ...dostosujDoSwobodnego(nowyWezel(s, 'tekst', 'T')),

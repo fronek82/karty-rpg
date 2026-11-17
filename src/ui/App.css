@@ -1645,3 +1645,109 @@ button.maly {
   width: 26px;
   height: 12px;
 }
+
+/* M2b-9: nakładka nad podglądem karty (tylko w edytorze) i podkład ze wzoru. */
+.karta-podgladu:focus-visible {
+  outline: 2px solid #2a6fd6;
+  outline-offset: 2px;
+}
+.podklad-podgladu {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+}
+.obszar-wezla {
+  touch-action: none;
+}
+.uchwyt {
+  position: absolute;
+  box-sizing: border-box;
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  min-width: 0;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border: 1.5px solid #2a6fd6;
+  border-radius: 2px;
+  z-index: 3;
+}
+.uchwyt:focus-visible {
+  outline: 2px solid #1b4fa0;
+  outline-offset: 2px;
+  background: #cfe0fb;
+}
+.uchwyt-n,
+.uchwyt-s {
+  cursor: ns-resize;
+}
+.uchwyt-e,
+.uchwyt-w {
+  cursor: ew-resize;
+}
+.uchwyt-ne,
+.uchwyt-sw {
+  cursor: nesw-resize;
+}
+.uchwyt-nw,
+.uchwyt-se {
+  cursor: nwse-resize;
+}
+.prowadnica {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+}
+.prowadnica-x {
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed #d6247f;
+}
+.prowadnica-y {
+  left: 0;
+  right: 0;
+  border-top: 1px dashed #d6247f;
+}
+.siatka-podgladu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgb(0 0 0 / 12%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 0 0 / 12%) 1px, transparent 1px);
+}
+.podpowiedz-przeciagania {
+  position: absolute;
+  pointer-events: none;
+  z-index: 4;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.3rem;
+  background: #222;
+  color: #fff;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.narzedzia-podgladu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  width: 100%;
+  justify-content: center;
+}
+.narzedzia-podgladu fieldset {
+  flex: 1 1 14rem;
+  max-width: 24rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.wyrownanie .wiersz-przyciskow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}

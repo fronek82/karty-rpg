@@ -21,8 +21,10 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  * 14 – M2b-7: ramka 9-slice – `ozdoba.rodzaj: 'ramka9'` (ramka karty i węzły) i element biblioteki
  *      rodzaju `ramka9` (`ramka9`: źródło PNG z zasobów projektu albo SVG, wcięcia, boki, środek).
  * 15 – M2b-8: tryb swobodny – kontener `swobodny` i `pozycja` węzła (x, y, kotwica, obrót 0/90/180/270).
+ * 16 – M2b-9: `Szablon.podklad` (podkład ze wzoru pod podglądem edytora: zasób obrazu projektu,
+ *      przezroczystość, widoczność); poza plikiem szablonu, nigdy w scenie, PDF ani eksporcie obrazów.
  */
-export const WERSJA_SCHEMATU = 15;
+export const WERSJA_SCHEMATU = 16;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

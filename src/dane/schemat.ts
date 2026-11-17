@@ -297,6 +297,13 @@ const szablon = obj({
     }),
   ),
   korzen: kontener,
+  podklad: opc(
+    obj({
+      zasob: identyfikator,
+      przezroczystosc: liczba.min(0).max(100),
+      widoczny: z.boolean(),
+    }),
+  ),
   parametry: opc(z.array(obj({ klucz: z.string(), nazwa: z.string(), domyslnie: z.string() }))),
   warianty: opc(z.array(obj({ ...rozmiarSlotow, korzen: kontener }))),
 });
@@ -658,6 +665,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 12→13: `biblioteka.ozdobniki` (własne SVG), kształt wartości `wlasny` – bez zmian danych.
   // 13→14: ramka 9-slice (`ozdoba.rodzaj: 'ramka9'`, element `ramka9` z PNG albo SVG) – bez zmian danych.
   // 14→15: tryb swobodny (kontener `swobodny`, `pozycja` węzła) – bez zmian danych.
+  // 15→16: `Szablon.podklad` (podkład ze wzoru w edytorze) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -673,6 +681,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     12: (d) => d,
     13: (d) => d,
     14: (d) => d,
+    15: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -689,6 +698,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     12: (d) => d,
     13: (d) => d,
     14: (d) => d,
+    15: (d) => d,
   },
 };
 
@@ -841,6 +851,15 @@ export function ostrzezeniaProjektu(p: Projekt): string[] {
       if (!zasoby.has(id)) {
         wynik.push(t('dane.nieznanyZasob', { gdzie: t('dane.gdzie.szablon', { id: s.id }), id }));
       }
+    }
+    // Podkład ze wzoru bez obrazu w bibliotece – edytor pokaże podgląd bez podkładu.
+    if (s.podklad && !zasoby.has(s.podklad.zasob)) {
+      wynik.push(
+        t('dane.nieznanyZasob', {
+          gdzie: t('dane.gdzie.szablon', { id: s.id }),
+          id: s.podklad.zasob,
+        }),
+      );
     }
   }
   // Element ozdobny użyty w szablonie, którego nie ma w bibliotece – silnik pominie ozdobę.
