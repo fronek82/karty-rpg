@@ -753,7 +753,7 @@ function PanelKarty({
                 return { ...s, ramka: o ? { ...r, ozdoba: o } : r };
               }, 'ramka-ozdoba'),
             ramkaZostaje: true,
-            promien: (szablon.promienRogow ?? 0) > 0 || szablon.ramka?.promien !== undefined,
+            promien: (szablon.promienRogow ?? 0) > 0 || (szablon.ramka?.promien ?? 0) > 0,
           }}
           ramka={szablon.ramka}
           zmien={(f) =>

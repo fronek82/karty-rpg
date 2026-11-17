@@ -111,15 +111,16 @@ export function ramkaZMotywu(
     }
   }
   if (o.szyny && o.szyny > 0) {
-    const g = o.szyny;
+    // Szyna nie grubsza niż pas – inaczej wymiary prostokątów wyszłyby ujemne.
+    const g = Math.min(o.szyny, pas);
     const obrys = { kolor: o.kolor, grubosc: g };
     const { x, y, szer, wys } = obszar;
     elementy.push({
       typ: 'prostokat',
       x: x + g / 2,
       y: y + g / 2,
-      szer: szer - g,
-      wys: wys - g,
+      szer: Math.max(0, szer - g),
+      wys: Math.max(0, wys - g),
       obrys,
     });
     const w = pas - g / 2;

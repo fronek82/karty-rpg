@@ -317,3 +317,87 @@ describe('PDF z motywami', () => {
     expect((await scenyDoPdf(sceny)).liczbaSymboli).toBe(6);
   });
 });
+
+describe('M2b-4: poprawki z przeglądu', () => {
+  const sym = (scena: { elementy: { typ: string; klucz?: string }[] }, klucz: string) =>
+    scena.elementy.filter((e) => e.typ === 'symbol' && e.klucz === klucz);
+
+  it('węzeł z odsunięciem i narożnikami: narożniki na tym samym prostokącie co pas', () => {
+    const sz = kartaZPanelem(ozdoba('wb:luski', { odsuniecie: 2, szerokosc: 3 }));
+    const panel = (sz.korzen as unknown as { dzieci: Record<string, unknown>[] }).dzieci[0]!;
+    panel.narozniki = { element: 'wb:kat', rozmiar: 3 };
+    const { scena } = renderujKarte(sz, { dane: { nazwa: 'A' } }, ctx);
+    const motyw = sym(scena, 'wb:luski')[0] as unknown as { macierz: number[] };
+    const rogi = sym(scena, 'wb:kat') as unknown as { macierz: number[] }[];
+    expect(rogi).toHaveLength(4);
+    // Lewy górny narożnik w tym samym punkcie, od którego zaczyna się pas (róg prostokąta po odsunięciu).
+    expect(rogi[0]!.macierz[4]).toBeCloseTo(motyw.macierz[4]! - 3, 9);
+    expect(rogi[0]!.macierz[5]).toBeCloseTo(motyw.macierz[5]!, 9);
+    expect(sym(scena, 'wb:luski:kostka')).toHaveLength(0);
+  });
+
+  it('kształt ścieżkowy pomija ozdobę – zostaje linia obramowania', () => {
+    const sz = kartaZPanelem(ozdoba('wb:luski'));
+    const panel = (sz.korzen as unknown as { dzieci: Record<string, unknown>[] }).dzieci[0]!;
+    Object.assign(panel, {
+      typ: 'wartosc',
+      ksztalt: 'romb',
+      obramowanie: { grubosc: 0.3, kolor: '#000000' },
+    });
+    const { scena } = renderujKarte(sz, { dane: { nazwa: 'A' } }, ctx);
+    expect(scena.elementy.some((e) => e.typ === 'symbol')).toBe(false);
+    expect(scena.elementy.some((e) => e.typ === 'sciezka' && e.obrys)).toBe(true);
+  });
+
+  it('narożnik nieznany lub o rozmiarze 0 nie zastępuje kostek – róg nie zostaje pusty', () => {
+    for (const n of [
+      { element: 'wb:nie-ma', rozmiar: 5 },
+      { element: 'wb:kat', rozmiar: 0 },
+    ]) {
+      const { scena } = renderujKarte(
+        kartaZRamka(ozdoba('wb:przeplot'), { narozniki: n }),
+        { dane: { nazwa: 'A' } },
+        ctx,
+      );
+      expect(sym(scena, 'wb:przeplot:kostka')).toHaveLength(4);
+    }
+  });
+
+  it('szyny: grubsze niż pas są przycinane, żaden wymiar nie jest ujemny', () => {
+    for (const obszar of [
+      { x: 0, y: 0, szer: 20, wys: 20 },
+      { x: 0, y: 0, szer: 4, wys: 40 },
+      { x: 1, y: 1, szer: 10, wys: 6 },
+    ]) {
+      const w = ramkaZMotywu(ozdoba('wb:runy', { szerokosc: 50, szyny: 30 }), obszar);
+      const prostokaty = w.elementy.filter((e) => e.typ === 'prostokat');
+      for (const p of prostokaty)
+        if (p.typ === 'prostokat') {
+          expect(p.szer).toBeGreaterThanOrEqual(0);
+          expect(p.wys).toBeGreaterThanOrEqual(0);
+        }
+      expect(prostokaty.length).toBeGreaterThanOrEqual(1);
+    }
+    const w = ramkaZMotywu(ozdoba('wb:runy', { szerokosc: 5, szyny: 0.4 }), {
+      x: 0,
+      y: 0,
+      szer: 60,
+      wys: 40,
+    });
+    const [zewn, wewn] = w.elementy.filter((e) => e.typ === 'prostokat');
+    expect(zewn).toMatchObject({ x: 0.2, y: 0.2, szer: 59.6, wys: 39.6 });
+    expect(wewn).toMatchObject({ x: 4.8, y: 4.8, szer: 50.4, wys: 30.4 });
+  });
+
+  it('bardzo krótki bok: jeden kafelek rozciągnięty; pas równy połowie boku – brak boków pionowych', () => {
+    const e = { szer: 20, wys: 10 };
+    // Szerokość 11 mm, pas 5: bok poziomy L = 1 mm → jeden kafelek.
+    const ms = macierzeBokow(e, { x: 0, y: 0, szer: 11, wys: 40 }, 5);
+    expect(ms.filter((m) => m[1] === 0 && m[0] > 0)).toHaveLength(1);
+    expect(ms.find((m) => m[1] === 0 && m[0] > 0)![0]).toBeCloseTo(1 / 20, 9);
+    // Szerokość = 2·pas: boki poziome znikają (L = 0), pionowe zostają.
+    const bez = macierzeBokow(e, { x: 0, y: 0, szer: 10, wys: 40 }, 5);
+    expect(bez.every((m) => m[0] === 0)).toBe(true);
+    expect(bez).toHaveLength(2 * rozlozKafelki(30, 5, e).n);
+  });
+});

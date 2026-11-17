@@ -176,6 +176,7 @@ export function PoleRamki<R extends Obramowanie>({
         <WyborNarozniki
           {...narozniki}
           kolorLinii={ozdoba?.wartosc?.kolor ?? ramka?.kolor ?? '#000000'}
+          domyslnyRozmiar={ozdoba?.wartosc?.szerokosc ?? 6}
         />
       )}
     </>
@@ -288,10 +289,13 @@ function WyborNarozniki({
   wartosc,
   zmien,
   kolorLinii,
+  domyslnyRozmiar,
 }: {
   wartosc: Narozniki | undefined;
   zmien: (n: Narozniki | undefined) => void;
   kolorLinii: string;
+  /** Rozmiar nowego narożnika: przy motywie – szerokość pasa (narożnik wypełnia kostkę). */
+  domyslnyRozmiar: number;
 }) {
   const idEtykiety = useId();
   const ustaw = (z: Partial<Narozniki>) => wartosc && zmien({ ...wartosc, ...z });
@@ -316,7 +320,11 @@ function WyborNarozniki({
             aria-label={nazwaElementu(e)}
             style={{ color: wartosc?.kolor ?? kolorLinii }}
             onClick={() =>
-              zmien(wartosc ? { ...wartosc, element: e.id } : { element: e.id, rozmiar: 6 })
+              zmien(
+                wartosc
+                  ? { ...wartosc, element: e.id }
+                  : { element: e.id, rozmiar: domyslnyRozmiar },
+              )
             }
           >
             <MiniaturaOzdobnika element={e} />
