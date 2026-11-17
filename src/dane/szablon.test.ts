@@ -18,6 +18,7 @@ import {
   wstawWezel,
   wyzej,
   zmienSzablon,
+  zmienTypPola,
   znajdzWezel,
 } from './szablon';
 
@@ -225,5 +226,27 @@ describe('poprawki po przeglądzie', () => {
     expect(nazwaKarty({ imie: 'Gryf' }, s)).toBe('Gryf');
     expect(nazwaKarty({ nazwa: 'N', imie: 'Gryf' }, s)).toBe('N');
     expect(nazwaKarty({}, s)).toBe('');
+  });
+});
+
+describe('zmiana typu pola', () => {
+  it('tekst → wartość w kształcie: zostaje klucz, nazwa, rozmiar i styl', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', {
+      ...nowyWezel(s, 'tekst', 'Siła'),
+      szerokosc: { mm: 10 },
+    } as Wezel);
+    s = zmienTypPola(s, 'tekst', 'wartosc');
+    expect(znajdzWezel(s, 'tekst')).toMatchObject({
+      typ: 'wartosc',
+      nazwa: 'Siła',
+      klucz: 'sila',
+      szerokosc: { mm: 10 },
+      ksztalt: 'prostokat',
+    });
+    // Separator nie ma danych – klucz znika.
+    const t = zmienTypPola(s, 'tekst', 'separator');
+    expect(znajdzWezel(t, 'tekst')).not.toHaveProperty('klucz');
+    expect(zmienTypPola(t, 'tekst', 'separator')).toBe(t);
   });
 });

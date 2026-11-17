@@ -115,7 +115,7 @@ const pole = z.discriminatedUnion('typ', [
     typ: z.literal('wartosc'),
     styl: stylTekstu,
     tekst: opc(napis),
-    ksztalt: z.enum(['prostokat', 'kolo', 'sciety', 'romb']),
+    ksztalt: z.enum(['prostokat', 'kwadrat', 'kolo', 'sciety', 'romb', 'tarcza', 'szesciokat']),
     etykieta: opc(
       obj({
         tekst: napis,
@@ -171,8 +171,11 @@ const pole = z.discriminatedUnion('typ', [
         szerokosc: opc(
           z.union([z.literal('auto'), obj({ mm: nieujemna }), obj({ wypelnij: dodatnia })]),
         ),
+        wyrownanie: opc(z.enum(['lewo', 'srodek', 'prawo'])),
       }),
     ),
+    wiersze: opc(calkowita.min(1).max(50)),
+    naglowki: opc(z.boolean()),
     styl: stylTekstu,
     stylNaglowka: opc(stylCzesciowy),
     tloNaglowka: opc(z.string()),

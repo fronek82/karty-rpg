@@ -2,6 +2,7 @@ import { pt, type Mm } from '../model/jednostki';
 import type { Projekt } from '../model/projekt';
 import {
   czyKontener,
+  kluczeTabeli,
   type Kolor,
   type Kontener,
   type Pole,
@@ -38,7 +39,7 @@ export function kluczeSzablonu(s: Szablon): Set<string> {
   for (const w of wszystkieWezly(s)) {
     if (czyKontener(w)) continue;
     if (w.klucz) k.add(w.klucz);
-    if (w.typ === 'tabela') for (const c of w.kolumny) k.add(c.klucz);
+    if (w.typ === 'tabela') for (const c of kluczeTabeli(w)) k.add(c);
   }
   for (const p of s.parametry ?? []) k.add(p.klucz);
   return k;
@@ -472,7 +473,7 @@ export function danePodgladu(s: Szablon): Record<string, string> {
   for (const w of wszystkieWezly(s)) {
     if (czyKontener(w)) continue;
     if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.klucz) dane[w.klucz] = w.nazwa || w.klucz;
-    if (w.typ === 'tabela') for (const k of w.kolumny) dane[k.klucz] = '–';
+    if (w.typ === 'tabela') for (const k of kluczeTabeli(w)) dane[k] = '–';
   }
   return {
     ...dane,
@@ -491,4 +492,49 @@ export function nazwaKarty(dane: Record<string, string>, s: Szablon | undefined)
       return dane[w.klucz]!;
   }
   return '';
+}
+
+/** Rodzaje pól, na które można zmienić typ elementu w panelu. */
+export const TYPY_POL = [
+  'tekst',
+  'wartosc',
+  'obraz',
+  'znaczniki',
+  'wpis',
+  'ikona',
+  'separator',
+  'tabela',
+] as const satisfies readonly Pole['typ'][];
+
+/**
+ * Zmiana typu pola: zostają id, nazwa, klucz (gdy nowy typ ma dane), rozmiar, odstępy, tło,
+ * ramka i „gdy puste”; reszta – neutralne ustawienia nowego typu. Styl tekstu przechodzi między
+ * typami, które go mają.
+ */
+export function zmienTypPola(s: Szablon, id: string, typ: Pole['typ']): Szablon {
+  const w = znajdzWezel(s, id);
+  if (!w || czyKontener(w) || w.typ === typ) return s;
+  const r = rodzicWezla(s, id);
+  const nowy = nowyWezel(s, typ, w.nazwa || typ, { wWierszu: r?.rodzic.typ === 'wiersz' }) as Pole;
+  const wspolne = (
+    [
+      'nazwa',
+      'szerokosc',
+      'wysokosc',
+      'margines',
+      'padding',
+      'wyrownanie',
+      'tlo',
+      'obramowanie',
+      'promien',
+      'minSzerokosc',
+      'minWysokosc',
+      'gdyPuste',
+    ] as const
+  ).reduce<Record<string, unknown>>((a, k) => (w[k] !== undefined ? { ...a, [k]: w[k] } : a), {});
+  const x = { ...nowy, ...wspolne, id } as Pole;
+  if (w.klucz && 'klucz' in nowy && nowy.klucz !== undefined) x.klucz = w.klucz;
+  if ('styl' in w && 'styl' in x && typeof w.styl === 'object' && typeof x.styl === 'object')
+    (x as { styl: unknown }).styl = w.styl;
+  return zmienWezel(s, id, () => x);
 }

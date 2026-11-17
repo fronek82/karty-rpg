@@ -2,6 +2,7 @@ import type { Arkusz, UstawieniaArkusza } from '../model/arkusz';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
 import {
   czyKontener,
+  kluczKomorki,
   stylePola,
   type Karta,
   type Pole,
@@ -57,15 +58,21 @@ export function kolumnySzablonu(s: Szablon): KolumnaDanych[] {
   for (const korzen of [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)]) {
     for (const pole of polaWezla(korzen)) {
       if (pole.typ === 'tabela') {
-        // Każda komórka wartości tabeli to osobna kolumna danych (nazwa = nagłówek).
-        for (const k of pole.kolumny)
-          if (k.klucz && !wynik.has(k.klucz))
-            wynik.set(k.klucz, {
-              klucz: k.klucz,
-              nazwa: k.naglowek || nazwaKlucza(k.klucz),
+        // Każda komórka wartości tabeli to osobna kolumna danych (nazwa = nagłówek, przy kilku
+        // wierszach – z numerem wiersza).
+        const wiersze = Math.max(1, Math.floor(pole.wiersze ?? 1));
+        for (let r = 0; r < wiersze; r++)
+          pole.kolumny.forEach((k, i) => {
+            const klucz = kluczKomorki(k, r);
+            if (!k.klucz || wynik.has(klucz)) return;
+            const naglowek = k.naglowek || `${pole.nazwa || nazwaKlucza(k.klucz)} ${i + 1}`;
+            wynik.set(klucz, {
+              klucz,
+              nazwa: wiersze > 1 ? `${naglowek} (${r + 1})` : naglowek,
               rodzaj: 'pole',
               typPola: 'tabela',
             });
+          });
         continue;
       }
       if (pole.klucz && !wynik.has(pole.klucz)) {
