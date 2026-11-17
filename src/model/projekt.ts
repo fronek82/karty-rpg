@@ -11,8 +11,9 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  * 6 – M2-4: tabela z wieloma wierszami i opcjonalnymi nagłówkami, kształty kwadrat/tarcza/sześciokąt.
  * 7 – M2-6: własny układ arkusza (`ustawienia.uklad`).
  * 8 – M2b-1: `ustawienia.dopasowanie` (luz karty w slocie), `dopasowanie` w presetach układów.
+ * 9 – M2b-2: mieszane rozmiary kart (`ustawienia.rozmiary`, `ustawienia.mieszane`, `Arkusz.kolejnosc`).
  */
-export const WERSJA_SCHEMATU = 8;
+export const WERSJA_SCHEMATU = 9;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

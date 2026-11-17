@@ -675,3 +675,310 @@ describe('tło do slotu – kolejność rysowania', () => {
     expect(Math.max(...tla)).toBeLessThan(Math.min(...karty));
   });
 });
+
+describe('zbudujArkusz – mieszane rozmiary kart (M2b-2)', () => {
+  const szablonMm = (id: string, szer: number, wys: number): Szablon => ({
+    ...szablonCzaru,
+    id,
+    nazwa: id,
+    rozmiar: { tryb: 'mm', szerokosc: szer, wysokosc: wys },
+  });
+  const sz = [
+    szablonMm('arkana', 70, 120),
+    szablonMm('czar', 63, 88),
+    szablonMm('przedmiot', 44, 68),
+  ];
+  const ctxM = {
+    czcionki: rejestrTestowy().przypiszRole('tytul', 'EB Garamond'),
+    szablony: new Map(sz.map((s) => [s.id, s])),
+  };
+  const taliaM = (ilosci: [number, number, number] = [2, 3, 5]): Talia => ({
+    id: 't',
+    nazwa: 't',
+    karty: sz.map((s, i) => ({ id: s.id, szablonId: s.id, dane: daneCzaru, ilosc: ilosci[i]! })),
+  });
+  const arkuszM = (
+    zmiana: Partial<Arkusz['ustawienia']> = {},
+    reszta: Partial<Arkusz> = {},
+  ): Arkusz => ({
+    id: 'a',
+    nazwa: 'a',
+    taliaId: 't',
+    ustawienia: {
+      ...ustawieniaKartkiDla(sz[0]!),
+      tytul: undefined,
+      rozmiary: 'mieszane',
+      ...zmiana,
+    },
+    ...reszta,
+  });
+
+  it('przykład E(1): 10 kart na jednej stronie A4, położenia z algorytmu pasów', () => {
+    const w = zbudujArkusz(arkuszM(), taliaM(), ctxM);
+    expect(w.ostrzezenia).toEqual([]);
+    expect(w.strony).toHaveLength(1);
+    const m = w.mieszane!;
+    expect(m.karty).toHaveLength(10);
+    // Obszar: A4 minus marginesy 10 mm.
+    expect(m.obszar).toEqual({ x: 10, y: 10, szer: 190, wys: 277 });
+    expect(m.karty.filter((k) => k.kartaId === 'arkana').map((k) => [k.x, k.y])).toEqual([
+      [10, 10],
+      [80, 10],
+    ]);
+    expect(m.pasy.map((p) => [p.y, p.wys])).toEqual([
+      [10, 120],
+      [130, 88],
+      [218, 68],
+    ]);
+    // Karty w obszarze strony, bez nakładania się – każda scena karty to jedna grupa.
+    expect(w.strony[0]!.elementy.filter((e) => e.typ === 'grupa')).toHaveLength(10);
+  });
+
+  it('linie cięcia: wspólna krawędź to jedna linia (bez dublowania)', () => {
+    const w = zbudujArkusz(arkuszM(), taliaM(), ctxM);
+    const l = linie(w.strony[0]!);
+    const klucze = l.map((o) => `${o.x1},${o.y1},${o.x2},${o.y2}`);
+    expect(new Set(klucze).size).toBe(klucze.length);
+    // Linia pod pasem 1 (y = 130) – od lewej krawędzi do prawej krawędzi pasa 2 (10 + 189).
+    expect(l).toContainEqual(expect.objectContaining({ x1: 10, y1: 130, x2: 199, y2: 130 }));
+    // Wszystkie przerywane.
+    expect(l.every((o) => o.obrys.kreska)).toBe(true);
+  });
+
+  it('tryb domyślny (jeden) – nic się nie zmienia: brak pola mieszane w wyniku', () => {
+    const w = zbudujArkusz(arkuszM({ rozmiary: undefined }), taliaM([1, 0, 0]), ctxM);
+    expect(w.mieszane).toBeUndefined();
+  });
+
+  it('kolejność własna: arkusz.kolejnosc zmienia układ; nieznane id ignorowane', () => {
+    const a = arkuszM(
+      { mieszane: { kolejnosc: 'wlasna', obracaj: false, grupujRozmiary: true, odstep: 0 } },
+      { kolejnosc: ['przedmiot', 'nieistniejaca', 'czar'] },
+    );
+    const w = zbudujArkusz(a, taliaM([1, 1, 1]), ctxM);
+    expect(w.mieszane!.karty.map((k) => k.kartaId)).toEqual(['przedmiot', 'czar', 'arkana']);
+    expect(w.ostrzezenia).toEqual([]);
+  });
+
+  it('obrócona karta: grupa z obrotem 90° w obrębie prostokąta karty', () => {
+    const a = arkuszM({
+      papier: 'wlasny',
+      wymiaryPapieru: { szer: 100, wys: 200 },
+      orientacja: 'pionowa',
+      marginesy: { gora: 5, prawo: 5, dol: 5, lewo: 5 },
+      mieszane: { kolejnosc: 'najwieksze', obracaj: true, grupujRozmiary: true, odstep: 0 },
+    });
+    // Karta 120×70 (z szablonu 70×120 obrócona) nie ma jak się zmieścić inaczej w 90 mm szerokości.
+    const t: Talia = {
+      id: 't',
+      nazwa: 't',
+      karty: [{ id: 'arkana', szablonId: 'arkana', dane: daneCzaru, ilosc: 1 }],
+    };
+    const c = { ...ctxM, szablony: new Map([['arkana', szablonMm('arkana', 120, 70)]]) };
+    const w = zbudujArkusz(a, t, c);
+    expect(w.ostrzezenia).toEqual([]);
+    const k = w.mieszane!.karty[0]!;
+    expect(k).toMatchObject({ obrocona: true, szer: 70, wys: 120 });
+    expect(w.strony[0]!.elementy.find((e) => e.typ === 'grupa')).toMatchObject({
+      obrot: 90,
+      x: k.x + 70,
+      y: k.y,
+    });
+  });
+
+  it('karta większa niż strona: ostrzeżenie i pominięcie, reszta układa się dalej', () => {
+    const a = arkuszM({ papier: 'A5' });
+    const t: Talia = {
+      id: 't',
+      nazwa: 't',
+      karty: [
+        { id: 'ogromna', szablonId: 'ogromna', dane: daneCzaru, ilosc: 1 },
+        { id: 'czar', szablonId: 'czar', dane: daneCzaru, ilosc: 1 },
+      ],
+    };
+    const c = {
+      ...ctxM,
+      szablony: new Map([...ctxM.szablony, ['ogromna', szablonMm('ogromna', 500, 600)]]),
+    };
+    const w = zbudujArkusz(a, t, c);
+    expect(w.ostrzezenia).toContainEqual({
+      kartaId: 'ogromna',
+      komunikat: 'karta-wieksza-niz-strona',
+    });
+    expect(w.mieszane!.karty.map((k) => k.kartaId)).toEqual(['czar']);
+  });
+
+  it('własny układ jest ignorowany, a karty innych rozmiarów nie dają ostrzeżenia o rozmiarze', () => {
+    const a = arkuszM({
+      uklad: {
+        kolumny: 3,
+        rzedy: 3,
+        gora: 10,
+        lewo: 10,
+        odstepPoziomy: 0,
+        odstepPionowy: 0,
+        linieCiecia: true,
+      },
+    });
+    const w = zbudujArkusz(a, taliaM(), ctxM);
+    expect(w.ostrzezenia.map((o) => o.komunikat)).toEqual([]);
+    expect(w.mieszane!.karty).toHaveLength(10);
+  });
+
+  it('przypięcia slotów są ignorowane', () => {
+    const a = arkuszM({}, { przypiete: [{ kartaId: 'czar', kolumna: 2, rzad: 2 }] });
+    const w = zbudujArkusz(a, taliaM([1, 1, 0]), ctxM);
+    expect(w.ostrzezenia).toEqual([]);
+    expect(w.mieszane!.karty).toHaveLength(2);
+  });
+
+  it('grupy talii: nagłówek nad pierwszym pasem grupy, grupy w osobnych pasach', () => {
+    const t: Talia = {
+      ...taliaM([1, 1, 1]),
+      grupy: [
+        { id: 'g1', naglowek: 'Pierwsza', karty: ['czar'] },
+        { id: 'g2', naglowek: 'Druga', opis: 'opis', karty: ['przedmiot'] },
+      ],
+    };
+    const w = zbudujArkusz(arkuszM(), t, ctxM);
+    const m = w.mieszane!;
+    const pasyZNaglowkiem = m.pasy.filter((p) => p.naglowek);
+    expect(pasyZNaglowkiem.map((p) => p.naglowek!.grupaId)).toEqual(['g1', 'g2']);
+    // Karty spoza grup (arkana) na końcu, bez nagłówka; pasy się nie nakładają.
+    expect(m.karty.map((k) => k.kartaId)).toEqual(['czar', 'przedmiot', 'arkana']);
+    for (const p of m.pasy) expect(p.y).toBeGreaterThanOrEqual(m.obszar.y);
+    expect(w.ostrzezenia).toEqual([]);
+  });
+
+  it('tytuł i czarno-biały działają jak w siatce', () => {
+    const a = arkuszM({
+      czarnoBialy: true,
+      tytul: {
+        tekst: 'Mieszana',
+        polozenie: 'gora',
+        styl: { czcionka: 'tytul', rozmiar: 6, kolor: '#ff0000' },
+        odstep: 2,
+      },
+    });
+    const w = zbudujArkusz(a, taliaM([1, 0, 0]), ctxM);
+    expect(w.mieszane!.obszar.y).toBeGreaterThan(10);
+    const tekst = JSON.stringify(w.strony[0]!.elementy);
+    expect(tekst).not.toContain('#ff0000');
+  });
+
+  it('ilość 0 – karta odłożona nie jest układana; ilość > 1 w kolejności własnej – egzemplarze razem', () => {
+    const a = arkuszM(
+      { mieszane: { kolejnosc: 'wlasna', obracaj: false, grupujRozmiary: true, odstep: 0 } },
+      { kolejnosc: ['przedmiot', 'czar'] },
+    );
+    const w = zbudujArkusz(a, taliaM([0, 2, 3]), ctxM);
+    expect(w.ostrzezenia).toEqual([]);
+    expect(w.mieszane!.karty.map((k) => k.kartaId)).toEqual([
+      'przedmiot',
+      'przedmiot',
+      'przedmiot',
+      'czar',
+      'czar',
+    ]);
+  });
+
+  it('tytuł z lewej: pionowy, wzdłuż lewej krawędzi obszaru kart, obszar węższy o pas tytułu', () => {
+    const a = arkuszM({
+      tytul: {
+        tekst: 'Pionowy',
+        polozenie: 'lewo',
+        styl: { czcionka: 'tytul', rozmiar: 6, kolor: '#000000' },
+        odstep: 2,
+      },
+    });
+    const w = zbudujArkusz(a, taliaM([1, 0, 0]), ctxM);
+    const m = w.mieszane!;
+    expect(m.obszar.x).toBeGreaterThan(10);
+    expect(m.obszar.szer).toBeLessThan(190);
+    const tytul = w.strony[0]!.elementy.find((e) => e.typ === 'grupa' && e.obrot === -90);
+    expect(tytul).toMatchObject({ y: m.obszar.y + m.obszar.wys });
+    expect((tytul as { x: number }).x).toBeLessThan(m.obszar.x);
+    expect(w.ostrzezenia).toEqual([]);
+  });
+
+  it('obrócona karta: linie cięcia obrysowują prostokąt po obrocie', () => {
+    const a = arkuszM({
+      papier: 'wlasny',
+      wymiaryPapieru: { szer: 100, wys: 200 },
+      marginesy: { gora: 5, prawo: 5, dol: 5, lewo: 5 },
+      mieszane: { kolejnosc: 'najwieksze', obracaj: true, grupujRozmiary: true, odstep: 0 },
+    });
+    const t: Talia = {
+      id: 't',
+      nazwa: 't',
+      karty: [{ id: 'arkana', szablonId: 'arkana', dane: daneCzaru, ilosc: 1 }],
+    };
+    const c = { ...ctxM, szablony: new Map([['arkana', szablonMm('arkana', 120, 70)]]) };
+    const w = zbudujArkusz(a, t, c);
+    const k = w.mieszane!.karty[0]!;
+    expect(k.obrocona).toBe(true);
+    const l = linie(w.strony[0]!);
+    expect(l).toContainEqual(expect.objectContaining({ x1: k.x, y1: k.y, x2: k.x + 70, y2: k.y }));
+    expect(l).toContainEqual(
+      expect.objectContaining({ x1: k.x + 70, y1: k.y, x2: k.x + 70, y2: k.y + 120 }),
+    );
+  });
+
+  it('kartka sprzed schematu 9 (bez rozmiarów) buduje się jak „jeden rozmiar”', () => {
+    const bez = arkuszM({ rozmiary: undefined });
+    const jeden = arkuszM({ rozmiary: 'jeden' });
+    const t = taliaM([1, 0, 0]);
+    const w1 = zbudujArkusz(bez, t, ctxM);
+    const w2 = zbudujArkusz(jeden, t, ctxM);
+    expect(w1.mieszane).toBeUndefined();
+    expect(w2.mieszane).toBeUndefined();
+    expect(JSON.stringify(w1.strony)).toBe(JSON.stringify(w2.strony));
+    expect(w1.siatka.kolumny).toBeGreaterThan(0);
+  });
+
+  it('PDF z mieszanymi rozmiarami powstaje i ma jedną stronę', async () => {
+    const w = zbudujArkusz(arkuszM(), taliaM(), ctxM);
+    const { bajty } = await scenyDoPdf(w.strony);
+    expect(bajty.length).toBeGreaterThan(500);
+  });
+});
+
+describe('wydruk testowy – mieszane rozmiary', () => {
+  it('obrysy kart pierwszej strony z ich wymiarami', () => {
+    const s = (id: string, szer: number, wys: number): Szablon => ({
+      ...szablonCzaru,
+      id,
+      rozmiar: { tryb: 'mm', szerokosc: szer, wysokosc: wys },
+    });
+    const a: Arkusz = {
+      id: 'a',
+      nazwa: 'a',
+      taliaId: 't',
+      ustawienia: { ...ustawieniaKartkiDla(s('x', 70, 120)), rozmiary: 'mieszane' },
+    };
+    const t: Talia = {
+      id: 't',
+      nazwa: 't',
+      karty: [
+        { id: 'k1', szablonId: 'k1', dane: daneCzaru, ilosc: 1 },
+        { id: 'k2', szablonId: 'k2', dane: daneCzaru, ilosc: 2 },
+      ],
+    };
+    const c = {
+      czcionki: rejestrTestowy().przypiszRole('tytul', 'EB Garamond'),
+      szablony: new Map([
+        ['k1', s('k1', 70, 120)],
+        ['k2', s('k2', 44, 68)],
+      ]),
+    };
+    const sc = stronaTestowa(a, t, c);
+    const prost = sc.elementy.filter(
+      (e): e is Extract<ElementSceny, { typ: 'prostokat' }> => e.typ === 'prostokat',
+    );
+    expect(prost.map((p) => [p.szer, p.wys])).toEqual([
+      [70, 120],
+      [44, 68],
+      [44, 68],
+    ]);
+  });
+});

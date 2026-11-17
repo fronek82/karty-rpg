@@ -13,9 +13,18 @@ export function MenuTypu({
   typy,
   styl,
   blokada,
+  uwaga,
+  tytul,
+  stopka,
   wybierz,
   zamknij,
 }: {
+  /** Tytuł menu (domyślnie „Dodaj kartę w tym slocie”). */
+  tytul?: string;
+  /** Zdanie pod listą (np. co się stanie z kartą, która się nie mieści). */
+  stopka?: string;
+  /** Ostrzeżenie przy typie, który nadal można dodać (pozycja klikalna). */
+  uwaga?: (typ: TypKarty) => string | undefined;
   typy: TypKarty[];
   styl: React.CSSProperties;
   /** Powód blokady typu w tym slocie (np. „nie mieści się”); undefined – można dodać. */
@@ -73,10 +82,11 @@ export function MenuTypu({
         }
       }}
     >
-      <div className="menu-tytul">{t('kartka.dodajKarteTutaj')}</div>
+      <div className="menu-tytul">{tytul ?? t('kartka.dodajKarteTutaj')}</div>
       {typy.map((typ) => {
         const powod = blokada(typ);
         const mozna = powod === undefined;
+        const ostrzezenie = uwaga?.(typ);
         const warianty = typ.warianty.length > 1;
         return (
           <div key={typ.id}>
@@ -106,6 +116,7 @@ export function MenuTypu({
               </span>
               <small>{typ.opisRozmiaru ?? typ.rozmiary.map(rozmiar).join(' · ')}</small>
               {powod && <small className="powod-blokady">{powod}</small>}
+              {!powod && ostrzezenie && <small className="powod-blokady">{ostrzezenie}</small>}
             </button>
             {warianty && rozwiniety === typ.id && (
               <div className="menu-warianty">
@@ -125,6 +136,7 @@ export function MenuTypu({
           </div>
         );
       })}
+      {stopka && <p className="menu-stopka">{stopka}</p>}
     </div>
   );
 }

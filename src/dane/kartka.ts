@@ -1,4 +1,9 @@
-import type { Arkusz, NaglowekGrupy, PrzypietaKarta } from '../model/arkusz';
+import {
+  MIESZANE_DOMYSLNE,
+  type Arkusz,
+  type NaglowekGrupy,
+  type PrzypietaKarta,
+} from '../model/arkusz';
 import type { Projekt } from '../model/projekt';
 import type { Karta, Szablon, Talia } from '../model/szablon';
 import { unikalneId } from './czcionki';
@@ -70,13 +75,30 @@ export function rozmiarKarty(k: Karta, szablony: ReadonlyMap<string, Szablon>): 
     : { kolumny: 1, rzedy: 1 };
 }
 
-/** Karty kartki z położeniem i rozmiarem (kolejność jak przypięcia). */
+/** Czy kartka ma mieszane rozmiary kart (pasy zamiast siatki slotów). */
+export const czyMieszane = (a: Arkusz): boolean => a.ustawienia.rozmiary === 'mieszane';
+
+/**
+ * Karty kartki z położeniem i rozmiarem (kolejność jak przypięcia). W trybie mieszanym nie ma
+ * slotów: zwracane są karty na kartce (ilość ≥ 1) w kolejności talii z położeniem zerowym –
+ * rzeczywiste położenie w mm daje `WynikArkusza.mieszane`.
+ */
 export function kartyKartki(
   p: Projekt,
   arkuszId: string,
   szablony: ReadonlyMap<string, Szablon>,
 ): KartaNaKartce[] {
   const { arkusz, talia } = arkuszITalia(p, arkuszId);
+  if (czyMieszane(arkusz))
+    return talia.karty
+      .filter((k) => k.ilosc >= 1)
+      .map((karta) => ({
+        karta,
+        strona: 0,
+        kolumna: 0,
+        rzad: 0,
+        ...rozmiarKarty(karta, szablony),
+      }));
   return (arkusz.przypiete ?? []).flatMap((x) => {
     const karta = talia.karty.find((k) => k.id === x.kartaId);
     return karta
@@ -355,8 +377,20 @@ export function duplikujKarty(
 export function usunKarty(p: Projekt, arkuszId: string, ids: string[]): Projekt {
   const usuwane = new Set(ids);
   return zmienKartke(p, arkuszId, (a, t) => ({
-    arkusz: { ...a, przypiete: (a.przypiete ?? []).filter((x) => !usuwane.has(x.kartaId)) },
-    talia: { ...t, karty: t.karty.filter((k) => !usuwane.has(k.id)) },
+    arkusz: {
+      ...a,
+      przypiete: (a.przypiete ?? []).filter((x) => !usuwane.has(x.kartaId)),
+      ...(a.kolejnosc ? { kolejnosc: a.kolejnosc.filter((id) => !usuwane.has(id)) } : {}),
+    },
+    talia: {
+      ...t,
+      karty: t.karty.filter((k) => !usuwane.has(k.id)),
+      ...(t.grupy
+        ? {
+            grupy: t.grupy.map((g) => ({ ...g, karty: g.karty.filter((id) => !usuwane.has(id)) })),
+          }
+        : {}),
+    },
   }));
 }
 
@@ -536,4 +570,154 @@ export function dodajKartke(
     },
     arkuszId: id,
   };
+}
+
+/*
+ * Mieszane rozmiary: karty nie mają slotów, więc dodawanie, duplikowanie i przesuwanie to
+ * operacje na kolejności (`Arkusz.kolejnosc`); położenie liczy za każdym razem algorytm pasów.
+ */
+
+/** Talia z nową kartą dopisaną do grupy karty `sasiad` (grupy talii zostają spójne z kartkami). */
+function zNowaWGrupie(t: Talia, sasiad: string | undefined, nowa: Karta): Talia {
+  const grupy = t.grupy?.map((g) =>
+    sasiad !== undefined && g.karty.includes(sasiad) ? { ...g, karty: [...g.karty, nowa.id] } : g,
+  );
+  return { ...t, karty: [...t.karty, nowa], ...(grupy ? { grupy } : {}) };
+}
+
+/** Lista `ids` bez przenoszonych i z nimi wstawionymi przed `przedId` (brak – na końcu). */
+export function przeniesWKolejnosci(lista: string[], ids: string[], przedId?: string): string[] {
+  const ruszane = lista.filter((id) => ids.includes(id));
+  const reszta = lista.filter((id) => !ids.includes(id));
+  const i = przedId === undefined ? -1 : reszta.indexOf(przedId);
+  return i < 0 ? [...reszta, ...ruszane] : [...reszta.slice(0, i), ...ruszane, ...reszta.slice(i)];
+}
+
+/** Kolejność własna kartki: zapisana lista, potem pozostałe karty talii (ilość ≥ 1). */
+function kolejnoscKartki(a: Arkusz, t: Talia): string[] {
+  const jest = new Set(t.karty.filter((k) => k.ilosc >= 1).map((k) => k.id));
+  const wynik = (a.kolejnosc ?? []).filter((id) => jest.has(id));
+  const wpisane = new Set(wynik);
+  for (const id of jest) if (!wpisane.has(id)) wynik.push(id);
+  return wynik;
+}
+
+const wlasna = (a: Arkusz): Arkusz['ustawienia']['mieszane'] =>
+  a.ustawienia.mieszane ? { ...a.ustawienia.mieszane } : undefined;
+
+/**
+ * Zapisuje kolejność własną i przełącza kartkę na „jak w talii” (kolejność własna). `lista` –
+ * identyfikatory kart w żądanej kolejności (np. wg bieżącego układu pasów).
+ */
+export function ustawKolejnosc(p: Projekt, arkuszId: string, lista: string[]): Projekt {
+  return zmienKartke(p, arkuszId, (a, t) => {
+    const m = wlasna(a) ?? { kolejnosc: 'wlasna', obracaj: false, grupujRozmiary: true, odstep: 0 };
+    return {
+      arkusz: {
+        ...a,
+        kolejnosc: lista,
+        ustawienia: { ...a.ustawienia, mieszane: { ...m, kolejnosc: 'wlasna' } },
+      },
+      talia: t,
+    };
+  });
+}
+
+/**
+ * Nowa karta na kartce o mieszanych rozmiarach. Przy kolejności własnej trafia za kartą `po`
+ * (brak – na koniec); przy „od największych” miejsce wyznacza algorytm.
+ */
+export function dodajKarteMieszane(
+  p: Projekt,
+  arkuszId: string,
+  typ: { szablonId: string; dane?: Record<string, string> },
+  po?: string,
+): { projekt: Projekt; kartaId: string } {
+  const kartaId = noweId(p)('karta');
+  const karta: Karta = { id: kartaId, szablonId: typ.szablonId, dane: { ...typ.dane }, ilosc: 1 };
+  const projekt = zmienKartke(p, arkuszId, (a, t) => {
+    const lista = kolejnoscKartki(a, t);
+    const i = po === undefined ? -1 : lista.indexOf(po);
+    const nowa =
+      i < 0 ? [...lista, kartaId] : [...lista.slice(0, i + 1), kartaId, ...lista.slice(i + 1)];
+    return { arkusz: { ...a, kolejnosc: nowa }, talia: zNowaWGrupie(t, po, karta) };
+  });
+  return { projekt, kartaId };
+}
+
+/** Kopie kart (za oryginałem w kolejności własnej); zwraca identyfikatory kopii. */
+export function duplikujKartyMieszane(
+  p: Projekt,
+  arkuszId: string,
+  ids: string[],
+  n: number,
+): { projekt: Projekt; kopie: string[] } {
+  const nowyId = noweId(p);
+  const ile = Math.max(0, Math.min(500, Math.floor(n)));
+  const kopie: { karta: Karta; po: string }[] = [];
+  const { talia } = arkuszITalia(p, arkuszId);
+  for (const id of ids) {
+    const zrodlo = talia.karty.find((k) => k.id === id);
+    if (!zrodlo) continue;
+    let po = id;
+    for (let i = 0; i < ile; i++) {
+      const karta: Karta = { ...structuredClone(zrodlo), id: nowyId(`${id}-kopia`), ilosc: 1 };
+      kopie.push({ karta, po });
+      po = karta.id;
+    }
+  }
+  const projekt = zmienKartke(p, arkuszId, (a, t) => {
+    let lista = kolejnoscKartki(a, t);
+    for (const k of kopie) {
+      const i = lista.indexOf(k.po);
+      lista =
+        i < 0
+          ? [...lista, k.karta.id]
+          : [...lista.slice(0, i + 1), k.karta.id, ...lista.slice(i + 1)];
+    }
+    return {
+      arkusz: { ...a, kolejnosc: lista },
+      talia: kopie.reduce((tt, k) => zNowaWGrupie(tt, k.po, k.karta), t),
+    };
+  });
+  return { projekt, kopie: kopie.map((k) => k.karta.id) };
+}
+
+/**
+ * Przełączenie kartki na mieszane rozmiary. Kolejność własna startuje od układu z siatki (strony,
+ * rzędy, kolumny); przypięcia zostają w pliku, ale są ignorowane. Opcje sprzed przełączenia
+ * (np. po powrocie do trybu mieszanego) są zachowane.
+ */
+export function naMieszane(p: Projekt, arkuszId: string): Projekt {
+  return zmienKartke(p, arkuszId, (a, t) => {
+    const wgSiatki = [...(a.przypiete ?? [])]
+      .sort((x, y) => (x.strona ?? 0) - (y.strona ?? 0) || x.rzad - y.rzad || x.kolumna - y.kolumna)
+      .map((x) => x.kartaId);
+    // Świeży układ z siatki; stara lista (z wcześniejszego trybu mieszanego) nie jest aktualna.
+    const kolejnosc = wgSiatki.length > 0 ? wgSiatki : (a.kolejnosc ?? []);
+    return {
+      arkusz: {
+        ...a,
+        kolejnosc,
+        ustawienia: {
+          ...a.ustawienia,
+          rozmiary: 'mieszane',
+          mieszane: a.ustawienia.mieszane ?? { ...MIESZANE_DOMYSLNE },
+        },
+      },
+      talia: t,
+    };
+  });
+}
+
+/** Blok kart `ids` przesunięty w liście o jedno miejsce (`kierunek` −1 wcześniej, +1 później). */
+export function przesunWKolejnosci(lista: string[], ids: string[], kierunek: -1 | 1): string[] {
+  const miejsca = lista.flatMap((id, i) => (ids.includes(id) ? [i] : []));
+  if (miejsca.length === 0) return lista;
+  if (kierunek < 0) {
+    const i = Math.min(...miejsca);
+    return i === 0 ? lista : przeniesWKolejnosci(lista, ids, lista[i - 1]);
+  }
+  const j = Math.max(...miejsca);
+  return j >= lista.length - 1 ? lista : przeniesWKolejnosci(lista, ids, lista[j + 2]);
 }

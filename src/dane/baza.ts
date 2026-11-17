@@ -80,7 +80,14 @@ export class BazaProjektow {
       liczbaStron: w.projekt.arkusze.reduce(
         (s, a) =>
           s +
-          Math.max(1, a.liczbaStron ?? 1, ...(a.przypiete ?? []).map((x) => (x.strona ?? 0) + 1)),
+          // Mieszane rozmiary: liczba stron wychodzi z układu pasów (wymaga czcionek) – tu minimum 1.
+          (a.ustawienia.rozmiary === 'mieszane'
+            ? 1
+            : Math.max(
+                1,
+                a.liczbaStron ?? 1,
+                ...(a.przypiete ?? []).map((x) => (x.strona ?? 0) + 1),
+              )),
         0,
       ),
       ...(w.projekt.pakiet ? { pakiet: w.projekt.pakiet } : {}),

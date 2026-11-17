@@ -5,20 +5,26 @@ import { normalizujKartki } from '../druk/normalizacja';
 import type { Projekt } from '../model/projekt';
 import { pakietMausritter } from '../pakiety/mausritter';
 import {
+  dodajKarteMieszane,
   dodajKarteWSlocie,
   dodajKartke,
   dodajNaglowek,
   dodajStrone,
   duplikujKarty,
+  duplikujKartyMieszane,
   kartyKartki,
+  naMieszane,
   kartyWObszarze,
   liczbaStronKartki,
   mozliweRozmiary,
+  przeniesWKolejnosci,
+  przesunWKolejnosci,
   przesunKarty,
   usunKarty,
   usunNaglowek,
   usunStrone,
   ustawDaneKart,
+  ustawKolejnosc,
   zmienNaglowek,
   zmienRozmiarKarty,
   type KontekstKartki,
@@ -251,5 +257,128 @@ describe('kartka – nowa kartka', () => {
     expect(projekt.talie.find((t) => t.id === a.taliaId)!.karty).toEqual([]);
     expect(pakietMausritter.nowaKartka.ustawienia.tytul?.tekst).toBe('Moje karty');
     expect(() => przygotujProjekt(projekt)).not.toThrow();
+  });
+});
+
+describe('kartka – mieszane rozmiary: kolejność kart', () => {
+  const mieszana = (p: Projekt): Projekt => ({
+    ...p,
+    arkusze: p.arkusze.map((a) =>
+      a.id === A ? { ...a, ustawienia: { ...a.ustawienia, rozmiary: 'mieszane' as const } } : a,
+    ),
+  });
+  const id = (p: Projekt) => kartyKartki(p, A, ctx.szablony).map((k) => k.karta.id);
+
+  it('przeniesWKolejnosci: wstawia przed wskazaną kartą albo na końcu', () => {
+    expect(przeniesWKolejnosci(['a', 'b', 'c', 'd'], ['d'], 'b')).toEqual(['a', 'd', 'b', 'c']);
+    expect(przeniesWKolejnosci(['a', 'b', 'c', 'd'], ['a', 'c'], undefined)).toEqual([
+      'b',
+      'd',
+      'a',
+      'c',
+    ]);
+    expect(przeniesWKolejnosci(['a', 'b', 'c'], ['b'], 'b')).toEqual(['a', 'c', 'b']);
+  });
+
+  it('przesunWKolejnosci: blok o jedno miejsce, na brzegach bez zmian', () => {
+    const l = ['a', 'b', 'c', 'd'];
+    expect(przesunWKolejnosci(l, ['c'], -1)).toEqual(['a', 'c', 'b', 'd']);
+    expect(przesunWKolejnosci(l, ['b'], 1)).toEqual(['a', 'c', 'b', 'd']);
+    expect(przesunWKolejnosci(l, ['b', 'c'], 1)).toEqual(['a', 'd', 'b', 'c']);
+    expect(przesunWKolejnosci(l, ['a'], -1)).toEqual(l);
+    expect(przesunWKolejnosci(l, ['d'], 1)).toEqual(l);
+  });
+
+  it('kartyKartki w trybie mieszanym: karty z talii bez slotów', () => {
+    const m = mieszana(pelny);
+    const lista = kartyKartki(m, A, ctx.szablony);
+    expect(lista.length).toBeGreaterThan(0);
+    expect(lista.every((k) => k.strona === 0 && k.kolumna === 0 && k.rzad === 0)).toBe(true);
+  });
+
+  it('dodajKarteMieszane: bez slotu i przypięcia, za wskazaną kartą w kolejności', () => {
+    const m = mieszana(pusty);
+    const a = ok(dodajKarteMieszane(m, A, { szablonId: BRON.szablonId }));
+    const b = ok(dodajKarteMieszane(a.projekt, A, { szablonId: ZBROJA.szablonId }));
+    const c = ok(dodajKarteMieszane(b.projekt, A, { szablonId: BRON.szablonId }, a.kartaId));
+    const ark = c.projekt.arkusze.find((x) => x.id === A)!;
+    expect(ark.kolejnosc).toEqual([a.kartaId, c.kartaId, b.kartaId]);
+    expect(ark.przypiete ?? []).toEqual([]);
+    expect(() => przygotujProjekt(c.projekt)).not.toThrow();
+  });
+
+  it('duplikujKartyMieszane: kopie tuż za oryginałem; usunKarty czyści kolejność', () => {
+    const m = mieszana(pusty);
+    const a = ok(dodajKarteMieszane(m, A, { szablonId: BRON.szablonId }));
+    const b = ok(dodajKarteMieszane(a.projekt, A, { szablonId: ZBROJA.szablonId }));
+    const d = duplikujKartyMieszane(b.projekt, A, [a.kartaId], 2);
+    expect(d.kopie).toHaveLength(2);
+    expect(d.projekt.arkusze.find((x) => x.id === A)!.kolejnosc).toEqual([
+      a.kartaId,
+      ...d.kopie,
+      b.kartaId,
+    ]);
+    const u = usunKarty(d.projekt, A, [d.kopie[0]!]);
+    expect(u.arkusze.find((x) => x.id === A)!.kolejnosc).not.toContain(d.kopie[0]);
+    expect(id(u)).toHaveLength(3);
+  });
+
+  it('ustawKolejnosc: zapisuje listę i przełącza na kolejność własną', () => {
+    const m = mieszana(pusty);
+    const a = ok(dodajKarteMieszane(m, A, { szablonId: BRON.szablonId }));
+    const b = ok(dodajKarteMieszane(a.projekt, A, { szablonId: ZBROJA.szablonId }));
+    const x = ustawKolejnosc(b.projekt, A, [b.kartaId, a.kartaId]);
+    const ark = x.arkusze.find((y) => y.id === A)!;
+    expect(ark.kolejnosc).toEqual([b.kartaId, a.kartaId]);
+    expect(ark.ustawienia.mieszane).toMatchObject({ kolejnosc: 'wlasna', odstep: 0 });
+    expect(() => przygotujProjekt(x)).not.toThrow();
+  });
+
+  it('przesunWKolejnosci / przeniesWKolejnosci: zaznaczenie nieciągłe i granice', () => {
+    const l = ['a', 'b', 'c', 'd', 'e'];
+    // Nieciągłe zaznaczenie b, d: blok wstawiany przed poprzednim elementem pierwszego.
+    expect(przesunWKolejnosci(l, ['b', 'd'], -1)).toEqual(['b', 'd', 'a', 'c', 'e']);
+    expect(przesunWKolejnosci(l, ['b', 'd'], 1)).toEqual(['a', 'c', 'e', 'b', 'd']);
+    expect(przesunWKolejnosci(l, ['a', 'c'], -1)).toEqual(l);
+    expect(przesunWKolejnosci(l, ['c', 'e'], 1)).toEqual(l);
+    expect(przesunWKolejnosci(l, [], 1)).toEqual(l);
+    expect(przesunWKolejnosci(l, ['x'], 1)).toEqual(l);
+    expect(przeniesWKolejnosci(l, ['b', 'd'], 'a')).toEqual(['b', 'd', 'a', 'c', 'e']);
+    expect(przeniesWKolejnosci(l, ['a'], 'zly')).toEqual(['b', 'c', 'd', 'e', 'a']);
+    expect(przeniesWKolejnosci(l, ['e'], 'e')).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+
+  it('naMieszane startuje od układu z siatki, a nie od starej kolejności', () => {
+    const a0 = pelny.arkusze.find((a) => a.id === A)!;
+    const stary: Projekt = {
+      ...pelny,
+      arkusze: pelny.arkusze.map((a) => (a.id === A ? { ...a, kolejnosc: ['nieaktualna'] } : a)),
+    };
+    const m = naMieszane(stary, A).arkusze.find((a) => a.id === A)!;
+    const oczekiwana = [...(a0.przypiete ?? [])]
+      .sort((x, y) => (x.strona ?? 0) - (y.strona ?? 0) || x.rzad - y.rzad || x.kolumna - y.kolumna)
+      .map((x) => x.kartaId);
+    expect(m.kolejnosc).toEqual(oczekiwana);
+    expect(m.ustawienia.rozmiary).toBe('mieszane');
+  });
+
+  it('nowa karta i kopia trafiają do grupy sąsiada; usunięcie czyści grupę', () => {
+    const baza = mieszana(pusty);
+    const a = ok(dodajKarteMieszane(baza, A, { szablonId: BRON.szablonId }));
+    const talia = a.projekt.arkusze.find((x) => x.id === A)!.taliaId;
+    const zGrupa: Projekt = {
+      ...a.projekt,
+      talie: a.projekt.talie.map((t) =>
+        t.id === talia ? { ...t, grupy: [{ id: 'g', naglowek: 'G', karty: [a.kartaId] }] } : t,
+      ),
+    };
+    const b = ok(dodajKarteMieszane(zGrupa, A, { szablonId: ZBROJA.szablonId }, a.kartaId));
+    const d = duplikujKartyMieszane(b.projekt, A, [a.kartaId], 1);
+    const g = () => (p: Projekt) => p.talie.find((t) => t.id === talia)!.grupy![0]!.karty;
+    expect(g()(d.projekt)).toEqual([a.kartaId, b.kartaId, ...d.kopie]);
+    expect(() => przygotujProjekt(d.projekt)).not.toThrow();
+    const u = usunKarty(d.projekt, A, [b.kartaId]);
+    expect(g()(u)).toEqual([a.kartaId, ...d.kopie]);
+    expect(() => przygotujProjekt(u)).not.toThrow();
   });
 });

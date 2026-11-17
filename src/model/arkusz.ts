@@ -73,6 +73,31 @@ export function polozenieKarty(
   };
 }
 
+/**
+ * Mieszane rozmiary kart na kartce (M2b-2): każda karta ma swój wymiar z szablonu, a układ tworzą
+ * pasy (cięcie gilotynowe). Bez tego pola (`jeden`) – stała siatka slotów jak dotąd.
+ */
+export type RozmiaryKart = 'jeden' | 'mieszane';
+
+export interface OpcjeMieszane {
+  /** `najwieksze` – od najwyższych i najszerszych; `wlasna` – wg `Arkusz.kolejnosc` (potem reszta). */
+  kolejnosc: 'najwieksze' | 'wlasna';
+  /** Obracanie kart o 90°, gdy to oszczędza papier. */
+  obracaj: boolean;
+  /** Karty tego samego rozmiaru trafiają obok siebie (do pasa z kartami tej samej wysokości). */
+  grupujRozmiary: boolean;
+  /** Odstęp między kartami w pasie i między pasami (mm). */
+  odstep: Mm;
+}
+
+/** Opcje mieszanych rozmiarów dla nowych kartek (odstęp 0 – wspólne linie cięcia). */
+export const MIESZANE_DOMYSLNE: OpcjeMieszane = {
+  kolejnosc: 'najwieksze',
+  obracaj: false,
+  grupujRozmiary: true,
+  odstep: 0,
+};
+
 /** Slot, gdy nie ma go z czego wziąć (karta pokerowa 63×88 mm). */
 export const SLOT_DOMYSLNY = { szerokosc: 63, wysokosc: 88 } as const;
 
@@ -197,6 +222,10 @@ export interface UstawieniaArkusza {
   uklad?: UkladArkusza;
   /** Luz, położenie, tło i linie karty w slocie; brak – tolerancja 0,5 mm jak przed M2b-1. */
   dopasowanie?: DopasowanieDoSlotu;
+  /** `mieszane` – karty o różnych rozmiarach w pasach; brak = `jeden` (siatka slotów). */
+  rozmiary?: RozmiaryKart;
+  /** Opcje trybu `mieszane`; brak – `MIESZANE_DOMYSLNE`. */
+  mieszane?: OpcjeMieszane;
 }
 
 /** Ręczne przypięcie egzemplarza karty do pozycji (w slotach). */
@@ -232,6 +261,11 @@ export interface Arkusz {
   /** Ręczne nagłówki grup (zamiast automatycznych grup talii). */
   naglowki?: NaglowekGrupy[];
   ustawienia: UstawieniaArkusza;
+  /**
+   * Kolejność kart (identyfikatory) w trybie mieszanym z kolejnością własną; karty spoza listy
+   * idą na końcu w kolejności talii. Przypięcia slotów są w tym trybie ignorowane.
+   */
+  kolejnosc?: string[];
   /** Przypięte egzemplarze; pozostałe karty rozmieszczane automatycznie w wolnych miejscach. */
   przypiete?: PrzypietaKarta[];
 }

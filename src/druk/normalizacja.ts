@@ -28,7 +28,11 @@ export function czyKartkaZnormalizowana(p: Projekt): boolean {
   return (
     p.arkusze.every((a) => {
       const t = p.talie.find((x) => x.id === a.taliaId);
-      if (!t || uzycia.get(t.id) !== 1 || t.grupy?.length) return false;
+      if (!t || uzycia.get(t.id) !== 1) return false;
+      // Mieszane rozmiary: karty bez slotów i przypięć (kolejność w talii / `Arkusz.kolejnosc`),
+      // grupy talii i ilości są pełnoprawne – nic do normalizacji.
+      if (a.ustawienia.rozmiary === 'mieszane') return true;
+      if (t.grupy?.length) return false;
       const przypiete = new Map<string, number>();
       for (const x of a.przypiete ?? [])
         przypiete.set(x.kartaId, (przypiete.get(x.kartaId) ?? 0) + 1);
@@ -101,6 +105,8 @@ export function normalizujKartki(
       a = { ...a, taliaId: id };
     }
     uzyteTalie.add(talia.id);
+    // Mieszane rozmiary nie używają slotów ani przypięć – kartka zostaje bez zmian.
+    if (a.ustawienia.rozmiary === 'mieszane') return a;
     const w = zbudujArkusz(a, talia, {
       czcionki: ctx.czcionki,
       szablony,
@@ -200,5 +206,38 @@ export function normalizujKartki(
       zmieniono: new Date().toISOString(),
     },
     pominiete,
+  };
+}
+
+/**
+ * Powrót kartki z mieszanych rozmiarów do siatki slotów: karty dostają przypięcia tam, gdzie
+ * siatka układa je automatycznie (jak przy normalizacji starych projektów); karty, które się nie
+ * mieszczą, zostają w talii jako odłożone (ilość 0), nic nie ginie. `odlozone` – ile kart
+ * (ze stanu „na kartce”) trafiło w ten sposób do odłożonych.
+ */
+export function wrocDoSiatki(
+  p: Projekt,
+  arkuszId: string,
+  ctx: { czcionki: RejestrCzcionek; obraz?: (z: string) => InformacjaOObrazie | undefined },
+): { projekt: Projekt; odlozone: number } {
+  const a = p.arkusze.find((x) => x.id === arkuszId);
+  const talia = a && p.talie.find((x) => x.id === a.taliaId);
+  if (!a || !talia) return { projekt: p, odlozone: 0 };
+  const { rozmiary: _r, ...ustawienia } = a.ustawienia;
+  const { liczbaStron: _l, przypiete: _p, kolejnosc: _k, ...reszta } = a;
+  void [_r, _l, _p, _k];
+  // Stare przypięcia i kolejność własna (z trybu mieszanego) nie pasują do siatki – układ od nowa.
+  const w = normalizujKartki({ ...p, arkusze: [{ ...reszta, ustawienia }], talie: [talia] }, ctx);
+  const arkusz = w.projekt.arkusze.find((x) => x.id === arkuszId)!;
+  const nowaTalia = w.projekt.talie.find((x) => x.id === talia.id)!;
+  const bylyNaKartce = new Set(talia.karty.filter((k) => k.ilosc >= 1).map((k) => k.id));
+  return {
+    projekt: {
+      ...p,
+      zmieniono: new Date().toISOString(),
+      arkusze: p.arkusze.map((x) => (x.id === arkuszId ? arkusz : x)),
+      talie: p.talie.map((x) => (x.id === talia.id ? nowaTalia : x)),
+    },
+    odlozone: w.pominiete.filter((id) => bylyNaKartce.has(id)).length,
   };
 }

@@ -8,19 +8,26 @@ import {
   ustawieniaKartkiDla,
 } from '../../dane/wlasneKarty';
 import {
+  czyMieszane,
+  dodajKarteMieszane,
   dodajKarteWSlocie,
   dodajKartke,
   dodajNaglowek,
   dodajStrone,
   duplikujKarty,
+  duplikujKartyMieszane,
   kartyKartki,
   kartyWObszarze,
   liczbaStronKartki,
   mozliweRozmiary,
+  naMieszane,
+  przeniesWKolejnosci,
+  przesunWKolejnosci,
   przesunKarty,
   usunKarty,
   usunNaglowek,
   usunStrone,
+  ustawKolejnosc,
   zmienNaglowek,
   zmienRozmiarKarty,
   type BladKartki,
@@ -29,14 +36,20 @@ import {
   type Polozenie,
 } from '../../dane/kartka';
 import { nazwaKarty } from '../../dane/szablon';
-import { zbudujArkusz, zSzarymiObrazami, type WynikArkusza } from '../../druk/arkusz';
-import { kartyOdlozone, pakietProjektu } from '../../druk/normalizacja';
+import {
+  kolejnoscWidoczna,
+  zbudujArkusz,
+  zSzarymiObrazami,
+  type WynikArkusza,
+} from '../../druk/arkusz';
+import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
 import { t, tJesliJest } from '../../i18n';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
 import {
   czyKontener,
   korzenKarty,
+  wymiaryKarty,
   type Karta,
   type PoleObraz,
   type Szablon,
@@ -58,7 +71,15 @@ import { nazwaPliku, zapiszPlik } from '../pliki';
 import { useZSzarymiObrazami } from '../szareObrazy';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
 import type { ZasobyPakietu } from '../zasoby';
-import { geometria, slotPodPunktem, stylMm, stylProstokata, type Geometria } from './geometria';
+import {
+  celKolejnosci,
+  geometria,
+  slotPodPunktem,
+  stylMm,
+  stylProstokata,
+  type CelKolejnosci,
+  type Geometria,
+} from './geometria';
 import { MenuPobierz } from './MenuPobierz';
 import { MenuTypu } from './MenuTypu';
 import { skalaZKolka, zaokr, zmienObrazKarty } from './obrazKarty';
@@ -100,6 +121,18 @@ type Gest =
       y0: number;
       ruch: boolean;
       dotyk?: boolean;
+    }
+  | {
+      /** Tryb mieszany: przeciągnięcie karty zmienia kolejność (wskaźnik wstawienia). */
+      rodzaj: 'kolejnosc';
+      arkuszId: string;
+      ids: string[];
+      klik: string;
+      x0: number;
+      y0: number;
+      ruch: boolean;
+      cel?: CelKolejnosci;
+      dotyk?: { t0: number; x: number; y: number; przewijanie: boolean };
     }
   | {
       rodzaj: 'obraz';
@@ -264,6 +297,20 @@ export function EdytorKartki({
     });
   }, [arkusze, talie, zasoby, pamiecKart, pamiecKartek]);
 
+  // Menu wolnego miejsca wskazuje je indeksem na liście układu – po zmianie układu (mieszane
+  // rozmiary) lista jest inna, więc menu zamykamy.
+  const menuRef = useRef(menu);
+  useEffect(() => {
+    menuRef.current = menu;
+  });
+  useEffect(() => {
+    const m = menuRef.current;
+    if (m && projekt.arkusze.some((a) => a.id === m.arkuszId && czyMieszane(a)))
+      ustawMenu(undefined);
+    // Tylko zmiana wyniku układu (nowa lista wolnych miejsc) zamyka menu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kartki]);
+
   // Siatka z BIEŻĄCYCH ustawień (podgląd stron jest odroczony): budowa bez kart – tania.
   const siatkiNaZywo = useMemo(() => {
     const m = new Map<string, { kolumny: number; rzedy: number }>();
@@ -350,7 +397,8 @@ export function EdytorKartki({
             // Zapamiętane karty są wyrenderowane starymi czcionkami – przy zmianie ról bez pamięci.
             ...(nowy.role === projekt.role && pamiecKart ? { pamiecKart } : {}),
           });
-          const przypietych = (a.przypiete ?? []).length;
+          const mieszana = czyMieszane(a);
+          const przypietych = mieszana ? 0 : (a.przypiete ?? []).length;
           if (
             w.rozmieszczenie.karty.length < przypietych ||
             w.ostrzezenia.some((o) =>
@@ -358,6 +406,7 @@ export function EdytorKartki({
             ) ||
             // Nagłówki grup nie są rysowane przy własnym układzie – nie blokują jego zmian.
             (!a.ustawienia.uklad &&
+              !mieszana &&
               (a.naglowki ?? []).some((h) => h.kolumna + h.kolumny > w.siatka.kolumny))
           ) {
             ok = false;
@@ -411,8 +460,17 @@ export function EdytorKartki({
       const ctx = kontekst(aktywne.arkuszId);
       if (!ctx) return;
       const ids = zaznaczoneKarty.map((k) => k.karta.id);
-      const { kopie } = duplikujKarty(projekt, aktywne.arkuszId, ids, n, ctx);
-      zmien((p) => duplikujKarty(p, aktywne.arkuszId, ids, n, ctx).projekt);
+      const mieszane = projekt.arkusze.some((a) => a.id === aktywne.arkuszId && czyMieszane(a));
+      const { kopie } = mieszane
+        ? duplikujKartyMieszane(projekt, aktywne.arkuszId, ids, n)
+        : duplikujKarty(projekt, aktywne.arkuszId, ids, n, ctx);
+      zmien(
+        (p) =>
+          (mieszane
+            ? duplikujKartyMieszane(p, aktywne.arkuszId, ids, n)
+            : duplikujKarty(p, aktywne.arkuszId, ids, n, ctx)
+          ).projekt,
+      );
       if (kopie.length) ustawZazn({ rodzaj: 'karty', arkuszId: aktywne.arkuszId, ids: kopie });
       ustawToast({ tekst: t('kartka.zduplikowano', { liczba: kopie.length }), cofnij: true });
     },
@@ -424,6 +482,20 @@ export function EdytorKartki({
       if (aktywne?.rodzaj !== 'karty') return;
       const ctx = kontekst(aktywne.arkuszId);
       if (!ctx) return;
+      const arkuszK = projekt.arkusze.find((a) => a.id === aktywne.arkuszId);
+      if (arkuszK && czyMieszane(arkuszK)) {
+        // Mieszane rozmiary: strzałki zmieniają kolejność (lewo / góra – wcześniej).
+        const m = kartki.find((x) => x.arkusz.id === arkuszK.id)?.wynik?.mieszane;
+        if (!m) return;
+        const lista = kolejnoscWidoczna(m);
+        const nowa = przesunWKolejnosci(lista, aktywne.ids, o.kolumna + o.rzad < 0 ? -1 : 1);
+        if (nowa.join() !== lista.join()) {
+          const przelacza = arkuszK.ustawienia.mieszane?.kolejnosc !== 'wlasna';
+          zmien((p) => ustawKolejnosc(p, arkuszK.id, nowa));
+          if (przelacza) ustawToast({ tekst: t('mieszane.przelaczono'), cofnij: true });
+        }
+        return;
+      }
       const w = przesunKarty(projekt, aktywne.arkuszId, aktywne.ids, o, ctx);
       if ('blad' in w) return;
       zmien((p) => {
@@ -434,7 +506,7 @@ export function EdytorKartki({
       if (document.activeElement?.matches('.karta-na-kartce'))
         fokusPo(`[data-karta="${aktywne.ids[0]}"]`);
     },
-    [aktywne, kontekst, projekt, zmien],
+    [aktywne, kontekst, projekt, zmien, kartki, ustawToast],
   );
 
   // --- Skróty klawiszowe.
@@ -568,7 +640,7 @@ export function EdytorKartki({
       return;
     }
     const przesuniety = Math.hypot(e.clientX - g.x0, e.clientY - g.y0) > PROG_RUCHU;
-    if (g.rodzaj === 'karty' && g.dotyk && !g.ruch) {
+    if ((g.rodzaj === 'karty' || g.rodzaj === 'kolejnosc') && g.dotyk && !g.ruch) {
       // Dotyk: ruch przed przytrzymaniem przewija stronę (karta ma touch-action: none).
       if (g.dotyk.przewijanie || (przesuniety && e.timeStamp - g.dotyk.t0 < PRZYTRZYMANIE_MS)) {
         window.scrollBy(g.dotyk.x - e.clientX, g.dotyk.y - e.clientY);
@@ -587,6 +659,17 @@ export function EdytorKartki({
     const ruch = g.ruch || przesuniety;
     const k = kartki.find((x) => x.arkusz.id === g.arkuszId);
     const s = stronaPod(e.clientX, e.clientY);
+    if (g.rodzaj === 'kolejnosc') {
+      const m = k?.wynik?.mieszane;
+      if (!ruch || !k?.geometria || !m) return ustawGestOba({ ...g, ruch });
+      if (!s || s.arkuszId !== g.arkuszId) {
+        const { cel: _c, ...bez } = g;
+        void _c;
+        return ustawGestOba({ ...bez, ruch });
+      }
+      const pt = mmNaStronie(s.el, k.geometria, e.clientX, e.clientY);
+      return ustawGestOba({ ...g, ruch, cel: celKolejnosci(m, g.ids, s.strona, pt) });
+    }
     if (g.rodzaj === 'karty') {
       if (!ruch || !k?.geometria) return ustawGestOba({ ...g, ruch });
       if (!s || s.arkuszId !== g.arkuszId) return ustawGestOba({ ...g, ruch, blad: 'poza-siatka' });
@@ -629,6 +712,23 @@ export function EdytorKartki({
     const g = gestRef.current;
     ustawGestOba(undefined);
     if (!g || g.rodzaj === 'obraz') return;
+    if (g.rodzaj === 'kolejnosc') {
+      const m = kartki.find((x) => x.arkusz.id === g.arkuszId)?.wynik?.mieszane;
+      const arkuszG = projekt.arkusze.find((a) => a.id === g.arkuszId);
+      if (g.ruch && g.cel && m && arkuszG) {
+        const lista = kolejnoscWidoczna(m);
+        const nowa = przeniesWKolejnosci(lista, g.ids, g.cel.przedId);
+        if (nowa.join() !== lista.join()) {
+          // Pierwsze przeciągnięcie przy „od największych” przełącza na kolejność własną.
+          const przelacza = arkuszG.ustawienia.mieszane?.kolejnosc !== 'wlasna';
+          zmien((p) => ustawKolejnosc(p, g.arkuszId, nowa));
+          if (przelacza) ustawToast({ tekst: t('mieszane.przelaczono'), cofnij: true });
+        }
+      } else if (!g.ruch && g.ids.length > 1) {
+        ustawZazn({ rodzaj: 'karty', arkuszId: g.arkuszId, ids: [g.klik] });
+      }
+      return;
+    }
     if (g.rodzaj === 'karty') {
       if (g.ruch && g.o && !g.blad && (g.o.strona || g.o.kolumna || g.o.rzad)) {
         const ctx = kontekst(g.arkuszId);
@@ -676,6 +776,12 @@ export function EdytorKartki({
     const pt = mmNaStronie(stronaEl, k.geometria, e.clientX, e.clientY);
     const kartaEl = cel.closest<HTMLElement>('[data-karta]');
     const naglowekEl = cel.closest<HTMLElement>('[data-naglowek]');
+    const mieszane = czyMieszane(k.arkusz);
+    if (mieszane && !kartaEl) {
+      // Mieszane rozmiary: wolne miejsce otwiera menu przez swój przycisk, reszta odznacza.
+      if (!cel.closest('[data-wolne]')) ustawZazn(undefined);
+      return;
+    }
     if (naglowekEl) {
       ustawZazn({ rodzaj: 'naglowek', arkuszId: k.arkusz.id, id: naglowekEl.dataset.naglowek! });
       return;
@@ -704,6 +810,19 @@ export function EdytorKartki({
           x0: e.clientX,
           y0: e.clientY,
           mmNaPx: k.geometria.szer / stronaEl.getBoundingClientRect().width,
+        });
+      } else if (mieszane) {
+        ustawGestOba({
+          rodzaj: 'kolejnosc',
+          arkuszId: k.arkusz.id,
+          ids,
+          klik: id,
+          x0: e.clientX,
+          y0: e.clientY,
+          ruch: false,
+          ...(e.pointerType === 'touch'
+            ? { dotyk: { t0: e.timeStamp, x: e.clientX, y: e.clientY, przewijanie: false } }
+            : {}),
         });
       } else {
         ustawGestOba({
@@ -789,6 +908,24 @@ export function EdytorKartki({
     const ctx = kontekst(menu.arkuszId);
     if (!ctx) return;
     const w = typ.warianty[wariant]!;
+    const arkuszM = projekt.arkusze.find((a) => a.id === menu.arkuszId);
+    if (arkuszM && czyMieszane(arkuszM)) {
+      // Mieszane: kliknięte wolne miejsce wskazuje kartę, za którą wstawiamy (kolejność własna).
+      const wolne = kartki.find((x) => x.arkusz.id === arkuszM.id)?.wynik?.mieszane?.wolne[
+        menu.kolumna
+      ];
+      const po = wolne?.poKluczu?.slice(0, wolne.poKluczu.lastIndexOf('#'));
+      const typKarty = { szablonId: w.szablonId, ...(w.dane ? { dane: w.dane } : {}) };
+      const { kartaId } = dodajKarteMieszane(projekt, arkuszM.id, typKarty, po);
+      if (!zmienUklad((p) => dodajKarteMieszane(p, arkuszM.id, typKarty, po).projekt)) {
+        ustawToast({ tekst: t('kartka.nieMiesci') });
+        return;
+      }
+      ustawZazn({ rodzaj: 'karty', arkuszId: arkuszM.id, ids: [kartaId] });
+      ustawMenu(undefined);
+      fokusPo(`[data-karta="${kartaId}"]`);
+      return;
+    }
     const opis = {
       szablonId: w.szablonId,
       rozmiary: typ.rozmiary,
@@ -960,6 +1097,32 @@ export function EdytorKartki({
     zmien((p) => dodajKartke(p, wzor, s.nazwa, false).projekt);
     ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
   };
+  /** Karty kartki pogrupowane wg szablonu i wymiaru – lista „Na kartce” w trybie mieszanym. */
+  const naKartce = (a: Arkusz) => {
+    const talia = projekt.talie.find((x) => x.id === a.taliaId);
+    const grupy = new Map<
+      string,
+      { id: string; nazwa: string; kolor?: string; szer: number; wys: number; liczba: number }
+    >();
+    for (const kt of talia?.karty ?? []) {
+      const sz = zasoby?.szablony.get(kt.szablonId);
+      if (!sz || kt.ilosc < 1) continue;
+      const { szer, wys } = wymiaryKarty(sz, kt);
+      const klucz = `${sz.id}|${szer}|${wys}`;
+      const g = grupy.get(klucz);
+      if (g) g.liczba += kt.ilosc;
+      else
+        grupy.set(klucz, {
+          id: klucz,
+          nazwa: sz.nazwa,
+          ...(sz.tlo ? { kolor: sz.tlo } : {}),
+          szer,
+          wys,
+          liczba: kt.ilosc,
+        });
+    }
+    return [...grupy.values()];
+  };
   let panel: React.ReactNode;
   if (aktywne?.rodzaj === 'karty' && arkuszZazn && kontekst(arkuszZazn.id)) {
     const ctx = kontekst(arkuszZazn.id)!;
@@ -967,7 +1130,10 @@ export function EdytorKartki({
     const od = Math.min(...naStronie.map((k) => k.kolumna));
     const do_ = Math.max(...naStronie.map((k) => k.kolumna + k.kolumny));
     const mozeNaglowek =
-      !!arkuszZazn.ustawienia.grupy && !arkuszZazn.ustawienia.uklad && naStronie.length > 0;
+      !!arkuszZazn.ustawienia.grupy &&
+      !arkuszZazn.ustawienia.uklad &&
+      !czyMieszane(arkuszZazn) &&
+      naStronie.length > 0;
     panel = (
       <PanelKart
         key={aktywne.ids.join(',')}
@@ -1065,6 +1231,20 @@ export function EdytorKartki({
         zmienUklad={zmienUklad}
         {...(wynikZazn ? { wynik: wynikZazn } : {})}
         wydrukTestowy={() => wTle(() => wydrukTestowy(arkuszZazn))}
+        przelaczRozmiary={(tryb) => {
+          if (tryb === 'mieszane') zmienUklad((p) => naMieszane(p, arkuszZazn.id));
+          else if (zasoby) {
+            const ctxSiatki = {
+              czcionki: zasoby.czcionki,
+              obraz: (id: string) => zasoby.obrazy.get(id)?.info,
+            };
+            const { odlozone } = wrocDoSiatki(projekt, arkuszZazn.id, ctxSiatki);
+            zmien((p) => wrocDoSiatki(p, arkuszZazn.id, ctxSiatki).projekt);
+            if (odlozone > 0)
+              ustawToast({ tekst: t('mieszane.odlozono', { liczba: odlozone }), cofnij: true });
+          }
+        }}
+        naKartce={naKartce(arkuszZazn)}
         {...(bladUkladu ? { blad: bladUkladu } : {})}
         {...(nowaKartka ? { nowaKartka } : {})}
         {...(bezGry ? { kartkaDlaSzablonu: nowaKartkaDlaSzablonu } : {})}
@@ -1277,12 +1457,28 @@ export function EdytorKartki({
               k={k}
               wiele={kartki.length > 1}
               karty={kartyNaKartkach.get(k.arkusz.id) ?? []}
-              liczbaStron={liczbaStronKartki(projekt, k.arkusz.id)}
+              liczbaStron={
+                czyMieszane(k.arkusz)
+                  ? (k.wynik?.strony.length ?? 1)
+                  : liczbaStronKartki(projekt, k.arkusz.id)
+              }
               zazn={aktywne}
               gest={gest}
               menu={menu?.arkuszId === k.arkusz.id ? menu : undefined}
               typy={pakiet?.typyKart ?? []}
+              uwaga={(typ) => {
+                // Mieszane: typ, który nie zmieści się w klikniętym wolnym miejscu (nadal klikalny).
+                const w = menu?.arkuszId === k.arkusz.id && k.wynik?.mieszane?.wolne[menu.kolumna];
+                const s = zasoby?.szablony.get(typ.warianty[0]!.szablonId);
+                if (!w || !s || !czyMieszane(k.arkusz)) return undefined;
+                const r = wymiaryKarty(s);
+                return r.szer > w.szer + 1e-6 || r.wys > w.wys + 1e-6
+                  ? t('mieszane.nieZmiesciSieTu')
+                  : undefined;
+              }}
+              przesun={(kierunek) => przesunZaznaczone({ strona: 0, kolumna: kierunek, rzad: 0 })}
               blokada={(typ) => {
+                if (czyMieszane(k.arkusz)) return undefined;
                 const ctx = kontekst(k.arkusz.id);
                 const s = ctx?.szablony.get(typ.warianty[0]!.szablonId);
                 // Własne karty: jedna kartka = jeden rozmiar karty.
@@ -1382,6 +1578,8 @@ function WidokKartki({
   menu,
   typy,
   blokada,
+  uwaga,
+  przesun,
   dodaj,
   zamknijMenu,
   poczatekGestu,
@@ -1406,6 +1604,10 @@ function WidokKartki({
   typy: TypKarty[];
   /** Powód, dla którego typu nie można dodać w tym slocie (undefined – można). */
   blokada: (typ: TypKarty) => string | undefined;
+  /** Ostrzeżenie przy typie, który nadal można dodać (mieszane: nie zmieści się w tym miejscu). */
+  uwaga: (typ: TypKarty) => string | undefined;
+  /** Mieszane: przesunięcie zaznaczonych kart o jedno miejsce w kolejności. */
+  przesun: (kierunek: -1 | 1) => void;
   dodaj: (typ: TypKarty, wariant: number) => void;
   zamknijMenu: () => void;
   poczatekGestu: (e: React.PointerEvent, k: Kartka, strona: number) => void;
@@ -1418,6 +1620,7 @@ function WidokKartki({
 }) {
   const g = k.geometria;
   const id = k.arkusz.id;
+  const mieszane = k.wynik?.mieszane;
   const zaznaczone =
     zazn?.rodzaj === 'karty' && zazn.arkuszId === id ? new Set(zazn.ids) : new Set<string>();
   const gestTu = gest && gest.arkuszId === id ? gest : undefined;
@@ -1442,7 +1645,10 @@ function WidokKartki({
         for (const c of naStronie)
           for (let i = 0; i < c.kolumny; i++)
             for (let j = 0; j < c.rzedy; j++) zajete.add(`${c.kolumna + i},${c.rzad + j}`);
-        const pusta = naStronie.length === 0;
+        const pusta = !mieszane && naStronie.length === 0;
+        const kartyMieszane = mieszane?.karty.filter((c) => c.strona === s) ?? [];
+        const polePol = mieszane ? mieszane.obszar.szer * mieszane.obszar.wys : 0;
+        const zajetePole = kartyMieszane.reduce((suma, c) => suma + c.szer * c.wys, 0);
         // Jeden przystanek Tab na stronę (pierwszy wolny slot albo ostatnio odwiedzony),
         // pozostałe sloty osiągalne strzałkami.
         let przystanek = kursor[s];
@@ -1473,7 +1679,14 @@ function WidokKartki({
         return (
           <div key={s} className="strona-opakowanie">
             <div className="etykieta-strony">
-              {t('kartka.strona', { numer: s + 1, liczba: liczbaStron })}
+              {mieszane
+                ? t('mieszane.zajete', {
+                    numer: s + 1,
+                    liczba: liczbaStron,
+                    kart: kartyMieszane.length,
+                    procent: polePol > 0 ? Math.round((zajetePole / polePol) * 100) : 0,
+                  })
+                : t('kartka.strona', { numer: s + 1, liczba: liczbaStron })}
               {pusta && liczbaStron > 1 && (
                 <button type="button" className="usun-strone" onClick={() => usunStrone(s)}>
                   {t('kartka.usunStrone')}
@@ -1504,7 +1717,117 @@ function WidokKartki({
                   />
                 </div>
               )}
-              {g && (
+              {g && mieszane && (
+                <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
+                  {mieszane.wolne.map((w, i) =>
+                    w.strona !== s ? null : (
+                      <button
+                        key={`wolne-${i}`}
+                        type="button"
+                        className={`wolne-miejsce${menu && menu.strona === s && menu.kolumna === i ? ' aktywny' : ''}`}
+                        data-wolne={i}
+                        style={stylMm(g, w.x, w.y, w.szer, w.wys)}
+                        aria-label={t('mieszane.wolneEtykieta', {
+                          szer: Math.round(w.szer),
+                          wys: Math.round(w.wys),
+                          strona: s + 1,
+                        })}
+                        onClick={() => otworzMenu({ strona: s, kolumna: i, rzad: 0 })}
+                      >
+                        {t('mieszane.wolne', { szer: Math.round(w.szer), wys: Math.round(w.wys) })}
+                      </button>
+                    ),
+                  )}
+                  {kartyMieszane.map((c) => {
+                    const podnoszona =
+                      gestTu?.rodzaj === 'kolejnosc' &&
+                      gestTu.ruch &&
+                      gestTu.ids.includes(c.kartaId);
+                    return (
+                      <button
+                        key={c.klucz}
+                        type="button"
+                        className={`karta-na-kartce${zaznaczone.has(c.kartaId) ? ' zaznaczona' : ''}${podnoszona ? ' podnoszona' : ''}`}
+                        data-karta={c.kartaId}
+                        style={stylMm(g, c.x, c.y, c.szer, c.wys)}
+                        aria-pressed={zaznaczone.has(c.kartaId)}
+                        onClick={(e) => e.detail === 0 && wybierzKarte(c.kartaId, e.shiftKey)}
+                        aria-label={t('mieszane.kartaEtykieta', {
+                          nazwa:
+                            nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) ||
+                            t('karta.bezNazwy'),
+                          strona: s + 1,
+                          szer: Math.round(c.szer),
+                          wys: Math.round(c.wys),
+                        })}
+                      />
+                    );
+                  })}
+                  {gestTu?.rodzaj === 'kolejnosc' &&
+                    gestTu.ruch &&
+                    gestTu.cel &&
+                    gestTu.cel.strona === s && (
+                      <div
+                        className="wskaznik-wstawienia"
+                        data-testid="wskaznik-wstawienia"
+                        style={stylMm(g, gestTu.cel.x - 0.75, gestTu.cel.y, 1.5, gestTu.cel.wys)}
+                      />
+                    )}
+                  {!gestTu &&
+                    (() => {
+                      const c = kartyMieszane.find((x) => zaznaczone.has(x.kartaId));
+                      if (!c) return null;
+                      const p = stylMm(g, c.x, c.y, c.szer, c.wys);
+                      return (
+                        <div
+                          className="pasek-karty"
+                          style={{ left: p.left, top: p.top, width: 'auto', height: 'auto' }}
+                        >
+                          <button type="button" onClick={() => przesun(-1)}>
+                            ◀ {t('mieszane.wczesniej')}
+                          </button>
+                          <button type="button" onClick={() => przesun(1)}>
+                            {t('mieszane.pozniej')} ▶
+                          </button>
+                          <button type="button" onClick={duplikuj}>
+                            {t('kartka.duplikuj')}
+                          </button>
+                          <button type="button" className="niebezpieczny" onClick={usun}>
+                            {t('kartka.usun')}
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  {menu &&
+                    menu.strona === s &&
+                    (() => {
+                      const w = mieszane.wolne[menu.kolumna];
+                      if (!w) return null;
+                      const poPrawej = w.x + w.szer < g.szer * 0.6;
+                      const p = stylMm(g, w.x, w.y, w.szer, w.wys);
+                      return (
+                        <MenuTypu
+                          typy={typy}
+                          tytul={t('mieszane.dodajTutaj', {
+                            szer: Math.round(w.szer),
+                            wys: Math.round(w.wys),
+                          })}
+                          stopka={t('mieszane.menuOpis')}
+                          styl={
+                            poPrawej
+                              ? { left: `${((w.x + w.szer) / g.szer) * 100}%`, top: p.top }
+                              : { right: `${100 - (w.x / g.szer) * 100}%`, top: p.top }
+                          }
+                          blokada={blokada}
+                          uwaga={uwaga}
+                          wybierz={dodaj}
+                          zamknij={zamknijMenu}
+                        />
+                      );
+                    })()}
+                </div>
+              )}
+              {g && !mieszane && (
                 <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
                   {Array.from({ length: g.siatka.rzedy }, (_, r) =>
                     Array.from({ length: g.siatka.kolumny }, (_, c) =>
@@ -1654,9 +1977,11 @@ function WidokKartki({
           </div>
         );
       })}
-      <button type="button" className="dodaj-strone" onClick={dodajStrone}>
-        ＋ {t('kartka.dodajStrone')}
-      </button>
+      {!mieszane && (
+        <button type="button" className="dodaj-strone" onClick={dodajStrone}>
+          ＋ {t('kartka.dodajStrone')}
+        </button>
+      )}
     </section>
   );
 }

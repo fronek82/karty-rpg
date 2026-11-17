@@ -1,4 +1,4 @@
-import type { WynikArkusza } from '../../druk/arkusz';
+import { kolejnoscWidoczna, type WynikArkusza, type WynikMieszane } from '../../druk/arkusz';
 import type { Mm } from '../../model/jednostki';
 
 /**
@@ -97,4 +97,62 @@ export function slotPodPunktem(
     }
   }
   return kolumna === undefined || rzad === undefined ? undefined : { kolumna, rzad };
+}
+
+/** Miejsce wstawienia przeciąganej karty: przed kartą `przedId` (brak – na końcu), wskaźnik w mm. */
+export interface CelKolejnosci {
+  przedId?: string;
+  strona: number;
+  x: Mm;
+  y: Mm;
+  wys: Mm;
+}
+
+/**
+ * Miejsce wstawienia przeciąganej karty (tryb mieszany): najbliższa karta na stronie pod punktem
+ * `pt` (mm) – przed nią, gdy punkt jest w jej lewej połowie, inaczej za nią. Karta z ilością > 1
+ * to jedna całość: „przed” – przed pierwszym egzemplarzem, „za” – za ostatnim. Przenoszone karty
+ * (`ids`) nie są celem.
+ */
+export function celKolejnosci(
+  m: Pick<WynikMieszane, 'karty' | 'obszar'>,
+  ids: string[],
+  strona: number,
+  pt: { x: number; y: number },
+): CelKolejnosci {
+  const lista = kolejnoscWidoczna(m);
+  const naStronie = m.karty.filter((c) => c.strona === strona && !ids.includes(c.kartaId));
+  if (naStronie.length === 0) {
+    // Strona bez innych kart: początek obszaru; przed pierwszą kartą z dalszych stron.
+    const dalsza = m.karty.find((c) => c.strona > strona && !ids.includes(c.kartaId));
+    return {
+      ...(dalsza ? { przedId: dalsza.kartaId } : {}),
+      strona,
+      x: m.obszar.x,
+      y: m.obszar.y,
+      wys: 20,
+    };
+  }
+  const odleglosc = (c: (typeof naStronie)[number]) =>
+    Math.hypot(
+      Math.max(c.x - pt.x, 0, pt.x - (c.x + c.szer)),
+      Math.max(c.y - pt.y, 0, pt.y - (c.y + c.wys)),
+    );
+  let najblizsza = naStronie[0]!;
+  for (const c of naStronie) if (odleglosc(c) < odleglosc(najblizsza) - 1e-9) najblizsza = c;
+  const kopie = m.karty.filter((c) => c.kartaId === najblizsza.kartaId);
+  if (pt.x < najblizsza.x + najblizsza.szer / 2) {
+    const c = kopie[0]!;
+    return { przedId: c.kartaId, strona: c.strona, x: c.x, y: c.y, wys: c.wys };
+  }
+  const c = kopie.at(-1)!;
+  const i = lista.indexOf(c.kartaId);
+  const nastepna = lista.slice(i + 1).find((id) => !ids.includes(id));
+  return {
+    ...(nastepna ? { przedId: nastepna } : {}),
+    strona: c.strona,
+    x: c.x + c.szer,
+    y: c.y,
+    wys: c.wys,
+  };
 }
