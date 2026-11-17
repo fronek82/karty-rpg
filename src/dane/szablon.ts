@@ -582,7 +582,15 @@ export function zmienTypKontenera(s: Szablon, id: string, typ: Kontener['typ']):
 export type SkopiowanyStyl = Record<string, unknown> & { stylEtykiety?: unknown };
 
 /** Właściwości wyglądu wspólne dla elementów (bez treści, kluczy i struktury). */
-const WYGLAD = ['tlo', 'obramowanie', 'ozdoba', 'narozniki', 'promien', 'padding', 'margines'] as const;
+const WYGLAD = [
+  'tlo',
+  'obramowanie',
+  'ozdoba',
+  'narozniki',
+  'promien',
+  'padding',
+  'margines',
+] as const;
 /** Właściwości wyglądu zależne od typu – kopiowane tylko do elementu, który je ma. */
 const WYGLAD_TYPU = [
   'styl',

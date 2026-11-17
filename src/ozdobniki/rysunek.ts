@@ -81,3 +81,65 @@ export function gwiazda(cx: number, cy: number, r1: number, r2: number, n = 4): 
   }
   return wielokat(...p);
 }
+
+type Pkt = [number, number];
+
+/** Fragment krzywej Béziera 3. stopnia dla parametrów `[t0, t1]` (de Casteljau) – np. przerwa w splocie. */
+export function fragmentKrzywej(p: [Pkt, Pkt, Pkt, Pkt], t0: number, t1: number): Kontur {
+  const lerp = (a: Pkt, b: Pkt, t: number): Pkt => [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+  ];
+  const dziel = (
+    q: [Pkt, Pkt, Pkt, Pkt],
+    t: number,
+  ): [[Pkt, Pkt, Pkt, Pkt], [Pkt, Pkt, Pkt, Pkt]] => {
+    const a = lerp(q[0], q[1], t);
+    const b = lerp(q[1], q[2], t);
+    const c = lerp(q[2], q[3], t);
+    const d = lerp(a, b, t);
+    const e = lerp(b, c, t);
+    const f = lerp(d, e, t);
+    return [
+      [q[0], a, d, f],
+      [f, e, c, q[3]],
+    ];
+  };
+  // Najpierw odcinamy część od t0, potem – w nowym parametrze – do t1.
+  const od = t0 > 0 ? dziel(p, t0)[1] : p;
+  const [q] = t1 < 1 ? dziel(od, (t1 - t0) / (1 - t0)) : [od];
+  return [
+    ['M', ...q[0]],
+    ['C', ...q[1], ...q[2], ...q[3]],
+  ];
+}
+
+/** Elipsa jako cztery krzywe (kierunek zgodny z `okrag`). */
+export function elipsa(cx: number, cy: number, rx: number, ry: number): Kontur {
+  const kx = rx * K;
+  const ky = ry * K;
+  return [
+    ['M', cx + rx, cy],
+    ['C', cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry],
+    ['C', cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy],
+    ['C', cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry],
+    ['C', cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy],
+    ['Z'],
+  ];
+}
+
+/** Ogniwo łańcucha (stadion): od `x0` do `x1`, wysokość `h`, środek w `cy`. */
+export function stadion(x0: number, x1: number, cy: number, h: number): Kontur {
+  const r = h / 2;
+  const k = r * K;
+  return [
+    ['M', x0 + r, cy - r],
+    ['L', x1 - r, cy - r],
+    ['C', x1 - r + k, cy - r, x1, cy - k, x1, cy],
+    ['C', x1, cy + k, x1 - r + k, cy + r, x1 - r, cy + r],
+    ['L', x0 + r, cy + r],
+    ['C', x0 + r - k, cy + r, x0, cy + k, x0, cy],
+    ['C', x0, cy - k, x0 + r - k, cy - r, x0 + r, cy - r],
+    ['Z'],
+  ];
+}

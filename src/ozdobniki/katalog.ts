@@ -1,10 +1,11 @@
 import type { Kontur } from '../silnik/scena';
 import { gwiazda, lisc, okrag, pierscien, wielokat } from './rysunek';
+import { MOTYWY_WBUDOWANE } from './motywy';
 import type { ElementOzdobny } from './typy';
 
 /**
  * Wbudowana biblioteka ozdobników – rysunki własne (licencja projektu, patrz `LICENCJE.md`),
- * ogólne, bez motywów z konkretnych gier. W tym etapie: narożniki.
+ * ogólne, bez motywów z konkretnych gier. Narożniki (w tym pliku) i motywy powtarzalne (`motywy.ts`).
  *
  * Narożnik rysowany dla lewego górnego rogu w kwadracie 10 × 10 (krawędzie ramki biegną po
  * górze i po lewej); pozostałe rogi to odbicia lustrzane (`macierzeNarozniki`).
@@ -49,7 +50,7 @@ export const NAROZNIKI_WBUDOWANE: ElementOzdobny[] = [
   naroznik('wb:zawijas', [{ kontur: ZAWIJAS, obrys: { grubosc: 0.9, kolor: 'kolor' } }]),
 ];
 
-export const ELEMENTY_WBUDOWANE: ElementOzdobny[] = [...NAROZNIKI_WBUDOWANE];
+export const ELEMENTY_WBUDOWANE: ElementOzdobny[] = [...NAROZNIKI_WBUDOWANE, ...MOTYWY_WBUDOWANE];
 
 /** Element po identyfikatorze (na razie tylko wbudowane); brak = `undefined`. */
 export function znajdzElement(id: string): ElementOzdobny | undefined {

@@ -743,6 +743,18 @@ function PanelKarty({
                 return { ...s, ramka: n ? { ...r, narozniki: n } : r };
               }, 'ramka-narozniki'),
           }}
+          ozdoba={{
+            wartosc: szablon.ramka?.ozdoba,
+            zmien: (o) =>
+              zmienSz((s) => {
+                if (!s.ramka) return s;
+                const { ozdoba: _o, ...r } = s.ramka;
+                void _o;
+                return { ...s, ramka: o ? { ...r, ozdoba: o } : r };
+              }, 'ramka-ozdoba'),
+            ramkaZostaje: true,
+            promien: (szablon.promienRogow ?? 0) > 0 || szablon.ramka?.promien !== undefined,
+          }}
           ramka={szablon.ramka}
           zmien={(f) =>
             zmienSz((s) => {
@@ -764,25 +776,27 @@ function PanelKarty({
                 zmienSz((s) => ({ ...s, ramka: { ...s.ramka!, odsuniecie: v } }), 'ramka-ods')
               }
             />
-            <Liczba
-              etykieta={t('wlasciwosci.promienRamki')}
-              wartosc={
-                szablon.ramka.promien ??
-                Math.max(
-                  0,
-                  (szablon.promienRogow ?? 0) -
-                    (szablon.ramka.odsuniecie ?? 0) -
-                    szablon.ramka.grubosc / 2,
-                )
-              }
-              max={Math.min(szer, wys) / 2}
-              zmien={(v) =>
-                zmienSz((s) => ({ ...s, ramka: { ...s.ramka!, promien: v } }), 'ramka-prom')
-              }
-            />
+            {!szablon.ramka.ozdoba && (
+              <Liczba
+                etykieta={t('wlasciwosci.promienRamki')}
+                wartosc={
+                  szablon.ramka.promien ??
+                  Math.max(
+                    0,
+                    (szablon.promienRogow ?? 0) -
+                      (szablon.ramka.odsuniecie ?? 0) -
+                      szablon.ramka.grubosc / 2,
+                  )
+                }
+                max={Math.min(szer, wys) / 2}
+                zmien={(v) =>
+                  zmienSz((s) => ({ ...s, ramka: { ...s.ramka!, promien: v } }), 'ramka-prom')
+                }
+              />
+            )}
           </div>
         )}
-        {szablon.ramka?.promien !== undefined && (
+        {szablon.ramka?.promien !== undefined && !szablon.ramka.ozdoba && (
           <button
             type="button"
             className="maly"

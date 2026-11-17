@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { t } from '../../i18n';
-import type { Narozniki, Obramowanie, Wezel, WyrownanieOsi } from '../../model/szablon';
-import { NAROZNIKI_WBUDOWANE, type ElementOzdobny } from '../../ozdobniki';
+import type { Narozniki, Obramowanie, Ozdoba, Wezel, WyrownanieOsi } from '../../model/szablon';
+import { MOTYWY_WBUDOWANE, NAROZNIKI_WBUDOWANE, type ElementOzdobny } from '../../ozdobniki';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { Liczba, PoleKoloru, PoleOdstepow, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 
@@ -21,6 +21,7 @@ export function PoleRamki<R extends Obramowanie>({
   krawedzie = true,
   rodzaj = false,
   narozniki,
+  ozdoba,
 }: {
   etykieta: string;
   ramka: R | undefined;
@@ -34,6 +35,20 @@ export function PoleRamki<R extends Obramowanie>({
   rodzaj?: boolean;
   /** Wybór narożników (przy rodzaju „linia”); brak = bez narożników. */
   narozniki?: { wartosc: Narozniki | undefined; zmien: (n: Narozniki | undefined) => void };
+  /**
+   * Motyw zamiast linii (rodzaj „motyw”). `ramkaZostaje` – ramka karty trzyma odsunięcie i pola
+   * linii także przy motywie; `odsuniecie` – pokaż własne pole odsunięcia ozdoby (węzły);
+   * `promien` – ustawiono zaokrąglenie rogów (podpowiedź R3); `wylaczony` – rodzaj niedostępny
+   * (np. kształt inny niż prostokąt).
+   */
+  ozdoba?: {
+    wartosc: Ozdoba | undefined;
+    zmien: (o: Ozdoba | undefined) => void;
+    ramkaZostaje?: boolean;
+    odsuniecie?: boolean;
+    promien?: boolean;
+    wylaczony?: boolean;
+  };
 }) {
   const zmienRamke = (f: (r: R) => R) => zmien((r) => (r ? f(r) : r));
   return (
@@ -45,16 +60,35 @@ export function PoleRamki<R extends Obramowanie>({
             opcje={[
               { wartosc: 'brak', tekst: t('ramka.rodzaj.brak') },
               { wartosc: 'linia', tekst: t('ramka.rodzaj.linia') },
-              { wartosc: 'motyw', tekst: t('ramka.rodzaj.motyw'), wylaczona: true },
+              {
+                wartosc: 'motyw',
+                tekst: t('ramka.rodzaj.motyw'),
+                wylaczona: !ozdoba || (ozdoba.wylaczony && !ozdoba.wartosc),
+              },
               { wartosc: 'obraz', tekst: t('ramka.rodzaj.obraz'), wylaczona: true },
             ]}
-            wartosc={ramka ? 'linia' : 'brak'}
+            wartosc={ozdoba?.wartosc ? 'motyw' : ramka ? 'linia' : 'brak'}
             zmien={(v) => {
               if (v === 'brak') {
+                ozdoba?.zmien(undefined);
                 zmien(() => undefined);
                 narozniki?.zmien(undefined);
-              } else if (v === 'linia')
+              } else if (v === 'linia') {
+                ozdoba?.zmien(undefined);
                 zmien((r) => r ?? ({ grubosc: 0.3, kolor: '#000000' } as R));
+              } else if (v === 'motyw' && ozdoba) {
+                if (ozdoba.ramkaZostaje)
+                  zmien((r) => r ?? ({ grubosc: 0.3, kolor: '#000000' } as R));
+                else zmien(() => undefined);
+                ozdoba.zmien(
+                  ozdoba.wartosc ?? {
+                    rodzaj: 'motyw',
+                    element: MOTYWY_WBUDOWANE[0]!.id,
+                    szerokosc: 6,
+                    kolor: ramka?.kolor ?? '#000000',
+                  },
+                );
+              }
             }}
           />
           <p className="podpis">{t('ramka.wKolejnychEtapach')}</p>
@@ -68,7 +102,15 @@ export function PoleRamki<R extends Obramowanie>({
           }
         />
       )}
-      {ramka && (
+      {ozdoba?.wartosc && (
+        <WyborMotywu
+          ozdoba={ozdoba.wartosc}
+          zmien={ozdoba.zmien}
+          odsuniecie={!!ozdoba.odsuniecie}
+          podpowiedz={!!ozdoba.promien}
+        />
+      )}
+      {ramka && !ozdoba?.wartosc && (
         <>
           <div className="dwa-pola">
             <Liczba
@@ -103,7 +145,6 @@ export function PoleRamki<R extends Obramowanie>({
               zmien={(v) => zmienRamke((r) => ({ ...r, przerwa: v }))}
             />
           )}
-          {narozniki && <WyborNarozniki {...narozniki} kolorLinii={ramka.kolor} />}
           {krawedzie && (
             <fieldset className="krawedzie">
               <legend>{t('wlasciwosci.krawedzie')}</legend>
@@ -131,6 +172,12 @@ export function PoleRamki<R extends Obramowanie>({
           )}
         </>
       )}
+      {narozniki && (ramka || ozdoba?.wartosc) && (
+        <WyborNarozniki
+          {...narozniki}
+          kolorLinii={ozdoba?.wartosc?.kolor ?? ramka?.kolor ?? '#000000'}
+        />
+      )}
     </>
   );
 }
@@ -144,10 +191,96 @@ const NAZWY_NAROZNIKOW = {
   'wb:zawijas': 'narozniki.nazwa.zawijas',
 } as const;
 
+const NAZWY_MOTYWOW = {
+  'wb:pnacze': 'motywy.nazwa.pnacze',
+  'wb:przeplot': 'motywy.nazwa.przeplot',
+  'wb:luski': 'motywy.nazwa.luski',
+  'wb:runy': 'motywy.nazwa.runy',
+  'wb:lancuch': 'motywy.nazwa.lancuch',
+  'wb:gwiazdki': 'motywy.nazwa.gwiazdki',
+} as const;
+
 /** Nazwa elementu dla użytkownika: własna albo z i18n (wbudowane). */
 function nazwaElementu(e: ElementOzdobny): string {
-  const klucz = NAZWY_NAROZNIKOW[e.id as keyof typeof NAZWY_NAROZNIKOW];
+  const klucz =
+    NAZWY_NAROZNIKOW[e.id as keyof typeof NAZWY_NAROZNIKOW] ??
+    NAZWY_MOTYWOW[e.id as keyof typeof NAZWY_MOTYWOW];
   return e.nazwa ?? (klucz ? t(klucz) : e.id);
+}
+
+/** Wybór motywu z listy miniatur oraz szerokość pasa, szyny, odsunięcie i kolor. */
+function WyborMotywu({
+  ozdoba,
+  zmien,
+  odsuniecie,
+  podpowiedz,
+}: {
+  ozdoba: Ozdoba;
+  zmien: (o: Ozdoba) => void;
+  odsuniecie: boolean;
+  podpowiedz: boolean;
+}) {
+  const idEtykiety = useId();
+  const ustaw = (z: Partial<Ozdoba>) => zmien({ ...ozdoba, ...z });
+  return (
+    <div className="pole-panelu">
+      <span id={idEtykiety}>{t('motywy.tytul')}</span>
+      <div className="wybor-narozniki" role="group" aria-labelledby={idEtykiety}>
+        {MOTYWY_WBUDOWANE.map((e) => (
+          <button
+            key={e.id}
+            type="button"
+            aria-pressed={ozdoba.element === e.id}
+            aria-label={nazwaElementu(e)}
+            style={{ color: ozdoba.kolor }}
+            onClick={() => ustaw({ element: e.id })}
+          >
+            <MiniaturaOzdobnika element={e} />
+            <small>{nazwaElementu(e)}</small>
+          </button>
+        ))}
+      </div>
+      <div className="dwa-pola">
+        <Liczba
+          etykieta={t('motywy.szerokosc')}
+          wartosc={ozdoba.szerokosc}
+          min={1}
+          max={30}
+          krok={0.5}
+          zmien={(v) => ustaw({ szerokosc: v })}
+        />
+        <PoleKoloru
+          etykieta={t('motywy.kolor')}
+          wartosc={ozdoba.kolor}
+          moznaBrak={false}
+          zmien={(v) => ustaw({ kolor: v! })}
+        />
+      </div>
+      <div className="dwa-pola">
+        <Liczba
+          etykieta={t('motywy.szyny')}
+          wartosc={ozdoba.szyny ?? 0}
+          max={3}
+          krok={0.05}
+          zmien={(v) => zmien(v > 0 ? { ...ozdoba, szyny: v } : bez(ozdoba, 'szyny'))}
+        />
+        {odsuniecie && (
+          <Liczba
+            etykieta={t('motywy.odsuniecie')}
+            wartosc={ozdoba.odsuniecie ?? 0}
+            max={30}
+            krok={0.5}
+            zmien={(v) => zmien(v > 0 ? { ...ozdoba, odsuniecie: v } : bez(ozdoba, 'odsuniecie'))}
+          />
+        )}
+      </div>
+      {podpowiedz && (
+        <p className="podpis" role="note">
+          {t('motywy.podpowiedzPromien')}
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** Wybór narożnika z biblioteki (miniatury), jego rozmiaru i koloru. */
@@ -261,6 +394,13 @@ export function PanelWygladu({ wezel, zmien }: { wezel: Wezel; zmien: Zmiana }) 
           narozniki={{
             wartosc: wezel.narozniki,
             zmien: (n) => ustaw('narozniki', n, `narozniki:${id}`),
+          }}
+          ozdoba={{
+            wartosc: wezel.ozdoba,
+            zmien: (o) => ustaw('ozdoba', o, `ozdoba:${id}`),
+            odsuniecie: true,
+            promien: (wezel.promien ?? 0) > 0,
+            wylaczony: ksztaltSciezki,
           }}
           zmien={(f) =>
             zmien((w) => {

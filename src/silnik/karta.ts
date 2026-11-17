@@ -17,6 +17,7 @@ import {
   type PoleWartosc,
   type Kolor,
   type Narozniki,
+  type Ozdoba,
   type RamkaKarty,
   type StylLinii,
   type StylTekstu,
@@ -26,6 +27,7 @@ import {
 } from '../model/szablon';
 import type { RejestrCzcionek } from './czcionki';
 import { konturIkony } from './ikony';
+import { ramkaZMotywu } from '../ozdobniki/motyw';
 import { narozniki as rysujNarozniki } from '../ozdobniki/narozniki';
 import {
   symboleSceny,
@@ -270,6 +272,26 @@ export function renderujKarte(
       ostrzezenia.push({ pole: id, komunikat: 'nieznany-element-ozdobny', szczegoly: w.nieznany });
   };
 
+  /**
+   * Ozdoba (motyw) na prostokącie. Nieznany motyw: ostrzeżenie i cienka linia ciągła w kolorze
+   * ozdoby. Własne narożniki (`maNarozniki`) zastępują kostki narożne motywu.
+   */
+  const dodajOzdobe = (o: Ozdoba, obszar: Ramka, id: string, maNarozniki: boolean) => {
+    const w = ramkaZMotywu(o, obszar, { bezKostek: maNarozniki });
+    elementy.push(...w.elementy);
+    Object.assign(symbole, w.symbole);
+    if (!w.nieznany) return;
+    ostrzezenia.push({ pole: id, komunikat: 'nieznany-element-ozdobny', szczegoly: w.nieznany });
+    elementy.push({
+      typ: 'prostokat',
+      x: obszar.x + 0.15,
+      y: obszar.y + 0.15,
+      szer: Math.max(0, obszar.szer - 0.3),
+      wys: Math.max(0, obszar.wys - 0.3),
+      obrys: { kolor: o.kolor, grubosc: 0.3 },
+    });
+  };
+
   const kontekst: KontekstUkladu = {
     czyUkryty: (w) =>
       !czyKontener(w) && (w.gdyPuste ?? 'pokaz-ramke') === 'ukryj' && czyPuste(w, dane),
@@ -403,20 +425,43 @@ export function renderujKarte(
       elementy.push(...rysujTekst(w, '', dane, ramka, ctx, glify, ostrzezenia));
     }
     u.dzieci.forEach(rysuj);
-    if (w.obramowanie) elementy.push(...rysujObramowanie(w.obramowanie, obszar, promien, ksztalt));
-    if (w.narozniki) dodajNarozniki(w.narozniki, obszar, w.obramowanie?.kolor ?? CZARNY, w.id);
+    if (w.ozdoba) {
+      const od = w.ozdoba.odsuniecie ?? 0;
+      dodajOzdobe(
+        w.ozdoba,
+        {
+          x: obszar.x + od,
+          y: obszar.y + od,
+          szer: obszar.szer - 2 * od,
+          wys: obszar.wys - 2 * od,
+        },
+        w.id,
+        !!w.narozniki,
+      );
+    } else if (w.obramowanie)
+      elementy.push(...rysujObramowanie(w.obramowanie, obszar, promien, ksztalt));
+    if (w.narozniki)
+      dodajNarozniki(w.narozniki, obszar, w.ozdoba?.kolor ?? w.obramowanie?.kolor ?? CZARNY, w.id);
   };
   rysuj(korzen);
   if (szablon.ramka) {
     const r = szablon.ramka;
-    elementy.push(...rysujRamkeKarty(r, szer, wys, szablon.promienRogow));
+    if (r.ozdoba) {
+      const o = r.odsuniecie ?? 0;
+      dodajOzdobe(
+        r.ozdoba,
+        { x: o, y: o, szer: szer - 2 * o, wys: wys - 2 * o },
+        'ramka-karty',
+        !!r.narozniki,
+      );
+    } else elementy.push(...rysujRamkeKarty(r, szer, wys, szablon.promienRogow));
     if (r.narozniki) {
       // Narożniki na zewnętrznej krawędzi ramki (po odsunięciu), nad linią.
       const o = r.odsuniecie ?? 0;
       dodajNarozniki(
         r.narozniki,
         { x: o, y: o, szer: szer - 2 * o, wys: wys - 2 * o },
-        r.kolor,
+        r.ozdoba?.kolor ?? r.kolor,
         'ramka-karty',
       );
     }
