@@ -7,7 +7,9 @@ import './App.css';
 // Strony ładowane leniwie: silnik (fontkit) i pakiet dopiero przy kartce; PDF – przy pobraniu.
 const Start = lazy(() => import('./start/Start').then((m) => ({ default: m.Start })));
 const WyborGry = lazy(() => import('./start/WyborGry').then((m) => ({ default: m.WyborGry })));
-const InneGry = lazy(() => import('./start/InneGry').then((m) => ({ default: m.InneGry })));
+const WlasneKarty = lazy(() =>
+  import('./start/WlasneKarty').then((m) => ({ default: m.WlasneKarty })),
+);
 const EdytorStrona = lazy(() =>
   import('./EdytorStrona').then((m) => ({ default: m.EdytorStrona })),
 );
@@ -60,9 +62,9 @@ export function App() {
           <Leniwa>
             <WyborGry id={decodeURIComponent(gra)} />
           </Leniwa>
-        ) : trasa === '/gry/inne' ? (
+        ) : trasa === '/wlasne' || trasa === '/gry/inne' ? (
           <Leniwa>
-            <InneGry />
+            <WlasneKarty />
           </Leniwa>
         ) : (
           <section>

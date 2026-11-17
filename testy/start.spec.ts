@@ -7,18 +7,27 @@ test('start: wybór gry po polsku, pusta lista projektów', async ({ page }) => 
     page.getByRole('heading', { level: 1, name: 'Karty do gier – zaprojektuj i wydrukuj' }),
   ).toBeVisible();
   await expect(page.getByRole('link', { name: /Stwórz karty do Mausrittera/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Stwórz karty do innej gry/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Stwórz własne karty/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Moje projekty' })).toBeVisible();
   await expect(page.getByText('Nie masz jeszcze żadnych projektów.')).toBeVisible();
 });
 
-test('inna gra: zapowiedź kolejnych gier z kamieniem milowym', async ({ page }) => {
+test('własne karty: zapowiedź edytora od zera, bez listy gier; stara trasa działa', async ({
+  page,
+}) => {
   await page.goto('./');
-  await page.getByRole('link', { name: /Stwórz karty do innej gry/ }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Inne gry – w budowie' })).toBeVisible();
-  for (const gra of ['Dungeons & Dragons', 'Warhammer', 'Jedyny Pierścień', 'Własne karty'])
-    await expect(page.getByText(gra, { exact: true })).toBeVisible();
-  await expect(page.locator('.planowane-gry .znacznik').first()).toHaveText('M3');
+  await expect(page.getByText('Od zera: własny rozmiar karty i własny układ pól')).toBeVisible();
+  await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
+  await expect(page).toHaveURL(/#\/wlasne$/);
+  const naglowek = page.getByRole('heading', {
+    level: 1,
+    name: 'Edytor własnych kart – w budowie',
+  });
+  await expect(naglowek).toBeVisible();
+  for (const gra of ['Dungeons & Dragons', 'Warhammer', 'Jedyny Pierścień'])
+    await expect(page.getByText(gra)).toHaveCount(0);
+  await page.goto('./#/gry/inne');
+  await expect(naglowek).toBeVisible();
 });
 
 test('Mausritter: drugi ekran z pustą kartką i gotowymi układami', async ({ page }) => {
