@@ -17,7 +17,7 @@ import {
 } from './archiwum';
 import { MAKS_BAJTOW_CZCIONKI, wariantCzcionki, wgrajCzcionke } from './czcionki';
 import { projektZPakietu, rejestrZProjektu } from './pakiet';
-import { BladDanych, MIGRACJE, migruj, ostrzezeniaProjektu } from './schemat';
+import { BladDanych, MIGRACJE, migruj, ostrzezeniaProjektu, przygotujProjekt } from './schemat';
 import { szablonCzaru, szablonStatystyk, szablonWroga } from '../silnik/__testy__/przyklady';
 
 const czcionka = async (plik: string) => new Uint8Array(readFileSync(`public/czcionki/${plik}`));
@@ -515,6 +515,84 @@ describe('eksport i import szablonu', () => {
     expect(wynik.projekt.szablony).toHaveLength(1);
     expect(wynik.projekt.role.tresc).toBe('EB Garamond');
     for (const o of wynik.projekt.zasoby) expect(wynik.zasoby.has(o.id)).toBe(true);
+  });
+
+  it('M2b-3: linia podwójna i narożniki przechodzą eksport/import szablonu bez zmian', () => {
+    const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
+    const ozdobny = {
+      ...wzor,
+      ramka: {
+        grubosc: 0.3,
+        kolor: '#2f5d8a',
+        styl: 'podwojna' as const,
+        przerwa: 0.5,
+        narozniki: { element: 'wb:lisc', rozmiar: 6, kolor: '#8b0000' },
+      },
+      korzen: {
+        ...wzor.korzen,
+        obramowanie: { grubosc: 0.3, kolor: '#000000', styl: 'podwojna' as const },
+        narozniki: { element: 'wb:kat', rozmiar: 4 },
+      },
+    };
+    const p: Projekt = {
+      ...projekt,
+      szablony: projekt.szablony.map((s) => (s.id === ozdobny.id ? ozdobny : s)),
+    };
+    const paczka = importujSzablon(eksportujSzablon(p, zasoby, ozdobny.id).bajty);
+    expect(paczka.szablon).toEqual(ozdobny);
+    const caly = importujProjekt(eksportujProjekt(p, zasoby));
+    expect(caly.projekt.szablony.find((s) => s.id === ozdobny.id)).toEqual(ozdobny);
+  });
+
+  it('M2b-3: migracja 9→10 jest tożsamościowa – stary projekt otwiera się bez zmian', () => {
+    const stary = { ...structuredClone(projekt), wersja: 9 };
+    const wynik = przygotujProjekt(stary);
+    expect(wynik.wersja).toBe(10);
+    expect(wynik.szablony).toEqual(projekt.szablony);
+    expect(migruj({ wersja: 9, a: 1 }, 'szablon')).toEqual({ wersja: 10, a: 1 });
+  });
+
+  it('M2b-3: schemat przyjmuje narożniki, przerwę i styl podwójny, odrzuca błędne wartości', () => {
+    const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
+    const z = (ramka: object, korzen: object = {}): Projekt => ({
+      ...projekt,
+      szablony: projekt.szablony.map((s) =>
+        s.id === wzor.id
+          ? { ...wzor, ramka: ramka as never, korzen: { ...wzor.korzen, ...korzen } }
+          : s,
+      ),
+    });
+    const ok = { grubosc: 0.3, kolor: '#000', styl: 'podwojna', przerwa: 0 };
+    expect(() => przygotujProjekt(z(ok))).not.toThrow();
+    expect(() =>
+      przygotujProjekt(z({ ...ok, narozniki: { element: 'wb:kat', rozmiar: 5 } })),
+    ).not.toThrow();
+    expect(() =>
+      przygotujProjekt(z(ok, { narozniki: { element: 'wb:kat', rozmiar: 5, kolor: '#fff' } })),
+    ).not.toThrow();
+    for (const zle of [
+      { ...ok, przerwa: -1 },
+      { ...ok, styl: 'potrojna' },
+      { ...ok, narozniki: { rozmiar: 5 } },
+      { ...ok, narozniki: { element: '', rozmiar: 5 } },
+      { ...ok, narozniki: { element: 'wb:kat', rozmiar: 0 } },
+    ])
+      expect(() => przygotujProjekt(z(zle))).toThrow();
+    expect(() => przygotujProjekt(z(ok, { narozniki: { element: 'wb:kat' } }))).toThrow();
+  });
+
+  it('M2b-3: niepoprawne narożniki są odrzucane', () => {
+    const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
+    const zly: Projekt = {
+      ...projekt,
+      szablony: [
+        {
+          ...wzor,
+          ramka: { grubosc: 0.3, kolor: '#000', narozniki: { element: 'x', rozmiar: -1 } },
+        },
+      ],
+    };
+    expect(() => importujProjekt(eksportujProjekt(zly, zasoby))).toThrow();
   });
 
   it('ostrzega o czcionce z własnego pliku', () => {

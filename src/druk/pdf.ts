@@ -22,7 +22,9 @@ import {
   setLineJoin,
   setLineWidth,
   setStrokingRgbColor,
+  LineCapStyle,
   LineJoinStyle,
+  setLineCap,
   stroke,
 } from 'pdf-lib';
 import { PT_NA_MM } from '../model/jednostki';
@@ -30,6 +32,7 @@ import type { Kolor } from '../model/szablon';
 import {
   czyObrys,
   kolorSceny,
+  type DefinicjaSymbolu,
   type ElementSceny,
   type Kontur,
   type Obrys,
@@ -156,6 +159,8 @@ function rysujKsztalt(
 class BudowniczyPdf {
   /** Glif → referencja do XObject (wspólna dla wszystkich stron). */
   private readonly glifyXObject = new Map<string, PDFRef>();
+  /** Symbol → XObject (bez koloru dla części `'kolor'` – dziedziczą go z miejsca wstawienia). */
+  private readonly symboleXObject = new Map<string, PDFRef>();
   private readonly obrazy = new Map<string, PDFRef>();
   private licznikGlifow = 0;
   readonly pominieteObrazy = new Set<string>();
@@ -215,6 +220,50 @@ class BudowniczyPdf {
 
   get liczbaGlifow(): number {
     return this.licznikGlifow;
+  }
+
+  get liczbaSymboli(): number {
+    return this.symboleXObject.size;
+  }
+
+  /** XObject symbolu – zapisany raz w dokumencie, wstawiany operatorem `Do` z `cm` i kolorem. */
+  private refSymbolu(klucz: string, d: DefinicjaSymbolu): PDFRef {
+    const istniejacy = this.symboleXObject.get(klucz);
+    if (istniejacy) return istniejacy;
+    const ops: PDFOperator[] = [];
+    let zapas = 0;
+    for (const c of d.kontury) {
+      const o = c.obrys && c.obrys.grubosc > 0 ? c.obrys : undefined;
+      if (c.wypelnienie === undefined && !o) continue;
+      ops.push(pushGraphicsState());
+      if (c.wypelnienie !== undefined && c.wypelnienie !== 'kolor') {
+        const [r, g, b] = kolorRgb(c.wypelnienie);
+        ops.push(setFillingRgbColor(r, g, b));
+      }
+      if (o) {
+        if (o.kolor !== 'kolor') {
+          const [r, g, b] = kolorRgb(o.kolor);
+          ops.push(setStrokingRgbColor(r, g, b));
+        }
+        ops.push(
+          setLineWidth(Math.round(o.grubosc * 1e4) / 1e4),
+          setLineJoin(LineJoinStyle.Round),
+          setLineCap(LineCapStyle.Round),
+        );
+        zapas = Math.max(zapas, o.grubosc);
+      }
+      ops.push(...operatorySciezki(c.kontur, (v) => Math.round(v * 1e4) / 1e4));
+      const wyp = c.wypelnienie !== undefined;
+      ops.push(wyp && o ? fillAndStroke() : wyp ? fill() : stroke());
+      ops.push(popGraphicsState());
+    }
+    const m = Math.ceil(zapas) + 1;
+    const strumien = this.doc.context.formXObject(ops, {
+      BBox: [-m, -m, Math.ceil(d.szer) + m, Math.ceil(d.wys) + m],
+    });
+    const ref = this.doc.context.register(strumien);
+    this.symboleXObject.set(klucz, ref);
+    return ref;
   }
 
   private async refObrazu(zasob: string): Promise<PDFRef | undefined> {
@@ -356,14 +405,40 @@ class BudowniczyPdf {
         );
         return ops;
       }
+      case 'symbol': {
+        const d = scena.symbole?.[e.klucz];
+        if (!d) return [];
+        const n = nazwa(`S|${e.klucz}`, this.refSymbolu(e.klucz, d), 'S');
+        const [r, g, b] = kolorRgb(e.kolor ?? '#000000');
+        const m = e.macierz;
+        const r6 = (v: number) => Math.round(v * 1e6) / 1e6;
+        return [
+          pushGraphicsState(),
+          concatTransformationMatrix(r6(m[0]), r6(m[1]), r6(m[2]), r6(m[3]), r3(m[4]), r3(m[5])),
+          setFillingRgbColor(r, g, b),
+          setStrokingRgbColor(r, g, b),
+          drawObject(n),
+          popGraphicsState(),
+        ];
+      }
       case 'grupa': {
         const kat = ((e.obrot ?? 0) * Math.PI) / 180;
         const c = Math.round(Math.cos(kat) * 1e6) / 1e6;
         const s = Math.round(Math.sin(kat) * 1e6) / 1e6;
-        const ops: PDFOperator[] = [
-          pushGraphicsState(),
-          concatTransformationMatrix(c, s, -s, c, r3(e.x), r3(e.y)),
-        ];
+        const ops: PDFOperator[] = [pushGraphicsState()];
+        // Przycięcie w układzie otaczającym – przed przekształceniem grupy.
+        if (e.przyciecie) {
+          const p = e.przyciecie;
+          ops.push(rectangle(r3(p.x), r3(p.y), r3(p.szer), r3(p.wys)), clip(), endPath());
+        }
+        ops.push(concatTransformationMatrix(c, s, -s, c, r3(e.x), r3(e.y)));
+        if (e.macierz) {
+          const m = e.macierz;
+          const r6 = (v: number) => Math.round(v * 1e6) / 1e6;
+          ops.push(
+            concatTransformationMatrix(r6(m[0]), r6(m[1]), r6(m[2]), r6(m[3]), r3(m[4]), r3(m[5])),
+          );
+        }
         for (const d of e.elementy) ops.push(...(await this.element(scena, d, strona, nazwa)));
         ops.push(popGraphicsState());
         return ops;
@@ -376,6 +451,8 @@ export interface WynikPdf {
   bajty: Uint8Array;
   /** Liczba różnych glifów zapisanych w dokumencie (każdy raz). */
   liczbaGlifow: number;
+  /** Liczba różnych symboli (ozdobników) zapisanych w dokumencie jako XObject (każdy raz). */
+  liczbaSymboli: number;
   /** Zasoby obrazów, których nie udało się odczytać (pominięte w PDF). */
   pominieteObrazy: string[];
 }
@@ -392,6 +469,7 @@ export async function scenyDoPdf(sceny: Scena[], opcje: OpcjePdf = {}): Promise<
   return {
     bajty,
     liczbaGlifow: budowniczy.liczbaGlifow,
+    liczbaSymboli: budowniczy.liczbaSymboli,
     pominieteObrazy: [...budowniczy.pominieteObrazy],
   };
 }

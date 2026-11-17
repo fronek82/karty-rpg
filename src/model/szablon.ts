@@ -21,12 +21,26 @@ export interface Odstepy {
 }
 
 export type WyrownanieOsi = 'poczatek' | 'srodek' | 'koniec';
-export type StylLinii = 'ciagla' | 'przerywana' | 'kropkowana';
+export type StylLinii = 'ciagla' | 'przerywana' | 'kropkowana' | 'podwojna';
+
+/**
+ * Narożniki z biblioteki ozdobników – ten sam rysunek odbity lustrzanie na cztery rogi ramki.
+ * `element` to identyfikator elementu (wbudowane: `wb:…`); nieznany daje ostrzeżenie i brak narożnika.
+ */
+export interface Narozniki {
+  element: string;
+  /** Bok kwadratu, w który wpisany jest narożnik (mm). */
+  rozmiar: Mm;
+  /** Kolor; domyślnie kolor linii ramki. */
+  kolor?: Kolor;
+}
 
 export interface Obramowanie {
   grubosc: Mm;
   kolor: Kolor;
   styl?: StylLinii;
+  /** Przerwa między liniami stylu `podwojna` (mm, domyślnie 2× grubość); `grubosc` to grubość każdej linii. */
+  przerwa?: Mm;
   /** Które krawędzie rysować; domyślnie wszystkie (wtedy z zaokrągleniem `promien`). */
   krawedzie?: Partial<Record<keyof Odstepy, boolean>>;
 }
@@ -49,6 +63,11 @@ interface WezelBazowy {
   wyrownanie?: { poziomo?: WyrownanieOsi; pionowo?: WyrownanieOsi };
   tlo?: Kolor;
   obramowanie?: Obramowanie;
+  /**
+   * Narożniki z biblioteki ozdobników. Silnik rysuje je niezależnie od linii, ale edytor oferuje
+   * wybór narożników tylko przy rodzaju ramki „linia” (przełączenie na „brak” je czyści).
+   */
+  narozniki?: Narozniki;
   /** Zaokrąglenie rogów tła i obramowania (mm); przy kształcie „sciety” – wielkość ścięcia. */
   promien?: Mm;
   /**
@@ -237,6 +256,8 @@ export interface PoleSeparator extends PoleBazowe {
   grubosc: Mm;
   kolor?: Kolor;
   stylLinii?: StylLinii;
+  /** Przerwa między liniami stylu `podwojna` (mm, domyślnie 2× grubość). */
+  przerwa?: Mm;
 }
 
 /** Kolumna tabeli: nagłówek stały z szablonu, wartość z danych karty. */
@@ -263,7 +284,7 @@ export interface PoleTabela extends PoleBazowe {
   stylNaglowka?: Partial<StylTekstu>;
   tloNaglowka?: Kolor;
   /** Linie siatki; `zewnetrzne: false` – bez obwódki tabeli. */
-  linie?: { grubosc: Mm; kolor: Kolor; styl?: StylLinii; zewnetrzne?: boolean };
+  linie?: { grubosc: Mm; kolor: Kolor; styl?: StylLinii; przerwa?: Mm; zewnetrzne?: boolean };
   /** Wewnętrzny odstęp komórki (mm, domyślnie 0,8). */
   paddingKomorki?: Mm;
 }
@@ -293,6 +314,10 @@ export interface RamkaKarty {
   grubosc: Mm;
   kolor: Kolor;
   styl?: StylLinii;
+  /** Przerwa między liniami stylu `podwojna` (mm, domyślnie 2× grubość). */
+  przerwa?: Mm;
+  /** Narożniki z biblioteki ozdobników, w rogach ramki. */
+  narozniki?: Narozniki;
   /** Odległość zewnętrznej krawędzi linii od krawędzi karty (mm, domyślnie 0). */
   odsuniecie?: Mm;
   /** Zaokrąglenie rogów ramki; domyślnie zgodne z rogami karty. */

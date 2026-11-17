@@ -33,6 +33,26 @@ export interface GlifNaScenie {
   skala: number;
 }
 
+/** Macierz afiniczna jak w SVG `matrix(a b c d e f)` i PDF `cm`: x' = a·x + c·y + e, y' = b·x + d·y + f. */
+export type Macierz = [number, number, number, number, number, number];
+
+/** Kolor rysunku symbolu: stały albo `'kolor'` – podstawiany z miejsca wstawienia. */
+export type KolorSymbolu = Kolor | 'kolor';
+
+export interface KonturSymbolu {
+  kontur: Kontur;
+  wypelnienie?: KolorSymbolu;
+  /** Grubość w jednostkach symbolu (skaluje się razem z nim). */
+  obrys?: { grubosc: number; kolor: KolorSymbolu };
+}
+
+/** Rysunek wstawiany wielokrotnie (`typ: 'symbol'`); współrzędne w jednostkach `szer` × `wys`, oś Y w dół. */
+export interface DefinicjaSymbolu {
+  kontury: KonturSymbolu[];
+  szer: number;
+  wys: number;
+}
+
 export type ElementSceny =
   | {
       typ: 'prostokat';
@@ -68,11 +88,26 @@ export type ElementSceny =
       obrot?: number;
     }
   | {
+      typ: 'symbol';
+      /** Klucz w słowniku symboli sceny. */
+      klucz: string;
+      /** Przekształcenie symbolu w układzie, w którym stoi element (skala, odbicie, obrót, przesunięcie). */
+      macierz: Macierz;
+      /** Podstawiany za kolor `'kolor'` w rysunku; domyślnie czarny. */
+      kolor?: Kolor;
+    }
+  | {
       typ: 'grupa';
-      /** Przesunięcie, potem obrót (stopnie, zgodnie z ruchem wskazówek zegara). */
+      /**
+       * Przekształcenie elementów: najpierw `macierz` (jeśli jest), potem obrót (stopnie, zgodnie
+       * z ruchem wskazówek zegara), na końcu przesunięcie o (x, y) – bez `macierz` jak dotychczas.
+       */
       x: Mm;
       y: Mm;
       obrot?: number;
+      macierz?: Macierz;
+      /** Przycięcie (mm) w układzie otaczającym grupę – nie podlega jej przekształceniu. */
+      przyciecie?: { x: Mm; y: Mm; szer: Mm; wys: Mm };
       elementy: ElementSceny[];
     };
 
@@ -86,6 +121,22 @@ export interface Scena {
   elementy: ElementSceny[];
   /** Kontury wszystkich glifów użytych w scenie – każdy zapisany raz. */
   glify: Record<string, DefinicjaGlifu>;
+  /** Rysunki użyte w scenie przez `symbol` – każdy zapisany raz (SVG `<use>`, PDF XObject). */
+  symbole?: Record<string, DefinicjaSymbolu>;
+}
+
+/** Łączy słowniki symboli (np. kart na arkuszu). Ten sam klucz = ten sam rysunek. */
+export function polaczSymbole(
+  ...slowniki: (Record<string, DefinicjaSymbolu> | undefined)[]
+): Record<string, DefinicjaSymbolu> {
+  const wynik: Record<string, DefinicjaSymbolu> = {};
+  for (const s of slowniki) if (s) Object.assign(wynik, s);
+  return wynik;
+}
+
+/** Kolor symbolu: stały zapis albo kolor wstawienia (domyślnie czarny). */
+export function kolorSymbolu(k: KolorSymbolu, kolorWstawienia: Kolor | undefined): string {
+  return k === 'kolor' ? kolorSceny(kolorWstawienia) : kolorSceny(k);
 }
 
 /** Łączy słowniki glifów (np. kart na arkuszu). Ten sam klucz = ten sam glif. */
@@ -112,4 +163,12 @@ export function kolorSceny(k: string | undefined): string {
 /** Obrys rysowany tylko przy dodatniej grubości (SVG i PDF zachowują się wtedy tak samo). */
 export function czyObrys(o: Obrys | undefined): o is Obrys {
   return o !== undefined && o.grubosc > 0;
+}
+
+/** Fragment sceny ze słownikiem symboli – pusty, gdy żadnego nie użyto (scena bez ozdobników bez zmian). */
+export function symboleSceny(...slowniki: (Record<string, DefinicjaSymbolu> | undefined)[]): {
+  symbole?: Record<string, DefinicjaSymbolu>;
+} {
+  const symbole = polaczSymbole(...slowniki);
+  return Object.keys(symbole).length > 0 ? { symbole } : {};
 }

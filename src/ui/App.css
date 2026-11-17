@@ -1364,3 +1364,36 @@ button.maly {
   display: flex;
   gap: 0.25rem;
 }
+
+/* Wybór narożnika ramki (miniatury z biblioteki ozdobników). */
+.wybor-narozniki {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 4px;
+}
+.wybor-narozniki button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border: 1px solid #c9c4b8;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  min-height: 56px;
+  justify-content: center;
+}
+.wybor-narozniki button[aria-pressed='true'] {
+  border-color: #2f5d8a;
+  box-shadow: 0 0 0 1px #2f5d8a;
+  background: #eef4fb;
+}
+.wybor-narozniki small {
+  font-size: 0.7rem;
+  color: #444;
+}
+.przelacznik-segmentowy button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

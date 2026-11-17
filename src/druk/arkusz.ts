@@ -23,6 +23,9 @@ import { renderujKarte, type InformacjaOObrazie, type Ostrzezenie } from '../sil
 import {
   kolorSceny,
   polaczGlify,
+  symboleSceny,
+  type DefinicjaSymbolu,
+  type KolorSymbolu,
   type DefinicjaGlifu,
   type ElementSceny,
   type Scena,
@@ -273,6 +276,35 @@ function liniaCiecia(o: { x1: Mm; y1: Mm; x2: Mm; y2: Mm }, l: LinieCiecia): Ele
   };
 }
 
+/**
+ * Stałe kolory w definicjach symboli na szarości (kolor `'kolor'` zostaje – szarzy go element
+ * `symbol` przy wstawieniu).
+ */
+export function symboleWSzarosci(
+  slownik: Record<string, DefinicjaSymbolu> | undefined,
+): Record<string, DefinicjaSymbolu> | undefined {
+  if (!slownik) return slownik;
+  const szary = (k: KolorSymbolu): KolorSymbolu =>
+    k === 'kolor'
+      ? k
+      : wSkaliSzarosci([{ typ: 'sciezka', kontur: [], wypelnienie: k }]).map(
+          (e) => (e as { wypelnienie: string }).wypelnienie,
+        )[0]!;
+  return Object.fromEntries(
+    Object.entries(slownik).map(([k, d]) => [
+      k,
+      {
+        ...d,
+        kontury: d.kontury.map((c) => ({
+          ...c,
+          ...(c.wypelnienie ? { wypelnienie: szary(c.wypelnienie) } : {}),
+          ...(c.obrys ? { obrys: { ...c.obrys, kolor: szary(c.obrys.kolor) } } : {}),
+        })),
+      },
+    ]),
+  );
+}
+
 /** Zamienia kolory sceny na szarości (luminancja). */
 export function wSkaliSzarosci(elementy: ElementSceny[]): ElementSceny[] {
   const szary = (k: string) => {
@@ -297,6 +329,8 @@ export function wSkaliSzarosci(elementy: ElementSceny[]): ElementSceny[] {
         return { ...e, obrys: obr(e.obrys) };
       case 'obraz':
         return e;
+      case 'symbol':
+        return e.kolor ? { ...e, kolor: szary(e.kolor) } : e;
       default:
         return {
           ...e,
@@ -503,6 +537,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
     const glify: Record<string, DefinicjaGlifu>[] = [];
+    const symbole: (Record<string, DefinicjaSymbolu> | undefined)[] = [];
     const naStronie = rozmieszczenie.karty.filter((c) => c.strona === n);
     const prostokaty = naStronie.map((c) => {
       const x = poczatek.x + c.xRegionu + odstepKolumny(n, c.kolumna) + c.kolumna * slot.szerokosc;
@@ -545,6 +580,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     naStronie.forEach((c, i) => {
       const s = scenaKarty(c.karta);
       glify.push(s.glify);
+      symbole.push(s.symbole);
       const k = prostokaty[i]!.karta;
       elementy.push({ typ: 'grupa', x: k.x, y: k.y, elementy: s.elementy });
     });
@@ -640,6 +676,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       wys: strona.wys,
       elementy: u.czarnoBialy ? wSkaliSzarosci(elementy) : elementy,
       glify: polaczGlify(...glify),
+      ...symboleSceny(...(u.czarnoBialy ? symbole.map(symboleWSzarosci) : symbole)),
     });
   }
   return {
@@ -758,10 +795,12 @@ function zbudujMieszane(w: {
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
     const glify: Record<string, DefinicjaGlifu>[] = [];
+    const symbole: (Record<string, DefinicjaSymbolu> | undefined)[] = [];
     const naStronie = karty.filter((c) => c.strona === n);
     for (const c of naStronie) {
       const s = scenaKarty(c.karta);
       glify.push(s.glify);
+      symbole.push(s.symbole);
       // Obrót o 90° zgodnie z ruchem wskazówek: obrócona karta zajmuje (wys × szer) od (x, y).
       elementy.push(
         c.obrocona
@@ -839,6 +878,7 @@ function zbudujMieszane(w: {
       wys: strona.wys,
       elementy: u.czarnoBialy ? wSkaliSzarosci(elementy) : elementy,
       glify: polaczGlify(...glify),
+      ...symboleSceny(...(u.czarnoBialy ? symbole.map(symboleWSzarosci) : symbole)),
     });
   }
   return {

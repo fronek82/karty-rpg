@@ -16,10 +16,11 @@ Pakiety szablonów: `src/pakiety/mausritter/LICENCJE.md`.
 
 Własne rysunki projektu (licencja jak kod, MIT), generowane skryptami z `narzedzia/`:
 
-| Zasób                        | Ścieżka                                       | Skrypt                         |
-| ---------------------------- | --------------------------------------------- | ------------------------------ |
-| Obrazek zastępczy pakietu    | `src/pakiety/mausritter/obrazy/zastepczy.png` | `narzedzia/obraz-zastepczy.py` |
-| Obrazek testowy (litera „F”) | `testy/zasoby/litera-f.png`                   | `narzedzia/obraz-testowy.py`   |
+| Zasób                                                                              | Ścieżka                                                 | Skrypt                                                  |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------- |
+| Obrazek zastępczy pakietu                                                          | `src/pakiety/mausritter/obrazy/zastepczy.png`           | `narzedzia/obraz-zastepczy.py`                          |
+| Obrazek testowy (litera „F”)                                                       | `testy/zasoby/litera-f.png`                             | `narzedzia/obraz-testowy.py`                            |
+| Narożniki ozdobne (6 wbudowanych: kątownik, liść, okucie, gwiazda, węzeł, zawijas) | `src/ozdobniki/katalog.ts` (ścieżki wektorowe w kodzie) | rysowane ręcznie jako kontury, bez zasobów zewnętrznych |
 
 ## Narzędzia testowe (nie trafiają do aplikacji)
 
