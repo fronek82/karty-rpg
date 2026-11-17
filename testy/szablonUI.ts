@@ -5,6 +5,9 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * właściwości) – do testów przykładów M2-5. Każdy krok to to, co zrobiłby użytkownik.
  */
 
+/** Tekst jako dosłowny fragment wyrażenia regularnego. */
+export const dokladnie = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export const drzewo = (page: Page) => page.getByRole('tree', { name: 'Struktura karty' });
 export const panel = (page: Page) => page.getByRole('complementary', { name: 'Właściwości' });
 
@@ -35,7 +38,7 @@ export async function kreator(
 export async function zaznacz(page: Page, nazwa: string, nr = 0) {
   const el = drzewo(page)
     .getByRole('treeitem', {
-      name: new RegExp(`^${nazwa.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} – `),
+      name: new RegExp(`^${dokladnie(nazwa)} – `),
     })
     .nth(nr);
   await el.locator(':scope > .wezel-etykieta').click();
@@ -59,11 +62,13 @@ export async function sekcja(page: Page, tytul: string, nr = 0): Promise<Locator
     // Nagłówek sekcji bezpośrednio w niej (sekcja zawiera też nagłówki sekcji zagnieżdżonych).
     .locator('details.sekcja-panelu', { has: page.locator(`:scope > summary:text-is("${tytul}")`) })
     .nth(nr);
-  // Otwiera też sekcje nadrzędne (np. „Styl etykiety” w „Etykieta”).
-  await s.evaluate((d) => {
-    for (let e: Element | null = d; e; e = e.parentElement?.closest('details') ?? null)
-      (e as HTMLDetailsElement).open = true;
-  });
+  // Otwiera kliknięciem w nagłówek – najpierw sekcje nadrzędne (np. „Etykieta” dla „Styl
+  // etykiety”), potem samą sekcję.
+  const zamkniete = s.locator('xpath=ancestor-or-self::details[not(@open)]');
+  while ((await zamkniete.count()) > 0) {
+    await zamkniete.first().locator(':scope > summary').click();
+  }
+  await expect(s).toHaveAttribute('open', '');
   return s;
 }
 
@@ -71,6 +76,7 @@ const przycisk = (s: Locator, nazwa: string) => s.getByRole('button', { name: na
 const wlacz = async (s: Locator, nazwa: string, wartosc: boolean) => {
   const b = przycisk(s, nazwa);
   if ((await b.getAttribute('aria-pressed')) !== String(wartosc)) await b.click();
+  await expect(b).toHaveAttribute('aria-pressed', String(wartosc));
 };
 
 /** Styl tekstu w podanej sekcji (styl pola, etykiety, nagłówków). */
@@ -190,7 +196,7 @@ export async function karta(page: Page) {
 export async function kartaNaKartce(page: Page, szablon: string, dane: Record<string, string>) {
   await page.getByRole('button', { name: 'Rób karty ►' }).click();
   await page.getByRole('button', { name: /^Pusty slot – strona 1, kolumna 1, rząd 1/ }).click();
-  await page.getByRole('menuitem', { name: new RegExp(szablon) }).click();
+  await page.getByRole('menuitem', { name: new RegExp(dokladnie(szablon)) }).click();
   const p = page.getByRole('complementary', { name: 'Zaznaczone karty' });
   for (const [pole, wartosc] of Object.entries(dane))
     await p.getByLabel(pole, { exact: true }).fill(wartosc);

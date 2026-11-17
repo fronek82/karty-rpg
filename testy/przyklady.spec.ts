@@ -12,7 +12,7 @@ import {
   szablonStatystyk,
   szablonWroga,
 } from '../src/silnik/__testy__/przyklady';
-import type { Szablon } from '../src/model/szablon';
+import type { Szablon, Wezel } from '../src/model/szablon';
 import {
   dodaj,
   drzewo,
@@ -34,17 +34,35 @@ import {
  * Kryterium M2: trzy przykłady (karta czaru, blok statystyk, karta wroga) zbudowane od zera
  * WYŁĄCZNIE przez interfejs, z ogólnych klocków edytora. Dla każdego: karta na kartce, wzorzec
  * wizualny karty i porównanie z szablonem wzorcowym (`src/silnik/__testy__/przyklady.ts`) –
- * ta sama treść daje tyle samo znaków na karcie i żadnych ostrzeżeń.
+ * ten sam tekst (glify, czcionki, rozmiary, kolory i położenie) i żadnych ostrzeżeń.
  */
 
 test.use({ viewport: { width: 1440, height: 1100 } });
 test.setTimeout(180_000);
 
-const liczGlify = (s: Scena) =>
-  s.elementy.reduce((a, e) => a + (e.typ === 'tekst' ? e.glify.length : 0), 0);
+/**
+ * Tekst sceny w kolejności rysowania: kolor, a dla każdego glifu klucz (czcionka, wariant,
+ * glif – więc też kapitaliki i wersaliki) i skala (rozmiar). Położenia glifów w poziomie
+ * porównuje `poziomo` z tolerancją 0,2 mm; odstępy w pionie mogą się różnić od wzorca
+ * o ułamki mm (domyślne odstępy klocków) – układ pionowy sprawdza wzorzec wizualny.
+ */
+const tekstSceny = (s: Scena) =>
+  s.elementy.flatMap((e) =>
+    e.typ === 'tekst'
+      ? [`${e.kolor}|${e.glify.map((g) => `${g.klucz}@${g.skala.toPrecision(4)}`).join(' ')}`]
+      : [],
+  );
+const poziomo = (s: Scena) =>
+  s.elementy.flatMap((e) => (e.typ === 'tekst' ? e.glify.map((g) => g.x) : []));
 
 /** Eksport projektu z interfejsu → karta i szablon odczytane w Node → render silnikiem. */
-async function porownajZWzorcem(page: Page, wzorzec: Szablon, daneWzorca: Record<string, string>) {
+async function porownajZWzorcem(
+  page: Page,
+  wzorzec: Szablon,
+  daneWzorca: Record<string, string>,
+  /** Pola zwijane (nazwa w edytorze → klucz we wzorcu): puste znikają razem z etykietą. */
+  zwijane: Record<string, string> = {},
+) {
   const [plik] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button', { name: /Eksportuj/ }).click(),
@@ -56,13 +74,44 @@ async function porownajZWzorcem(page: Page, wzorzec: Szablon, daneWzorca: Record
   const zUI = renderujKarte(s, k, { czcionki });
   const wzor = renderujKarte(wzorzec, { dane: daneWzorca }, { czcionki });
   expect(zUI.ostrzezenia).toEqual([]);
-  expect(liczGlify(zUI.scena)).toBe(liczGlify(wzor.scena));
+  expect(wzor.ostrzezenia).toEqual([]);
+  expect(tekstSceny(zUI.scena)).toEqual(tekstSceny(wzor.scena));
+  const x0 = poziomo(wzor.scena);
+  const odchylenie = Math.max(...poziomo(zUI.scena).map((x, i) => Math.abs(x - x0[i]!)));
+  expect(odchylenie).toBeLessThan(0.2);
   expect(zUI.scena.szer).toBe(wzor.scena.szer);
   expect(zUI.scena.wys).toBe(wzor.scena.wys);
+  if (Object.keys(zwijane).length) {
+    // Klucz pola nadany w edytorze (zostaje z chwili utworzenia) – szukany po nazwie.
+    const kluczUI = (nazwa: string, w: Wezel = s.korzen): string | undefined =>
+      w.nazwa === nazwa && 'klucz' in w
+        ? (w.klucz as string)
+        : 'dzieci' in w
+          ? w.dzieci.map((d) => kluczUI(nazwa, d)).find(Boolean)
+          : undefined;
+    const bez = (d: Record<string, string>, klucze: (string | undefined)[]) => ({
+      ...d,
+      ...Object.fromEntries(klucze.map((z) => [z!, ''])),
+    });
+    const kluczeUI = Object.keys(zwijane).map((n) => kluczUI(n));
+    expect(kluczeUI.every((z) => z && k.dane[z])).toBe(true);
+    const pustUI = renderujKarte(s, { ...k, dane: bez(k.dane, kluczeUI) }, { czcionki });
+    const pustWzor = renderujKarte(
+      wzorzec,
+      { dane: bez(daneWzorca, Object.values(zwijane)) },
+      { czcionki },
+    );
+    // Etykiety pustych pól znikają: mniej tekstów niż z danymi, tak samo jak we wzorcu.
+    expect(tekstSceny(pustUI.scena).length).toBeLessThan(tekstSceny(zUI.scena).length);
+    expect(tekstSceny(pustUI.scena)).toEqual(tekstSceny(pustWzor.scena));
+  }
 }
 
 async function wzorzecKarty(page: Page, nazwa: string) {
+  // Fokus z pola panelu (skróty kartki pomijają zdarzenia z pól), potem odznaczenie karty.
+  await page.locator(':focus').blur();
   await page.keyboard.press('Escape');
+  await expect(page.locator('.karta-na-kartce.zaznaczona')).toHaveCount(0);
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
   await expect(page.locator('[data-karta]')).toHaveScreenshot(nazwa, { maxDiffPixelRatio: 0.002 });
 }
@@ -89,6 +138,7 @@ test('A. karta czaru: kolorowa karta, białe panele, siatka 2×2 etykieta/warto�
       .locator(':scope > .wezel-etykieta')
       .click({ modifiers: ['Shift'] });
   await expect(panel(page)).toContainText('Zmiany dotyczą wszystkich zaznaczonych');
+  await expect(drzewo(page).locator('[aria-selected="true"]')).toHaveCount(4);
   await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 8, wyrownanie: 'do środka' });
   await styl(await sekcja(page, 'Styl etykiety'), {
     rozmiar: 5.5,
@@ -124,6 +174,7 @@ test('A. karta czaru: kolorowa karta, białe panele, siatka 2×2 etykieta/warto�
     .getByRole('treeitem', { name: /^Klasa – / })
     .locator(':scope > .wezel-etykieta')
     .click({ modifiers: ['Shift'] });
+  await expect(drzewo(page).locator('[aria-selected="true"]')).toHaveCount(2);
   await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 7, kursywa: true, kolor: '#ffffff' });
 
   // Ramka całej karty i odstępy karty.
@@ -169,7 +220,12 @@ test('B. blok statystyk: tytuł kapitalikami, tabela cech, separator, akapity wy
 
   // Tabela za tytułem: 12 kolumn z nagłówkami.
   await dodaj(page, 'Tabela', 'Cechy');
-  await sekcja(page, 'Kolumny (3)');
+  await sekcja(
+    page,
+    `Kolumny (${await panel(page)
+      .getByLabel(/^Nagłówek kolumny/)
+      .count()})`,
+  );
   for (let i = 3; i < CECHY.length; i++)
     await panel(page).getByRole('button', { name: '＋ Dodaj kolumnę' }).click();
   for (const [i, c] of CECHY.entries())
@@ -249,21 +305,22 @@ test('C. karta wroga: zagnieżdżony nagłówek, wartości w rombach z etykietą
     styl: { rozmiar: 4.5, pogrubienie: true, wielkie: true, kolor: '#9b1c1c', minRozmiar: 3.5 },
   });
   await wyglad(page, { ramka: { grubosc: 0.35, kolor: '#9b1c1c' } });
+  const struktura = page.getByRole('complementary', { name: 'Struktura karty' });
   for (const nazwa of ['Siła', 'Zbroja', 'Nienawiść', 'Poziom']) {
-    await page
-      .getByRole('complementary', { name: 'Struktura karty' })
-      .getByRole('button', { name: 'Duplikuj', exact: true })
-      .click();
+    await struktura.getByRole('button', { name: 'Duplikuj', exact: true }).click();
     await nazwij(page, nazwa);
   }
   // Poziom do nagłówka: wyjmij z wiersza, wyżej, do kontenera powyżej (Nagłówek).
-  await page.getByRole('button', { name: '← Wyjmij z kontenera' }).click();
-  await page.getByRole('button', { name: '↑ Wyżej' }).click();
-  await page.getByRole('button', { name: '→ Do kontenera powyżej' }).click();
-  await expect(drzewo(page).getByRole('treeitem', { name: /^Poziom – / })).toHaveAttribute(
-    'aria-level',
-    '3',
-  );
+  await struktura.getByRole('button', { name: '← Wyjmij z kontenera' }).click();
+  await struktura.getByRole('button', { name: '↑ Wyżej' }).click();
+  await struktura.getByRole('button', { name: '→ Do kontenera powyżej' }).click();
+  // Poziom jest ostatnim dzieckiem Nagłówka, za kolumną Tytuł.
+  const wNaglowku = drzewo(page)
+    .getByRole('treeitem', { name: /^Nagłówek – / })
+    .locator(':scope > [role=group] > [role=treeitem]');
+  await expect(wNaglowku).toHaveCount(2);
+  await expect(wNaglowku.nth(0)).toHaveAccessibleName(/^Tytuł – /);
+  await expect(wNaglowku.nth(1)).toHaveAccessibleName(/^Poziom – /);
 
   await karta(page);
   await dodaj(page, 'Separator', 'Kreska');
@@ -302,5 +359,8 @@ test('C. karta wroga: zagnieżdżony nagłówek, wartości w rombach z etykietą
     Zdolności: daneWroga.zdolnosci,
   });
   await wzorzecKarty(page, 'przyklad-wrog.png');
-  await porownajZWzorcem(page, szablonWroga, daneWroga);
+  await porownajZWzorcem(page, szablonWroga, daneWroga, {
+    Broń: 'bron',
+    Zdolności: 'zdolnosci',
+  });
 });
