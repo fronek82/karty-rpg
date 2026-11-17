@@ -1287,7 +1287,12 @@ export function EdytorKartki({
                 const s = ctx?.szablony.get(typ.warianty[0]!.szablonId);
                 // Własne karty: jedna kartka = jeden rozmiar karty.
                 const slotK = k.wynik?.slot ?? k.arkusz.ustawienia.slot;
-                if (bezGry && s && slotK && !pasujeDoSlotu(s, slotK))
+                if (
+                  bezGry &&
+                  s &&
+                  slotK &&
+                  !pasujeDoSlotu(s, slotK, k.arkusz.ustawienia.dopasowanie)
+                )
                   return t('kartka.innyRozmiar', { rozmiar: opisRozmiaruSzablonu(s) });
                 const ok =
                   !!menu &&

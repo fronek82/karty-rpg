@@ -230,5 +230,9 @@ Każdy etap to **jeden ciąg pracy i jeden PR** od aktualnego `main`: kod + test
 
 Rozstrzygnięcia przyjęte w trakcie M2b, których plan nie przesądza. Numeracja kontynuuje `plan-M2.md` (od B39). Każde da się łatwo zmienić.
 
-| #   | Etap | Sprawa | Decyzja |
-| --- | ---- | ------ | ------- |
+| #   | Etap  | Sprawa                  | Decyzja                                                                                                                                                                                                                                                    |
+| --- | ----- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B39 | M2b-1 | Gdzie `pasujeDoSlotu`   | Czysta funkcja na wymiarach w `src/model/arkusz.ts` (używa jej `zbudujArkusz`); `dane/wlasneKarty.ts` ma cienką nakładkę na `Szablon`. Luz bierze z `ustawienia.dopasowanie`, bez niego 0,5 mm.                                                            |
+| B40 | M2b-1 | Nowe kartki             | Dopasowanie domyślne (luz 1 mm) dostają kartki tworzone przez `ustawieniaKartkiDla`; kartki z pakietów i z zapisanych projektów go nie mają (zachowanie bez zmian). Panel dla kartki bez pola pokazuje luz 0,5 mm i dopiero edycja zapisuje `dopasowanie`. |
+| B41 | M2b-1 | Tło do slotu            | Rysowane tylko gdy szablon ma `tlo`; promień rogów z `promienRogow` karty. Linie „wokół karty” zawsze obrysowują każdą kartę osobno (bez wspólnych boków), wydruk testowy bierze rozmiar karty z pierwszego szablonu w trybie mm.                          |
+| B42 | M2b-1 | Sekcja „Karta w slocie” | Widoczna w obu trybach układu (automatyczny i własny), nad polami siatki w panelu układu.                                                                                                                                                                  |

@@ -158,3 +158,43 @@ test('kalibracja zapamiętana w przeglądarce, wydruk testowy, eksport PNG/JPG 3
   // JPG: znacznik SOI.
   expect([...pliki['1-ognista-kula.jpg']!.subarray(0, 2)]).toEqual([0xff, 0xd8]);
 });
+
+test('luz karty w slocie (M2b-1): 63×88 w slocie 63,5×89 bez ostrzeżeń, luz w presecie', async ({
+  page,
+}) => {
+  const ust = await kartkaCzaru(page);
+  const tryb = ust.getByRole('group', { name: 'Układ kart na kartce' });
+  await tryb.getByRole('button', { name: 'własny układ arkusza' }).click();
+  const sekcja = ust.getByRole('group', { name: 'Karta w slocie' });
+  // Nowa kartka: luz 1 mm.
+  await expect(sekcja.getByLabel('Luz (mm)')).toHaveValue('1');
+  await ust.getByLabel('Szerokość karty (mm)').fill('63.5');
+  await ust.getByLabel('Wysokość karty (mm)').fill('89');
+  await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
+  // Luz 0 – karta mniejsza od slotu już nie pasuje.
+  await sekcja.getByLabel('Luz (mm)').fill('0');
+  await expect(page.locator('.ostrzezenia-projektu')).toContainText('innym rozmiarze');
+  await sekcja.getByLabel('Luz (mm)').fill('1.5');
+  await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
+  await sekcja.getByRole('button', { name: 'Lewy górny róg' }).click();
+  await sekcja.getByLabel('Tło do krawędzi slotu').check();
+  await sekcja.getByRole('button', { name: 'Wokół karty' }).click();
+  await expect(sekcja.getByRole('button', { name: 'Wokół karty' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  if (process.env.ZRZUTY) await ust.screenshot({ path: 'docs/obrazy/m2b-1-karta-w-slocie.png' });
+  // Preset zapisuje luz i „Użyj” go przywraca.
+  await ust.getByLabel('Nazwa układu').fill('Perforacja 63,5×89');
+  await ust.getByRole('button', { name: 'Zapisz jako mój układ' }).click();
+  await expect(ust).toContainText('Zapisano układ');
+  await sekcja.getByLabel('Luz (mm)').fill('0.5');
+  await ust.getByRole('button', { name: 'Użyj układu Perforacja 63,5×89' }).click();
+  await expect(sekcja.getByLabel('Luz (mm)')).toHaveValue('1.5');
+  await ust.getByRole('button', { name: 'Usuń układ Perforacja 63,5×89' }).click();
+  const [test] = await Promise.all([
+    page.waitForEvent('download'),
+    ust.getByRole('button', { name: 'Wydruk testowy (PDF)' }).click(),
+  ]);
+  expect(test.suggestedFilename()).toMatch(/wydruk-testowy.*\.pdf$/);
+});

@@ -5,7 +5,9 @@ import {
   czyFormatZdjeciowy,
   MARGINES_BEZPIECZENSTWA_FOTO,
   SLOT_DOMYSLNY,
-  TOLERANCJA_ROZMIARU,
+  DOPASOWANIE_DOMYSLNE,
+  pasujeDoSlotu as pasujeDoSlotuMm,
+  type DopasowanieDoSlotu,
   wymiaryStrony,
   type Papier,
   type UstawieniaArkusza,
@@ -91,6 +93,7 @@ export function ustawieniaKartkiDla(
       odstepOdKart: 2,
     },
     slot: slotSzablonu(szablon),
+    dopasowanie: { ...DOPASOWANIE_DOMYSLNE },
   };
   const pozioma: UstawieniaArkusza = { ...baza, orientacja: 'pozioma' };
   return slotyNaStronie(pozioma, baza.slot!).razem > slotyNaStronie(baza, baza.slot!).razem
@@ -125,13 +128,13 @@ export function typyZSzablonow(szablony: readonly Szablon[]): TypKarty[] {
   });
 }
 
-/** Czy szablon pasuje do slotu kartki (ten sam wymiar karty w mm albo ten sam slot, ±0,5 mm). */
-export function pasujeDoSlotu(s: Szablon, slot: { szerokosc: Mm; wysokosc: Mm }): boolean {
-  const w = slotSzablonu(s);
-  return (
-    Math.abs(w.szerokosc - slot.szerokosc) <= TOLERANCJA_ROZMIARU &&
-    Math.abs(w.wysokosc - slot.wysokosc) <= TOLERANCJA_ROZMIARU
-  );
+/** Czy szablon pasuje do slotu kartki (luz z jej `dopasowanie`, bez niego ±0,5 mm). */
+export function pasujeDoSlotu(
+  s: Szablon,
+  slot: { szerokosc: Mm; wysokosc: Mm },
+  dopasowanie?: Pick<DopasowanieDoSlotu, 'luz'>,
+): boolean {
+  return pasujeDoSlotuMm(slotSzablonu(s), slot, dopasowanie);
 }
 
 /** Opis rozmiaru karty szablonu dla użytkownika, np. „63×88 mm” (domyślny rozmiar karty). */
@@ -166,7 +169,11 @@ export function dodajSzablonZKartka(
   };
   const szablony = new Map(p.szablony.map((x) => [x.id, x]));
   const talia = (a: Projekt['arkusze'][number]) => p.talie.find((x) => x.id === a.taliaId);
-  if (p.arkusze.some((a) => pasujeDoSlotu(s, slotKartki(a, talia(a), szablony))))
+  if (
+    p.arkusze.some((a) =>
+      pasujeDoSlotu(s, slotKartki(a, talia(a), szablony), a.ustawienia.dopasowanie),
+    )
+  )
     return { ...w, projekt: p, nowaKartka: false };
   const wzor = p.arkusze[0]?.ustawienia;
   const { projekt: zKartka } = dodajKartke(
@@ -251,6 +258,7 @@ export function zmienRozmiarSzablonu(p: Projekt, szablonId: string, szer: Mm, wy
             p.talie.find((x) => x.id === a.taliaId),
             new Map(p.szablony.map((x) => [x.id, x])),
           ),
+          a.ustawienia.dopasowanie,
         ) &&
         slotyNaStronie(a.ustawienia, slot).razem === 0 &&
         slotyNaStronie(
@@ -273,7 +281,8 @@ export function zmienRozmiarSzablonu(p: Projekt, szablonId: string, szer: Mm, wy
       const karty = talia?.karty ?? [];
       const tylkoTen = karty.length > 0 && karty.every((k) => k.szablonId === szablonId);
       const pustaTegoRozmiaru =
-        karty.length === 0 && pasujeDoSlotu(s, slotKartki(a, talia, szablony));
+        karty.length === 0 &&
+        pasujeDoSlotu(s, slotKartki(a, talia, szablony), a.ustawienia.dopasowanie);
       if (!tylkoTen && !pustaTegoRozmiaru) return a;
       // Nowy slot; orientacja ta, w której mieści się więcej kart.
       const u = { ...a.ustawienia, slot };
@@ -308,6 +317,7 @@ export function kartkaDlaSzablonu(
         p.talie.find((x) => x.id === a.taliaId),
         szablony,
       ),
+      a.ustawienia.dopasowanie,
     ),
   );
   if (jest) return { projekt: p, arkuszId: jest.id };

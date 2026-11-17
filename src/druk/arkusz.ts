@@ -1,7 +1,8 @@
 import type { Mm } from '../model/jednostki';
 import {
   SLOT_DOMYSLNY,
-  TOLERANCJA_ROZMIARU,
+  pasujeDoSlotu as wymiarPasujeDoSlotu,
+  polozenieKarty,
   wymiaryStrony,
   type Arkusz,
   type LinieCiecia,
@@ -115,6 +116,8 @@ export function odcinkiCiecia(
   slot: { szerokosc: Mm; wysokosc: Mm },
   /** Odstępy między kartami własnego układu – karta zajmująca kilka slotów obejmuje też odstępy. */
   odstep: { x: Mm; y: Mm } = { x: 0, y: 0 },
+  /** Obrys każdej karty osobno, wokół samej karty (a nie wokół slotu). */
+  wokolKarty = false,
 ): { x1: Mm; y1: Mm; x2: Mm; y2: Mm }[] {
   const mapa = new Map<string, { x1: Mm; y1: Mm; x2: Mm; y2: Mm }>();
   const k = (v: number) => Math.round(v * 1000);
@@ -125,7 +128,7 @@ export function odcinkiCiecia(
   for (const c of karty) {
     const sz = slot.szerokosc;
     const wy = slot.wysokosc;
-    if (odstep.x > 0 || odstep.y > 0) {
+    if (wokolKarty || odstep.x > 0 || odstep.y > 0) {
       // Karty z odstępami nie mają wspólnych boków – obrys każdej osobno, wokół samej karty.
       const r = c.karta ?? {
         x: c.x,
@@ -234,18 +237,13 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   const szablon = (k: Karta) => ctx.szablony.get(k.szablonId);
 
   const slot = slotKartki(arkusz, talia, ctx.szablony);
-  const rozny = (a: Mm, b: Mm) => Math.abs(a - b) > TOLERANCJA_ROZMIARU;
+  const dop = u.dopasowanie;
   const karty = talia.karty.filter((k) => {
     const s = szablon(k);
     if (!s) ostrzezenia.push({ kartaId: k.id, komunikat: 'brak-szablonu' });
     // Karta w mm zajmuje jeden slot (kartka ma slot = wymiar karty), karta w slotach – całe sloty
     // kartki; inny wymiar karty / slotu – ostrzeżenie.
-    else if (
-      s.rozmiar.tryb === 'mm'
-        ? rozny(s.rozmiar.szerokosc, slot.szerokosc) || rozny(s.rozmiar.wysokosc, slot.wysokosc)
-        : rozny(s.rozmiar.slot.szerokosc, slot.szerokosc) ||
-          rozny(s.rozmiar.slot.wysokosc, slot.wysokosc)
-    )
+    else if (!wymiarPasujeDoSlotu(s.rozmiar.tryb === 'mm' ? s.rozmiar : s.rozmiar.slot, slot, dop))
       ostrzezenia.push({ kartaId: k.id, komunikat: 'karta-inny-rozmiar' });
     return s !== undefined;
   });
@@ -446,13 +444,30 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         kolumny: c.kolumny,
         rzedy: c.rzedy,
         karta: {
-          x: x + Math.max(0, (obszarX - szer) / 2),
-          y: y + Math.max(0, (obszarY - wys) / 2),
+          ...polozenieKarty({ x, y, szer: obszarX, wys: obszarY }, { szer, wys }, dop),
           szer,
           wys,
         },
+        obszar: { x, y, szer: obszarX, wys: obszarY },
       };
     });
+    // Tło do krawędzi slotu: przy przesunięciu druku względem perforacji nie widać papieru.
+    // Wszystkie tła przed kartami – tło sąsiedniego slotu nie zakryje wystającej (≤ 0,5 mm) karty.
+    if (dop?.tloDoSlotu)
+      naStronie.forEach((c, i) => {
+        const sz = szablon(c.karta)!;
+        const ob = prostokaty[i]!.obszar;
+        if (sz.tlo)
+          elementy.push({
+            typ: 'prostokat',
+            x: ob.x,
+            y: ob.y,
+            szer: ob.szer,
+            wys: ob.wys,
+            ...(sz.promienRogow ? { promien: sz.promienRogow } : {}),
+            wypelnienie: sz.tlo,
+          });
+      });
     naStronie.forEach((c, i) => {
       const s = scenaKarty(c.karta);
       glify.push(s.glify);
@@ -473,7 +488,10 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
           ostrzezenia.push({ kartaId: c.karta.id, komunikat: 'karta-w-strefie-przyciecia' });
       });
     }
-    const odcinki = uklad && !uklad.linieCiecia ? [] : odcinkiCiecia(prostokaty, slot, odstep);
+    const odcinki =
+      uklad && !uklad.linieCiecia
+        ? []
+        : odcinkiCiecia(prostokaty, slot, odstep, dop?.linie === 'karta');
     for (const o of odcinki) elementy.push(liniaCiecia(o, u.linie));
 
     const dolSiatki = poczatek.y + rzedySiatki * slot.wysokosc + odstepRzedu(rzedySiatki - 1);
@@ -704,7 +722,19 @@ export function stronaTestowa(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza
           wys: s.wysokosc,
         };
       });
-  pola.forEach((p, i) => {
+  // Obrysy wokół karty (nie slotu): rozmiar karty z pierwszego szablonu talii w trybie mm.
+  const dop = arkusz.ustawienia.dopasowanie;
+  const wzor = talia.karty
+    .map((k) => ctx.szablony.get(k.szablonId))
+    .find((x) => x?.rozmiar.tryb === 'mm');
+  const rozmiarKarty = dop?.linie === 'karta' && wzor ? wymiaryKarty(wzor) : undefined;
+  pola.forEach((slotPola, i) => {
+    const p =
+      rozmiarKarty &&
+      slotPola.szer >= rozmiarKarty.szer - 1e-6 &&
+      slotPola.wys >= rozmiarKarty.wys - 1e-6
+        ? { ...polozenieKarty(slotPola, rozmiarKarty, dop), ...rozmiarKarty }
+        : slotPola;
     elementy.push({ typ: 'prostokat', ...p, obrys });
     const cx = p.x + p.szer / 2;
     const cy = p.y + p.wys / 2;

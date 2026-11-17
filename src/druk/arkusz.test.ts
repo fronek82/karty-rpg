@@ -502,3 +502,176 @@ describe('wydruk testowy i kalibracja', () => {
     expect(p.elementy).toEqual([{ typ: 'grupa', x: 1.5, y: -0.5, elementy: s.elementy }]);
   });
 });
+
+describe('luz karty w slocie (dopasowanie)', () => {
+  const ctxL = {
+    czcionki: rejestrTestowy().przypiszRole('tytul', 'EB Garamond'),
+    szablony: new Map<string, Szablon>(),
+  };
+  const karta = (szer: number, wys: number, tlo?: string): Szablon => ({
+    ...szablonCzaru,
+    id: `s-${szer}x${wys}`,
+    rozmiar: { tryb: 'mm', szerokosc: szer, wysokosc: wys },
+    ...(tlo ? { tlo, promienRogow: 2 } : {}),
+  });
+  const uklad: UkladArkusza = {
+    kolumny: 3,
+    rzedy: 3,
+    gora: 10,
+    lewo: 10,
+    odstepPoziomy: 0,
+    odstepPionowy: 0,
+    linieCiecia: true,
+  };
+  const zbuduj = (
+    s: Szablon,
+    z: Partial<Arkusz['ustawienia']>,
+    slot = { szerokosc: 63.5, wysokosc: 89 },
+  ) => {
+    const ctx2 = { ...ctxL, szablony: new Map([[s.id, s]]) };
+    const a: Arkusz = {
+      id: 'a',
+      nazwa: 'a',
+      taliaId: 't',
+      ustawienia: { ...ustawieniaKartkiDla(s), slot, uklad, ...z },
+    };
+    const t: Talia = {
+      id: 't',
+      nazwa: 't',
+      karty: [{ id: 'k', szablonId: s.id, dane: daneCzaru, ilosc: 1 }],
+    };
+    return { w: zbudujArkusz(a, t, ctx2), a, t, ctx2 };
+  };
+  const dop = { luz: 1, polozenie: 'srodek', tloDoSlotu: false, linie: 'slot' } as const;
+
+  it('63×88 w slocie 63,5×89 na nowej kartce (luz 1 mm) – bez ostrzeżeń', () => {
+    const s = karta(63, 88);
+    expect(ustawieniaKartkiDla(s).dopasowanie).toEqual(dop);
+    const { w } = zbuduj(s, { dopasowanie: dop });
+    expect(w.ostrzezenia).toEqual([]);
+  });
+
+  it('ta sama karta na kartce sprzed M2b-1 (bez dopasowania) – ostrzeżenie jak dziś', () => {
+    const { a, t, ctx2 } = zbuduj(karta(63, 88), {});
+    const bez = { ...a.ustawienia };
+    delete bez.dopasowanie;
+    const w = zbudujArkusz({ ...a, ustawienia: bez }, t, ctx2);
+    expect(w.ostrzezenia.map((o) => o.komunikat)).toEqual(['karta-inny-rozmiar']);
+  });
+
+  it('luz zapisany w kartce (np. z presetu) decyduje o ostrzeżeniu', () => {
+    const slot = { szerokosc: 64.5, wysokosc: 90 };
+    expect(zbuduj(karta(63, 88), { dopasowanie: dop }, slot).w.ostrzezenia).toHaveLength(1);
+    expect(zbuduj(karta(63, 88), { dopasowanie: { ...dop, luz: 2 } }, slot).w.ostrzezenia).toEqual(
+      [],
+    );
+  });
+
+  it('karta mniejsza o więcej niż luz (62×88 przy luzie 1) – ostrzeżenie', () => {
+    const { w } = zbuduj(karta(62, 88), { dopasowanie: dop });
+    expect(w.ostrzezenia.map((o) => o.komunikat)).toEqual(['karta-inny-rozmiar']);
+  });
+
+  it('karta większa od slotu o > 0,5 mm – ostrzeżenie mimo luzu', () => {
+    const { w } = zbuduj(karta(64.2, 89), { dopasowanie: { ...dop, luz: 5 } });
+    expect(w.ostrzezenia.map((o) => o.komunikat)).toContain('karta-inny-rozmiar');
+  });
+
+  it('położenie: środek albo lewy górny róg slotu', () => {
+    const s = karta(63, 88);
+    const prostokat = (p: 'srodek' | 'lewy-gorny') => {
+      const { w } = zbuduj(s, { dopasowanie: { ...dop, polozenie: p } });
+      const g = w.strony[0]!.elementy.find((e) => e.typ === 'grupa')!;
+      return g.typ === 'grupa' ? { x: g.x, y: g.y } : undefined;
+    };
+    expect(prostokat('srodek')).toEqual({ x: 10.25, y: 10.5 });
+    expect(prostokat('lewy-gorny')).toEqual({ x: 10, y: 10 });
+  });
+
+  it('tło do slotu: prostokąt slotu w kolorze tła z promieniem rogów karty', () => {
+    const s = karta(63, 88, '#ffeecc');
+    const bez = zbuduj(s, { dopasowanie: dop }).w.strony[0]!.elementy;
+    expect(bez.find((e) => e.typ === 'prostokat')).toBeUndefined();
+    const z = zbuduj(s, { dopasowanie: { ...dop, tloDoSlotu: true } }).w.strony[0]!.elementy;
+    expect(z.find((e) => e.typ === 'prostokat')).toEqual({
+      typ: 'prostokat',
+      x: 10,
+      y: 10,
+      szer: 63.5,
+      wys: 89,
+      promien: 2,
+      wypelnienie: '#ffeecc',
+    });
+  });
+
+  it('linie cięcia wokół slotu (wspólne) albo wokół karty', () => {
+    const s = karta(63, 88);
+    const wokolSlotu = linie(zbuduj(s, { dopasowanie: dop }).w.strony[0]!);
+    const wokolKarty = linie(zbuduj(s, { dopasowanie: { ...dop, linie: 'karta' } }).w.strony[0]!);
+    expect(wokolSlotu).toHaveLength(4);
+    expect(wokolSlotu[0]!.x1).toBe(10);
+    expect(wokolKarty).toHaveLength(4);
+    expect(
+      Math.max(...wokolKarty.map((o) => o.x2)) - Math.min(...wokolKarty.map((o) => o.x1)),
+    ).toBeCloseTo(63);
+  });
+
+  it('wydruk testowy: obrysy slotów albo kart', () => {
+    const s = karta(63, 88);
+    const prost = (sc: Scena) =>
+      sc.elementy.filter(
+        (e): e is Extract<ElementSceny, { typ: 'prostokat' }> => e.typ === 'prostokat',
+      );
+    const sl = zbuduj(s, { dopasowanie: dop });
+    expect(prost(stronaTestowa(sl.a, sl.t, sl.ctx2))[0]).toMatchObject({ szer: 63.5, wys: 89 });
+    const ka = zbuduj(s, { dopasowanie: { ...dop, linie: 'karta' } });
+    expect(prost(stronaTestowa(ka.a, ka.t, ka.ctx2))[0]).toMatchObject({
+      x: 10.25,
+      y: 10.5,
+      szer: 63,
+      wys: 88,
+    });
+  });
+
+  it('PDF z tłem do slotu powstaje bez błędu', async () => {
+    const s = karta(63, 88, '#ffeecc');
+    const { w } = zbuduj(s, { dopasowanie: { ...dop, tloDoSlotu: true } });
+    const { bajty } = await scenyDoPdf(w.strony);
+    expect(bajty.length).toBeGreaterThan(500);
+  });
+});
+
+describe('tło do slotu – kolejność rysowania', () => {
+  it('wszystkie tła przed pierwszą kartą (tło sąsiada nie zakrywa wystającej karty)', () => {
+    const s: Szablon = {
+      ...szablonCzaru,
+      id: 'dwa',
+      rozmiar: { tryb: 'mm', szerokosc: 64, wysokosc: 88 },
+      tlo: '#ffeecc',
+    };
+    const a: Arkusz = {
+      id: 'a',
+      nazwa: 'a',
+      taliaId: 't',
+      ustawienia: {
+        ...ustawieniaKartkiDla(s),
+        slot: { szerokosc: 63.5, wysokosc: 89 },
+        dopasowanie: { luz: 1, polozenie: 'srodek', tloDoSlotu: true, linie: 'slot' },
+      },
+    };
+    const t: Talia = {
+      id: 't',
+      nazwa: 't',
+      karty: [{ id: 'k', szablonId: 'dwa', dane: daneCzaru, ilosc: 2 }],
+    };
+    const w = zbudujArkusz(a, t, {
+      czcionki: rejestrTestowy().przypiszRole('tytul', 'EB Garamond'),
+      szablony: new Map([['dwa', s]]),
+    });
+    const el = w.strony[0]!.elementy;
+    const tla = el.flatMap((e, i) => (e.typ === 'prostokat' ? [i] : []));
+    const karty = el.flatMap((e, i) => (e.typ === 'grupa' ? [i] : []));
+    expect(tla).toHaveLength(2);
+    expect(Math.max(...tla)).toBeLessThan(Math.min(...karty));
+  });
+});
