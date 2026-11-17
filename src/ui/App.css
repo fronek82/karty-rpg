@@ -1409,7 +1409,7 @@ button.maly {
 }
 .uklad-biblioteki {
   display: grid;
-  grid-template-columns: minmax(260px, 340px) minmax(320px, 520px);
+  grid-template-columns: minmax(260px, 340px) minmax(320px, 960px);
   gap: 1.25rem;
   padding: 1.25rem;
   align-items: start;
@@ -1493,4 +1493,80 @@ button.maly {
 .tresc-ksztaltu {
   border: 1px solid #d8d3c7;
   border-radius: 6px;
+}
+
+/* Edytor wcięć ramki 9-slice. */
+.ramka9-glowna {
+  display: grid;
+  grid-template-columns: minmax(200px, 340px) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+.zrodlo-ramki9 {
+  position: relative;
+  width: 100%;
+  background: #f7f0dc;
+  border: 1px solid #d8d3c7;
+  line-height: 0;
+}
+.zrodlo-ramki9 img,
+.zrodlo-ramki9 > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  user-select: none;
+}
+.linia-wciecia {
+  position: absolute;
+  background: transparent;
+  touch-action: none;
+}
+.linia-wciecia::after {
+  content: '';
+  position: absolute;
+  border: 0 dashed #1f5fd0;
+}
+.linia-wciecia.pionowa {
+  top: -4px;
+  bottom: -4px;
+  width: 14px;
+  margin-left: -7px;
+  cursor: ew-resize;
+}
+.linia-wciecia.pionowa::after {
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  border-left-width: 2px;
+}
+.linia-wciecia.pozioma {
+  left: -4px;
+  right: -4px;
+  height: 14px;
+  margin-top: -7px;
+  cursor: ns-resize;
+}
+.linia-wciecia.pozioma::after {
+  top: 6px;
+  left: 0;
+  right: 0;
+  border-top-width: 2px;
+}
+.linia-wciecia:focus-visible {
+  outline: 2px solid #1f5fd0;
+}
+.ustawienia-ramki9 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.podglady-ramki9 {
+  display: flex;
+  gap: 1.25rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.podglady-ramki9 figure {
+  margin: 0;
 }

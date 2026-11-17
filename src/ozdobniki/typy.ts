@@ -2,7 +2,7 @@ import type { KonturSymbolu } from '../silnik/scena';
 
 /**
  * Element biblioteki ozdobników (SPEC 5). Wbudowane mają identyfikator `wb:…` i żyją w kodzie
- * (`katalog.ts`, motywy w `motywy.ts`); własne (z projektu) dojdą w kolejnych etapach M2b.
+ * (`katalog.ts`, motywy w `motywy.ts`); własne (z projektu) – import SVG albo ramka 9-slice z obrazu PNG.
  */
 export type RodzajElementu = 'motyw' | 'naroznik' | 'zakonczenie' | 'srodek' | 'ksztalt' | 'ramka9';
 

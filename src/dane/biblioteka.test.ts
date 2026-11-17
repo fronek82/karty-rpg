@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { DaneZasobow, Projekt } from '../model/projekt';
+import { WERSJA_SCHEMATU, type DaneZasobow, type Projekt } from '../model/projekt';
 import type { Szablon } from '../model/szablon';
 import { importujSvg, type ElementOzdobny } from '../ozdobniki';
 import { pakietMausritter } from '../pakiety/mausritter';
@@ -190,8 +190,8 @@ describe('eksport i import z elementami', () => {
 
 describe('walidacja i migracja (schemat 13)', () => {
   it('migracja 12→13 jest tożsamościowa; stary projekt bez biblioteki się otwiera', () => {
-    expect(migruj({ wersja: 12, a: 1 }, 'projekt')).toEqual({ wersja: 13, a: 1 });
-    expect(migruj({ wersja: 12, a: 1 }, 'szablon')).toEqual({ wersja: 13, a: 1 });
+    expect(migruj({ wersja: 12, a: 1 }, 'projekt')).toEqual({ wersja: WERSJA_SCHEMATU, a: 1 });
+    expect(migruj({ wersja: 12, a: 1 }, 'szablon')).toEqual({ wersja: WERSJA_SCHEMATU, a: 1 });
     const stary = { ...structuredClone(baza), wersja: 12 };
     const w = przygotujProjekt(stary);
     expect(w.biblioteka).toBeUndefined();

@@ -1,8 +1,16 @@
 import { useId } from 'react';
 import { t } from '../../i18n';
-import type { Narozniki, Obramowanie, Ozdoba, Wezel, WyrownanieOsi } from '../../model/szablon';
+import type {
+  Narozniki,
+  Obramowanie,
+  Ozdoba,
+  OzdobaMotyw,
+  OzdobaRamka9,
+  Wezel,
+  WyrownanieOsi,
+} from '../../model/szablon';
 import { MOTYWY_WBUDOWANE, type ElementOzdobny } from '../../ozdobniki';
-import { elementyRodzaju, useElementyWlasne } from './elementyWlasne';
+import { elementyRodzaju, useAdresBiblioteki, useElementyWlasne } from './elementyWlasne';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { Liczba, PoleKoloru, PoleOdstepow, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 
@@ -52,6 +60,9 @@ export function PoleRamki<R extends Obramowanie>({
   };
 }) {
   const zmienRamke = (f: (r: R) => R) => zmien((r) => (r ? f(r) : r));
+  const adresBiblioteki = useAdresBiblioteki();
+  const ramki9 = elementyRodzaju('ramka9', useElementyWlasne());
+  const rodzajOzdoby = ozdoba?.wartosc?.rodzaj;
   return (
     <>
       {rodzaj ? (
@@ -66,9 +77,21 @@ export function PoleRamki<R extends Obramowanie>({
                 tekst: t('ramka.rodzaj.motyw'),
                 wylaczona: !ozdoba || (ozdoba.wylaczony && !ozdoba.wartosc),
               },
-              { wartosc: 'obraz', tekst: t('ramka.rodzaj.obraz'), wylaczona: true },
+              {
+                wartosc: 'obraz',
+                tekst: t('ramka.rodzaj.obraz'),
+                wylaczona: !ozdoba || (ozdoba.wylaczony && !ozdoba.wartosc) || ramki9.length === 0,
+              },
             ]}
-            wartosc={ozdoba?.wartosc ? 'motyw' : ramka ? 'linia' : 'brak'}
+            wartosc={
+              rodzajOzdoby === 'ramka9'
+                ? 'obraz'
+                : rodzajOzdoby
+                  ? 'motyw'
+                  : ramka
+                    ? 'linia'
+                    : 'brak'
+            }
             zmien={(v) => {
               if (v === 'brak') {
                 ozdoba?.zmien(undefined);
@@ -77,12 +100,23 @@ export function PoleRamki<R extends Obramowanie>({
               } else if (v === 'linia') {
                 ozdoba?.zmien(undefined);
                 zmien((r) => r ?? ({ grubosc: 0.3, kolor: '#000000' } as R));
+              } else if (v === 'obraz' && ozdoba && ramki9[0]) {
+                if (ozdoba.ramkaZostaje)
+                  zmien((r) => r ?? ({ grubosc: 0.3, kolor: '#000000' } as R));
+                else zmien(() => undefined);
+                if (rodzajOzdoby !== 'ramka9')
+                  ozdoba.zmien({
+                    rodzaj: 'ramka9',
+                    element: ramki9[0].id,
+                    grubosc: 4,
+                    ...(ramka ? { kolor: ramka.kolor } : {}),
+                  });
               } else if (v === 'motyw' && ozdoba) {
                 if (ozdoba.ramkaZostaje)
                   zmien((r) => r ?? ({ grubosc: 0.3, kolor: '#000000' } as R));
                 else zmien(() => undefined);
                 ozdoba.zmien(
-                  ozdoba.wartosc ?? {
+                  (rodzajOzdoby === 'motyw' ? ozdoba.wartosc : undefined) ?? {
                     rodzaj: 'motyw',
                     element: MOTYWY_WBUDOWANE[0]!.id,
                     szerokosc: 6,
@@ -92,7 +126,11 @@ export function PoleRamki<R extends Obramowanie>({
               }
             }}
           />
-          <p className="podpis">{t('ramka.wKolejnychEtapach')}</p>
+          {ramki9.length === 0 && (
+            <p className="podpis">
+              {t('ramka.brakRamek9')} <a href={adresBiblioteki}>{t('biblioteka.otworz')}</a>
+            </p>
+          )}
         </>
       ) : (
         <Wybor
@@ -103,7 +141,15 @@ export function PoleRamki<R extends Obramowanie>({
           }
         />
       )}
-      {ozdoba?.wartosc && (
+      {ozdoba?.wartosc?.rodzaj === 'ramka9' && (
+        <WyborRamki9
+          ozdoba={ozdoba.wartosc}
+          zmien={ozdoba.zmien}
+          odsuniecie={!!ozdoba.odsuniecie}
+          ramki={ramki9}
+        />
+      )}
+      {ozdoba?.wartosc?.rodzaj === 'motyw' && (
         <WyborMotywu
           ozdoba={ozdoba.wartosc}
           zmien={ozdoba.zmien}
@@ -177,7 +223,11 @@ export function PoleRamki<R extends Obramowanie>({
         <WyborNarozniki
           {...narozniki}
           kolorLinii={ozdoba?.wartosc?.kolor ?? ramka?.kolor ?? '#000000'}
-          domyslnyRozmiar={ozdoba?.wartosc?.szerokosc ?? 6}
+          domyslnyRozmiar={
+            ozdoba?.wartosc?.rodzaj === 'motyw'
+              ? ozdoba.wartosc.szerokosc
+              : (ozdoba?.wartosc?.grubosc ?? 6)
+          }
         />
       )}
     </>
@@ -223,6 +273,75 @@ export function nazwaElementu(e: ElementOzdobny): string {
   return e.nazwa ?? (klucz ? t(klucz) : e.id);
 }
 
+/** Wybór ramki 9-slice z biblioteki projektu, grubość, kolor (źródło SVG) i odsunięcie. */
+function WyborRamki9({
+  ozdoba,
+  zmien,
+  odsuniecie,
+  ramki,
+}: {
+  ozdoba: OzdobaRamka9;
+  zmien: (o: Ozdoba) => void;
+  odsuniecie: boolean;
+  ramki: ElementOzdobny[];
+}) {
+  const idEtykiety = useId();
+  const adresBiblioteki = useAdresBiblioteki();
+  const ustaw = (z: Partial<OzdobaRamka9>) => zmien({ ...ozdoba, ...z });
+  const aktualny = ramki.find((e) => e.id === ozdoba.element);
+  const svg = aktualny?.ramka9?.zrodlo.typ === 'svg';
+  return (
+    <div className="pole-panelu">
+      <span id={idEtykiety}>{t('ramka9.tytul')}</span>
+      <div className="wybor-narozniki" role="group" aria-labelledby={idEtykiety}>
+        {ramki.map((e) => (
+          <button
+            key={e.id}
+            type="button"
+            aria-pressed={ozdoba.element === e.id}
+            aria-label={nazwaElementu(e)}
+            style={{ color: ozdoba.kolor ?? '#000000' }}
+            onClick={() => ustaw({ element: e.id })}
+          >
+            <MiniaturaOzdobnika element={e} />
+            <small>{nazwaElementu(e)}</small>
+          </button>
+        ))}
+      </div>
+      <div className="dwa-pola">
+        <Liczba
+          etykieta={t('ramka9.grubosc')}
+          wartosc={ozdoba.grubosc}
+          min={0.2}
+          max={30}
+          krok={0.1}
+          zmien={(v) => ustaw({ grubosc: v })}
+        />
+        {svg && (
+          <PoleKoloru
+            etykieta={t('motywy.kolor')}
+            wartosc={ozdoba.kolor ?? '#000000'}
+            moznaBrak={false}
+            zmien={(v) => ustaw({ kolor: v! })}
+          />
+        )}
+        {odsuniecie && (
+          <Liczba
+            etykieta={t('motywy.odsuniecie')}
+            wartosc={ozdoba.odsuniecie ?? 0}
+            max={30}
+            krok={0.5}
+            zmien={(v) => zmien(v > 0 ? { ...ozdoba, odsuniecie: v } : bez(ozdoba, 'odsuniecie'))}
+          />
+        )}
+      </div>
+      <p className="podpis">
+        <a href={adresBiblioteki}>{t('ramka9.edytujWBibliotece')}</a>
+      </p>
+    </div>
+  );
+}
+
 /** Wybór motywu z listy miniatur oraz szerokość pasa, szyny, odsunięcie i kolor. */
 function WyborMotywu({
   ozdoba,
@@ -230,14 +349,14 @@ function WyborMotywu({
   odsuniecie,
   podpowiedz,
 }: {
-  ozdoba: Ozdoba;
+  ozdoba: OzdobaMotyw;
   zmien: (o: Ozdoba) => void;
   odsuniecie: boolean;
   podpowiedz: boolean;
 }) {
   const idEtykiety = useId();
   const motywy = elementyRodzaju('motyw', useElementyWlasne());
-  const ustaw = (z: Partial<Ozdoba>) => zmien({ ...ozdoba, ...z });
+  const ustaw = (z: Partial<OzdobaMotyw>) => zmien({ ...ozdoba, ...z });
   return (
     <div className="pole-panelu">
       <span id={idEtykiety}>{t('motywy.tytul')}</span>

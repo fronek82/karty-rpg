@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
+import { zapisano } from './pomoc';
 import { importujProjekt } from '../src/dane/archiwum';
 import { renderujKarte } from '../src/silnik/karta';
 import type { Scena } from '../src/silnik/scena';
@@ -369,4 +371,149 @@ test('C. karta wroga: zagnieżdżony nagłówek, wartości w rombach z etykietą
     Broń: 'bron',
     Zdolności: 'zdolnosci',
   });
+});
+
+test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia, własny kształt, ramka 9-slice z PNG, PDF', async ({
+  page,
+}) => {
+  // Karta 63×88 w kolorze pergaminu, tytuł i opis.
+  await kreator(page, {
+    nazwa: 'Ozdobna',
+    format: 'Standard / Poker',
+    rogi: 3,
+    kolor: '#f3e6c8',
+    uklad: 'Tytuł i opis',
+  });
+  const podglad = page.locator('.karta-podgladu svg');
+
+  // Ramka karty z motywu (pnącze) z narożnikami.
+  await karta(page);
+  const r = await sekcja(page, 'Ramka karty');
+  const rodzaj = r.getByRole('group', { name: 'Ramka karty', exact: true });
+  await rodzaj.getByRole('button', { name: 'motyw' }).click();
+  await r
+    .getByRole('group', { name: 'Motyw', exact: true })
+    .getByRole('button', { name: 'pnącze' })
+    .click();
+  await r.getByLabel('Szerokość pasa (mm)').fill('5');
+  await r.getByLabel('Kolor motywu').fill('#5b3a1e');
+  await r.getByRole('group', { name: 'Narożniki' }).getByRole('button', { name: 'liść' }).click();
+  await expect(podglad.locator('use[color="#5b3a1e"]').first()).toBeVisible();
+
+  // Separator z zakończeniami i środkiem pod tytułem.
+  await karta(page);
+  await dodaj(page, 'Separator z zakończeniami', 'Dekor');
+  await drzewo(page)
+    .getByRole('treeitem', { name: /^Dekor – / })
+    .click();
+  await page
+    .getByRole('complementary', { name: 'Struktura karty' })
+    .getByRole('button', { name: '↑ Wyżej' })
+    .click();
+  const kolejnosc = drzewo(page).locator('[role=treeitem]');
+  await expect(kolejnosc.nth(1)).toHaveAccessibleName(/^Tytuł – /);
+  await expect(kolejnosc.nth(2)).toHaveAccessibleName(/^Dekor – /);
+  await panel(page).getByLabel('Kolor linii').fill('#5b3a1e');
+
+  // Panel z podwójną linią (pole opisu).
+  await zaznacz(page, 'Opis');
+  const w = await sekcja(page, 'Wygląd (tło, ramka, rogi)');
+  await w
+    .getByRole('group', { name: 'Ramka z linii', exact: true })
+    .getByRole('button', { name: 'linia', exact: true })
+    .click();
+  await w
+    .getByRole('group', { name: 'Styl linii' })
+    .getByRole('button', { name: 'podwójna' })
+    .click();
+  await w.getByLabel('Kolor linii').fill('#5b3a1e');
+
+  // Biblioteka: własny SVG (kształt wartości) i ramka 9-slice z PNG – wgrane przez interfejs.
+  await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
+  await page.getByTestId('plik-svg').setInputFiles('testy/zasoby/gwiazdka.svg');
+  await page
+    .getByRole('group', { name: 'Użyj jako' })
+    .getByRole('button', { name: 'kształt wartości' })
+    .click();
+  await page.getByLabel('Nazwa', { exact: true }).fill('Gwiazdka');
+  await page.getByRole('button', { name: 'Dodaj do biblioteki' }).click();
+  await page.getByTestId('plik-png').setInputFiles('testy/zasoby/ramka-testowa.png');
+  const edytor = page.getByTestId('edytor-ramki9');
+  await expect(edytor).toContainText('120×120 px');
+  for (const s of ['Góra', 'Prawo', 'Dół', 'Lewo'])
+    await edytor.getByLabel(s, { exact: true }).fill('30');
+  await expect(edytor.getByTestId('dpi-ramki')).toContainText('305 dpi');
+  await page.goBack();
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+
+  // Wartość w kształcie z własnego SVG.
+  await karta(page);
+  await dodaj(page, 'Wartość w kształcie', 'Siła');
+  await panel(page).getByLabel('Kształt').selectOption('wlasny');
+  await expect(
+    panel(page).getByTestId('wybor-ksztaltu').getByRole('button', { name: 'Gwiazdka' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await rozmiar(page, 'Szerokość', 'mm', 16);
+  await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 9, pogrubienie: true });
+  await wyglad(page, { tlo: '#fff8e6' });
+  await expect(podglad.locator('path[fill="#fff8e6"]')).toHaveCount(1);
+
+  // Karta 1 na kartce.
+  await kartaNaKartce(page, 'Ozdobna', { Tytuł: 'Smocza łuska', Opis: 'Ozdobna karta', Siła: '7' });
+  await zapisano(page);
+
+  // Druga karta: szablon w tym samym projekcie z ramką 9-slice z PNG.
+  const idProjektu = /#\/projekt\/([^/]+)/.exec(page.url())![1]!;
+  await kreator(page, {
+    nazwa: 'Ozdobna PNG',
+    format: 'Standard / Poker',
+    rogi: 0,
+    kolor: '#f3e6c8',
+    uklad: 'Tytuł i opis',
+    adres: `./#/projekt/${idProjektu}/nowy-szablon`,
+  });
+  await karta(page);
+  const r2 = await sekcja(page, 'Ramka karty');
+  const rodzaj2 = r2.getByRole('group', { name: 'Ramka karty', exact: true });
+  await rodzaj2.getByRole('button', { name: /z obrazu/ }).click();
+  await r2.getByLabel('Grubość ramki (mm)').fill('2.5');
+  const ramkaPng = page.locator('.karta-podgladu svg image');
+  await expect(ramkaPng.first()).toBeVisible();
+  await expect(r2.getByRole('group', { name: 'Ramka 9-slice z biblioteki' })).toBeVisible();
+  await page.getByRole('button', { name: 'Rób karty ►' }).click();
+  await page.getByRole('button', { name: /^Pusty slot – strona 1, kolumna 2, rząd 1/ }).click();
+  await page.getByRole('menuitem', { name: /Ozdobna PNG/ }).click();
+  const dane = page.getByRole('complementary', { name: 'Zaznaczone karty' });
+  await dane.getByLabel('Tytuł', { exact: true }).fill('Ramka z obrazu');
+  await zapisano(page);
+  await expect(page.locator('[data-karta]')).toHaveCount(2);
+  await page.locator(':focus').blur();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
+  await expect(page.locator('.ostrzezenia-karty')).toHaveCount(0);
+  if (process.env.ZRZUTY) {
+    await page.mouse.move(5, 5);
+    await page.screenshot({ path: 'docs/obrazy/m2b-7-przyklad-d.png' });
+  }
+
+  // PDF bez ostrzeżeń: symbole motywu zapisane raz (XObject), PNG ramki raz.
+  const [pobranie] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
+  ]);
+  const pdf = await PDFDocument.load(readFileSync(await pobranie.path()));
+  expect(pdf.getPageCount()).toBe(1);
+  const symbole = new Set<string>();
+  const obrazy = new Set<string>();
+  for (const strona of pdf.getPages()) {
+    const xo = strona.node.Resources()?.lookup(PDFName.of('XObject'), PDFDict);
+    for (const [nazwa, ref] of xo?.entries() ?? []) {
+      if (nazwa.toString().startsWith('/S')) symbole.add(String(ref));
+      if (nazwa.toString().startsWith('/Im')) obrazy.add(String(ref));
+    }
+  }
+  // Pnącze (kafelek), liść (narożnik), grot i romb (separator): po jednym XObjectcie.
+  expect(symbole.size).toBe(4);
+  expect(obrazy.size).toBe(1);
+  await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
 });

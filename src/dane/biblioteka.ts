@@ -4,7 +4,9 @@ import { czyWbudowany } from '../ozdobniki/katalog';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { t } from '../i18n';
 import { identyfikatorZNazwy } from './czcionki';
-import { BladDanych } from './schemat';
+import { BladDanych, zasobySzablonu } from './schemat';
+import { przytnijWciecia } from '../ozdobniki/ramka9';
+import type { OpisObrazu } from '../model/projekt';
 
 /** Najwięcej własnych elementów w bibliotece projektu (ochrona przed rozdęciem projektu). */
 export const MAKS_ELEMENTOW_BIBLIOTEKI = 200;
@@ -85,6 +87,17 @@ export function elementyUzyteWSzablonie(p: Projekt, s: Szablon): ElementOzdobny[
   return elementyProjektu(p).filter((e) => uzyte.has(e.id));
 }
 
+/** Zasoby obrazów (PNG) wskazane przez elementy `ramka9` ze źródłem „obraz”. */
+export function zasobyElementow(elementy: readonly ElementOzdobny[]): string[] {
+  return elementy.flatMap((e) => (e.ramka9?.zrodlo.typ === 'obraz' ? [e.ramka9.zrodlo.zasob] : []));
+}
+
+/** Wszystkie zasoby obrazów szablonu: stałe obrazy pól i obrazy ramek 9-slice użytych elementów. */
+export function zasobyObrazowSzablonu(s: Szablon, wlasne: readonly ElementOzdobny[]): string[] {
+  const uzyte = new Set(odwolaniaDoElementow(s));
+  return [...zasobySzablonu(s), ...zasobyElementow(wlasne.filter((e) => uzyte.has(e.id)))];
+}
+
 /** Szablony projektu używające elementu (do ostrzeżenia przy usuwaniu). */
 export function szablonyUzywajace(p: Projekt, id: string): Szablon[] {
   return p.szablony.filter((s) => odwolaniaDoElementow(s).includes(id));
@@ -142,8 +155,46 @@ export function usunElementZBiblioteki(p: Projekt, id: string): Projekt {
 }
 
 export type ZmianaElementu = Partial<
-  Pick<ElementOzdobny, 'nazwa' | 'rodzaj' | 'kolorowanie' | 'tresc'>
+  Pick<ElementOzdobny, 'nazwa' | 'rodzaj' | 'kolorowanie' | 'tresc' | 'ramka9'>
 >;
+
+/**
+ * Domyślne ustawienia ramki 9-slice dla źródła o wymiarach `szer` × `wys`: wcięcia po jednej
+ * trzeciej każdego wymiaru, boki powtarzane, środek wypełniony.
+ */
+export function ramka9Domyslna(
+  zrodlo: NonNullable<ElementOzdobny['ramka9']>['zrodlo'],
+  szer: number,
+  wys: number,
+): NonNullable<ElementOzdobny['ramka9']> {
+  const w = zrodlo.typ === 'obraz' ? Math.round : (v: number) => Math.round(v * 100) / 100;
+  return {
+    zrodlo,
+    wciecia: { gora: w(wys / 3), prawo: w(szer / 3), dol: w(wys / 3), lewo: w(szer / 3) },
+    boki: 'powtarzaj',
+    srodek: 'wypelnij',
+  };
+}
+
+/**
+ * Dodaje do biblioteki ramkę 9-slice z obrazu PNG projektu (element bez konturów; `szer` × `wys`
+ * to piksele obrazu). Zwraca nowy projekt i nadane id.
+ */
+export function dodajRamke9ZObrazu(
+  p: Projekt,
+  nazwa: string,
+  obraz: Pick<OpisObrazu, 'id' | 'szerokosc' | 'wysokosc'>,
+): { projekt: Projekt; id: string } {
+  if (elementyProjektu(p).length >= MAKS_ELEMENTOW_BIBLIOTEKI)
+    throw new BladDanych(t('dane.zaDuzoElementow', { limit: MAKS_ELEMENTOW_BIBLIOTEKI }));
+  return dodajElementDoBiblioteki(p, nazwa, {
+    rodzaj: 'ramka9',
+    szer: obraz.szerokosc,
+    wys: obraz.wysokosc,
+    kontury: [],
+    ramka9: ramka9Domyslna({ typ: 'obraz', zasob: obraz.id }, obraz.szerokosc, obraz.wysokosc),
+  });
+}
 
 /** Prostokąt treści w obrębie rysunku: wymiary co najmniej 1 %, całość w zakresie 0–1. */
 export function przytnijTresc(
@@ -164,7 +215,20 @@ export function zmienElementBiblioteki(p: Projekt, id: string, zmiana: ZmianaEle
   if (zmiana.tresc) zmiana = { ...zmiana, tresc: przytnijTresc(zmiana.tresc) };
   return {
     ...p,
-    biblioteka: { ozdobniki: lista.map((e) => (e.id === id ? { ...e, ...zmiana } : e)) },
+    biblioteka: {
+      ozdobniki: lista.map((e) => {
+        if (e.id !== id) return e;
+        const n: ElementOzdobny = { ...e, ...zmiana };
+        // Ramka z obrazu nie ma konturów – nie da się jej użyć w innym rodzaju.
+        if (n.ramka9?.zrodlo.typ === 'obraz') n.rodzaj = 'ramka9';
+        // Rodzaj „ramka 9-slice” wymaga ustawień (dla SVG – domyślne wcięcia); inne rodzaje ich nie mają.
+        if (n.rodzaj === 'ramka9') {
+          if (!n.ramka9) n.ramka9 = ramka9Domyslna({ typ: 'svg' }, n.szer, n.wys);
+          n.ramka9 = { ...n.ramka9, wciecia: przytnijWciecia(n.ramka9.wciecia, n.szer, n.wys) };
+        } else if (n.ramka9?.zrodlo.typ === 'svg') delete n.ramka9;
+        return n;
+      }),
+    },
     zmieniono: new Date().toISOString(),
   };
 }

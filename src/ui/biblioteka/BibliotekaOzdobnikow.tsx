@@ -1,7 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
+import { dodajZasoby } from '../../dane/edycja';
+import { MAKS_BAJTOW_OBRAZU, opisObrazu } from '../../dane/obrazy';
 import {
   MAKS_ELEMENTOW_BIBLIOTEKI,
   dodajElementDoBiblioteki,
+  dodajRamke9ZObrazu,
+  ramka9Domyslna,
   elementyProjektu,
   noweIdElementu,
   szablonyUzywajace,
@@ -24,10 +28,19 @@ import { Liczba } from '../szablon/Kontrolki';
 import { MiniaturaOzdobnika } from '../szablon/MiniaturaOzdobnika';
 import { nazwaElementu } from '../szablon/PanelWygladu';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
+import { przygotujObraz } from '../obrazy';
+import { EdytorRamki9 } from './EdytorRamki9';
 import { KOLOR_PODGLADU, podgladElementu } from './podgladElementu';
 
-/** Rodzaje, w których można użyć własnego elementu (ramki 9-slice – M2b-7). */
-const RODZAJE: RodzajElementu[] = ['naroznik', 'motyw', 'zakonczenie', 'srodek', 'ksztalt'];
+/** Rodzaje, w których można użyć własnego elementu z SVG. */
+const RODZAJE: RodzajElementu[] = [
+  'naroznik',
+  'motyw',
+  'zakonczenie',
+  'srodek',
+  'ksztalt',
+  'ramka9',
+];
 const GRUPY_WBUDOWANE = ['motyw', 'naroznik', 'zakonczenie', 'srodek'] as const;
 
 /** Import w toku: wynik sanityzacji z edytowalnymi ustawieniami przed dodaniem do biblioteki. */
@@ -110,6 +123,7 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
   const { projekt, zmien } = edycja;
   const wlasne = elementyProjektu(projekt);
   const plik = useRef<HTMLInputElement>(null);
+  const plikPng = useRef<HTMLInputElement>(null);
   const [wczytany, ustawWczytany] = useState<Wczytany>();
   const [blad, ustawBlad] = useState<string>();
   const [status, ustawStatus] = useState('');
@@ -149,6 +163,38 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
     }
   };
 
+  /** PNG → obraz w zasobach projektu + element `ramka9` ze źródłem „obraz” (wcięcia po trzecim). */
+  const importujPng = async (f: File) => {
+    ustawBlad(undefined);
+    ustawStatus('');
+    try {
+      if (wlasne.length >= MAKS_ELEMENTOW_BIBLIOTEKI)
+        throw new Error(t('biblioteka.limit', { limit: MAKS_ELEMENTOW_BIBLIOTEKI }));
+      if (f.size > MAKS_BAJTOW_OBRAZU)
+        throw new Error(t('dane.zaDuzy', { plik: f.name, mb: (f.size / 1024 / 1024).toFixed(1) }));
+      const { dane, ...wymiary } = await przygotujObraz(new Uint8Array(await f.arrayBuffer()));
+      const nazwa = bezRozszerzenia(f.name);
+      let nowyId = '';
+      await edycja.zmienZZasobami((p, d) => {
+        const opis = opisObrazu(f.name, dane, wymiary, new Set(p.zasoby.map((z) => z.id)));
+        const w = dodajZasoby(p, d, [{ opis, dane }]);
+        const r = dodajRamke9ZObrazu(w.projekt, nazwa, opis);
+        nowyId = r.id;
+        return { projekt: r.projekt, dane: w.dane };
+      });
+      ustawWczytany(undefined);
+      ustawWybrany(nowyId);
+      ustawStatus(t('biblioteka.ramka9.obrazZnaleziony', { nazwa }));
+    } catch (e) {
+      ustawBlad(
+        t('biblioteka.import.blad', {
+          plik: f.name,
+          powod: e instanceof Error ? e.message : String(e),
+        }),
+      );
+    }
+  };
+
   const dodaj = () => {
     if (!wczytany) return;
     if (wlasne.length >= MAKS_ELEMENTOW_BIBLIOTEKI) {
@@ -163,6 +209,15 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
           ...wczytany.wynik.element,
           rodzaj: wczytany.rodzaj,
           kolorowanie: wczytany.kolorowanie,
+          ...(wczytany.rodzaj === 'ramka9'
+            ? {
+                ramka9: ramka9Domyslna(
+                  { typ: 'svg' },
+                  wczytany.wynik.element.szer,
+                  wczytany.wynik.element.wys,
+                ),
+              }
+            : {}),
         }).projekt,
     );
     ustawWczytany(undefined);
@@ -177,7 +232,18 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
     nazwa: wczytany.nazwa,
     rodzaj: wczytany.rodzaj,
     kolorowanie: wczytany.kolorowanie,
+    ...(wczytany.rodzaj === 'ramka9'
+      ? {
+          ramka9: ramka9Domyslna(
+            { typ: 'svg' },
+            wczytany.wynik.element.szer,
+            wczytany.wynik.element.wys,
+          ),
+        }
+      : {}),
   };
+  // Ramka z obrazu PNG nie ma konturów: ani rodzaju do wyboru, ani koloru.
+  const obrazowa = element?.ramka9?.zrodlo.typ === 'obraz';
   const uzywajace = element ? szablonyUzywajace(projekt, element.id) : [];
 
   return (
@@ -206,6 +272,21 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
             const f = e.target.files?.[0];
             e.target.value = '';
             if (f) void importuj(f);
+          }}
+        />
+        <button type="button" onClick={() => plikPng.current?.click()}>
+          {t('biblioteka.importujPng')}
+        </button>
+        <input
+          ref={plikPng}
+          type="file"
+          accept=".png,image/png"
+          hidden
+          data-testid="plik-png"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = '';
+            if (f) void importujPng(f);
           }}
         />
         <a className="przycisk glowny" href={`#/projekt/${idProjektu}`}>
@@ -248,7 +329,12 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
                   }}
                 >
                   <span className="miniatury" style={{ color: KOLOR_PODGLADU }}>
-                    <MiniaturaOzdobnika element={e} />
+                    <MiniaturaOzdobnika
+                      element={e}
+                      {...(e.ramka9?.zrodlo.typ === 'obraz'
+                        ? { adres: edycja.zasoby.zasoby.obrazy.get(e.ramka9.zrodlo.zasob)?.adres }
+                        : {})}
+                    />
                   </span>
                   <span className="nazwa">{nazwaElementu(e)}</span>
                   <span className="podpis">{t(`biblioteka.rodzaj.${e.rodzaj}`)}</span>
@@ -331,29 +417,42 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
           {!wczytany && element && (
             <>
               <h2>{nazwaElementu(element)}</h2>
-              <Podglad
-                key={`${element.id}-${element.rodzaj}-${element.kolorowanie}-${JSON.stringify(element.tresc)}`}
-                element={element}
-                czcionki={czcionki}
-                prefiks="be-"
-              />
-              <Przyciski
-                etykieta={t('biblioteka.uzyjJako')}
-                opcje={RODZAJE.map((r) => ({ wartosc: r, tekst: t(`biblioteka.rodzaj.${r}`) }))}
-                wartosc={element.rodzaj}
-                zmien={(r) => zmien((p) => zmienElementBiblioteki(p, element.id, { rodzaj: r }))}
-              />
-              <Przyciski
-                etykieta={t('biblioteka.kolor')}
-                opcje={(['jednolity', 'oryginal'] as const).map((k) => ({
-                  wartosc: k,
-                  tekst: t(`biblioteka.kolor.${k}`),
-                }))}
-                wartosc={element.kolorowanie ?? 'oryginal'}
-                zmien={(k) =>
-                  zmien((p) => zmienElementBiblioteki(p, element.id, { kolorowanie: k }))
-                }
-              />
+              {element.rodzaj === 'ramka9' ? (
+                <EdytorRamki9 key={element.id} element={element} edycja={edycja} />
+              ) : (
+                <Podglad
+                  key={`${element.id}-${element.rodzaj}-${element.kolorowanie}-${JSON.stringify(element.tresc)}`}
+                  element={element}
+                  czcionki={czcionki}
+                  prefiks="be-"
+                />
+              )}
+              {!obrazowa && (
+                <>
+                  <Przyciski
+                    etykieta={t('biblioteka.uzyjJako')}
+                    opcje={RODZAJE.map((r) => ({
+                      wartosc: r,
+                      tekst: t(`biblioteka.rodzaj.${r}`),
+                    }))}
+                    wartosc={element.rodzaj}
+                    zmien={(r) =>
+                      zmien((p) => zmienElementBiblioteki(p, element.id, { rodzaj: r }))
+                    }
+                  />
+                  <Przyciski
+                    etykieta={t('biblioteka.kolor')}
+                    opcje={(['jednolity', 'oryginal'] as const).map((k) => ({
+                      wartosc: k,
+                      tekst: t(`biblioteka.kolor.${k}`),
+                    }))}
+                    wartosc={element.kolorowanie ?? 'oryginal'}
+                    zmien={(k) =>
+                      zmien((p) => zmienElementBiblioteki(p, element.id, { kolorowanie: k }))
+                    }
+                  />
+                </>
+              )}
               <div className="pole-panelu">
                 <label htmlFor="nazwa-elementu">{t('biblioteka.nazwa')}</label>
                 <input

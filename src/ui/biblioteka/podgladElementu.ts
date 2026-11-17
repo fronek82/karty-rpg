@@ -2,7 +2,7 @@ import type { Szablon, Wezel } from '../../model/szablon';
 import { renderujKarte } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
 import type { ElementOzdobny } from '../../ozdobniki';
-import type { ZasobyPakietu } from '../zasoby';
+import type { ObrazWPamieci, ZasobyPakietu } from '../zasoby';
 
 /** Kolor rysunku w podglądach biblioteki (rysunki kolorowalne). */
 export const KOLOR_PODGLADU = '#7a2e24';
@@ -17,10 +17,13 @@ function rozmiarPodgladu(rodzaj: ElementOzdobny['rodzaj']) {
 
 /**
  * Szablon podglądu elementu – ten sam silnik co na kartach (jedna scena): narożniki i motyw na
- * ramce karty, zakończenie i środek na separatorze, kształt na polu wartości. Ramka 9-slice – M2b-7.
+ * ramce karty, zakończenie i środek na separatorze, kształt na polu wartości. Ramka 9-slice na ramce karty.
  */
-export function szablonPodgladu(e: ElementOzdobny): Szablon | undefined {
-  const { szer, wys } = rozmiarPodgladu(e.rodzaj);
+export function szablonPodgladu(
+  e: ElementOzdobny,
+  rozmiar?: { szer: number; wys: number; grubosc?: number },
+): Szablon | undefined {
+  const { szer, wys } = rozmiar ?? rozmiarPodgladu(e.rodzaj);
   const baza = {
     id: 'podglad',
     nazwa: '',
@@ -42,6 +45,21 @@ export function szablonPodgladu(e: ElementOzdobny): Szablon | undefined {
           kolor: KOLOR_PODGLADU,
           odsuniecie: 2,
           narozniki: { element: e.id, rozmiar: 12 },
+        },
+        korzen: korzen([]),
+      };
+    case 'ramka9':
+      return {
+        ...baza,
+        ramka: {
+          grubosc: 0.3,
+          kolor: KOLOR_PODGLADU,
+          ozdoba: {
+            rodzaj: 'ramka9',
+            element: e.id,
+            grubosc: rozmiar?.grubosc ?? 4,
+            kolor: KOLOR_PODGLADU,
+          },
         },
         korzen: korzen([]),
       };
@@ -108,13 +126,31 @@ export function podgladElementu(
   e: ElementOzdobny,
   czcionki: ZasobyPakietu['czcionki'],
   prefiks: string,
+  opcje: {
+    obrazy?: ReadonlyMap<string, ObrazWPamieci>;
+    rozmiar?: { szer: number; wys: number; grubosc?: number };
+    /** Elementy projektu dostępne dla podglądu (poza `e`). */
+    elementy?: readonly ElementOzdobny[];
+  } = {},
 ): PodgladElementu | undefined {
-  const szablon = szablonPodgladu(e);
+  const szablon = szablonPodgladu(e, opcje.rozmiar);
   if (!szablon) return undefined;
+  const obrazy = opcje.obrazy;
   try {
-    const w = renderujKarte(szablon, { dane: {} }, { czcionki, elementy: [e] });
+    const w = renderujKarte(
+      szablon,
+      { dane: {} },
+      {
+        czcionki,
+        elementy: [e, ...(opcje.elementy ?? []).filter((x) => x.id !== e.id)],
+        ...(obrazy ? { obraz: (id: string) => obrazy.get(id)?.info } : {}),
+      },
+    );
     return {
-      svg: scenaDoSvg(w.scena, { przedrostekId: prefiks }),
+      svg: scenaDoSvg(w.scena, {
+        przedrostekId: prefiks,
+        ...(obrazy ? { adresObrazu: (id: string) => obrazy.get(id)?.adres } : {}),
+      }),
       szer: w.scena.szer,
       wys: w.scena.wys,
     };

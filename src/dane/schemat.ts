@@ -45,14 +45,23 @@ const odstepy = (wartosc: z.ZodNumber) =>
   ]);
 const stylLinii = z.enum(['ciagla', 'przerywana', 'kropkowana', 'podwojna']);
 const narozniki = obj({ element: identyfikator, rozmiar: dodatnia, kolor: opc(z.string()) });
-const ozdoba = obj({
-  rodzaj: z.literal('motyw'),
-  element: identyfikator,
-  szerokosc: dodatnia,
-  kolor: z.string(),
-  szyny: opc(nieujemna),
-  odsuniecie: opc(nieujemna),
-});
+const ozdoba = z.discriminatedUnion('rodzaj', [
+  obj({
+    rodzaj: z.literal('motyw'),
+    element: identyfikator,
+    szerokosc: dodatnia,
+    kolor: z.string(),
+    szyny: opc(nieujemna),
+    odsuniecie: opc(nieujemna),
+  }),
+  obj({
+    rodzaj: z.literal('ramka9'),
+    element: identyfikator,
+    grubosc: dodatnia.max(1000),
+    kolor: opc(z.string()),
+    odsuniecie: opc(nieujemna),
+  }),
+]);
 const krawedzie = obj({
   gora: opc(z.boolean()),
   prawo: opc(z.boolean()),
@@ -438,6 +447,17 @@ const limitKomend = [
 ] as const;
 const ulamek = liczba.min(0).max(1);
 
+const wciecieRamki = nieujemna.max(LIMITY_SVG.zakres);
+const ustawieniaRamki9 = obj({
+  zrodlo: z.discriminatedUnion('typ', [
+    obj({ typ: z.literal('obraz'), zasob: idZasobu }),
+    obj({ typ: z.literal('svg') }),
+  ]),
+  wciecia: obj({ gora: wciecieRamki, prawo: wciecieRamki, dol: wciecieRamki, lewo: wciecieRamki }),
+  boki: z.enum(['rozciagnij', 'powtarzaj']),
+  srodek: z.enum(['wypelnij', 'pomin']),
+});
+
 /** Własny element biblioteki ozdobników (z importu SVG); wbudowane (`wb:`) żyją w kodzie. */
 const elementOzdobny = obj({
   id: z.string().regex(/^wl:[\w.-]{1,100}$/),
@@ -465,7 +485,20 @@ const elementOzdobny = obj({
       wys: ulamek.min(0.01),
     }).refine((r) => r.x + r.szer <= 1 + 1e-9 && r.y + r.wys <= 1 + 1e-9, 'poza rysunkiem'),
   ),
-});
+  ramka9: opc(ustawieniaRamki9),
+})
+  .refine(
+    (e) => (e.rodzaj === 'ramka9') === (e.ramka9 !== undefined),
+    'ramka9 tylko przy rodzaju ramka9',
+  )
+  // Wcięcia 9-slice nie mogą wychodzić poza źródło.
+  .refine(
+    (e) =>
+      !e.ramka9 ||
+      (e.ramka9.wciecia.lewo + e.ramka9.wciecia.prawo <= e.szer + 1e-9 &&
+        e.ramka9.wciecia.gora + e.ramka9.wciecia.dol <= e.wys + 1e-9),
+    'wcięcia poza źródłem',
+  );
 
 const opisZasobu = z.discriminatedUnion('rodzaj', [
   obj({
@@ -597,6 +630,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 10→11: `ozdoba` (motyw zamiast linii; ramka karty i węzły szablonu) – bez zmian danych.
   // 11→12: separator ozdobny (`rysunek`, `zakonczenia`, `srodek`, `dlugosc`, `odstepOdOzdoby`) – bez zmian danych.
   // 12→13: `biblioteka.ozdobniki` (własne SVG), kształt wartości `wlasny` – bez zmian danych.
+  // 13→14: ramka 9-slice (`ozdoba.rodzaj: 'ramka9'`, element `ramka9` z PNG albo SVG) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -610,6 +644,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     10: (d) => d,
     11: (d) => d,
     12: (d) => d,
+    13: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -624,6 +659,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     10: (d) => d,
     11: (d) => d,
     12: (d) => d,
+    13: (d) => d,
   },
 };
 
@@ -786,6 +822,14 @@ export function ostrzezeniaProjektu(p: Projekt): string[] {
         wynik.push(t('dane.nieznanyElement', { gdzie: t('dane.gdzie.szablon', { id: s.id }), id }));
       }
     }
+  }
+  // Ramka 9-slice z obrazu, którego nie ma w zasobach – silnik narysuje cienką linię.
+  for (const e of p.biblioteka?.ozdobniki ?? []) {
+    const z = e.ramka9?.zrodlo;
+    if (z?.typ === 'obraz' && !zasoby.has(z.zasob))
+      wynik.push(
+        t('dane.nieznanyZasob', { gdzie: t('dane.gdzie.ramka9', { id: e.id }), id: z.zasob }),
+      );
   }
   const szablony = new Map(p.szablony.map((s) => [s.id, s]));
   const zgloszone = new Set<string>();

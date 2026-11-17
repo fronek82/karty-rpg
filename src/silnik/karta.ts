@@ -18,6 +18,7 @@ import {
   type Kolor,
   type Narozniki,
   type Ozdoba,
+  type OzdobaRamka9,
   type RamkaKarty,
   type StylLinii,
   type StylTekstu,
@@ -31,6 +32,7 @@ import { znajdzElement } from '../ozdobniki/katalog';
 import { konturWlasnegoKsztaltu, wnetrzeWlasnegoKsztaltu } from '../ozdobniki/ksztalt';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { ramkaZMotywu } from '../ozdobniki/motyw';
+import { MIN_DPI_RAMKI, ramka9ZElementu } from '../ozdobniki/ramka9';
 import { rysujSeparatorOzdobny, wysokoscOzdobySeparatora } from '../ozdobniki/separator';
 import { narozniki as rysujNarozniki, type WynikNarozniki } from '../ozdobniki/narozniki';
 import {
@@ -80,7 +82,8 @@ export interface Ostrzezenie {
     | 'brak-znakow'
     | 'brak-miejsca-na-obraz'
     | 'nieznane-pole-do-omijania'
-    | 'nieznany-element-ozdobny';
+    | 'nieznany-element-ozdobny'
+    | 'niska-rozdzielczosc-ramki';
   szczegoly?: string;
 }
 
@@ -286,6 +289,10 @@ export function renderujKarte(
    * Narożniki leżą na tym samym prostokącie co pas (po odsunięciu), kolor domyślny = kolor motywu.
    */
   const dodajOzdobe = (o: Ozdoba, obszar: Ramka, id: string, n: Narozniki | undefined) => {
+    if (o.rodzaj === 'ramka9') {
+      dodajRamke9(o, obszar, id, n);
+      return;
+    }
     const rogi = n ? rysujNarozniki(n, obszar, o.kolor, ctx.elementy) : undefined;
     const w = ramkaZMotywu(o, obszar, {
       bezKostek: !!rogi && rogi.elementy.length > 0,
@@ -305,6 +312,42 @@ export function renderujKarte(
       });
     }
     if (rogi) wypiszNarozniki(rogi, id);
+  };
+
+  /**
+   * Ramka 9-slice (PNG albo SVG). Brak elementu albo obrazu: ostrzeżenie i cienka linia ciągła.
+   * PNG o rogach poniżej 300 dpi: ostrzeżenie `niska-rozdzielczosc-ramki` (rysujemy mimo to).
+   * Własne narożniki rysujemy nad ramką.
+   */
+  const dodajRamke9 = (o: OzdobaRamka9, obszar: Ramka, id: string, n: Narozniki | undefined) => {
+    const w = ramka9ZElementu(o, obszar, {
+      ...(ctx.elementy ? { wlasne: ctx.elementy } : {}),
+      maObraz: (zasob) => ctx.obraz?.(zasob) !== undefined,
+    });
+    elementy.push(...w.elementy);
+    Object.assign(symbole, w.symbole);
+    if (w.nieznany || w.brakObrazu) {
+      ostrzezenia.push(
+        w.nieznany
+          ? { pole: id, komunikat: 'nieznany-element-ozdobny', szczegoly: w.nieznany }
+          : { pole: id, komunikat: 'brak-obrazu', szczegoly: w.brakObrazu! },
+      );
+      elementy.push({
+        typ: 'prostokat',
+        x: obszar.x + 0.15,
+        y: obszar.y + 0.15,
+        szer: Math.max(0, obszar.szer - 0.3),
+        wys: Math.max(0, obszar.wys - 0.3),
+        obrys: { kolor: o.kolor ?? CZARNY, grubosc: 0.3 },
+      });
+    }
+    if (w.dpi !== undefined && w.dpi < MIN_DPI_RAMKI)
+      ostrzezenia.push({
+        pole: id,
+        komunikat: 'niska-rozdzielczosc-ramki',
+        szczegoly: String(Math.round(w.dpi)),
+      });
+    if (n) wypiszNarozniki(rysujNarozniki(n, obszar, o.kolor ?? CZARNY, ctx.elementy), id);
   };
 
   const kontekst: KontekstUkladu = {

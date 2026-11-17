@@ -18,8 +18,10 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  * 12 – M2b-5: separator ozdobny (`rysunek`, `zakonczenia`, `srodek`, `dlugosc`, `odstepOdOzdoby`).
  * 13 – M2b-6: `biblioteka.ozdobniki` (własne SVG), kształt wartości `wlasny` (+ `ksztaltElement`);
  *      plik szablonu niesie użyte elementy (`biblioteka`).
+ * 14 – M2b-7: ramka 9-slice – `ozdoba.rodzaj: 'ramka9'` (ramka karty i węzły) i element biblioteki
+ *      rodzaju `ramka9` (`ramka9`: źródło PNG z zasobów projektu albo SVG, wcięcia, boki, środek).
  */
-export const WERSJA_SCHEMATU = 13;
+export const WERSJA_SCHEMATU = 14;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 
