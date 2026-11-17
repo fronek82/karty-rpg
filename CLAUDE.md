@@ -4,7 +4,7 @@ Aplikacja przeglądarkowa (Vite + TypeScript + React) do projektowania i drukowa
 
 ## Gdzie co jest
 
-- Specyfikacja: `SPEC.md`. Aktualny plan: `docs/plan-M2.md` (M2 ukończony, dalej M2b – sekcja 6).
+- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b – do akceptacji, decyzje R1–R12).
 - Decyzje podjęte bez konsultacji: sekcja 9 planu (B1…); nowe dopisuj tam.
 - Przykłady szablonów: `docs/przyklady/`; zrzuty ekranu: `docs/obrazy/`.
 - Agenci: `.claude/agents/` (np. `recenzent` – przegląd, tylko odczyt).

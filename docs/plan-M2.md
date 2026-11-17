@@ -2,7 +2,7 @@
 
 Kamień milowy M2 ze `SPEC.md` (sekcje 3–6 i 12), zawężony do tego, co jest potrzebne, żeby użytkownik sam zbudował od zera szablon karty i robił z niego karty na kartce A4 – tak jak dziś w Mausritterze.
 
-**Status:** plan, decyzje P1–P9 i uzupełnienia U1–U6 zaakceptowane (P4 zmieniona – sekcja 5, U2 z marginesem bezpieczeństwa). Zrobione: M2-1 – M2-6 – kamień M2 ukończony (kryterium: `testy/przyklady.spec.ts` buduje trzy przykłady wyłącznie przez interfejs; druk poza A4 – B31–B38). Dalej: M2b (sekcja 6).
+**Status:** plan, decyzje P1–P9 i uzupełnienia U1–U6 zaakceptowane (P4 zmieniona – sekcja 5, U2 z marginesem bezpieczeństwa). Zrobione: M2-1 – M2-6 – kamień M2 ukończony (kryterium: `testy/przyklady.spec.ts` buduje trzy przykłady wyłącznie przez interfejs; druk poza A4 – B31–B38). Dalej: M2b – plan w `docs/plan-M2b.md`.
 
 ## 1. Cel i kryterium ukończenia
 

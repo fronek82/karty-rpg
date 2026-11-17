@@ -1,0 +1,232 @@
+# Plan M2b – ozdobniki, mieszane rozmiary, luz w slocie, tryb swobodny
+
+Kamień milowy po M2 (`docs/plan-M2.md`, sekcja 6). Łączy wiersz „M2b” i wiersz „Biblioteka ozdobników” z tamtej tabeli, zawężony do czterech bloków:
+
+1. **biblioteka ozdobników** – linie podwójne, motywy powtarzalne wzdłuż krawędzi (pnącze, przeplot, łuski, runy, łańcuch, gwiazdki), narożniki, separatory z ozdobnymi zakończeniami, ramki 9-slice, własne SVG (SPEC 5, pkt 1–4);
+2. **mieszane rozmiary kart na jednej kartce** (SPEC 10 „karty różnych rozmiarów”);
+3. **luźniejsze dopasowanie karty do slotu** (np. 63×88 w slocie 63,5×89 – B33);
+4. **tryb swobodny pól** (SPEC 4 „tryb swobodny”, P2).
+
+**Status:** plan do akceptacji – decyzje R1–R12 (sekcja 7) czekają na zatwierdzenie. Kod jeszcze nie powstał.
+
+Makiety (`docs/obrazy/`):
+
+| Plik                                  | Co pokazuje                                                                           |
+| ------------------------------------- | ------------------------------------------------------------------------------------- |
+| `makieta-m2b-1-ramka-motyw.png`       | Ramka karty z motywu (pnącze) z narożnikami; wybór motywu, pasa, narożnika            |
+| `makieta-m2b-2-separatory.png`        | Separator z zakończeniami i środkiem, separator z motywu, panel z podwójną linią      |
+| `makieta-m2b-3-biblioteka-9slice.png` | Biblioteka ozdobników projektu, edytor wcięć 9-slice z podglądem, import własnego SVG |
+| `makieta-m2b-4-mieszane-rozmiary.png` | Kartka A4 z kartami 70×120, 63×88 i 44×68 ułożonymi pasami; dodawanie w wolne miejsce |
+| `makieta-m2b-5-luz-w-slocie.png`      | Własny układ 63,5×89 z kartami 63×88: luz, położenie, tło do krawędzi slotu           |
+| `makieta-m2b-6-tryb-swobodny.png`     | Kontener swobodny: przeciąganie z uchwytami, prowadnice, panel X/Y/obrót/kolejność    |
+
+## 1. Cel i kryterium ukończenia
+
+Po M2b użytkownik może:
+
+- obłożyć kartę albo panel **ozdobną ramką** (linia podwójna, motyw z biblioteki, ramka z obrazu 9-slice) z **narożnikami**, wstawić **ozdobny separator** i wgrać **własny element SVG** – i nadal dostaje te same wyniki w podglądzie i w PDF (jedna scena);
+- położyć **karty różnych rozmiarów na jednej kartce** i wydrukować je razem;
+- drukować na arkuszach z perforacją, których sloty są **trochę większe niż karta**;
+- układać pola **swobodnie** – przeciągnąć je w dowolne miejsce karty, obrócić o 90°, nałożyć na ilustrację.
+
+**Kryterium ukończenia:** trzy nowe przypadki testowe budowane wyłącznie przez interfejs (jak A–C w M2, B30). To **przypadki testowe edytora, a nie gotowe szablony** – nie trafiają do aplikacji.
+
+| Przykład                     | Co musi się dać zbudować                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D. Ozdobna karta**         | 63×88 w kolorze pergaminu: ramka karty z motywu (pnącze) z narożnikami, pod tytułem separator z zakończeniami i środkiem, panel z podwójną linią, wartość w kształcie z własnego SVG (plik testowy wgrany przez UI). Druga karta tego samego szablonu z ramką 9-slice z PNG. PDF bez ostrzeżeń, kafelki motywu zapisane w PDF raz (XObject).                                                 |
+| **E. Kartka mieszana + luz** | (1) A4: 2× 70×120, 3× 63×88, 5× 44×68 na jednej stronie w trybie „mieszane”; położenia zgodne z algorytmem pasów, wspólne linie cięcia rysowane raz. (2) Własny układ 3×3 ze slotem 63,5×89 i kartami 63×88 z luzem 1,5 mm i tłem do krawędzi slotu – bez ostrzeżeń, wydruk testowy z obrysami slotów.                                                                                       |
+| **F. Karta swobodna**        | Szablon z kontenerem swobodnym zbudowany **przeciąganiem myszą** w podglądzie (Playwright `mouse`) i klawiaturą: ilustracja w tle, tytuł na pasku nałożonym na ilustrację, wartość w kole w rogu, napis obrócony o 90° przy prawej krawędzi, kolumna z opisem w środku. Porównanie położeń z szablonem wzorcowym silnika (tolerancja 0,05 mm – przyciąganie do siatki daje dokładne liczby). |
+
+Poza M2b (świadomie): podkład ze wzoru w tle, globalna biblioteka szablonów, osobny podgląd układu ze strzałkami (B31), sprawdzenie eksportu obrazów w Firefoksie i Safari, zestawy stylów, styl szkicowy, postrzępiona krawędź, tekstury – sekcja 6 i decyzja R2.
+
+## 2. Stan dziś
+
+✓ jest, ◐ częściowo, ✗ brak.
+
+| Potrzeba                               | Stan | Uwagi                                                                                                                                                                                 |
+| -------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Linie ciągła / przerywana / kropkowana | ✓    | `StylLinii` w obramowaniu węzła, ramce karty (`RamkaKarty`), separatorze i tabeli.                                                                                                    |
+| Linia podwójna                         | ✗    | Brak w `StylLinii`; U6 odłożyło ją do etapu ozdobników.                                                                                                                               |
+| Wielokrotne użycie rysunku w scenie    | ◐    | Glify są w słowniku `Scena.glify` i w PDF jako XObject (raz). Dla ozdobników brak odpowiednika; `grupa` ma tylko przesunięcie i obrót – bez skali, odbicia i przycięcia.              |
+| Motywy, narożniki, zakończenia         | ✗    | Brak biblioteki i modelu.                                                                                                                                                             |
+| Separator                              | ◐    | `PoleSeparator`: kierunek, grubość, kolor, styl – linia na całą długość (B7). Bez zakończeń, środka, motywu i długości.                                                               |
+| Kształty wartości                      | ◐    | Prostokąt, kwadrat, koło, ścięty, romb, tarcza, sześciokąt (B25); własny SVG odłożony do ozdobników.                                                                                  |
+| Zasoby projektu                        | ◐    | `Projekt.zasoby` (obrazy, czcionki), eksport w `.kartyrpg` i w pliku szablonu. Brak rodzaju „element ozdobny”.                                                                        |
+| Kilka rozmiarów na kartce              | ✗    | Jedna kartka = jeden slot (B12); inne rozmiary – ostrzeżenie `karta-inny-rozmiar` i blokada w menu. Karty Mausrittera w slotach (1×1, 2×1…) już się mieszają w obrębie siatki slotów. |
+| Karta mniejsza niż slot                | ◐    | Rysowana na środku (U5, B33), ale tylko do `TOLERANCJA_ROZMIARU` = 0,5 mm (`src/model/arkusz.ts`); 63×88 w 63,5×89 (1 mm w pionie) jest blokowana.                                    |
+| Tryb swobodny                          | ◐    | Kontener `warstwy` + wyrównanie i marginesy pozwalają nałożyć element; brak położenia X/Y, obrotu i przeciągania.                                                                     |
+
+## 3. Projekt rozwiązania
+
+### 3.1 Fundament: symbole w scenie
+
+Ozdobniki to setki powtórzeń tego samego kafelka. Robimy dla nich to samo, co dla glifów:
+
+- `Scena.symbole: Record<string, { kontury: { kontur: Kontur; wypelnienie?: Kolor; obrys?: Obrys }[]; szer: Mm; wys: Mm }>` – każdy rysunek zapisany raz;
+- nowy element `{ typ: 'symbol'; klucz; macierz: [a, b, c, d, e, f]; kolor?: Kolor }` – umieszczenie z dowolnym przekształceniem (skala, odbicie, obrót, przesunięcie); `kolor` podmienia kolor „kolorowalnego” rysunku;
+- `grupa` dostaje opcjonalne `macierz` i `przyciecie` (prostokąt) – potrzebne przy 9-slice z SVG;
+- **SVG** (podgląd): `<defs><symbol id>` + `<use transform>`; **PDF**: XObject Form na symbol (jak glify), `cm` przed `Do`; przycięcie `re W n`.
+
+Wynik: ramka z 40 kafelkami to jeden XObject i 40 krótkich wywołań; podgląd lekki dzięki `<use>`. Linia podwójna nie potrzebuje symboli – to dwie linie (zewnętrzna i wewnętrzna z promieniem pomniejszonym o odsunięcie).
+
+### 3.2 Model ozdobników
+
+**Element biblioteki** (wbudowany w kodzie albo własny w projekcie):
+
+```ts
+type RodzajElementu = 'motyw' | 'naroznik' | 'zakonczenie' | 'srodek' | 'ksztalt' | 'ramka9';
+
+interface ElementOzdobny {
+  id: string; // wbudowane: 'wb:pnacze', własne: identyfikator zasobu
+  nazwa: string;
+  rodzaj: RodzajElementu;
+  /** Rysunek w jednostkach pola szer × wys (oś Y w dół), już spłaszczony do M/L/C/Z. */
+  szer: number;
+  wys: number;
+  kontury: {
+    kontur: Kontur;
+    wypelnienie?: Kolor | 'kolor';
+    obrys?: { grubosc: number; kolor: Kolor | 'kolor' };
+  }[];
+  /** 'kolor' = kolorowalny (bierze kolor z ustawień ozdoby). */
+  // motyw: czy ma szyny domyślnie, kostka narożna (opcjonalnie)
+  // kształt: prostokąt treści (wcięcia w jednostkach pola)
+  // ramka9: zasób obrazu (SVG/PNG), wcięcia w px, boki 'rozciagnij' | 'powtarzaj', środek 'rozciagnij' | 'powtarzaj' | 'pusty'
+}
+```
+
+**Użycie w szablonie** – dotychczasowe pola zostają (zgodność wstecz), dochodzą nowe:
+
+- `StylLinii` += `'podwojna'` (+ `przerwa?: Mm`, domyślnie 2× grubość) – w obramowaniu, ramce karty, separatorze i liniach tabeli;
+- `ozdoba?: { rodzaj: 'motyw'; element; szerokosc: Mm; kolor; szyny?: Mm } | { rodzaj: 'ramka9'; element; grubosc: Mm }` – na `WezelBazowy` (panel) i w `RamkaKarty`; gdy jest, zastępuje linię;
+- `narozniki?: { element; rozmiar: Mm; kolor? }` – osobno, łączy się z linią albo motywem (SPEC 5 pkt 3);
+- `PoleSeparator` += `rysunek?: 'linia' | { motyw; szerokosc }`, `zakonczenia?: { element; rozmiar }`, `srodek?: { element; rozmiar }`, `dlugosc?: { mm } | { procent }`, `odstepOdOzdoby?: Mm`;
+- `PoleWartosc.ksztalt` += `{ element }` (własny kształt z SVG – zamyka odłożone z B25);
+- `Projekt.biblioteka.ozdobniki: ElementOzdobny[]` (własne; SPEC 2 „Biblioteka … ramki, motywy”), eksportowane w `.kartyrpg` i w pliku szablonu razem z użytymi elementami (jak czcionki i obrazy).
+
+Schemat podniesiony o 1 (dziś wersja 7), migracja tożsamościowa; walidacja w `src/dane/schemat.ts` (identyfikatory elementów muszą istnieć – brakujący element = ostrzeżenie i rysowanie linii ciągłej).
+
+### 3.3 Silnik ozdobników (`src/ozdobniki/`)
+
+- **Motyw wzdłuż odcinka długości L**, pas szerokości `b`: nominalna długość kafelka `k = b · szer/wys`; liczba kafelków `n = max(1, round(L / k))`; każdy kafelek rozciągnięty w osi motywu do `L / n` (zmiana proporcji ≤ ±1/(2n), przy typowych długościach kilka procent – niewidoczne). Tak pasuje do każdej długości (SPEC 5 pkt 2).
+- **Ramka z motywu:** cztery boki między narożnikami; kafelek „patrzy” na zewnątrz (obrót o 90° na kolejnych bokach, zgodnie z ruchem wskazówek zegara). Róg: narożnik z biblioteki (odbicie lustrzane na 4 rogi) albo – bez narożnika – kwadrat pasa (z szynami obrysowany). Promień zaokrąglenia nie zakrzywia motywu (R3).
+- **Szyny:** cienkie linie wzdłuż obu krawędzi pasa, grubość w mm.
+- **Separator:** zakończenie lewe, odbicie na prawe; środek wycina przerwę w linii; motyw zamiast linii – ten sam algorytm co bok ramki; pionowy = obrót o 90°.
+- **9-slice:** dziewięć kawałków źródła; rogi skalowane proporcjonalnie do `grubosc`, boki **powtarzane równo** (jak motyw – całkowita liczba kawałków, lekko rozciągniętych) albo rozciągane; środek rozciągany, powtarzany lub pusty. PNG: istniejący element `obraz` z przycięciem (obraz w PDF zapisany raz); SVG: `grupa` z macierzą i przycięciem. Ostrzeżenie < 300 dpi jak dla obrazów (SPEC 10).
+- **Wbudowana biblioteka** (rysujemy sami, licencja projektu, wpis w `LICENCJE.md`): motywy pnącze, przeplot, łuski, runy (ogólne znaki runopodobne), łańcuch, gwiazdki; narożniki liść, okucie, gwiazda, węzeł, zawijas, prosty kątownik; zakończenia grot, zawijas, liść, kropka, kolec; środki romb, gwiazda, liść, kropka (R11).
+
+### 3.4 Własne SVG
+
+- Import w „Bibliotece ozdobników” projektu (makieta 3) albo z listy wyboru („własny…”).
+- **Bezpieczeństwo:** surowego SVG nigdy nie wstawiamy do strony. Plik jest parsowany (DOMParser w przeglądarce; w testach Node – ten sam kod na prostym parserze XML), a z dozwolonych elementów (`path`, `rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`, `use` wewnętrzne, `transform`, `fill`, `stroke`, `stroke-width`, `style` – tylko te właściwości) budujemy własne kontury. Skrypty, zdarzenia, odwołania zewnętrzne, `foreignObject`, `image` – usuwane z komunikatem; `text` – komunikat „zamień tekst na krzywe”; gradient – pierwszy kolor; filtry – usuwane (PDF ich nie ma).
+- **Spłaszczenie** do `M/L/C/Z` w jednostkach pola (łuki `A` → krzywe Béziera, `Q/T/S/H/V` i względne → bezwzględne, `transform` wypalony) – biblioteka `svgpath` (MIT) albo własny kod (R4).
+- Limity: plik ≤ 512 KB, ≤ 20 000 komend po spłaszczeniu.
+- Kolor: „jednolity (kolorowalny)” – wszystkie wypełnienia i obrysy = kolor z ustawień; „zachowaj kolory” – kolory pliku (tryb czarno-biały zamienia je jak resztę).
+- Element ma rodzaj i od niego zależy, gdzie się pojawia: kafelek motywu, narożnik, zakończenie, środek separatora, kształt wartości (z prostokątem treści do ustawienia), ramka 9-slice (źródło SVG albo PNG).
+
+### 3.5 Luz w slocie
+
+Model: `UstawieniaArkusza.dopasowanie?: { luz: Mm; polozenie: 'srodek' | 'lewy-gorny'; tloDoSlotu: boolean; linie: 'slot' | 'karta' }`.
+
+- **Luz** – o ile karta może być **mniejsza** od slotu w każdym wymiarze i wciąż „pasuje” (bez ostrzeżenia, dostępna w menu). Domyślnie 0,5 mm (= dzisiejsza tolerancja, więc stare kartki działają tak samo), zakres 0–5 mm. Większa od slotu o > 0,5 mm albo mniejsza o więcej niż luz – jak dziś: `karta-inny-rozmiar` i blokada (R8). Sprawdzenie w jednym miejscu (`pasujeDoSlotu`) używanym przez `zbudujArkusz`, `wlasneKarty.ts`, menu typów i „Rób karty ►”.
+- **Położenie** – środek (U5) albo lewy górny róg slotu.
+- **Tło do slotu** – pod kartą prostokąt slotu w kolorze tła karty (`Szablon.tlo`) z promieniem rogów karty: przy przesunięciu druku względem perforacji nie widać białego paska. Treść karty nie zmienia położenia ani skali. Eksport „karty osobno” rysuje samą kartę.
+- **Linie cięcia i obrysy wydruku testowego** – wokół slotu (wspólne, jak dziś) albo wokół karty.
+- Działa w układzie automatycznym (slot z ustawień kartki) i własnym; „Moje układy” zapamiętują `dopasowanie` (pole opcjonalne – stare presety działają bez zmian).
+
+### 3.6 Mieszane rozmiary na kartce
+
+Model: `UstawieniaArkusza.rozmiary?: 'jeden' | 'mieszane'` (domyślnie `jeden` – wszystko jak dziś) i `mieszane?: { kolejnosc: 'najwieksze' | 'wlasna'; obracaj: boolean; grupujRozmiary: boolean; odstep: Mm }`; `Arkusz.kolejnosc?: string[]` (identyfikatory kart dla kolejności własnej).
+
+- **Wymiar karty** z jej szablonu: karta w mm – szerokość × wysokość, karta w slotach – kolumny × rzędy × slot szablonu.
+- **Algorytm pasów** (`src/druk/pasy.ts`, czyste funkcje, deterministyczne): karty w kolejności (od najwyższych, potem najszerszych – albo własnej); każda trafia do pierwszego pasa na bieżącej stronie, w którym się mieści (przy `grupujRozmiary` najpierw pas z kartami tej samej wysokości); inaczej nowy pas pod spodem; inaczej nowa strona. Wysokość pasa = pierwsza (najwyższa) karta; karty wyrównane do góry pasa. Cięcie jest „gilotynowe”: najpierw wzdłuż pasów, potem w pasie – wygodne na trymerze (R5).
+- **Obracanie** (opcja, domyślnie wyłączona – R7): karta, która nie mieści się w żadnym pasie, a obrócona tak, albo obrócona pasuje do pasa tej samej wysokości – obrót o 90° (scena: `grupa` z obrotem).
+- **Linie cięcia:** krawędzie wszystkich kart jako odcinki, nakładające się odcinki współliniowe scalane – wspólna krawędź to jedna linia przerywana (spójna z dzisiejszymi liniami siatki).
+- **Ręczna korekta** (R6): przeciągnięcie karty zmienia jej **kolejność** (wskaźnik wstawienia między kartami); rozmieszczenie liczy się od nowa, więc karty nigdy się nie nakładają. Pierwsze przeciągnięcie przy „od największych” przełącza na „własna” (z komunikatem, Cofnij wraca).
+- **Dodawanie:** klik w wolne miejsce otwiera menu ze wszystkimi szablonami projektu; te, które się w tym miejscu nie zmieszczą, są oznaczone, ale klikalne – karta trafia w pierwsze miejsce, gdzie się zmieści.
+- **Grupy talii:** każda grupa zaczyna nowy pas z nagłówkiem nad nim (styl jak dziś). Tytuł i nożyczki – jak dziś.
+- **Ograniczenia:** własny układ arkusza (stała siatka) jest przy „mieszane” wyłączony; karta większa niż obszar strony – ostrzeżenie i pominięcie (jak normalizacja). Wydruk testowy, eksport obrazów, czarno-biały, strefa bezpieczeństwa – bez zmian (działają na scenie strony).
+- Przełączenie „mieszane → jeden” przy kartach różnych rozmiarów: zostaje dzisiejsze ostrzeżenie `karta-inny-rozmiar`.
+
+### 3.7 Tryb swobodny
+
+Model: nowy typ kontenera `'swobodny'` (R10) i na każdym węźle `pozycja?: { x: Mm; y: Mm; kotwica?: Kotwica; obrot?: 0 | 90 | 180 | 270 }`, czytane tylko, gdy rodzic jest swobodny. `Kotwica` – 9 punktów (lewy-górny … prawy-dolny): `x`, `y` liczone od tego punktu kontenera do tego samego punktu elementu, więc pole „przyklejone” do prawego dolnego rogu zostaje tam po zmianie rozmiaru karty.
+
+- **Silnik (`uklad.ts`):** kontener swobodny ma rozmiar z rodzica jak każdy węzeł (w trybie „wg treści” – obwiednia dzieci). Dziecko dostaje szerokość i wysokość w mm, % kontenera albo „wg treści”; „wypełnij” nie ma sensu i panel go nie pokazuje (w modelu – jak „wg treści”). Wnętrze dziecka układa się normalnie (kolumna w swobodnym łamie tekst, dopasowuje, zwija puste). Obrót: dziecko układane w swoim nieobróconym pudełku, potem `grupa` z obrotem wokół rogu; dla 90°/270° pudełko zamienia szerokość z wysokością.
+- Kolejność rysowania = kolejność w drzewie (ostatnie na wierzchu); „na wierzch / wyżej / niżej / na spód” przesuwa w drzewie.
+- Element wychodzący poza kartę – ostrzeżenie w edytorze; na karcie przycięty do jej krawędzi (jak dziś).
+- **Konwersja:** „Zamień na swobodny” bierze położenia i rozmiary z bieżącego wyniku układu (nic się na karcie nie przesuwa); „Zamień na kolumnę / wiersz” – kolejność dzieci wg położenia (góra→dół, lewo→prawo), `pozycja` usuwana.
+- Kreator: czwarty układ startowy „pusta karta – swobodny” (rozszerza B22).
+- **Edytor (makieta 6):** przeciąganie w podglądzie (nakładka z uchwytami nad SVG, przeliczenie px → mm ze skali podglądu), 8 uchwytów rozmiaru (Shift – proporcje), strzałki 0,5 mm, Shift+strzałki 5 mm; **przyciąganie** do siatki (domyślnie 0,5 mm) i do krawędzi / środków rodzeństwa i kontenera (próg 6 px ekranu), Alt wyłącza; prowadnice rysowane tylko w edytorze; wiele zaznaczonych przesuwa się razem; wyrównaj (6 kierunków) i rozłóż równo; podpowiedź z X·Y w trakcie przeciągania. Jedno przeciągnięcie = jeden krok Cofnij (stan tymczasowy w trakcie, zapis na `pointerup`). Wszystko dostępne też z panelu (pola liczb) i klawiatury – przeciąganie jest dodatkiem, nie jedyną drogą (ryzyko z M2, sekcja 8).
+
+## 4. Etapy
+
+Każdy etap to **jeden ciąg pracy i jeden PR** od aktualnego `main`: kod + testy (typecheck, lint, format, Vitest, e2e), przegląd agentem `recenzent`, poprawki, scalenie, sprawdzenie wdrożenia na Pages, krótka notka „co sprawdzić” ze zrzutami. Decyzje bez konsultacji – sekcja 9.
+
+| Etap       | Wielkość | Zakres                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Agenci                                                     |
+| ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **M2b-1**  | S        | **Luz w slocie.** `dopasowanie` w ustawieniach kartki (sekcja 3.5), jedna funkcja `pasujeDoSlotu`, tło do slotu, położenie, linie wokół slotu/karty, w presetach „Moje układy” (schemat +1); sekcja „Karta w slocie” w panelu układu (makieta 5). Testy: silnik arkusza (63×88 w 63,5×89 z luzem 1,5 – bez ostrzeżeń; 62×88 – ostrzeżenie), PDF z tłem do slotu, e2e – przykład E(2).                                                                             | druk-pdf, edytor-ui, tester                                |
+| **M2b-2**  | L        | **Mieszane rozmiary.** Algorytm pasów z testami (kolejność, grupowanie rozmiarów, obracanie, nowa strona, grupy talii), scalanie linii cięcia, `rozmiary: 'mieszane'` w `zbudujArkusz` i PDF, przełącznik i opcje w ustawieniach kartki, menu „Dodaj w to miejsce”, przeciąganie = kolejność, blokada własnego układu (makieta 4). Schemat +1 (pola ustawień kartki i `Arkusz.kolejnosc`). E2e – przykład E(1) ze wzorcem PNG strony i PDF.                       | druk-pdf, edytor-ui, dane-import, tester                   |
+| **M2b-3**  | M        | **Fundament ozdobników + linia podwójna + narożniki.** Symbole w scenie (SVG `<use>`, PDF XObject), `grupa` z macierzą i przycięciem, styl `podwojna` wszędzie, gdzie są linie, model `ElementOzdobny` i katalog wbudowanych narożników, `narozniki` na ramce karty i panelu; w panelu „Ramka”: rodzaj (brak / linia / motyw / z obrazu – dwa ostatnie wyłączone do kolejnych etapów), wybór narożnika z miniaturami. Schemat +1. Testy jednostkowe i wzorce SVG. | biblioteka-ozdobnikow, silnik-layoutu, druk-pdf, edytor-ui |
+| **M2b-4**  | M        | **Motywy powtarzalne.** Sześć motywów z kostkami narożnymi, algorytm równego rozłożenia, szyny, ramka karty i panelu z motywu, lista z miniaturami, szerokość pasa, odsunięcie, kolor (makieta 1). Testy: liczba i krok kafelków dla różnych długości, wzorce SVG każdego motywu na karcie i na małym panelu, PDF – jeden XObject na kafelek.                                                                                                                     | biblioteka-ozdobnikow, edytor-ui, tester                   |
+| **M2b-5**  | S–M      | **Separatory ozdobne.** Zakończenia, środek, motyw jako separator, długość (mm / %), odstęp od ozdoby, pionowy; trzy wzory w menu „+ Pole → Separator” (makieta 2). Testy wzorców SVG, poziomy i pionowy, separator w wierszu i kolumnie.                                                                                                                                                                                                                         | biblioteka-ozdobnikow, edytor-ui                           |
+| **M2b-6**  | M        | **Własne SVG.** Import z sanityzacją i spłaszczeniem (sekcja 3.4), „Biblioteka ozdobników” projektu (makieta 3 – lewa i prawa kolumna), użycie jako kafelek, narożnik, zakończenie, środek, **kształt wartości**; eksport/import projektu i pliku szablonu z elementami (schemat +1). Testy: złośliwe pliki (skrypt, `onload`, zewnętrzny `href`, `foreignObject`), łuki i transformacje (porównanie z referencją), limity, kolorowanie; e2e – import i użycie.   | biblioteka-ozdobnikow, dane-import, edytor-ui, tester      |
+| **M2b-7**  | M        | **Ramki 9-slice.** Element `ramka9` ze źródłem PNG albo SVG, edytor wcięć (przeciągane linie + pola), boki rozciągnij / powtarzaj równo, środek, grubość w mm, ostrzeżenie dpi; ramka karty i panelu (makieta 3 – środek). Testy: geometria kawałków, wzorce SVG, PDF z PNG zapisanym raz. E2e – przykład D w całości.                                                                                                                                            | biblioteka-ozdobnikow, druk-pdf, edytor-ui, tester         |
+| **M2b-8**  | M        | **Tryb swobodny – model, silnik, panel.** Kontener `swobodny`, `pozycja` (x, y, kotwica, obrót co 90°), układ i obrót w `uklad.ts`/scenie, konwersje w obie strony, kreator „swobodny”, sekcja „Położenie” w panelu (pola liczb, kotwica, obrót, kolejność), drzewo z położeniem. Schemat +1. Testy silnika (kotwice przy zmianie rozmiaru karty, obrót, zagnieżdżona kolumna, konwersja bez przesunięć).                                                         | silnik-layoutu, edytor-ui, tester                          |
+| **M2b-9**  | L        | **Tryb swobodny – praca myszą.** Przeciąganie, uchwyty, przyciąganie do siatki i rodzeństwa, prowadnice, wiele zaznaczonych, wyrównaj / rozłóż, klawiatura, jeden krok Cofnij na gest (makieta 6). E2e – przykład F budowany myszą.                                                                                                                                                                                                                               | edytor-ui, tester                                          |
+| **M2b-10** | S        | **Domknięcie.** Przykłady D–F razem w `testy/przyklady.spec.ts` (wzorce PNG + szablon wzorcowy silnika jak B30), README („Ozdobniki”, „Karty różnych rozmiarów”, „Tryb swobodny”), zrzuty nowych widoków do `docs/obrazy/`, poprawki UX z budowania przykładów, aktualizacja `plan-M2b.md` i `CLAUDE.md`.                                                                                                                                                         | tester, edytor-ui, recenzent                               |
+
+**Kolejność (R1):** najpierw druk (M2b-1, M2b-2) – mały, samodzielny etap z natychmiastową korzyścią (arkusze perforowane) i jedna większa zmiana w `arkusz.ts`, zanim ozdobniki dołożą ciężaru scenie. Potem ozdobniki od fundamentu (3) przez motywy (4) i separatory (5) do zasobów użytkownika (6, 7) – 7 korzysta z 6, bo źródło 9-slice może być SVG. Tryb swobodny na końcu (8, 9): najbardziej ryzykowny UX i niezależny od reszty. Bloki są od siebie niezależne – można je zamienić miejscami bez przeróbek.
+
+„Schemat +1” – każdy etap, który zmienia model, podnosi wersję o 1 z migracją tożsamościową.
+
+## 5. Zakres pierwszej wersji (M2b)
+
+- Linie: ciągła, przerywana, kropkowana, **podwójna**; wszędzie, gdzie dziś są linie.
+- Ramka karty i panelu: linia albo **motyw** (6 wbudowanych + własne) albo **ramka z obrazu 9-slice** (PNG/SVG); **narożniki** z każdym rodzajem; parametry: skala (szerokość pasa / grubość), kolor, odsunięcie, szyny.
+- Separator: linia lub motyw, **zakończenia**, **środek**, długość, poziomy i pionowy.
+- **Własne SVG** w bibliotece projektu: bezpieczny import, kolorowanie, użycie we wszystkich rolach, także jako kształt wartości; eksport z projektem i szablonem.
+- Kartka: **mieszane rozmiary** (pasy, opcjonalne obracanie, kolejność, dodawanie w wolne miejsce) i **luz w slocie** (próg, położenie, tło do slotu, linie).
+- Szablon: **kontener swobodny** z położeniem w mm, kotwicą, obrotem co 90°, przeciąganiem, przyciąganiem i prowadnicami.
+
+## 6. Później
+
+| Kiedy | Co                                                                                                                                                                                                                                                                                                                                                               |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M2c   | Podkład ze wzoru w tle (SPEC 6.2 – naturalne uzupełnienie trybu swobodnego, R2), globalna biblioteka szablonów i ozdobników między projektami, podgląd układu ze strzałkami wymiarów (B31), eksport obrazów w Firefoksie i Safari.                                                                                                                               |
+| M3    | Zestawy stylów (SPEC 5 – komplety ramka + separator + narożnik jednym kliknięciem, ogólne, nie pod konkretne gry), styl szkicowy, postrzępiona krawędź, tekstury; obrót o dowolny kąt w trybie swobodnym; motyw wzdłuż łuku zaokrąglonych rogów; ciasne pakowanie kart (maxrects) jako druga strategia mieszanych rozmiarów. Reszta jak w `plan-M2.md` sekcja 6. |
+| M4    | Bez zmian (rewers, spad i znaczniki cięcia, druk dwustronny – „tło do slotu” z M2b-1 to zalążek spadu).                                                                                                                                                                                                                                                          |
+
+## 7. Decyzje do zatwierdzenia
+
+| #   | Sprawa                         | Propozycja                                                                                                                                                                                                                             |
+| --- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Kolejność etapów               | Druk (luz, mieszane) → ozdobniki → tryb swobodny (sekcja 4).                                                                                                                                                                           |
+| R2  | Co z resztą „M2b” z planu M2   | Podkład ze wzoru, globalna biblioteka szablonów, strzałki wymiarów (B31), eksport obrazów w FF/Safari – do M2c. Alternatywa: podkład ze wzoru dołożony do M2b-9 (mały: obraz pod podglądem, przezroczystość, niedrukowany).            |
+| R3  | Motyw a zaokrąglone rogi       | Motyw biegnie po prostych bokach, róg zajmuje narożnik albo kostka motywu; promień dotyczy tylko linii. Panel pokazuje podpowiedź, gdy przy motywie ustawiono promień.                                                                 |
+| R4  | Spłaszczanie SVG               | Biblioteka `svgpath` (MIT, mała, bez zależności) do łuków, skrótów i transformacji + własny kod dla kształtów i sanityzacji. Wpis w `LICENCJE.md`.                                                                                     |
+| R5  | Algorytm mieszanych rozmiarów  | Pasy (cięcie gilotynowe) zamiast ciasnego pakowania: odrobinę więcej papieru, za to proste cięcie na trymerze i przewidywalny układ. SPEC 10 mówi „ciasno” – pasy z grupowaniem rozmiarów dają na typowych kartkach 80–90 % zajętości. |
+| R6  | Ręczna korekta przy mieszanych | Przeciąganie zmienia kolejność, nie położenie w mm – bez nakładania się i bez dziur do ręcznego łatania.                                                                                                                               |
+| R7  | Obracanie kart przy mieszanych | Opcja, domyślnie wyłączona (karta obrócona na kartce bywa myląca; cięcie i tak z obu stron).                                                                                                                                           |
+| R8  | Luz                            | Domyślnie 0,5 mm (dzisiejsza tolerancja), zakres 0–5 mm; poza luzem – jak dziś ostrzeżenie i blokada; tło do slotu domyślnie wyłączone; położenie domyślnie środek (U5).                                                               |
+| R9  | Obrót w trybie swobodnym       | Tylko 0/90/180/270° – wystarcza na napisy wzdłuż krawędzi, a pomiar tekstu, przyciąganie i trafienia kursorem zostają prostokątne. Dowolny kąt – M3.                                                                                   |
+| R10 | Tryb swobodny – gdzie          | Typ kontenera, nie przełącznik całej karty: swobodny może być korzeń albo panel w kolumnie, a w swobodnym – zwykłe kolumny i wiersze.                                                                                                  |
+| R11 | Wbudowana biblioteka           | Rysunki własne (licencja projektu), ogólne: 6 motywów z SPEC, 6 narożników, 5 zakończeń, 4 środki. Runy jako ogólne znaki runopodobne. Bez elementów pod konkretne gry.                                                                |
+| R12 | Gdzie żyją własne ozdobniki    | W projekcie (`Projekt.biblioteka.ozdobniki`), eksport z projektem i z szablonem, który ich używa; biblioteka między projektami – M2c razem z globalną biblioteką szablonów.                                                            |
+
+## 8. Ryzyka
+
+- **Rozmiar i szybkość PDF / podglądu** – setki kafelków. Ograniczenie: symbole zapisane raz (XObject, `<use>`), test liczący XObjecty i rozmiar PDF przykładu D.
+- **Bezpieczeństwo SVG** – plik użytkownika mógłby nieść skrypt. Ograniczenie: nigdy nie wstawiamy surowego SVG; budujemy kontury z białej listy; testy ze złośliwymi plikami.
+- **Wierność importu SVG** – maski, gradienty, tekst, CSS z klasami. Ograniczenie: jasny raport „co pominięto” przy imporcie; obsługujemy to, co daje się wiernie zapisać w PDF.
+- **9-slice z PNG** – niska rozdzielczość rogów i szwy między kawałkami (antyaliasing). Ograniczenie: ostrzeżenie dpi, kawałki zachodzą na siebie o 0,05 mm.
+- **Mieszane rozmiary a istniejące funkcje** – przypięcia slotów, grupy, nagłówki, wydruk testowy. Ograniczenie: tryb domyślnie wyłączony, przypięcia slotów ignorowane w trybie mieszanym (ostrzeżenie przy przełączeniu), testy wszystkich ścieżek arkusza z obu trybów.
+- **Tryb swobodny – UX myszy i Cofnij** – drgania przy przyciąganiu, zbyt drobne kroki historii, trafianie w obrócone i zagnieżdżone elementy. Ograniczenie: panel liczb jako pełnoprawna droga, jeden krok na gest, trafienia liczone z wyniku układu (te same prostokąty co scena).
+- **Testy wizualne** – drobne różnice antyaliasingu ozdobników. Ograniczenie: wzorce SVG (deterministyczne) tam, gdzie się da; PNG tylko w e2e na Linuksie jak w CI.
+
+## 9. Decyzje podjęte bez konsultacji
+
+Rozstrzygnięcia przyjęte w trakcie M2b, których plan nie przesądza. Numeracja kontynuuje `plan-M2.md` (od B39). Każde da się łatwo zmienić.
+
+| #   | Etap | Sprawa | Decyzja |
+| --- | ---- | ------ | ------- |
