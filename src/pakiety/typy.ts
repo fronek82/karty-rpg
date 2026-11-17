@@ -36,6 +36,8 @@ export interface TypKarty {
   ikona: string;
   warianty: { szablonId: string; nazwa: string; dane?: Record<string, string> }[];
   rozmiary: RozmiarTypu[];
+  /** Opis rozmiaru w menu zamiast rozmiarów w slotach (np. „63×88 mm” – własne karty). */
+  opisRozmiaru?: string;
 }
 
 /** Gotowy układ z pakietu – arkusze ładowane na kartki jako zwykłe karty. */

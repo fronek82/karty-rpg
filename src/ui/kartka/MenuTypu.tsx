@@ -12,13 +12,14 @@ const rozmiar = (r: { kolumny: number; rzedy: number; nazwa?: string }) =>
 export function MenuTypu({
   typy,
   styl,
-  miesciSie,
+  blokada,
   wybierz,
   zamknij,
 }: {
   typy: TypKarty[];
   styl: React.CSSProperties;
-  miesciSie: (typ: TypKarty) => boolean;
+  /** Powód blokady typu w tym slocie (np. „nie mieści się”); undefined – można dodać. */
+  blokada: (typ: TypKarty) => string | undefined;
   wybierz: (typ: TypKarty, wariant: number) => void;
   zamknij: () => void;
 }) {
@@ -28,7 +29,12 @@ export function MenuTypu({
     [...(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])].filter(
       (b) => !b.disabled,
     );
-  useEffect(() => pozycje()[0]?.focus(), []);
+  // Fokus na pierwszej dostępnej pozycji (zablokowane są osiągalne strzałkami – z powodem).
+  useEffect(
+    () =>
+      (pozycje().find((b) => b.getAttribute('aria-disabled') !== 'true') ?? pozycje()[0])?.focus(),
+    [],
+  );
   if (typy.length === 0) {
     return (
       <div className="menu-typu" role="menu" aria-label={t('kartka.dodajKarte')} style={styl}>
@@ -69,7 +75,8 @@ export function MenuTypu({
     >
       <div className="menu-tytul">{t('kartka.dodajKarteTutaj')}</div>
       {typy.map((typ) => {
-        const mozna = miesciSie(typ);
+        const powod = blokada(typ);
+        const mozna = powod === undefined;
         const warianty = typ.warianty.length > 1;
         return (
           <div key={typ.id}>
@@ -77,14 +84,17 @@ export function MenuTypu({
               type="button"
               role="menuitem"
               className="menu-pozycja"
-              disabled={!mozna}
-              title={mozna ? undefined : t('kartka.nieMiesci')}
+              // Zablokowana pozycja zostaje osiągalna z klawiatury, a powód jest w jej treści.
+              aria-disabled={mozna ? undefined : true}
+              title={powod}
               aria-haspopup={warianty ? 'menu' : undefined}
               aria-expanded={warianty ? rozwiniety === typ.id : undefined}
               onClick={() =>
-                warianty
-                  ? ustawRozwiniety(rozwiniety === typ.id ? undefined : typ.id)
-                  : wybierz(typ, 0)
+                !mozna
+                  ? undefined
+                  : warianty
+                    ? ustawRozwiniety(rozwiniety === typ.id ? undefined : typ.id)
+                    : wybierz(typ, 0)
               }
             >
               <span>
@@ -94,7 +104,8 @@ export function MenuTypu({
                 {typ.nazwa}
                 {warianty && ' ▸'}
               </span>
-              <small>{typ.rozmiary.map(rozmiar).join(' · ')}</small>
+              <small>{typ.opisRozmiaru ?? typ.rozmiary.map(rozmiar).join(' · ')}</small>
+              {powod && <small className="powod-blokady">{powod}</small>}
             </button>
             {warianty && rozwiniety === typ.id && (
               <div className="menu-warianty">

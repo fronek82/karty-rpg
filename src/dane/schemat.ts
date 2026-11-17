@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { t } from '../i18n';
+import { PAPIERY } from '../model/arkusz';
 import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
 import type { Kontener, Szablon, Wezel } from '../model/szablon';
 
@@ -279,7 +280,9 @@ const arkusz = obj({
     ),
   ),
   ustawienia: obj({
-    papier: z.enum(['A4', 'Letter']),
+    papier: z.enum([...(Object.keys(PAPIERY) as (keyof typeof PAPIERY)[]), 'wlasny']),
+    wymiaryPapieru: opc(obj({ szer: liczba.min(20).max(1000), wys: liczba.min(20).max(1000) })),
+    marginesBezpieczenstwa: opc(nieujemna),
     orientacja: z.enum(['pionowa', 'pozioma']),
     marginesy: obj({ gora: nieujemna, prawo: nieujemna, dol: nieujemna, lewo: nieujemna }),
     tytul: opc(
@@ -306,6 +309,9 @@ const arkusz = obj({
     czarnoBialy: opc(z.boolean()),
     slot: opc(obj({ szerokosc: dodatnia, wysokosc: dodatnia })),
     poczatekSiatki: opc(xy),
+  }).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined, {
+    message: t('dane.wymiaryPapieru'),
+    path: ['wymiaryPapieru'],
   }),
   przypiete: opc(
     z.array(
@@ -434,8 +440,9 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 1 → 2: nowe pola są opcjonalne; sprowadzenie do modelu kartki robi normalizacja przy
   // otwarciu (potrzebuje czcionek – patrz src/druk/normalizacja.ts).
   // 2→3: nowe, opcjonalne pola (ramka karty, romb, separator, tabela, formatowanie) – bez zmian danych.
-  projekt: { 1: (d) => d, 2: (d) => d },
-  szablon: { 1: (d) => d, 2: (d) => d },
+  // 3→4: nowe formaty papieru, własny papier, margines bezpieczeństwa – bez zmian danych.
+  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d },
+  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d },
 };
 
 export function migruj(

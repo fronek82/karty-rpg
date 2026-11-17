@@ -9,9 +9,46 @@ import {
 } from '../../dane/edycja';
 import { BladDanych } from '../../dane/schemat';
 import { t, tJesliJest } from '../../i18n';
-import { PAPIERY, type Arkusz, type Papier } from '../../model/arkusz';
+import {
+  czyFormatZdjeciowy,
+  MARGINES_BEZPIECZENSTWA_FOTO,
+  PAPIERY,
+  wymiaryStrony,
+  type Arkusz,
+  type Papier,
+  type UstawieniaArkusza,
+} from '../../model/arkusz';
+import { PoleLiczby } from './PoleLiczby';
+import { SzablonyProjektu } from './SzablonyProjektu';
 import type { Projekt } from '../../model/projekt';
 import type { ProjektWEdycji } from '../useProjekt';
+
+/** Granice własnego papieru (mm) – jak w schemacie zapisu. */
+const MIN_PAPIER = 20;
+const MAX_PAPIER = 1000;
+
+const zaokr = (x: number) => String(Math.round(x * 10) / 10).replace('.', ',');
+
+/**
+ * Zmiana papieru. Format zdjęciowy: strefa bezpieczeństwa 3 mm i marginesy równe strefie (mały
+ * papier – liczy się każdy milimetr). Powrót na zwykły papier wyłącza strefę. Własny – startuje
+ * od wymiarów obecnego papieru.
+ */
+export function zmianaPapieru(u: UstawieniaArkusza, papier: Papier): Partial<UstawieniaArkusza> {
+  const zmiana: Partial<UstawieniaArkusza> = { papier };
+  if (papier === 'wlasny' && !u.wymiaryPapieru) {
+    const s = wymiaryStrony({ ...u, orientacja: 'pionowa' });
+    zmiana.wymiaryPapieru = { szer: s.szer, wys: s.wys };
+  }
+  if (czyFormatZdjeciowy(papier) && !czyFormatZdjeciowy(u.papier)) {
+    const m = MARGINES_BEZPIECZENSTWA_FOTO;
+    zmiana.marginesBezpieczenstwa = m;
+    zmiana.marginesy = { gora: m, prawo: m, dol: m, lewo: m };
+  } else if (!czyFormatZdjeciowy(papier) && czyFormatZdjeciowy(u.papier)) {
+    zmiana.marginesBezpieczenstwa = 0;
+  }
+  return zmiana;
+}
 
 const komunikat = (e: unknown) =>
   e instanceof BladDanych ? e.message : String(e instanceof Error ? e.message : e);
@@ -26,9 +63,12 @@ export function PanelUstawien({
   arkusz,
   zmienUklad,
   nowaKartka,
+  kartkaDlaSzablonu,
   zamknij,
   blad,
 }: {
+  /** Własne karty: nowa kartka dopasowana do rozmiaru szablonu. */
+  kartkaDlaSzablonu?: (szablonId: string) => void;
   edycja: ProjektWEdycji;
   arkusz: Arkusz;
   zmienUklad: (f: (p: Projekt) => Projekt, klucz?: string) => void;
@@ -156,19 +196,76 @@ export function PanelUstawien({
         </div>
       </div>
       <div className="pole-panelu">
-        <span id="papier">{t('kartka.papier')}</span>
-        <div className="przelacznik-segmentowy" role="group" aria-labelledby="papier">
-          {(Object.keys(PAPIERY) as Papier[]).map((x) => (
+        <label htmlFor="papier">{t('kartka.papier')}</label>
+        <select
+          id="papier"
+          value={u.papier}
+          onChange={(e) => {
+            const papier = e.target.value as Papier;
+            zmienUklad((p) => ustawUstawieniaArkusza(p, A, zmianaPapieru(u, papier)));
+          }}
+        >
+          {[...(Object.keys(PAPIERY) as Papier[]), 'wlasny' as const].map((x) => (
+            <option key={x} value={x}>
+              {t(`papier.${x}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+      {u.papier === 'wlasny' && (
+        <div className="pole-panelu dwa-pola">
+          {(['szer', 'wys'] as const).map((os) => (
+            <PoleLiczby
+              key={os}
+              id={`papier-${os}`}
+              etykieta={t(os === 'szer' ? 'kartka.szerokoscPapieru' : 'kartka.wysokoscPapieru')}
+              wartosc={(u.wymiaryPapieru ?? PAPIERY.A4)[os]}
+              min={MIN_PAPIER}
+              max={MAX_PAPIER}
+              zmien={(v) => {
+                const w = { ...(u.wymiaryPapieru ?? PAPIERY.A4), [os]: v };
+                zmienUklad((p) => ustawUstawieniaArkusza(p, A, { wymiaryPapieru: w }), 'papier');
+              }}
+            />
+          ))}
+        </div>
+      )}
+      <div className="pole-panelu">
+        <span id="orientacja">{t('kartka.orientacja')}</span>
+        <div className="przelacznik-segmentowy" role="group" aria-labelledby="orientacja">
+          {(['pionowa', 'pozioma'] as const).map((x) => (
             <button
               key={x}
               type="button"
-              aria-pressed={u.papier === x}
-              onClick={() => zmienUklad((p) => ustawUstawieniaArkusza(p, A, { papier: x }))}
+              aria-pressed={u.orientacja === x}
+              onClick={() => zmienUklad((p) => ustawUstawieniaArkusza(p, A, { orientacja: x }))}
             >
-              {x}
+              {t(`kartka.orientacja.${x}`)}
             </button>
           ))}
         </div>
+        <p className="podpis">
+          {(() => {
+            const s = wymiaryStrony(u);
+            return t('kartka.wymiaryPapieru', { szer: zaokr(s.szer), wys: zaokr(s.wys) });
+          })()}
+        </p>
+      </div>
+      <div className="pole-panelu">
+        <PoleLiczby
+          id="strefa"
+          etykieta={t('kartka.marginesBezpieczenstwa')}
+          wartosc={u.marginesBezpieczenstwa ?? 0}
+          min={0}
+          max={20}
+          krok={0.5}
+          zmien={(v) =>
+            zmien((p) => ustawUstawieniaArkusza(p, A, { marginesBezpieczenstwa: v }), {
+              klucz: `strefa:${A}`,
+            })
+          }
+        />
+        <p className="podpis">{t('kartka.marginesBezpieczenstwaOpis')}</p>
       </div>
       <fieldset className="sekcja-czcionek">
         <legend>{t('czcionki.tytul')}</legend>
@@ -214,6 +311,9 @@ export function PanelUstawien({
           </p>
         )}
       </fieldset>
+      {kartkaDlaSzablonu && (
+        <SzablonyProjektu edycja={edycja} kartkaDlaSzablonu={kartkaDlaSzablonu} />
+      )}
       {nowaKartka && (
         <p>
           <button type="button" onClick={nowaKartka}>

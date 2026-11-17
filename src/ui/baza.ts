@@ -32,3 +32,19 @@ export async function nowyProjektZPakietu(
   await baza().zapisz(projekt, zasoby);
   return projekt.id;
 }
+
+/** Nowy projekt własnych kart z pliku szablonu (`.kartyrpg-szablon`) – zapisany w bazie; zwraca id. */
+export async function nowyProjektZSzablonu(
+  bajty: Uint8Array,
+  bazaUrl: string = import.meta.env.BASE_URL,
+): Promise<string> {
+  const [{ importujSzablon }, { nowyProjektWlasny }] = await Promise.all([
+    import('../dane/archiwum'),
+    import('../dane/wlasneKarty'),
+  ]);
+  const { projekt, zasoby } = await nowyProjektWlasny(importujSzablon(bajty), (plik) =>
+    pobierz(`${bazaUrl}czcionki/${plik}`),
+  );
+  await baza().zapisz(projekt, zasoby);
+  return projekt.id;
+}
