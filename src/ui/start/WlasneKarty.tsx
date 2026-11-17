@@ -28,8 +28,13 @@ export function WlasneKarty() {
       <nav aria-label={t('projekt.nawigacja')} className="okruszki">
         <a href="#/">{t('nawigacja.start')}</a> › {t('start.stworzWlasne')}
       </nav>
-      <h1>{t('start.wlasneWBudowie')}</h1>
-      <p>{t('start.wlasneWBudowieOpis')}</p>
+      <h1>{t('start.stworzWlasne')}</h1>
+      <p>{t('start.wlasneOpisStrony')}</p>
+      <p>
+        <a className="przycisk glowny" href="#/wlasne/nowy">
+          {t('start.nowySzablon')}
+        </a>
+      </p>
       <h2>{t('start.wlasneZSzablonu')}</h2>
       <p>{t('start.wlasneZSzablonuOpis')}</p>
       <p>

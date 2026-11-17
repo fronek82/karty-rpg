@@ -34,6 +34,8 @@ export interface Obramowanie {
 interface WezelBazowy {
   /** Identyfikator unikalny w obrębie szablonu. */
   id: string;
+  /** Nazwa dla użytkownika (drzewo edytora, nazwa pola danych w panelu karty). */
+  nazwa?: string;
   szerokosc?: Rozmiar;
   wysokosc?: Rozmiar;
   /** Margines zewnętrzny (mm) – jedna liczba dla wszystkich stron albo osobno. */
@@ -303,6 +305,8 @@ export interface Szablon {
   rozmiar: RozmiarKarty;
   promienRogow?: Mm;
   tlo?: Kolor;
+  /** Dane przykładowe do podglądu w edytorze szablonu (klucz pola → wartość). */
+  przyklad?: Record<string, string>;
   /** Ramka całej karty – linia w odległości `odsuniecie` od krawędzi (0 = po krawędzi). */
   ramka?: RamkaKarty;
   korzen: Kontener;

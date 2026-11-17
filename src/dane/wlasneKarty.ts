@@ -228,3 +228,61 @@ export function pakietWlasny(szablony: readonly Szablon[]): Pakiet {
     nowaKartka: { nazwa: '', ustawienia: ustawieniaKartkiDla(pierwszy) },
   };
 }
+
+/**
+ * Zmiana rozmiaru karty szablonu (mm). Kartki, na których są tylko karty tego szablonu (albo
+ * żadne, a slot był równy staremu rozmiarowi), dostają slot nowego rozmiaru – karty dalej
+ * pasują; reszta kartek zostaje (karta innego rozmiaru – ostrzeżenie).
+ */
+export function zmienRozmiarSzablonu(p: Projekt, szablonId: string, szer: Mm, wys: Mm): Projekt {
+  const s = p.szablony.find((x) => x.id === szablonId);
+  if (!s || s.rozmiar.tryb !== 'mm') return p;
+  const nowy: Szablon = { ...s, rozmiar: { tryb: 'mm', szerokosc: szer, wysokosc: wys } };
+  const szablony = new Map(p.szablony.map((x) => [x.id, x]));
+  return {
+    ...p,
+    zmieniono: new Date().toISOString(),
+    szablony: p.szablony.map((x) => (x.id === szablonId ? nowy : x)),
+    arkusze: p.arkusze.map((a) => {
+      const talia = p.talie.find((x) => x.id === a.taliaId);
+      const karty = talia?.karty ?? [];
+      const tylkoTen = karty.length > 0 && karty.every((k) => k.szablonId === szablonId);
+      const pustaTegoRozmiaru =
+        karty.length === 0 && pasujeDoSlotu(s, slotKartki(a, talia, szablony));
+      return tylkoTen || pustaTegoRozmiaru
+        ? { ...a, ustawienia: { ...a.ustawienia, slot: { szerokosc: szer, wysokosc: wys } } }
+        : a;
+    }),
+  };
+}
+
+/**
+ * Kartka dla szablonu: istniejąca o jego rozmiarze albo nowa (bez tytułu, papier jak pierwsza
+ * kartka). Zwraca projekt i id kartki.
+ */
+export function kartkaDlaSzablonu(
+  p: Projekt,
+  szablonId: string,
+): { projekt: Projekt; arkuszId: string } {
+  const s = p.szablony.find((x) => x.id === szablonId);
+  if (!s) throw new Error(`Brak szablonu „${szablonId}”.`);
+  const szablony = new Map(p.szablony.map((x) => [x.id, x]));
+  const jest = p.arkusze.find((a) =>
+    pasujeDoSlotu(
+      s,
+      slotKartki(
+        a,
+        p.talie.find((x) => x.id === a.taliaId),
+        szablony,
+      ),
+    ),
+  );
+  if (jest) return { projekt: p, arkuszId: jest.id };
+  const wzor = p.arkusze[0]?.ustawienia;
+  return dodajKartke(
+    p,
+    { nazwa: s.nazwa, ustawienia: ustawieniaKartkiDla(s, wzor?.papier, wzor?.wymiaryPapieru) },
+    s.nazwa,
+    false,
+  );
+}

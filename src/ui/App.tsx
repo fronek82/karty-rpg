@@ -10,6 +10,9 @@ const WyborGry = lazy(() => import('./start/WyborGry').then((m) => ({ default: m
 const WlasneKarty = lazy(() =>
   import('./start/WlasneKarty').then((m) => ({ default: m.WlasneKarty })),
 );
+const KreatorStrona = lazy(() =>
+  import('./start/KreatorStrona').then((m) => ({ default: m.KreatorStrona })),
+);
 const EdytorStrona = lazy(() =>
   import('./EdytorStrona').then((m) => ({ default: m.EdytorStrona })),
 );
@@ -27,7 +30,9 @@ function Leniwa({ children }: { children: ReactNode }) {
 
 export function App() {
   const trasa = useTrasa();
-  const projekt = /^\/projekt\/([^/]+)/.exec(trasa)?.[1];
+  const dopasowanie = /^\/projekt\/([^/]+)(?:\/(.*))?$/.exec(trasa);
+  const projekt = dopasowanie?.[1];
+  const podtrasa = dopasowanie?.[2] ?? '';
   const gra = /^\/gra\/([^/]+)$/.exec(trasa)?.[1];
   // Dawne trasy (lista projektów, arkusze pakietu) – teraz wszystko jest na starcie.
   const dawna = trasa === '/projekty' || trasa === '/arkusze';
@@ -40,7 +45,7 @@ export function App() {
     return (
       <div className="aplikacja">
         <Leniwa>
-          <EdytorStrona key={projekt} id={decodeURIComponent(projekt)} />
+          <EdytorStrona key={projekt} id={decodeURIComponent(projekt)} podtrasa={podtrasa} />
         </Leniwa>
       </div>
     );
@@ -61,6 +66,10 @@ export function App() {
         ) : gra ? (
           <Leniwa>
             <WyborGry id={decodeURIComponent(gra)} />
+          </Leniwa>
+        ) : trasa === '/wlasne/nowy' ? (
+          <Leniwa>
+            <KreatorStrona />
           </Leniwa>
         ) : trasa === '/wlasne' || trasa === '/gry/inne' ? (
           <Leniwa>
