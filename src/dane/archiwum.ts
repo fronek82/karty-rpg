@@ -1,7 +1,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { t } from '../i18n';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
-import type { Szablon, Wezel } from '../model/szablon';
+import { stylePola, type Szablon, type Wezel } from '../model/szablon';
 import { BladKolekcjiCzcionek, wczytajCzcionke } from '../silnik/czcionki';
 import { MAKS_BAJTOW_CZCIONKI, formatObrazu, unikalneId } from './czcionki';
 import {
@@ -172,8 +172,7 @@ function wszystkieWezly(s: Szablon): Wezel[] {
 function czcionkiSzablonu(s: Szablon): string[] {
   const nazwy = new Set<string>();
   for (const w of wszystkieWezly(s)) {
-    if ('styl' in w) nazwy.add(w.styl.czcionka);
-    if (w.typ === 'tekst' && w.etykieta?.styl?.czcionka) nazwy.add(w.etykieta.styl.czcionka);
+    for (const st of stylePola(w)) if (st.czcionka) nazwy.add(st.czcionka);
   }
   return [...nazwy];
 }

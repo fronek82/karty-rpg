@@ -36,21 +36,34 @@ export class Czcionka {
     this.descent = Math.abs(font.descent);
   }
 
-  /** Kształtuje tekst w jedną linię (bez łamania). Pamięć podręczna LRU (`LIMIT_PAMIECI_UKLADU`). */
-  uloz(tekst: string): UlozonyGlif[] {
-    const zapamietany = this.pamiecUkladu.get(tekst);
+  /** Czy czcionka ma cechę OpenType (np. `smcp` – kapitaliki). */
+  maCeche(cecha: string): boolean {
+    try {
+      return this.font.availableFeatures.includes(cecha);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Kształtuje tekst w jedną linię (bez łamania), opcjonalnie z cechami OpenType.
+   * Pamięć podręczna LRU (`LIMIT_PAMIECI_UKLADU`).
+   */
+  uloz(tekst: string, cechy?: string[]): UlozonyGlif[] {
+    const klucz = cechy?.length ? `${cechy.join(',')}\u0000${tekst}` : tekst;
+    const zapamietany = this.pamiecUkladu.get(klucz);
     if (zapamietany) {
       // Odświeżenie pozycji – Map zachowuje kolejność wstawiania, najstarszy jest pierwszy.
-      this.pamiecUkladu.delete(tekst);
-      this.pamiecUkladu.set(tekst, zapamietany);
+      this.pamiecUkladu.delete(klucz);
+      this.pamiecUkladu.set(klucz, zapamietany);
       return zapamietany;
     }
-    const run = this.font.layout(tekst);
+    const run = cechy?.length ? this.font.layout(tekst, cechy) : this.font.layout(tekst);
     const glify = run.glyphs.map((g, i) => {
       const p = run.positions[i];
       return { id: g.id, przesuniecie: p?.xAdvance ?? 0, dx: p?.xOffset ?? 0, dy: p?.yOffset ?? 0 };
     });
-    this.pamiecUkladu.set(tekst, glify);
+    this.pamiecUkladu.set(klucz, glify);
     if (this.pamiecUkladu.size > LIMIT_PAMIECI_UKLADU) {
       const najstarszy = this.pamiecUkladu.keys().next().value;
       if (najstarszy !== undefined) this.pamiecUkladu.delete(najstarszy);

@@ -1,5 +1,11 @@
 import type { Mm } from '../model/jednostki';
-import type { Kolor, StylTekstu, WyrownanieOsi } from '../model/szablon';
+import type {
+  Kolor,
+  StylTekstu,
+  WariantCzcionki,
+  WyrownanieOsi,
+  WyrownanieTekstu,
+} from '../model/szablon';
 import type { Czcionka, RejestrCzcionek, UlozonyGlif } from './czcionki';
 import type { DefinicjaGlifu, ElementSceny, GlifNaScenie } from './scena';
 
@@ -7,6 +13,79 @@ import type { DefinicjaGlifu, ElementSceny, GlifNaScenie } from './scena';
 export interface Fragment {
   tekst: string;
   styl: StylTekstu;
+  /** Fragment jest etykietą pola – akapit z samą etykietą nie dostaje wcięcia ani odstępu po. */
+  etykieta?: boolean;
+}
+
+/** Mnożnik rozmiaru syntetycznych kapitalików (czcionka bez cechy `smcp`). */
+export const SKALA_KAPITALIKOW = 0.75;
+
+const WARIANTY: Record<WariantCzcionki, [boolean, boolean]> = {
+  normalny: [false, false],
+  pogrubiony: [true, false],
+  kursywa: [false, true],
+  'pogrubiona-kursywa': [true, true],
+};
+const zFlag = (b: boolean, i: boolean): WariantCzcionki =>
+  b && i ? 'pogrubiona-kursywa' : b ? 'pogrubiony' : i ? 'kursywa' : 'normalny';
+
+/**
+ * Formatowanie w treści: `**pogrubienie**`, `*kursywa*`, `***pogrubiona kursywa***`; `\*` to
+ * zwykła gwiazdka. Znacznik bez pary zostaje zwykłym tekstem. Wariant łączy się z wariantem
+ * stylu (np. `**` w kursywie daje pogrubioną kursywę).
+ */
+export function parsujFormatowanie(tekst: string, styl: StylTekstu): Fragment[] {
+  type Znacznik = { znacznik: 1 | 2 | 3; para?: boolean };
+  type Znak = { tekst: string } | Znacznik;
+  const czesci: Znak[] = [];
+  const re = /\\\*|\*{1,3}/g;
+  let poz = 0;
+  for (const m of tekst.matchAll(re)) {
+    if (m.index > poz) czesci.push({ tekst: tekst.slice(poz, m.index) });
+    if (m[0] === '\\*') czesci.push({ tekst: '*' });
+    else czesci.push({ znacznik: m[0].length as 1 | 2 | 3 });
+    poz = m.index + m[0].length;
+  }
+  if (poz < tekst.length) czesci.push({ tekst: tekst.slice(poz) });
+  // Parowanie: znacznik otwiera, ten sam rodzaj dalej zamyka.
+  const otwarte = new Map<number, Znacznik>();
+  for (const c of czesci) {
+    if (!('znacznik' in c)) continue;
+    const o = otwarte.get(c.znacznik);
+    if (o) {
+      o.para = true;
+      c.para = true;
+      otwarte.delete(c.znacznik);
+    } else otwarte.set(c.znacznik, c);
+  }
+  const [b0, i0] = WARIANTY[styl.wariant ?? 'normalny'];
+  let b = false;
+  let i = false;
+  const wynik: Fragment[] = [];
+  // Ten sam obiekt stylu dla tego samego wariantu – sąsiednie kawałki się łączą.
+  const style = new Map<WariantCzcionki, StylTekstu>();
+  const dodajZeStylem = (t: string) => {
+    if (t === '') return;
+    const wariant = zFlag(b0 || b, i0 || i);
+    let st = style.get(wariant);
+    if (!st) {
+      st = wariant === (styl.wariant ?? 'normalny') ? styl : { ...styl, wariant };
+      style.set(wariant, st);
+    }
+    const ost = wynik[wynik.length - 1];
+    if (ost && ost.styl === st) ost.tekst += t;
+    else wynik.push({ tekst: t, styl: st });
+  };
+  for (const c of czesci) {
+    if ('tekst' in c) dodajZeStylem(c.tekst);
+    else if (!c.para) dodajZeStylem('*'.repeat(c.znacznik));
+    else if (c.znacznik === 3) {
+      b = !b;
+      i = !i;
+    } else if (c.znacznik === 2) b = !b;
+    else i = !i;
+  }
+  return wynik;
 }
 
 const KOLOR_DOMYSLNY: Kolor = '#000000';
@@ -30,6 +109,8 @@ interface GlifWWierszu {
   x: Mm;
   dy: Mm;
   id: number;
+  /** Liczba odstępów między słowami przed glifem w wierszu (do justowania). */
+  nrSpacji: number;
 }
 
 export interface WierszTekstu {
@@ -38,6 +119,10 @@ export interface WierszTekstu {
   /** Odległość linii bazowej od góry wiersza. */
   linia: Mm;
   glify: GlifWWierszu[];
+  /** Odstępy między słowami w wierszu. */
+  spacje: number;
+  /** Ostatni wiersz akapitu (nie jest justowany). */
+  ostatni: boolean;
 }
 
 export interface UkladTekstu {
@@ -54,11 +139,12 @@ function kawalek(
   styl: StylTekstu,
   czcionki: RejestrCzcionek,
   skala: number,
+  cechy?: string[],
 ): Kawalek {
   const czcionka = czcionki.pobierz(styl.czcionka, styl.wariant);
   const rozmiar = styl.rozmiar * skala;
   const odstepLiter = (styl.odstepLiter ?? 0) * skala;
-  const glify = czcionka.uloz(tekst);
+  const glify = czcionka.uloz(tekst, cechy);
   const naMm = rozmiar / czcionka.unitsPerEm;
   const szerokosc =
     glify.reduce((s, g) => s + g.przesuniecie * naMm, 0) + odstepLiter * glify.length;
@@ -81,10 +167,34 @@ function naAkapity(fragmenty: Fragment[]): Fragment[][] {
     const czesci = f.tekst.split('\n');
     czesci.forEach((czesc, i) => {
       if (i > 0) akapity.push([]);
-      if (czesc !== '') akapity[akapity.length - 1]!.push({ tekst: czesc, styl: f.styl });
+      if (czesc !== '') akapity[akapity.length - 1]!.push({ ...f, tekst: czesc });
     });
   }
   return akapity;
+}
+
+/**
+ * Kawałki jednego słowa: zwykle jeden; kapitaliki bez cechy `smcp` – małe litery jako
+ * mniejsze wersaliki (osobne kawałki).
+ */
+function kawalkiSlowa(
+  tekst: string,
+  styl: StylTekstu,
+  czcionki: RejestrCzcionek,
+  skala: number,
+): Kawalek[] {
+  if (!styl.kapitaliki || styl.wielkieLitery) return [kawalek(tekst, styl, czcionki, skala)];
+  if (czcionki.pobierz(styl.czcionka, styl.wariant).maCeche('smcp'))
+    return [kawalek(tekst, styl, czcionki, skala, ['smcp'])];
+  const male = { ...styl, rozmiar: styl.rozmiar * SKALA_KAPITALIKOW };
+  return tekst
+    .split(/(\p{Ll}+)/u)
+    .filter((c) => c !== '')
+    .map((c) =>
+      /^\p{Ll}+$/u.test(c)
+        ? kawalek(c.toLocaleUpperCase('pl'), male, czcionki, skala)
+        : kawalek(c, styl, czcionki, skala),
+    );
 }
 
 function metryki(k: Pick<Kawalek, 'czcionka' | 'rozmiar' | 'interlinia'>) {
@@ -96,7 +206,12 @@ function metryki(k: Pick<Kawalek, 'czcionka' | 'rozmiar' | 'interlinia'>) {
   };
 }
 
-function zbudujWiersz(kawalki: Kawalek[], zapasowy: Kawalek | undefined): WierszTekstu {
+function zbudujWiersz(
+  kawalki: Kawalek[],
+  zapasowy: Kawalek | undefined,
+  wciecie: Mm,
+  ostatni: boolean,
+): WierszTekstu {
   // Spacje na końcu wiersza nie zajmują miejsca.
   while (kawalki.length > 0 && kawalki[kawalki.length - 1]!.spacja) kawalki.pop();
   const doMetryk = kawalki.length > 0 ? kawalki : zapasowy ? [zapasowy] : [];
@@ -110,9 +225,11 @@ function zbudujWiersz(kawalki: Kawalek[], zapasowy: Kawalek | undefined): Wiersz
     zejscie = Math.max(zejscie, m.zejscie);
   }
   const glify: GlifWWierszu[] = [];
-  let x = 0;
+  let x = wciecie;
+  let spacje = 0;
   for (const k of kawalki) {
     const skala = k.rozmiar / k.czcionka.unitsPerEm;
+    if (k.spacja) spacje++;
     for (const g of k.glify) {
       if (!k.spacja) {
         glify.push({
@@ -122,13 +239,21 @@ function zbudujWiersz(kawalki: Kawalek[], zapasowy: Kawalek | undefined): Wiersz
           x: x + g.dx * skala,
           dy: g.dy * skala,
           id: g.id,
+          nrSpacji: spacje,
         });
       }
       x += g.przesuniecie * skala + k.odstepLiter;
     }
   }
   const szerokosc = kawalki.length > 0 ? x - (kawalki[kawalki.length - 1]?.odstepLiter ?? 0) : 0;
-  return { szerokosc, wysokosc, linia: (wysokosc - (wznos + zejscie)) / 2 + wznos, glify };
+  return {
+    szerokosc,
+    wysokosc,
+    linia: (wysokosc - (wznos + zejscie)) / 2 + wznos,
+    glify,
+    spacje,
+    ostatni,
+  };
 }
 
 /**
@@ -144,10 +269,19 @@ export function ulozTekst(
   const wiersze: WierszTekstu[] = [];
   let zaSzeroki = false;
   const pierwszy = fragmenty[0];
-  for (const akapit of naAkapity(fragmenty)) {
+  const akapity = naAkapity(fragmenty);
+  akapity.forEach((akapit, nrAkapitu) => {
     const zapasowy = pierwszy
       ? kawalek(' ', akapit[0]?.styl ?? pierwszy.styl, czcionki, skala)
       : undefined;
+    // Wcięcie i odstęp po akapicie – ze stylu początku akapitu; akapit z samą etykietą bez nich.
+    const tylkoEtykieta = akapit.length > 0 && akapit.every((f) => f.etykieta);
+    const stylAkapitu = akapit.find((f) => !f.etykieta)?.styl ?? akapit[0]?.styl;
+    const wciecie = tylkoEtykieta || akapit[0]?.etykieta ? 0 : (stylAkapitu?.wciecie ?? 0) * skala;
+    const odstepPo =
+      tylkoEtykieta || nrAkapitu === akapity.length - 1
+        ? 0
+        : (stylAkapitu?.odstepAkapitow ?? 0) * skala;
     // Słowa = ciągi kawałków bez spacji; łamać można tylko na spacjach.
     const slowa: { spacjaPrzed?: Kawalek; kawalki: Kawalek[]; szerokosc: Mm }[] = [];
     let spacja: Kawalek | undefined;
@@ -161,7 +295,7 @@ export function ulozTekst(
           biezace = undefined;
           continue;
         }
-        const k = kawalek(czesc, f.styl, czcionki, skala);
+        const ks = kawalkiSlowa(czesc, f.styl, czcionki, skala);
         if (!biezace) {
           biezace = {
             spacjaPrzed: slowa.length > 0 ? spacja : undefined,
@@ -171,13 +305,16 @@ export function ulozTekst(
           slowa.push(biezace);
           spacja = undefined;
         }
-        biezace.kawalki.push(k);
-        biezace.szerokosc += k.szerokosc;
+        for (const k of ks) {
+          biezace.kawalki.push(k);
+          biezace.szerokosc += k.szerokosc;
+        }
       }
     }
 
     let wiersz: Kawalek[] = [];
-    let szerokoscWiersza = 0;
+    let szerokoscWiersza = wciecie;
+    let pierwszyWiersz = true;
     for (const slowo of slowa) {
       const zSpacja = wiersz.length > 0 && slowo.spacjaPrzed ? slowo.spacjaPrzed.szerokosc : 0;
       if (
@@ -185,9 +322,10 @@ export function ulozTekst(
         wiersz.length > 0 &&
         szerokoscWiersza + zSpacja + slowo.szerokosc > szerokoscMax + 1e-6
       ) {
-        wiersze.push(zbudujWiersz(wiersz, zapasowy));
+        wiersze.push(zbudujWiersz(wiersz, zapasowy, pierwszyWiersz ? wciecie : 0, false));
         wiersz = [];
         szerokoscWiersza = 0;
+        pierwszyWiersz = false;
       }
       if (wiersz.length > 0 && slowo.spacjaPrzed) {
         wiersz.push(slowo.spacjaPrzed);
@@ -197,8 +335,10 @@ export function ulozTekst(
       szerokoscWiersza += slowo.szerokosc;
       if (szerokoscMax !== undefined && slowo.szerokosc > szerokoscMax + 1e-6) zaSzeroki = true;
     }
-    wiersze.push(zbudujWiersz(wiersz, zapasowy));
-  }
+    const ostatni = zbudujWiersz(wiersz, zapasowy, pierwszyWiersz ? wciecie : 0, true);
+    ostatni.wysokosc += odstepPo;
+    wiersze.push(ostatni);
+  });
   return {
     wiersze,
     szerokosc: Math.max(0, ...wiersze.map((w) => w.szerokosc)),
@@ -234,7 +374,7 @@ export function ulozDopasowany(
 export function tekstNaScene(
   uklad: UkladTekstu,
   ramka: { x: Mm; y: Mm; szer: Mm; wys: Mm },
-  wyrownanie: 'lewo' | 'srodek' | 'prawo',
+  wyrownanie: WyrownanieTekstu,
   wyrownaniePionowe: WyrownanieOsi,
   slownikGlifow: Record<string, DefinicjaGlifu>,
   obwodka?: { grubosc: Mm; kolor: Kolor },
@@ -249,11 +389,19 @@ export function tekstNaScene(
     const wolneX = ramka.szer - w.szerokosc;
     const x0 =
       ramka.x + (wyrownanie === 'srodek' ? wolneX / 2 : wyrownanie === 'prawo' ? wolneX : 0);
+    // Justowanie: wolne miejsce rozdzielone między odstępy słów (bez ostatniego wiersza akapitu).
+    const naSpacje =
+      wyrownanie === 'justuj' && !w.ostatni && w.spacje > 0 && wolneX > 0 ? wolneX / w.spacje : 0;
     for (const g of w.glify) {
       const klucz = `${g.czcionka.id}#${g.id}`;
       if (!slownikGlifow[klucz]) slownikGlifow[klucz] = { kontur: g.czcionka.kontur(g.id) };
       const lista = wgKoloru.get(g.kolor) ?? [];
-      lista.push({ klucz, x: x0 + g.x, y: y + w.linia - g.dy, skala: g.skala });
+      lista.push({
+        klucz,
+        x: x0 + g.x + g.nrSpacji * naSpacje,
+        y: y + w.linia - g.dy,
+        skala: g.skala,
+      });
       wgKoloru.set(g.kolor, lista);
     }
     y += w.wysokosc;

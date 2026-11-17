@@ -2,6 +2,7 @@ import type { Arkusz, UstawieniaArkusza } from '../model/arkusz';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
 import {
   czyKontener,
+  stylePola,
   type Karta,
   type Pole,
   type Szablon,
@@ -55,6 +56,18 @@ export function kolumnySzablonu(s: Szablon): KolumnaDanych[] {
   const wynik = new Map<string, KolumnaDanych>();
   for (const korzen of [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)]) {
     for (const pole of polaWezla(korzen)) {
+      if (pole.typ === 'tabela') {
+        // Każda komórka wartości tabeli to osobna kolumna danych (nazwa = nagłówek).
+        for (const k of pole.kolumny)
+          if (k.klucz && !wynik.has(k.klucz))
+            wynik.set(k.klucz, {
+              klucz: k.klucz,
+              nazwa: k.naglowek || nazwaKlucza(k.klucz),
+              rodzaj: 'pole',
+              typPola: 'tabela',
+            });
+        continue;
+      }
       if (pole.klucz && !wynik.has(pole.klucz)) {
         wynik.set(pole.klucz, {
           klucz: pole.klucz,
@@ -121,10 +134,7 @@ export function roleProjektu(p: Projekt): string[] {
   const role = new Set(Object.keys(p.role));
   const style = (w: Wezel) => {
     for (const x of polaWezla(w)) {
-      const nazwy = [
-        'styl' in x ? x.styl.czcionka : undefined,
-        x.typ === 'tekst' ? x.etykieta?.styl?.czcionka : undefined,
-      ];
+      const nazwy = stylePola(x).map((st) => st.czcionka);
       for (const n of nazwy) if (n && !rodziny.has(n)) role.add(n);
     }
   };

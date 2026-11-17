@@ -67,6 +67,8 @@ export interface Kontener extends WezelBazowy {
   rozklad?: WyrownanieOsi | 'miedzy';
 }
 
+export type WyrownanieTekstu = 'lewo' | 'srodek' | 'prawo' | 'justuj';
+
 export type WariantCzcionki = 'normalny' | 'pogrubiony' | 'kursywa' | 'pogrubiona-kursywa';
 
 export interface StylTekstu {
@@ -78,11 +80,18 @@ export interface StylTekstu {
   /** Auto-dopasowanie: zmniejszaj do tego rozmiaru, aż tekst się zmieści. */
   minRozmiar?: Mm;
   kolor?: Kolor;
-  wyrownanie?: 'lewo' | 'srodek' | 'prawo';
+  /** `justuj` – wiersze rozciągnięte do pełnej szerokości (bez ostatniego wiersza akapitu). */
+  wyrownanie?: WyrownanieTekstu;
   wyrownaniePionowe?: WyrownanieOsi;
   /** Wysokość wiersza jako wielokrotność rozmiaru (domyślnie 1,2). */
   interlinia?: number;
   wielkieLitery?: boolean;
+  /** Kapitaliki: małe litery jako małe wersaliki (cecha `smcp` czcionki albo synteza). */
+  kapitaliki?: boolean;
+  /** Wcięcie pierwszego wiersza akapitu (mm). */
+  wciecie?: Mm;
+  /** Dodatkowy odstęp po akapicie (mm). */
+  odstepAkapitow?: Mm;
   /** Dodatkowy odstęp między literami (mm). */
   odstepLiter?: Mm;
   /** Obwódka wokół liter (np. biała, żeby napis był czytelny na tle ilustracji). */
@@ -116,10 +125,17 @@ export interface PoleTekst extends PoleBazowe {
   wieleWierszy?: boolean;
   etykieta?: {
     tekst: NapisSzablonu;
-    /** `nad` – osobny wiersz nad wartością; `przed` – w tej samej linii przed tekstem. */
-    pozycja: 'nad' | 'przed';
+    /**
+     * `nad` / `pod` – osobny wiersz nad / pod wartością; `przed` – w tej samej linii przed tekstem.
+     */
+    pozycja: 'nad' | 'przed' | 'pod';
     styl?: Partial<StylTekstu>;
   };
+  /**
+   * Formatowanie w treści (domyślnie włączone): `**pogrubienie**`, `*kursywa*`,
+   * `***pogrubiona kursywa***`; `\*` to zwykła gwiazdka.
+   */
+  formatowanie?: boolean;
 }
 
 /** Krótka wartość (np. `k6`, `-1 obr`) w ramce o zadanym kształcie. */
@@ -128,8 +144,18 @@ export interface PoleWartosc extends PoleBazowe {
   tekst?: NapisSzablonu;
   styl: StylTekstu;
   /** `sciety` – prostokąt ze ściętymi rogami (wielkość ścięcia w `promien`). */
-  ksztalt: 'prostokat' | 'kolo' | 'sciety';
+  ksztalt: KsztaltWartosci;
+  /** Etykieta nad albo pod kształtem (np. „WYTRZYMAŁOŚĆ” nad rombem); tło i ramka – tylko kształt. */
+  etykieta?: {
+    tekst: NapisSzablonu;
+    pozycja: 'nad' | 'pod';
+    styl?: Partial<StylTekstu>;
+    /** Odstęp między etykietą a kształtem (mm, domyślnie 0,5). */
+    odstep?: Mm;
+  };
 }
+
+export type KsztaltWartosci = 'prostokat' | 'kolo' | 'sciety' | 'romb';
 
 export interface PoleObraz extends PoleBazowe {
   typ: 'obraz';
@@ -194,7 +220,47 @@ export interface PoleIkona extends PoleBazowe {
   kolor?: Kolor;
 }
 
-export type Pole = PoleTekst | PoleWartosc | PoleObraz | PoleZnaczniki | PoleWpis | PoleIkona;
+/** Linia oddzielająca (pozioma w kolumnie, pionowa w wierszu) – na całą dostępną długość. */
+export interface PoleSeparator extends PoleBazowe {
+  typ: 'separator';
+  kierunek: 'poziomy' | 'pionowy';
+  grubosc: Mm;
+  kolor?: Kolor;
+  stylLinii?: StylLinii;
+}
+
+/** Kolumna tabeli: nagłówek stały z szablonu, wartość z danych karty. */
+export interface KolumnaTabeli {
+  naglowek: string;
+  /** Klucz w danych karty (jedna komórka wartości). */
+  klucz: string;
+  /** `auto` (domyślnie) – wg najszerszej komórki; `wypelnij` – udział w wolnym miejscu. */
+  szerokosc?: 'auto' | { mm: Mm } | { wypelnij: number };
+}
+
+/** Tabela: wiersz nagłówków i wiersz wartości (np. cechy w bloku statystyk). */
+export interface PoleTabela extends PoleBazowe {
+  typ: 'tabela';
+  kolumny: KolumnaTabeli[];
+  /** Styl wartości; nagłówki – ten sam z nadpisaniami `stylNaglowka` (domyślnie pogrubiony). */
+  styl: StylTekstu;
+  stylNaglowka?: Partial<StylTekstu>;
+  tloNaglowka?: Kolor;
+  /** Linie siatki; `zewnetrzne: false` – bez obwódki tabeli. */
+  linie?: { grubosc: Mm; kolor: Kolor; styl?: StylLinii; zewnetrzne?: boolean };
+  /** Wewnętrzny odstęp komórki (mm, domyślnie 0,8). */
+  paddingKomorki?: Mm;
+}
+
+export type Pole =
+  | PoleTekst
+  | PoleWartosc
+  | PoleObraz
+  | PoleZnaczniki
+  | PoleWpis
+  | PoleIkona
+  | PoleSeparator
+  | PoleTabela;
 export type Wezel = Kontener | Pole;
 
 export type RozmiarKarty =
@@ -206,6 +272,16 @@ export type RozmiarKarty =
       rzedy: number;
     }
   | { tryb: 'mm'; szerokosc: Mm; wysokosc: Mm };
+
+export interface RamkaKarty {
+  grubosc: Mm;
+  kolor: Kolor;
+  styl?: StylLinii;
+  /** Odległość zewnętrznej krawędzi linii od krawędzi karty (mm, domyślnie 0). */
+  odsuniecie?: Mm;
+  /** Zaokrąglenie rogów ramki; domyślnie zgodne z rogami karty. */
+  promien?: Mm;
+}
 
 /** Parametr szablonu – napis z wartością domyślną, który karta może nadpisać w danych. */
 export interface ParametrSzablonu {
@@ -224,6 +300,8 @@ export interface Szablon {
   rozmiar: RozmiarKarty;
   promienRogow?: Mm;
   tlo?: Kolor;
+  /** Ramka całej karty – linia w odległości `odsuniecie` od krawędzi (0 = po krawędzi). */
+  ramka?: RamkaKarty;
   korzen: Kontener;
   /**
    * Inny układ dla wybranego rozmiaru karty w slotach (np. ciężka broń 1×2 z ilustracją na całą
@@ -297,4 +375,20 @@ export function rozwinOdstepy(o: Mm | Partial<Odstepy> | undefined): Odstepy {
   if (o === undefined) return { gora: 0, prawo: 0, dol: 0, lewo: 0 };
   if (typeof o === 'number') return { gora: o, prawo: o, dol: o, lewo: o };
   return { gora: o.gora ?? 0, prawo: o.prawo ?? 0, dol: o.dol ?? 0, lewo: o.lewo ?? 0 };
+}
+
+/** Wszystkie style tekstu pola (główny, etykiety, nagłówki tabeli) – np. do zebrania czcionek. */
+export function stylePola(w: Wezel): Partial<StylTekstu>[] {
+  if (czyKontener(w)) return [];
+  switch (w.typ) {
+    case 'tekst':
+    case 'wartosc':
+      return [w.styl, ...(w.etykieta?.styl ? [w.etykieta.styl] : [])];
+    case 'tabela':
+      return [w.styl, ...(w.stylNaglowka ? [w.stylNaglowka] : [])];
+    case 'wpis':
+      return [w.styl];
+    default:
+      return [];
+  }
 }

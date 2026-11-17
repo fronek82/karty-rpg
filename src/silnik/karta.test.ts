@@ -4,6 +4,7 @@ import type { Szablon } from '../model/szablon';
 import {
   czyPuste,
   daneZParametrami,
+  konturRombu,
   konturScietego,
   renderujKarte,
   wartoscPola,
@@ -14,6 +15,14 @@ import { korzenKarty } from '../model/szablon';
 import type { ElementSceny, Scena } from './scena';
 import { scenaDoSvg } from './svg';
 import { rejestrTestowy, szablonBroni } from './__testy__/pomoc';
+import {
+  daneCzaru,
+  daneStatystyk,
+  daneWroga,
+  szablonCzaru,
+  szablonStatystyk,
+  szablonWroga,
+} from './__testy__/przyklady';
 
 const czcionki = rejestrTestowy();
 const ctx = {
@@ -546,5 +555,149 @@ describe('obraz – przypadki z przeglądu E4a', () => {
         { adresObrazu: () => 'k.png' },
       ),
     ).toContain('rotate(-30 ');
+  });
+});
+
+describe('klocki M2: ramka karty, romb, etykiety, separator, tabela', () => {
+  const svg = (s: Szablon, dane: Record<string, string>) => {
+    const { scena, ostrzezenia } = renderujKarte(s, { dane }, ctx);
+    return { scena, ostrzezenia, svg: scenaDoSvg(scena) };
+  };
+
+  it('A. karta czaru – wzorzec SVG, bez ostrzeżeń', async () => {
+    const w = svg(szablonCzaru, daneCzaru);
+    expect(w.ostrzezenia).toEqual([]);
+    await expect(w.svg).toMatchFileSnapshot('./__snapshots__/m2-czar.svg');
+  });
+
+  it('B. blok statystyk – wzorzec SVG, bez ostrzeżeń', async () => {
+    const w = svg(szablonStatystyk, daneStatystyk);
+    expect(w.ostrzezenia).toEqual([]);
+    await expect(w.svg).toMatchFileSnapshot('./__snapshots__/m2-statystyki.svg');
+  });
+
+  it('C. karta wroga – wzorzec SVG, puste pole zwinięte', async () => {
+    const w = svg(szablonWroga, daneWroga);
+    expect(w.ostrzezenia).toEqual([]);
+    await expect(w.svg).toMatchFileSnapshot('./__snapshots__/m2-wrog.svg');
+    // Bez „opisu” karta ma tyle samo tekstu co z pustym opisem; z opisem – więcej.
+    const zOpisem = svg(szablonWroga, { ...daneWroga, opis: 'Poluje nocą.' });
+    expect(ile(zOpisem.scena, 'tekst')).toBeGreaterThanOrEqual(ile(w.scena, 'tekst'));
+    expect(zOpisem.svg.length).toBeGreaterThan(w.svg.length);
+  });
+
+  it('ramka karty: prostokąt z odsunięciem, rogi zgodne z kartą', () => {
+    const { scena } = renderujKarte(szablonCzaru, { dane: {} }, ctx);
+    const r = scena.elementy.at(-1)!;
+    expect(r).toMatchObject({ typ: 'prostokat', x: 1.15, y: 1.15 });
+    if (r.typ !== 'prostokat') throw new Error();
+    expect(r.szer).toBeCloseTo(63 - 2.3, 6);
+    expect(r.promien).toBeCloseTo(3 - 1.15, 6);
+    expect(r.obrys).toMatchObject({ grubosc: 0.3, kolor: '#ffffff' });
+  });
+
+  it('romb: tło i obrys to ścieżki rombu, etykieta nad kształtem', () => {
+    const s: Szablon = {
+      id: 's',
+      nazwa: 's',
+      rozmiar: { tryb: 'mm', szerokosc: 20, wysokosc: 20 },
+      korzen: {
+        id: 'k',
+        typ: 'kolumna',
+        dzieci: [
+          {
+            id: 'v',
+            typ: 'wartosc',
+            klucz: 'v',
+            ksztalt: 'romb',
+            tlo: '#eeeeee',
+            obramowanie: { grubosc: 0.4, kolor: '#000000' },
+            szerokosc: { mm: 10 },
+            wysokosc: { mm: 14 },
+            styl: { czcionka: 'tresc', rozmiar: pt(9) },
+            etykieta: { tekst: 'SIŁA', pozycja: 'nad', odstep: 1 },
+          },
+        ],
+      },
+    };
+    const { scena } = renderujKarte(s, { dane: { v: '5' } }, ctx);
+    const sciezki = scena.elementy.filter((e) => e.typ === 'sciezka');
+    expect(sciezki).toHaveLength(2);
+    const [tlo, obr] = sciezki as Extract<ElementSceny, { typ: 'sciezka' }>[];
+    // Tło: wierzchołki rombu w obszarze pod etykietą.
+    const ys = tlo!.kontur.flatMap((c) => (c[0] === 'Z' ? [] : [c[2] as number]));
+    const etykietaWys = 14 - (Math.max(...ys) - Math.min(...ys)) - 1;
+    expect(etykietaWys).toBeGreaterThan(2);
+    expect(Math.max(...ys)).toBeCloseTo(14, 6);
+    expect(obr!.obrys).toMatchObject({ grubosc: 0.4 });
+    // Dwa elementy tekstu: etykieta i wartość.
+    expect(ile(scena, 'tekst')).toBe(2);
+    expect(konturRombu({ x: 0, y: 0, szer: 4, wys: 4 })).toEqual([
+      ['M', 2, 0],
+      ['L', 4, 2],
+      ['L', 2, 4],
+      ['L', 0, 2],
+      ['Z'],
+    ]);
+  });
+
+  it('tabela: kolumna danych na komórkę, linie siatki, auto-dopasowanie i rozciągnięcie', () => {
+    const tab = szablonStatystyk.korzen.dzieci[1]!;
+    if (tab.typ !== 'tabela') throw new Error();
+    expect(czyPuste(tab, {})).toBe(true);
+    expect(czyPuste(tab, { cecha_ww: '30' })).toBe(false);
+    const { scena } = renderujKarte(szablonStatystyk, { dane: daneStatystyk }, ctx);
+    const linie = scena.elementy.filter((e) => e.typ === 'linia');
+    // 11 pionowych między 12 kolumnami, 1 pod nagłówkiem, 1 separator.
+    expect(linie).toHaveLength(13);
+    // Tabela rozciągnięta na całą szerokość wnętrza (88 − 2·3).
+    const obwodka = scena.elementy.find(
+      (e) => e.typ === 'prostokat' && e.obrys?.grubosc === 0.2 && !e.wypelnienie,
+    );
+    expect(obwodka).toMatchObject({ x: 3.1 });
+    if (obwodka?.typ !== 'prostokat') throw new Error();
+    expect(obwodka.szer).toBeCloseTo(88 - 6 - 0.2, 6);
+  });
+
+  it('etykieta pod tekstem i separator pionowy', () => {
+    const s: Szablon = {
+      id: 's',
+      nazwa: 's',
+      rozmiar: { tryb: 'mm', szerokosc: 30, wysokosc: 20 },
+      korzen: {
+        id: 'k',
+        typ: 'wiersz',
+        dzieci: [
+          {
+            id: 't',
+            typ: 'tekst',
+            klucz: 't',
+            szerokosc: { wypelnij: 1 },
+            styl: { czcionka: 'tresc', rozmiar: pt(9) },
+            etykieta: { tekst: 'podpis', pozycja: 'pod' },
+          },
+          {
+            id: 'sep',
+            typ: 'separator',
+            kierunek: 'pionowy',
+            grubosc: 0.5,
+            stylLinii: 'przerywana',
+          },
+          {
+            id: 'u',
+            typ: 'tekst',
+            klucz: 'u',
+            szerokosc: { wypelnij: 1 },
+            styl: { czcionka: 'tresc', rozmiar: pt(9) },
+          },
+        ],
+      },
+    };
+    const { scena } = renderujKarte(s, { dane: { t: 'wartość', u: 'x' } }, ctx);
+    const l = scena.elementy.find((e) => e.typ === 'linia');
+    expect(l).toMatchObject({ y1: 0, y2: 20 });
+    if (l?.typ !== 'linia') throw new Error();
+    expect(l.x1).toBe(l.x2);
+    expect(l.obrys.kreska).toBeDefined();
   });
 });
