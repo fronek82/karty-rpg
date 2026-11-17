@@ -375,6 +375,7 @@ export function EdytorSzablonu({
       value={{
         elementy: projekt.biblioteka?.ozdobniki ?? [],
         adresBiblioteki: `#/projekt/${idProjektu}/biblioteka`,
+        adresObrazu: (id) => zasoby.obrazy.get(id)?.adres,
       }}
     >
       <div className="edytor-szablonu">

@@ -251,6 +251,12 @@ export function importujSzablon(bajty: Uint8Array): PaczkaSzablonu {
     throw new BladDanych(
       t('dane.powtorzonyId', { id: powtorzony, gdzie: t('dane.gdzie.biblioteka') }),
     );
+  // Ramka 9-slice z PNG musi mieć obraz w paczce (inaczej szablon wskazywałby cudzy zasób).
+  for (const e of plik.biblioteka ?? []) {
+    const z = e.ramka9?.zrodlo;
+    if (z?.typ === 'obraz' && !plik.zasoby.some((o) => o.id === z.zasob))
+      throw new BladDanych(t('dane.ramka9BezObrazu', { id: e.id, zasob: z.zasob }));
+  }
   return { ...plik, dane: zbierzZasoby(pliki, PLIK_SZABLONU, plik.zasoby) };
 }
 

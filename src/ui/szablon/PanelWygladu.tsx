@@ -10,7 +10,12 @@ import type {
   WyrownanieOsi,
 } from '../../model/szablon';
 import { MOTYWY_WBUDOWANE, type ElementOzdobny } from '../../ozdobniki';
-import { elementyRodzaju, useAdresBiblioteki, useElementyWlasne } from './elementyWlasne';
+import {
+  elementyRodzaju,
+  useAdresBiblioteki,
+  useAdresObrazu,
+  useElementyWlasne,
+} from './elementyWlasne';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { Liczba, PoleKoloru, PoleOdstepow, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 
@@ -287,6 +292,7 @@ function WyborRamki9({
 }) {
   const idEtykiety = useId();
   const adresBiblioteki = useAdresBiblioteki();
+  const adresObrazu = useAdresObrazu();
   const ustaw = (z: Partial<OzdobaRamka9>) => zmien({ ...ozdoba, ...z });
   const aktualny = ramki.find((e) => e.id === ozdoba.element);
   const svg = aktualny?.ramka9?.zrodlo.typ === 'svg';
@@ -303,7 +309,12 @@ function WyborRamki9({
             style={{ color: ozdoba.kolor ?? '#000000' }}
             onClick={() => ustaw({ element: e.id })}
           >
-            <MiniaturaOzdobnika element={e} />
+            <MiniaturaOzdobnika
+              element={e}
+              {...(e.ramka9?.zrodlo.typ === 'obraz'
+                ? { adres: adresObrazu?.(e.ramka9.zrodlo.zasob) }
+                : {})}
+            />
             <small>{nazwaElementu(e)}</small>
           </button>
         ))}

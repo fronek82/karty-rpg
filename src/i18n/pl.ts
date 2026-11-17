@@ -22,6 +22,11 @@ export const pl = {
   'dane.gdzie.zasoby': 'zasoby',
   'dane.gdzie.biblioteka': 'biblioteka ozdobników',
   'dane.gdzie.ramka9': 'ramka 9-slice {id}',
+  'dane.ramka9Wymiary':
+    '„{gdzie}” ma wymiary {a}×{b} px, a obraz „{id}” – {c}×{d} px; wcięcia mogą nie pasować',
+  'dane.ramka9Pusta': '„{gdzie}” ma źródło SVG bez rysunku – nic nie zostanie narysowane',
+  'dane.ramka9BezObrazu':
+    'Plik szablonu: ramka 9-slice „{id}” wskazuje obraz „{zasob}”, którego nie ma w paczce',
   'dane.zaDuzoElementow': 'Biblioteka ozdobników przekroczyłaby limit {limit} elementów.',
   'dane.elementZProjektu':
     'Szablon odwołuje się do elementu ozdobnego „{id}”, którego nie ma w pliku – użyto elementu o tym id z projektu.',

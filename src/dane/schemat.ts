@@ -823,13 +823,28 @@ export function ostrzezeniaProjektu(p: Projekt): string[] {
       }
     }
   }
-  // Ramka 9-slice z obrazu, którego nie ma w zasobach – silnik narysuje cienką linię.
+  // Ramki 9-slice: obraz, którego nie ma w zasobach (silnik narysuje cienką linię), wymiary
+  // niezgodne z obrazem (wcięcia w pikselach przestałyby pasować) i źródło SVG bez rysunku.
   for (const e of p.biblioteka?.ozdobniki ?? []) {
     const z = e.ramka9?.zrodlo;
-    if (z?.typ === 'obraz' && !zasoby.has(z.zasob))
-      wynik.push(
-        t('dane.nieznanyZasob', { gdzie: t('dane.gdzie.ramka9', { id: e.id }), id: z.zasob }),
-      );
+    const gdzie = t('dane.gdzie.ramka9', { id: e.id });
+    if (z?.typ === 'obraz') {
+      const opis = p.zasoby.find((o) => o.rodzaj === 'obraz' && o.id === z.zasob);
+      if (!opis || opis.rodzaj !== 'obraz')
+        wynik.push(t('dane.nieznanyZasob', { gdzie, id: z.zasob }));
+      else if (opis.szerokosc !== e.szer || opis.wysokosc !== e.wys)
+        wynik.push(
+          t('dane.ramka9Wymiary', {
+            gdzie,
+            a: e.szer,
+            b: e.wys,
+            id: z.zasob,
+            c: opis.szerokosc,
+            d: opis.wysokosc,
+          }),
+        );
+    } else if (z?.typ === 'svg' && e.kontury.length === 0)
+      wynik.push(t('dane.ramka9Pusta', { gdzie }));
   }
   const szablony = new Map(p.szablony.map((s) => [s.id, s]));
   const zgloszone = new Set<string>();

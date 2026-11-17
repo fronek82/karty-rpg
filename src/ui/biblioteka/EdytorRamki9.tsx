@@ -4,7 +4,6 @@ import { t } from '../../i18n';
 import {
   MIN_DPI_RAMKI,
   dpiRogow,
-  przytnijWciecia,
   type ElementOzdobny,
   type UstawieniaRamki9,
 } from '../../ozdobniki';
@@ -22,24 +21,53 @@ const POMOC_PODGLADY = [
   { szer: 50, wys: 18, klucz: 'mala' },
 ] as const;
 
-/** Linia wcięcia na podglądzie źródła: przeciągana myszą i strzałkami (wartość w jednostkach źródła). */
+const PRZECIWNA: Record<Strona, Strona> = {
+  lewo: 'prawo',
+  prawo: 'lewo',
+  gora: 'dol',
+  dol: 'gora',
+};
+
+/** Największe wcięcie strony: wymiar źródła minus wcięcie strony przeciwnej (przeciwna się nie zmienia). */
+export const maksWciecie = (
+  strona: Strona,
+  element: Pick<ElementOzdobny, 'szer' | 'wys'>,
+  wciecia: UstawieniaRamki9['wciecia'],
+) =>
+  Math.max(
+    0,
+    (strona === 'lewo' || strona === 'prawo' ? element.szer : element.wys) -
+      wciecia[PRZECIWNA[strona]],
+  );
+
+/** Wartość wcięcia: piksele PNG – całkowite, jednostki SVG – do 0,01 (jak z myszy). */
+const zaokraglij = (v: number, calkowite: boolean) =>
+  calkowite ? Math.round(v) : Math.round(v * 100) / 100;
+
+/**
+ * Linia wcięcia na podglądzie źródła: przeciągana myszą, sterowana klawiaturą (strzałki ±1,
+ * Shift/PageUp/PageDown ±10, Home/End – skrajne wartości); wartość w jednostkach źródła.
+ */
 function LiniaWciecia({
   strona,
   element,
   wciecia,
   ustaw,
   pojemnik,
+  jednostka,
 }: {
   strona: Strona;
   element: ElementOzdobny;
   wciecia: UstawieniaRamki9['wciecia'];
   ustaw: (strona: Strona, v: number) => void;
   pojemnik: React.RefObject<HTMLDivElement | null>;
+  jednostka: string;
 }) {
   const pionowa = strona === 'lewo' || strona === 'prawo';
   const rozmiar = pionowa ? element.szer : element.wys;
   const wartosc = wciecia[strona];
-  // Położenie linii od lewej / od góry, jako ułamek źródła.
+  const max = maksWciecie(strona, element, wciecia);
+  // Położenie linii od lewej / od góry.
   const pozycja = strona === 'lewo' || strona === 'gora' ? wartosc : rozmiar - wartosc;
   const calkowite = element.ramka9?.zrodlo.typ === 'obraz';
   const krok = calkowite ? 1 : Math.max(0.01, Math.round(rozmiar) / 200);
@@ -49,8 +77,7 @@ function LiniaWciecia({
     const p = pionowa
       ? ((clientX - r.left) / r.width) * rozmiar
       : ((clientY - r.top) / r.height) * rozmiar;
-    const v = strona === 'lewo' || strona === 'gora' ? p : rozmiar - p;
-    ustaw(strona, calkowite ? Math.round(v) : Math.round(v * 100) / 100);
+    ustaw(strona, zaokraglij(strona === 'lewo' || strona === 'gora' ? p : rozmiar - p, calkowite));
   };
   const nazwa = t('biblioteka.ramka9.liniaWciecia', { strona: t(`biblioteka.ramka9.${strona}`) });
   return (
@@ -61,8 +88,9 @@ function LiniaWciecia({
       aria-label={nazwa}
       aria-orientation={pionowa ? 'horizontal' : 'vertical'}
       aria-valuemin={0}
-      aria-valuemax={rozmiar}
+      aria-valuemax={zaokraglij(max, calkowite)}
       aria-valuenow={wartosc}
+      aria-valuetext={`${wartosc} ${jednostka}`}
       data-testid={`linia-${strona}`}
       style={
         pionowa
@@ -76,18 +104,37 @@ function LiniaWciecia({
       onPointerMove={(e) => {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) przelicz(e.clientX, e.clientY);
       }}
+      onPointerUp={(e) => {
+        if (e.currentTarget.hasPointerCapture(e.pointerId))
+          e.currentTarget.releasePointerCapture(e.pointerId);
+      }}
+      onPointerCancel={(e) => {
+        if (e.currentTarget.hasPointerCapture(e.pointerId))
+          e.currentTarget.releasePointerCapture(e.pointerId);
+      }}
       onKeyDown={(e) => {
+        // Strzałka przesuwa linię na ekranie; dla prawej i dolnej wcięcie rośnie w przeciwną stronę.
+        const odwrotnie = strona === 'prawo' || strona === 'dol';
         const znak =
           e.key === 'ArrowRight' || e.key === 'ArrowDown'
             ? 1
             : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
               ? -1
-              : 0;
+              : e.key === 'PageUp'
+                ? 10
+                : e.key === 'PageDown'
+                  ? -10
+                  : 0;
+        if (e.key === 'Home' || e.key === 'End') {
+          e.preventDefault();
+          ustaw(strona, e.key === 'Home' ? 0 : zaokraglij(max, calkowite));
+          return;
+        }
         if (!znak) return;
         e.preventDefault();
-        // Strzałka przesuwa linię na ekranie; dla prawej i dolnej wcięcie rośnie w przeciwną stronę.
-        const kierunek = strona === 'lewo' || strona === 'gora' ? znak : -znak;
-        ustaw(strona, Math.max(0, wartosc + kierunek * krok * (e.shiftKey ? 10 : 1)));
+        const przyrost = (odwrotnie && Math.abs(znak) === 1 ? -znak : znak) * krok;
+        const mnoznik = e.shiftKey && Math.abs(znak) === 1 ? 10 : 1;
+        ustaw(strona, zaokraglij(Math.max(0, wartosc + przyrost * mnoznik), calkowite));
       }}
     />
   );
@@ -136,14 +183,16 @@ export function EdytorRamki9({
       (p) => zmienElementBiblioteki(p, element.id, { ramka9: { ...u, ...z } }),
       klucz ? { klucz } : undefined,
     );
+  // „Takie same na wszystkich bokach”: samo zaznaczenie niczego nie zmienia (poprzednie wartości
+  // zostają, aż do pierwszej zmiany); dopiero zmiana ustawia wszystkie cztery wcięcia naraz.
   const ustawWciecie = (strona: Strona, v: number) => {
-    const max = jednakowe
-      ? Math.min(element.szer, element.wys) / 2
-      : Math.max(element.szer, element.wys);
-    const w = Math.max(0, Math.min(max, v));
+    const wartosc = (max: number) => Math.max(0, Math.min(max, Number.isFinite(v) ? v : 0));
     const nowe = jednakowe
-      ? { gora: w, prawo: w, dol: w, lewo: w }
-      : przytnijWciecia({ ...u.wciecia, [strona]: w }, element.szer, element.wys);
+      ? (() => {
+          const w = wartosc(Math.min(element.szer, element.wys) / 2);
+          return { gora: w, prawo: w, dol: w, lewo: w };
+        })()
+      : { ...u.wciecia, [strona]: wartosc(maksWciecie(strona, element, u.wciecia)) };
     zmienUstawienia({ wciecia: nowe }, `biblioteka:wciecia:${element.id}`);
   };
   const najgrubsze = Math.max(...STRONY.map((s) => u.wciecia[s]));
@@ -195,6 +244,7 @@ export function EdytorRamki9({
               wciecia={u.wciecia}
               ustaw={ustawWciecie}
               pojemnik={pojemnik}
+              jednostka={jednostka}
             />
           ))}
         </div>
@@ -207,7 +257,7 @@ export function EdytorRamki9({
                 etykieta={t(`biblioteka.ramka9.${s}`)}
                 wartosc={u.wciecia[s]}
                 min={0}
-                max={s === 'gora' || s === 'dol' ? element.wys : element.szer}
+                max={maksWciecie(s, element, u.wciecia)}
                 krok={png ? 1 : 0.1}
                 zmien={(v) => ustawWciecie(s, v)}
               />
@@ -217,10 +267,7 @@ export function EdytorRamki9({
             <input
               type="checkbox"
               checked={jednakowe}
-              onChange={(e) => {
-                ustawJednakowe(e.target.checked);
-                if (e.target.checked) ustawWciecie('gora', u.wciecia.gora);
-              }}
+              onChange={(e) => ustawJednakowe(e.target.checked)}
             />{' '}
             {t('biblioteka.ramka9.jednakowe')}
           </label>

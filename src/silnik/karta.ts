@@ -32,7 +32,7 @@ import { znajdzElement } from '../ozdobniki/katalog';
 import { konturWlasnegoKsztaltu, wnetrzeWlasnegoKsztaltu } from '../ozdobniki/ksztalt';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { ramkaZMotywu } from '../ozdobniki/motyw';
-import { MIN_DPI_RAMKI, ramka9ZElementu } from '../ozdobniki/ramka9';
+import { MIN_DPI_RAMKI, ramka9ZElementu, type WynikRamki9 } from '../ozdobniki/ramka9';
 import { rysujSeparatorOzdobny, wysokoscOzdobySeparatora } from '../ozdobniki/separator';
 import { narozniki as rysujNarozniki, type WynikNarozniki } from '../ozdobniki/narozniki';
 import {
@@ -319,11 +319,20 @@ export function renderujKarte(
    * PNG o rogach poniżej 300 dpi: ostrzeżenie `niska-rozdzielczosc-ramki` (rysujemy mimo to).
    * Własne narożniki rysujemy nad ramką.
    */
-  const dodajRamke9 = (o: OzdobaRamka9, obszar: Ramka, id: string, n: Narozniki | undefined) => {
+  const wczesne = new Map<string, WynikRamki9>();
+  /** Środek ramki 9-slice rysujemy przed treścią (dzieci, pola) – reszta dochodzi później, na wierzchu. */
+  const przygotujRamke9 = (o: OzdobaRamka9, obszar: Ramka, id: string) => {
     const w = ramka9ZElementu(o, obszar, {
       ...(ctx.elementy ? { wlasne: ctx.elementy } : {}),
       maObraz: (zasob) => ctx.obraz?.(zasob) !== undefined,
     });
+    elementy.push(...w.srodek);
+    wczesne.set(id, w);
+  };
+  const dodajRamke9 = (o: OzdobaRamka9, obszar: Ramka, id: string, n: Narozniki | undefined) => {
+    const w = wczesne.get(id);
+    if (!w) return;
+    wczesne.delete(id);
     elementy.push(...w.elementy);
     Object.assign(symbole, w.symbole);
     if (w.nieznany || w.brakObrazu) {
@@ -366,6 +375,14 @@ export function renderujKarte(
       promien: szablon.promienRogow,
       wypelnienie: szablon.tlo,
     });
+  }
+  if (szablon.ramka?.ozdoba?.rodzaj === 'ramka9') {
+    const o = szablon.ramka.odsuniecie ?? 0;
+    przygotujRamke9(
+      szablon.ramka.ozdoba,
+      { x: o, y: o, szer: szer - 2 * o, wys: wys - 2 * o },
+      'ramka-karty',
+    );
   }
   const korzen = rozmiesc(korzenKarty(szablon, karta), 0, 0, szer, wys, kontekst);
   // Położenia wszystkich widocznych węzłów – obraz może omijać pola rysowane nad nim.
@@ -441,6 +458,19 @@ export function renderujKarte(
                   promien,
                   wypelnienie: w.tlo,
                 },
+      );
+    }
+    if (w.ozdoba?.rodzaj === 'ramka9' && !ksztalt) {
+      const od = w.ozdoba.odsuniecie ?? 0;
+      przygotujRamke9(
+        w.ozdoba,
+        {
+          x: obszar.x + od,
+          y: obszar.y + od,
+          szer: obszar.szer - 2 * od,
+          wys: obszar.wys - 2 * od,
+        },
+        w.id,
       );
     }
     if (podzial?.etykieta) {

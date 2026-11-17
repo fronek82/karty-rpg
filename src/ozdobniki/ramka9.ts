@@ -63,6 +63,9 @@ export function przytnijWciecia(
  * Liczba kawałków boku i krok: `rozciagnij` – jeden; `powtarzaj` – `max(1, round(rozpiętość / naturalna))`
  * kawałków równej długości (jak kafelki motywu).
  */
+/** Najwięcej kawałków jednego boku; więcej (np. wąski środek źródła z importu) – jeden rozciągnięty. */
+export const MAKS_KAWALKOW_BOKU = 200;
+
 export function podzialBoku(
   rozpietosc: Mm,
   naturalna: Mm,
@@ -71,6 +74,7 @@ export function podzialBoku(
   if (!(rozpietosc > EPS)) return { n: 0, krok: 0 };
   if (tryb === 'rozciagnij' || !(naturalna > EPS)) return { n: 1, krok: rozpietosc };
   const n = Math.max(1, Math.round(rozpietosc / naturalna));
+  if (n > MAKS_KAWALKOW_BOKU) return { n: 1, krok: rozpietosc };
   return { n, krok: rozpietosc / n };
 }
 
@@ -184,30 +188,44 @@ export function kawalkiRamki9(
   const p = NAKLADKA_KAWALKOW / 2;
   const nakladaSie = (a0: number, a1: number, b0: number, b1: number) =>
     Math.min(a1, b1) - Math.max(a0, b0) > EPS;
-  const sasiad = (k: Omit<Kawalek, 'przyciecie'>, strona: 'l' | 'p' | 'g' | 'd') =>
-    kawalki.some((m) => {
-      if (m === k) return false;
-      const a = k.cel;
-      const b = m.cel;
-      switch (strona) {
-        case 'l':
-          return (
-            Math.abs(b.x + b.szer - a.x) < EPS && nakladaSie(a.y, a.y + a.wys, b.y, b.y + b.wys)
-          );
-        case 'p':
-          return (
-            Math.abs(b.x - (a.x + a.szer)) < EPS && nakladaSie(a.y, a.y + a.wys, b.y, b.y + b.wys)
-          );
-        case 'g':
-          return (
-            Math.abs(b.y + b.wys - a.y) < EPS && nakladaSie(a.x, a.x + a.szer, b.x, b.x + b.szer)
-          );
-        default:
-          return (
-            Math.abs(b.y - (a.y + a.wys)) < EPS && nakladaSie(a.x, a.x + a.szer, b.x, b.x + b.szer)
-          );
-      }
-    });
+  // Sąsiedzi przez indeksy krawędzi (klucz = współrzędna zaokrąglona do 1e-6), bez przeglądania
+  // wszystkich par.
+  const klucz = (v: number) => Math.round(v * 1e6);
+  type Czesc = Omit<Kawalek, 'przyciecie'>;
+  const wg = (f: (k: Czesc) => number) => {
+    const m = new Map<number, Czesc[]>();
+    for (const k of kawalki) {
+      const c = klucz(f(k));
+      const l = m.get(c);
+      if (l) l.push(k);
+      else m.set(c, [k]);
+    }
+    return m;
+  };
+  const poPrawej = wg((k) => k.cel.x + k.cel.szer);
+  const poLewej = wg((k) => k.cel.x);
+  const poDolnej = wg((k) => k.cel.y + k.cel.wys);
+  const poGornej = wg((k) => k.cel.y);
+  const sasiad = (k: Czesc, strona: 'l' | 'p' | 'g' | 'd') => {
+    const a = k.cel;
+    const lista =
+      strona === 'l'
+        ? poPrawej.get(klucz(a.x))
+        : strona === 'p'
+          ? poLewej.get(klucz(a.x + a.szer))
+          : strona === 'g'
+            ? poDolnej.get(klucz(a.y))
+            : poGornej.get(klucz(a.y + a.wys));
+    return (
+      lista?.some(
+        (m) =>
+          m !== k &&
+          (strona === 'l' || strona === 'p'
+            ? nakladaSie(a.y, a.y + a.wys, m.cel.y, m.cel.y + m.cel.wys)
+            : nakladaSie(a.x, a.x + a.szer, m.cel.x, m.cel.x + m.cel.szer)),
+      ) ?? false
+    );
+  };
   const wynik: Kawalek[] = kawalki.map((k) => {
     const l = sasiad(k, 'l') ? p : 0;
     const pr = sasiad(k, 'p') ? p : 0;
@@ -234,7 +252,10 @@ export const dpiRogow = (mmNaPiksel: number): number =>
   mmNaPiksel > 0 ? 25.4 / mmNaPiksel : Infinity;
 
 export interface WynikRamki9 {
+  /** Boki i rogi – rysowane nad treścią węzła. */
   elementy: ElementSceny[];
+  /** Kawałek środka – musi być rysowany PRZED treścią (pola, tekst), inaczej ją zakryje. */
+  srodek: ElementSceny[];
   symbole: Record<string, DefinicjaSymbolu>;
   /** Identyfikator nieznanego elementu (albo elementu o złym rodzaju / bez ustawień). */
   nieznany?: string;
@@ -267,16 +288,18 @@ export function ramka9ZElementu(
 ): WynikRamki9 {
   const e = znajdzElement(o.element, opcje.wlasne);
   const u = e?.rodzaj === 'ramka9' ? e.ramka9 : undefined;
-  if (!e || !u) return { elementy: [], symbole: {}, nieznany: o.element };
+  if (!e || !u) return { elementy: [], srodek: [], symbole: {}, nieznany: o.element };
   const obrazZrodlo = u.zrodlo.typ === 'obraz' ? u.zrodlo.zasob : undefined;
   if (obrazZrodlo !== undefined && !opcje.maObraz?.(obrazZrodlo))
-    return { elementy: [], symbole: {}, brakObrazu: obrazZrodlo };
+    return { elementy: [], srodek: [], symbole: {}, brakObrazu: obrazZrodlo };
   const g = kawalkiRamki9(u, e.szer, e.wys, obszar, o.grubosc);
   const elementy: ElementSceny[] = [];
+  const srodek: ElementSceny[] = [];
   for (const k of g.kawalki) {
     const m = mapowanie(k.zrodlo, k.cel);
+    const cel = k.rola === 'srodek' ? srodek : elementy;
     if (obrazZrodlo !== undefined) {
-      elementy.push({
+      cel.push({
         typ: 'obraz',
         zasob: obrazZrodlo,
         x: m.ex,
@@ -286,7 +309,7 @@ export function ramka9ZElementu(
         przyciecie: k.przyciecie,
       });
     } else {
-      elementy.push({
+      cel.push({
         typ: 'grupa',
         x: 0,
         y: 0,
@@ -305,7 +328,11 @@ export function ramka9ZElementu(
   }
   return {
     elementy,
-    symbole: obrazZrodlo === undefined && elementy.length > 0 ? { [e.id]: symbolZElementu(e) } : {},
+    srodek,
+    symbole:
+      obrazZrodlo === undefined && elementy.length + srodek.length > 0
+        ? { [e.id]: symbolZElementu(e) }
+        : {},
     ...(obrazZrodlo !== undefined && g.skala > 0 ? { dpi: dpiRogow(g.skala) } : {}),
   };
 }
