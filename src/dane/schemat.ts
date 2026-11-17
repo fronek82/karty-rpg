@@ -345,10 +345,20 @@ const arkusz = obj({
     poczatekSiatki: opc(xy),
     uklad: opc(ukladArkusza),
     dopasowanie: opc(dopasowanieDoSlotu),
+    rozmiary: opc(z.enum(['jeden', 'mieszane'])),
+    mieszane: opc(
+      obj({
+        kolejnosc: z.enum(['najwieksze', 'wlasna']),
+        obracaj: z.boolean(),
+        grupujRozmiary: z.boolean(),
+        odstep: nieujemna,
+      }),
+    ),
   }).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined, {
     message: t('dane.wymiaryPapieru'),
     path: ['wymiaryPapieru'],
   }),
+  kolejnosc: opc(z.array(identyfikator)),
   przypiete: opc(
     z.array(
       obj({
@@ -482,6 +492,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 6→7: własny układ arkusza (`ustawienia.uklad`) – bez zmian danych.
   // 7→8: `ustawienia.dopasowanie` (luz karty w slocie) i `dopasowanie` w presetach – bez zmian danych;
   // kartki bez tego pola zachowują tolerancję 0,5 mm.
+  // 8→9: `ustawienia.rozmiary` / `ustawienia.mieszane` (mieszane rozmiary kart) i `Arkusz.kolejnosc` –
+  // bez zmian danych; kartki bez pól mają jeden rozmiar (siatka) jak dotąd.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -490,6 +502,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     5: (d) => d,
     6: (d) => d,
     7: (d) => d,
+    8: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -499,6 +512,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     5: (d) => d,
     6: (d) => d,
     7: (d) => d,
+    8: (d) => d,
   },
 };
 
