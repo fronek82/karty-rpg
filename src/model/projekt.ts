@@ -1,3 +1,4 @@
+import type { ElementOzdobny } from '../ozdobniki/typy';
 import type { Arkusz } from './arkusz';
 import type { Szablon, Talia, WariantCzcionki } from './szablon';
 
@@ -15,8 +16,10 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  * 10 – M2b-3: styl linii `podwojna` (+ `przerwa`), `narozniki` na ramce karty i węzłach szablonu.
  * 11 – M2b-4: `ozdoba` (motyw powtarzalny zamiast linii) na ramce karty i węzłach szablonu.
  * 12 – M2b-5: separator ozdobny (`rysunek`, `zakonczenia`, `srodek`, `dlugosc`, `odstepOdOzdoby`).
+ * 13 – M2b-6: `biblioteka.ozdobniki` (własne SVG), kształt wartości `wlasny` (+ `ksztaltElement`);
+ *      plik szablonu niesie użyte elementy (`biblioteka`).
  */
-export const WERSJA_SCHEMATU = 12;
+export const WERSJA_SCHEMATU = 13;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 
@@ -60,6 +63,11 @@ export interface Projekt {
   arkusze: Arkusz[];
   /** Pakiet gry, z którego pochodzą szablony i typy kart (np. `mausritter`). */
   pakiet?: string;
+  /**
+   * Biblioteka ozdobników projektu: własne elementy z zaimportowanych plików SVG (kontury
+   * spłaszczone do M/L/C/Z, bez surowego SVG). Brak pola = projekt bez własnych elementów.
+   */
+  biblioteka?: { ozdobniki: ElementOzdobny[] };
 }
 
 /** Bajty zasobów projektu według identyfikatora. */

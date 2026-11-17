@@ -58,7 +58,16 @@ export const ELEMENTY_WBUDOWANE: ElementOzdobny[] = [
   ...SRODKI_WBUDOWANE,
 ];
 
-/** Element po identyfikatorze (na razie tylko wbudowane); brak = `undefined`. */
-export function znajdzElement(id: string): ElementOzdobny | undefined {
-  return ELEMENTY_WBUDOWANE.find((e) => e.id === id);
+/**
+ * Element po identyfikatorze: wbudowany (`wb:…`) albo własny z biblioteki projektu (`wlasne`,
+ * `Projekt.biblioteka.ozdobniki`); brak = `undefined`. Wbudowane mają pierwszeństwo.
+ */
+export function znajdzElement(
+  id: string,
+  wlasne?: readonly ElementOzdobny[],
+): ElementOzdobny | undefined {
+  return ELEMENTY_WBUDOWANE.find((e) => e.id === id) ?? wlasne?.find((e) => e.id === id);
 }
+
+/** Czy element jest wbudowany (tylko do odczytu). */
+export const czyWbudowany = (id: string) => id.startsWith('wb:');

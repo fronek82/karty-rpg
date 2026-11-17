@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plik testowy: rysunek (zawijas z kółkiem) z celowo dodanymi elementami niebezpiecznymi i
+     nieobsługiwanymi. Import musi je usunąć i zgłosić w raporcie. Własny, licencja projektu (MIT). -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" onload="alert('x')">
+  <script>alert(document.cookie)</script>
+  <foreignObject width="10" height="10"><div xmlns="http://www.w3.org/1999/xhtml" onclick="alert(2)">x</div></foreignObject>
+  <image xlink:href="https://example.com/obraz.png" width="10" height="10"/>
+  <defs><filter id="rozmycie"><feGaussianBlur stdDeviation="2"/></filter></defs>
+  <path d="M2 22 C2 10 10 2 22 2 C20 8 16 10 12 10 C16 12 14 18 8 18 C6 18 4 20 2 22 Z" fill="#7a2e24" filter="url(#rozmycie)"/>
+  <circle cx="17" cy="6" r="1.2" fill="none" stroke="#7a2e24" stroke-width="0.6" onclick="alert(1)"/>
+</svg>

@@ -104,7 +104,10 @@ export function SzablonyProjektu({
       </a>{' '}
       <button type="button" onClick={() => plik.current?.click()}>
         {t('szablony.importuj')}
-      </button>
+      </button>{' '}
+      <a className="przycisk" href={`#/projekt/${encodeURIComponent(projekt.id)}/biblioteka`}>
+        {t('biblioteka.tytul')}
+      </a>
       <input
         ref={plik}
         type="file"

@@ -3,6 +3,7 @@ import type { Kolor, PoleSeparator } from '../model/szablon';
 import type { DefinicjaSymbolu, ElementSceny, Macierz, Obrys } from '../silnik/scena';
 import { znajdzElement } from './katalog';
 import { rozlozKafelki } from './motyw';
+import { symbolZElementu } from './narozniki';
 import type { ElementOzdobny } from './typy';
 
 /** Domyślny odstęp linii od zakończeń i środka (mm). */
@@ -18,15 +19,13 @@ export interface WynikSeparatora {
   nieznane: string[];
 }
 
-const symbolZ = (e: ElementOzdobny): DefinicjaSymbolu => ({
-  kontury: e.kontury,
-  szer: e.szer,
-  wys: e.wys,
-});
-
 /** Element biblioteki danego rodzaju albo `undefined`. */
-function element(id: string | undefined, rodzaj: ElementOzdobny['rodzaj']) {
-  const e = id ? znajdzElement(id) : undefined;
+function element(
+  id: string | undefined,
+  rodzaj: ElementOzdobny['rodzaj'],
+  wlasne?: readonly ElementOzdobny[],
+) {
+  const e = id ? znajdzElement(id, wlasne) : undefined;
   return e && e.rodzaj === rodzaj ? e : undefined;
 }
 
@@ -34,14 +33,17 @@ function element(id: string | undefined, rodzaj: ElementOzdobny['rodzaj']) {
  * Wysokość ozdób w poprzek separatora (mm): największa z zakończeń, środka i pasa motywu
  * (tylko elementy znane). Silnik układu bierze `max(ta, grubość linii)` jako rozmiar separatora.
  */
-export function wysokoscOzdobySeparatora(pole: PoleSeparator): Mm {
+export function wysokoscOzdobySeparatora(
+  pole: PoleSeparator,
+  wlasne?: readonly ElementOzdobny[],
+): Mm {
   const r: Mm[] = [0];
-  if (element(pole.zakonczenia?.element, 'zakonczenie')) r.push(pole.zakonczenia!.rozmiar);
-  if (element(pole.srodek?.element, 'srodek')) r.push(pole.srodek!.rozmiar);
+  if (element(pole.zakonczenia?.element, 'zakonczenie', wlasne)) r.push(pole.zakonczenia!.rozmiar);
+  if (element(pole.srodek?.element, 'srodek', wlasne)) r.push(pole.srodek!.rozmiar);
   if (
     pole.rysunek &&
     pole.rysunek !== 'linia' &&
-    element(pole.rysunek.motyw, 'motyw') &&
+    element(pole.rysunek.motyw, 'motyw', wlasne) &&
     pole.rysunek.szerokosc > 0
   )
     r.push(pole.rysunek.szerokosc);
@@ -73,6 +75,7 @@ export function rysujSeparatorOzdobny(
   ramka: Ramka,
   linia: { obrys: Obrys | undefined; odsuniecia: Mm[] },
   kolor: Kolor,
+  wlasne?: readonly ElementOzdobny[],
 ): WynikSeparatora {
   const poziomy = pole.kierunek === 'poziomy';
   const dostepna = poziomy ? ramka.szer : ramka.wys;
@@ -87,7 +90,7 @@ export function rysujSeparatorOzdobny(
 
   const znajdz = (id: string | undefined, rodzaj: ElementOzdobny['rodzaj']) => {
     if (!id) return undefined;
-    const e = element(id, rodzaj);
+    const e = element(id, rodzaj, wlasne);
     if (!e && !nieznane.includes(id)) nieznane.push(id);
     return e;
   };
@@ -97,7 +100,7 @@ export function rysujSeparatorOzdobny(
   const macierz = (ou: Mm, sx: number, ov: Mm, sy: number): Macierz =>
     poziomy ? [sx, 0, 0, sy, ou, srodekPoprzek + ov] : [0, sx, -sy, 0, srodekPoprzek - ov, ou];
   const symbol = (e: ElementOzdobny, m: Macierz) => {
-    symbole[e.id] = symbolZ(e);
+    symbole[e.id] = symbolZElementu(e);
     elementy.push({ typ: 'symbol', klucz: e.id, macierz: m, kolor });
   };
 

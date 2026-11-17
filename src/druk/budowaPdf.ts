@@ -1,3 +1,4 @@
+import type { ElementOzdobny } from '../ozdobniki/typy';
 import type { Arkusz } from '../model/arkusz';
 import type { Mm } from '../model/jednostki';
 import type { Szablon, Talia, WariantCzcionki } from '../model/szablon';
@@ -31,6 +32,8 @@ export interface ZadaniePdf {
   role: Record<string, string>;
   zapasowa?: string;
   obrazy: ObrazDoPdf[];
+  /** Własne elementy biblioteki ozdobników projektu (dane klonowalne). */
+  elementy?: ElementOzdobny[];
   /** Kalibracja drukarki: przesunięcie zawartości stron (mm, + w prawo / w dół). */
   przesuniecie?: { x: Mm; y: Mm };
   /** Wydruk testowy tej kartki (obrysy slotów z numerami) zamiast kart. */
@@ -51,7 +54,12 @@ export async function zbudujPdf(z: ZadaniePdf): Promise<Uint8Array> {
   rejestr.ustawZapasowa(z.zapasowa);
   const szablony = new Map(z.szablony.map((s) => [s.id, s]));
   const obrazy = new Map(z.obrazy.map((o) => [o.id, o]));
-  const ctx = { czcionki: rejestr, szablony, obraz: (id: string) => obrazy.get(id)?.info };
+  const ctx = {
+    czcionki: rejestr,
+    szablony,
+    obraz: (id: string) => obrazy.get(id)?.info,
+    ...(z.elementy ? { elementy: z.elementy } : {}),
+  };
   const testowa = z.testowy ? z.arkusze.find((a) => a.id === z.testowy) : undefined;
   if (z.testowy && !testowa) throw new Error(`kartka ${z.testowy}`);
   const taliaKartki = (a: Arkusz) => {

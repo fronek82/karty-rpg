@@ -2,7 +2,7 @@ import type { Mm } from '../model/jednostki';
 import type { OzdobaMotyw } from '../model/szablon';
 import type { DefinicjaSymbolu, ElementSceny, Macierz } from '../silnik/scena';
 import { znajdzElement } from './katalog';
-import { macierzeNarozniki, type WynikNarozniki } from './narozniki';
+import { macierzeNarozniki, symbolZElementu, type WynikNarozniki } from './narozniki';
 import type { ElementOzdobny } from './typy';
 
 /** Klucz symbolu kostki narożnej motywu w słowniku symboli sceny. */
@@ -79,22 +79,22 @@ export interface WynikOzdoby extends WynikNarozniki {
 export function ramkaZMotywu(
   o: OzdobaMotyw,
   obszar: Obszar,
-  opcje: { bezKostek?: boolean } = {},
+  opcje: { bezKostek?: boolean; wlasne?: readonly ElementOzdobny[] } = {},
 ): WynikOzdoby {
-  const e = znajdzElement(o.element);
+  const e = znajdzElement(o.element, opcje.wlasne);
   if (!e || e.rodzaj !== 'motyw') return { elementy: [], symbole: {}, nieznany: o.element, pas: 0 };
   const pas = Math.min(o.szerokosc, obszar.szer / 2, obszar.wys / 2);
   if (!(pas > 0)) return { elementy: [], symbole: {}, pas: 0 };
   const elementy: ElementSceny[] = [];
   const symbole: Record<string, DefinicjaSymbolu> = {
-    [e.id]: { kontury: e.kontury, szer: e.szer, wys: e.wys },
+    [e.id]: symbolZElementu(e),
   };
   for (const macierz of macierzeBokow(e, obszar, pas))
     elementy.push({ typ: 'symbol', klucz: e.id, macierz, kolor: o.kolor });
   if (!opcje.bezKostek) {
     if (e.kostka) {
       const klucz = kluczKostki(e.id);
-      symbole[klucz] = { kontury: e.kostka, szer: e.wys, wys: e.wys };
+      symbole[klucz] = { ...symbolZElementu({ ...e, kontury: e.kostka }), szer: e.wys };
       for (const macierz of macierzeNarozniki({ szer: e.wys, wys: e.wys }, obszar, pas))
         elementy.push({ typ: 'symbol', klucz, macierz, kolor: o.kolor });
     } else {

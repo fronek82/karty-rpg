@@ -274,6 +274,7 @@ export function EdytorKartki({
           czcionki: zasoby.czcionki,
           szablony: zasoby.szablony,
           obraz: (id) => zasoby.obrazy.get(id)?.info,
+          ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
           pamiecKart,
         });
         k = {
@@ -394,6 +395,7 @@ export function EdytorKartki({
             czcionki: z.czcionki,
             szablony: z.szablony,
             obraz: (id) => z.obrazy.get(id)?.info,
+            ...(z.elementy ? { elementy: z.elementy } : {}),
             // Zapamiętane karty są wyrenderowane starymi czcionkami – przy zmianie ról bez pamięci.
             ...(nowy.role === projekt.role && pamiecKart ? { pamiecKart } : {}),
           });
@@ -983,6 +985,7 @@ export function EdytorKartki({
       talie: projekt.talie,
       szablony: [...z.szablony.values()],
       czcionki: z.plikiCzcionek,
+      ...(z.elementy ? { elementy: [...z.elementy] } : {}),
       role: z.role,
       ...(z.zapasowa !== undefined ? { zapasowa: z.zapasowa } : {}),
       obrazy: [...z.obrazy].map(([id, o]) => ({

@@ -23,6 +23,15 @@ Własne rysunki projektu (licencja jak kod, MIT), generowane skryptami z `narzed
 | Narożniki ozdobne (6 wbudowanych: kątownik, liść, okucie, gwiazda, węzeł, zawijas)                         | `src/ozdobniki/katalog.ts` (ścieżki wektorowe w kodzie)    | rysowane ręcznie jako kontury, bez zasobów zewnętrznych                                                            |
 | Motywy powtarzalne (6 wbudowanych: pnącze, przeplot, łuski, runy, łańcuch, gwiazdki, z kostkami narożnymi) | `src/ozdobniki/motywy.ts` (ścieżki wektorowe w kodzie)     | rysowane ręcznie jako kontury (runy to ogólne znaki runopodobne, bez wzorów z pisma ani z gier), licencja projektu |
 | Zakończenia (5: grot, zawijas, liść, kropka, kolec) i środki (4: romb, gwiazda, liść, kropka) separatorów  | `src/ozdobniki/separatory.ts` (ścieżki wektorowe w kodzie) | rysowane ręcznie jako kontury, ogólne, bez zasobów zewnętrznych, licencja projektu                                 |
+| Rysunek testowy SVG (gwiazdka z otworem) do testów importu własnego SVG                                    | `testy/zasoby/gwiazdka.svg`                                | narysowany ręcznie na potrzeby testów, bez zasobów zewnętrznych, licencja projektu (MIT)                           |
+
+## Zależności w aplikacji (środowisko uruchomieniowe)
+
+| Biblioteka | Użycie                                                                                                  | Źródło                                | Licencja |
+| ---------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- | -------- |
+| `svgpath`  | import własnych SVG (M2b-6): łuki `A` → krzywe Béziera, skróty H/V/S/T, ścieżki względne, transformacje | <https://github.com/fontello/svgpath> | MIT      |
+
+Pozostałe zależności z `package.json` (React, Dexie, pdf-lib, fontkit, fflate, zod) – licencje wg pakietów.
 
 ## Narzędzia testowe (nie trafiają do aplikacji)
 

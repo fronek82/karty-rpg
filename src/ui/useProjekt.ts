@@ -254,6 +254,7 @@ export function useProjekt(id: string): StanProjektu {
   // Zasoby silnika (parsowanie czcionek, adresy blob:) tylko przy zmianie biblioteki lub szablonów;
   // role czcionek przypisywane do istniejącego rejestru (bez ponownego parsowania).
   const bibl = projekt?.zasoby;
+  const biblioteka = projekt?.biblioteka;
   const szablony = projekt?.szablony;
   const projektRef = useRef(projekt);
   useEffect(() => {
@@ -265,20 +266,34 @@ export function useProjekt(id: string): StanProjektu {
     const z = zasobyProjektu(p, dane);
     ustawZasoby(z);
     return () => z.zwolnij();
-    // Biblioteka zasobów zależy od zasobów i bajtów – nie od szablonów (te podmienia zRolami).
+    // Biblioteka zasobów zależy od zasobów i bajtów – nie od szablonów (te podmienia zRolami)
+    // ani od biblioteki ozdobników (ta jest dokładana niżej, bez ponownego parsowania czcionek).
   }, [bibl, dane]);
 
   const role = projekt?.role;
-  const zasobyZRolami = useMemo(
+  const zasobyBezElementow = useMemo(
     () => (zasoby && role && szablony ? zasoby.zRolami(role, szablony) : undefined),
     [zasoby, role, szablony],
+  );
+  // Własne elementy ozdobne osobno od zasobów: edycja biblioteki nie odtwarza czcionek, ale
+  // dostaje nowy obiekt zasobów (pamięć wyrenderowanych kart kartki jest wtedy unieważniana).
+  const elementy = biblioteka?.ozdobniki;
+  const zasobyZRolami = useMemo(
+    () =>
+      zasobyBezElementow && elementy && elementy.length > 0
+        ? {
+            ...zasobyBezElementow,
+            zasoby: { ...zasobyBezElementow.zasoby, elementy },
+          }
+        : zasobyBezElementow,
+    [zasobyBezElementow, elementy],
   );
   const talie = projekt?.talie;
   const ostrzezenia = useMemo(
     () => (projekt ? ostrzezeniaProjektu(projekt) : []),
     // Ostrzeżenia zależą od talii, szablonów, biblioteki i ról – nie od nazwy czy arkuszy.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [talie, szablony, bibl, role],
+    [talie, szablony, bibl, role, biblioteka],
   );
 
   if (!widok || widok.id !== id) return { stan: 'wczytywanie' };

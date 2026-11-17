@@ -1397,3 +1397,100 @@ button.maly {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* Biblioteka ozdobników projektu (własne SVG). */
+.biblioteka-ozdobnikow {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.biblioteka-ozdobnikow .okruszek {
+  color: #666;
+}
+.uklad-biblioteki {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(320px, 520px);
+  gap: 1.25rem;
+  padding: 1.25rem;
+  align-items: start;
+}
+.panel-biblioteki,
+.panel-importu {
+  background: #fff;
+  border: 1px solid #d8d3c7;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.panel-biblioteki h2,
+.panel-importu h2,
+.panel-biblioteki h3 {
+  margin: 0;
+}
+.panel-biblioteki h3 {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #555;
+}
+.lista-biblioteki {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lista-biblioteki li,
+.lista-biblioteki li > button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.lista-biblioteki li > button {
+  width: 100%;
+  text-align: left;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+.lista-biblioteki li > button[aria-pressed='true'] {
+  border-color: #2f5d8a;
+  background: #eef4fb;
+}
+.lista-biblioteki .miniatury {
+  display: inline-flex;
+  min-width: 56px;
+  justify-content: center;
+}
+.lista-biblioteki .nazwa {
+  flex: 1;
+}
+.podglad-elementu {
+  align-self: center;
+  background: #f7f0dc;
+  border: 1px solid #d8d3c7;
+  line-height: 0;
+}
+.podglad-elementu svg {
+  width: 100%;
+  height: auto;
+}
+.raport-ok {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: #eaf5ea;
+  color: #285a28;
+}
+.akcje-importu {
+  display: flex;
+  gap: 0.5rem;
+}
+.tresc-ksztaltu {
+  border: 1px solid #d8d3c7;
+  border-radius: 6px;
+}

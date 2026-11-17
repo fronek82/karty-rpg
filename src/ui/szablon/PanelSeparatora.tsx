@@ -1,14 +1,8 @@
 import { useId } from 'react';
 import { t } from '../../i18n';
 import type { Pole, PoleSeparator } from '../../model/szablon';
-import {
-  MOTYWY_WBUDOWANE,
-  ODSTEP_OZDOBY_DOMYSLNY,
-  znajdzElement,
-  SRODKI_WBUDOWANE,
-  ZAKONCZENIA_WBUDOWANE,
-  type ElementOzdobny,
-} from '../../ozdobniki';
+import { ODSTEP_OZDOBY_DOMYSLNY, znajdzElement, type ElementOzdobny } from '../../ozdobniki';
+import { elementyRodzaju, useElementyWlasne } from './elementyWlasne';
 import { Liczba, PoleKoloru, Przelacznik, Sekcja } from './Kontrolki';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { nazwaElementu } from './PanelWygladu';
@@ -83,6 +77,7 @@ export function PanelSeparatora({
   ustaw: (z: Partial<Pole>) => void;
 }) {
   const idMotywu = useId();
+  const wlasne = useElementyWlasne();
   const kolor = pole.kolor ?? '#000000';
   const rysunek = pole.rysunek && pole.rysunek !== 'linia' ? pole.rysunek : undefined;
   const dlugosc = pole.dlugosc
@@ -92,7 +87,7 @@ export function PanelSeparatora({
     : ('calosc' as const);
   // Motyw nieznany lub bez szerokości nie rysuje się – separator wraca do zwykłej linii.
   const motywDziala =
-    !!rysunek && rysunek.szerokosc > 0 && znajdzElement(rysunek.motyw)?.rodzaj === 'motyw';
+    !!rysunek && rysunek.szerokosc > 0 && znajdzElement(rysunek.motyw, wlasne)?.rodzaj === 'motyw';
   const ozdoby = !!pole.zakonczenia || !!pole.srodek || !!rysunek;
   return (
     <Sekcja tytul={t('wezel.separator')} otwarta>
@@ -122,7 +117,7 @@ export function PanelSeparatora({
         <div className="pole-panelu">
           <span id={idMotywu}>{t('motywy.tytul')}</span>
           <div className="wybor-narozniki" role="group" aria-labelledby={idMotywu}>
-            {MOTYWY_WBUDOWANE.map((e) => (
+            {elementyRodzaju('motyw', wlasne).map((e) => (
               <button
                 key={e.id}
                 type="button"
@@ -215,14 +210,14 @@ export function PanelSeparatora({
       )}
       <WyborOzdoby
         etykieta={t('separator.zakonczenia')}
-        elementy={ZAKONCZENIA_WBUDOWANE}
+        elementy={elementyRodzaju('zakonczenie', wlasne)}
         wartosc={pole.zakonczenia}
         zmien={(v) => ustaw({ zakonczenia: v })}
         kolor={kolor}
       />
       <WyborOzdoby
         etykieta={t('separator.srodek')}
-        elementy={SRODKI_WBUDOWANE}
+        elementy={elementyRodzaju('srodek', wlasne)}
         wartosc={pole.srodek}
         zmien={(v) => ustaw({ srodek: v })}
         kolor={kolor}

@@ -44,6 +44,8 @@ export interface KonturSymbolu {
   wypelnienie?: KolorSymbolu;
   /** Grubość w jednostkach symbolu (skaluje się razem z nim). */
   obrys?: { grubosc: number; kolor: KolorSymbolu };
+  /** Wypełnienie parzysto-nieparzyste (SVG `fill-rule="evenodd"`, PDF `f*`) – dziury we własnych SVG. */
+  evenodd?: boolean;
 }
 
 /** Rysunek wstawiany wielokrotnie (`typ: 'symbol'`); współrzędne w jednostkach `szer` × `wys`, oś Y w dół. */
@@ -67,7 +69,7 @@ export type ElementSceny =
   | { typ: 'linia'; x1: Mm; y1: Mm; x2: Mm; y2: Mm; obrys: Obrys }
   | { typ: 'okrag'; cx: Mm; cy: Mm; r: Mm; wypelnienie?: Kolor; obrys?: Obrys }
   /** Ścieżka w mm (oś Y w dół). */
-  | { typ: 'sciezka'; kontur: Kontur; wypelnienie?: Kolor; obrys?: Obrys }
+  | { typ: 'sciezka'; kontur: Kontur; wypelnienie?: Kolor; obrys?: Obrys; evenodd?: boolean }
   | {
       typ: 'tekst';
       kolor: Kolor;

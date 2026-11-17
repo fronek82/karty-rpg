@@ -73,7 +73,8 @@ function tresciSymbolu(d: DefinicjaSymbolu): string {
       const lin = obrys
         ? ` stroke="${kolorWSymbolu(obrys.kolor)}" stroke-width="${liczba(obrys.grubosc, 3)}" stroke-linejoin="round" stroke-linecap="round"`
         : '';
-      return `<path d="${konturNaD(c.kontur, 3)}" fill="${wyp}"${lin}/>`;
+      const regula = c.evenodd && wyp !== 'none' ? ' fill-rule="evenodd"' : '';
+      return `<path d="${konturNaD(c.kontur, 3)}" fill="${wyp}"${regula}${lin}/>`;
     })
     .join('');
 }
@@ -101,7 +102,7 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
       case 'okrag':
         return `<circle cx="${liczba(e.cx)}" cy="${liczba(e.cy)}" r="${liczba(e.r)}"${wypelnienie(e.wypelnienie)}${atrybutyObrysu(e.obrys)}/>`;
       case 'sciezka':
-        return `<path d="${konturNaD(e.kontur)}"${wypelnienie(e.wypelnienie)}${atrybutyObrysu(e.obrys)}/>`;
+        return `<path d="${konturNaD(e.kontur)}"${wypelnienie(e.wypelnienie)}${e.evenodd && e.wypelnienie !== undefined ? ' fill-rule="evenodd"' : ''}${atrybutyObrysu(e.obrys)}/>`;
       case 'tekst': {
         const uzycia = (obrys?: { grubosc: number }) =>
           e.glify

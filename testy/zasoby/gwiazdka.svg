@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prosty rysunek testowy (własny, domena publiczna / licencja projektu): gwiazdka z otworem. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
+  <title>Gwiazdka testowa</title>
+  <path fill="#7a2e24" fill-rule="evenodd"
+        d="M10 1 L12.6 7.2 L19 7.8 L14.2 12.2 L15.6 18.6 L10 15.3 L4.4 18.6 L5.8 12.2 L1 7.8 L7.4 7.2 Z
+           M10 7 A2.2 2.2 0 1 0 10 11.4 A2.2 2.2 0 1 0 10 7 Z"/>
+</svg>

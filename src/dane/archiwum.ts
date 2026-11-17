@@ -2,8 +2,17 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { t } from '../i18n';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
 import { stylePola, type Szablon, type Wezel } from '../model/szablon';
+import type { ElementOzdobny } from '../ozdobniki/typy';
 import { BladKolekcjiCzcionek, wczytajCzcionke } from '../silnik/czcionki';
 import { MAKS_BAJTOW_CZCIONKI, formatObrazu, unikalneId } from './czcionki';
+import { czyWbudowany } from '../ozdobniki/katalog';
+import {
+  dolaczElementy,
+  elementyProjektu,
+  elementyUzyteWSzablonie,
+  odwolaniaDoElementow,
+  przepiszOdwolania,
+} from './biblioteka';
 import {
   BladDanych,
   migruj,
@@ -182,6 +191,8 @@ export interface PaczkaSzablonu {
   role: Record<string, string>;
   zasoby: OpisZasobu[];
   dane: DaneZasobow;
+  /** Własne elementy biblioteki ozdobników użyte przez szablon. */
+  biblioteka?: ElementOzdobny[];
 }
 
 export interface WynikEksportuSzablonu {
@@ -218,7 +229,14 @@ export function eksportujSzablon(
       ),
     ),
   ];
-  const plik = { wersja: projekt.wersja, szablon, role, zasoby: uzyte };
+  const biblioteka = elementyUzyteWSzablonie(projekt, szablon);
+  const plik = {
+    wersja: projekt.wersja,
+    szablon,
+    role,
+    zasoby: uzyte,
+    ...(biblioteka.length > 0 ? { biblioteka } : {}),
+  };
   return {
     bajty: spakuj(
       plik,
@@ -233,6 +251,12 @@ export function importujSzablon(bajty: Uint8Array): PaczkaSzablonu {
   const pliki = rozpakuj(bajty, PLIK_SZABLONU);
   const zmigrowane = migruj(odczytajJson(pliki, PLIK_SZABLONU), 'szablon');
   const plik = sprawdz(schematPlikuSzablonu, zmigrowane) as Omit<PaczkaSzablonu, 'dane'>;
+  const ids = (plik.biblioteka ?? []).map((e) => e.id);
+  const powtorzony = ids.find((id, i) => ids.indexOf(id) !== i);
+  if (powtorzony !== undefined)
+    throw new BladDanych(
+      t('dane.powtorzonyId', { id: powtorzony, gdzie: t('dane.gdzie.biblioteka') }),
+    );
   return { ...plik, dane: zbierzZasoby(pliki, PLIK_SZABLONU, plik.zasoby) };
 }
 
@@ -291,6 +315,14 @@ export function dodajSzablon(
   for (const w of wszystkieWezly(szablon)) {
     if (w.typ === 'obraz' && w.zasob) w.zasob = przemianowane.get(w.zasob) ?? w.zasob;
   }
+  // Własne elementy ozdobne szablonu: identyczne współdzielone, inne o zajętym id – nowe id.
+  const uzyte = new Set(odwolaniaDoElementow(szablon).filter((id) => !czyWbudowany(id)));
+  const wPaczce = new Set((paczka.biblioteka ?? []).map((e) => e.id));
+  for (const id of uzyte)
+    if (!wPaczce.has(id) && elementyProjektu(projekt).some((e) => e.id === id))
+      ostrzezenia.push(t('dane.elementZProjektu', { id }));
+  const elementy = dolaczElementy(projekt, paczka.biblioteka ?? [], uzyte);
+  przepiszOdwolania(szablon, elementy.mapa);
   const role = { ...projekt.role };
   for (const [rola, rodzina] of Object.entries(paczka.role)) {
     const obecna = role[rola];
@@ -303,6 +335,7 @@ export function dodajSzablon(
     ...projekt,
     role,
     zasoby: opisy,
+    ...(elementy.lista.length > 0 ? { biblioteka: { ozdobniki: elementy.lista } } : {}),
     szablony: [...projekt.szablony, szablon],
     zmieniono: new Date().toISOString(),
   };
