@@ -2,7 +2,7 @@
 
 Kamień milowy M2 ze `SPEC.md` (sekcje 3–6 i 12), zawężony do tego, co jest potrzebne, żeby użytkownik sam zbudował od zera szablon karty i robił z niego karty na kartce A4 – tak jak dziś w Mausritterze.
 
-**Status:** plan i decyzje P1–P9 zaakceptowane (P4 zmieniona – patrz sekcja 5). Uzupełnienia z drugiej rundy (ramki z linii, eksport/import szablonu, druk poza A4, sposób pracy) dopisane – **czekają na akceptację**. Kodu jeszcze nie ma.
+**Status:** plan, decyzje P1–P9 i uzupełnienia U1–U6 zaakceptowane (P4 zmieniona – sekcja 5, U2 z marginesem bezpieczeństwa). Realizacja: od M2-1.
 
 ## 1. Cel i kryterium ukończenia
 
@@ -139,13 +139,13 @@ Kolejność ma sens: M2-1 i M2-2 dają silnik i druk, które można przetestowa�
 
 Cel: elastyczność na przyszłość, **bez presetów pod konkretne produkty** – gotowe są tylko standardowe formaty papieru; resztę użytkownik ustawia i zapisuje sam.
 
-| Część                            | Gdzie               | Co                                                                                                                                                                                                                 |
-| -------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| a) Format papieru                | **M2-2**            | A4, Letter, A5 (148×210), zdjęcia 10×15 (102×152), 13×18 (127×178), 15×21 (152×210) albo własny w mm; pion/poziom. W ustawieniach kartki, obok orientacji. Zwykła kartka liczy siatkę sama (ile kart się zmieści). |
-| e) Bez odstępów                  | **M2-2** (domyślne) | Zwykły papier: karty stykają się, wspólne linie cięcia – jak dziś.                                                                                                                                                 |
-| b) Edytor układu arkusza         | **M2-6**            | Dla gotowych arkuszy z perforowanymi kartami: papier, margines górny i lewy, liczba kolumn i rzędów, rozmiar karty, odstęp poziomy i pionowy; zapis jako własny preset.                                            |
-| c) Kalibracja + wydruk testowy   | **M2-6**            | Przesunięcie drukarki X/Y w mm (zapamiętane w tej przeglądarce) i PDF testowy z samymi obrysami kart.                                                                                                              |
-| d) Druk w punkcie fotograficznym | **M2-6**            | Eksport do JPG/PNG 300 dpi: każda karta osobno (ZIP) albo cała strona kartki – przy formacie 10×15 / 13×18 strona = gotowa odbitka z rozmieszczonymi kartami.                                                      |
+| Część                            | Gdzie               | Co                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| a) Format papieru                | **M2-2**            | A4, Letter, A5 (148×210), zdjęcia 10×15 (102×152), 13×18 (127×178), 15×21 (152×210) albo własny w mm; pion/poziom. W ustawieniach kartki, obok orientacji. Zwykła kartka liczy siatkę sama (ile kart się zmieści). **Formaty zdjęciowe: margines bezpieczeństwa 3 mm** (punkty foto przycinają brzegi o 1–3 mm) – domyślnie, do zmiany w ustawieniach kartki; strefa zaznaczona na podglądzie, ostrzeżenie, gdy karta w nią wchodzi. |
+| e) Bez odstępów                  | **M2-2** (domyślne) | Zwykły papier: karty stykają się, wspólne linie cięcia – jak dziś.                                                                                                                                                                                                                                                                                                                                                                   |
+| b) Edytor układu arkusza         | **M2-6**            | Dla gotowych arkuszy z perforowanymi kartami: papier, margines górny i lewy, liczba kolumn i rzędów, rozmiar karty, odstęp poziomy i pionowy; zapis jako własny preset.                                                                                                                                                                                                                                                              |
+| c) Kalibracja + wydruk testowy   | **M2-6**            | Przesunięcie drukarki X/Y w mm (zapamiętane w tej przeglądarce) i PDF testowy z samymi obrysami kart.                                                                                                                                                                                                                                                                                                                                |
+| d) Druk w punkcie fotograficznym | **M2-6**            | Eksport do JPG/PNG 300 dpi: każda karta osobno (ZIP) albo cała strona kartki – przy formacie 10×15 / 13×18 strona = gotowa odbitka z rozmieszczonymi kartami.                                                                                                                                                                                                                                                                        |
 
 ### Edytor układu arkusza (M2-6)
 
@@ -162,7 +162,7 @@ Makieta: `docs/obrazy/makieta-m2-4-uklad-arkusza.png`.
 
 - Menu „Pobierz” obok „Pobierz PDF”: **PDF**, **Obrazy stron (JPG/PNG, 300 dpi)**, **Karty osobno (ZIP z JPG/PNG, 300 dpi)**.
 - Rasteryzacja w przeglądarce z tego samego SVG co podgląd (tekst to krzywe, obrazy podmieniane na dane); JPG jakość 92%, PNG bezstratnie; nazwy plików z nazwy kartki i numeru.
-- Przy formacie zdjęciowym ostrzeżenie: punkty foto często przycinają brzegi – warto zostawić margines ≥ 3 mm.
+- Formaty zdjęciowe mają domyślny margines bezpieczeństwa 3 mm (sekcja 4a, a); karta wchodząca w strefę przycięcia daje ostrzeżenie na kartce i przy eksporcie.
 
 ## 5. Pierwsza wersja (M2) – zakres
 
@@ -185,7 +185,7 @@ Makieta: `docs/obrazy/makieta-m2-4-uklad-arkusza.png`.
 | M3                    | Styl szkicowy, postrzępiona krawędź i tekstury (pergamin), kolory zależne od danych, kontynuacja długiego tekstu na kolejnej karcie, listy numerowane, nazwane grupy stylów, ikony `:kod:` w tekście, import CSV/XLSX.           |
 | M4                    | Rewers, Google Fonts, tryb „drukarnia” (spad, znaczniki cięcia), druk dwustronny.                                                                                                                                                |
 
-## 7. Decyzje (P1–P9 zatwierdzone, U1–U6 do akceptacji)
+## 7. Decyzje (P1–P9 i U1–U6 zatwierdzone)
 
 | #   | Sprawa                          | Propozycja                                                                                                                                                                                                                                                          |
 | --- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -199,16 +199,16 @@ Makieta: `docs/obrazy/makieta-m2-4-uklad-arkusza.png`.
 | P8  | Domyślna czcionka własnych kart | EB Garamond (już w aplikacji, OFL) w rolach `tytul` i `tresc`; własne czcionki przez ustawienia.                                                                                                                                                                    |
 | P9  | Układ startowy w kreatorze      | Trzy neutralne układy (pusty; tytuł + opis; tytuł + siatka 2×2 + opis + stopka) – to ogólne punkty startu, nie szablony konkretnych gier.                                                                                                                           |
 
-Uzupełnienia do akceptacji:
+Uzupełnienia (zatwierdzone):
 
-| #   | Sprawa                             | Propozycja                                                                                                                                                                         |
-| --- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| U1  | Gdzie druk poza A4                 | Formaty papieru w M2-2; edytor układu arkusza, kalibracja, wydruk testowy i eksport do obrazów jako osobny etap **M2-6** na końcu.                                                 |
-| U2  | Wymiary formatów zdjęciowych       | 10×15 = 102×152 mm, 13×18 = 127×178 mm, 15×21 = 152×210 mm (rozmiary odbitek w punktach foto).                                                                                     |
-| U3  | Presety układów                    | Zapisane w przeglądarce (jak projekty), kopia ustawień w projekcie; bez gotowych presetów pod konkretne produkty.                                                                  |
-| U4  | Kalibracja                         | Jedna na przeglądarkę (cecha drukarki), tylko w PDF i wydruku testowym, nie w podglądzie ani w obrazach.                                                                           |
-| U5  | Rozmiar karty ≠ rozmiar w układzie | Karty nie są skalowane: kartka pokazuje ostrzeżenie „karta X ma inny rozmiar niż w układzie arkusza” (różnica > 0,5 mm), a druk idzie według szablonu, wyśrodkowany w polu układu. |
-| U6  | Ramka karty                        | Linia z odsunięciem od krawędzi (0 = po krawędzi), style ciągła / przerywana / kropkowana; podwójna i ozdobne – etap ozdobników.                                                   |
+| #   | Sprawa                             | Propozycja                                                                                                                                                                                                          |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U1  | Gdzie druk poza A4                 | Formaty papieru w M2-2; edytor układu arkusza, kalibracja, wydruk testowy i eksport do obrazów jako osobny etap **M2-6** na końcu.                                                                                  |
+| U2  | Wymiary formatów zdjęciowych       | 10×15 = 102×152 mm, 13×18 = 127×178 mm, 15×21 = 152×210 mm (rozmiary odbitek w punktach foto). Domyślny margines bezpieczeństwa 3 mm (do zmiany w ustawieniach kartki), ostrzeżenie, gdy karta wchodzi w tę strefę. |
+| U3  | Presety układów                    | Zapisane w przeglądarce (jak projekty), kopia ustawień w projekcie; bez gotowych presetów pod konkretne produkty.                                                                                                   |
+| U4  | Kalibracja                         | Jedna na przeglądarkę (cecha drukarki), tylko w PDF i wydruku testowym, nie w podglądzie ani w obrazach.                                                                                                            |
+| U5  | Rozmiar karty ≠ rozmiar w układzie | Karty nie są skalowane: kartka pokazuje ostrzeżenie „karta X ma inny rozmiar niż w układzie arkusza” (różnica > 0,5 mm), a druk idzie według szablonu, wyśrodkowany w polu układu.                                  |
+| U6  | Ramka karty                        | Linia z odsunięciem od krawędzi (0 = po krawędzi), style ciągła / przerywana / kropkowana; podwójna i ozdobne – etap ozdobników.                                                                                    |
 
 ## 8. Ryzyka
 
