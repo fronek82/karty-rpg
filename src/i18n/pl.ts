@@ -240,6 +240,17 @@ export const pl = {
   'uklad.wysokoscKarty': 'Wysokość karty (mm)',
   'uklad.odstepPoziomy': 'Odstęp poziomy (mm)',
   'uklad.odstepPionowy': 'Odstęp pionowy (mm)',
+  'dopasowanie.tytul': 'Karta w slocie',
+  'dopasowanie.luz': 'Luz (mm)',
+  'dopasowanie.luzOpis':
+    'O ile karta może być mniejsza od slotu i wciąż do niego pasować (0–5 mm). Karta większa od slotu o więcej niż {tolerancja} mm nie pasuje.',
+  'dopasowanie.polozenie': 'Położenie karty w slocie',
+  'dopasowanie.srodek': 'Środek',
+  'dopasowanie.lewyGorny': 'Lewy górny róg',
+  'dopasowanie.tloDoSlotu': 'Tło do krawędzi slotu',
+  'dopasowanie.linie': 'Linie cięcia i obrysy',
+  'dopasowanie.wokolSlotu': 'Wokół slotu',
+  'dopasowanie.wokolKarty': 'Wokół karty',
   'uklad.linieCiecia': 'Linie cięcia wokół kart',
   'uklad.wynik': 'Kart na stronie: {liczba} · prawy margines {prawo} mm · dolny {dol} mm',
   'uklad.pozaPapierem':

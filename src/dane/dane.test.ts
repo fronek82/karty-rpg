@@ -295,6 +295,56 @@ describe('baza IndexedDB', () => {
     expect((await baza.uklady()).map((x) => x.id)).toEqual(['u1']);
   });
 
+  it('preset z dopasowaniem i bez (sprzed M2b-1) jest czytany; luz poza 0–5 mm odrzucany', async () => {
+    baza = new BazaProjektow('test-dopasowanie');
+    const u = {
+      id: 'u1',
+      nazwa: 'Stary',
+      papier: 'A4' as const,
+      orientacja: 'pionowa' as const,
+      slot: { szerokosc: 63.5, wysokosc: 89 },
+      uklad: {
+        kolumny: 3,
+        rzedy: 3,
+        gora: 12,
+        lewo: 8,
+        odstepPoziomy: 0,
+        odstepPionowy: 0,
+        linieCiecia: false,
+      },
+    };
+    const dop = {
+      luz: 1.5,
+      polozenie: 'lewy-gorny' as const,
+      tloDoSlotu: true,
+      linie: 'karta' as const,
+    };
+    await baza.zapiszUklad(u);
+    await baza.zapiszUklad({ ...u, id: 'u2', nazwa: 'Nowy', dopasowanie: dop });
+    await baza.zapiszUklad({ ...u, id: 'u3', nazwa: 'Zły', dopasowanie: { ...dop, luz: 6 } });
+    const lista = await baza.uklady();
+    expect(lista.map((x) => x.id)).toEqual(['u2', 'u1']);
+    expect(lista[0]!.dopasowanie).toEqual(dop);
+    expect(lista[1]!.dopasowanie).toBeUndefined();
+  });
+
+  it('projekt ze schematu 7 (bez dopasowania) wczytuje się bez dopisywania pola; dopasowanie przechodzi walidację', () => {
+    const stary = { ...structuredClone(projekt), wersja: 7 };
+    const a0 = stary.arkusze[0]!;
+    expect(a0.ustawienia.dopasowanie).toBeUndefined();
+    const wczytany = importujProjekt(eksportujProjekt(stary, zasoby)).projekt;
+    expect(wczytany.wersja).toBe(WERSJA_SCHEMATU);
+    expect(wczytany.arkusze[0]!.ustawienia.dopasowanie).toBeUndefined();
+    const nowy = structuredClone(projekt);
+    const dop = { luz: 2, polozenie: 'srodek' as const, tloDoSlotu: false, linie: 'slot' as const };
+    nowy.arkusze[0]!.ustawienia.dopasowanie = dop;
+    expect(
+      importujProjekt(eksportujProjekt(nowy, zasoby)).projekt.arkusze[0]!.ustawienia.dopasowanie,
+    ).toEqual(dop);
+    nowy.arkusze[0]!.ustawienia.dopasowanie = { ...dop, luz: -1 };
+    expect(() => importujProjekt(eksportujProjekt(nowy, zasoby))).toThrow();
+  });
+
   it('lista, zmiana samego dokumentu, usuwanie', async () => {
     baza = new BazaProjektow('test-lista');
     await baza.zapisz(projekt, zasoby);

@@ -266,6 +266,13 @@ const talia = obj({
   ),
 });
 
+const dopasowanieDoSlotu = obj({
+  luz: liczba.min(0).max(5),
+  polozenie: z.enum(['srodek', 'lewy-gorny']),
+  tloDoSlotu: z.boolean(),
+  linie: z.enum(['slot', 'karta']),
+});
+
 const ukladArkusza = obj({
   kolumny: calkowita.min(1).max(50),
   rzedy: calkowita.min(1).max(50),
@@ -285,6 +292,7 @@ export const presetUkladu = obj({
   orientacja: z.enum(['pionowa', 'pozioma']),
   slot: obj({ szerokosc: dodatnia, wysokosc: dodatnia }),
   uklad: ukladArkusza,
+  dopasowanie: opc(dopasowanieDoSlotu),
 }).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined);
 
 const arkusz = obj({
@@ -336,6 +344,7 @@ const arkusz = obj({
     slot: opc(obj({ szerokosc: dodatnia, wysokosc: dodatnia })),
     poczatekSiatki: opc(xy),
     uklad: opc(ukladArkusza),
+    dopasowanie: opc(dopasowanieDoSlotu),
   }).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined, {
     message: t('dane.wymiaryPapieru'),
     path: ['wymiaryPapieru'],
@@ -471,8 +480,26 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 4→5: nazwy węzłów i dane przykładowe szablonu (edytor szablonu) – bez zmian danych.
   // 5→6: tabela (wiersze, nagłówki, wyrównanie kolumn), nowe kształty – bez zmian danych.
   // 6→7: własny układ arkusza (`ustawienia.uklad`) – bez zmian danych.
-  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d, 6: (d) => d },
-  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d, 6: (d) => d },
+  // 7→8: `ustawienia.dopasowanie` (luz karty w slocie) i `dopasowanie` w presetach – bez zmian danych;
+  // kartki bez tego pola zachowują tolerancję 0,5 mm.
+  projekt: {
+    1: (d) => d,
+    2: (d) => d,
+    3: (d) => d,
+    4: (d) => d,
+    5: (d) => d,
+    6: (d) => d,
+    7: (d) => d,
+  },
+  szablon: {
+    1: (d) => d,
+    2: (d) => d,
+    3: (d) => d,
+    4: (d) => d,
+    5: (d) => d,
+    6: (d) => d,
+    7: (d) => d,
+  },
 };
 
 export function migruj(

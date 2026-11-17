@@ -18,6 +18,61 @@ export type Papier = keyof typeof PAPIERY | 'wlasny';
 export const czyFormatZdjeciowy = (p: Papier) => p.startsWith('foto-');
 /** Dopuszczalna różnica wymiaru karty i slotu kartki (mm). */
 export const TOLERANCJA_ROZMIARU: Mm = 0.5;
+
+/**
+ * Dopasowanie karty do slotu kartki (arkusze perforowane, których sloty są trochę większe niż
+ * karta). Brak pola w zapisanej kartce = zachowanie sprzed M2b-1: tolerancja `TOLERANCJA_ROZMIARU`.
+ */
+export interface DopasowanieDoSlotu {
+  /** O ile karta może być mniejsza od slotu w każdym wymiarze i wciąż „pasuje” (mm, 0–5). */
+  luz: Mm;
+  /** Gdzie w slocie leży karta mniejsza od slotu. */
+  polozenie: 'srodek' | 'lewy-gorny';
+  /** Pod kartą prostokąt slotu w kolorze tła karty (przesunięcie druku nie odsłania papieru). */
+  tloDoSlotu: boolean;
+  /** Linie cięcia i obrysy wydruku testowego wokół slotu albo wokół karty. */
+  linie: 'slot' | 'karta';
+}
+
+/** Dopasowanie nowych kartek: luz 1 mm (63×88 mieści się w slocie 63,5×89). */
+export const DOPASOWANIE_DOMYSLNE: DopasowanieDoSlotu = {
+  luz: 1,
+  polozenie: 'srodek',
+  tloDoSlotu: false,
+  linie: 'slot',
+};
+export const LUZ_MAKS: Mm = 5;
+
+/**
+ * Jedno miejsce sprawdzania, czy karta o danym wymiarze pasuje do slotu: mniejsza o co najwyżej
+ * `luz` (bez dopasowania – `TOLERANCJA_ROZMIARU`), większa o co najwyżej `TOLERANCJA_ROZMIARU`.
+ */
+export function pasujeDoSlotu(
+  wymiar: { szerokosc: Mm; wysokosc: Mm },
+  slot: { szerokosc: Mm; wysokosc: Mm },
+  dopasowanie?: Pick<DopasowanieDoSlotu, 'luz'>,
+): boolean {
+  const luz = dopasowanie?.luz ?? TOLERANCJA_ROZMIARU;
+  const ok = (karta: Mm, s: Mm) => {
+    const roznica = s - karta; // dodatnia – karta mniejsza od slotu
+    return roznica <= luz + 1e-6 && -roznica <= TOLERANCJA_ROZMIARU + 1e-6;
+  };
+  return ok(wymiar.szerokosc, slot.szerokosc) && ok(wymiar.wysokosc, slot.wysokosc);
+}
+
+/** Lewy górny róg karty o rozmiarze `rozmiar` w obszarze slotu (środek albo lewy górny róg). */
+export function polozenieKarty(
+  obszar: { x: Mm; y: Mm; szer: Mm; wys: Mm },
+  rozmiar: { szer: Mm; wys: Mm },
+  dopasowanie?: Pick<DopasowanieDoSlotu, 'polozenie'>,
+): { x: Mm; y: Mm } {
+  if (dopasowanie?.polozenie === 'lewy-gorny') return { x: obszar.x, y: obszar.y };
+  return {
+    x: obszar.x + Math.max(0, (obszar.szer - rozmiar.szer) / 2),
+    y: obszar.y + Math.max(0, (obszar.wys - rozmiar.wys) / 2),
+  };
+}
+
 /** Slot, gdy nie ma go z czego wziąć (karta pokerowa 63×88 mm). */
 export const SLOT_DOMYSLNY = { szerokosc: 63, wysokosc: 88 } as const;
 
@@ -87,6 +142,8 @@ export interface PresetUkladu {
   orientacja: 'pionowa' | 'pozioma';
   slot: { szerokosc: Mm; wysokosc: Mm };
   uklad: UkladArkusza;
+  /** Dopasowanie karty do slotu dobrane pod ten arkusz; brak – luz kartki bez zmian. */
+  dopasowanie?: DopasowanieDoSlotu;
 }
 
 /** Wymiary siatki własnego układu (mm) i marginesy, które zostają po prawej i na dole. */
@@ -138,6 +195,8 @@ export interface UstawieniaArkusza {
   poczatekSiatki?: { x: Mm; y: Mm };
   /** Własny układ arkusza (stała siatka z odstępami); bez tego – układ automatyczny. */
   uklad?: UkladArkusza;
+  /** Luz, położenie, tło i linie karty w slocie; brak – tolerancja 0,5 mm jak przed M2b-1. */
+  dopasowanie?: DopasowanieDoSlotu;
 }
 
 /** Ręczne przypięcie egzemplarza karty do pozycji (w slotach). */

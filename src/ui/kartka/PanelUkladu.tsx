@@ -3,9 +3,13 @@ import { ustawUstawieniaArkusza } from '../../dane/edycja';
 import type { WynikArkusza } from '../../druk/arkusz';
 import { t } from '../../i18n';
 import {
+  DOPASOWANIE_DOMYSLNE,
+  LUZ_MAKS,
+  TOLERANCJA_ROZMIARU,
   wymiaryStrony,
   wymiaryUkladu,
   type Arkusz,
+  type DopasowanieDoSlotu,
   type PresetUkladu,
   type UkladArkusza,
 } from '../../model/arkusz';
@@ -70,6 +74,17 @@ export function PanelUkladu({
   const zmienSiatke = (z: Partial<UkladArkusza>, klucz: string) =>
     uklad && zmienUklad((p) => ustawUstawieniaArkusza(p, A, { uklad: { ...uklad, ...z } }), klucz);
 
+  // Kartka bez zapisanego dopasowania działa jak przed M2b-1: luz 0,5 mm.
+  const dopasowanie: DopasowanieDoSlotu = u.dopasowanie ?? {
+    ...DOPASOWANIE_DOMYSLNE,
+    luz: TOLERANCJA_ROZMIARU,
+  };
+  const zmienDopasowanie = (z: Partial<DopasowanieDoSlotu>, klucz: string) =>
+    zmienUklad(
+      (p) => ustawUstawieniaArkusza(p, A, { dopasowanie: { ...dopasowanie, ...z } }),
+      `dopasowanie-${klucz}`,
+    );
+
   const wlaczWlasny = () => {
     const w = wynik;
     const start: UkladArkusza = {
@@ -104,6 +119,7 @@ export function PanelUkladu({
       orientacja: u.orientacja,
       slot,
       uklad,
+      ...(u.dopasowanie ? { dopasowanie: u.dopasowanie } : {}),
     };
     await baza().zapiszUklad(preset);
     ustawBladBazy(false);
@@ -119,6 +135,8 @@ export function PanelUkladu({
         orientacja: p.orientacja,
         slot: p.slot,
         uklad: p.uklad,
+        // Preset sprzed M2b-1 (bez dopasowania) nie zmienia luzu kartki.
+        ...(p.dopasowanie ? { dopasowanie: p.dopasowanie } : {}),
       }),
     );
 
@@ -146,6 +164,71 @@ export function PanelUkladu({
         </div>
         <p className="podpis">{t('uklad.opis')}</p>
       </div>
+      <fieldset className="karta-w-slocie">
+        <legend>{t('dopasowanie.tytul')}</legend>
+        <PoleLiczby
+          id="dopasowanie-luz"
+          etykieta={t('dopasowanie.luz')}
+          wartosc={dopasowanie.luz}
+          min={0}
+          max={LUZ_MAKS}
+          krok={0.5}
+          zmien={(v) => zmienDopasowanie({ luz: v }, 'luz')}
+        />
+        <p className="podpis">
+          {t('dopasowanie.luzOpis', { tolerancja: zaokr(TOLERANCJA_ROZMIARU) })}
+        </p>
+        <div className="pole-panelu">
+          <span id={`dop-polozenie-${A}`}>{t('dopasowanie.polozenie')}</span>
+          <div
+            className="przelacznik-segmentowy"
+            role="group"
+            aria-labelledby={`dop-polozenie-${A}`}
+          >
+            <button
+              type="button"
+              aria-pressed={dopasowanie.polozenie === 'srodek'}
+              onClick={() => zmienDopasowanie({ polozenie: 'srodek' }, 'polozenie')}
+            >
+              {t('dopasowanie.srodek')}
+            </button>
+            <button
+              type="button"
+              aria-pressed={dopasowanie.polozenie === 'lewy-gorny'}
+              onClick={() => zmienDopasowanie({ polozenie: 'lewy-gorny' }, 'polozenie')}
+            >
+              {t('dopasowanie.lewyGorny')}
+            </button>
+          </div>
+        </div>
+        <label className="pole-panelu wybor">
+          <input
+            type="checkbox"
+            checked={dopasowanie.tloDoSlotu}
+            onChange={(e) => zmienDopasowanie({ tloDoSlotu: e.target.checked }, 'tlo')}
+          />
+          {t('dopasowanie.tloDoSlotu')}
+        </label>
+        <div className="pole-panelu">
+          <span id={`dop-linie-${A}`}>{t('dopasowanie.linie')}</span>
+          <div className="przelacznik-segmentowy" role="group" aria-labelledby={`dop-linie-${A}`}>
+            <button
+              type="button"
+              aria-pressed={dopasowanie.linie === 'slot'}
+              onClick={() => zmienDopasowanie({ linie: 'slot' }, 'linie')}
+            >
+              {t('dopasowanie.wokolSlotu')}
+            </button>
+            <button
+              type="button"
+              aria-pressed={dopasowanie.linie === 'karta'}
+              onClick={() => zmienDopasowanie({ linie: 'karta' }, 'linie')}
+            >
+              {t('dopasowanie.wokolKarty')}
+            </button>
+          </div>
+        </div>
+      </fieldset>
       {uklad && (
         <>
           <div className="pole-panelu dwa-pola">
