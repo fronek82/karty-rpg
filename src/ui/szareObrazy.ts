@@ -9,7 +9,7 @@ import type { ObrazWPamieci, ZasobyPakietu } from './zasoby';
 type ZrodloArkuszy = { arkusze: Arkusz[]; talie: Talia[] };
 
 /** Obrazy użyte na arkuszach czarno-białych: wartości danych kart i stałe obrazy szablonów. */
-function obrazyCzarnoBialych(zrodlo: ZrodloArkuszy, z: ZasobyPakietu): Set<string> {
+export function obrazyCzarnoBialych(zrodlo: ZrodloArkuszy, z: ZasobyPakietu): Set<string> {
   const ids = new Set<string>();
   for (const a of zrodlo.arkusze) {
     if (!a.ustawienia.czarnoBialy) continue;

@@ -487,6 +487,30 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   await dane.getByLabel('Tytuł', { exact: true }).fill('Ramka z obrazu');
   await zapisano(page);
   await expect(page.locator('[data-karta]')).toHaveCount(2);
+  // Treść drugiej karty nie jest zakryta środkiem ramki: w obrysie karty są glify tytułu (pola) i
+  // obrazy ramki, a pierwszy obraz (środek) leży w kolejności rysowania PRZED pierwszym glifem.
+  const uklad = await page.evaluate(() => {
+    const r = document.querySelectorAll('[data-karta]')[1]!.getBoundingClientRect();
+    const w = (e: Element) => {
+      const b = e.getBoundingClientRect();
+      const x = b.x + b.width / 2;
+      const y = b.y + b.height / 2;
+      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    };
+    const wszystkie = [...document.querySelectorAll('.strona-kartki svg *')];
+    const glify = wszystkie.filter((e) => e.matches('use:not([color])') && w(e));
+    const obrazy = wszystkie.filter((e) => e.matches('image') && w(e));
+    const przed = (a: Element, b: Element) =>
+      !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    return {
+      glify: glify.length,
+      obrazy: obrazy.length,
+      srodekPrzedTekstem: glify[0] && obrazy[0] ? przed(obrazy[0], glify[0]) : false,
+    };
+  });
+  expect(uklad.glify).toBeGreaterThan(5);
+  expect(uklad.obrazy).toBeGreaterThan(8);
+  expect(uklad.srodekPrzedTekstem).toBe(true);
   await page.locator(':focus').blur();
   await page.keyboard.press('Escape');
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);

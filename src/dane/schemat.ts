@@ -491,6 +491,11 @@ const elementOzdobny = obj({
     (e) => (e.rodzaj === 'ramka9') === (e.ramka9 !== undefined),
     'ramka9 tylko przy rodzaju ramka9',
   )
+  // Ramka z obrazu nie ma własnego rysunku – kontury ma tylko źródło SVG.
+  .refine(
+    (e) => e.ramka9?.zrodlo.typ !== 'obraz' || e.kontury.length === 0,
+    'ramka z obrazu bez konturów',
+  )
   // Wcięcia 9-slice nie mogą wychodzić poza źródło.
   .refine(
     (e) =>

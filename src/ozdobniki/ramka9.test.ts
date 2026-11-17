@@ -5,9 +5,11 @@ import { scenyDoPdf } from '../druk/pdf';
 import type { OzdobaRamka9, Szablon } from '../model/szablon';
 import { rejestrTestowy } from '../silnik/__testy__/pomoc';
 import { renderujKarte } from '../silnik/karta';
+import { zSzarymiObrazami } from '../druk/arkusz';
 import { scenaDoSvg } from '../silnik/svg';
 import { tekstOstrzezenia } from '../ui/ostrzezenia';
 import {
+  MAKS_KAWALKOW_BOKU,
   NAKLADKA_KAWALKOW,
   dpiRogow,
   kawalkiRamki9,
@@ -354,5 +356,82 @@ describe('PDF z ramką 9-slice', () => {
     const { scena } = renderujKarte(karta(ozdoba(ELEMENT_SVG.id, 4)), { dane: {} }, ctx);
     const w = await scenyDoPdf([scena, scena]);
     expect(w.liczbaSymboli).toBe(1);
+  });
+});
+
+describe('kolejność rysowania i limity', () => {
+  it('środek ramki karty leży PRZED polami (treść nie jest zakryta), boki i rogi za nimi', () => {
+    const sz: Szablon = {
+      ...karta(ozdoba(ELEMENT_SVG.id, 3)),
+      korzen: {
+        id: 'korzen',
+        typ: 'kolumna',
+        padding: 8,
+        dzieci: [
+          { id: 't', typ: 'tekst', tekst: 'Smok', styl: { czcionka: 'tresc', rozmiar: 12 } },
+        ],
+      },
+    };
+    const { scena } = renderujKarte(sz, { dane: {} }, ctx);
+    const e = scena.elementy;
+    const tekst = e.findIndex((x) => x.typ === 'tekst');
+    const grupy = e.flatMap((x, i) => (x.typ === 'grupa' ? [i] : []));
+    expect(tekst).toBeGreaterThan(-1);
+    const g = kawalkiRamki9(ELEMENT_SVG.ramka9!, 30, 30, { x: 1, y: 1, szer: 61, wys: 86 }, 3);
+    const nSrodek = g.kawalki.filter((k) => k.rola === 'srodek').length;
+    expect(nSrodek).toBe(1);
+    // Dokładnie jedna grupa (środek) przed tekstem, reszta po nim.
+    expect(grupy.filter((i) => i < tekst)).toHaveLength(1);
+    expect(grupy.filter((i) => i > tekst).length).toBe(g.kawalki.length - 1);
+  });
+
+  it('ramka węzła: środek przed tekstem węzła, boki po nim', () => {
+    const sz: Szablon = {
+      ...karta(ozdoba(ELEMENT_SVG.id, 3), 40, 30),
+      ramka: undefined,
+      korzen: {
+        id: 'korzen',
+        typ: 'kolumna',
+        padding: 4,
+        dzieci: [
+          {
+            id: 'panel',
+            typ: 'tekst',
+            tekst: 'Ala',
+            styl: { czcionka: 'tresc', rozmiar: 8 },
+            ozdoba: ozdoba(ELEMENT_SVG.id, 2),
+          },
+        ],
+      },
+    };
+    const e = renderujKarte(sz, { dane: {} }, ctx).scena.elementy;
+    const tekst = e.findIndex((x) => x.typ === 'tekst');
+    const grupy = e.flatMap((x, i) => (x.typ === 'grupa' ? [i] : []));
+    expect(grupy.filter((i) => i < tekst)).toHaveLength(1);
+    expect(grupy.filter((i) => i > tekst).length).toBeGreaterThan(4);
+  });
+
+  it('wąski środek źródła i duża rozpiętość: ograniczona liczba kawałków, szybko', () => {
+    const t0 = Date.now();
+    const g = kawalkiRamki9(
+      ust({ wciecia: { gora: 1, prawo: 1, dol: 1, lewo: 1 }, boki: 'powtarzaj' }),
+      4000,
+      4000,
+      { x: 0, y: 0, szer: 800, wys: 800 },
+      0.5,
+    );
+    expect(Date.now() - t0).toBeLessThan(500);
+    expect(g.kawalki.length).toBeLessThanOrEqual(4 * MAKS_KAWALKOW_BOKU + 5);
+    // Za wiele kawałków boku: jeden rozciągnięty.
+    expect(g.kawalki.filter((k) => k.rola === 'gora')).toHaveLength(1);
+    expect(podzialBoku(1e6, 0.001, 'powtarzaj').n).toBe(1);
+  });
+
+  it('szare obrazy: wszystkie kawałki PNG wskazują szarą wersję zasobu', () => {
+    const { scena } = renderujKarte(karta(ozdoba(ELEMENT_PNG.id, 2.5)), { dane: {} }, ctx);
+    const szara = zSzarymiObrazami(scena);
+    const obrazy = szara.elementy.filter((x) => x.typ === 'obraz');
+    expect(obrazy.length).toBeGreaterThan(20);
+    expect(obrazy.every((x) => x.zasob === 'ramka#szary')).toBe(true);
   });
 });

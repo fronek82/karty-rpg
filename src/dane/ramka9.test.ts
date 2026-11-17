@@ -15,12 +15,15 @@ import {
 import {
   dodajElementDoBiblioteki,
   dodajRamke9ZObrazu,
+  usunElementZBiblioteki,
   elementyProjektu,
   ramka9Domyslna,
   zasobyObrazowSzablonu,
   zmienElementBiblioteki,
 } from './biblioteka';
 import { dodajZasoby } from './edycja';
+import { obrazyCzarnoBialych } from '../ui/szareObrazy';
+import type { ZasobyPakietu } from '../ui/zasoby';
 import { projektZPakietu } from './pakiet';
 import { migruj, ostrzezeniaProjektu, przygotujProjekt } from './schemat';
 
@@ -225,5 +228,78 @@ describe('eksport i import ramek 9-slice', () => {
     expect(() =>
       importujSzablon(zipSync({ ...pliki, 'szablon.json': strToU8(JSON.stringify(j)) })),
     ).toThrow();
+  });
+});
+
+describe('ramka 9-slice: czarno-biały, usuwanie, walidacja', () => {
+  it('obrazyCzarnoBialych obejmuje PNG ramki użytej w szablonie karty arkusza czarno-białego', () => {
+    const { p, szablon } = projektZRamkami();
+    const arkusz = {
+      ...p.arkusze[0]!,
+      taliaId: 'tt',
+      ustawienia: { ...p.arkusze[0]!.ustawienia, czarnoBialy: true },
+    };
+    const talie = [
+      { id: 'tt', nazwa: 'T', karty: [{ id: 'k', szablonId: szablon.id, dane: {}, ilosc: 1 }] },
+    ];
+    const z = {
+      obrazy: new Map(),
+      szablony: new Map([[szablon.id, szablon]]),
+      elementy: elementyProjektu(p),
+    } as unknown as ZasobyPakietu;
+    expect([...obrazyCzarnoBialych({ arkusze: [arkusz], talie }, z)]).toEqual(['ramka-testowa']);
+    // Bez elementów w zasobach – brak obrazu ramki (szablon sam go nie wskazuje).
+    expect(
+      obrazyCzarnoBialych({ arkusze: [arkusz], talie }, { ...z, elementy: [] } as ZasobyPakietu)
+        .size,
+    ).toBe(0);
+  });
+
+  it('usunięcie elementu zostawia obraz w zasobach (decyzja B86), projekt dalej się waliduje', () => {
+    const { p } = projektZRamkami();
+    const po = usunElementZBiblioteki(p, 'wl:Ramka-PNG');
+    expect(po.zasoby.some((z) => z.id === 'ramka-testowa')).toBe(true);
+    expect(elementyProjektu(po).map((e) => e.id)).toEqual(['wl:Ramka-SVG']);
+    expect(() => przygotujProjekt(structuredClone(po))).not.toThrow();
+    // Odwołanie w szablonie zostaje – ostrzeżenie o nieznanym elemencie.
+    expect(ostrzezeniaProjektu(po).some((o) => o.includes('wl:Ramka-PNG'))).toBe(true);
+  });
+
+  it('zod: ramka z obrazu nie może mieć konturów', () => {
+    const { p } = projektZRamkami();
+    const j = JSON.parse(JSON.stringify(p));
+    j.biblioteka.ozdobniki[0].kontury = [
+      { kontur: [['M', 0, 0], ['L', 1, 1], ['Z']], wypelnienie: 'kolor' },
+    ];
+    expect(() => przygotujProjekt(j)).toThrow();
+  });
+
+  it('ostrzeżenia: wymiary elementu niezgodne z obrazem i źródło SVG bez rysunku', () => {
+    const { p } = projektZRamkami();
+    const inne = {
+      ...p,
+      zasoby: p.zasoby.map((z) => (z.id === 'ramka-testowa' ? { ...z, szerokosc: 200 } : z)),
+    } as Projekt;
+    expect(ostrzezeniaProjektu(inne).some((o) => o.includes('200'))).toBe(true);
+    const pusty = {
+      ...p,
+      biblioteka: {
+        ozdobniki: elementyProjektu(p).map((e) =>
+          e.id === 'wl:Ramka-SVG' ? { ...e, kontury: [] } : e,
+        ),
+      },
+    } as Projekt;
+    expect(ostrzezeniaProjektu(pusty).some((o) => o.includes('bez rysunku'))).toBe(true);
+  });
+
+  it('importujSzablon odrzuca ramkę z PNG bez obrazu w paczce', () => {
+    const { p, d, szablon } = projektZRamkami();
+    const pliki = unzipSync(eksportujSzablon(p, d, szablon.id).bajty);
+    const j = JSON.parse(strFromU8(pliki['szablon.json']!));
+    j.zasoby = [];
+    const bez = Object.fromEntries(Object.entries(pliki).filter(([n]) => !n.startsWith('zasoby/')));
+    expect(() =>
+      importujSzablon(zipSync({ ...bez, 'szablon.json': strToU8(JSON.stringify(j)) })),
+    ).toThrow(/ramka-testowa/);
   });
 });

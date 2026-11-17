@@ -54,12 +54,28 @@ test('ramka 9-slice z PNG: edytor wcięć, podglądy, dpi i użycie w panelu Ram
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
   await expect(lewo).toHaveValue('30');
-  // „Takie same na wszystkich bokach” ustawia cztery wcięcia naraz.
+  // Klawiatura: End ustawia największe wcięcie, ale wcięcie przeciwnej strony zostaje.
+  await linia.focus();
+  await page.keyboard.press('End');
+  await expect(lewo).toHaveValue('90');
+  await expect(edytor.getByLabel('Prawo', { exact: true })).toHaveValue('30');
+  await page.keyboard.press('Home');
+  await expect(lewo).toHaveValue('0');
+  await page.keyboard.press('PageUp');
+  await expect(lewo).toHaveValue('10');
+  await expect(linia).toHaveAttribute('aria-valuetext', '10 px obrazu');
+  await expect(linia).toHaveAttribute('aria-valuemax', '90');
+  await lewo.fill('30');
+  // „Takie same na wszystkich bokach”: samo zaznaczenie niczego nie zmienia, dopiero zmiana
+  // ustawia cztery wcięcia naraz; odznaczenie wraca do ustawień osobnych.
   await edytor.getByLabel('Takie same na wszystkich bokach').check();
-  await edytor.getByLabel('Góra', { exact: true }).fill('30');
+  await expect(edytor.getByLabel('Góra', { exact: true })).toHaveValue('30');
+  await edytor.getByLabel('Góra', { exact: true }).fill('28');
   for (const s of ['Prawo', 'Dół', 'Lewo'])
-    await expect(edytor.getByLabel(s, { exact: true })).toHaveValue('30');
+    await expect(edytor.getByLabel(s, { exact: true })).toHaveValue('28');
   await edytor.getByLabel('Takie same na wszystkich bokach').uncheck();
+  for (const s of ['Góra', 'Prawo', 'Dół', 'Lewo'])
+    await edytor.getByLabel(s, { exact: true }).fill('30');
 
   // Grubość i dpi: 30 px na 2,5 mm to 305 dpi (bez ostrzeżenia), na 5 mm – 152 dpi.
   const dpi = edytor.getByTestId('dpi-ramki');
