@@ -547,9 +547,47 @@ describe('eksport i import szablonu', () => {
   it('M2b-3: migracja 9→10 jest tożsamościowa – stary projekt otwiera się bez zmian', () => {
     const stary = { ...structuredClone(projekt), wersja: 9 };
     const wynik = przygotujProjekt(stary);
-    expect(wynik.wersja).toBe(10);
+    expect(wynik.wersja).toBe(WERSJA_SCHEMATU);
     expect(wynik.szablony).toEqual(projekt.szablony);
-    expect(migruj({ wersja: 9, a: 1 }, 'szablon')).toEqual({ wersja: 10, a: 1 });
+    expect(migruj({ wersja: 9, a: 1 }, 'szablon')).toEqual({ wersja: WERSJA_SCHEMATU, a: 1 });
+  });
+
+  it('M2b-4: migracja 10→11 jest tożsamościowa; ozdoba (motyw) przechodzi eksport i walidację', () => {
+    expect(WERSJA_SCHEMATU).toBe(11);
+    expect(migruj({ wersja: 10, a: 1 }, 'szablon')).toEqual({ wersja: 11, a: 1 });
+    const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
+    const ozdoba = {
+      rodzaj: 'motyw' as const,
+      element: 'wb:przeplot',
+      szerokosc: 5,
+      kolor: '#2f5d8a',
+      szyny: 0.3,
+      odsuniecie: 1,
+    };
+    const z = (o: object): Projekt => ({
+      ...projekt,
+      szablony: projekt.szablony.map((s) =>
+        s.id === wzor.id
+          ? {
+              ...wzor,
+              ramka: { grubosc: 0.3, kolor: '#000', ozdoba: o as never },
+              korzen: { ...wzor.korzen, ozdoba: o as never },
+            }
+          : s,
+      ),
+    });
+    const p = z(ozdoba);
+    const paczka = importujSzablon(eksportujSzablon(p, zasoby, wzor.id).bajty);
+    expect(paczka.szablon.ramka?.ozdoba).toEqual(ozdoba);
+    expect(paczka.szablon.korzen.ozdoba).toEqual(ozdoba);
+    expect(przygotujProjekt(p).szablony[0]).toBeDefined();
+    for (const zle of [
+      { ...ozdoba, szerokosc: 0 },
+      { ...ozdoba, rodzaj: 'obraz' },
+      { ...ozdoba, element: '' },
+      { ...ozdoba, szyny: -1 },
+    ])
+      expect(() => przygotujProjekt(z(zle))).toThrow();
   });
 
   it('M2b-3: schemat przyjmuje narożniki, przerwę i styl podwójny, odrzuca błędne wartości', () => {

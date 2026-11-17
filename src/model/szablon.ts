@@ -35,6 +35,27 @@ export interface Narozniki {
   kolor?: Kolor;
 }
 
+/**
+ * Ozdoba zamiast linii ramki: motyw z biblioteki powtarzany wzdłuż czterech boków (pas szerokości
+ * `szerokosc` mm), w rogach kostka narożna motywu (albo narożniki z `narozniki`). Motyw biegnie po
+ * prostych bokach – promień zaokrąglenia dotyczy tylko linii (R3). Nieznany element: ostrzeżenie
+ * i cienka linia ciągła w kolorze ozdoby. Dla ramki karty odsunięcie to `RamkaKarty.odsuniecie`.
+ */
+export interface OzdobaMotyw {
+  rodzaj: 'motyw';
+  /** Identyfikator motywu (wbudowane: `wb:pnacze`, `wb:przeplot`, …). */
+  element: string;
+  /** Szerokość pasa motywu (mm). */
+  szerokosc: Mm;
+  kolor: Kolor;
+  /** Grubość „szyn” – cienkich linii po obu stronach pasa (mm); brak = bez szyn. */
+  szyny?: Mm;
+  /** Odsunięcie pasa od krawędzi węzła (mm, domyślnie 0); ramka karty używa `odsuniecie` ramki. */
+  odsuniecie?: Mm;
+}
+/** Ozdoba ramki (w kolejnych etapach dojdzie ramka 9-slice z obrazu). */
+export type Ozdoba = OzdobaMotyw;
+
 export interface Obramowanie {
   grubosc: Mm;
   kolor: Kolor;
@@ -63,6 +84,8 @@ interface WezelBazowy {
   wyrownanie?: { poziomo?: WyrownanieOsi; pionowo?: WyrownanieOsi };
   tlo?: Kolor;
   obramowanie?: Obramowanie;
+  /** Motyw zamiast linii obramowania (gdy jest, linii nie rysujemy). */
+  ozdoba?: Ozdoba;
   /**
    * Narożniki z biblioteki ozdobników. Silnik rysuje je niezależnie od linii, ale edytor oferuje
    * wybór narożników tylko przy rodzaju ramki „linia” (przełączenie na „brak” je czyści).
@@ -318,6 +341,11 @@ export interface RamkaKarty {
   przerwa?: Mm;
   /** Narożniki z biblioteki ozdobników, w rogach ramki. */
   narozniki?: Narozniki;
+  /**
+   * Motyw zamiast linii. Pola linii (`grubosc`, `kolor`…) zostają w modelu, żeby powrót do rodzaju
+   * „linia” zachował ustawienia; przy ozdobie nie są rysowane.
+   */
+  ozdoba?: Ozdoba;
   /** Odległość zewnętrznej krawędzi linii od krawędzi karty (mm, domyślnie 0). */
   odsuniecie?: Mm;
   /** Zaokrąglenie rogów ramki; domyślnie zgodne z rogami karty. */

@@ -333,3 +333,33 @@ describe('zmiana typu – przypadki brzegowe, kopiowanie stylu', () => {
     expect(w).not.toHaveProperty('styl');
   });
 });
+
+describe('M2b-4: ozdoba (motyw) w edycji szablonu', () => {
+  const oz = { rodzaj: 'motyw' as const, element: 'wb:runy', szerokosc: 4, kolor: '#2f5d8a' };
+
+  it('skopiujStyl i wklejStyl przenoszą ozdobę, a przy jej braku w źródle usuwają z celu', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', { ...nowyWezel(s, 'tekst', 'A'), ozdoba: oz } as Wezel);
+    s = wstawWezel(s, 'karta', {
+      ...nowyWezel(s, 'tekst', 'B'),
+      ozdoba: { ...oz, szyny: 1 },
+    } as Wezel);
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'tekst', 'C'));
+    const st = skopiujStyl(znajdzWezel(s, 'tekst')!);
+    expect(st.ozdoba).toEqual(oz);
+    // Kopia głęboka – zmiana schowka nie rusza źródła.
+    expect(st.ozdoba).not.toBe((znajdzWezel(s, 'tekst') as { ozdoba: unknown }).ozdoba);
+    expect(wklejStyl(znajdzWezel(s, 'tekst-3')!, st)).toMatchObject({ ozdoba: oz });
+    expect(wklejStyl(znajdzWezel(s, 'tekst-2')!, st)).toMatchObject({ ozdoba: oz });
+    // Źródło bez ozdoby: cel traci ozdobę.
+    const bez = skopiujStyl(znajdzWezel(s, 'tekst-3')!);
+    expect(wklejStyl(znajdzWezel(s, 'tekst-2')!, bez)).not.toHaveProperty('ozdoba');
+  });
+
+  it('zmiana typu pola zachowuje ozdobę', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', { ...nowyWezel(s, 'tekst', 'Siła'), ozdoba: oz } as Wezel);
+    s = zmienTypPola(s, 'tekst', 'wartosc');
+    expect(znajdzWezel(s, 'tekst')).toMatchObject({ typ: 'wartosc', ozdoba: oz });
+  });
+});

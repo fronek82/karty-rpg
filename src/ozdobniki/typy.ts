@@ -2,7 +2,7 @@ import type { KonturSymbolu } from '../silnik/scena';
 
 /**
  * Element biblioteki ozdobników (SPEC 5). Wbudowane mają identyfikator `wb:…` i żyją w kodzie
- * (`katalog.ts`); własne (z projektu) dojdą w kolejnych etapach M2b.
+ * (`katalog.ts`, motywy w `motywy.ts`); własne (z projektu) dojdą w kolejnych etapach M2b.
  */
 export type RodzajElementu = 'motyw' | 'naroznik' | 'zakonczenie' | 'srodek' | 'ksztalt' | 'ramka9';
 
@@ -17,4 +17,9 @@ export interface ElementOzdobny {
   wys: number;
   /** Części rysunku; kolor `'kolor'` = kolorowalny (bierze kolor z ustawień ozdoby). */
   kontury: KonturSymbolu[];
+  /**
+   * Tylko motyw: kostka narożna – kwadrat `wys` × `wys` rysowany dla lewego górnego rogu
+   * (zewnętrzne krawędzie przy górze i po lewej), odbijany na cztery rogi ramki.
+   */
+  kostka?: KonturSymbolu[];
 }
