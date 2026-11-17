@@ -25,6 +25,7 @@ import {
   polaczGlify,
   symboleSceny,
   type DefinicjaSymbolu,
+  type KolorSymbolu,
   type DefinicjaGlifu,
   type ElementSceny,
   type Scena,
@@ -273,6 +274,35 @@ function liniaCiecia(o: { x1: Mm; y1: Mm; x2: Mm; y2: Mm }, l: LinieCiecia): Ele
       fazaKreski: (okres - (poczatek % okres)) % okres,
     },
   };
+}
+
+/**
+ * Stałe kolory w definicjach symboli na szarości (kolor `'kolor'` zostaje – szarzy go element
+ * `symbol` przy wstawieniu).
+ */
+export function symboleWSzarosci(
+  slownik: Record<string, DefinicjaSymbolu> | undefined,
+): Record<string, DefinicjaSymbolu> | undefined {
+  if (!slownik) return slownik;
+  const szary = (k: KolorSymbolu): KolorSymbolu =>
+    k === 'kolor'
+      ? k
+      : wSkaliSzarosci([{ typ: 'sciezka', kontur: [], wypelnienie: k }]).map(
+          (e) => (e as { wypelnienie: string }).wypelnienie,
+        )[0]!;
+  return Object.fromEntries(
+    Object.entries(slownik).map(([k, d]) => [
+      k,
+      {
+        ...d,
+        kontury: d.kontury.map((c) => ({
+          ...c,
+          ...(c.wypelnienie ? { wypelnienie: szary(c.wypelnienie) } : {}),
+          ...(c.obrys ? { obrys: { ...c.obrys, kolor: szary(c.obrys.kolor) } } : {}),
+        })),
+      },
+    ]),
+  );
 }
 
 /** Zamienia kolory sceny na szarości (luminancja). */
@@ -646,7 +676,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       wys: strona.wys,
       elementy: u.czarnoBialy ? wSkaliSzarosci(elementy) : elementy,
       glify: polaczGlify(...glify),
-      ...symboleSceny(...symbole),
+      ...symboleSceny(...(u.czarnoBialy ? symbole.map(symboleWSzarosci) : symbole)),
     });
   }
   return {
@@ -848,7 +878,7 @@ function zbudujMieszane(w: {
       wys: strona.wys,
       elementy: u.czarnoBialy ? wSkaliSzarosci(elementy) : elementy,
       glify: polaczGlify(...glify),
-      ...symboleSceny(...symbole),
+      ...symboleSceny(...(u.czarnoBialy ? symbole.map(symboleWSzarosci) : symbole)),
     });
   }
   return {

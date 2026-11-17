@@ -11,8 +11,8 @@ import type { ElementOzdobny } from './typy';
  */
 const R = 10;
 
-function naroznik(id: string, nazwa: string, kontury: ElementOzdobny['kontury']): ElementOzdobny {
-  return { id, nazwa, rodzaj: 'naroznik', szer: R, wys: R, kontury };
+function naroznik(id: string, kontury: ElementOzdobny['kontury']): ElementOzdobny {
+  return { id, rodzaj: 'naroznik', szer: R, wys: R, kontury };
 }
 
 const wypelnione = (kontur: Kontur) => ({ kontur, wypelnienie: 'kolor' as const });
@@ -29,14 +29,14 @@ const ZAWIJAS: Kontur = [
 ];
 
 export const NAROZNIKI_WBUDOWANE: ElementOzdobny[] = [
-  naroznik('wb:kat', 'kątownik', [
+  naroznik('wb:kat', [
     wypelnione(wielokat([0, 0], [10, 0], [10, 1.6], [1.6, 1.6], [1.6, 10], [0, 10])),
   ]),
-  naroznik('wb:lisc', 'liść', [
+  naroznik('wb:lisc', [
     wypelnione(pierscien(2.6, 2.6, 2.6, 1.5)),
     wypelnione(lisc(4.2, 4.2, 9.4, 9.4, 1.7)),
   ]),
-  naroznik('wb:okucie', 'okucie', [
+  naroznik('wb:okucie', [
     wypelnione([
       ...wielokat([0, 0], [4.4, 0], [4.4, 4.4], [0, 4.4]),
       ...okrag(2.2, 2.2, 0.8, true),
@@ -44,12 +44,9 @@ export const NAROZNIKI_WBUDOWANE: ElementOzdobny[] = [
     wypelnione(wielokat([4.4, 0], [10, 0], [10, 1.2], [4.4, 1.2])),
     wypelnione(wielokat([0, 4.4], [1.2, 4.4], [1.2, 10], [0, 10])),
   ]),
-  naroznik('wb:gwiazda', 'gwiazda', [wypelnione(gwiazda(3.4, 3.4, 3.4, 0.95))]),
-  naroznik('wb:wezel', 'węzeł', [
-    wypelnione(pierscien(3, 3, 3, 1.8)),
-    wypelnione(okrag(3, 3, 0.7)),
-  ]),
-  naroznik('wb:zawijas', 'zawijas', [{ kontur: ZAWIJAS, obrys: { grubosc: 0.9, kolor: 'kolor' } }]),
+  naroznik('wb:gwiazda', [wypelnione(gwiazda(3.4, 3.4, 3.4, 0.95))]),
+  naroznik('wb:wezel', [wypelnione(pierscien(3, 3, 3, 1.8)), wypelnione(okrag(3, 3, 0.7))]),
+  naroznik('wb:zawijas', [{ kontur: ZAWIJAS, obrys: { grubosc: 0.9, kolor: 'kolor' } }]),
 ];
 
 export const ELEMENTY_WBUDOWANE: ElementOzdobny[] = [...NAROZNIKI_WBUDOWANE];
@@ -58,7 +55,3 @@ export const ELEMENTY_WBUDOWANE: ElementOzdobny[] = [...NAROZNIKI_WBUDOWANE];
 export function znajdzElement(id: string): ElementOzdobny | undefined {
   return ELEMENTY_WBUDOWANE.find((e) => e.id === id);
 }
-
-/** Wbudowane narożniki do wyboru w panelu (kolejność = kolejność miniatur). */
-export const nazwyNarozniki = (): { id: string; nazwa: string }[] =>
-  NAROZNIKI_WBUDOWANE.map((e) => ({ id: e.id, nazwa: e.nazwa }));

@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { t } from '../../i18n';
 import type { Narozniki, Obramowanie, Wezel, WyrownanieOsi } from '../../model/szablon';
-import { NAROZNIKI_WBUDOWANE } from '../../ozdobniki';
+import { NAROZNIKI_WBUDOWANE, type ElementOzdobny } from '../../ozdobniki';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { Liczba, PoleKoloru, PoleOdstepow, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 
@@ -135,6 +135,21 @@ export function PoleRamki<R extends Obramowanie>({
   );
 }
 
+const NAZWY_NAROZNIKOW = {
+  'wb:kat': 'narozniki.nazwa.kat',
+  'wb:lisc': 'narozniki.nazwa.lisc',
+  'wb:okucie': 'narozniki.nazwa.okucie',
+  'wb:gwiazda': 'narozniki.nazwa.gwiazda',
+  'wb:wezel': 'narozniki.nazwa.wezel',
+  'wb:zawijas': 'narozniki.nazwa.zawijas',
+} as const;
+
+/** Nazwa elementu dla użytkownika: własna albo z i18n (wbudowane). */
+function nazwaElementu(e: ElementOzdobny): string {
+  const klucz = NAZWY_NAROZNIKOW[e.id as keyof typeof NAZWY_NAROZNIKOW];
+  return e.nazwa ?? (klucz ? t(klucz) : e.id);
+}
+
 /** Wybór narożnika z biblioteki (miniatury), jego rozmiaru i koloru. */
 function WyborNarozniki({
   wartosc,
@@ -165,14 +180,14 @@ function WyborNarozniki({
             key={e.id}
             type="button"
             aria-pressed={wartosc?.element === e.id}
-            aria-label={e.nazwa}
+            aria-label={nazwaElementu(e)}
             style={{ color: wartosc?.kolor ?? kolorLinii }}
             onClick={() =>
               zmien(wartosc ? { ...wartosc, element: e.id } : { element: e.id, rozmiar: 6 })
             }
           >
             <MiniaturaOzdobnika element={e} />
-            <small>{e.nazwa}</small>
+            <small>{nazwaElementu(e)}</small>
           </button>
         ))}
       </div>

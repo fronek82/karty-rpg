@@ -9,7 +9,8 @@ export type RodzajElementu = 'motyw' | 'naroznik' | 'zakonczenie' | 'srodek' | '
 export interface ElementOzdobny {
   /** Wbudowane: `wb:pnacze`; własne: identyfikator zasobu. */
   id: string;
-  nazwa: string;
+  /** Nazwa własnego elementu; wbudowane jej nie mają (nazwa z i18n po identyfikatorze). */
+  nazwa?: string;
   rodzaj: RodzajElementu;
   /** Rysunek w jednostkach pola `szer` × `wys` (oś Y w dół), spłaszczony do M/L/C/Z. */
   szer: number;

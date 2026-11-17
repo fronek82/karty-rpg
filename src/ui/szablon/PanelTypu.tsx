@@ -300,13 +300,22 @@ export function PanelTypu({
           </div>
           <Przelacznik
             etykieta={t('wlasciwosci.stylLinii')}
-            opcje={(['ciagla', 'przerywana', 'kropkowana'] as const).map((s) => ({
+            opcje={(['ciagla', 'przerywana', 'kropkowana', 'podwojna'] as const).map((s) => ({
               wartosc: s,
               tekst: t(`wlasciwosci.linia.${s}`),
             }))}
             wartosc={pole.stylLinii ?? 'ciagla'}
             zmien={(v) => ustaw({ stylLinii: v === 'ciagla' ? undefined : v })}
           />
+          {pole.stylLinii === 'podwojna' && (
+            <Liczba
+              etykieta={t('wlasciwosci.przerwa')}
+              wartosc={pole.przerwa ?? 2 * pole.grubosc}
+              krok={0.05}
+              max={10}
+              zmien={(v) => ustaw({ przerwa: v })}
+            />
+          )}
         </Sekcja>
       );
     case 'tabela':

@@ -901,7 +901,8 @@ function rysujPole(
 const PADDING_KOMORKI = 0.8;
 
 /** Odsunięcie treści rombu od narożników prostokąta wpisanego – grubość obrysu. */
-const marginesRombu = (pole: PoleWartosc): Mm => pole.obramowanie?.grubosc ?? 0;
+const marginesRombu = (pole: PoleWartosc): Mm =>
+  pole.obramowanie ? pelnaGrubosc(pole.obramowanie) : 0;
 
 interface UkladTabeli {
   szer: Mm;

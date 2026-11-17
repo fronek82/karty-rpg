@@ -63,7 +63,10 @@ interface WezelBazowy {
   wyrownanie?: { poziomo?: WyrownanieOsi; pionowo?: WyrownanieOsi };
   tlo?: Kolor;
   obramowanie?: Obramowanie;
-  /** Narożniki z biblioteki ozdobników (niezależnie od tego, czy jest linia ramki). */
+  /**
+   * Narożniki z biblioteki ozdobników. Silnik rysuje je niezależnie od linii, ale edytor oferuje
+   * wybór narożników tylko przy rodzaju ramki „linia” (przełączenie na „brak” je czyści).
+   */
   narozniki?: Narozniki;
   /** Zaokrąglenie rogów tła i obramowania (mm); przy kształcie „sciety” – wielkość ścięcia. */
   promien?: Mm;

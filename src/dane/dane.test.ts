@@ -17,7 +17,7 @@ import {
 } from './archiwum';
 import { MAKS_BAJTOW_CZCIONKI, wariantCzcionki, wgrajCzcionke } from './czcionki';
 import { projektZPakietu, rejestrZProjektu } from './pakiet';
-import { BladDanych, MIGRACJE, migruj, ostrzezeniaProjektu } from './schemat';
+import { BladDanych, MIGRACJE, migruj, ostrzezeniaProjektu, przygotujProjekt } from './schemat';
 import { szablonCzaru, szablonStatystyk, szablonWroga } from '../silnik/__testy__/przyklady';
 
 const czcionka = async (plik: string) => new Uint8Array(readFileSync(`public/czcionki/${plik}`));
@@ -542,6 +542,43 @@ describe('eksport i import szablonu', () => {
     expect(paczka.szablon).toEqual(ozdobny);
     const caly = importujProjekt(eksportujProjekt(p, zasoby));
     expect(caly.projekt.szablony.find((s) => s.id === ozdobny.id)).toEqual(ozdobny);
+  });
+
+  it('M2b-3: migracja 9→10 jest tożsamościowa – stary projekt otwiera się bez zmian', () => {
+    const stary = { ...structuredClone(projekt), wersja: 9 };
+    const wynik = przygotujProjekt(stary);
+    expect(wynik.wersja).toBe(10);
+    expect(wynik.szablony).toEqual(projekt.szablony);
+    expect(migruj({ wersja: 9, a: 1 }, 'szablon')).toEqual({ wersja: 10, a: 1 });
+  });
+
+  it('M2b-3: schemat przyjmuje narożniki, przerwę i styl podwójny, odrzuca błędne wartości', () => {
+    const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
+    const z = (ramka: object, korzen: object = {}): Projekt => ({
+      ...projekt,
+      szablony: projekt.szablony.map((s) =>
+        s.id === wzor.id
+          ? { ...wzor, ramka: ramka as never, korzen: { ...wzor.korzen, ...korzen } }
+          : s,
+      ),
+    });
+    const ok = { grubosc: 0.3, kolor: '#000', styl: 'podwojna', przerwa: 0 };
+    expect(() => przygotujProjekt(z(ok))).not.toThrow();
+    expect(() =>
+      przygotujProjekt(z({ ...ok, narozniki: { element: 'wb:kat', rozmiar: 5 } })),
+    ).not.toThrow();
+    expect(() =>
+      przygotujProjekt(z(ok, { narozniki: { element: 'wb:kat', rozmiar: 5, kolor: '#fff' } })),
+    ).not.toThrow();
+    for (const zle of [
+      { ...ok, przerwa: -1 },
+      { ...ok, styl: 'potrojna' },
+      { ...ok, narozniki: { rozmiar: 5 } },
+      { ...ok, narozniki: { element: '', rozmiar: 5 } },
+      { ...ok, narozniki: { element: 'wb:kat', rozmiar: 0 } },
+    ])
+      expect(() => przygotujProjekt(z(zle))).toThrow();
+    expect(() => przygotujProjekt(z(ok, { narozniki: { element: 'wb:kat' } }))).toThrow();
   });
 
   it('M2b-3: niepoprawne narożniki są odrzucane', () => {

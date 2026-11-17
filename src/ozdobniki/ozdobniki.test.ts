@@ -6,7 +6,9 @@ import { rejestrTestowy } from '../silnik/__testy__/pomoc';
 import type { ElementSceny, Scena } from '../silnik/scena';
 import { scenaDoSvg } from '../silnik/svg';
 import { scenyDoPdf } from '../druk/pdf';
-import { PDFDocument, PDFName, PDFDict } from 'pdf-lib';
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from 'pdf-lib';
+import { osieLinii, pelnaGrubosc } from '../silnik/karta';
+import { tekstOstrzezenia, tekstOstrzezeniaArkusza } from '../ui/ostrzezenia';
 import {
   ELEMENTY_WBUDOWANE,
   NAROZNIKI_WBUDOWANE,
@@ -322,5 +324,160 @@ describe('PDF z symbolami', () => {
     expect(refy.size).toBe(1);
     const a = (await scenyDoPdf(dwie)).bajty;
     expect(Buffer.from(a).equals(Buffer.from(wynik.bajty))).toBe(true);
+  });
+});
+
+/** Dekodowana treść wszystkich strumieni zawartości strony i XObjectów formularzy. */
+async function strumienie(bajty: Uint8Array) {
+  const doc = await PDFDocument.load(bajty);
+  const tekst = (s: unknown) =>
+    Buffer.from(decodePDFRawStream(s as PDFRawStream).decode()).toString('latin1');
+  const strona = doc.getPage(0);
+  const tresc = strona.node.Contents();
+  const glowny =
+    tresc instanceof PDFRawStream ? tresc : (tresc as PDFArray).lookup(0, PDFRawStream);
+  const formularze: { tresc: string; bbox: number[] }[] = [];
+  for (const [, obiekt] of doc.context.enumerateIndirectObjects()) {
+    if (
+      obiekt instanceof PDFRawStream &&
+      obiekt.dict.get(PDFName.of('Subtype')) === PDFName.of('Form')
+    ) {
+      const bbox = (obiekt.dict.lookup(PDFName.of('BBox'), PDFArray) as PDFArray)
+        .asArray()
+        .map((n) => Number(String(n)));
+      formularze.push({ tresc: tekst(obiekt), bbox });
+    }
+  }
+  return { glowny: tekst(glowny), formularze };
+}
+
+describe('PDF – szczegóły symboli i grup', () => {
+  it('symbol z obrysem „kolor” (zawijas): obrys bez własnego koloru, zaokrąglone końce, BBox z zapasem', async () => {
+    const e = znajdzElement('wb:zawijas')!;
+    const scena: Scena = {
+      szer: 20,
+      wys: 20,
+      glify: {},
+      symbole: { [e.id]: { kontury: e.kontury, szer: e.szer, wys: e.wys } },
+      elementy: [{ typ: 'symbol', klucz: e.id, macierz: [1, 0, 0, 1, 2, 3], kolor: '#ff0000' }],
+    };
+    const { glowny, formularze } = await strumienie((await scenyDoPdf([scena])).bajty);
+    const f = formularze.find((x) => x.tresc.includes(' w'))!;
+    // Szerokość linii, zakończenia i łączenia okrągłe (1 J, 1 j), brak ustawiania koloru obrysu (RG).
+    expect(f.tresc).toMatch(/0\.9 w/);
+    expect(f.tresc).toMatch(/\b1 J\b/);
+    expect(f.tresc).toMatch(/\b1 j\b/);
+    expect(f.tresc).not.toMatch(/ RG\b/);
+    expect(f.tresc).not.toMatch(/ rg\b/);
+    // BBox: pole 10×10 plus zapas na grubość obrysu.
+    expect(f.bbox[0]).toBeLessThan(0);
+    expect(f.bbox[2]).toBeGreaterThan(10);
+    // Wstawienie: kolor wypełnienia i obrysu ustawiony przed Do.
+    expect(glowny).toMatch(/1 0 0 rg[\s\S]*1 0 0 RG[\s\S]*\/S[-\w]+ Do/);
+  });
+
+  it('grupa z macierzą i przycięciem: przycięcie, potem obrót/przesunięcie, na końcu macierz', async () => {
+    const scena: Scena = {
+      szer: 20,
+      wys: 20,
+      glify: {},
+      elementy: [
+        {
+          typ: 'grupa',
+          x: 5,
+          y: 6,
+          macierz: [2, 0, 0, 3, 1, 1],
+          przyciecie: { x: 1, y: 2, szer: 10, wys: 11 },
+          elementy: [{ typ: 'prostokat', x: 0, y: 0, szer: 1, wys: 1, wypelnienie: '#000000' }],
+        },
+      ],
+    };
+    const { glowny } = await strumienie((await scenyDoPdf([scena])).bajty);
+    const iClip = glowny.indexOf('1 2 10 11 re');
+    const iObrot = glowny.indexOf('1 0 0 1 5 6 cm');
+    const iMacierz = glowny.indexOf('2 0 0 3 1 1 cm');
+    expect(iClip).toBeGreaterThan(0);
+    expect(glowny.indexOf('W\nn')).toBeGreaterThan(iClip);
+    expect(iObrot).toBeGreaterThan(glowny.indexOf('W\nn'));
+    expect(iMacierz).toBeGreaterThan(iObrot);
+  });
+});
+
+describe('osieLinii i pełna grubość – brzegi', () => {
+  it('ciągła: jedna oś; podwójna: dwie osie, przerwa 0 i domyślna', () => {
+    expect(osieLinii({ grubosc: 1 })).toEqual([0.5]);
+    expect(osieLinii({ grubosc: 1, styl: 'podwojna' })).toEqual([0.5, 3.5]);
+    expect(osieLinii({ grubosc: 1, styl: 'podwojna', przerwa: 0 })).toEqual([0.5, 1.5]);
+    expect(pelnaGrubosc({ grubosc: 1, styl: 'podwojna', przerwa: 0 })).toBe(2);
+    expect(pelnaGrubosc({ grubosc: 1, styl: 'podwojna' })).toBe(4);
+    expect(pelnaGrubosc({ grubosc: 1, styl: 'przerywana' })).toBe(1);
+  });
+
+  it('grubość 0: nic nie jest rysowane', () => {
+    const { scena } = renderujKarte(
+      szablon({ ramka: { grubosc: 0, kolor: '#000000', styl: 'podwojna' } }),
+      { dane: {} },
+      ctx,
+    );
+    expect(scena.elementy.filter((e) => e.typ === 'prostokat' && e.obrys)).toHaveLength(0);
+  });
+});
+
+describe('linia podwójna na kształtach węzła', () => {
+  const wartosc = (ksztalt: 'romb' | 'tarcza' | 'sciety') =>
+    renderujKarte(
+      szablon({
+        korzen: {
+          id: 'korzen',
+          typ: 'kolumna',
+          dzieci: [
+            {
+              id: 'w',
+              typ: 'wartosc',
+              klucz: 'w',
+              ksztalt,
+              promien: 2,
+              minSzerokosc: 14,
+              minWysokosc: 14,
+              obramowanie: { grubosc: 0.4, kolor: '#000000', styl: 'podwojna' },
+              styl: { czcionka: 'tresc', rozmiar: pt(10) },
+            },
+          ],
+        },
+      }),
+      { dane: { w: '2' } },
+      ctx,
+    ).scena;
+
+  for (const k of ['romb', 'tarcza', 'sciety'] as const)
+    it(`${k}: dwa kontury obrysu, wewnętrzny mniejszy`, () => {
+      const s = wartosc(k);
+      const kontury = s.elementy.filter((e) => e.typ === 'sciezka' && e.obrys);
+      expect(kontury).toHaveLength(2);
+      const szer = (e: ElementSceny) => {
+        const xs = (e as Extract<ElementSceny, { typ: 'sciezka' }>).kontur.flatMap((c) =>
+          c[0] === 'Z' ? [] : [c[1] as number],
+        );
+        return Math.max(...xs) - Math.min(...xs);
+      };
+      expect(szer(kontury[1]!)).toBeLessThan(szer(kontury[0]!));
+    });
+});
+
+describe('ostrzeżenie o nieznanym elemencie ozdobnym', () => {
+  it('ma czytelny polski tekst z identyfikatorem', () => {
+    expect(
+      tekstOstrzezenia({
+        pole: 'ramka-karty',
+        komunikat: 'nieznany-element-ozdobny',
+        szczegoly: 'wb:x',
+      }),
+    ).toContain('wb:x');
+    expect(
+      tekstOstrzezeniaArkusza(
+        { komunikat: 'nieznany-element-ozdobny:ramka-karty:wb:x', kartaId: 'k' },
+        'Karta',
+      ),
+    ).toMatch(/nieznany element ozdobny/);
   });
 });
