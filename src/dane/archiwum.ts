@@ -10,17 +10,11 @@ import {
   dolaczElementy,
   elementyProjektu,
   elementyUzyteWSzablonie,
+  zasobyObrazowSzablonu,
   odwolaniaDoElementow,
   przepiszOdwolania,
 } from './biblioteka';
-import {
-  BladDanych,
-  migruj,
-  przygotujProjekt,
-  schematPlikuSzablonu,
-  sprawdz,
-  zasobySzablonu,
-} from './schemat';
+import { BladDanych, migruj, przygotujProjekt, schematPlikuSzablonu, sprawdz } from './schemat';
 
 /** Rozszerzenie pliku projektu i szablonu (ZIP z JSON-em i zasobami). */
 export const ROZSZERZENIE_PROJEKTU = '.kartyrpg';
@@ -216,7 +210,7 @@ export function eksportujSzablon(
     if (rodzina !== undefined) role[nazwa] = rodzina;
     rodziny.add(rodzina ?? nazwa);
   }
-  const obrazy = new Set(zasobySzablonu(szablon));
+  const obrazy = new Set(zasobyObrazowSzablonu(szablon, elementyProjektu(projekt)));
   const uzyte = projekt.zasoby.filter((o) =>
     o.rodzaj === 'czcionka' ? rodziny.has(o.rodzina) : obrazy.has(o.id),
   );
@@ -257,6 +251,12 @@ export function importujSzablon(bajty: Uint8Array): PaczkaSzablonu {
     throw new BladDanych(
       t('dane.powtorzonyId', { id: powtorzony, gdzie: t('dane.gdzie.biblioteka') }),
     );
+  // Ramka 9-slice z PNG musi mieć obraz w paczce (inaczej szablon wskazywałby cudzy zasób).
+  for (const e of plik.biblioteka ?? []) {
+    const z = e.ramka9?.zrodlo;
+    if (z?.typ === 'obraz' && !plik.zasoby.some((o) => o.id === z.zasob))
+      throw new BladDanych(t('dane.ramka9BezObrazu', { id: e.id, zasob: z.zasob }));
+  }
   return { ...plik, dane: zbierzZasoby(pliki, PLIK_SZABLONU, plik.zasoby) };
 }
 
@@ -321,7 +321,17 @@ export function dodajSzablon(
   for (const id of uzyte)
     if (!wPaczce.has(id) && elementyProjektu(projekt).some((e) => e.id === id))
       ostrzezenia.push(t('dane.elementZProjektu', { id }));
-  const elementy = dolaczElementy(projekt, paczka.biblioteka ?? [], uzyte);
+  // Obrazy ramek 9-slice, którym nadano nowe id, wskazują nowe id także w elementach z paczki.
+  const bibliotekaPaczki = (paczka.biblioteka ?? []).map((e) => {
+    const z = e.ramka9?.zrodlo;
+    return e.ramka9 && z?.typ === 'obraz' && przemianowane.has(z.zasob)
+      ? {
+          ...e,
+          ramka9: { ...e.ramka9, zrodlo: { ...z, zasob: przemianowane.get(z.zasob)! } },
+        }
+      : e;
+  });
+  const elementy = dolaczElementy(projekt, bibliotekaPaczki, uzyte);
   przepiszOdwolania(szablon, elementy.mapa);
   const role = { ...projekt.role };
   for (const [rola, rodzina] of Object.entries(paczka.role)) {

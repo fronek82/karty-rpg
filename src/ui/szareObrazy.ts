@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { zasobySzablonu } from '../dane/schemat';
+import { zasobyObrazowSzablonu } from '../dane/biblioteka';
 import { SUFIKS_SZARY } from '../druk/arkusz';
 import type { Arkusz } from '../model/arkusz';
 import type { Talia } from '../model/szablon';
@@ -9,14 +9,14 @@ import type { ObrazWPamieci, ZasobyPakietu } from './zasoby';
 type ZrodloArkuszy = { arkusze: Arkusz[]; talie: Talia[] };
 
 /** Obrazy użyte na arkuszach czarno-białych: wartości danych kart i stałe obrazy szablonów. */
-function obrazyCzarnoBialych(zrodlo: ZrodloArkuszy, z: ZasobyPakietu): Set<string> {
+export function obrazyCzarnoBialych(zrodlo: ZrodloArkuszy, z: ZasobyPakietu): Set<string> {
   const ids = new Set<string>();
   for (const a of zrodlo.arkusze) {
     if (!a.ustawienia.czarnoBialy) continue;
     for (const k of zrodlo.talie.find((x) => x.id === a.taliaId)?.karty ?? []) {
       for (const v of Object.values(k.dane)) if (z.obrazy.has(v)) ids.add(v);
       const s = z.szablony.get(k.szablonId);
-      if (s) for (const id of zasobySzablonu(s)) ids.add(id);
+      if (s) for (const id of zasobyObrazowSzablonu(s, z.elementy ?? [])) ids.add(id);
     }
   }
   return ids;

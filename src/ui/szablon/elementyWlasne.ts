@@ -13,9 +13,12 @@ export const ElementyWlasneKontekst = createContext<{
   elementy: readonly ElementOzdobny[];
   /** Adres strony „Biblioteka ozdobników” projektu. */
   adresBiblioteki: string;
+  /** Adres obrazu z zasobów projektu (miniatury ramek 9-slice z PNG). */
+  adresObrazu?: (zasob: string) => string | undefined;
 }>({ elementy: [], adresBiblioteki: '#/' });
 
 export const useElementyWlasne = () => useContext(ElementyWlasneKontekst).elementy;
+export const useAdresObrazu = () => useContext(ElementyWlasneKontekst).adresObrazu;
 export const useAdresBiblioteki = () => useContext(ElementyWlasneKontekst).adresBiblioteki;
 
 const WBUDOWANE: Partial<Record<RodzajElementu, ElementOzdobny[]>> = {

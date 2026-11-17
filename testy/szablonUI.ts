@@ -21,9 +21,11 @@ export async function kreator(
     rogi?: number;
     kolor?: string;
     uklad: string;
+    /** Adres kreatora (domyślnie nowy projekt własnych kart; `#/projekt/<id>/nowy-szablon` – szablon w projekcie). */
+    adres?: string;
   },
 ) {
-  await page.goto('./#/wlasne/nowy');
+  await page.goto(o.adres ?? './#/wlasne/nowy');
   await page.getByLabel('Nazwa szablonu').fill(o.nazwa);
   await page.locator('label.format', { hasText: o.format }).click();
   if (o.pozioma) await page.getByRole('button', { name: 'poziomo', exact: true }).click();

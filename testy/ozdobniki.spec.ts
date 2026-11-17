@@ -17,10 +17,10 @@ test('ramka karty: linia podwójna i narożnik z miniatur; zapis w modelu i w po
   await karta(page);
   const r = await sekcja(page, 'Ramka karty');
   const rodzaj = r.getByRole('group', { name: 'Ramka karty', exact: true });
-  // Ramka z obrazu jest wyłączona do kolejnych etapów, motyw dostępny.
+  // Ramka z obrazu jest wyłączona, dopóki biblioteka nie ma ramki 9-slice; motyw dostępny.
   await expect(rodzaj.getByRole('button', { name: 'motyw' })).toBeEnabled();
   await expect(rodzaj.getByRole('button', { name: /z obrazu/ })).toBeDisabled();
-  await expect(r).toContainText('w kolejnych etapach');
+  await expect(r).toContainText('wymaga ramki 9-slice');
   await rodzaj.getByRole('button', { name: 'linia', exact: true }).click();
 
   await r.getByLabel('Kolor linii').fill('#2f5d8a');

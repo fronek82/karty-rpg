@@ -2,7 +2,14 @@ import { konturNaD } from '../../silnik/svg';
 import type { ElementOzdobny } from '../../ozdobniki';
 
 /** Miniatura elementu biblioteki – rysunek kolorowalny dziedziczy kolor tekstu (`currentColor`). */
-export function MiniaturaOzdobnika({ element }: { element: ElementOzdobny }) {
+export function MiniaturaOzdobnika({
+  element,
+  adres,
+}: {
+  element: ElementOzdobny;
+  /** Adres obrazu (źródło PNG ramki 9-slice) – rysowany pod wcięciami. */
+  adres?: string;
+}) {
   // Motywy są szerokie – miniatura proporcjonalna do kafelka.
   const szeroki = element.szer > element.wys;
   const szerokosc = szeroki ? 52 : 40;
@@ -27,6 +34,26 @@ export function MiniaturaOzdobnika({ element }: { element: ElementOzdobny }) {
         strokeOpacity="0.15"
         strokeWidth="0.15"
       />
+      {element.ramka9 && (
+        <rect
+          x={element.ramka9.wciecia.lewo}
+          y={element.ramka9.wciecia.gora}
+          width={Math.max(
+            0,
+            element.szer - element.ramka9.wciecia.lewo - element.ramka9.wciecia.prawo,
+          )}
+          height={Math.max(
+            0,
+            element.wys - element.ramka9.wciecia.gora - element.ramka9.wciecia.dol,
+          )}
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.5"
+          strokeDasharray={`${element.szer / 20} ${element.szer / 20}`}
+          strokeWidth={element.szer / 60}
+        />
+      )}
+      {adres && <image href={adres} x="0" y="0" width={element.szer} height={element.wys} />}
       {element.kontury.map((c, i) => (
         <path
           key={i}

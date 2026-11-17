@@ -2,9 +2,23 @@ import type { KonturSymbolu } from '../silnik/scena';
 
 /**
  * Element biblioteki ozdobników (SPEC 5). Wbudowane mają identyfikator `wb:…` i żyją w kodzie
- * (`katalog.ts`, motywy w `motywy.ts`); własne (z projektu) dojdą w kolejnych etapach M2b.
+ * (`katalog.ts`, motywy w `motywy.ts`); własne (z projektu) – import SVG albo ramka 9-slice z obrazu PNG.
  */
 export type RodzajElementu = 'motyw' | 'naroznik' | 'zakonczenie' | 'srodek' | 'ksztalt' | 'ramka9';
+
+/**
+ * Ustawienia ramki 9-slice (element rodzaju `ramka9`). Wcięcia w jednostkach źródła: piksele PNG
+ * albo jednostki rysunku SVG (`szer` × `wys` elementu) – wyznaczają cztery rogi, cztery boki i środek.
+ */
+export interface UstawieniaRamki9 {
+  /** `obraz` – zasób PNG projektu (element nie ma konturów, `szer`/`wys` = piksele); `svg` – kontury elementu. */
+  zrodlo: { typ: 'obraz'; zasob: string } | { typ: 'svg' };
+  wciecia: { gora: number; prawo: number; dol: number; lewo: number };
+  /** Boki: jeden rozciągnięty kawałek albo kawałki powtórzone równo (całkowita liczba, lekko rozciągnięte). */
+  boki: 'rozciagnij' | 'powtarzaj';
+  /** Środek: rozciągnięty na całe wnętrze albo pominięty (karta widoczna przez ramkę). */
+  srodek: 'wypelnij' | 'pomin';
+}
 
 export interface ElementOzdobny {
   /** Wbudowane: `wb:pnacze`; własne: identyfikator zasobu. */
@@ -28,6 +42,8 @@ export interface ElementOzdobny {
    * pliku (albo `'kolor'` dla `currentColor`), więc tryb można przełączać bez straty.
    */
   kolorowanie?: 'jednolity' | 'oryginal';
+  /** Tylko rodzaj `ramka9`: źródło, wcięcia, boki i środek. */
+  ramka9?: UstawieniaRamki9;
   /**
    * Tylko własny kształt wartości: prostokąt na tekst jako ułamki rysunku (x, y, szerokość,
    * wysokość w zakresie 0–1); domyślnie 15 % marginesu z każdej strony.
