@@ -153,8 +153,27 @@ const wPolu = (e: Element | null) =>
   (e.matches('input, textarea, select, [contenteditable="true"]') || !!e.closest('[role="menu"]'));
 
 /** Edytor kartki: strony A4 z siatką slotów, karty klikane, przeciągane i edytowane w panelu. */
-export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
+export function EdytorKartki({
+  edycja,
+  pokazKartke,
+}: {
+  edycja: ProjektWEdycji;
+  /** Kartka do pokazania po wejściu (np. po „Rób karty” z edytora szablonu). */
+  pokazKartke?: string;
+}) {
   const { projekt, zmien } = edycja;
+  // Po wejściu z edytora szablonu – przewiń do kartki dla jego rozmiaru.
+  useEffect(() => {
+    if (!pokazKartke) return;
+    const z = setTimeout(
+      () =>
+        document
+          .querySelector(`.kartka[data-kartka="${CSS.escape(pokazKartke)}"]`)
+          ?.scrollIntoView({ block: 'start' }),
+      100,
+    );
+    return () => clearTimeout(z);
+  }, [pokazKartke]);
   const idPakietu = pakietProjektu(projekt);
   const pakietGry = usePakiet(idPakietu);
   // Projekt bez pakietu gry (własne karty): typy kart z szablonów projektu.
@@ -848,7 +867,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       }
     : undefined;
   // Własne karty: nowa kartka dopasowana do rozmiaru szablonu (bez tytułu, papier jak zaznaczona).
-  const kartkaDlaSzablonu = (szablonId: string) => {
+  const nowaKartkaDlaSzablonu = (szablonId: string) => {
     const s = projekt.szablony.find((x) => x.id === szablonId);
     if (!s) return;
     const papier = arkuszZazn?.ustawienia;
@@ -963,7 +982,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
         zmienUklad={zmienUklad}
         {...(bladUkladu ? { blad: bladUkladu } : {})}
         {...(nowaKartka ? { nowaKartka } : {})}
-        {...(bezGry ? { kartkaDlaSzablonu } : {})}
+        {...(bezGry ? { kartkaDlaSzablonu: nowaKartkaDlaSzablonu } : {})}
         zamknij={() => ustawZazn(undefined)}
       />
     );
@@ -1314,7 +1333,7 @@ function WidokKartki({
     );
   }
   return (
-    <section className="kartka" aria-label={k.arkusz.nazwa}>
+    <section className="kartka" data-kartka={k.arkusz.id} aria-label={k.arkusz.nazwa}>
       {wiele && <h2 className="tytul-kartki">{k.arkusz.nazwa}</h2>}
       {Array.from({ length: Math.max(liczbaStron, k.svg.length) }, (_, s) => {
         const naStronie = karty.filter((x) => x.strona === s);

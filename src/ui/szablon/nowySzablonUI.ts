@@ -16,9 +16,7 @@ export const nazwyStartowe = (): NazwyStartowe => ({
   stopkaPrawa: t('start.uklad.stopkaPrawa'),
 });
 
-/** Szablon z ustawień kreatora (id unikalne w projekcie). */
-export function szablonZKreatora(u: UstawieniaNowegoSzablonu, zajete: readonly string[]): Szablon {
-  let id = 'szablon';
-  for (let n = 2; zajete.includes(id); n++) id = `szablon-${n}`;
-  return nowySzablon(id, u, nazwyStartowe());
+/** Szablon z ustawień kreatora (id unikalne nadaje dodawanie szablonu do projektu). */
+export function szablonZKreatora(u: UstawieniaNowegoSzablonu): Szablon {
+  return nowySzablon('szablon', u, nazwyStartowe());
 }

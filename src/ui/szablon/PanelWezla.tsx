@@ -52,7 +52,7 @@ export function PanelWezla({
             const nazwa = e.target.value;
             zmienWezel((w) => {
               const x = { ...w, nazwa } as Wezel;
-              // Etykieta równa dotychczasowej nazwie idzie za nią (np. „Zasięg” → „Zasięg czaru”).
+              // Etykieta równa dotychczasowej nazwie idzie za nią (np. „Pole 1” → „Siła”).
               if (
                 (x.typ === 'tekst' || x.typ === 'wartosc') &&
                 x.etykieta &&

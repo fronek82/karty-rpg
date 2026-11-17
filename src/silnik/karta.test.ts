@@ -595,6 +595,14 @@ describe('klocki M2: ramka karty, romb, etykiety, separator, tabela', () => {
     expect(svg(szablonWroga, { ...daneWroga, opis: '' }).svg).toBe(w.svg);
   });
 
+  it('położenia węzłów (do zaznaczania w edytorze szablonu)', () => {
+    const { wezly } = renderujKarte(szablonCzaru, { dane: daneCzaru }, ctx);
+    expect(wezly.find((w) => w.id === 'korzen')).toMatchObject({ x: 0, y: 0, szer: 63, wys: 88 });
+    const nazwa = wezly.find((w) => w.id === 'nazwa')!;
+    expect(nazwa.x).toBeCloseTo(2.5, 6);
+    expect(nazwa.szer).toBeCloseTo(58, 6);
+  });
+
   it('ramka karty: prostokąt z odsunięciem, rogi zgodne z kartą', () => {
     const { scena } = renderujKarte(szablonCzaru, { dane: {} }, ctx);
     const r = scena.elementy.at(-1)!;

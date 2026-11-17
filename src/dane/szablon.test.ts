@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { czyKontener, type Kontener, type Szablon } from '../model/szablon';
+import type { Projekt } from '../model/projekt';
+import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
 import { kolumnySzablonu } from './edycja';
 import {
+  danePodgladu,
   doPoprzedniegoKontenera,
   duplikujWezel,
   kluczZNazwy,
+  nazwaKarty,
   nowySzablon,
   nowyWezel,
   opakuj,
@@ -14,6 +17,7 @@ import {
   usunWezly,
   wstawWezel,
   wyzej,
+  zmienSzablon,
   znajdzWezel,
 } from './szablon';
 
@@ -157,5 +161,69 @@ describe('nowy szablon', () => {
         NAZWY,
       ).korzen.dzieci,
     ).toHaveLength(2);
+  });
+});
+
+describe('poprawki po przeglądzie', () => {
+  it('trzy pola o tej samej nazwie i dwa duplikaty tabeli – klucze bez kolizji', () => {
+    let s = pusty();
+    for (let i = 0; i < 3; i++) s = wstawWezel(s, 'karta', nowyWezel(s, 'tekst', 'Tekst'));
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'tabela', 'Tabela'));
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'tabela', 'Tabela'));
+    s = duplikujWezel(s, 'tabela', '(kopia)').szablon;
+    s = duplikujWezel(s, 'tabela', '(kopia)').szablon;
+    const k = kolumnySzablonu(s).map((x) => x.klucz);
+    expect(new Set(k).size).toBe(k.length);
+    expect(k.slice(0, 3)).toEqual(['tekst', 'tekst_2', 'tekst_3']);
+  });
+
+  it('klucze zajęte w danych kart nie wracają do nowych pól', () => {
+    const s = pusty();
+    expect((nowyWezel(s, 'tekst', 'Opis', { zajete: ['opis'] }) as { klucz: string }).klucz).toBe(
+      'opis_2',
+    );
+  });
+
+  it('operacja bez skutku nie zmienia projektu (bez kroku „Cofnij”)', () => {
+    const s = wstawWezel(pusty(), 'karta', nowyWezel(pusty(), 'tekst', 'A'));
+    const p = { szablony: [s] } as unknown as Projekt;
+    expect(zmienSzablon(p, 's', (x) => przesunWezel(x, 'tekst', -1))).toBe(p);
+    expect(zmienSzablon(p, 's', (x) => doPoprzedniegoKontenera(x, 'tekst'))).toBe(p);
+    expect(zmienSzablon(p, 's', (x) => wyzej(x, 'tekst'))).toBe(p);
+    expect(zmienSzablon(p, 'brak', (x) => x)).toBe(p);
+  });
+
+  it('duplikat: obraz omija kopie pól, etykieta idzie za nazwą', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'warstwy', 'Grupa'));
+    s = wstawWezel(s, 'warstwy', nowyWezel(s, 'wartosc', 'Wartość'));
+    s = wstawWezel(s, 'warstwy', {
+      ...nowyWezel(s, 'obraz', 'Obraz'),
+      omijaj: ['wartosc'],
+    } as Wezel);
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'etykieta-wartosc', 'Siła'));
+    const d = duplikujWezel(s, 'warstwy', '(kopia)');
+    const kopia = znajdzWezel(d.szablon, d.id) as Kontener;
+    const obraz = kopia.dzieci.find((x) => x.typ === 'obraz') as { omijaj: string[] };
+    expect(obraz.omijaj).toEqual([kopia.dzieci[0]!.id]);
+    const e = duplikujWezel(s, 'etykieta-wartosc', '(kopia)');
+    expect(znajdzWezel(e.szablon, e.id)).toMatchObject({
+      nazwa: 'Siła (kopia)',
+      etykieta: { tekst: 'Siła (kopia)' },
+    });
+  });
+
+  it('dane podglądu i nazwa karty', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'tekst', 'Imię'));
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'tabela', 'Cechy'));
+    expect(danePodgladu({ ...s, przyklad: { imie: 'Ala' } })).toMatchObject({
+      imie: 'Ala',
+      cechy_1: '–',
+    });
+    expect(danePodgladu(s).imie).toBe('Imię');
+    expect(nazwaKarty({ imie: 'Gryf' }, s)).toBe('Gryf');
+    expect(nazwaKarty({ nazwa: 'N', imie: 'Gryf' }, s)).toBe('N');
+    expect(nazwaKarty({}, s)).toBe('');
   });
 });

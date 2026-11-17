@@ -74,6 +74,21 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   // Cofnij przywraca kolejność.
   await page.keyboard.press('Escape');
   await page.keyboard.press('Control+z');
+  const poCofnieciu = await drzewo(page)
+    .locator('[aria-level="2"]')
+    .evaluateAll((e) => e.map((x) => x.getAttribute('aria-label')));
+  expect(poCofnieciu[1]).toMatch(/^Wiersz/);
+  // Klawiatura w drzewie: strzałki, Shift+strzałka dokłada, Delete usuwa i fokus zostaje.
+  await element(page, /^Tytuł – /).focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(element(page, /^Wiersz – /)).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(element(page, /^Siła – /)).toBeFocused();
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('Shift+ArrowDown');
+  await expect(drzewo(page).locator('[aria-selected="true"]')).toHaveCount(2);
+  await page.keyboard.press('Home');
+  await expect(element(page, /^Karta – /)).toBeFocused();
   await zapisano(page);
 
   // Rób karty: kartka dla rozmiaru 68×44, karta z menu, pola z nazwami z szablonu.
@@ -115,4 +130,24 @@ test('nowy szablon w istniejącym projekcie: kreator z kartki, siatka 2×2', asy
   for (const n of [1, 2, 3, 4])
     await expect(element(page, new RegExp(`^Pole ${n} – `))).toBeVisible();
   await expect(element(page, /^Stopka – lewa – /)).toBeVisible();
+});
+
+test('edytor szablonu nie otwiera się dla projektu gry ani nieznanego szablonu', async ({
+  page,
+}) => {
+  await page.goto('./#/gra/mausritter');
+  await page.getByRole('button', { name: /Pusta kartka/ }).click();
+  await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
+  const adres = page.url().replace(/#.*$/, '');
+  const id = page.url().split('/projekt/')[1]!;
+  await page.goto(`${adres}#/projekt/${id}/szablon/mausritter-bron`);
+  await expect(page.getByRole('alert')).toContainText('Szablony z pakietu gry');
+  await page.goto('./#/wlasne/nowy');
+  await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+  const wlasny = page.url().split('/szablon/')[0]!;
+  await page.goto(`${wlasny}/szablon/nie-ma-takiego`);
+  await expect(
+    page.getByRole('heading', { name: 'Nie ma takiego szablonu w projekcie' }),
+  ).toBeVisible();
 });

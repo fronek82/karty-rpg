@@ -1,4 +1,4 @@
-import { dodajSzablonZKartka } from '../dane/wlasneKarty';
+import { czyProjektWlasny, dodajSzablonZKartka } from '../dane/wlasneKarty';
 import { t } from '../i18n';
 import { EdytorKartki } from './kartka/EdytorKartki';
 import { EdytorSzablonu } from './szablon/EdytorSzablonu';
@@ -24,7 +24,18 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
       </section>
     );
   const sciezka = `#/projekt/${encodeURIComponent(id)}`;
+  const zGry = !czyProjektWlasny(stan.projekt);
   const szablon = /^szablon\/(.+)$/.exec(podtrasa)?.[1];
+  if ((szablon || podtrasa === 'nowy-szablon') && zGry)
+    // Projekt gry (np. Mausritter): szablony z pakietu nie są edytowane w edytorze od zera.
+    return (
+      <section className="tresc">
+        <p role="alert" className="uwaga">
+          {t('szablon.tylkoWlasne')}
+        </p>
+        <a href={sciezka}>{t('szablon.wrocDoKartek')}</a>
+      </section>
+    );
   if (szablon)
     return <EdytorSzablonu key={szablon} edycja={stan} szablonId={decodeURIComponent(szablon)} />;
   if (podtrasa === 'nowy-szablon')
@@ -32,24 +43,27 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
       <div className="tresc">
         <Kreator
           anuluj={() => (window.location.hash = sciezka)}
-          utworz={async (u) => {
-            const s = szablonZKreatora(
-              u,
-              stan.projekt.szablony.map((x) => x.id),
-            );
-            await stan.zmienZZasobami((p, d) => {
-              const w = dodajSzablonZKartka(p, d, {
-                szablon: s,
+          utworz={(u) => {
+            // Nowy szablon bez zasobów – zwykła zmiana projektu (zapis w tle, jak każda edycja);
+            // id szablonu z wyniku (dodajSzablon nadaje unikalne).
+            let szablonId = '';
+            stan.zmien((p) => {
+              const w = dodajSzablonZKartka(p, stan.dane, {
+                szablon: szablonZKreatora(u),
                 role: {},
                 zasoby: [],
                 dane: new Map(),
               });
-              return { projekt: w.projekt, dane: w.zasoby };
+              szablonId = w.szablonId;
+              return w.projekt;
             });
-            window.location.hash = `${sciezka}/szablon/${encodeURIComponent(s.id)}`;
+            window.location.hash = `${sciezka}/szablon/${encodeURIComponent(szablonId)}`;
           }}
         />
       </div>
     );
-  return <EdytorKartki edycja={stan} />;
+  const kartka = /^kartka\/(.+)$/.exec(podtrasa)?.[1];
+  return (
+    <EdytorKartki edycja={stan} {...(kartka ? { pokazKartke: decodeURIComponent(kartka) } : {})} />
+  );
 }

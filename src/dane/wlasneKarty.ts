@@ -1,4 +1,5 @@
 import { slotKartki } from '../druk/arkusz';
+import { pakietProjektu } from '../druk/normalizacja';
 import { t } from '../i18n';
 import {
   czyFormatZdjeciowy,
@@ -238,6 +239,30 @@ export function zmienRozmiarSzablonu(p: Projekt, szablonId: string, szer: Mm, wy
   const s = p.szablony.find((x) => x.id === szablonId);
   if (!s || s.rozmiar.tryb !== 'mm') return p;
   const nowy: Szablon = { ...s, rozmiar: { tryb: 'mm', szerokosc: szer, wysokosc: wys } };
+  // Karta, która nie zmieści się na żadnej stronie kartki – zmiana odrzucona (wołający pokazuje komunikat).
+  const slot = { szerokosc: szer, wysokosc: wys };
+  if (
+    p.arkusze.some(
+      (a) =>
+        pasujeDoSlotu(
+          s,
+          slotKartki(
+            a,
+            p.talie.find((x) => x.id === a.taliaId),
+            new Map(p.szablony.map((x) => [x.id, x])),
+          ),
+        ) &&
+        slotyNaStronie(a.ustawienia, slot).razem === 0 &&
+        slotyNaStronie(
+          {
+            ...a.ustawienia,
+            orientacja: a.ustawienia.orientacja === 'pionowa' ? 'pozioma' : 'pionowa',
+          },
+          slot,
+        ).razem === 0,
+    )
+  )
+    return p;
   const szablony = new Map(p.szablony.map((x) => [x.id, x]));
   return {
     ...p,
@@ -249,9 +274,17 @@ export function zmienRozmiarSzablonu(p: Projekt, szablonId: string, szer: Mm, wy
       const tylkoTen = karty.length > 0 && karty.every((k) => k.szablonId === szablonId);
       const pustaTegoRozmiaru =
         karty.length === 0 && pasujeDoSlotu(s, slotKartki(a, talia, szablony));
-      return tylkoTen || pustaTegoRozmiaru
-        ? { ...a, ustawienia: { ...a.ustawienia, slot: { szerokosc: szer, wysokosc: wys } } }
-        : a;
+      if (!tylkoTen && !pustaTegoRozmiaru) return a;
+      // Nowy slot; orientacja ta, w której mieści się więcej kart.
+      const u = { ...a.ustawienia, slot };
+      const druga = {
+        ...u,
+        orientacja: u.orientacja === 'pionowa' ? ('pozioma' as const) : ('pionowa' as const),
+      };
+      return {
+        ...a,
+        ustawienia: slotyNaStronie(druga, slot).razem > slotyNaStronie(u, slot).razem ? druga : u,
+      };
     }),
   };
 }
@@ -285,4 +318,10 @@ export function kartkaDlaSzablonu(
     s.nazwa,
     false,
   );
+}
+
+/** Projekt własnych kart (bez pakietu gry) – szablony edytuje się w edytorze od zera. */
+export function czyProjektWlasny(p: Projekt): boolean {
+  const id = pakietProjektu(p);
+  return id === undefined || id === PAKIET_WLASNY;
 }

@@ -150,7 +150,14 @@ export function Kreator({
                 max={20}
                 step={0.5}
                 value={promien}
-                onChange={(e) => ustawPromien(Math.max(0, e.target.valueAsNumber || 0))}
+                onChange={(e) =>
+                  ustawPromien(
+                    Math.min(
+                      Math.max(0, e.target.valueAsNumber || 0),
+                      Math.min(wymiar.szer, wymiar.wys) / 2,
+                    ),
+                  )
+                }
               />
             </label>
             <label>

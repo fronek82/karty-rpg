@@ -40,10 +40,10 @@ export function DrzewoSzablonu({
         role="treeitem"
         aria-level={poziom}
         aria-selected={wybrany}
-        aria-expanded={kontener ? true : undefined}
         aria-label={`${nazwaWezla(w)} – ${t(`wezel.${w.typ}`)}`}
         data-wezel={w.id}
-        tabIndex={wybrany || (zaznaczone.length === 0 && poziom === 1) ? 0 : -1}
+        // Jeden przystanek Tab: pierwszy zaznaczony element, bez zaznaczenia – korzeń.
+        tabIndex={(zaznaczone.length ? zaznaczone[0] === w.id : poziom === 1) ? 0 : -1}
         className={`wezel-drzewa${wybrany ? ' wybrany' : ''}`}
         onClick={(e) => {
           e.stopPropagation();
@@ -64,7 +64,12 @@ export function DrzewoSzablonu({
     );
   };
   return (
-    <ul role="tree" aria-label={t('szablon.struktura')} className="drzewo-szablonu">
+    <ul
+      role="tree"
+      aria-label={t('szablon.struktura')}
+      aria-multiselectable="true"
+      className="drzewo-szablonu"
+    >
       {wiersz(korzen, 1)}
     </ul>
   );

@@ -258,6 +258,7 @@ export const pl = {
   'kreator.podglad': 'Podgląd rozmiaru',
   'kreator.anuluj': 'Anuluj',
   'kreator.dalej': 'Dalej: układ pól ►',
+  'rozmiar.tryb.domyslnie': 'domyślnie',
   'rozmiar.tryb.auto': 'wg treści',
   'rozmiar.tryb.wypelnij': 'wypełnij',
   'rozmiar.tryb.mm': 'mm',
@@ -276,6 +277,11 @@ export const pl = {
   'start.uklad.stopkaLewa': 'Stopka – lewa',
   'start.uklad.stopkaPrawa': 'Stopka – prawa',
   'szablon.brak': 'Nie ma takiego szablonu w projekcie',
+  'szablon.tylkoWlasne':
+    'Szablony z pakietu gry nie są edytowane w edytorze szablonu – wróć do kartek.',
+  'szablon.rozmiarNieMiesci':
+    'Karta w tym rozmiarze nie zmieści się na stronie kartki – zmień najpierw papier.',
+  'szablon.tytulEdytora': 'Edytor szablonu',
   'szablon.wrocDoKartek': '← Kartki',
   'szablon.robKarty': 'Rób karty ►',
   'szablon.nazwaSzablonu': 'Nazwa szablonu',
@@ -337,7 +343,7 @@ export const pl = {
   'wezel.separator': 'Separator',
   'wezel.tabela': 'Tabela',
   'szablony.tytul': 'Szablony projektu',
-  'szablony.brak': 'Brak szablonów – zaimportuj plik szablonu.',
+  'szablony.brak': 'Brak szablonów – utwórz nowy albo zaimportuj plik szablonu.',
   'szablony.eksportuj': 'Eksportuj',
   'szablony.eksportujEtykieta': 'Eksportuj szablon {nazwa}',
   'szablony.kartka': '＋ Kartka',

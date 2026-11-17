@@ -14,7 +14,7 @@ export function KreatorStrona() {
       <Kreator
         anuluj={() => (window.location.hash = '#/wlasne')}
         utworz={async (u) => {
-          const s = szablonZKreatora(u, []);
+          const s = szablonZKreatora(u);
           const id = await nowyProjektZSzablonuKreatora(s);
           window.location.hash = `#/projekt/${encodeURIComponent(id)}/szablon/${encodeURIComponent(s.id)}`;
         }}

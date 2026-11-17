@@ -49,13 +49,15 @@ export function kluczZNazwy(nazwa: string, zajete: ReadonlySet<string>): string 
   const baza =
     nazwa
       .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/ł/g, 'l')
       .replace(/Ł/g, 'L')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '_')
       .replace(/^_+|_+$/g, '') || 'pole';
-  return unikalneId(baza, zajete).replace(/-/g, '_');
+  let klucz = baza;
+  for (let n = 2; zajete.has(klucz); n++) klucz = `${baza}_${n}`;
+  return klucz;
 }
 
 const noweIdWezla = (s: Szablon, typ: string) =>
@@ -69,10 +71,14 @@ export function nowyWezel(
   s: Szablon,
   rodzaj: RodzajNowego,
   nazwa: string,
-  opcje: { wWierszu?: boolean } = {},
+  opcje: {
+    wWierszu?: boolean;
+    /** Klucze zajęte poza szablonem (np. dane kart po usuniętych polach) – nie do ponownego użycia. */
+    zajete?: Iterable<string>;
+  } = {},
 ): Wezel {
   const id = noweIdWezla(s, rodzaj);
-  const klucze = kluczeSzablonu(s);
+  const klucze = new Set([...kluczeSzablonu(s), ...(opcje.zajete ?? [])]);
   const klucz = () => kluczZNazwy(nazwa, klucze);
   switch (rodzaj) {
     case 'wiersz':
@@ -309,17 +315,23 @@ export function duplikujWezel(
   s: Szablon,
   id: string,
   dopisek: string,
+  zajete: Iterable<string> = [],
 ): { szablon: Szablon; id: string } {
   const w = znajdzWezel(s, id);
   const r = rodzicWezla(s, id);
   if (!w || !r) return { szablon: s, id: '' };
   const ids = new Set(wszystkieWezly(s).map((x) => x.id));
-  const klucze = kluczeSzablonu(s);
+  const klucze = new Set([...kluczeSzablonu(s), ...zajete]);
+  const noweIds = new Map<string, string>();
   const kopia = mapuj(structuredClone(w), (x) => {
     const nid = unikalneId(x.id, ids);
     ids.add(nid);
+    noweIds.set(x.id, nid);
     const y = { ...x, id: nid, ...(x.nazwa ? { nazwa: `${x.nazwa} ${dopisek}` } : {}) } as Wezel;
     if (czyKontener(y)) return y;
+    // Etykieta równa nazwie idzie za nią (jak przy zmianie nazwy w panelu).
+    if ((y.typ === 'tekst' || y.typ === 'wartosc') && y.etykieta && y.etykieta.tekst === x.nazwa)
+      y.etykieta = { ...y.etykieta, tekst: y.nazwa! };
     if (y.klucz) {
       y.klucz = kluczZNazwy(y.nazwa ?? y.klucz, klucze);
       klucze.add(y.klucz);
@@ -332,18 +344,37 @@ export function duplikujWezel(
       });
     return y;
   });
-  return { szablon: wstawDo(s, r.rodzic.id, r.indeks + 1, kopia), id: kopia.id };
+  // Obraz w kopii omija kopie pól, nie oryginały.
+  const poprawiona = mapuj(kopia, (x) =>
+    !czyKontener(x) && x.typ === 'obraz' && x.omijaj
+      ? { ...x, omijaj: x.omijaj.map((id) => noweIds.get(id) ?? id) }
+      : x,
+  );
+  return { szablon: wstawDo(s, r.rodzic.id, r.indeks + 1, poprawiona), id: poprawiona.id };
 }
 
 // --- Projekt.
 
 /** Zmiana szablonu w projekcie (bez zmiany kart). */
 export function zmienSzablon(p: Projekt, szablonId: string, f: (s: Szablon) => Szablon): Projekt {
+  const s = p.szablony.find((x) => x.id === szablonId);
+  const nowy = s && f(s);
+  // Operacja bez skutku (np. przesunięcie na brzegu) – ten sam projekt: bez kroku „Cofnij”.
+  if (!s || nowy === s) return p;
   return {
     ...p,
     zmieniono: new Date().toISOString(),
-    szablony: p.szablony.map((s) => (s.id === szablonId ? f(s) : s)),
+    szablony: p.szablony.map((x) => (x.id === szablonId ? nowy! : x)),
   };
+}
+
+/** Klucze danych w kartach danego szablonu (także po usuniętych polach). */
+export function kluczeDanychKart(p: Projekt, szablonId: string): Set<string> {
+  const k = new Set<string>();
+  for (const t of p.talie)
+    for (const karta of t.karty)
+      if (karta.szablonId === szablonId) for (const x of Object.keys(karta.dane)) k.add(x);
+  return k;
 }
 
 // --- Nowy szablon.

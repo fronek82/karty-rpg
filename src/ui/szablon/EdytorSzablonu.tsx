@@ -3,12 +3,14 @@ import {
   danePodgladu,
   doPoprzedniegoKontenera,
   duplikujWezel,
+  kluczeDanychKart,
   nowyWezel,
   opakuj,
   przesunWezel,
   rodzicWezla,
   usunWezly,
   wstawWezel,
+  wszystkieWezly,
   wyzej,
   zmienSzablon,
   zmienWezel,
@@ -16,6 +18,7 @@ import {
   type RodzajNowego,
 } from '../../dane/szablon';
 import { kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty';
+import { wymiaryKarty } from '../../model/szablon';
 import { t } from '../../i18n';
 import { czyKontener, type Szablon, type Wezel } from '../../model/szablon';
 import { renderujKarte } from '../../silnik/karta';
@@ -71,14 +74,28 @@ export function EdytorSzablonu({
   const zmienSz = (f: (s: Szablon) => Szablon, klucz?: string) =>
     zmien((p) => zmienSzablon(p, szablonId, f), klucz ? { klucz: `szablon:${klucz}` } : {});
 
-  // Podgląd: karta z danymi przykładowymi (silnik jak na kartce i w PDF).
+  const wybierz = (id: string, dodajDo: boolean) =>
+    ustawZazn((z) => (dodajDo ? (z.includes(id) ? z.filter((x) => x !== id) : [...z, id]) : [id]));
+  const fokusWDrzewie = (id: string) =>
+    requestAnimationFrame(() =>
+      drzewo.current?.querySelector<HTMLElement>(`[data-wezel="${CSS.escape(id)}"]`)?.focus(),
+    );
+  const zamknijMenu = () => {
+    ustawMenuDodaj(false);
+  };
+
+  // Podgląd: karta z danymi przykładowymi (silnik jak na kartce i w PDF). Zależy tylko od
+  // tego, co widać na karcie – zmiana nazwy szablonu nie rysuje karty od nowa.
   const zasoby = edycja.zasoby.zasoby;
+  const doRysunku = szablon && { ...szablon, nazwa: '' };
+  const kluczRysunku = doRysunku ? JSON.stringify(doRysunku) : '';
   const podglad = useMemo(() => {
-    if (!szablon) return undefined;
+    if (!kluczRysunku) return undefined;
+    const sz = JSON.parse(kluczRysunku) as Szablon;
     try {
       const w = renderujKarte(
-        szablon,
-        { dane: danePodgladu(szablon) },
+        sz,
+        { dane: danePodgladu(sz) },
         { czcionki: zasoby.czcionki, obraz: (id) => zasoby.obrazy.get(id)?.info },
       );
       return {
@@ -91,51 +108,127 @@ export function EdytorSzablonu({
     } catch (e) {
       return { blad: e instanceof Error ? e.message : String(e) };
     }
-  }, [szablon, zasoby]);
+  }, [kluczRysunku, zasoby.czcionki, zasoby.obrazy]);
+  const wezlyPoId = useMemo(
+    () => new Map(szablon ? wszystkieWezly(szablon).map((w) => [w.id, w] as const) : []),
+    [szablon],
+  );
 
+  // Operacje liczone w aktualizatorze (na najnowszym szablonie); nowe id przekazywane przez zmienną.
+  const zajeteKlucze = () => kluczeDanychKart(projekt, szablonId);
   const cel = jeden ?? szablon?.korzen;
   const dodaj = (r: RodzajNowego) => {
-    if (!szablon || !cel) return;
-    const rodzic = czyKontener(cel) ? cel : rodzicWezla(szablon, cel.id)?.rodzic;
-    const w = nowyWezel(szablon, r, t(`wezel.${r}`), { wWierszu: rodzic?.typ === 'wiersz' });
-    zmienSz((s) => wstawWezel(s, cel.id, w));
-    ustawZazn([w.id]);
-    ustawMenuDodaj(false);
+    if (!cel) return;
+    let noweId = '';
+    zmienSz((s) => {
+      const c = znajdzWezel(s, cel.id) ?? s.korzen;
+      const rodzic = czyKontener(c) ? c : rodzicWezla(s, c.id)?.rodzic;
+      const w = nowyWezel(s, r, t(`wezel.${r}`), {
+        wWierszu: rodzic?.typ === 'wiersz',
+        zajete: zajeteKlucze(),
+      });
+      noweId = w.id;
+      return wstawWezel(s, c.id, w);
+    });
+    if (noweId) ustawZazn([noweId]);
+    zamknijMenu();
   };
   const usun = () => {
-    if (!szablon || aktywne.length === 0) return;
-    zmienSz((s) => usunWezly(s, aktywne));
-    ustawZazn([]);
+    if (!szablon) return;
+    const ids = aktywne.filter((id) => id !== szablon.korzen.id);
+    if (ids.length === 0) return;
+    // Fokus po usunięciu: sąsiad albo rodzic pierwszego usuwanego.
+    const r = rodzicWezla(szablon, ids[0]!);
+    const nastepny =
+      r?.rodzic.dzieci.find((d, i) => i > r.indeks && !ids.includes(d.id)) ??
+      [...(r?.rodzic.dzieci ?? [])]
+        .reverse()
+        .find((d, i, t) => t.length - 1 - i < r!.indeks && !ids.includes(d.id)) ??
+      r?.rodzic;
+    zmienSz((s) => usunWezly(s, ids));
+    ustawZazn(nastepny ? [nastepny.id] : []);
+    if (nastepny) fokusWDrzewie(nastepny.id);
   };
   const duplikuj = () => {
     if (!szablon || !jeden || jeden.id === szablon.korzen.id) return;
-    const d = duplikujWezel(szablon, jeden.id, t('szablon.kopia'));
-    zmienSz(() => d.szablon);
-    ustawZazn([d.id]);
+    let noweId = '';
+    zmienSz((s) => {
+      const d = duplikujWezel(s, jeden.id, t('szablon.kopia'), zajeteKlucze());
+      noweId = d.id;
+      return d.szablon;
+    });
+    if (noweId) ustawZazn([noweId]);
   };
   const ruch = (f: (s: Szablon, id: string) => Szablon) => {
     if (!jeden) return;
     zmienSz((s) => f(s, jeden.id));
+    fokusWDrzewie(jeden.id);
   };
   const opakujW = (typ: 'wiersz' | 'kolumna') => {
-    if (!szablon || aktywne.length === 0) return;
-    const o = opakuj(szablon, aktywne, typ, t(`wezel.${typ}`));
-    if (!o.id) return;
-    zmienSz(() => o.szablon);
-    ustawZazn([o.id]);
+    if (aktywne.length === 0) return;
+    let noweId = '';
+    zmienSz((s) => {
+      const o = opakuj(s, aktywne, typ, t(`wezel.${typ}`));
+      noweId = o.id;
+      return o.szablon;
+    });
+    if (noweId) ustawZazn([noweId]);
   };
   const robKarty = () => {
-    const w = kartkaDlaSzablonu(projekt, szablonId);
-    if (w.projekt !== projekt) zmien(() => w.projekt);
-    window.location.hash = `#/projekt/${idProjektu}`;
+    let arkuszId = '';
+    zmien((p) => {
+      const w = kartkaDlaSzablonu(p, szablonId);
+      arkuszId = w.arkuszId;
+      return w.projekt;
+    });
+    window.location.hash = `#/projekt/${idProjektu}/kartka/${encodeURIComponent(arkuszId)}`;
   };
 
-  // Skróty: Delete, Ctrl+D, Ctrl+Z / Ctrl+Y, Escape; strzałki w drzewie.
+  // Menu „+ Dodaj”: fokus na pierwszej pozycji, strzałki, Escape wraca na przycisk.
+  const przyciskDodaj = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuDodaj) return;
+    menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    const poza = (e: PointerEvent) => {
+      if (!menu.current?.contains(e.target as Node) && e.target !== przyciskDodaj.current)
+        ustawMenuDodaj(false);
+    };
+    window.addEventListener('pointerdown', poza);
+    return () => window.removeEventListener('pointerdown', poza);
+  }, [menuDodaj]);
+  const klawiszMenu = (e: React.KeyboardEvent) => {
+    const pozycje = [...(menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+    const i = pozycje.indexOf(document.activeElement as HTMLElement);
+    const cel =
+      e.key === 'ArrowDown'
+        ? pozycje[(i + 1) % pozycje.length]
+        : e.key === 'ArrowUp'
+          ? pozycje[(i - 1 + pozycje.length) % pozycje.length]
+          : e.key === 'Home'
+            ? pozycje[0]
+            : e.key === 'End'
+              ? pozycje.at(-1)
+              : undefined;
+    if (cel) {
+      e.preventDefault();
+      cel.focus();
+    } else if (e.key === 'Escape' || e.key === 'Tab') {
+      e.preventDefault();
+      e.stopPropagation();
+      ustawMenuDodaj(false);
+      przyciskDodaj.current?.focus();
+    }
+  };
+
+  // Skróty: Delete, Ctrl+D, Ctrl+Z / Ctrl+Y, Escape; drzewo: strzałki, Home/End, Shift+strzałka
+  // (dokłada do zaznaczenia), ←/→ (rodzic / pierwsze dziecko), Alt+↑/↓ (przesuń).
   const klawisze = useRef<(e: KeyboardEvent) => void>(() => undefined);
   const obsluzKlawisz = (e: KeyboardEvent) => {
     if (wPolu(document.activeElement)) return;
     const ctrl = e.ctrlKey || e.metaKey;
     const k = e.key.toLowerCase();
+    const wDrzewie = !!drzewo.current?.contains(document.activeElement);
     if (ctrl && k === 'z') {
       e.preventDefault();
       if (e.shiftKey) edycja.ponow();
@@ -151,23 +244,43 @@ export function EdytorSzablonu({
       usun();
     } else if (e.key === 'Escape') {
       ustawZazn([]);
-      ustawMenuDodaj(false);
     } else if (
-      (e.key === 'ArrowUp' || e.key === 'ArrowDown') &&
-      drzewo.current?.contains(document.activeElement)
+      wDrzewie &&
+      ['ArrowUp', 'ArrowDown', 'Home', 'End', 'ArrowLeft', 'ArrowRight'].includes(e.key)
     ) {
       e.preventDefault();
-      const elementy = [...drzewo.current.querySelectorAll<HTMLElement>('[data-wezel]')];
-      const i = elementy.indexOf(document.activeElement as HTMLElement);
-      const nast =
-        elementy[Math.max(0, Math.min(elementy.length - 1, i + (e.key === 'ArrowUp' ? -1 : 1)))];
-      if (nast) {
-        if (e.altKey && jeden) ruch((s, id) => przesunWezel(s, id, e.key === 'ArrowUp' ? -1 : 1));
-        else {
-          ustawZazn([nast.dataset.wezel!]);
-          nast.focus();
-        }
+      const elementy = [...drzewo.current!.querySelectorAll<HTMLElement>('[data-wezel]')];
+      const biezacy = document.activeElement as HTMLElement;
+      const i = elementy.indexOf(biezacy);
+      const id = biezacy.dataset.wezel;
+      if (e.altKey && jeden && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        ruch((s, x) => przesunWezel(s, x, e.key === 'ArrowUp' ? -1 : 1));
+        return;
       }
+      let nast: HTMLElement | undefined;
+      if (e.key === 'ArrowUp') nast = elementy[Math.max(0, i - 1)];
+      else if (e.key === 'ArrowDown') nast = elementy[Math.min(elementy.length - 1, i + 1)];
+      else if (e.key === 'Home') nast = elementy[0];
+      else if (e.key === 'End') nast = elementy.at(-1);
+      else if (e.key === 'ArrowLeft' && szablon && id) {
+        const r = rodzicWezla(szablon, id);
+        nast = r ? elementy.find((x) => x.dataset.wezel === r.rodzic.id) : undefined;
+      } else if (e.key === 'ArrowRight' && szablon && id) {
+        const w = wezlyPoId.get(id);
+        const pierwsze = w && czyKontener(w) ? w.dzieci[0] : undefined;
+        nast = pierwsze ? elementy.find((x) => x.dataset.wezel === pierwsze.id) : undefined;
+      }
+      if (nast?.dataset.wezel) {
+        const nid = nast.dataset.wezel;
+        if (e.shiftKey) ustawZazn((z) => (z.includes(nid) ? z : [...z, nid]));
+        else ustawZazn([nid]);
+        nast.focus();
+      }
+    } else if (wDrzewie && (e.key === ' ' || e.key === 'Enter')) {
+      // Spacja z Ctrl – dokłada / zdejmuje element z zaznaczenia.
+      e.preventDefault();
+      const id = (document.activeElement as HTMLElement).dataset.wezel;
+      if (id) wybierz(id, ctrl);
     }
   };
   useEffect(() => {
@@ -188,17 +301,26 @@ export function EdytorSzablonu({
     );
   }
 
-  const wybierz = (id: string, dodajDo: boolean) =>
-    ustawZazn((z) => (dodajDo ? (z.includes(id) ? z.filter((x) => x !== id) : [...z, id]) : [id]));
   const wymiary = (id: string) =>
     podglad && 'wezly' in podglad ? podglad.wezly.find((w) => w.id === id) : undefined;
-  const r = szablon.rozmiar;
-  const szer = r.tryb === 'mm' ? r.szerokosc : r.kolumny * r.slot.szerokosc;
-  const wys = r.tryb === 'mm' ? r.wysokosc : r.rzedy * r.slot.wysokosc;
+  const { szer, wys } = wymiaryKarty(szablon);
+  // „Opakuj” – tylko elementy jednego rodzica (bez korzenia).
+  const rodzice = new Set(aktywne.map((id) => rodzicWezla(szablon, id)?.rodzic.id));
+  const moznaOpakowac = aktywne.length > 0 && rodzice.size === 1 && !rodzice.has(undefined);
+  const r1 = jeden && !korzen(jeden.id) ? rodzicWezla(szablon, jeden.id) : undefined;
+  const moznaWyzej = !!r1 && r1.indeks > 0;
+  const moznaNizej = !!r1 && r1.indeks < r1.rodzic.dzieci.length - 1;
+  const poprzedni = r1 ? r1.rodzic.dzieci[r1.indeks - 1] : undefined;
+  const moznaDoKontenera = !!poprzedni && czyKontener(poprzedni);
+  const moznaWyjac = !!r1 && r1.rodzic.id !== szablon.korzen.id;
   const korzenZazn = !jeden || jeden.id === szablon.korzen.id;
+  function korzen(id: string) {
+    return id === szablon!.korzen.id;
+  }
 
   return (
     <div className="edytor-szablonu">
+      <h1 className="tylko-czytnik">{t('szablon.tytulEdytora')}</h1>
       <header className="pasek-gorny">
         <a href="#/" className="logo">
           {t('aplikacja.nazwa')}
@@ -245,6 +367,7 @@ export function EdytorSzablonu({
           <div className="akcje-drzewa">
             <div className="menu-dodaj">
               <button
+                ref={przyciskDodaj}
                 type="button"
                 aria-haspopup="menu"
                 aria-expanded={menuDodaj}
@@ -253,7 +376,13 @@ export function EdytorSzablonu({
                 {t('szablon.dodaj')}
               </button>
               {menuDodaj && (
-                <div className="menu-typu" role="menu" aria-label={t('szablon.dodaj')}>
+                <div
+                  ref={menu}
+                  className="menu-typu"
+                  role="menu"
+                  aria-label={t('szablon.dodaj')}
+                  onKeyDown={klawiszMenu}
+                >
                   {RODZAJE.map((r) => (
                     <button
                       key={r}
@@ -275,40 +404,32 @@ export function EdytorSzablonu({
             </div>
             <button
               type="button"
-              disabled={!jeden || korzenZazn}
+              disabled={!moznaWyzej}
               onClick={() => ruch((s, id) => przesunWezel(s, id, -1))}
             >
               {t('szablon.wyzej')}
             </button>
             <button
               type="button"
-              disabled={!jeden || korzenZazn}
+              disabled={!moznaNizej}
               onClick={() => ruch((s, id) => przesunWezel(s, id, 1))}
             >
               {t('szablon.nizej')}
             </button>
             <button
               type="button"
-              disabled={!jeden || korzenZazn}
+              disabled={!moznaDoKontenera}
               onClick={() => ruch(doPoprzedniegoKontenera)}
             >
               {t('szablon.doKontenera')}
             </button>
-            <button type="button" disabled={!jeden || korzenZazn} onClick={() => ruch(wyzej)}>
+            <button type="button" disabled={!moznaWyjac} onClick={() => ruch(wyzej)}>
               {t('szablon.wyjmij')}
             </button>
-            <button
-              type="button"
-              disabled={aktywne.length === 0 || aktywne.includes(szablon.korzen.id)}
-              onClick={() => opakujW('wiersz')}
-            >
+            <button type="button" disabled={!moznaOpakowac} onClick={() => opakujW('wiersz')}>
               {t('szablon.opakujWiersz')}
             </button>
-            <button
-              type="button"
-              disabled={aktywne.length === 0 || aktywne.includes(szablon.korzen.id)}
-              onClick={() => opakujW('kolumna')}
-            >
+            <button type="button" disabled={!moznaOpakowac} onClick={() => opakujW('kolumna')}>
               {t('szablon.opakujKolumne')}
             </button>
             <button type="button" disabled={!jeden || korzenZazn} onClick={duplikuj}>
@@ -350,7 +471,7 @@ export function EdytorSzablonu({
                   {[...podglad.wezly]
                     .sort((a, b) => b.szer * b.wys - a.szer * a.wys)
                     .map((w) => {
-                      const wezel = znajdzWezel(szablon, w.id);
+                      const wezel = wezlyPoId.get(w.id);
                       if (!wezel) return null;
                       return (
                         <button
@@ -419,9 +540,12 @@ export function EdytorSzablonu({
             <PanelKarty
               szablon={szablon}
               zmienSz={zmienSz}
-              zmienRozmiar={(s, w) =>
-                zmien((p) => zmienRozmiarSzablonu(p, szablonId, s, w), { klucz: 'rozmiar-karty' })
-              }
+              zmienRozmiar={(s, w) => {
+                // Karta, która nie zmieści się na stronie kartki – odrzucona (komunikat w panelu).
+                if (zmienRozmiarSzablonu(projekt, szablonId, s, w) === projekt) return false;
+                zmien((p) => zmienRozmiarSzablonu(p, szablonId, s, w), { klucz: 'rozmiar-karty' });
+                return true;
+              }}
             />
           )}
         </aside>
@@ -438,12 +562,20 @@ function PanelKarty({
 }: {
   szablon: Szablon;
   zmienSz: (f: (s: Szablon) => Szablon, klucz?: string) => void;
-  zmienRozmiar: (szer: number, wys: number) => void;
+  zmienRozmiar: (szer: number, wys: number) => boolean;
 }) {
   const r = szablon.rozmiar;
+  const [blad, ustawBlad] = useState(false);
+  const { szer, wys } = wymiaryKarty(szablon);
+  const rozmiar = (s: number, w: number) => ustawBlad(!zmienRozmiar(s, w));
   return (
     <>
       <h2>{t('szablon.karta')}</h2>
+      {blad && (
+        <p role="alert" className="blad-pola">
+          {t('szablon.rozmiarNieMiesci')}
+        </p>
+      )}
       <p className="podpis">{t('szablon.kartaOpis')}</p>
       {r.tryb === 'mm' ? (
         <div className="pole-panelu dwa-pola">
@@ -454,7 +586,7 @@ function PanelKarty({
             min={10}
             max={300}
             krok={0.5}
-            zmien={(v) => zmienRozmiar(v, r.wysokosc)}
+            zmien={(v) => rozmiar(v, r.wysokosc)}
           />
           <PoleLiczby
             id="karta-wys"
@@ -463,7 +595,7 @@ function PanelKarty({
             min={10}
             max={300}
             krok={0.5}
-            zmien={(v) => zmienRozmiar(r.szerokosc, v)}
+            zmien={(v) => rozmiar(r.szerokosc, v)}
           />
         </div>
       ) : (
@@ -475,7 +607,7 @@ function PanelKarty({
           etykieta={t('kreator.promien')}
           wartosc={szablon.promienRogow ?? 0}
           min={0}
-          max={30}
+          max={Math.min(szer, wys) / 2}
           krok={0.5}
           zmien={(v) => zmienSz((s) => ({ ...s, promienRogow: v }), 'promien')}
         />

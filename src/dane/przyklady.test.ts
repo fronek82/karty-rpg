@@ -38,8 +38,8 @@ function bajty(s: Szablon): Uint8Array {
 describe('pliki przykładów w docs/przyklady', () => {
   for (const [s, nazwa] of PRZYKLADY) {
     it(`${nazwa}: plik wczytuje się i zawiera aktualny szablon`, () => {
-      if (process.env.AKTUALIZUJ_PRZYKLADY || !existsSync(plik(nazwa)))
-        writeFileSync(plik(nazwa), bajty(s));
+      if (process.env.AKTUALIZUJ_PRZYKLADY) writeFileSync(plik(nazwa), bajty(s));
+      expect(existsSync(plik(nazwa)), `brak pliku ${plik(nazwa)}`).toBe(true);
       expect(importujSzablon(new Uint8Array(readFileSync(plik(nazwa)))).szablon).toEqual(s);
     });
   }
