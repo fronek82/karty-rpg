@@ -42,6 +42,14 @@ const odstepy = (wartosc: z.ZodNumber) =>
   ]);
 const stylLinii = z.enum(['ciagla', 'przerywana', 'kropkowana', 'podwojna']);
 const narozniki = obj({ element: identyfikator, rozmiar: dodatnia, kolor: opc(z.string()) });
+const ozdoba = obj({
+  rodzaj: z.literal('motyw'),
+  element: identyfikator,
+  szerokosc: dodatnia,
+  kolor: z.string(),
+  szyny: opc(nieujemna),
+  odsuniecie: opc(nieujemna),
+});
 const krawedzie = obj({
   gora: opc(z.boolean()),
   prawo: opc(z.boolean()),
@@ -67,6 +75,7 @@ const baza = {
       krawedzie: opc(krawedzie),
     }),
   ),
+  ozdoba: opc(ozdoba),
   narozniki: opc(narozniki),
   promien: opc(nieujemna),
   minSzerokosc: opc(nieujemna),
@@ -232,6 +241,7 @@ const szablon = obj({
       styl: opc(stylLinii),
       przerwa: opc(nieujemna),
       narozniki: opc(narozniki),
+      ozdoba: opc(ozdoba),
       odsuniecie: opc(nieujemna),
       promien: opc(nieujemna),
     }),
@@ -502,6 +512,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 8→9: `ustawienia.rozmiary` / `ustawienia.mieszane` (mieszane rozmiary kart) i `Arkusz.kolejnosc` –
   // bez zmian danych; kartki bez pól mają jeden rozmiar (siatka) jak dotąd.
   // 9→10: styl linii `podwojna`, `przerwa`, `narozniki` (ramka karty i węzły szablonu) – bez zmian danych.
+  // 10→11: `ozdoba` (motyw zamiast linii; ramka karty i węzły szablonu) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -512,6 +523,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     7: (d) => d,
     8: (d) => d,
     9: (d) => d,
+    10: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -523,6 +535,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     7: (d) => d,
     8: (d) => d,
     9: (d) => d,
+    10: (d) => d,
   },
 };
 
