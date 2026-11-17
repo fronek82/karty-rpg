@@ -235,8 +235,8 @@ export const pl = {
     'Przerywane kratki są tylko na ekranie. Drukuj w skali 100% – slot ma wtedy rozmiar slotu na karcie postaci.',
   'start.tytul': 'Karty do gier – zaprojektuj i wydrukuj',
   'start.stworzDo': 'Stwórz karty do {gra}',
-  'start.stworzInna': 'Stwórz karty do innej gry',
-  'start.innaOpis': 'D&D, Warhammer, Jedyny Pierścień, własne karty – w przygotowaniu.',
+  'start.stworzWlasne': 'Stwórz własne karty',
+  'start.wlasneOpis': 'Od zera: własny rozmiar karty i własny układ pól',
   'start.mojeProjekty': 'Moje projekty',
   'start.podsumowanie': 'stron: {strony}, kart: {karty}',
   'start.otworz': 'Otwórz',
@@ -248,9 +248,9 @@ export const pl = {
   'start.gotowyUkladOpis': 'Karty z pakietu ułożone jak w oryginale – do dowolnej zmiany.',
   'start.bladPakietu': 'Nie udało się wczytać danych gry ({szczegoly}). Odśwież stronę.',
   'start.tworze': 'Tworzę projekt…',
-  'start.wBudowie': 'Inne gry – w budowie',
-  'start.wBudowieOpis':
-    'Kolejne gry pojawią się tu jako osobne kafelki. Na razie aplikacja obsługuje karty do Mausrittera.',
+  'start.wlasneWBudowie': 'Edytor własnych kart – w budowie',
+  'start.wlasneWBudowieOpis':
+    'Tu powstanie edytor, w którym od zera ustawisz rozmiar karty i ułożysz jej pola. Na razie możesz tworzyć karty do Mausrittera.',
   'projekt.bladTytul': 'Nie udało się otworzyć projektu',
   'projekt.wrocDoListy': 'Wróć na start',
   'projekt.nawigacja': 'Ścieżka',

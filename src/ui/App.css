@@ -388,29 +388,6 @@ textarea:focus-visible {
   flex-wrap: wrap;
 }
 
-.planowane-gry {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  gap: 0.8rem;
-}
-
-.planowane-gry li {
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--obramowanie);
-  border-radius: 0.6rem;
-  background: var(--tlo-panelu);
-}
-
-.znacznik {
-  font-size: 0.75rem;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--akcent) 15%, transparent);
-  color: var(--akcent);
-  font-weight: 600;
-}
-
 /* --- Edytor kartki --- */
 .edytor-kartki {
   min-height: 100vh;
