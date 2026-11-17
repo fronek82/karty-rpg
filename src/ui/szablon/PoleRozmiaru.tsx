@@ -28,6 +28,7 @@ export function PoleRozmiaru({
   wartosc,
   zmien,
   domyslneMm,
+  bezWypelnij = false,
 }: {
   id: string;
   etykieta: string;
@@ -35,6 +36,8 @@ export function PoleRozmiaru({
   zmien: (r: Rozmiar | undefined) => void;
   /** Wartość startowa przy przełączeniu na mm (np. obecny rozmiar elementu). */
   domyslneMm: number;
+  /** Dziecko kontenera swobodnego: „wypełnij” nie ma tam sensu (działa jak „wg treści”), więc je ukrywamy. */
+  bezWypelnij?: boolean;
 }) {
   const tryb = trybRozmiaru(wartosc);
   const liczba = liczbaRozmiaru(wartosc);
@@ -54,11 +57,13 @@ export function PoleRozmiaru({
     <div className="pole-panelu pole-rozmiaru">
       <span id={`${id}-etykieta`}>{etykieta}</span>
       <div className="przelacznik-segmentowy" role="group" aria-labelledby={`${id}-etykieta`}>
-        {(['domyslnie', 'auto', 'wypelnij', 'mm', 'procent'] as const).map((x) => (
-          <button key={x} type="button" aria-pressed={tryb === x} onClick={() => ustawTryb(x)}>
-            {t(`rozmiar.tryb.${x}`)}
-          </button>
-        ))}
+        {(['domyslnie', 'auto', 'wypelnij', 'mm', 'procent'] as const)
+          .filter((x) => x !== 'wypelnij' || !bezWypelnij || tryb === 'wypelnij')
+          .map((x) => (
+            <button key={x} type="button" aria-pressed={tryb === x} onClick={() => ustawTryb(x)}>
+              {t(`rozmiar.tryb.${x}`)}
+            </button>
+          ))}
       </div>
       {tryb !== 'auto' && tryb !== 'domyslnie' && (
         <PoleLiczby

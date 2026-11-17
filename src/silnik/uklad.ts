@@ -2,6 +2,7 @@ import type { Mm } from '../model/jednostki';
 import {
   czyKontener,
   rozwinOdstepy,
+  ulamkiKotwicy,
   type Kontener,
   type Pole,
   type Rozmiar,
@@ -33,11 +34,47 @@ export interface KontekstUkladu {
 
 export interface UlozonyWezel {
   wezel: Wezel;
+  /**
+   * Ramka węzła w układzie rodzica. Przy `obrot` to ramka PRZED obrotem (w niej układają się dzieci
+   * i rysuje treść); prostokąt zajęty na karcie daje `prostokatPoObrocie`.
+   */
   x: Mm;
   y: Mm;
   szer: Mm;
   wys: Mm;
+  /** Obrót (stopnie, zgodnie z zegarem) wokół środka ramki – tylko dzieci kontenera swobodnego (R9). */
+  obrot?: 90 | 180 | 270;
   dzieci: UlozonyWezel[];
+}
+
+export interface Prostokat {
+  x: Mm;
+  y: Mm;
+  szer: Mm;
+  wys: Mm;
+}
+
+/** Prostokąt obrócony o wielokrotność 90° (zgodnie z zegarem) wokół punktu (cx, cy). */
+export function obrocProstokat(r: Prostokat, cx: Mm, cy: Mm, kat: 0 | 90 | 180 | 270): Prostokat {
+  if (kat === 0) return r;
+  const dx = r.x + r.szer / 2 - cx;
+  const dy = r.y + r.wys / 2 - cy;
+  // Obrót zgodnie z zegarem przy osi Y w dół: (x, y) → (−y, x).
+  const [nx, ny] = kat === 90 ? [-dy, dx] : kat === 180 ? [-dx, -dy] : [dy, -dx];
+  const zamien = kat !== 180;
+  const szer = zamien ? r.wys : r.szer;
+  const wys = zamien ? r.szer : r.wys;
+  return { x: cx + nx - szer / 2, y: cy + ny - wys / 2, szer, wys };
+}
+
+/** Prostokąt zajęty przez węzeł (w układzie rodzica) po jego własnym obrocie. */
+export function prostokatPoObrocie(u: Prostokat & { obrot?: 90 | 180 | 270 }): Prostokat {
+  return obrocProstokat(
+    { x: u.x, y: u.y, szer: u.szer, wys: u.wys },
+    u.x + u.szer / 2,
+    u.y + u.wys / 2,
+    u.obrot ?? 0,
+  );
 }
 
 type Os = 'szer' | 'wys';
@@ -122,6 +159,22 @@ function zmierzKontener(k: Kontener, wnetrze: Ograniczenie, ctx: KontekstUkladu)
       );
       szer = Math.max(szer, r.szer + marginesy(d, 'szer'));
       wys = Math.max(wys, r.wys + marginesy(d, 'wys'));
+    }
+    return { szer, wys };
+  }
+  if (k.typ === 'swobodny') {
+    // Rozmiar wg treści = obwiednia dzieci; dziecko zakotwiczone przy prawej / dolnej krawędzi
+    // (albo na środku) nie ma stałego punktu odniesienia, więc liczy się jego rozmiar plus odległość.
+    let szer = 0;
+    let wys = 0;
+    for (const d of dzieci) {
+      const r = rozmiarSwobodny(d, wnetrze, ctx);
+      const poz = d.pozycja;
+      const { fx, fy } = ulamkiKotwicy(poz?.kotwica);
+      const x = poz?.x ?? 0;
+      const y = poz?.y ?? 0;
+      szer = Math.max(szer, obwiednia(fx, x, r.prostokatSzer));
+      wys = Math.max(wys, obwiednia(fy, y, r.prostokatWys));
     }
     return { szer, wys };
   }
@@ -234,6 +287,23 @@ export function rozmiesc(
     return wynik;
   }
 
+  if (w.typ === 'swobodny') {
+    wynik.dzieci = dzieci.map((d) => {
+      const r = rozmiarSwobodny(d, ramka, ctx);
+      const poz = d.pozycja;
+      const { fx, fy } = ulamkiKotwicy(poz?.kotwica);
+      // Prostokąt na karcie (po obrocie) wiąże kotwica; ramka przed obrotem ma ten sam środek.
+      const lewo = ramka.x + ramka.szer * fx + (poz?.x ?? 0) - r.prostokatSzer * fx;
+      const gora = ramka.y + ramka.wys * fy + (poz?.y ?? 0) - r.prostokatWys * fy;
+      const cx = lewo + r.prostokatSzer / 2;
+      const cy = gora + r.prostokatWys / 2;
+      const u = rozmiesc(d, cx - r.szer / 2, cy - r.wys / 2, r.szer, r.wys, ctx);
+      if (r.obrot) u.obrot = r.obrot;
+      return u;
+    });
+    return wynik;
+  }
+
   const glowna: Os = w.typ === 'wiersz' ? 'szer' : 'wys';
   const poprzeczna = druga(glowna);
   const dostepneGlowna = ramka[glowna];
@@ -278,6 +348,57 @@ export function rozmiesc(
       : rozmiesc(d, ramka.x + pozPop, ramka.y + start, rozmiarPop, rozmiarGl, ctx);
   });
   return wynik;
+}
+
+/**
+ * Wkład dziecka w rozmiar kontenera „wg treści” w jednej osi (`f` – ułamek kotwicy, `x` – przesunięcie,
+ * `d` – rozmiar elementu): przy kotwicy na początku element sięga `x + d`; przy środkowej kontener
+ * musi być symetryczny wokół punktu, więc `d + 2|x|`; przy końcowej (f = 1) liczy się `d + |x|`
+ * (dodatnie `x` wyprowadza element poza kontener, więc nie powiększa go bardziej niż ujemne).
+ */
+function obwiednia(f: number, x: Mm, d: Mm): Mm {
+  if (f === 0) return x + d;
+  return f === 0.5 ? d + 2 * Math.abs(x) : d + Math.abs(x);
+}
+
+/**
+ * Rozmiar dziecka kontenera swobodnego: `szer` × `wys` to jego własne wymiary (przed obrotem),
+ * `prostokatSzer` × `prostokatWys` – prostokąt zajęty na karcie (zamienione boki przy 90° / 270°).
+ * mm i % (miejsca wnętrza kontenera w tej samej osi) są stałe; reszta (auto, wypełnij) – wg treści,
+ * z ograniczeniem do wnętrza kontenera wzdłuż osi, w którą po obrocie trafia dany bok.
+ */
+function rozmiarSwobodny(
+  d: Wezel,
+  ramka: Ograniczenie,
+  ctx: KontekstUkladu,
+): { szer: Mm; wys: Mm; prostokatSzer: Mm; prostokatWys: Mm; obrot?: 90 | 180 | 270 } {
+  const kat = d.pozycja?.obrot ?? 0;
+  const bokiZamienione = kat === 90 || kat === 270;
+  const sz = staly(d.szerokosc, ramka.szer);
+  const wy = staly(d.wysokosc, ramka.wys);
+  let szer = sz;
+  let wys = wy;
+  if (sz === undefined || wy === undefined) {
+    const ogr: Ograniczenie = {
+      szer: sz ?? (bokiZamienione ? ramka.wys : ramka.szer),
+      wys: wy ?? (bokiZamienione ? ramka.szer : ramka.wys),
+    };
+    const ustalone: Ograniczenie = {};
+    if (sz !== undefined) ustalone.szer = sz;
+    if (wy !== undefined) ustalone.wys = wy;
+    const m = zmierz(d, ogr, ctx, ustalone);
+    szer = sz ?? m.szer;
+    wys = wy ?? m.wys;
+  }
+  const s0 = szer ?? 0;
+  const w0 = wys ?? 0;
+  return {
+    szer: s0,
+    wys: w0,
+    prostokatSzer: bokiZamienione ? w0 : s0,
+    prostokatWys: bokiZamienione ? s0 : w0,
+    ...(kat ? { obrot: kat } : {}),
+  };
 }
 
 /** Rozmiar w osi poprzecznej: stały, wg treści (gdy jest wyrównanie) albo rozciągnięty. */

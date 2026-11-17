@@ -53,6 +53,8 @@ import {
   type UkladTekstu,
 } from './tekst';
 import {
+  obrocProstokat,
+  prostokatPoObrocie,
   rozmiesc,
   type KontekstUkladu,
   type Ograniczenie,
@@ -91,7 +93,20 @@ export interface WyrenderowanaKarta {
   scena: Scena;
   ostrzezenia: Ostrzezenie[];
   /** Położenia widocznych węzłów (mm od rogu karty) – do zaznaczania w edytorze szablonu. */
-  wezly: { id: string; x: Mm; y: Mm; szer: Mm; wys: Mm }[];
+  wezly: {
+    id: string;
+    x: Mm;
+    y: Mm;
+    szer: Mm;
+    wys: Mm;
+    /**
+     * Ramka węzła w układzie jego rodzica, przed obrotem węzła (u dzieci obróconych przodków
+     * – w układzie przed obrotem przodków). Z niej liczą się położenia przy konwersji kontenerów.
+     */
+    lokalne: { x: Mm; y: Mm; szer: Mm; wys: Mm };
+    /** Obrót własny węzła (tylko w kontenerze swobodnym). */
+    obrot?: 90 | 180 | 270;
+  }[];
 }
 
 const CZARNY = '#000000';
@@ -270,7 +285,7 @@ export function renderujKarte(
   const dane = daneZParametrami(szablon, karta.dane);
   const glify: Record<string, DefinicjaGlifu> = {};
   const symbole: Record<string, DefinicjaSymbolu> = {};
-  const elementy: ElementSceny[] = [];
+  let elementy: ElementSceny[] = [];
   const ostrzezenia: Ostrzezenie[] = [];
   /** Narożniki z biblioteki: elementy na scenę, rysunek do słownika symboli, ostrzeżenie o nieznanym. */
   const wypiszNarozniki = (w: WynikNarozniki, id: string) => {
@@ -387,11 +402,26 @@ export function renderujKarte(
   const korzen = rozmiesc(korzenKarty(szablon, karta), 0, 0, szer, wys, kontekst);
   // Położenia wszystkich widocznych węzłów – obraz może omijać pola rysowane nad nim.
   const ulozone = new Map<string, UlozonyWezel>();
-  const zbierz = (u: UlozonyWezel) => {
+  const wezly = new Map<string, WyrenderowanaKarta['wezly'][number]>();
+  /** `przodkowie` – obrócone ramki przodków (od najbliższego): prostokąt węzła na karcie obracamy kolejno. */
+  const zbierz = (u: UlozonyWezel, przodkowie: UlozonyWezel[]) => {
     ulozone.set(u.wezel.id, u);
-    u.dzieci.forEach(zbierz);
+    let r = prostokatPoObrocie(u);
+    for (const p of przodkowie)
+      r = obrocProstokat(r, p.x + p.szer / 2, p.y + p.wys / 2, p.obrot ?? 0);
+    wezly.set(u.wezel.id, {
+      id: u.wezel.id,
+      x: r.x,
+      y: r.y,
+      szer: r.szer,
+      wys: r.wys,
+      lokalne: { x: u.x, y: u.y, szer: u.szer, wys: u.wys },
+      ...(u.obrot ? { obrot: u.obrot } : {}),
+    });
+    const dalej = u.obrot ? [u, ...przodkowie] : przodkowie;
+    u.dzieci.forEach((d) => zbierz(d, dalej));
   };
-  zbierz(korzen);
+  zbierz(korzen, []);
   // Wszystkie węzły szablonu (także ukryte) – do sprawdzenia identyfikatorów w `omijaj`.
   const wezlySzablonu = new Set<string>();
   const zbierzSzablon = (w: Wezel) => {
@@ -400,7 +430,29 @@ export function renderujKarte(
   };
   zbierzSzablon(korzen.wezel);
 
+  /**
+   * Węzeł obrócony (dziecko kontenera swobodnego): jego rysunek trafia do `grupy` z obrotem wokół
+   * środka ramki; współrzędne wewnątrz zostają bezwzględne (macierz przesuwa środek do początku).
+   */
   const rysuj = (u: UlozonyWezel) => {
+    if (!u.obrot) return rysujWezel(u);
+    const zewnetrzne = elementy;
+    elementy = [];
+    rysujWezel(u);
+    const wewnetrzne = elementy;
+    elementy = zewnetrzne;
+    const cx = u.x + u.szer / 2;
+    const cy = u.y + u.wys / 2;
+    elementy.push({
+      typ: 'grupa',
+      x: cx,
+      y: cy,
+      obrot: u.obrot,
+      macierz: [1, 0, 0, 1, -cx, -cy],
+      elementy: wewnetrzne,
+    });
+  };
+  const rysujWezel = (u: UlozonyWezel) => {
     const w = u.wezel;
     // Wartość z etykietą: tło, ramka i treść – tylko w obszarze kształtu, etykieta osobno.
     const podzial =
@@ -514,7 +566,9 @@ export function renderujKarte(
         const przeszkody = (w.omijaj ?? [])
           .filter((id) => id !== w.id)
           .map((id) => ulozone.get(id))
-          .filter((x): x is UlozonyWezel => x !== undefined);
+          .filter((x): x is UlozonyWezel => x !== undefined)
+          // Przeszkoda obrócona (swobodny) zajmuje prostokąt po obrocie, w układzie swojego rodzica.
+          .map(prostokatPoObrocie);
         elementy.push(
           ...rysujPoleObrazu(w, ramka, dane, ctx, ostrzezenia, przeszkody, karta.obrazy?.[w.id]),
         );
@@ -579,13 +633,7 @@ export function renderujKarte(
   return {
     scena: { szer, wys, elementy, glify, ...symboleSceny(symbole) },
     ostrzezenia,
-    wezly: [...ulozone.values()].map((u) => ({
-      id: u.wezel.id,
-      x: u.x,
-      y: u.y,
-      szer: u.szer,
-      wys: u.wys,
-    })),
+    wezly: [...wezly.values()],
   };
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   danePodgladu,
   doPoprzedniegoKontenera,
+  dostosujDoSwobodnego,
   duplikujWezel,
   kluczeDanychKart,
   nowyWezel,
@@ -9,8 +10,10 @@ import {
   przesunWezel,
   rodzicWezla,
   skopiujStyl,
+  ukladZWezlow,
   usunWezly,
   wklejStyl,
+  zmienKolejnoscRysowania,
   zmienTypKontenera,
   zmienTypPola,
   type SkopiowanyStyl,
@@ -23,7 +26,7 @@ import {
   type RodzajNowego,
 } from '../../dane/szablon';
 import { kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty';
-import { wymiaryKarty } from '../../model/szablon';
+import { rozwinOdstepy, wymiaryKarty } from '../../model/szablon';
 import { roleProjektu } from '../../dane/edycja';
 import { ElementyWlasneKontekst } from './elementyWlasne';
 import { t, tJesliJest } from '../../i18n';
@@ -48,6 +51,7 @@ const RODZAJE: RodzajNowego[] = [
   'wiersz',
   'kolumna',
   'warstwy',
+  'swobodny',
   'tekst',
   'etykieta-wartosc',
   'wartosc',
@@ -144,6 +148,12 @@ export function EdytorSzablonu({
     [szablon],
   );
 
+  // Układ do konwersji kontenerów (swobodny ↔ kolumna / wiersz): ramki z bieżącego podglądu.
+  const uklad = useMemo(
+    () => (podglad && 'wezly' in podglad ? ukladZWezlow(podglad.wezly) : undefined),
+    [podglad],
+  );
+
   // Operacje liczone w aktualizatorze (na najnowszym szablonie); nowe id przekazywane przez zmienną.
   const zajeteKlucze = () => kluczeDanychKart(projekt, szablonId);
   const cel = jeden ?? szablon?.korzen;
@@ -157,8 +167,10 @@ export function EdytorSzablonu({
         wWierszu: rodzic?.typ === 'wiersz',
         zajete: zajeteKlucze(),
       });
-      noweId = w.id;
-      return wstawWezel(s, c.id, w);
+      // W kontenerze swobodnym element dostaje położenie i rozmiar w mm.
+      const nowy = rodzic?.typ === 'swobodny' ? dostosujDoSwobodnego(w) : w;
+      noweId = nowy.id;
+      return wstawWezel(s, c.id, nowy);
     });
     if (noweId) ustawZazn([noweId]);
     zamknijMenu();
@@ -352,6 +364,29 @@ export function EdytorSzablonu({
     zaznWezly.every((w) => w.typ === zaznWezly[0]!.typ)
       ? zaznWezly[0]
       : undefined;
+  // Sekcja „Położenie”: wszystkie zaznaczone elementy leżą w tym samym kontenerze swobodnym.
+  const rodzicSw = (() => {
+    if (!edytowany) return undefined;
+    const rodzice = aktywne.map((id) => rodzicWezla(szablon, id)?.rodzic);
+    const r = rodzice[0];
+    return r?.typ === 'swobodny' && rodzice.every((x) => x?.id === r.id) ? r : undefined;
+  })();
+  /** Rozmiary do zachowania miejsca elementu przy zmianie kotwicy (z bieżącego podglądu). */
+  const rozmiaryKotwicy = (id: string) => {
+    const wezly = podglad && 'wezly' in podglad ? podglad.wezly : undefined;
+    const rodzic = rodzicWezla(szablon, id)?.rodzic;
+    const e = wezly?.find((x) => x.id === id);
+    const r = rodzic && wezly?.find((x) => x.id === rodzic.id);
+    if (!e || !r || !rodzic) return undefined;
+    const p = rozwinOdstepy(rodzic.padding);
+    const zamienione = e.obrot === 90 || e.obrot === 270;
+    return {
+      ramka: { szer: r.lokalne.szer - p.lewo - p.prawo, wys: r.lokalne.wys - p.gora - p.dol },
+      element: zamienione
+        ? { szer: e.lokalne.wys, wys: e.lokalne.szer }
+        : { szer: e.lokalne.szer, wys: e.lokalne.wys },
+    };
+  };
   // Czcionki: role projektu i rodziny z biblioteki; obrazy z biblioteki.
   const rodziny = [
     ...new Set(projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : []))),
@@ -612,6 +647,10 @@ export function EdytorSzablonu({
                   czcionki={czcionki}
                   obrazy={obrazy}
                   zajeteKlucze={zajeteKlucze}
+                  {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
+                  rozmiaryKotwicy={rozmiaryKotwicy}
+                  mozeNaSwobodny={!!uklad}
+                  kolejnosc={(jak) => zmienSz((s) => zmienKolejnoscRysowania(s, edytowany.id, jak))}
                   // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
                   zmienWezel={(f, klucz) =>
                     zmienSz(
@@ -624,7 +663,7 @@ export function EdytorSzablonu({
                       aktywne.reduce(
                         (x, id) =>
                           czyKontener(edytowany)
-                            ? zmienTypKontenera(x, id, typ as Kontener['typ'])
+                            ? zmienTypKontenera(x, id, typ as Kontener['typ'], uklad)
                             : zmienTypPola(
                                 x,
                                 id,
@@ -670,6 +709,7 @@ export function EdytorSzablonu({
                     szablon={szablon}
                     wezel={szablon.korzen}
                     wymiary={wymiary(szablon.korzen.id)}
+                    mozeNaSwobodny={!!uklad}
                     czcionki={czcionki}
                     obrazy={obrazy}
                     zajeteKlucze={zajeteKlucze}
@@ -677,7 +717,9 @@ export function EdytorSzablonu({
                       zmienSz((s) => zmienWezel(s, s.korzen.id, f), klucz && `korzen:${klucz}`)
                     }
                     zmienTyp={(typ) =>
-                      zmienSz((s) => zmienTypKontenera(s, s.korzen.id, typ as Kontener['typ']))
+                      zmienSz((s) =>
+                        zmienTypKontenera(s, s.korzen.id, typ as Kontener['typ'], uklad),
+                      )
                     }
                     zmienPrzyklad={() => undefined}
                   />

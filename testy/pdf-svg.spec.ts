@@ -59,6 +59,78 @@ const szablonOpisu: Szablon = {
   },
 };
 
+/** Tryb swobodny: kotwice, obroty 90/180/270 tekstu i obrazu, kolumna w obróconym kontenerze. */
+const szablonSwobodny: Szablon = {
+  id: 'swobodny',
+  nazwa: 'Swobodny',
+  rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+  tlo: '#f4ecd8',
+  korzen: {
+    id: 'k',
+    typ: 'swobodny',
+    dzieci: [
+      {
+        id: 'ilustracja',
+        typ: 'obraz',
+        zasob: LITERA,
+        dopasowanie: 'dopasuj',
+        szerokosc: { mm: 30 },
+        wysokosc: { mm: 30 },
+        pozycja: { x: 4, y: 4, obrot: 90 },
+      },
+      {
+        id: 'tytul',
+        typ: 'tekst',
+        tekst: 'Bagienny troll',
+        wieleWierszy: false,
+        szerokosc: { mm: 44 },
+        wysokosc: { mm: 9 },
+        tlo: '#2a3b50',
+        padding: 1,
+        pozycja: { x: 0, y: -4, kotwica: 'dolny' },
+        styl: {
+          czcionka: 'tytul',
+          wariant: 'pogrubiony',
+          rozmiar: pt(12),
+          kolor: '#ffffff',
+          wyrownanie: 'srodek',
+          wyrownaniePionowe: 'srodek',
+        },
+      },
+      {
+        id: 'bok',
+        typ: 'tekst',
+        tekst: 'STWÓR · BAGNA',
+        wieleWierszy: false,
+        szerokosc: { mm: 40 },
+        wysokosc: { mm: 5 },
+        pozycja: { x: -2, y: 4, kotwica: 'prawy-gorny', obrot: 270 },
+        styl: { czcionka: 'tresc', rozmiar: pt(8), wyrownanie: 'srodek' },
+      },
+      {
+        id: 'kolumna',
+        typ: 'kolumna',
+        odstep: 1,
+        szerokosc: { mm: 26 },
+        wysokosc: { mm: 22 },
+        tlo: '#ffffff',
+        padding: 1,
+        obramowanie: { grubosc: 0.3, kolor: '#7a2e1f' },
+        pozycja: { x: 36, y: 40, obrot: 180 },
+        dzieci: [
+          {
+            id: 'a',
+            typ: 'tekst',
+            tekst: 'Regeneracja: 2 rany na turę.',
+            styl: { czcionka: 'tresc', rozmiar: pt(8) },
+          },
+          { id: 'g', typ: 'ikona', ikona: 'gwiazdka', rozmiar: 4 },
+        ],
+      },
+    ],
+  },
+};
+
 const PRZYPADKI: { nazwa: string; wynik: () => ReturnType<typeof renderujKarte> }[] = [
   {
     nazwa: 'Mausritter: broń z obrazkiem i białą obwódką klasy',
@@ -91,6 +163,15 @@ const PRZYPADKI: { nazwa: string; wynik: () => ReturnType<typeof renderujKarte> 
           rozmiar: { kolumny: 1, rzedy: 2 },
         },
         { czcionki },
+      ),
+  },
+  {
+    nazwa: 'tryb swobodny: kotwice i obroty 90°, 180°, 270°',
+    wynik: () =>
+      renderujKarte(
+        szablonSwobodny,
+        { dane: {} },
+        { czcionki, obraz: () => ({ szerokosc: 640, wysokosc: 480 }) },
       ),
   },
   {

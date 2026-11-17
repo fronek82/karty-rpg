@@ -69,6 +69,26 @@ const krawedzie = obj({
   lewo: opc(z.boolean()),
 });
 
+/** Położenie w kontenerze swobodnym: ±1000 mm to dużo więcej niż największa karta (300 mm). */
+const pozycja = obj({
+  x: liczba.min(-1000).max(1000),
+  y: liczba.min(-1000).max(1000),
+  kotwica: opc(
+    z.enum([
+      'lewy-gorny',
+      'gorny',
+      'prawy-gorny',
+      'lewy',
+      'srodek',
+      'prawy',
+      'lewy-dolny',
+      'dolny',
+      'prawy-dolny',
+    ]),
+  ),
+  obrot: opc(z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)])),
+});
+
 const baza = {
   id: identyfikator,
   nazwa: opc(z.string()),
@@ -92,6 +112,7 @@ const baza = {
   promien: opc(nieujemna),
   minSzerokosc: opc(nieujemna),
   minWysokosc: opc(nieujemna),
+  pozycja: opc(pozycja),
 };
 const bazaPola = {
   ...baza,
@@ -238,7 +259,7 @@ const pole = z.discriminatedUnion('typ', [
 const kontener: z.ZodType<Kontener> = z.lazy(() =>
   obj({
     ...baza,
-    typ: z.enum(['wiersz', 'kolumna', 'warstwy']),
+    typ: z.enum(['wiersz', 'kolumna', 'warstwy', 'swobodny']),
     dzieci: z.array(wezel),
     odstep: opc(nieujemna),
     rozklad: opc(z.enum(['poczatek', 'srodek', 'koniec', 'miedzy'])),
@@ -636,6 +657,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 11→12: separator ozdobny (`rysunek`, `zakonczenia`, `srodek`, `dlugosc`, `odstepOdOzdoby`) – bez zmian danych.
   // 12→13: `biblioteka.ozdobniki` (własne SVG), kształt wartości `wlasny` – bez zmian danych.
   // 13→14: ramka 9-slice (`ozdoba.rodzaj: 'ramka9'`, element `ramka9` z PNG albo SVG) – bez zmian danych.
+  // 14→15: tryb swobodny (kontener `swobodny`, `pozycja` węzła) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -650,6 +672,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     11: (d) => d,
     12: (d) => d,
     13: (d) => d,
+    14: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -665,6 +688,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     11: (d) => d,
     12: (d) => d,
     13: (d) => d,
+    14: (d) => d,
   },
 };
 
