@@ -86,9 +86,9 @@ function projektZRamkami(): { p: Projekt; d: DaneZasobow; szablon: Szablon } {
 
 describe('schemat 14 i ramka 9-slice', () => {
   it('numer wersji i migracja 13→14 tożsamościowa (projekt i szablon)', () => {
-    expect(WERSJA_SCHEMATU).toBe(14);
-    expect(migruj({ wersja: 13, a: 1 }, 'projekt')).toEqual({ wersja: 14, a: 1 });
-    expect(migruj({ wersja: 13, a: 1 }, 'szablon')).toEqual({ wersja: 14, a: 1 });
+    expect(WERSJA_SCHEMATU).toBeGreaterThanOrEqual(14);
+    expect(migruj({ wersja: 13, a: 1 }, 'projekt', 14)).toEqual({ wersja: 14, a: 1 });
+    expect(migruj({ wersja: 13, a: 1 }, 'szablon', 14)).toEqual({ wersja: 14, a: 1 });
   });
 
   it('element z PNG ma domyślne wcięcia po trzeciej części i nie ma konturów', () => {

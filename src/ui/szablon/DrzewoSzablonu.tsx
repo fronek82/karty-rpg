@@ -1,10 +1,13 @@
 import { t } from '../../i18n';
-import { czyKontener, type Wezel } from '../../model/szablon';
+import { czyKontener, type Kontener, type Wezel } from '../../model/szablon';
+
+const liczba = (v: number) => String(Math.round(v * 10) / 10).replace('.', ',');
 
 export const IKONY_WEZLOW: Record<Wezel['typ'], string> = {
   wiersz: '⇆',
   kolumna: '⇅',
   warstwy: '⧉',
+  swobodny: '✥',
   tekst: 'T',
   wartosc: '◇',
   obraz: '▣',
@@ -31,9 +34,11 @@ export function DrzewoSzablonu({
   zaznaczone: readonly string[];
   wybierz: (id: string, dodaj: boolean) => void;
 }) {
-  const wiersz = (w: Wezel, poziom: number): React.ReactNode => {
+  const wiersz = (w: Wezel, poziom: number, rodzic?: Kontener): React.ReactNode => {
     const wybrany = zaznaczone.includes(w.id);
     const kontener = czyKontener(w);
+    // Położenie dziecka kontenera swobodnego: X · Y (mm) i obrót.
+    const poz = rodzic?.typ === 'swobodny' ? (w.pozycja ?? { x: 0, y: 0 }) : undefined;
     return (
       <li
         key={w.id}
@@ -56,9 +61,18 @@ export function DrzewoSzablonu({
           </span>
           {nazwaWezla(w)}
           {w.nazwa && <span className="podpis"> · {t(`wezel.${w.typ}`)}</span>}
+          {poz && (
+            <span
+              className="znacznik-polozenia"
+              title={t(`polozenie.kotwica.${poz.kotwica ?? 'lewy-gorny'}`)}
+            >
+              {t('polozenie.znacznik', { x: liczba(poz.x), y: liczba(poz.y) })}
+              {poz.obrot ? ` ↻${poz.obrot}°` : ''}
+            </span>
+          )}
         </span>
         {kontener && w.dzieci.length > 0 && (
-          <ul role="group">{w.dzieci.map((d) => wiersz(d, poziom + 1))}</ul>
+          <ul role="group">{w.dzieci.map((d) => wiersz(d, poziom + 1, w))}</ul>
         )}
       </li>
     );

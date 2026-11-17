@@ -181,9 +181,16 @@ export function Kreator({
                   aria-hidden="true"
                   style={{ background: tlo }}
                 >
-                  {u !== 'pusty' && <i className="m-tytul" />}
+                  {u === 'swobodny' && (
+                    <>
+                      <i className="m-s1" />
+                      <i className="m-s2" />
+                      <i className="m-s3" />
+                    </>
+                  )}
+                  {u !== 'pusty' && u !== 'swobodny' && <i className="m-tytul" />}
                   {u === 'tytul-siatka-opis-stopka' && <i className="m-siatka" />}
-                  {u !== 'pusty' && <i className="m-opis" />}
+                  {u !== 'pusty' && u !== 'swobodny' && <i className="m-opis" />}
                   {u === 'tytul-siatka-opis-stopka' && <i className="m-stopka" />}
                 </span>
                 <span>{t(`kreator.uklad.${u}`)}</span>
