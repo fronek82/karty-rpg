@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { ROZSZERZENIE_SZABLONU } from '../../dane/archiwum';
 import { t } from '../../i18n';
 import { nowyProjektZSzablonu } from '../baza';
 
@@ -43,7 +44,7 @@ export function WlasneKarty() {
         <input
           ref={plik}
           type="file"
-          accept=".kartyrpg-szablon,.zip"
+          accept={`${ROZSZERZENIE_SZABLONU},.zip`}
           hidden
           data-testid="plik-szablonu-start"
           onChange={(e) => {

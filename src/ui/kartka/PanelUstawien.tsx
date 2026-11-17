@@ -18,9 +18,14 @@ import {
   type Papier,
   type UstawieniaArkusza,
 } from '../../model/arkusz';
+import { PoleLiczby } from './PoleLiczby';
 import { SzablonyProjektu } from './SzablonyProjektu';
 import type { Projekt } from '../../model/projekt';
 import type { ProjektWEdycji } from '../useProjekt';
+
+/** Granice własnego papieru (mm) – jak w schemacie zapisu. */
+const MIN_PAPIER = 20;
+const MAX_PAPIER = 1000;
 
 const zaokr = (x: number) => String(Math.round(x * 10) / 10).replace('.', ',');
 
@@ -210,22 +215,18 @@ export function PanelUstawien({
       {u.papier === 'wlasny' && (
         <div className="pole-panelu dwa-pola">
           {(['szer', 'wys'] as const).map((os) => (
-            <label key={os}>
-              {t(os === 'szer' ? 'kartka.szerokoscPapieru' : 'kartka.wysokoscPapieru')}
-              <input
-                type="number"
-                min={20}
-                max={1000}
-                step={1}
-                defaultValue={(u.wymiaryPapieru ?? PAPIERY.A4)[os]}
-                onChange={(e) => {
-                  const v = e.target.valueAsNumber;
-                  if (!(v >= 20 && v <= 1000)) return;
-                  const w = { ...(u.wymiaryPapieru ?? PAPIERY.A4), [os]: v };
-                  zmienUklad((p) => ustawUstawieniaArkusza(p, A, { wymiaryPapieru: w }), 'papier');
-                }}
-              />
-            </label>
+            <PoleLiczby
+              key={os}
+              id={`papier-${os}`}
+              etykieta={t(os === 'szer' ? 'kartka.szerokoscPapieru' : 'kartka.wysokoscPapieru')}
+              wartosc={(u.wymiaryPapieru ?? PAPIERY.A4)[os]}
+              min={MIN_PAPIER}
+              max={MAX_PAPIER}
+              zmien={(v) => {
+                const w = { ...(u.wymiaryPapieru ?? PAPIERY.A4), [os]: v };
+                zmienUklad((p) => ustawUstawieniaArkusza(p, A, { wymiaryPapieru: w }), 'papier');
+              }}
+            />
           ))}
         </div>
       )}
@@ -250,27 +251,22 @@ export function PanelUstawien({
           })()}
         </p>
       </div>
-      {(czyFormatZdjeciowy(u.papier) || (u.marginesBezpieczenstwa ?? 0) > 0) && (
-        <div className="pole-panelu">
-          <label htmlFor="strefa">{t('kartka.marginesBezpieczenstwa')}</label>
-          <input
-            id="strefa"
-            type="number"
-            min={0}
-            max={20}
-            step={0.5}
-            defaultValue={u.marginesBezpieczenstwa ?? 0}
-            onChange={(e) => {
-              const v = e.target.valueAsNumber;
-              if (!(v >= 0 && v <= 20)) return;
-              zmien((p) => ustawUstawieniaArkusza(p, A, { marginesBezpieczenstwa: v }), {
-                klucz: `strefa:${A}`,
-              });
-            }}
-          />
-          <p className="podpis">{t('kartka.marginesBezpieczenstwaOpis')}</p>
-        </div>
-      )}
+      <div className="pole-panelu">
+        <PoleLiczby
+          id="strefa"
+          etykieta={t('kartka.marginesBezpieczenstwa')}
+          wartosc={u.marginesBezpieczenstwa ?? 0}
+          min={0}
+          max={20}
+          krok={0.5}
+          zmien={(v) =>
+            zmien((p) => ustawUstawieniaArkusza(p, A, { marginesBezpieczenstwa: v }), {
+              klucz: `strefa:${A}`,
+            })
+          }
+        />
+        <p className="podpis">{t('kartka.marginesBezpieczenstwaOpis')}</p>
+      </div>
       <fieldset className="sekcja-czcionek">
         <legend>{t('czcionki.tytul')}</legend>
         {roleProjektu(projekt).map((rola) => (

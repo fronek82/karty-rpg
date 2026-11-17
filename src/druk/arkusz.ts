@@ -1,5 +1,11 @@
 import type { Mm } from '../model/jednostki';
-import { wymiaryStrony, type Arkusz, type LinieCiecia } from '../model/arkusz';
+import {
+  SLOT_DOMYSLNY,
+  TOLERANCJA_ROZMIARU,
+  wymiaryStrony,
+  type Arkusz,
+  type LinieCiecia,
+} from '../model/arkusz';
 import {
   wymiaryKarty,
   type Karta,
@@ -173,8 +179,22 @@ export function wSkaliSzarosci(elementy: ElementSceny[]): ElementSceny[] {
   });
 }
 
-/** Dopuszczalna różnica wymiaru karty w mm i slotu kartki (mm). */
-export const TOLERANCJA_ROZMIARU: Mm = 0.5;
+/**
+ * Slot kartki: z ustawień albo z szablonu pierwszej karty (tryb slotów – slot, mm – wymiar
+ * karty), a bez kart – domyślny 63×88 mm.
+ */
+export function slotKartki(
+  arkusz: Arkusz,
+  talia: Talia | undefined,
+  szablony: ReadonlyMap<string, Szablon>,
+): { szerokosc: Mm; wysokosc: Mm } {
+  if (arkusz.ustawienia.slot) return arkusz.ustawienia.slot;
+  const s = (talia?.karty ?? []).map((k) => szablony.get(k.szablonId)).find(Boolean);
+  if (!s) return { ...SLOT_DOMYSLNY };
+  return s.rozmiar.tryb === 'sloty'
+    ? s.rozmiar.slot
+    : { szerokosc: s.rozmiar.szerokosc, wysokosc: s.rozmiar.wysokosc };
+}
 
 export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza): WynikArkusza {
   const u = arkusz.ustawienia;
@@ -182,23 +202,18 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   const ostrzezenia: OstrzezenieArkusza[] = [];
   const szablon = (k: Karta) => ctx.szablony.get(k.szablonId);
 
-  // Slot z ustawień albo z pierwszego szablonu (w trybie slotów – slot, w mm – wymiar karty).
-  const pierwszy = talia.karty.map(szablon).find((s) => s !== undefined);
-  const slot = u.slot
-    ? u.slot
-    : pierwszy?.rozmiar.tryb === 'sloty'
-      ? pierwszy.rozmiar.slot
-      : pierwszy
-        ? { szerokosc: pierwszy.rozmiar.szerokosc, wysokosc: pierwszy.rozmiar.wysokosc }
-        : { szerokosc: 63, wysokosc: 88 };
+  const slot = slotKartki(arkusz, talia, ctx.szablony);
+  const rozny = (a: Mm, b: Mm) => Math.abs(a - b) > TOLERANCJA_ROZMIARU;
   const karty = talia.karty.filter((k) => {
     const s = szablon(k);
     if (!s) ostrzezenia.push({ kartaId: k.id, komunikat: 'brak-szablonu' });
-    // Karta w mm zajmuje jeden slot (kartka ma slot = wymiar karty); inny wymiar – ostrzeżenie.
+    // Karta w mm zajmuje jeden slot (kartka ma slot = wymiar karty), karta w slotach – całe sloty
+    // kartki; inny wymiar karty / slotu – ostrzeżenie.
     else if (
-      s.rozmiar.tryb === 'mm' &&
-      (Math.abs(s.rozmiar.szerokosc - slot.szerokosc) > TOLERANCJA_ROZMIARU ||
-        Math.abs(s.rozmiar.wysokosc - slot.wysokosc) > TOLERANCJA_ROZMIARU)
+      s.rozmiar.tryb === 'mm'
+        ? rozny(s.rozmiar.szerokosc, slot.szerokosc) || rozny(s.rozmiar.wysokosc, slot.wysokosc)
+        : rozny(s.rozmiar.slot.szerokosc, slot.szerokosc) ||
+          rozny(s.rozmiar.slot.wysokosc, slot.wysokosc)
     )
       ostrzezenia.push({ kartaId: k.id, komunikat: 'karta-inny-rozmiar' });
     return s !== undefined;
@@ -300,7 +315,10 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       : {}),
   });
   for (const o of rozmieszczenie.ostrzezenia) ostrzezenia.push({ komunikat: o });
-  const rzedySiatki = Math.floor(siatka.wys / slot.wysokosc + 1e-6);
+  const rzedySiatki = Math.max(0, Math.floor(siatka.wys / slot.wysokosc + 1e-6));
+  // Strona za mała na choćby jeden slot (np. karta większa niż papier) – ostrzeżenie kartki.
+  if (rzedySiatki < 1 || Math.floor(siatka.szer / slot.szerokosc + 1e-6) < 1)
+    ostrzezenia.push({ komunikat: 'brak-slotow-na-stronie' });
 
   let rozmiarTytulu = u.tytul?.styl.rozmiar ?? 0;
   // Tytuł nie dłuższy niż bok siatki (minus miejsce na nożyczki na tej samej krawędzi).
@@ -476,7 +494,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     odstepKolumny,
     naglowki: geometriaNaglowkow,
     siatka: {
-      kolumny: Math.floor(siatka.szer / slot.szerokosc + 1e-6),
+      kolumny: Math.max(0, Math.floor(siatka.szer / slot.szerokosc + 1e-6)),
       rzedy: rzedySiatki,
       grupy: !!(grupy && u.grupy),
     },

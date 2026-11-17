@@ -26,6 +26,7 @@ export const pl = {
   'dane.gdzie.szablon': 'szablon {id}',
   'dane.gdzie.talia': 'talia {id}',
   'dane.gdzie.karta': 'karta {id}',
+  'dane.wymiaryPapieru': 'własny papier wymaga wymiarów (szerokość i wysokość w mm)',
   'dane.gdzie.arkusz': 'arkusz {id}',
   'dane.nieznanaKartaPrzypieta': 'arkusz „{arkusz}” przypina nieznaną kartę „{karta}”',
   'dane.powtorzonaCzcionka':
@@ -113,6 +114,9 @@ export const pl = {
   'ostrzezenie.nieznanePoleDoOmijania': 'szablon wskazuje nieznane pole do omijania „{a}”',
   'ostrzezenie.brakSzablonu': 'nieznany szablon karty',
   'ostrzezenie.kartaInnyRozmiar': 'karta ma inny rozmiar niż slot kartki',
+  'ostrzezenie.brakSlotow':
+    'na stronie nie mieści się żadna karta – zmień papier, orientację albo marginesy',
+  'rozmiar.mm': '{szer}×{wys} mm',
   'ostrzezenie.kartaWStrefiePrzyciecia':
     'karta wchodzi w strefę przy krawędzi kartki, którą punkt foto może przyciąć',
   'ostrzezenie.tytulNieMiesciSie': 'tytuł arkusza nie mieści się i został zmniejszony',
@@ -216,11 +220,11 @@ export const pl = {
   'kartka.orientacja.pionowa': 'pionowo',
   'kartka.orientacja.pozioma': 'poziomo',
   'kartka.wymiaryPapieru': 'Strona {szer} × {wys} mm',
-  'kartka.szerokoscPapieru': 'Szerokość (mm)',
-  'kartka.wysokoscPapieru': 'Wysokość (mm)',
+  'kartka.szerokoscPapieru': 'Szerokość w pionie (mm)',
+  'kartka.wysokoscPapieru': 'Wysokość w pionie (mm)',
   'kartka.marginesBezpieczenstwa': 'Margines bezpieczeństwa (mm)',
   'kartka.marginesBezpieczenstwaOpis':
-    'Punkty fotograficzne przycinają brzegi odbitki o 1–3 mm. Karta wchodząca w tę strefę daje ostrzeżenie; strefa jest zaznaczona na kartce.',
+    'Strefa przy krawędzi kartki, w którą karty nie powinny wchodzić – np. punkty fotograficzne przycinają brzegi odbitki o 1–3 mm (dla formatów zdjęciowych domyślnie 3 mm). Karta w strefie daje ostrzeżenie; strefa jest zaznaczona na kartce. 0 – bez strefy.',
   'kartka.wStrefie': '{kartka}: kart w strefie przycięcia przy krawędzi – {liczba}.',
   'kartka.innyRozmiarKart': '{kartka}: kart o innym rozmiarze niż slot kartki – {liczba}.',
   'papier.A4': 'A4 (210 × 297 mm)',
@@ -238,6 +242,7 @@ export const pl = {
   'szablony.kartkaEtykieta': 'Nowa kartka dla szablonu {nazwa}',
   'szablony.importuj': '⤒ Importuj szablon…',
   'szablony.zaimportowano': 'Dodano szablon „{nazwa}”.',
+  'szablony.dodanoKartke': 'Ma inny rozmiar niż karty na kartkach – dodano dla niego nową kartkę.',
   'szablony.bladImportu': 'Nie udało się zaimportować szablonu: {szczegoly}',
   'kartka.wgrajCzcionke': '⤒ Wgraj własną czcionkę…',
   'kartka.nowaKartka': '＋ Nowa kartka (z własnym tytułem)',

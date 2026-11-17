@@ -666,7 +666,7 @@ textarea:focus-visible {
   text-align: left;
 }
 
-.menu-pozycja:hover:not(:disabled),
+.menu-pozycja:hover:not(:disabled, [aria-disabled='true']),
 .menu-pozycja:focus-visible {
   background: rgb(42 111 214 / 10%);
 }
@@ -674,6 +674,21 @@ textarea:focus-visible {
 .menu-pozycja small {
   opacity: 0.6;
   font-size: 0.75rem;
+}
+
+.menu-pozycja {
+  flex-wrap: wrap;
+}
+
+.menu-pozycja[aria-disabled='true'] {
+  cursor: not-allowed;
+  color: #8a8478;
+}
+
+.menu-pozycja .powod-blokady {
+  flex-basis: 100%;
+  opacity: 0.85;
+  color: #8a4b2a;
 }
 
 .menu-warianty {

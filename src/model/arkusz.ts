@@ -16,6 +16,11 @@ export type Papier = keyof typeof PAPIERY | 'wlasny';
 
 /** Formaty zdjęciowe – punkty foto przycinają brzegi, więc mają strefę bezpieczeństwa. */
 export const czyFormatZdjeciowy = (p: Papier) => p.startsWith('foto-');
+/** Dopuszczalna różnica wymiaru karty i slotu kartki (mm). */
+export const TOLERANCJA_ROZMIARU: Mm = 0.5;
+/** Slot, gdy nie ma go z czego wziąć (karta pokerowa 63×88 mm). */
+export const SLOT_DOMYSLNY = { szerokosc: 63, wysokosc: 88 } as const;
+
 /** Domyślny margines bezpieczeństwa formatów zdjęciowych (mm). */
 export const MARGINES_BEZPIECZENSTWA_FOTO: Mm = 3;
 

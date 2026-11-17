@@ -14,6 +14,7 @@ const KODY: Record<string, KluczTekstu> = {
   'nieznane-pole-do-omijania': 'ostrzezenie.nieznanePoleDoOmijania',
   'brak-szablonu': 'ostrzezenie.brakSzablonu',
   'karta-inny-rozmiar': 'ostrzezenie.kartaInnyRozmiar',
+  'brak-slotow-na-stronie': 'ostrzezenie.brakSlotow',
   'karta-w-strefie-przyciecia': 'ostrzezenie.kartaWStrefiePrzyciecia',
   'tytul-nie-miesci-sie': 'ostrzezenie.tytulNieMiesciSie',
   'naglowek-grupy-nie-miesci-sie': 'ostrzezenie.naglowekGrupy',

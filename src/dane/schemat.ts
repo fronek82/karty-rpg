@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { t } from '../i18n';
+import { PAPIERY } from '../model/arkusz';
 import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
 import type { Kontener, Szablon, Wezel } from '../model/szablon';
 
@@ -279,8 +280,8 @@ const arkusz = obj({
     ),
   ),
   ustawienia: obj({
-    papier: z.enum(['A4', 'Letter', 'A5', 'foto-10x15', 'foto-13x18', 'foto-15x21', 'wlasny']),
-    wymiaryPapieru: opc(obj({ szer: dodatnia, wys: dodatnia })),
+    papier: z.enum([...(Object.keys(PAPIERY) as (keyof typeof PAPIERY)[]), 'wlasny']),
+    wymiaryPapieru: opc(obj({ szer: liczba.min(20).max(1000), wys: liczba.min(20).max(1000) })),
     marginesBezpieczenstwa: opc(nieujemna),
     orientacja: z.enum(['pionowa', 'pozioma']),
     marginesy: obj({ gora: nieujemna, prawo: nieujemna, dol: nieujemna, lewo: nieujemna }),
@@ -308,6 +309,9 @@ const arkusz = obj({
     czarnoBialy: opc(z.boolean()),
     slot: opc(obj({ szerokosc: dodatnia, wysokosc: dodatnia })),
     poczatekSiatki: opc(xy),
+  }).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined, {
+    message: t('dane.wymiaryPapieru'),
+    path: ['wymiaryPapieru'],
   }),
   przypiete: opc(
     z.array(

@@ -29,7 +29,12 @@ export function MenuTypu({
     [...(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])].filter(
       (b) => !b.disabled,
     );
-  useEffect(() => pozycje()[0]?.focus(), []);
+  // Fokus na pierwszej dostępnej pozycji (zablokowane są osiągalne strzałkami – z powodem).
+  useEffect(
+    () =>
+      (pozycje().find((b) => b.getAttribute('aria-disabled') !== 'true') ?? pozycje()[0])?.focus(),
+    [],
+  );
   if (typy.length === 0) {
     return (
       <div className="menu-typu" role="menu" aria-label={t('kartka.dodajKarte')} style={styl}>
@@ -79,14 +84,17 @@ export function MenuTypu({
               type="button"
               role="menuitem"
               className="menu-pozycja"
-              disabled={!mozna}
+              // Zablokowana pozycja zostaje osiągalna z klawiatury, a powód jest w jej treści.
+              aria-disabled={mozna ? undefined : true}
               title={powod}
               aria-haspopup={warianty ? 'menu' : undefined}
               aria-expanded={warianty ? rozwiniety === typ.id : undefined}
               onClick={() =>
-                warianty
-                  ? ustawRozwiniety(rozwiniety === typ.id ? undefined : typ.id)
-                  : wybierz(typ, 0)
+                !mozna
+                  ? undefined
+                  : warianty
+                    ? ustawRozwiniety(rozwiniety === typ.id ? undefined : typ.id)
+                    : wybierz(typ, 0)
               }
             >
               <span>
@@ -97,6 +105,7 @@ export function MenuTypu({
                 {warianty && ' ▸'}
               </span>
               <small>{typ.opisRozmiaru ?? typ.rozmiary.map(rozmiar).join(' · ')}</small>
+              {powod && <small className="powod-blokady">{powod}</small>}
             </button>
             {warianty && rozwiniety === typ.id && (
               <div className="menu-warianty">

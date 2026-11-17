@@ -1,13 +1,17 @@
+import { slotKartki } from '../druk/arkusz';
+import { t } from '../i18n';
 import {
   czyFormatZdjeciowy,
   MARGINES_BEZPIECZENSTWA_FOTO,
+  SLOT_DOMYSLNY,
+  TOLERANCJA_ROZMIARU,
   wymiaryStrony,
   type Papier,
   type UstawieniaArkusza,
 } from '../model/arkusz';
 import { pt, type Mm } from '../model/jednostki';
 import type { DaneZasobow, Projekt } from '../model/projekt';
-import type { Szablon } from '../model/szablon';
+import { wymiaryKarty, type Szablon } from '../model/szablon';
 import type { Pakiet, TypKarty } from '../pakiety/typy';
 import { projektZPakietu } from './pakiet';
 import { dodajSzablon, type PaczkaSzablonu } from './archiwum';
@@ -22,10 +26,11 @@ import { dodajKartke } from './kartka';
 export const PAKIET_WLASNY = 'wlasne';
 
 /** Pseudo-pakiet: tylko czcionka domyślna (EB Garamond, OFL); rola tytułu – ta sama rodzina. */
+const RODZINA_DOMYSLNA = 'EB Garamond';
 const CZCIONKI_WLASNE: Pakiet['czcionki'] = [
   {
     rola: 'tresc',
-    rodzina: 'EB Garamond',
+    rodzina: RODZINA_DOMYSLNA,
     warianty: {
       normalny: 'EBGaramond-Regular.ttf',
       pogrubiony: 'EBGaramond-Bold.ttf',
@@ -94,123 +99,120 @@ export function ustawieniaKartkiDla(
 
 /** Typy kart w menu kartki z szablonów projektu (jeden szablon = jedna pozycja). */
 export function typyZSzablonow(szablony: readonly Szablon[]): TypKarty[] {
-  return szablony.map((s) => ({
-    id: s.id,
-    nazwa: s.nazwa,
-    ikona: '▤',
-    warianty: [{ szablonId: s.id, nazwa: s.nazwa }],
-    opisRozmiaru: opisRozmiaruSzablonu(s),
-    rozmiary:
-      s.rozmiar.tryb === 'sloty'
-        ? [
-            { kolumny: s.rozmiar.kolumny, rzedy: s.rozmiar.rzedy },
-            ...(s.warianty ?? [])
-              .filter(
-                (w) =>
-                  s.rozmiar.tryb === 'sloty' &&
-                  (w.kolumny !== s.rozmiar.kolumny || w.rzedy !== s.rozmiar.rzedy),
-              )
-              .map((w) => ({ kolumny: w.kolumny, rzedy: w.rzedy })),
-          ]
-        : [{ kolumny: 1, rzedy: 1 }],
-  }));
+  return szablony.map((s) => {
+    const r = s.rozmiar;
+    const rozmiary: TypKarty['rozmiary'] = [{ kolumny: 1, rzedy: 1 }];
+    if (r.tryb === 'sloty') {
+      // Rozmiar domyślny i rozmiary wariantów układu, bez powtórzeń.
+      const klucze = new Set<string>();
+      rozmiary.length = 0;
+      for (const x of [r, ...(s.warianty ?? [])]) {
+        const k = `${x.kolumny}×${x.rzedy}`;
+        if (klucze.has(k)) continue;
+        klucze.add(k);
+        rozmiary.push({ kolumny: x.kolumny, rzedy: x.rzedy });
+      }
+    }
+    return {
+      id: s.id,
+      nazwa: s.nazwa,
+      ikona: '▤',
+      warianty: [{ szablonId: s.id, nazwa: s.nazwa }],
+      opisRozmiaru: opisRozmiaruSzablonu(s),
+      rozmiary,
+    };
+  });
 }
 
-/** Czy szablon pasuje do slotu kartki (karta w mm – ten sam wymiar ±0,5 mm; sloty – ten sam slot). */
-export function pasujeDoKartki(s: Szablon, u: UstawieniaArkusza): boolean {
-  if (!u.slot) return true;
-  const slot = slotSzablonu(s);
+/** Czy szablon pasuje do slotu kartki (ten sam wymiar karty w mm albo ten sam slot, ±0,5 mm). */
+export function pasujeDoSlotu(s: Szablon, slot: { szerokosc: Mm; wysokosc: Mm }): boolean {
+  const w = slotSzablonu(s);
   return (
-    Math.abs(slot.szerokosc - u.slot.szerokosc) <= 0.5 &&
-    Math.abs(slot.wysokosc - u.slot.wysokosc) <= 0.5
+    Math.abs(w.szerokosc - slot.szerokosc) <= TOLERANCJA_ROZMIARU &&
+    Math.abs(w.wysokosc - slot.wysokosc) <= TOLERANCJA_ROZMIARU
   );
 }
 
-/** Opis rozmiaru szablonu dla użytkownika, np. „63×88 mm”. */
+/** Opis rozmiaru karty szablonu dla użytkownika, np. „63×88 mm” (domyślny rozmiar karty). */
 export function opisRozmiaruSzablonu(s: Szablon): string {
   const z = (x: number) => String(Math.round(x * 10) / 10).replace('.', ',');
-  const slot = slotSzablonu(s);
-  return `${z(slot.szerokosc)}×${z(slot.wysokosc)} mm`;
+  const { szer, wys } = wymiaryKarty(s);
+  return t('rozmiar.mm', { szer: z(szer), wys: z(wys) });
 }
 
 /**
  * Dodaje szablon z paczki do projektu; gdy żadna kartka nie ma jego rozmiaru – dokłada kartkę
- * dla niego (nazwa = nazwa szablonu).
+ * dla niego (nazwa = nazwa szablonu, papier jak pierwsza kartka). Projekt bez pakietu staje się
+ * projektem własnych kart. Brakujące role czcionek dostają czcionkę domyślną.
  */
 export function dodajSzablonZKartka(
   projekt: Projekt,
   zasoby: DaneZasobow,
   paczka: PaczkaSzablonu,
-): { projekt: Projekt; zasoby: DaneZasobow; szablonId: string; ostrzezenia: string[] } {
+): {
+  projekt: Projekt;
+  zasoby: DaneZasobow;
+  szablonId: string;
+  ostrzezenia: string[];
+  nowaKartka: boolean;
+} {
   const w = dodajSzablon(projekt, zasoby, paczka);
   const s = w.projekt.szablony.find((x) => x.id === w.szablonId)!;
-  if (w.projekt.arkusze.some((a) => pasujeDoKartki(s, a.ustawienia))) return w;
+  const p: Projekt = {
+    ...w.projekt,
+    pakiet: w.projekt.pakiet ?? PAKIET_WLASNY,
+    role: { tytul: RODZINA_DOMYSLNA, tresc: RODZINA_DOMYSLNA, ...w.projekt.role },
+  };
+  const szablony = new Map(p.szablony.map((x) => [x.id, x]));
+  const talia = (a: Projekt['arkusze'][number]) => p.talie.find((x) => x.id === a.taliaId);
+  if (p.arkusze.some((a) => pasujeDoSlotu(s, slotKartki(a, talia(a), szablony))))
+    return { ...w, projekt: p, nowaKartka: false };
+  const wzor = p.arkusze[0]?.ustawienia;
   const { projekt: zKartka } = dodajKartke(
-    w.projekt,
-    { nazwa: s.nazwa, ustawienia: ustawieniaKartkiDla(s) },
+    p,
+    { nazwa: s.nazwa, ustawienia: ustawieniaKartkiDla(s, wzor?.papier, wzor?.wymiaryPapieru) },
     s.nazwa,
     false,
   );
-  return { ...w, projekt: zKartka };
+  return { ...w, projekt: zKartka, nowaKartka: true };
 }
 
 /**
- * Nowy projekt własnych kart z zaimportowanego szablonu: czcionki domyślne, szablon (z jego
- * czcionkami i obrazami) i pusta kartka dopasowana do rozmiaru karty.
+ * Nowy projekt własnych kart z zaimportowanego szablonu: czcionki domyślne (role szablonu mają
+ * pierwszeństwo), szablon (z jego czcionkami i obrazami) i pusta kartka dopasowana do karty.
  */
 export async function nowyProjektWlasny(
   paczka: PaczkaSzablonu,
   pobierzCzcionke: (plik: string) => Promise<Uint8Array>,
   id: string = crypto.randomUUID(),
-): Promise<{ projekt: Projekt; zasoby: DaneZasobow }> {
-  const pakiet: Pakiet = {
-    id: PAKIET_WLASNY,
-    nazwa: '',
-    opis: '',
-    atrybucja: '',
-    czcionki: CZCIONKI_WLASNE,
-    szablony: [],
-    talie: [],
-    arkusze: [],
-    zasoby: [],
-    typyKart: [],
-    gotoweUklady: [],
-    nowaKartka: { nazwa: '', ustawienia: ustawieniaKartkiDla(paczka.szablon) },
-  };
+): Promise<{ projekt: Projekt; zasoby: DaneZasobow; ostrzezenia: string[] }> {
   const pusty = await projektZPakietu(
-    pakiet,
+    pakietWlasny([]),
     pobierzCzcionke,
     () => Promise.reject(new Error('brak obrazów')),
     id,
   );
+  // Bez ról – role z szablonu wchodzą bez konfliktu, brakujące uzupełnia dodajSzablonZKartka.
   const w = dodajSzablonZKartka(
-    {
-      ...pusty.projekt,
-      nazwa: paczka.szablon.nazwa,
-      pakiet: PAKIET_WLASNY,
-      role: { tytul: 'EB Garamond', tresc: 'EB Garamond' },
-    },
+    { ...pusty.projekt, nazwa: paczka.szablon.nazwa, pakiet: PAKIET_WLASNY, role: {} },
     pusty.zasoby,
     paczka,
   );
-  return { projekt: w.projekt, zasoby: w.zasoby };
+  return { projekt: w.projekt, zasoby: w.zasoby, ostrzezenia: w.ostrzezenia };
 }
 
 /**
  * Pakiet „w locie” dla projektu własnych kart (edytor kartki traktuje go jak pakiet gry): typy kart
- * z szablonów projektu, nowa kartka – z ustawieniami pierwszej kartki (ten sam rozmiar kart).
+ * z szablonów projektu; nowa kartka – dla pierwszego szablonu (edytor bierze zwykle ustawienia
+ * zaznaczonej kartki).
  */
-export function pakietWlasny(projekt: Projekt): Pakiet {
-  const pierwszy = projekt.szablony[0];
-  const ustawienia =
-    projekt.arkusze[0]?.ustawienia ??
-    (pierwszy ? ustawieniaKartkiDla(pierwszy) : undefined) ??
-    ustawieniaKartkiDla({
-      id: '',
-      nazwa: '',
-      rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
-      korzen: { id: 'k', typ: 'kolumna', dzieci: [] },
-    });
+export function pakietWlasny(szablony: readonly Szablon[]): Pakiet {
+  const pierwszy = szablony[0] ?? {
+    id: '',
+    nazwa: '',
+    rozmiar: { tryb: 'mm', szerokosc: SLOT_DOMYSLNY.szerokosc, wysokosc: SLOT_DOMYSLNY.wysokosc },
+    korzen: { id: 'k', typ: 'kolumna', dzieci: [] },
+  };
   return {
     id: PAKIET_WLASNY,
     nazwa: '',
@@ -221,8 +223,8 @@ export function pakietWlasny(projekt: Projekt): Pakiet {
     talie: [],
     arkusze: [],
     zasoby: [],
-    typyKart: typyZSzablonow(projekt.szablony),
+    typyKart: typyZSzablonow(szablony),
     gotoweUklady: [],
-    nowaKartka: { nazwa: '', ustawienia },
+    nowaKartka: { nazwa: '', ustawienia: ustawieniaKartkiDla(pierwszy) },
   };
 }

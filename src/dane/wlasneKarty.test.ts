@@ -17,7 +17,8 @@ import { rejestrZProjektu } from './pakiet';
 import {
   dodajSzablonZKartka,
   nowyProjektWlasny,
-  pasujeDoKartki,
+  pakietWlasny,
+  pasujeDoSlotu,
   PAKIET_WLASNY,
   slotyNaStronie,
   typyZSzablonow,
@@ -61,8 +62,20 @@ describe('kartka dla szablonu', () => {
     });
     expect(typy[1]!.rozmiary.length).toBeGreaterThanOrEqual(1);
     const u = ustawieniaKartkiDla(szablonCzaru);
-    expect(pasujeDoKartki(szablonWroga, u)).toBe(true); // też 63×88
-    expect(pasujeDoKartki(szablonStatystyk, u)).toBe(false);
+    expect(pasujeDoSlotu(szablonWroga, u.slot!)).toBe(true); // też 63×88
+    expect(pasujeDoSlotu(szablonStatystyk, u.slot!)).toBe(false);
+    expect(typy[0]!.opisRozmiaru).toBe('63×88 mm');
+    // Szablon w slotach: rozmiar domyślny i warianty bez powtórzeń, opis – wymiar karty.
+    const bron = pakietMausritter.szablony.find((x) => x.id === 'mausritter-bron')!;
+    const [t] = typyZSzablonow([
+      { ...bron, warianty: [...(bron.warianty ?? []), ...(bron.warianty ?? [])] },
+    ]);
+    expect(new Set(t!.rozmiary.map((r) => `${r.kolumny}×${r.rzedy}`)).size).toBe(
+      t!.rozmiary.length,
+    );
+    expect(t!.opisRozmiaru).toBe('25,8×25,8 mm');
+    // Pakiet „w locie” bez szablonów – kartka 63×88.
+    expect(pakietWlasny([]).nowaKartka.ustawienia.slot).toEqual({ szerokosc: 63, wysokosc: 88 });
   });
 });
 
@@ -121,6 +134,47 @@ describe('projekt własnych kart', () => {
     expect(inny.projekt.arkusze).toHaveLength(2);
     expect(inny.projekt.arkusze[1]).toMatchObject({ nazwa: 'Blok statystyk (test)' });
     expect(inny.projekt.arkusze[1]!.ustawienia.slot).toEqual({ szerokosc: 88, wysokosc: 63 });
+  });
+
+  it('role czcionek szablonu mają pierwszeństwo przed domyślnymi; brakujące – domyślne', async () => {
+    const w = await nowyProjektWlasny(
+      { ...paczka(), role: { tytul: 'Grenze Gotisch' } },
+      czcionka,
+      'w6',
+    );
+    expect(w.projekt.role).toEqual({ tytul: 'Grenze Gotisch', tresc: 'EB Garamond' });
+    expect(w.ostrzezenia).toEqual([]);
+  });
+
+  it('kartka bez slotu w ustawieniach: rozmiar z jej kart; dwa razy ten sam plik – nowe id', async () => {
+    const { projekt, zasoby } = await nowyProjektWlasny(paczka(), czcionka, 'w7');
+    const bezSlotu = {
+      ...projekt,
+      arkusze: projekt.arkusze.map((a) => {
+        const { slot: _s, ...u } = a.ustawienia;
+        void _s;
+        return { ...a, ustawienia: u };
+      }),
+      talie: projekt.talie.map((t) => ({
+        ...t,
+        karty: [{ id: 'k1', szablonId: 'test-czar', dane: {}, ilosc: 1 }],
+      })),
+    };
+    expect(dodajSzablonZKartka(bezSlotu, zasoby, paczka(szablonWroga)).nowaKartka).toBe(false);
+    expect(dodajSzablonZKartka(bezSlotu, zasoby, paczka(szablonStatystyk)).nowaKartka).toBe(true);
+    const dwa = dodajSzablonZKartka(projekt, zasoby, paczka());
+    expect(dwa.szablonId).not.toBe('test-czar');
+    expect(dwa.projekt.szablony).toHaveLength(2);
+    expect(dwa.nowaKartka).toBe(false);
+  });
+
+  it('import do projektu bez pakietu oznacza go jako własne karty', async () => {
+    const { projekt, zasoby } = await nowyProjektWlasny(paczka(), czcionka, 'w8');
+    const bez = { ...projekt };
+    delete bez.pakiet;
+    expect(dodajSzablonZKartka(bez, zasoby, paczka(szablonWroga)).projekt.pakiet).toBe(
+      PAKIET_WLASNY,
+    );
   });
 
   it('eksport szablonu z projektu i import do nowego projektu', async () => {

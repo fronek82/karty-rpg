@@ -32,13 +32,21 @@ export function SzablonyProjektu({
       const paczka = importujSzablon(new Uint8Array(await f.arrayBuffer()));
       let ostrzezenia: string[] = [];
       let nazwa = '';
+      let nowaKartka = false;
       await edycja.zmienZZasobami((p, d) => {
         const w = dodajSzablonZKartka(p, d, paczka);
         ostrzezenia = w.ostrzezenia;
+        nowaKartka = w.nowaKartka;
         nazwa = w.projekt.szablony.find((s) => s.id === w.szablonId)?.nazwa ?? '';
         return { projekt: w.projekt, dane: w.zasoby };
       });
-      ustawStatus([t('szablony.zaimportowano', { nazwa }), ...ostrzezenia].join(' '));
+      ustawStatus(
+        [
+          t('szablony.zaimportowano', { nazwa }),
+          ...(nowaKartka ? [t('szablony.dodanoKartke')] : []),
+          ...ostrzezenia,
+        ].join(' '),
+      );
     } catch (e) {
       ustawBlad(t('szablony.bladImportu', { szczegoly: komunikat(e) }));
     }

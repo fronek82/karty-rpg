@@ -4,7 +4,7 @@ import {
   opisRozmiaruSzablonu,
   PAKIET_WLASNY,
   pakietWlasny,
-  pasujeDoKartki,
+  pasujeDoSlotu,
   ustawieniaKartkiDla,
 } from '../../dane/wlasneKarty';
 import {
@@ -157,10 +157,10 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
   const pakietGry = usePakiet(idPakietu);
   // Projekt bez pakietu gry (własne karty): typy kart z szablonów projektu.
   const bezGry = idPakietu === undefined || idPakietu === PAKIET_WLASNY;
+  const szablonyProjektu = projekt.szablony;
   const pakietZSzablonow = useMemo(
-    () => (bezGry ? pakietWlasny(projekt) : undefined),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- tylko szablony i pierwsza kartka
-    [bezGry, projekt.szablony, projekt.arkusze[0]?.ustawienia],
+    () => (bezGry ? pakietWlasny(szablonyProjektu) : undefined),
+    [bezGry, szablonyProjektu],
   );
   const pakiet = pakietGry ?? pakietZSzablonow;
   const zasoby = useZSzarymiObrazami(edycja.zasoby.zasoby, projekt);
@@ -283,7 +283,9 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
         ? !!projekt.arkusze
             .find((a) => a.id === zazn.arkuszId)
             ?.naglowki?.some((h) => h.id === zazn.id)
-        : true;
+        : zazn?.rodzaj === 'ustawienia'
+          ? projekt.arkusze.some((a) => a.id === zazn.arkuszId)
+          : true;
   const aktywne = zaznaczenieAktualne ? zazn : undefined;
 
   /**
@@ -869,7 +871,15 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
         zamknij={() => ustawZazn(undefined)}
         ostrzezenia={(kartki.find((x) => x.arkusz.id === arkuszZazn.id)?.wynik?.ostrzezenia ?? [])
           .filter((o) => o.kartaId && aktywne.ids.includes(o.kartaId))
-          .map((o) => tekstOstrzezeniaArkusza(o))}
+          .map((o) =>
+            // Jedna karta – bez jej nazwy przed treścią; kilka – z nazwą zamiast identyfikatora.
+            aktywne.ids.length === 1
+              ? tekstOstrzezeniaArkusza({ komunikat: o.komunikat })
+              : tekstOstrzezeniaArkusza(
+                  o,
+                  zaznaczoneKarty.find((k) => k.karta.id === o.kartaId)?.karta.dane.nazwa,
+                ),
+          )}
         {...(mozeNaglowek
           ? {
               dodajNaglowek: () => {
@@ -1143,7 +1153,8 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
                 const ctx = kontekst(k.arkusz.id);
                 const s = ctx?.szablony.get(typ.warianty[0]!.szablonId);
                 // Własne karty: jedna kartka = jeden rozmiar karty.
-                if (bezGry && s && !pasujeDoKartki(s, k.arkusz.ustawienia))
+                const slotK = k.wynik?.slot ?? k.arkusz.ustawienia.slot;
+                if (bezGry && s && slotK && !pasujeDoSlotu(s, slotK))
                   return t('kartka.innyRozmiar', { rozmiar: opisRozmiaruSzablonu(s) });
                 const ok =
                   !!menu &&
@@ -1347,8 +1358,8 @@ function WidokKartki({
                       g,
                       k.arkusz.ustawienia.marginesBezpieczenstwa!,
                       k.arkusz.ustawienia.marginesBezpieczenstwa!,
-                      g.szer - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!,
-                      g.wys - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!,
+                      Math.max(0, g.szer - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!),
+                      Math.max(0, g.wys - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!),
                     )}
                   />
                 </div>

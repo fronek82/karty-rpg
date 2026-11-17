@@ -96,8 +96,38 @@ test('szablon innego rozmiaru: własna kartka, w menu pierwszej kartki zablokowa
   await expect(page.locator('.kartka').nth(1).locator('.slot')).toHaveCount(9);
 
   await slot(page, 1, 1, 1).first().click();
+  // Zablokowana pozycja zostaje osiągalna z klawiatury, z powodem w treści.
   const zablokowany = page.getByRole('menuitem', { name: /Blok statystyk/ });
-  await expect(zablokowany).toBeDisabled();
-  await expect(zablokowany).toHaveAttribute('title', /Inny rozmiar karty \(88×63 mm\)/);
+  await expect(zablokowany).toHaveAttribute('aria-disabled', 'true');
+  await expect(zablokowany).toContainText('Inny rozmiar karty (88×63 mm)');
+  await expect(page.getByRole('menuitem', { name: /Czar \(test\)/ })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(zablokowany).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-karta]')).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: /Czar \(test\)/ })).toBeEnabled();
+});
+
+test('własny papier: pola wymiarów, odrzucenie zbyt małego, Cofnij przywraca pole', async ({
+  page,
+}) => {
+  await page.goto('./#/wlasne');
+  await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu(szablonCzaru));
+  await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
+  await slot(page, 1, 1, 1).click();
+  await page.getByRole('menuitem', { name: /Czar \(test\)/ }).click();
+  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  await ust.getByLabel('Papier', { exact: true }).selectOption('wlasny');
+  const szer = ust.getByLabel('Szerokość w pionie (mm)');
+  await expect(szer).toHaveValue('210');
+  await szer.fill('150');
+  await expect(ust).toContainText('Strona 150 × 297 mm');
+  // 50 mm – karta 63 mm się nie zmieści: zmiana odrzucona, pole wraca po wyjściu z niego.
+  await szer.fill('50');
+  await expect(ust.getByRole('alert')).toContainText('nie zmieściłyby się');
+  await szer.blur();
+  await expect(szer).toHaveValue('150');
+  await page.keyboard.press('Control+z');
+  await expect(szer).toHaveValue('210');
 });
