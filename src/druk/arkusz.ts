@@ -5,6 +5,7 @@ import {
   wymiaryStrony,
   type Arkusz,
   type LinieCiecia,
+  wymiaryUkladu,
 } from '../model/arkusz';
 import {
   wymiaryKarty,
@@ -57,8 +58,15 @@ export interface WynikArkusza {
   slot: { szerokosc: Mm; wysokosc: Mm };
   /** Siatka w slotach; `grupy` – karty w kolumnach grup (przypięcia wtedy nie działają). */
   siatka: { kolumny: number; rzedy: number; grupy: boolean };
-  /** Przesunięcie (mm) kolumny `kolumna` na stronie `strona` przez odstępy nagłówków grup. */
+  /**
+   * Przesunięcie (mm) kolumny `kolumna` na stronie `strona` przez odstępy nagłówków grup
+   * i odstępy między kartami własnego układu.
+   */
   odstepKolumny: (strona: number, kolumna: number) => Mm;
+  /** Przesunięcie (mm) rzędu `rzad` przez odstępy między kartami własnego układu. */
+  odstepRzedu: (rzad: number) => Mm;
+  /** Odstępy między kartami własnego układu (0 – układ automatyczny). */
+  odstep: { x: Mm; y: Mm };
   /** Ręczne nagłówki grup na stronach (mm od rogu strony) – do warstwy edytora. */
   naglowki: { id: string; strona: number; x: Mm; y: Mm; szer: Mm; wys: Mm }[];
   /** Tytuł po dopasowaniu: rozmiar czcionki i długość napisu (mm). */
@@ -98,6 +106,8 @@ function napis(
 export function odcinkiCiecia(
   karty: { x: Mm; y: Mm; kolumny: number; rzedy: number }[],
   slot: { szerokosc: Mm; wysokosc: Mm },
+  /** Odstępy między kartami własnego układu – karta zajmująca kilka slotów obejmuje też odstępy. */
+  odstep: { x: Mm; y: Mm } = { x: 0, y: 0 },
 ): { x1: Mm; y1: Mm; x2: Mm; y2: Mm }[] {
   const mapa = new Map<string, { x1: Mm; y1: Mm; x2: Mm; y2: Mm }>();
   const k = (v: number) => Math.round(v * 1000);
@@ -108,6 +118,16 @@ export function odcinkiCiecia(
   for (const c of karty) {
     const sz = slot.szerokosc;
     const wy = slot.wysokosc;
+    if (odstep.x > 0 || odstep.y > 0) {
+      // Karty z odstępami nie mają wspólnych boków – obrys każdej osobno.
+      const w = c.kolumny * sz + (c.kolumny - 1) * odstep.x;
+      const h = c.rzedy * wy + (c.rzedy - 1) * odstep.y;
+      dodaj(c.x, c.y, c.x + w, c.y);
+      dodaj(c.x, c.y + h, c.x + w, c.y + h);
+      dodaj(c.x, c.y, c.x, c.y + h);
+      dodaj(c.x + w, c.y, c.x + w, c.y + h);
+      continue;
+    }
     for (let i = 0; i < c.kolumny; i++) {
       dodaj(c.x + i * sz, c.y, c.x + (i + 1) * sz, c.y);
       dodaj(c.x + i * sz, c.y + c.rzedy * wy, c.x + (i + 1) * sz, c.y + c.rzedy * wy);
@@ -221,8 +241,10 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
 
   // Tytuł.
   // Pusty tytuł („bez tytułu” w edytorze) – bez paska tytułu.
+  // Własny układ: stała siatka od zadanego miejsca – bez tytułu, nagłówków grup i nożyczek.
+  const uklad = u.uklad;
   let tytul =
-    u.tytul && u.tytul.tekst.trim()
+    !uklad && u.tytul && u.tytul.tekst.trim()
       ? napis(u.tytul.tekst, u.tytul.styl, undefined, ctx.czcionki)
       : undefined;
   const obszar = {
@@ -243,7 +265,8 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   }
 
   // Grupy: wysokość pasa nagłówków zależy od szerokości grup, a ta od liczby rzędów – dwa przybliżenia.
-  const grupy = u.grupy && talia.grupy && talia.grupy.length > 0 ? talia.grupy : undefined;
+  const grupy =
+    !uklad && u.grupy && talia.grupy && talia.grupy.length > 0 ? talia.grupy : undefined;
   const lista = egzemplarze(karty, (k) => {
     if (szablon(k)!.rozmiar.tryb === 'mm') return { kolumny: 1, rzedy: 1 };
     const { szer, wys } = wymiaryKarty(szablon(k)!, k);
@@ -273,7 +296,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
 
   // Ręczne nagłówki grup (edytor kartki): pas nad siatką i odstępy przesuwające kolumny.
   const naglowki =
-    !grupy && u.grupy && arkusz.naglowki && arkusz.naglowki.length > 0
+    !uklad && !grupy && u.grupy && arkusz.naglowki && arkusz.naglowki.length > 0
       ? arkusz.naglowki
       : undefined;
   const stylGrup = u.grupy;
@@ -287,22 +310,42 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       pas = Math.max(pas, wys + stylGrup.odstepOdKart);
     }
   }
+  const odstep = { x: uklad?.odstepPoziomy ?? 0, y: uklad?.odstepPionowy ?? 0 };
   const odstepKolumny = (s: number, kolumna: number): Mm =>
+    kolumna * odstep.x +
     (naglowki ?? [])
       .filter((h) => h.strona === s && h.kolumna <= kolumna)
       .reduce((suma, h) => suma + (h.odstepPrzed ?? 0), 0);
+  const odstepRzedu = (rzad: number): Mm => rzad * odstep.y;
   const najwiekszyOdstep = Math.max(
     0,
-    ...(naglowki ?? []).map((h) => odstepKolumny(h.strona, Number.MAX_SAFE_INTEGER)),
+    ...(naglowki ?? []).map((h) =>
+      (naglowki ?? [])
+        .filter((x) => x.strona === h.strona)
+        .reduce((suma, x) => suma + (x.odstepPrzed ?? 0), 0),
+    ),
   );
 
-  const poczatek = u.poczatekSiatki ?? { x: obszar.x, y: obszar.y + pas };
-  const siatka = {
-    // Odstępy między grupami zabierają miejsce w poziomie (najwięcej na którejkolwiek stronie).
-    szer: strona.szer - u.marginesy.prawo - poczatek.x - najwiekszyOdstep,
-    wys: strona.wys - u.marginesy.dol - poczatek.y,
-    slot,
-  };
+  const poczatek = uklad
+    ? { x: uklad.lewo, y: uklad.gora }
+    : (u.poczatekSiatki ?? { x: obszar.x, y: obszar.y + pas });
+  // Własny układ – siatka dokładnie kolumny × rzędy (odstępy liczone osobno).
+  const siatka = uklad
+    ? {
+        szer: uklad.kolumny * slot.szerokosc,
+        wys: uklad.rzedy * slot.wysokosc,
+        slot,
+      }
+    : {
+        // Odstępy między grupami zabierają miejsce w poziomie (najwięcej na którejkolwiek stronie).
+        szer: strona.szer - u.marginesy.prawo - poczatek.x - najwiekszyOdstep,
+        wys: strona.wys - u.marginesy.dol - poczatek.y,
+        slot,
+      };
+  if (uklad) {
+    const w = wymiaryUkladu(uklad, slot, strona);
+    if (w.prawo < -1e-6 || w.dol < -1e-6) ostrzezenia.push({ komunikat: 'uklad-poza-papierem' });
+  }
   const rozmieszczenie = rozmiescKarty(lista, siatka, {
     ...(arkusz.przypiete ? { przypiete: arkusz.przypiete } : {}),
     ...(grupy && u.grupy
@@ -380,17 +423,21 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     const naStronie = rozmieszczenie.karty.filter((c) => c.strona === n);
     const prostokaty = naStronie.map((c) => ({
       x: poczatek.x + c.xRegionu + odstepKolumny(n, c.kolumna) + c.kolumna * slot.szerokosc,
-      y: poczatek.y + c.rzad * slot.wysokosc,
+      y: poczatek.y + c.rzad * slot.wysokosc + odstepRzedu(c.rzad),
       kolumny: c.kolumny,
       rzedy: c.rzedy,
     }));
     naStronie.forEach((c, i) => {
       const s = scenaKarty(c.karta);
       glify.push(s.glify);
+      // Karta w mm mniejsza niż slot – na środku slotu (bez skalowania).
+      const sz = szablon(c.karta)!;
+      const dx = sz.rozmiar.tryb === 'mm' ? Math.max(0, (slot.szerokosc - s.szer) / 2) : 0;
+      const dy = sz.rozmiar.tryb === 'mm' ? Math.max(0, (slot.wysokosc - s.wys) / 2) : 0;
       elementy.push({
         typ: 'grupa',
-        x: prostokaty[i]!.x,
-        y: prostokaty[i]!.y,
+        x: prostokaty[i]!.x + dx,
+        y: prostokaty[i]!.y + dy,
         elementy: s.elementy,
       });
     });
@@ -409,10 +456,10 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
           ostrzezenia.push({ kartaId: c.karta.id, komunikat: 'karta-w-strefie-przyciecia' });
       });
     }
-    const odcinki = odcinkiCiecia(prostokaty, slot);
+    const odcinki = uklad && !uklad.linieCiecia ? [] : odcinkiCiecia(prostokaty, slot, odstep);
     for (const o of odcinki) elementy.push(liniaCiecia(o, u.linie));
 
-    const dolSiatki = poczatek.y + rzedySiatki * slot.wysokosc;
+    const dolSiatki = poczatek.y + rzedySiatki * slot.wysokosc + odstepRzedu(rzedySiatki - 1);
     if (u.tytul && tytul) {
       glify.push(tytul.glify);
       elementy.push(
@@ -471,7 +518,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         });
       }
     }
-    if (u.nozyczki && odcinki.length > 0) {
+    if (!uklad && u.nozyczki && odcinki.length > 0) {
       const n = nozyczkiNaScenie(u.nozyczki, odcinki, pas, u.linie);
       if (n) elementy.push(...n);
       else
@@ -492,6 +539,8 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     poczatekSiatki: poczatek,
     slot,
     odstepKolumny,
+    odstepRzedu,
+    odstep,
     naglowki: geometriaNaglowkow,
     siatka: {
       kolumny: Math.max(0, Math.floor(siatka.szer / slot.szerokosc + 1e-6)),
@@ -597,4 +646,49 @@ export function zSzarymiObrazami(scena: Scena): Scena {
           : e,
     );
   return { ...scena, elementy: zmien(scena.elementy) };
+}
+
+/**
+ * Wydruk testowy kartki: ta sama siatka co na kartce (z odstępami własnego układu), ale zamiast
+ * kart same obrysy slotów z numerami i krzyżykami na środkach – do sprawdzenia, czy wydruk trafia
+ * w perforację (z kalibracją przesunięcia jak zwykły PDF). Jedna strona.
+ */
+export function stronaTestowa(arkusz: Arkusz, ctx: KontekstArkusza): Scena {
+  const pusta = zbudujArkusz(
+    { ...arkusz, liczbaStron: 1, przypiete: [] },
+    { id: '', nazwa: '', karty: [] },
+    ctx,
+  );
+  const { szer, wys } = wymiaryStrony(arkusz.ustawienia);
+  const elementy: ElementSceny[] = [];
+  const glify: Record<string, DefinicjaGlifu>[] = [];
+  const obrys = { kolor: '#000000', grubosc: 0.2 };
+  const krzyzyk = { kolor: '#000000', grubosc: 0.15 };
+  const styl: StylTekstu = { czcionka: 'tytul', rozmiar: 4, kolor: '#000000' };
+  const { kolumny, rzedy } = pusta.siatka;
+  const s = pusta.slot;
+  for (let r = 0; r < rzedy; r++)
+    for (let k = 0; k < kolumny; k++) {
+      const x = pusta.poczatekSiatki.x + pusta.odstepKolumny(0, k) + k * s.szerokosc;
+      const y = pusta.poczatekSiatki.y + r * s.wysokosc + pusta.odstepRzedu(r);
+      elementy.push({ typ: 'prostokat', x, y, szer: s.szerokosc, wys: s.wysokosc, obrys });
+      const cx = x + s.szerokosc / 2;
+      const cy = y + s.wysokosc / 2;
+      const d = Math.min(5, s.szerokosc / 6, s.wysokosc / 6);
+      elementy.push({ typ: 'linia', x1: cx - d, y1: cy, x2: cx + d, y2: cy, obrys: krzyzyk });
+      elementy.push({ typ: 'linia', x1: cx, y1: cy - d, x2: cx, y2: cy + d, obrys: krzyzyk });
+      const nr = napis(String(r * kolumny + k + 1), styl, undefined, ctx.czcionki);
+      glify.push(nr.glify);
+      elementy.push({ typ: 'grupa', x: x + 1.5, y: y + 1, elementy: nr.elementy });
+    }
+  return { szer, wys, elementy, glify: polaczGlify(...glify) };
+}
+
+/**
+ * Kalibracja drukarki: przesunięcie zawartości strony o (x, y) mm (+ w prawo / w dół). Tylko PDF –
+ * podgląd zostaje bez przesunięcia.
+ */
+export function przesunScene(scena: Scena, p: { x: Mm; y: Mm }): Scena {
+  if (!p.x && !p.y) return scena;
+  return { ...scena, elementy: [{ typ: 'grupa', x: p.x, y: p.y, elementy: scena.elementy }] };
 }

@@ -314,6 +314,17 @@ const arkusz = obj({
     czarnoBialy: opc(z.boolean()),
     slot: opc(obj({ szerokosc: dodatnia, wysokosc: dodatnia })),
     poczatekSiatki: opc(xy),
+    uklad: opc(
+      obj({
+        kolumny: calkowita.min(1).max(50),
+        rzedy: calkowita.min(1).max(50),
+        gora: nieujemna,
+        lewo: nieujemna,
+        odstepPoziomy: nieujemna,
+        odstepPionowy: nieujemna,
+        linieCiecia: z.boolean(),
+      }),
+    ),
   }).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined, {
     message: t('dane.wymiaryPapieru'),
     path: ['wymiaryPapieru'],
@@ -448,8 +459,9 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 3→4: nowe formaty papieru, własny papier, margines bezpieczeństwa – bez zmian danych.
   // 4→5: nazwy węzłów i dane przykładowe szablonu (edytor szablonu) – bez zmian danych.
   // 5→6: tabela (wiersze, nagłówki, wyrównanie kolumn), nowe kształty – bez zmian danych.
-  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d },
-  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d },
+  // 6→7: własny układ arkusza (`ustawienia.uklad`) – bez zmian danych.
+  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d, 6: (d) => d },
+  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d, 6: (d) => d },
 };
 
 export function migruj(

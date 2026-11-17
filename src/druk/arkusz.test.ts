@@ -1,8 +1,10 @@
 /// <reference types="node" />
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { Arkusz } from '../model/arkusz';
-import type { Szablon } from '../model/szablon';
+import { wymiaryUkladu, type Arkusz, type UkladArkusza } from '../model/arkusz';
+import { ustawieniaKartkiDla } from '../dane/wlasneKarty';
+import { daneCzaru, szablonCzaru } from '../silnik/__testy__/przyklady';
+import type { Szablon, Talia } from '../model/szablon';
 import { arkuszeMausrittera } from '../pakiety/mausritter/arkusze';
 import { SLOT, szablonyMausrittera } from '../pakiety/mausritter/szablony';
 import {
@@ -13,7 +15,14 @@ import {
 } from '../pakiety/mausritter/talie';
 import type { ElementSceny, Scena } from '../silnik/scena';
 import { rejestrTestowy } from '../silnik/__testy__/pomoc';
-import { odcinkiCiecia, wSkaliSzarosci, zbudujArkusz, zSzarymiObrazami } from './arkusz';
+import {
+  odcinkiCiecia,
+  przesunScene,
+  stronaTestowa,
+  wSkaliSzarosci,
+  zbudujArkusz,
+  zSzarymiObrazami,
+} from './arkusz';
 import { scenyDoPdf } from './pdf';
 
 const ctx = {
@@ -306,5 +315,136 @@ describe('zSzarymiObrazami', () => {
     expect(JSON.stringify(wynik)).toContain('"zasob":"a#szary"');
     expect(wynik.elementy[0]).toBe(scena.elementy[0]);
     expect(JSON.stringify(scena)).not.toContain('#szary');
+  });
+});
+
+describe('zbudujArkusz – własny układ arkusza', () => {
+  const s = szablonCzaru; // 63×88 mm
+  const ctxW = {
+    czcionki: rejestrTestowy().przypiszRole('tytul', 'EB Garamond'),
+    szablony: new Map([[s.id, s]]),
+  };
+  const taliaW: Talia = {
+    id: 't',
+    nazwa: 't',
+    karty: [1, 2, 3, 4].map((i) => ({
+      id: `k${i}`,
+      szablonId: s.id,
+      dane: daneCzaru,
+      ilosc: i === 4 ? 6 : 1,
+    })),
+  };
+  const arkuszW = (uklad: UkladArkusza): Arkusz => ({
+    id: 'a',
+    nazwa: 'a',
+    taliaId: 't',
+    ustawienia: {
+      ...ustawieniaKartkiDla(s),
+      tytul: {
+        tekst: 'Tytuł',
+        polozenie: 'gora',
+        styl: { czcionka: 'tytul', rozmiar: 6 },
+        odstep: 2,
+      },
+      uklad,
+    },
+  });
+  const uklad: UkladArkusza = {
+    kolumny: 3,
+    rzedy: 3,
+    gora: 12,
+    lewo: 8,
+    odstepPoziomy: 4,
+    odstepPionowy: 3,
+    linieCiecia: true,
+  };
+
+  it('stała siatka od zadanego miejsca, odstępy między kartami, bez tytułu', () => {
+    const w = zbudujArkusz(arkuszW(uklad), taliaW, ctxW);
+    expect(w.ostrzezenia).toEqual([]);
+    expect(w.siatka).toEqual({ kolumny: 3, rzedy: 3, grupy: false });
+    expect(w.poczatekSiatki).toEqual({ x: 8, y: 12 });
+    // 9 egzemplarzy na stronie 1 (3 + 6), położenia z odstępami.
+    const karty = w.strony[0]!.elementy.filter((e) => e.typ === 'grupa');
+    expect(karty).toHaveLength(9);
+    expect(karty.map((e) => [e.x, e.y]).slice(0, 4)).toEqual([
+      [8, 12],
+      [8 + 63 + 4, 12],
+      [8 + 2 * 67, 12],
+      [8, 12 + 88 + 3],
+    ]);
+    // Każda karta ma osobny obrys (4 boki), bez wspólnych linii.
+    expect(linie(w.strony[0]!)).toHaveLength(9 * 4);
+    expect(w.odstepKolumny(0, 2)).toBe(8);
+    expect(w.odstepRzedu(2)).toBe(6);
+  });
+
+  it('bez linii cięcia; siatka poza papierem – ostrzeżenie', () => {
+    const bez = zbudujArkusz(arkuszW({ ...uklad, linieCiecia: false }), taliaW, ctxW);
+    expect(linie(bez.strony[0]!)).toHaveLength(0);
+    const za = zbudujArkusz(arkuszW({ ...uklad, kolumny: 4 }), taliaW, ctxW);
+    expect(za.ostrzezenia).toContainEqual({ komunikat: 'uklad-poza-papierem' });
+  });
+
+  it('wymiaryUkladu: siatka i marginesy po prawej i na dole', () => {
+    expect(wymiaryUkladu(uklad, { szerokosc: 63, wysokosc: 88 }, { szer: 210, wys: 297 })).toEqual({
+      szer: 197,
+      wys: 270,
+      prawo: 5,
+      dol: 15,
+    });
+  });
+
+  it('karta mniejsza niż slot – na środku slotu, bez skalowania', () => {
+    const a = arkuszW({ ...uklad, kolumny: 2, rzedy: 2 });
+    a.ustawienia.slot = { szerokosc: 63.4, wysokosc: 88.4 };
+    const w = zbudujArkusz(a, taliaW, ctxW);
+    const k = w.strony[0]!.elementy.find((e) => e.typ === 'grupa')!;
+    expect(k.x).toBeCloseTo(8.2);
+    expect(k.y).toBeCloseTo(12.2);
+  });
+});
+
+describe('wydruk testowy i kalibracja', () => {
+  const ctxT = {
+    czcionki: rejestrTestowy().przypiszRole('tytul', 'EB Garamond'),
+    szablony: new Map<string, Szablon>(),
+  };
+  const a: Arkusz = {
+    id: 'a',
+    nazwa: 'a',
+    taliaId: 't',
+    ustawienia: {
+      ...ustawieniaKartkiDla(szablonCzaru),
+      uklad: {
+        kolumny: 2,
+        rzedy: 2,
+        gora: 10,
+        lewo: 10,
+        odstepPoziomy: 5,
+        odstepPionowy: 5,
+        linieCiecia: false,
+      },
+    },
+  };
+
+  it('obrysy slotów z numerami i krzyżykami w siatce kartki', () => {
+    const s = stronaTestowa(a, ctxT);
+    const prost = s.elementy.filter((e) => e.typ === 'prostokat');
+    expect(prost.map((p) => [p.x, p.y])).toEqual([
+      [10, 10],
+      [78, 10],
+      [10, 103],
+      [78, 103],
+    ]);
+    expect(s.elementy.filter((e) => e.typ === 'linia')).toHaveLength(8);
+    expect(s.elementy.filter((e) => e.typ === 'grupa')).toHaveLength(4);
+  });
+
+  it('przesunięcie kalibracji przesuwa całą zawartość strony', () => {
+    const s = stronaTestowa(a, ctxT);
+    expect(przesunScene(s, { x: 0, y: 0 })).toBe(s);
+    const p = przesunScene(s, { x: 1.5, y: -0.5 });
+    expect(p.elementy).toEqual([{ typ: 'grupa', x: 1.5, y: -0.5, elementy: s.elementy }]);
   });
 });

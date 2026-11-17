@@ -240,6 +240,32 @@ describe('baza IndexedDB', () => {
     rowne(zasoby, wynik.zasoby);
   });
 
+  it('„Moje układy”: zapis, lista alfabetycznie, nadpisanie, usunięcie', async () => {
+    baza = new BazaProjektow('test-uklady');
+    const u = {
+      id: 'u1',
+      nazwa: 'Perforacja 3×3',
+      papier: 'A4' as const,
+      orientacja: 'pionowa' as const,
+      slot: { szerokosc: 63, wysokosc: 88 },
+      uklad: {
+        kolumny: 3,
+        rzedy: 3,
+        gora: 12,
+        lewo: 8,
+        odstepPoziomy: 4,
+        odstepPionowy: 3,
+        linieCiecia: false,
+      },
+    };
+    await baza.zapiszUklad(u);
+    await baza.zapiszUklad({ ...u, id: 'u2', nazwa: 'Arkusz A' });
+    expect((await baza.uklady()).map((x) => x.nazwa)).toEqual(['Arkusz A', 'Perforacja 3×3']);
+    await baza.zapiszUklad({ ...u, nazwa: 'Zdjęcie' });
+    await baza.usunUklad('u2');
+    expect(await baza.uklady()).toEqual([{ ...u, nazwa: 'Zdjęcie' }]);
+  });
+
   it('lista, zmiana samego dokumentu, usuwanie', async () => {
     baza = new BazaProjektow('test-lista');
     await baza.zapisz(projekt, zasoby);

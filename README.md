@@ -36,6 +36,16 @@ projekty zostają na Twoim komputerze (IndexedDB).
 4. Papier: A4, Letter, A5, zdjęcia 10×15 / 13×18 / 15×21 cm (strefa bezpieczeństwa 3 mm) albo
    własny. Szablon eksportuje się do pliku `.kartyrpg-szablon` i importuje w innym projekcie.
 
+### Druk poza zwykłym A4
+
+- **Własny układ arkusza** (Ustawienia kartki → „Układ arkusza”): stała siatka kolumny × rzędy,
+  margines górny i lewy, rozmiar karty i odstępy między kartami – np. gotowe arkusze z perforacją.
+  Kartka obok to podgląd na żywo; „Zapisz jako mój układ” – lista „Moje układy” w tej przeglądarce.
+- **Kalibracja drukarki**: przesunięcie X/Y w mm (zapamiętane w przeglądarce, tylko PDF)
+  i **„Wydruk testowy (PDF)”** – same obrysy kart z numerami i krzyżykami; drukuj w skali 100%.
+- **Pobierz ▾**: PDF, obrazy stron albo karty osobno (ZIP) jako JPG/PNG 300 dpi – do punktu
+  fotograficznego (formaty 10×15 / 13×18 / 15×21 cm mają strefę przycięcia 3 mm).
+
 Przykładowe szablony do wypróbowania (do testów, nie gotowe pakiety gier):
 [`docs/przyklady/`](docs/przyklady/).
 

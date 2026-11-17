@@ -1,8 +1,9 @@
 import type { Arkusz } from '../model/arkusz';
+import type { Mm } from '../model/jednostki';
 import type { Szablon, Talia, WariantCzcionki } from '../model/szablon';
 import { RejestrCzcionek, wczytajCzcionke } from '../silnik/czcionki';
 import type { InformacjaOObrazie } from '../silnik/karta';
-import { zbudujArkusz, zSzarymiObrazami } from './arkusz';
+import { przesunScene, stronaTestowa, zbudujArkusz, zSzarymiObrazami } from './arkusz';
 import { scenyDoPdf } from './pdf';
 
 /** Plik czcionki z przypisaniem do rodziny – do odtworzenia rejestru poza wątkiem głównym. */
@@ -30,6 +31,10 @@ export interface ZadaniePdf {
   role: Record<string, string>;
   zapasowa?: string;
   obrazy: ObrazDoPdf[];
+  /** Kalibracja drukarki: przesunięcie zawartości stron (mm, + w prawo / w dół). */
+  przesuniecie?: { x: Mm; y: Mm };
+  /** Wydruk testowy tej kartki (obrysy slotów z numerami) zamiast kart. */
+  testowy?: string;
 }
 
 /** Buduje arkusze i PDF (w workerze albo – awaryjnie – w wątku głównym). */
@@ -46,16 +51,19 @@ export async function zbudujPdf(z: ZadaniePdf): Promise<Uint8Array> {
   rejestr.ustawZapasowa(z.zapasowa);
   const szablony = new Map(z.szablony.map((s) => [s.id, s]));
   const obrazy = new Map(z.obrazy.map((o) => [o.id, o]));
-  const sceny = z.arkusze.flatMap((a) => {
-    const talia = z.talie.find((x) => x.id === a.taliaId);
-    if (!talia) throw new Error(`talia ${a.taliaId}`);
-    const strony = zbudujArkusz(a, talia, {
-      czcionki: rejestr,
-      szablony,
-      obraz: (id) => obrazy.get(id)?.info,
-    }).strony;
-    return a.ustawienia.czarnoBialy ? strony.map(zSzarymiObrazami) : strony;
-  });
+  const ctx = { czcionki: rejestr, szablony, obraz: (id: string) => obrazy.get(id)?.info };
+  const testowa = z.testowy ? z.arkusze.find((a) => a.id === z.testowy) : undefined;
+  if (z.testowy && !testowa) throw new Error(`kartka ${z.testowy}`);
+  const sceny = (
+    testowa
+      ? [stronaTestowa(testowa, ctx)]
+      : z.arkusze.flatMap((a) => {
+          const talia = z.talie.find((x) => x.id === a.taliaId);
+          if (!talia) throw new Error(`talia ${a.taliaId}`);
+          const strony = zbudujArkusz(a, talia, ctx).strony;
+          return a.ustawienia.czarnoBialy ? strony.map(zSzarymiObrazami) : strony;
+        })
+  ).map((s) => (z.przesuniecie ? przesunScene(s, z.przesuniecie) : s));
   const { bajty } = await scenyDoPdf(sceny, {
     tytul: z.tytul,
     obraz: (id) => {

@@ -7,6 +7,8 @@ const g: Geometria = {
   siatka: { kolumny: 4, rzedy: 3, grupy: false },
   // Odstęp 5 mm przed kolumną 2 na stronie 0.
   odstepKolumny: (s, k) => (s === 0 && k >= 2 ? 5 : 0),
+  odstepRzedu: () => 0,
+  odstep: { x: 0, y: 0 },
   szer: 200,
   wys: 100,
 };
@@ -20,6 +22,25 @@ describe('geometria warstwy kartki', () => {
     expect(slotPodPunktem(g, 0, 5, 10)).toBeUndefined();
     expect(slotPodPunktem(g, 0, 5, 10, true)).toEqual({ kolumna: 0, rzad: 0 });
     expect(slotPodPunktem(g, 0, 500, 500, true)).toEqual({ kolumna: 3, rzad: 2 });
+  });
+
+  it('własny układ: odstępy między kartami (w odstępie – brak slotu)', () => {
+    const u: Geometria = {
+      ...g,
+      odstepKolumny: (_s, k) => k * 4,
+      odstepRzedu: (r) => r * 2,
+      odstep: { x: 4, y: 2 },
+    };
+    expect(slotPodPunktem(u, 0, 36, 21)).toBeUndefined(); // 35–39: odstęp
+    expect(slotPodPunktem(u, 0, 40, 46)).toBeUndefined(); // 45–47: odstęp w pionie
+    expect(slotPodPunktem(u, 0, 40, 48)).toEqual({ kolumna: 1, rzad: 1 });
+    expect(slotPodPunktem(u, 0, 40, 46, true)).toEqual({ kolumna: 1, rzad: 0 });
+    expect(stylProstokata(u, 0, 1, 1, 2, 1)).toEqual({
+      left: '19.5%',
+      top: '47%',
+      width: '27%',
+      height: '25%',
+    });
   });
 
   it('prostokąt w procentach strony', () => {
