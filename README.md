@@ -20,6 +20,24 @@ projekty zostają na Twoim komputerze (IndexedDB).
 6. **Pobierz PDF** i drukuj w **skali 100%** (bez „dopasuj do strony”). **Eksportuj** zapisuje
    projekt do pliku `.kartyrpg` (kopia zapasowa, przeniesienie na inny komputer – import na starcie).
 
+## Własne karty (od zera)
+
+1. Na starcie **„Stwórz własne karty”** → **„＋ Nowy szablon od zera”**: nazwa, format karty
+   (Poker, Bridge, Mini Euro, Mini American, Tarot, kwadrat albo własny w mm), orientacja, rogi,
+   kolor i neutralny układ startowy.
+2. **Edytor szablonu**: z lewej drzewo wierszy, kolumn i pól (**＋ Dodaj**, ↑/↓, do kontenera,
+   opakuj, duplikuj, usuń; klawiatura), w środku podgląd karty (klik zaznacza element), z prawej
+   **właściwości**: typ, nazwa, treść z danych karty albo stała, etykieta, szerokość i wysokość,
+   styl tekstu, tło, ramka, odstępy, kształt wartości, tabela (kolumny, wiersze, nagłówki, linie).
+   Shift + klik – kilka elementów naraz; Kopiuj / Wklej styl.
+3. **„Rób karty ►”** – kartka dla rozmiaru szablonu; klik w slot dodaje kartę, panel pokazuje pola
+   z nazwami z szablonu. **„Edytuj szablon”** wraca do edytora.
+4. Papier: A4, Letter, A5, zdjęcia 10×15 / 13×18 / 15×21 cm (strefa bezpieczeństwa 3 mm) albo
+   własny. Szablon eksportuje się do pliku `.kartyrpg-szablon` i importuje w innym projekcie.
+
+Przykładowe szablony do wypróbowania (do testów, nie gotowe pakiety gier):
+[`docs/przyklady/`](docs/przyklady/).
+
 ## Uruchomienie
 
 Wymagany Node.js 22 lub nowszy.
