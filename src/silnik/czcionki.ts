@@ -25,6 +25,7 @@ export class Czcionka {
   /** Głębokość pod linią bazową (jednostki czcionki, dodatnia). */
   readonly descent: number;
   private readonly pamiecUkladu = new Map<string, UlozonyGlif[]>();
+  private cechy: Set<string> | undefined;
   private readonly pamiecKonturow = new Map<number, Kontur>();
 
   constructor(
@@ -38,11 +39,15 @@ export class Czcionka {
 
   /** Czy czcionka ma cechę OpenType (np. `smcp` – kapitaliki). */
   maCeche(cecha: string): boolean {
-    try {
-      return this.font.availableFeatures.includes(cecha);
-    } catch {
-      return false;
+    // `availableFeatures` w fontkit liczy się od nowa przy każdym odczycie – zapamiętujemy raz.
+    if (!this.cechy) {
+      try {
+        this.cechy = new Set(this.font.availableFeatures);
+      } catch {
+        this.cechy = new Set();
+      }
     }
+    return this.cechy.has(cecha);
   }
 
   /**
@@ -50,7 +55,7 @@ export class Czcionka {
    * Pamięć podręczna LRU (`LIMIT_PAMIECI_UKLADU`).
    */
   uloz(tekst: string, cechy?: string[]): UlozonyGlif[] {
-    const klucz = cechy?.length ? `${cechy.join(',')}\u0000${tekst}` : tekst;
+    const klucz = `${cechy?.join(',') ?? ''}\u0000${tekst}`;
     const zapamietany = this.pamiecUkladu.get(klucz);
     if (zapamietany) {
       // Odświeżenie pozycji – Map zachowuje kolejność wstawiania, najstarszy jest pierwszy.
@@ -217,6 +222,8 @@ export class RejestrCzcionek {
   private sledzone: Set<string> | undefined;
   /** Nazwy (role lub rodziny), dla których użyto czcionki zapasowej – do ostrzeżeń w UI. */
   readonly brakujace = new Set<string>();
+  /** Warianty zastąpione najbliższym dostępnym (np. brak pogrubienia) – do ostrzeżeń w UI. */
+  readonly brakujaceWarianty = new Map<string, { nazwa: string; wariant: WariantCzcionki }>();
 
   /**
    * Rodzina zapasowa: gdy szukanej czcionki brak, zamiast błędu używana jest ta rodzina,
@@ -244,6 +251,7 @@ export class RejestrCzcionek {
     this.role.clear();
     for (const [r, f] of Object.entries(role)) this.role.set(r, f);
     this.brakujace.clear();
+    this.brakujaceWarianty.clear();
     return this;
   }
 
@@ -265,8 +273,13 @@ export class RejestrCzcionek {
   }
 
   pobierz(nazwa: string, wariant: WariantCzcionki = 'normalny'): Czcionka {
-    const znaleziona = this.znajdz(this.role.get(nazwa) ?? nazwa, wariant);
-    if (znaleziona) return znaleziona;
+    const rodzina = this.role.get(nazwa) ?? nazwa;
+    const znaleziona = this.znajdz(rodzina, wariant);
+    if (znaleziona) {
+      if (!this.rodziny.get(rodzina)?.[wariant])
+        this.brakujaceWarianty.set(`${nazwa}\u0000${wariant}`, { nazwa, wariant });
+      return znaleziona;
+    }
     const zapasowa = this.zapasowa !== undefined ? this.znajdz(this.zapasowa, wariant) : undefined;
     if (zapasowa) {
       this.brakujace.add(nazwa);

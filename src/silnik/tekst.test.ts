@@ -113,6 +113,14 @@ describe('formatowanie w treści', () => {
     expect(w('\\*gwiazdka\\* **x')).toEqual([['*gwiazdka* **x', 'normalny']]);
   });
 
+  it('gwiazdki otoczone spacjami nie tworzą pary (np. mnożenie)', () => {
+    expect(w('k6 * 2 albo k8 * 3')).toEqual([['k6 * 2 albo k8 * 3', 'normalny']]);
+    expect(w('a * b *c*')).toEqual([
+      ['a * b ', 'normalny'],
+      ['c', 'kursywa'],
+    ]);
+  });
+
   it('łączy się z wariantem stylu i zachowuje nowe wiersze', () => {
     expect(w('**Uwaga:** tekst\n*dalej*', { ...styl, wariant: 'kursywa' })).toEqual([
       ['Uwaga:', 'pogrubiona-kursywa'],
@@ -149,6 +157,46 @@ describe('akapity, justowanie, kapitaliki', () => {
     expect(u.wiersze[0]!.glify[0]!.x).toBeCloseTo(zwykly.wiersze[0]!.glify[0]!.x + 3, 6);
     expect(u.wiersze[0]!.szerokosc).toBeCloseTo(zwykly.wiersze[0]!.szerokosc + 3, 6);
     expect(u.wysokosc).toBeCloseTo(zwykly.wysokosc + 2, 6); // tylko między akapitami
+  });
+
+  it('wcięcie tylko w pierwszym wierszu akapitu i liczone do szerokości', () => {
+    const st = { ...styl, wciecie: 4 };
+    const u = ulozTekst([{ tekst: DLUGI, styl: st }], 30, czcionki);
+    expect(u.wiersze.length).toBeGreaterThan(2);
+    for (const w of u.wiersze) expect(w.szerokosc).toBeLessThanOrEqual(30 + 1e-6);
+    expect(u.wiersze[0]!.glify[0]!.x).toBeGreaterThan(4 - 1e-6);
+    expect(u.wiersze[1]!.glify[0]!.x).toBeLessThan(1);
+  });
+
+  it('bez odstępu akapitu przed samą etykietą (etykieta „pod”)', () => {
+    const st = { ...styl, odstepAkapitow: 2 };
+    const u = ulozTekst(
+      [
+        { tekst: 'wartość', styl: st },
+        { tekst: '\npodpis', styl: st, etykieta: true },
+      ],
+      undefined,
+      czcionki,
+    );
+    const zwykly = ulozTekst([{ tekst: 'wartość\npodpis', styl }], undefined, czcionki);
+    expect(u.wysokosc).toBeCloseTo(zwykly.wysokosc, 6);
+  });
+
+  it('justowanie: jedno słowo w wierszu i tekst szerszy niż ramka bez przesunięć', () => {
+    const u = ulozTekst([{ tekst: 'Słowo', styl }], 100, czcionki);
+    expect(xGlifow(u, 100, 'justuj')).toEqual(xGlifow(u, 100, 'lewo'));
+    const szeroki = ulozTekst([{ tekst: 'raz dwa trzy\ncztery', styl }], undefined, czcionki);
+    expect(xGlifow(szeroki, 2, 'justuj')).toEqual(xGlifow(szeroki, 2, 'lewo'));
+  });
+
+  it('kapitaliki przy wielkich literach nie działają (wszystko wersalikami)', () => {
+    const u = ulozTekst(
+      [{ tekst: 'Ab', styl: { ...styl, kapitaliki: true, wielkieLitery: true } }],
+      undefined,
+      czcionki,
+    );
+    const [a, b] = u.wiersze[0]!.glify;
+    expect(b!.skala).toBeCloseTo(a!.skala, 6);
   });
 
   it('akapit z samą etykietą nie dostaje wcięcia ani odstępu', () => {

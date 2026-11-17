@@ -148,12 +148,14 @@ function etykietaWartosci(
   pole: PoleWartosc,
   dane: Record<string, string>,
   ctx: KontekstRenderowania,
-): { uklad: UkladTekstu; styl: StylTekstu; odstep: Mm } | undefined {
+): { uklad: UkladTekstu; fragmenty: Fragment[]; styl: StylTekstu; odstep: Mm } | undefined {
   const tekst = pole.etykieta ? napis(pole.etykieta.tekst, dane) : '';
   if (!pole.etykieta || tekst === '') return undefined;
   const styl = { ...pole.styl, ...pole.etykieta.styl };
+  const fragmenty = [{ tekst, styl, etykieta: true }];
   return {
-    uklad: ulozTekst([{ tekst, styl, etykieta: true }], undefined, ctx.czcionki),
+    uklad: ulozTekst(fragmenty, undefined, ctx.czcionki),
+    fragmenty,
     styl,
     odstep: pole.etykieta.odstep ?? 0.5,
   };
@@ -165,7 +167,10 @@ function podzialWartosci(
   r: Ramka,
   dane: Record<string, string>,
   ctx: KontekstRenderowania,
-): { ksztalt: Ramka; etykieta?: { ramka: Ramka; uklad: UkladTekstu; styl: StylTekstu } } {
+): {
+  ksztalt: Ramka;
+  etykieta?: { ramka: Ramka; fragmenty: Fragment[]; styl: StylTekstu };
+} {
   const e = etykietaWartosci(pole, dane, ctx);
   if (!e) return { ksztalt: r };
   const h = Math.min(r.wys, e.uklad.wysokosc);
@@ -175,7 +180,7 @@ function podzialWartosci(
     ksztalt: { x: r.x, y: nad ? r.y + r.wys - reszta : r.y, szer: r.szer, wys: reszta },
     etykieta: {
       ramka: { x: r.x, y: nad ? r.y : r.y + r.wys - h, szer: r.szer, wys: h },
-      uklad: e.uklad,
+      fragmenty: e.fragmenty,
       styl: e.styl,
     },
   };
@@ -285,10 +290,21 @@ export function renderujKarte(
       );
     }
     if (podzial?.etykieta) {
+      // Etykieta w jednym wierszu, zmniejszana do `minRozmiar`, gdy jest szersza niż pole.
       const e = podzial.etykieta;
+      const uklad = ulozDopasowany(
+        e.fragmenty,
+        e.ramka.szer,
+        e.ramka.wys,
+        ctx.czcionki,
+        false,
+        minimalnaSkala(e.styl),
+      );
+      if (uklad.przepelnienie) ostrzezenia.push({ pole: w.id, komunikat: 'tekst-nie-miesci-sie' });
+      dodajOstrzezenieZnakow(w.id, e.fragmenty, ctx, ostrzezenia);
       elementy.push(
         ...tekstNaScene(
-          e.uklad,
+          uklad,
           e.ramka,
           e.styl.wyrownanie ?? 'srodek',
           'srodek',
@@ -297,7 +313,8 @@ export function renderujKarte(
         ),
       );
     }
-    if (!czyKontener(w) && !czyPuste(w, dane)) {
+    // Tabela z pustymi wartościami (i „pokaż ramkę”) rysuje nagłówki i siatkę – do wypełnienia.
+    if (!czyKontener(w) && (!czyPuste(w, dane) || w.typ === 'tabela')) {
       const p = rozwinOdstepy(w.padding);
       const ramka = {
         x: obszar.x + p.lewo,
@@ -394,9 +411,9 @@ function rysujObramowanie(
   const g = o.grubosc;
   const s = obrys(o);
   if (!s) return [];
+  // Romb ma zawsze pełny obrys (wybór krawędzi dotyczy prostokątów).
+  if (ksztalt === 'romb') return [{ typ: 'sciezka', kontur: konturRombu(u, g / 2), obrys: s }];
   const k = o.krawedzie;
-  if (!k && ksztalt === 'romb')
-    return [{ typ: 'sciezka', kontur: konturRombu(u, g / 2), obrys: s }];
   if (!k && ksztalt === 'sciety') {
     const wew = {
       x: u.x + g / 2,
@@ -486,8 +503,9 @@ function zmierzPole(
         const bok = Math.max(u.szerokosc, u.wysokosc);
         k = { szer: bok, wys: bok };
       } else if (pole.ksztalt === 'romb') {
-        // Tekst mieści się w prostokącie o połowie przekątnych rombu.
-        k = { szer: 2 * u.szerokosc, wys: 2 * u.wysokosc };
+        // Tekst w prostokącie o połowie przekątnych rombu, odsunięty od obrysu (jak przy rysowaniu).
+        const m = marginesRombu(pole);
+        k = { szer: 2 * (u.szerokosc + 2 * m), wys: 2 * (u.wysokosc + 2 * m) };
       }
       const e = etykietaWartosci(pole, dane, ctx);
       return e
@@ -495,11 +513,14 @@ function zmierzPole(
         : k;
     }
     case 'separator':
+      // Długość 0 – linię wydłuża rozciągnięcie w rodzicu; inaczej separator rozpychałby
+      // kontenery mierzone wg treści.
       return pole.kierunek === 'poziomy'
-        ? { szer: ogr.szer ?? 0, wys: pole.grubosc }
-        : { szer: pole.grubosc, wys: ogr.wys ?? 0 };
+        ? { szer: 0, wys: pole.grubosc }
+        : { szer: pole.grubosc, wys: 0 };
     case 'tabela': {
-      const t = ukladTabeli(pole, dane, ctx, 1);
+      if (pole.kolumny.length === 0) return { szer: 0, wys: 0 };
+      const t = ukladTabeli(pole, dane, ctx, skalaTabeli(pole, dane, ctx, ogr.szer));
       return { szer: Math.min(t.szer, ogr.szer ?? t.szer), wys: t.wys };
     }
     case 'obraz':
@@ -591,12 +612,13 @@ function rysujPole(
       const fr = [{ tekst: wartosc, styl: pole.styl }];
       const minSkala = minimalnaSkala(pole.styl);
       if (pole.ksztalt === 'romb') {
-        // Treść w prostokącie wpisanym w romb (połowa przekątnych).
+        // Treść w prostokącie wpisanym w romb (połowa przekątnych), odsunięta od obrysu.
+        const m = marginesRombu(pole);
         ramka = {
-          x: ramka.x + ramka.szer / 4,
-          y: ramka.y + ramka.wys / 4,
-          szer: ramka.szer / 2,
-          wys: ramka.wys / 2,
+          x: ramka.x + ramka.szer / 4 + m,
+          y: ramka.y + ramka.wys / 4 + m,
+          szer: Math.max(0, ramka.szer / 2 - 2 * m),
+          wys: Math.max(0, ramka.wys / 2 - 2 * m),
         };
       }
       const uklad = ulozDopasowany(fr, ramka.szer, ramka.wys, ctx.czcionki, false, minSkala);
@@ -705,6 +727,9 @@ function rysujPole(
 
 const PADDING_KOMORKI = 0.8;
 
+/** Odsunięcie treści rombu od narożników prostokąta wpisanego – grubość obrysu. */
+const marginesRombu = (pole: PoleWartosc): Mm => pole.obramowanie?.grubosc ?? 0;
+
 interface UkladTabeli {
   szer: Mm;
   wys: Mm;
@@ -730,18 +755,13 @@ function ukladTabeli(
   szerokosc?: Mm,
 ): UkladTabeli {
   const pad = pole.paddingKomorki ?? PADDING_KOMORKI;
-  const sk = (st: StylTekstu): StylTekstu => ({
-    ...st,
-    rozmiar: st.rozmiar * skala,
-    ...(st.odstepLiter !== undefined ? { odstepLiter: st.odstepLiter * skala } : {}),
-  });
-  const styl = sk(pole.styl);
-  const stylNaglowka = sk({ ...pole.styl, wariant: 'pogrubiony', ...pole.stylNaglowka });
+  const styl = pole.styl;
+  const stylNaglowka: StylTekstu = { ...pole.styl, wariant: 'pogrubiony', ...pole.stylNaglowka };
   const naglowki = pole.kolumny.map((k) =>
-    ulozTekst([{ tekst: k.naglowek, styl: stylNaglowka }], undefined, ctx.czcionki),
+    ulozTekst([{ tekst: k.naglowek, styl: stylNaglowka }], undefined, ctx.czcionki, skala),
   );
   const wartosci = pole.kolumny.map((k) =>
-    ulozTekst([{ tekst: dane[k.klucz] ?? '', styl }], undefined, ctx.czcionki),
+    ulozTekst([{ tekst: dane[k.klucz] ?? '', styl }], undefined, ctx.czcionki, skala),
   );
   const kolumny = pole.kolumny.map((k, i) => {
     const sz = k.szerokosc;
@@ -777,6 +797,38 @@ function ukladTabeli(
   };
 }
 
+/**
+ * Skala tabeli mieszczącej się w szerokości: szerokość rośnie prawie liniowo ze skalą (stałe są
+ * kolumny w mm i odstępy komórek), więc skala liczona wprost, zaokrąglona w dół do kroku 2%,
+ * z korektą; nie mniej niż `minRozmiar`. Wspólna dla pomiaru i rysowania.
+ */
+function skalaTabeli(
+  pole: PoleTabela,
+  dane: Record<string, string>,
+  ctx: KontekstRenderowania,
+  szerokosc: Mm | undefined,
+): number {
+  if (szerokosc === undefined || pole.kolumny.length === 0) return 1;
+  const pelna = ukladTabeli(pole, dane, ctx, 1);
+  if (pelna.szer <= szerokosc + 1e-6) return 1;
+  const pad = pole.paddingKomorki ?? PADDING_KOMORKI;
+  const stale = pole.kolumny.reduce(
+    (a, k) =>
+      a + (k.szerokosc && k.szerokosc !== 'auto' && 'mm' in k.szerokosc ? k.szerokosc.mm : 2 * pad),
+    0,
+  );
+  const minSkala = minimalnaSkala(pole.styl);
+  const zmienna = pelna.szer - stale;
+  let skala = zmienna > 0 ? Math.floor(((szerokosc - stale) / zmienna) * 50 + 1e-9) / 50 : minSkala;
+  skala = Math.min(1, Math.max(minSkala, skala));
+  while (
+    skala - 0.02 >= minSkala - 1e-9 &&
+    ukladTabeli(pole, dane, ctx, skala).szer > szerokosc + 1e-6
+  )
+    skala -= 0.02;
+  return skala;
+}
+
 function rysujTabele(
   pole: PoleTabela,
   ramka: Ramka,
@@ -786,17 +838,16 @@ function rysujTabele(
   ostrzezenia: Ostrzezenie[],
 ): ElementSceny[] {
   if (pole.kolumny.length === 0) return [];
-  // Auto-dopasowanie: zmniejszaj całą tabelę, aż zmieści się w szerokości ramki.
-  const minSkala = minimalnaSkala(pole.styl);
-  let skala = 1;
-  let t = ukladTabeli(pole, dane, ctx, skala);
-  while (t.szer > ramka.szer + 1e-6 && skala - 0.02 >= minSkala - 1e-9) {
-    skala -= 0.02;
-    t = ukladTabeli(pole, dane, ctx, skala);
-  }
-  if (t.szer > ramka.szer + 1e-6 || t.wys > ramka.wys + 1e-6)
+  const skala = skalaTabeli(pole, dane, ctx, ramka.szer);
+  const t = ukladTabeli(pole, dane, ctx, skala, ramka.szer);
+  const pad = pole.paddingKomorki ?? PADDING_KOMORKI;
+  // Za szeroka mimo zmniejszenia, za niska albo komórka (np. kolumna o stałej szerokości)
+  // węższa niż jej treść – tekst wyszedłby poza siatkę.
+  const zaWaskaKomorka = t.kolumny.some(
+    (sz, i) => Math.max(t.naglowki[i]!.szerokosc, t.wartosci[i]!.szerokosc) > sz - 2 * pad + 1e-6,
+  );
+  if (t.szer > ramka.szer + 1e-6 || t.wys > ramka.wys + 1e-6 || zaWaskaKomorka)
     ostrzezenia.push({ pole: pole.id, komunikat: 'tekst-nie-miesci-sie' });
-  t = ukladTabeli(pole, dane, ctx, skala, ramka.szer);
   const wynik: ElementSceny[] = [];
   const { x, y } = ramka;
   if (pole.tloNaglowka)
@@ -808,7 +859,6 @@ function rysujTabele(
       wys: t.wysNaglowka,
       wypelnienie: pole.tloNaglowka,
     });
-  const pad = pole.paddingKomorki ?? PADDING_KOMORKI;
   const wyrownanie = t.styl.wyrownanie ?? 'srodek';
   let kx = x;
   t.kolumny.forEach((sz, i) => {

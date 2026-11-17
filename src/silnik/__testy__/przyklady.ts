@@ -187,7 +187,13 @@ const wartoscWRombie = (id: string, etykieta: string) => ({
   etykieta: {
     tekst: etykieta,
     pozycja: 'nad' as const,
-    styl: { czcionka: 'tresc', rozmiar: pt(4.5), wariant: 'pogrubiony' as const, kolor: ROMB },
+    styl: {
+      czcionka: 'tresc',
+      rozmiar: pt(4.5),
+      minRozmiar: pt(3.5),
+      wariant: 'pogrubiony' as const,
+      kolor: ROMB,
+    },
   },
 });
 

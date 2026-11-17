@@ -86,7 +86,10 @@ export interface StylTekstu {
   /** Wysokość wiersza jako wielokrotność rozmiaru (domyślnie 1,2). */
   interlinia?: number;
   wielkieLitery?: boolean;
-  /** Kapitaliki: małe litery jako małe wersaliki (cecha `smcp` czcionki albo synteza). */
+  /**
+   * Kapitaliki: małe litery jako małe wersaliki (cecha `smcp` czcionki albo synteza).
+   * Przy `wielkieLitery` nie działają (wszystko jest wersalikami).
+   */
   kapitaliki?: boolean;
   /** Wcięcie pierwszego wiersza akapitu (mm). */
   wciecie?: Mm;

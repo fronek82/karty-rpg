@@ -31,11 +31,13 @@ const zFlag = (b: boolean, i: boolean): WariantCzcionki =>
 
 /**
  * Formatowanie w treści: `**pogrubienie**`, `*kursywa*`, `***pogrubiona kursywa***`; `\*` to
- * zwykła gwiazdka. Znacznik bez pary zostaje zwykłym tekstem. Wariant łączy się z wariantem
- * stylu (np. `**` w kursywie daje pogrubioną kursywę).
+ * zwykła gwiazdka. Znacznik otwierający musi stać tuż przed tekstem, zamykający tuż po nim
+ * (jak w Markdown) – `5 * 3 * 2` zostaje zwykłym tekstem; znacznik bez pary też. Każdy rodzaj
+ * (`*`, `**`, `***`) paruje się osobno. Wariant łączy się z wariantem stylu (np. `**` w kursywie
+ * daje pogrubioną kursywę).
  */
 export function parsujFormatowanie(tekst: string, styl: StylTekstu): Fragment[] {
-  type Znacznik = { znacznik: 1 | 2 | 3; para?: boolean };
+  type Znacznik = { znacznik: 1 | 2 | 3; para?: boolean; otwiera: boolean; zamyka: boolean };
   type Znak = { tekst: string } | Znacznik;
   const czesci: Znak[] = [];
   const re = /\\\*|\*{1,3}/g;
@@ -43,7 +45,15 @@ export function parsujFormatowanie(tekst: string, styl: StylTekstu): Fragment[] 
   for (const m of tekst.matchAll(re)) {
     if (m.index > poz) czesci.push({ tekst: tekst.slice(poz, m.index) });
     if (m[0] === '\\*') czesci.push({ tekst: '*' });
-    else czesci.push({ znacznik: m[0].length as 1 | 2 | 3 });
+    else {
+      const przed = tekst[m.index - 1];
+      const po = tekst[m.index + m[0].length];
+      czesci.push({
+        znacznik: m[0].length as 1 | 2 | 3,
+        otwiera: po !== undefined && !/\s/.test(po),
+        zamyka: przed !== undefined && !/\s/.test(przed),
+      });
+    }
     poz = m.index + m[0].length;
   }
   if (poz < tekst.length) czesci.push({ tekst: tekst.slice(poz) });
@@ -52,11 +62,11 @@ export function parsujFormatowanie(tekst: string, styl: StylTekstu): Fragment[] 
   for (const c of czesci) {
     if (!('znacznik' in c)) continue;
     const o = otwarte.get(c.znacznik);
-    if (o) {
+    if (o && c.zamyka) {
       o.para = true;
       c.para = true;
       otwarte.delete(c.znacznik);
-    } else otwarte.set(c.znacznik, c);
+    } else if (c.otwiera) otwarte.set(c.znacznik, c);
   }
   const [b0, i0] = WARIANTY[styl.wariant ?? 'normalny'];
   let b = false;
@@ -278,8 +288,11 @@ export function ulozTekst(
     const tylkoEtykieta = akapit.length > 0 && akapit.every((f) => f.etykieta);
     const stylAkapitu = akapit.find((f) => !f.etykieta)?.styl ?? akapit[0]?.styl;
     const wciecie = tylkoEtykieta || akapit[0]?.etykieta ? 0 : (stylAkapitu?.wciecie ?? 0) * skala;
+    // Bez odstępu: po ostatnim akapicie, po samej etykiecie i przed samą etykietą (np. „pod”).
+    const nastepny = akapity[nrAkapitu + 1];
+    const przedEtykieta = !!nastepny && nastepny.length > 0 && nastepny.every((f) => f.etykieta);
     const odstepPo =
-      tylkoEtykieta || nrAkapitu === akapity.length - 1
+      tylkoEtykieta || przedEtykieta || nrAkapitu === akapity.length - 1
         ? 0
         : (stylAkapitu?.odstepAkapitow ?? 0) * skala;
     // Słowa = ciągi kawałków bez spacji; łamać można tylko na spacjach.

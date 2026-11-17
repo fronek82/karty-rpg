@@ -142,6 +142,8 @@ export const pl = {
   'czcionki.zrodlo.google': 'Google Fonts',
   'czcionki.zrodlo.wlasna': 'własny plik',
   'czcionki.brakujace': 'Brak czcionki dla: {lista} – użyto czcionki zapasowej.',
+  'czcionki.brakWariantu':
+    'Czcionka {nazwa} nie ma wariantu „{wariant}” (np. pogrubienia z **…**) – użyto najbliższego.',
   'wariant.normalny': 'normalny',
   'wariant.pogrubiony': 'pogrubiony',
   'wariant.kursywa': 'kursywa',

@@ -580,10 +580,19 @@ describe('klocki M2: ramka karty, romb, etykiety, separator, tabela', () => {
     const w = svg(szablonWroga, daneWroga);
     expect(w.ostrzezenia).toEqual([]);
     await expect(w.svg).toMatchFileSnapshot('./__snapshots__/m2-wrog.svg');
-    // Bez „opisu” karta ma tyle samo tekstu co z pustym opisem; z opisem – więcej.
-    const zOpisem = svg(szablonWroga, { ...daneWroga, opis: 'Poluje nocą.' });
-    expect(ile(zOpisem.scena, 'tekst')).toBeGreaterThanOrEqual(ile(w.scena, 'tekst'));
-    expect(zOpisem.svg.length).toBeGreaterThan(w.svg.length);
+    // Puste pole z „ukryj” nie zajmuje miejsca: bez broni zdolności przesuwają się w górę,
+    // a pusty opis daje ten sam obraz co brak klucza.
+    const yOstatniegoGlifu = (sc: Scena, kolor: string) =>
+      Math.max(
+        ...sc.elementy.flatMap((e) =>
+          e.typ === 'tekst' && e.kolor === kolor ? e.glify.map((g) => g.y) : [],
+        ),
+      );
+    const bezBroni = svg(szablonWroga, { ...daneWroga, bron: '' });
+    expect(yOstatniegoGlifu(bezBroni.scena, '#000000')).toBeLessThan(
+      yOstatniegoGlifu(w.scena, '#000000') - 2,
+    );
+    expect(svg(szablonWroga, { ...daneWroga, opis: '' }).svg).toBe(w.svg);
   });
 
   it('ramka karty: prostokąt z odsunięciem, rogi zgodne z kartą', () => {
@@ -657,6 +666,68 @@ describe('klocki M2: ramka karty, romb, etykiety, separator, tabela', () => {
     expect(obwodka).toMatchObject({ x: 3.1 });
     if (obwodka?.typ !== 'prostokat') throw new Error();
     expect(obwodka.szer).toBeCloseTo(88 - 6 - 0.2, 6);
+  });
+
+  it('tabela z pustymi wartościami rysuje nagłówki i siatkę; pusta lista kolumn – nic', () => {
+    const { scena, ostrzezenia } = renderujKarte(szablonStatystyk, { dane: {} }, ctx);
+    expect(ostrzezenia).toEqual([]);
+    // 11 pionowych + 1 pod nagłówkiem + separator.
+    expect(scena.elementy.filter((e) => e.typ === 'linia')).toHaveLength(13);
+    const tab = szablonStatystyk.korzen.dzieci[1]!;
+    const bezKolumn: Szablon = {
+      ...szablonStatystyk,
+      korzen: {
+        ...szablonStatystyk.korzen,
+        dzieci: [{ ...tab, kolumny: [] } as typeof tab],
+      },
+    };
+    expect(renderujKarte(bezKolumn, { dane: {} }, ctx).scena.elementy).toHaveLength(2); // tło, ramka
+  });
+
+  it('kolumna tabeli węższa niż treść daje ostrzeżenie', () => {
+    const tab = szablonStatystyk.korzen.dzieci[1]!;
+    if (tab.typ !== 'tabela') throw new Error();
+    const waska: Szablon = {
+      ...szablonStatystyk,
+      korzen: {
+        ...szablonStatystyk.korzen,
+        dzieci: [
+          {
+            ...tab,
+            kolumny: [{ naglowek: 'Bardzo długi nagłówek', klucz: 'x', szerokosc: { mm: 3 } }],
+          },
+        ],
+      },
+    };
+    const { ostrzezenia } = renderujKarte(waska, { dane: { x: '1' } }, ctx);
+    expect(ostrzezenia).toContainEqual({ pole: 'cechy', komunikat: 'tekst-nie-miesci-sie' });
+  });
+
+  it('separator nie rozpycha kontenera mierzonego wg treści', () => {
+    const s: Szablon = {
+      id: 's',
+      nazwa: 's',
+      rozmiar: { tryb: 'mm', szerokosc: 40, wysokosc: 20 },
+      korzen: {
+        id: 'k',
+        typ: 'kolumna',
+        dzieci: [
+          {
+            id: 'srodek',
+            typ: 'kolumna',
+            wyrownanie: { poziomo: 'srodek' },
+            dzieci: [
+              { id: 't', typ: 'tekst', tekst: 'Ab', styl: { czcionka: 'tresc', rozmiar: pt(9) } },
+              { id: 'sep', typ: 'separator', kierunek: 'poziomy', grubosc: 0.3 },
+            ],
+          },
+        ],
+      },
+    };
+    const l = renderujKarte(s, { dane: {} }, ctx).scena.elementy.find((e) => e.typ === 'linia');
+    if (l?.typ !== 'linia') throw new Error();
+    expect(l.x2 - l.x1).toBeLessThan(10); // szerokość tekstu „Ab”, nie 40 mm
+    expect(l.x1).toBeGreaterThan(15);
   });
 
   it('etykieta pod tekstem i separator pionowy', () => {

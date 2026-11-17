@@ -938,6 +938,18 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     () => (kartki.length && zasoby ? [...zasoby.czcionki.brakujace] : []),
     [kartki, zasoby],
   );
+  const brakujaceWarianty = useMemo(
+    () =>
+      kartki.length && zasoby
+        ? [...zasoby.czcionki.brakujaceWarianty.values()].map((b) =>
+            t('czcionki.brakWariantu', {
+              nazwa: tJesliJest(`rola.${b.nazwa}`) ?? b.nazwa,
+              wariant: t(`wariant.${b.wariant}`),
+            }),
+          )
+        : [],
+    [kartki, zasoby],
+  );
 
   // --- Widok.
   const naglowekProjektu = (
@@ -1024,6 +1036,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       {naglowekProjektu}
       {(edycja.ostrzezenia.length > 0 ||
         brakujaceCzcionki.length > 0 ||
+        brakujaceWarianty.length > 0 ||
         ostrzezeniaKartek.length > 0) && (
         <details className="uwaga ostrzezenia-projektu">
           <summary>
@@ -1031,11 +1044,12 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
               liczba:
                 edycja.ostrzezenia.length +
                 ostrzezeniaKartek.length +
+                brakujaceWarianty.length +
                 (brakujaceCzcionki.length ? 1 : 0),
             })}
           </summary>
           <ul>
-            {[...edycja.ostrzezenia, ...ostrzezeniaKartek].map((o, i) => (
+            {[...edycja.ostrzezenia, ...ostrzezeniaKartek, ...brakujaceWarianty].map((o, i) => (
               <li key={i}>{o}</li>
             ))}
             {brakujaceCzcionki.length > 0 && (
