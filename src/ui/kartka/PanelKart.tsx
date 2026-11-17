@@ -9,6 +9,7 @@ import {
   type KontekstKartki,
 } from '../../dane/kartka';
 import { t, tJesliJest } from '../../i18n';
+import { MAKS_ZNACZNIKOW } from '../../silnik/karta';
 import type { Arkusz } from '../../model/arkusz';
 import {
   czyKontener,
@@ -176,7 +177,8 @@ export function PanelKart({
               />
             );
           }
-          const nazwa = nazwaPola(kol.klucz, kol.nazwa);
+          // Nazwa nadana w edytorze szablonu ma pierwszeństwo przed nazwami pól pakietu gry.
+          const nazwa = pole?.nazwa || nazwaPola(kol.klucz, kol.nazwa);
           const w = wspolna(kol.klucz);
           const id = `pole-${kol.klucz}`;
           if (pole?.typ === 'znaczniki') {
@@ -199,8 +201,10 @@ export function PanelKart({
                   <button
                     type="button"
                     aria-label={t('kartka.wiecej', { pole: nazwa })}
-                    disabled={(n ?? 0) >= 12}
-                    onClick={() => ustaw(kol.klucz, String(Math.min(12, (n ?? domyslnie) + 1)))}
+                    disabled={(n ?? 0) >= MAKS_ZNACZNIKOW}
+                    onClick={() =>
+                      ustaw(kol.klucz, String(Math.min(MAKS_ZNACZNIKOW, (n ?? domyslnie) + 1)))
+                    }
                   >
                     +
                   </button>

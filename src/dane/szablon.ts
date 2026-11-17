@@ -94,12 +94,9 @@ export function nowyWezel(
         nazwa,
         typ: 'tekst',
         klucz: klucz(),
-        styl: { ...tresc(9), wyrownanie: 'srodek' },
-        etykieta: {
-          tekst: nazwa,
-          pozycja: 'nad',
-          styl: { rozmiar: pt(6), wariant: 'pogrubiony', wielkieLitery: true },
-        },
+        styl: tresc(9),
+        // Etykieta mniejsza od wartości – bez innych upiększeń (kolor, wersaliki ustawia użytkownik).
+        etykieta: { tekst: nazwa, pozycja: 'nad', styl: { rozmiar: pt(7) } },
       };
     case 'wartosc':
       return {
@@ -108,6 +105,8 @@ export function nowyWezel(
         typ: 'wartosc',
         klucz: klucz(),
         ksztalt: 'prostokat',
+        // Rozmiar wg treści (bez rozciągania na całą szerokość / wysokość rodzica).
+        wyrownanie: { poziomo: 'poczatek', pionowo: 'poczatek' },
         padding: 0.8,
         obramowanie: { grubosc: 0.3, kolor: CZARNY },
         styl: tresc(9),
@@ -537,4 +536,42 @@ export function zmienTypPola(s: Szablon, id: string, typ: Pole['typ']): Szablon 
   if ('styl' in w && 'styl' in x && typeof w.styl === 'object' && typeof x.styl === 'object')
     (x as { styl: unknown }).styl = w.styl;
   return zmienWezel(s, id, () => x);
+}
+
+/** Styl elementu do schowka „Kopiuj styl”: wygląd, odstępy, styl tekstu, etykiety i kształt. */
+export interface SkopiowanyStyl {
+  styl?: unknown;
+  stylEtykiety?: unknown;
+  ksztalt?: string;
+  tlo?: string;
+  obramowanie?: unknown;
+  promien?: number;
+  padding?: unknown;
+  margines?: unknown;
+}
+
+export function skopiujStyl(w: Wezel): SkopiowanyStyl {
+  const x: SkopiowanyStyl = {};
+  if ('styl' in w && typeof w.styl === 'object') x.styl = structuredClone(w.styl);
+  if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta?.styl)
+    x.stylEtykiety = structuredClone(w.etykieta.styl);
+  if (w.typ === 'wartosc') x.ksztalt = w.ksztalt;
+  for (const k of ['tlo', 'obramowanie', 'promien', 'padding', 'margines'] as const)
+    if (w[k] !== undefined) (x as Record<string, unknown>)[k] = structuredClone(w[k]);
+  return x;
+}
+
+/** Wkleja styl do elementu – tylko to, co ten typ ma (np. styl tekstu do pól z tekstem). */
+export function wklejStyl(w: Wezel, st: SkopiowanyStyl): Wezel {
+  const x = { ...w } as Record<string, unknown>;
+  for (const k of ['tlo', 'obramowanie', 'promien', 'padding', 'margines'] as const) {
+    if (st[k] !== undefined) x[k] = structuredClone(st[k]);
+    else delete x[k];
+  }
+  if (st.styl !== undefined && 'styl' in w && typeof w.styl === 'object')
+    x.styl = structuredClone(st.styl);
+  if (st.ksztalt !== undefined && w.typ === 'wartosc') x.ksztalt = st.ksztalt;
+  if (st.stylEtykiety !== undefined && (w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta)
+    x.etykieta = { ...w.etykieta, styl: structuredClone(st.stylEtykiety) };
+  return x as unknown as Wezel;
 }

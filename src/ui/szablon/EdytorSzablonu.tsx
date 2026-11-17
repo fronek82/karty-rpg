@@ -8,7 +8,11 @@ import {
   opakuj,
   przesunWezel,
   rodzicWezla,
+  skopiujStyl,
   usunWezly,
+  wklejStyl,
+  zmienTypPola,
+  type SkopiowanyStyl,
   wstawWezel,
   wszystkieWezly,
   wyzej,
@@ -19,15 +23,18 @@ import {
 } from '../../dane/szablon';
 import { kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty';
 import { wymiaryKarty } from '../../model/szablon';
-import { t } from '../../i18n';
-import { czyKontener, type Szablon, type Wezel } from '../../model/szablon';
+import { roleProjektu } from '../../dane/edycja';
+import { t, tJesliJest } from '../../i18n';
+import { czyKontener, type Pole, type Szablon, type Wezel } from '../../model/szablon';
 import { renderujKarte } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
 import { PoleLiczby } from '../kartka/PoleLiczby';
 import { tekstOstrzezenia } from '../ostrzezenia';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
 import { DrzewoSzablonu, IKONY_WEZLOW, nazwaWezla } from './DrzewoSzablonu';
+import { Liczba, Sekcja } from './Kontrolki';
 import { PanelWezla } from './PanelWezla';
+import { PoleRamki } from './PanelWygladu';
 
 const RODZAJE: RodzajNowego[] = [
   'wiersz',
@@ -64,6 +71,7 @@ export function EdytorSzablonu({
   const szablon = projekt.szablony.find((s) => s.id === szablonId);
   const [zazn, ustawZazn] = useState<string[]>([]);
   const [menuDodaj, ustawMenuDodaj] = useState(false);
+  const [schowek, ustawSchowek] = useState<SkopiowanyStyl>();
   const drzewo = useRef<HTMLDivElement>(null);
   const idProjektu = encodeURIComponent(projekt.id);
 
@@ -314,6 +322,28 @@ export function EdytorSzablonu({
   const moznaDoKontenera = !!poprzedni && czyKontener(poprzedni);
   const moznaWyjac = !!r1 && r1.rodzic.id !== szablon.korzen.id;
   const korzenZazn = !jeden || jeden.id === szablon.korzen.id;
+  // Element do panelu: jeden zaznaczony albo kilku tego samego typu (bez korzenia).
+  const zaznWezly = aktywne.map((id) => wezlyPoId.get(id)).filter((w): w is Wezel => !!w);
+  const edytowany =
+    zaznWezly.length > 0 &&
+    !aktywne.includes(szablon.korzen.id) &&
+    zaznWezly.every((w) => w.typ === zaznWezly[0]!.typ)
+      ? zaznWezly[0]
+      : undefined;
+  // Czcionki: role projektu i rodziny z biblioteki; obrazy z biblioteki.
+  const rodziny = [
+    ...new Set(projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : []))),
+  ];
+  const czcionki = [
+    ...roleProjektu(projekt).map((r) => ({
+      wartosc: r,
+      tekst: t('wlasciwosci.rola', { rola: tJesliJest(`rola.${r}`) ?? r }),
+    })),
+    ...rodziny.map((r) => ({ wartosc: r, tekst: r })),
+  ];
+  const obrazy = projekt.zasoby.flatMap((z) =>
+    z.rodzaj === 'obraz' ? [{ wartosc: z.id, tekst: z.nazwa }] : [],
+  );
   function korzen(id: string) {
     return id === szablon!.korzen.id;
   }
@@ -514,15 +544,57 @@ export function EdytorSzablonu({
         </section>
 
         <aside className="panel-edytora" aria-label={t('szablon.wlasciwosci')}>
-          {jeden && !korzenZazn ? (
+          {edytowany ? (
             <>
-              <h2>{nazwaWezla(jeden)}</h2>
+              <h2>
+                {aktywne.length > 1
+                  ? t('szablon.zaznaczono', { liczba: aktywne.length })
+                  : nazwaWezla(edytowany)}
+              </h2>
+              <p className="akcje-stylu">
+                <button type="button" onClick={() => ustawSchowek(skopiujStyl(edytowany))}>
+                  {t('wlasciwosci.kopiujStyl')}
+                </button>
+                <button
+                  type="button"
+                  disabled={!schowek}
+                  onClick={() =>
+                    schowek &&
+                    zmienSz((s) =>
+                      aktywne.reduce((x, id) => zmienWezel(x, id, (w) => wklejStyl(w, schowek)), s),
+                    )
+                  }
+                >
+                  {t('wlasciwosci.wklejStyl')}
+                </button>
+              </p>
               <PanelWezla
-                key={jeden.id}
+                key={aktywne.join(',')}
                 szablon={szablon}
-                wezel={jeden}
-                wymiary={wymiary(jeden.id)}
-                zmienWezel={(f, klucz) => zmienSz((s) => zmienWezel(s, jeden.id, f), klucz)}
+                wezel={edytowany}
+                wiele={aktywne.length > 1}
+                wymiary={wymiary(edytowany.id)}
+                czcionki={czcionki}
+                obrazy={obrazy}
+                zajeteKlucze={zajeteKlucze}
+                // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
+                zmienWezel={(f, klucz) =>
+                  zmienSz(
+                    (s) => aktywne.reduce((x, id) => zmienWezel(x, id, f), s),
+                    klucz && `${klucz}:${aktywne.join(',')}`,
+                  )
+                }
+                zmienTyp={(typ) =>
+                  zmienSz((s) =>
+                    aktywne.reduce(
+                      (x, id) =>
+                        czyKontener(edytowany)
+                          ? zmienWezel(x, id, (w) => ({ ...w, typ }) as Wezel)
+                          : zmienTypPola(x, id, typ as Pole['typ']),
+                      s,
+                    ),
+                  )
+                }
                 zmienPrzyklad={(klucz, v) =>
                   zmienSz(
                     (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
@@ -620,6 +692,44 @@ function PanelKarty({
           />
         </label>
       </div>
+      <Sekcja tytul={t('wlasciwosci.ramkaKarty')} otwarta={!!szablon.ramka}>
+        <PoleRamki
+          etykieta={t('wlasciwosci.ramkaKarty')}
+          krawedzie={false}
+          ramka={szablon.ramka}
+          zmien={(r) =>
+            zmienSz((s) => {
+              const x = { ...s };
+              if (r) x.ramka = { ...s.ramka, ...r };
+              else delete x.ramka;
+              return x;
+            }, 'ramka')
+          }
+        />
+        {szablon.ramka && (
+          <div className="dwa-pola">
+            <Liczba
+              etykieta={t('wlasciwosci.odsuniecie')}
+              wartosc={szablon.ramka.odsuniecie ?? 0}
+              max={Math.min(szer, wys) / 2}
+              zmien={(v) =>
+                zmienSz((s) => ({ ...s, ramka: { ...s.ramka!, odsuniecie: v } }), 'ramka-ods')
+              }
+            />
+            <Liczba
+              etykieta={t('wlasciwosci.promienRamki')}
+              wartosc={
+                szablon.ramka.promien ??
+                Math.max(0, (szablon.promienRogow ?? 0) - (szablon.ramka.odsuniecie ?? 0))
+              }
+              max={Math.min(szer, wys) / 2}
+              zmien={(v) =>
+                zmienSz((s) => ({ ...s, ramka: { ...s.ramka!, promien: v } }), 'ramka-prom')
+              }
+            />
+          </div>
+        )}
+      </Sekcja>
       {szablon.warianty?.length ? <p className="podpis">{t('szablon.warianty')}</p> : null}
       {jedenWezelUwaga(szablon.korzen)}
     </>

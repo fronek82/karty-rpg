@@ -1,19 +1,32 @@
+import { kluczZNazwy, kluczeSzablonu, TYPY_POL } from '../../dane/szablon';
 import { t } from '../../i18n';
 import {
   czyKontener,
+  kluczeTabeli,
   type Kontener,
+  type Pole,
   type PoleTekst,
   type PoleWartosc,
+  type StylTekstu,
   type Szablon,
   type Wezel,
 } from '../../model/szablon';
-import { PoleLiczby } from '../kartka/PoleLiczby';
 import { nazwaWezla } from './DrzewoSzablonu';
+import { Liczba, Lista, Przelacznik, Sekcja } from './Kontrolki';
+import { PanelStylu } from './PanelStylu';
+import { PanelTypu } from './PanelTypu';
+import { PanelWygladu } from './PanelWygladu';
 import { PoleRozmiaru } from './PoleRozmiaru';
 
+type Opcje = readonly { wartosc: string; tekst: string }[];
+
+/** Pola, które mogą być stałe (ten sam tekst / obraz na każdej karcie) albo z danych karty. */
+const ZE_ZRODLEM = new Set(['tekst', 'wartosc', 'obraz', 'ikona', 'znaczniki', 'wpis']);
+
 /**
- * Właściwości zaznaczonego elementu: typ, nazwa, etykieta, szerokość, wysokość i wartość
- * przykładowa (podgląd); dla kontenera – odstępy. Pełne ustawienia stylu – M2-4.
+ * Właściwości zaznaczonego elementu (albo kilku elementów tego samego typu naraz): typ, nazwa,
+ * źródło (dane karty / stały tekst), etykieta, szerokość i wysokość, ustawienia typu, styl,
+ * wygląd, odstępy, „gdy puste” i wartość przykładowa do podglądu.
  */
 export function PanelWezla({
   szablon,
@@ -21,6 +34,11 @@ export function PanelWezla({
   wymiary,
   zmienWezel,
   zmienPrzyklad,
+  zmienTyp,
+  czcionki,
+  obrazy,
+  wiele = false,
+  zajeteKlucze,
 }: {
   szablon: Szablon;
   wezel: Wezel;
@@ -28,6 +46,13 @@ export function PanelWezla({
   wymiary: { szer: number; wys: number } | undefined;
   zmienWezel: (f: (w: Wezel) => Wezel, klucz?: string) => void;
   zmienPrzyklad: (klucz: string, wartosc: string) => void;
+  zmienTyp: (typ: Wezel['typ']) => void;
+  czcionki: Opcje;
+  obrazy: Opcje;
+  /** Edycja kilku elementów naraz – ustawienia wspólne (bez nazwy, klucza i przykładu). */
+  wiele?: boolean;
+  /** Klucze zajęte poza szablonem (dane kart) – przy przełączeniu pola na dane karty. */
+  zajeteKlucze: () => Iterable<string>;
 }) {
   const id = wezel.id;
   const korzen = wezel.id === szablon.korzen.id;
@@ -38,37 +63,115 @@ export function PanelWezla({
       : undefined;
   const etykieta = zEtykieta?.etykieta;
   const tekstEtykiety = etykieta && typeof etykieta.tekst === 'string' ? etykieta.tekst : '';
+  const stalyTekst =
+    pole && (pole.typ === 'tekst' || pole.typ === 'wartosc') && typeof pole.tekst === 'string'
+      ? pole.tekst
+      : '';
+
+  const typy = czyKontener(wezel) ? (['wiersz', 'kolumna', 'warstwy'] as const) : TYPY_POL;
 
   return (
     <>
-      <p className="podpis">{t(`wezel.${wezel.typ}`)}</p>
-      <div className="pole-panelu">
-        <label htmlFor={`nazwa-${id}`}>{t('szablon.nazwaElementu')}</label>
-        <input
-          id={`nazwa-${id}`}
-          value={wezel.nazwa ?? ''}
-          placeholder={nazwaWezla({ ...wezel, nazwa: '' })}
-          onChange={(e) => {
-            const nazwa = e.target.value;
-            zmienWezel((w) => {
-              const x = { ...w, nazwa } as Wezel;
-              // Etykieta równa dotychczasowej nazwie idzie za nią (np. „Pole 1” → „Siła”).
-              if (
-                (x.typ === 'tekst' || x.typ === 'wartosc') &&
-                x.etykieta &&
-                x.etykieta.tekst === (w.nazwa ?? '')
-              )
-                x.etykieta = { ...x.etykieta, tekst: nazwa };
-              return x;
-            }, `nazwa:${id}`);
-          }}
+      {wiele && <p className="uwaga">{t('wlasciwosci.wieleNaraz')}</p>}
+      {!korzen && (
+        <Lista
+          etykieta={t('wlasciwosci.typ')}
+          opcje={typy.map((x) => ({ wartosc: x, tekst: t(`wezel.${x}`) }))}
+          wartosc={wezel.typ}
+          zmien={(v) => zmienTyp(v)}
         />
-        {pole?.klucz && <p className="podpis">{t('szablon.kluczDanych', { klucz: pole.klucz })}</p>}
-      </div>
+      )}
+      {!wiele && (
+        <div className="pole-panelu">
+          <label htmlFor={`nazwa-${id}`}>{t('szablon.nazwaElementu')}</label>
+          <input
+            id={`nazwa-${id}`}
+            value={wezel.nazwa ?? ''}
+            placeholder={nazwaWezla({ ...wezel, nazwa: '' })}
+            onChange={(e) => {
+              const nazwa = e.target.value;
+              zmienWezel((w) => {
+                const x = { ...w, nazwa } as Wezel;
+                // Etykieta równa dotychczasowej nazwie idzie za nią (np. „Pole 1” → „Siła”).
+                if (
+                  (x.typ === 'tekst' || x.typ === 'wartosc') &&
+                  x.etykieta &&
+                  x.etykieta.tekst === (w.nazwa ?? '')
+                )
+                  x.etykieta = { ...x.etykieta, tekst: nazwa };
+                return x;
+              }, `nazwa:${id}`);
+            }}
+          />
+        </div>
+      )}
+
+      {pole && ZE_ZRODLEM.has(pole.typ) && !wiele && (
+        <>
+          <Przelacznik
+            etykieta={t('wlasciwosci.zrodlo')}
+            opcje={[
+              { wartosc: 'dane', tekst: t('wlasciwosci.zrodlo.dane') },
+              { wartosc: 'staly', tekst: t('wlasciwosci.zrodlo.staly') },
+            ]}
+            wartosc={pole.klucz ? 'dane' : 'staly'}
+            zmien={(v) =>
+              zmienWezel((w) => {
+                const x = { ...w } as Pole;
+                if (v === 'staly') {
+                  // Stały tekst: na start wartość przykładowa albo nazwa.
+                  if ((x.typ === 'tekst' || x.typ === 'wartosc') && !x.tekst)
+                    x.tekst = (x.klucz && szablon.przyklad?.[x.klucz]) || x.nazwa || '';
+                  delete x.klucz;
+                } else {
+                  x.klucz = kluczZNazwy(
+                    x.nazwa || x.typ,
+                    new Set([...kluczeSzablonu(szablon), ...zajeteKlucze()]),
+                  );
+                }
+                return x;
+              })
+            }
+          />
+          {pole.klucz ? (
+            <p className="podpis">{t('szablon.kluczDanych', { klucz: pole.klucz })}</p>
+          ) : (
+            (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
+              <div className="pole-panelu">
+                <label htmlFor={`staly-${id}`}>{t('wlasciwosci.stalyTekst')}</label>
+                <textarea
+                  id={`staly-${id}`}
+                  rows={pole.typ === 'tekst' ? 2 : 1}
+                  value={stalyTekst}
+                  onChange={(e) =>
+                    zmienWezel((w) => ({ ...w, tekst: e.target.value }) as Wezel, `staly:${id}`)
+                  }
+                />
+              </div>
+            )
+          )}
+          {pole.klucz && (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
+            <div className="pole-panelu">
+              <label htmlFor={`domyslny-${id}`}>{t('wlasciwosci.domyslny')}</label>
+              <input
+                id={`domyslny-${id}`}
+                value={stalyTekst}
+                onChange={(e) =>
+                  zmienWezel((w) => {
+                    const x = { ...w } as PoleTekst;
+                    if (e.target.value) x.tekst = e.target.value;
+                    else delete x.tekst;
+                    return x;
+                  }, `domyslny:${id}`)
+                }
+              />
+            </div>
+          )}
+        </>
+      )}
 
       {zEtykieta && (
-        <fieldset className="sekcja-panelu">
-          <legend>{t('szablon.etykieta')}</legend>
+        <Sekcja tytul={t('szablon.etykieta')} otwarta={!!etykieta}>
           <label className="wiersz-pola">
             <input
               type="checkbox"
@@ -77,10 +180,7 @@ export function PanelWezla({
                 zmienWezel((w) => {
                   const x = { ...w } as PoleTekst | PoleWartosc;
                   if (e.target.checked)
-                    x.etykieta = {
-                      tekst: w.nazwa || t(`wezel.${w.typ}`),
-                      pozycja: 'nad',
-                    };
+                    x.etykieta = { tekst: w.nazwa || t(`wezel.${w.typ}`), pozycja: 'nad' };
                   else delete x.etykieta;
                   return x;
                 })
@@ -90,56 +190,75 @@ export function PanelWezla({
           </label>
           {etykieta && (
             <>
-              <div className="pole-panelu">
-                <label htmlFor={`etykieta-${id}`}>{t('szablon.tekstEtykiety')}</label>
-                <input
-                  id={`etykieta-${id}`}
-                  value={tekstEtykiety}
-                  onChange={(e) =>
+              {!wiele && (
+                <div className="pole-panelu">
+                  <label htmlFor={`etykieta-${id}`}>{t('szablon.tekstEtykiety')}</label>
+                  <input
+                    id={`etykieta-${id}`}
+                    value={tekstEtykiety}
+                    onChange={(e) =>
+                      zmienWezel(
+                        (w) =>
+                          ({
+                            ...w,
+                            etykieta: { ...(w as PoleTekst).etykieta!, tekst: e.target.value },
+                          }) as Wezel,
+                        `etykieta:${id}`,
+                      )
+                    }
+                  />
+                </div>
+              )}
+              <Przelacznik
+                etykieta={t('szablon.pozycjaEtykiety')}
+                opcje={(zEtykieta.typ === 'tekst'
+                  ? (['nad', 'przed', 'pod'] as const)
+                  : (['nad', 'pod'] as const)
+                ).map((p) => ({ wartosc: p, tekst: t(`szablon.pozycja.${p}`) }))}
+                wartosc={etykieta.pozycja}
+                zmien={(p) =>
+                  zmienWezel(
+                    (w) =>
+                      ({ ...w, etykieta: { ...(w as PoleTekst).etykieta!, pozycja: p } }) as Wezel,
+                  )
+                }
+              />
+              {zEtykieta.typ === 'wartosc' && (
+                <Liczba
+                  etykieta={t('wlasciwosci.odstepEtykiety')}
+                  wartosc={(etykieta as NonNullable<PoleWartosc['etykieta']>).odstep ?? 0.5}
+                  max={20}
+                  krok={0.1}
+                  zmien={(v) =>
                     zmienWezel(
                       (w) =>
                         ({
                           ...w,
-                          etykieta: { ...(w as PoleTekst).etykieta!, tekst: e.target.value },
+                          etykieta: { ...(w as PoleWartosc).etykieta!, odstep: v },
                         }) as Wezel,
-                      `etykieta:${id}`,
+                      `odstepetykiety:${id}`,
                     )
                   }
                 />
-              </div>
-              <div className="pole-panelu">
-                <span id={`pozycja-${id}`}>{t('szablon.pozycjaEtykiety')}</span>
-                <div
-                  className="przelacznik-segmentowy"
-                  role="group"
-                  aria-labelledby={`pozycja-${id}`}
-                >
-                  {(zEtykieta.typ === 'tekst'
-                    ? (['nad', 'przed', 'pod'] as const)
-                    : (['nad', 'pod'] as const)
-                  ).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      aria-pressed={etykieta.pozycja === p}
-                      onClick={() =>
-                        zmienWezel(
-                          (w) =>
-                            ({
-                              ...w,
-                              etykieta: { ...(w as PoleTekst).etykieta!, pozycja: p },
-                            }) as Wezel,
-                        )
-                      }
-                    >
-                      {t(`szablon.pozycja.${p}`)}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
+              <Sekcja tytul={t('wlasciwosci.stylEtykiety')}>
+                <PanelStylu
+                  styl={etykieta.styl ?? {}}
+                  bazowy={zEtykieta.styl}
+                  czcionki={czcionki}
+                  akapity={false}
+                  zmien={(s: Partial<StylTekstu>) =>
+                    zmienWezel(
+                      (w) =>
+                        ({ ...w, etykieta: { ...(w as PoleTekst).etykieta!, styl: s } }) as Wezel,
+                      `stylEtykiety:${id}`,
+                    )
+                  }
+                />
+              </Sekcja>
             </>
           )}
-        </fieldset>
+        </Sekcja>
       )}
 
       {!korzen && (
@@ -176,29 +295,67 @@ export function PanelWezla({
       )}
 
       {czyKontener(wezel) && (
-        <div className="pole-panelu dwa-pola">
-          <PoleLiczby
-            id={`odstep-${id}`}
+        <>
+          <Liczba
             etykieta={t('szablon.odstepDzieci')}
             wartosc={(wezel as Kontener).odstep ?? 0}
-            min={0}
             max={50}
-            krok={0.5}
             zmien={(v) => zmienWezel((w) => ({ ...w, odstep: v }) as Wezel, `odstep:${id}`)}
           />
-          <PoleLiczby
-            id={`padding-${id}`}
-            etykieta={t('szablon.padding')}
-            wartosc={typeof wezel.padding === 'number' ? wezel.padding : 0}
-            min={0}
-            max={50}
-            krok={0.5}
-            zmien={(v) => zmienWezel((w) => ({ ...w, padding: v }), `padding:${id}`)}
-          />
-        </div>
+          {wezel.typ !== 'warstwy' && (
+            <Przelacznik
+              etykieta={t('wlasciwosci.rozklad')}
+              opcje={(['poczatek', 'srodek', 'koniec', 'miedzy'] as const).map((r) => ({
+                wartosc: r,
+                tekst: t(`wlasciwosci.rozklad.${r}`),
+              }))}
+              wartosc={wezel.rozklad ?? 'poczatek'}
+              zmien={(v) =>
+                zmienWezel((w) => {
+                  const x = { ...w } as Kontener;
+                  if (v === 'poczatek') delete x.rozklad;
+                  else x.rozklad = v;
+                  return x;
+                })
+              }
+            />
+          )}
+        </>
       )}
 
-      {pole?.klucz && pole.typ !== 'obraz' && (
+      {pole && (
+        <PanelTypu
+          szablon={szablon}
+          pole={pole}
+          zmien={zmienWezel}
+          czcionki={czcionki}
+          obrazy={obrazy}
+          wiele={wiele}
+        />
+      )}
+
+      {(pole?.klucz || pole?.typ === 'tabela') && (
+        <Przelacznik
+          etykieta={t('wlasciwosci.gdyPuste')}
+          opcje={[
+            { wartosc: 'pokaz-ramke', tekst: t('wlasciwosci.gdyPuste.pokaz') },
+            { wartosc: 'ukryj', tekst: t('wlasciwosci.gdyPuste.ukryj') },
+          ]}
+          wartosc={pole.gdyPuste ?? 'pokaz-ramke'}
+          zmien={(v) =>
+            zmienWezel((w) => {
+              const x = { ...w } as Pole;
+              if (v === 'ukryj') x.gdyPuste = 'ukryj';
+              else delete x.gdyPuste;
+              return x;
+            })
+          }
+        />
+      )}
+
+      <PanelWygladu wezel={wezel} zmien={zmienWezel} />
+
+      {!wiele && pole?.klucz && pole.typ !== 'obraz' && (
         <div className="pole-panelu">
           <label htmlFor={`przyklad-${id}`}>{t('szablon.przyklad')}</label>
           <textarea
@@ -210,19 +367,28 @@ export function PanelWezla({
           <p className="podpis">{t('szablon.przykladOpis')}</p>
         </div>
       )}
-      {pole?.typ === 'tabela' &&
-        pole.kolumny.map((k) => (
-          <div key={k.klucz} className="pole-panelu">
-            <label htmlFor={`przyklad-${id}-${k.klucz}`}>
-              {t('szablon.przykladKomorki', { naglowek: k.naglowek || k.klucz })}
-            </label>
-            <input
-              id={`przyklad-${id}-${k.klucz}`}
-              value={szablon.przyklad?.[k.klucz] ?? ''}
-              onChange={(e) => zmienPrzyklad(k.klucz, e.target.value)}
-            />
-          </div>
-        ))}
+      {!wiele && pole?.typ === 'tabela' && (
+        <Sekcja tytul={t('szablon.przyklad')}>
+          {kluczeTabeli(pole).map((k, i) => {
+            const kolumna = pole.kolumny[i % pole.kolumny.length]!;
+            const wiersz = Math.floor(i / pole.kolumny.length) + 1;
+            return (
+              <div key={k} className="pole-panelu">
+                <label htmlFor={`przyklad-${id}-${k}`}>
+                  {t('szablon.przykladKomorki', {
+                    naglowek: `${kolumna.naglowek || kolumna.klucz} (${wiersz})`,
+                  })}
+                </label>
+                <input
+                  id={`przyklad-${id}-${k}`}
+                  value={szablon.przyklad?.[k] ?? ''}
+                  onChange={(e) => zmienPrzyklad(k, e.target.value)}
+                />
+              </div>
+            );
+          })}
+        </Sekcja>
+      )}
     </>
   );
 }
