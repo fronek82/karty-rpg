@@ -146,3 +146,99 @@ test('motyw: wybór z listy miniatur na ramce karty i na węźle, kolor, pas, sz
   await rodzajW.getByRole('button', { name: 'brak', exact: true }).click();
   await expect(uzycia).toHaveCount(0);
 });
+
+test('separator ozdobny: trzy wzory z menu, zakończenia, środek, motyw, długość, pionowy', async ({
+  page,
+}) => {
+  await kreator(page, {
+    nazwa: 'Separatory',
+    format: 'Standard / Poker',
+    rogi: 3,
+    uklad: 'Tytuł i opis',
+  });
+  await karta(page);
+  const podglad = page.locator('.karta-podgladu svg');
+
+  // Wzór 1: sama linia – bez symboli.
+  await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Separator z zakończeniami' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Separator z motywem' })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Separator', exact: true }).click();
+  await expect(podglad.locator('use[color]')).toHaveCount(0);
+
+  // Wzór 2: linia z zakończeniami i środkiem (grot + romb) – trzy użycia dwóch rysunków.
+  await karta(page);
+  await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
+  await page.getByRole('menuitem', { name: 'Separator z zakończeniami' }).click();
+  const p = panel(page);
+  await expect(p.getByRole('heading', { name: 'Separator z zakończeniami' })).toBeVisible();
+  await expect(podglad.locator('use[color]')).toHaveCount(3);
+  await expect(podglad.locator('defs g[id]')).toHaveCount(2);
+  const zak = p.getByRole('group', { name: /^Zakończenia/ });
+  const srodek = p.getByRole('group', { name: 'Środek', exact: true });
+  await expect(zak.getByRole('button')).toHaveCount(6); // brak + 5
+  await expect(srodek.getByRole('button')).toHaveCount(5); // brak + 4
+  await expect(zak.getByRole('button', { name: 'grot' })).toHaveAttribute('aria-pressed', 'true');
+
+  // Zmiana zakończenia i środka podmienia rysunki; „brak” je usuwa.
+  await zak.getByRole('button', { name: 'kolec' }).click();
+  await srodek.getByRole('button', { name: 'gwiazda' }).click();
+  await expect(podglad.locator('use[color]')).toHaveCount(3);
+  await srodek.getByRole('button', { name: 'brak' }).click();
+  await expect(podglad.locator('use[color]')).toHaveCount(2);
+  await srodek.getByRole('button', { name: 'romb' }).click();
+  await expect(podglad.locator('use[color]')).toHaveCount(3);
+
+  // Długość w % skraca rysunek; zakończenia zostają na jego końcach.
+  const linie = podglad.locator('line');
+  await expect(linie).toHaveCount(3); // pierwszy separator (linia) + dwa odcinki drugiego
+  const dlugosc = p.getByRole('group', { name: 'Długość', exact: true });
+  await dlugosc.getByRole('button', { name: '%' }).click();
+  await p.getByLabel('Długość (% miejsca)').fill('60');
+  await dlugosc.getByRole('button', { name: 'mm' }).click();
+  await p.getByLabel('Długość (mm)').fill('30');
+  await p.getByLabel('Odstęp linii od ozdoby (mm)').fill('1');
+  // Karta 63 mm, padding 3: rysunek 30 mm od x = 16,5; kolec 5,76 mm + odstęp 1 mm → linia od 23,26.
+  await expect
+    .poll(async () => Number(await linie.nth(1).getAttribute('x1')))
+    .toBeCloseTo(23.26, 1);
+  await p.getByLabel('Kolor linii').fill('#6b3a1e');
+
+  // Wzór 3: motyw (łańcuch) z zakończeniami; lista motywów, zmiana motywu.
+  await karta(page);
+  await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
+  await page.getByRole('menuitem', { name: 'Separator z motywem' }).click();
+  const motywy = p.getByRole('group', { name: 'Motyw', exact: true });
+  await expect(motywy.getByRole('button')).toHaveCount(6);
+  await expect(motywy.getByRole('button', { name: 'łańcuch' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  const kafle = podglad.locator('use[color]');
+  await expect(kafle.first()).toBeVisible();
+  const przed = await kafle.count();
+  expect(przed).toBeGreaterThan(5);
+  await p.getByLabel('Szerokość pasa motywu (mm)').fill('6');
+  await expect.poll(() => kafle.count()).toBeLessThan(przed);
+  await motywy.getByRole('button', { name: 'gwiazdki' }).click();
+  await expect(motywy.getByRole('button', { name: 'gwiazdki' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  if (process.env.ZRZUTY) await page.screenshot({ path: 'docs/obrazy/m2b-5-separatory.png' });
+  // Powrót do linii usuwa motyw, zostają zakończenia.
+  await p
+    .getByRole('group', { name: 'Rysunek', exact: true })
+    .getByRole('button', { name: 'linia' })
+    .click();
+  await expect(p.getByRole('group', { name: 'Motyw', exact: true })).toHaveCount(0);
+  // Razem z drugim separatorem (3 użycia) zostają zakończenia trzeciego (2 użycia).
+  await expect(podglad.locator('use[color]')).toHaveCount(5);
+
+  // Pionowy w wierszu: kierunek z panelu, ozdoby obrócone.
+  await p
+    .getByRole('group', { name: 'Kierunek', exact: true })
+    .getByRole('button', { name: 'pionowy' })
+    .click();
+  await expect(p.getByRole('group', { name: 'Kierunek', exact: true })).toBeVisible();
+});

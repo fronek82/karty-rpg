@@ -201,11 +201,24 @@ const NAZWY_MOTYWOW = {
   'wb:gwiazdki': 'motywy.nazwa.gwiazdki',
 } as const;
 
+const NAZWY_SEPARATOROW = {
+  'wb:zak-grot': 'zakonczenia.nazwa.grot',
+  'wb:zak-zawijas': 'zakonczenia.nazwa.zawijas',
+  'wb:zak-lisc': 'zakonczenia.nazwa.lisc',
+  'wb:zak-kropka': 'zakonczenia.nazwa.kropka',
+  'wb:zak-kolec': 'zakonczenia.nazwa.kolec',
+  'wb:sr-romb': 'srodek.nazwa.romb',
+  'wb:sr-gwiazda': 'srodek.nazwa.gwiazda',
+  'wb:sr-lisc': 'srodek.nazwa.lisc',
+  'wb:sr-kropka': 'srodek.nazwa.kropka',
+} as const;
+
 /** Nazwa elementu dla użytkownika: własna albo z i18n (wbudowane). */
-function nazwaElementu(e: ElementOzdobny): string {
+export function nazwaElementu(e: ElementOzdobny): string {
   const klucz =
     NAZWY_NAROZNIKOW[e.id as keyof typeof NAZWY_NAROZNIKOW] ??
-    NAZWY_MOTYWOW[e.id as keyof typeof NAZWY_MOTYWOW];
+    NAZWY_MOTYWOW[e.id as keyof typeof NAZWY_MOTYWOW] ??
+    NAZWY_SEPARATOROW[e.id as keyof typeof NAZWY_SEPARATOROW];
   return e.nazwa ?? (klucz ? t(klucz) : e.id);
 }
 

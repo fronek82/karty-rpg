@@ -553,8 +553,7 @@ describe('eksport i import szablonu', () => {
   });
 
   it('M2b-4: migracja 10→11 jest tożsamościowa; ozdoba (motyw) przechodzi eksport i walidację', () => {
-    expect(WERSJA_SCHEMATU).toBe(11);
-    expect(migruj({ wersja: 10, a: 1 }, 'szablon')).toEqual({ wersja: 11, a: 1 });
+    expect(migruj({ wersja: 10, a: 1 }, 'szablon', 11)).toEqual({ wersja: 11, a: 1 });
     const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
     const ozdoba = {
       rodzaj: 'motyw' as const,
@@ -588,6 +587,43 @@ describe('eksport i import szablonu', () => {
       { ...ozdoba, szyny: -1 },
     ])
       expect(() => przygotujProjekt(z(zle))).toThrow();
+  });
+
+  it('M2b-5: migracja 11→12 jest tożsamościowa; separator ozdobny przechodzi eksport i walidację', () => {
+    expect(WERSJA_SCHEMATU).toBe(12);
+    expect(migruj({ wersja: 11, a: 1 }, 'szablon')).toEqual({ wersja: 12, a: 1 });
+    expect(migruj({ wersja: 11, a: 1 })).toEqual({ wersja: 12, a: 1 });
+    const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
+    const sep = {
+      id: 'sep-oz',
+      typ: 'separator' as const,
+      kierunek: 'poziomy' as const,
+      grubosc: 0.3,
+      rysunek: { motyw: 'wb:lancuch', szerokosc: 3 },
+      zakonczenia: { element: 'wb:zak-grot', rozmiar: 2.4 },
+      srodek: { element: 'wb:sr-romb', rozmiar: 2.4 },
+      dlugosc: { procent: 80 },
+      odstepOdOzdoby: 0.4,
+    };
+    const z = (o: object): Projekt => ({
+      ...projekt,
+      szablony: projekt.szablony.map((s) =>
+        s.id === wzor.id
+          ? { ...wzor, korzen: { ...wzor.korzen, dzieci: [...wzor.korzen.dzieci, o as never] } }
+          : s,
+      ),
+    });
+    const p = z(sep);
+    const paczka = importujSzablon(eksportujSzablon(p, zasoby, wzor.id).bajty);
+    expect(paczka.szablon.korzen.dzieci.at(-1)).toEqual(sep);
+    expect(przygotujProjekt(p).szablony[0]).toBeDefined();
+    expect(() => przygotujProjekt(z({ ...sep, rysunek: 'inny' }))).toThrow();
+    expect(() => przygotujProjekt(z({ ...sep, dlugosc: { mm: -1 } }))).toThrow();
+    expect(() =>
+      przygotujProjekt(z({ ...sep, zakonczenia: { element: '', rozmiar: 1 } })),
+    ).toThrow();
+    expect(() => przygotujProjekt(z({ ...sep, odstepOdOzdoby: -1 }))).toThrow();
+    expect(przygotujProjekt(z({ ...sep, rysunek: 'linia', dlugosc: { mm: 30 } }))).toBeDefined();
   });
 
   it('M2b-3: schemat przyjmuje narożniki, przerwę i styl podwójny, odrzuca błędne wartości', () => {

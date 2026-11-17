@@ -722,9 +722,8 @@ function zmierzPole(
         ? { szer: Math.max(k.szer, e.uklad.szerokosc), wys: k.wys + e.uklad.wysokosc + e.odstep }
         : k;
     }
-    case 'separator': // Długość 0 – linię wydłuża rozciągnięcie w rodzicu; inaczej separator rozpychałby
-    // kontenery mierzone wg treści.
-    {
+    case 'separator': {
+      // kontenery mierzone wg treści. // Długość 0 – linię wydłuża rozciągnięcie w rodzicu; inaczej separator rozpychałby
       // Ozdoby (zakończenia, środek, motyw) wyznaczają wysokość w poprzek linii.
       const w = Math.max(
         pelnaGrubosc({ ...pole, styl: pole.stylLinii }),

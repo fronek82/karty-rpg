@@ -16,12 +16,13 @@ Pakiety szablonów: `src/pakiety/mausritter/LICENCJE.md`.
 
 Własne rysunki projektu (licencja jak kod, MIT), generowane skryptami z `narzedzia/`:
 
-| Zasób                                                                                                      | Ścieżka                                                 | Skrypt                                                                                                             |
-| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Obrazek zastępczy pakietu                                                                                  | `src/pakiety/mausritter/obrazy/zastepczy.png`           | `narzedzia/obraz-zastepczy.py`                                                                                     |
-| Obrazek testowy (litera „F”)                                                                               | `testy/zasoby/litera-f.png`                             | `narzedzia/obraz-testowy.py`                                                                                       |
-| Narożniki ozdobne (6 wbudowanych: kątownik, liść, okucie, gwiazda, węzeł, zawijas)                         | `src/ozdobniki/katalog.ts` (ścieżki wektorowe w kodzie) | rysowane ręcznie jako kontury, bez zasobów zewnętrznych                                                            |
-| Motywy powtarzalne (6 wbudowanych: pnącze, przeplot, łuski, runy, łańcuch, gwiazdki, z kostkami narożnymi) | `src/ozdobniki/motywy.ts` (ścieżki wektorowe w kodzie)  | rysowane ręcznie jako kontury (runy to ogólne znaki runopodobne, bez wzorów z pisma ani z gier), licencja projektu |
+| Zasób                                                                                                      | Ścieżka                                                    | Skrypt                                                                                                             |
+| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Obrazek zastępczy pakietu                                                                                  | `src/pakiety/mausritter/obrazy/zastepczy.png`              | `narzedzia/obraz-zastepczy.py`                                                                                     |
+| Obrazek testowy (litera „F”)                                                                               | `testy/zasoby/litera-f.png`                                | `narzedzia/obraz-testowy.py`                                                                                       |
+| Narożniki ozdobne (6 wbudowanych: kątownik, liść, okucie, gwiazda, węzeł, zawijas)                         | `src/ozdobniki/katalog.ts` (ścieżki wektorowe w kodzie)    | rysowane ręcznie jako kontury, bez zasobów zewnętrznych                                                            |
+| Motywy powtarzalne (6 wbudowanych: pnącze, przeplot, łuski, runy, łańcuch, gwiazdki, z kostkami narożnymi) | `src/ozdobniki/motywy.ts` (ścieżki wektorowe w kodzie)     | rysowane ręcznie jako kontury (runy to ogólne znaki runopodobne, bez wzorów z pisma ani z gier), licencja projektu |
+| Zakończenia (5: grot, zawijas, liść, kropka, kolec) i środki (4: romb, gwiazda, liść, kropka) separatorów  | `src/ozdobniki/separatory.ts` (ścieżki wektorowe w kodzie) | rysowane ręcznie jako kontury, ogólne, bez zasobów zewnętrznych, licencja projektu                                 |
 
 ## Narzędzia testowe (nie trafiają do aplikacji)
 

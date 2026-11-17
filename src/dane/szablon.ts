@@ -18,7 +18,8 @@ import { unikalneId } from './czcionki';
  */
 
 /** Rodzaje nowych elementów w menu „+ Dodaj”. `etykieta-wartosc` to pole tekstowe z etykietą nad. */
-export type RodzajNowego = Kontener['typ'] | Pole['typ'] | 'etykieta-wartosc';
+export type RodzajNowego =
+  Kontener['typ'] | Pole['typ'] | 'etykieta-wartosc' | 'separator-zakonczenia' | 'separator-motyw';
 
 const CZARNY: Kolor = '#000000';
 const tresc = (rozmiar: number) => ({ czcionka: 'tresc', rozmiar: pt(rozmiar) });
@@ -78,7 +79,7 @@ export function nowyWezel(
     zajete?: Iterable<string>;
   } = {},
 ): Wezel {
-  const id = noweIdWezla(s, rodzaj);
+  const id = noweIdWezla(s, rodzaj.startsWith('separator') ? 'separator' : rodzaj);
   const klucze = new Set([...kluczeSzablonu(s), ...(opcje.zajete ?? [])]);
   const klucz = () => kluczZNazwy(nazwa, klucze);
   switch (rodzaj) {
@@ -146,13 +147,32 @@ export function nowyWezel(
     case 'ikona':
       return { id, nazwa, typ: 'ikona', ikona: 'gwiazdka', rozmiar: 4 };
     case 'separator':
+    case 'separator-zakonczenia':
+    case 'separator-motyw': {
+      // Trzy wzory startowe (ogólne klocki): linia, linia z zakończeniami i środkiem, motyw.
+      const wzor =
+        rodzaj === 'separator-zakonczenia'
+          ? {
+              zakonczenia: { element: 'wb:zak-grot', rozmiar: 2.4 },
+              srodek: { element: 'wb:sr-romb', rozmiar: 2.4 },
+              odstepOdOzdoby: 0.4,
+            }
+          : rodzaj === 'separator-motyw'
+            ? {
+                rysunek: { motyw: 'wb:lancuch', szerokosc: 3 },
+                zakonczenia: { element: 'wb:zak-zawijas', rozmiar: 2.4 },
+                odstepOdOzdoby: 0.4,
+              }
+            : {};
       return {
         id,
         nazwa,
         typ: 'separator',
         kierunek: opcje.wWierszu ? 'pionowy' : 'poziomy',
         grubosc: 0.3,
+        ...wzor,
       };
+    }
     case 'tabela': {
       const kolumny = [1, 2, 3].map((n) => {
         const k = kluczZNazwy(`${nazwa} ${n}`, klucze);
