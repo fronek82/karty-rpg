@@ -14,6 +14,7 @@ import {
   kartyOdlozone,
   normalizujKartki,
   pakietProjektu,
+  wrocDoSiatki,
 } from './normalizacja';
 
 const czytaj = async (plik: string) => new Uint8Array(readFileSync(plik));
@@ -116,5 +117,44 @@ describe('normalizacja do modelu kartki', () => {
   it('pakiet rozpoznawany po szablonach', () => {
     expect(pakietProjektu({ ...p, pakiet: undefined })).toBe('mausritter');
     expect(pakietProjektu({ ...p, pakiet: undefined, szablony: [] })).toBeUndefined();
+  });
+});
+
+describe('mieszane rozmiary a normalizacja', () => {
+  it('kartka w trybie mieszanym bez przypięć jest uznana za znormalizowaną i nie jest zmieniana', () => {
+    const { projekt: n } = normalizujKartki(p, { czcionki, obraz });
+    const A = n.arkusze[0]!.id;
+    const m: Projekt = {
+      ...n,
+      arkusze: n.arkusze.map((a) =>
+        a.id === A
+          ? { ...a, przypiete: [], ustawienia: { ...a.ustawienia, rozmiary: 'mieszane' as const } }
+          : a,
+      ),
+    };
+    expect(czyKartkaZnormalizowana(m)).toBe(true);
+    const znowu = normalizujKartki(m, { czcionki, obraz }).projekt;
+    expect(znowu.arkusze.find((a) => a.id === A)).toEqual(m.arkusze.find((a) => a.id === A));
+  });
+
+  it('powrót do siatki: karty znowu przypięte, nic nie ginie', () => {
+    const { projekt: n } = normalizujKartki(p, { czcionki, obraz });
+    const A = n.arkusze[0]!.id;
+    const m: Projekt = {
+      ...n,
+      arkusze: n.arkusze.map((a) =>
+        a.id === A
+          ? { ...a, przypiete: [], ustawienia: { ...a.ustawienia, rozmiary: 'mieszane' as const } }
+          : a,
+      ),
+    };
+    const wrot = wrocDoSiatki(m, A, { czcionki, obraz });
+    const a = wrot.arkusze.find((x) => x.id === A)!;
+    expect(a.ustawienia.rozmiary).toBeUndefined();
+    const talia = wrot.talie.find((t) => t.id === a.taliaId)!;
+    const wsz = talia.karty.filter((k) => k.ilosc === 1).length;
+    expect(a.przypiete).toHaveLength(wsz);
+    expect(wsz + kartyOdlozone(wrot, A).length).toBeGreaterThanOrEqual(talia.karty.length);
+    expect(() => przygotujProjekt(wrot)).not.toThrow();
   });
 });

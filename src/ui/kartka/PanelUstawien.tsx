@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ComponentProps } from 'react';
 import { wgrajCzcionke } from '../../dane/czcionki';
 import {
   dodajZasoby,
@@ -70,7 +70,11 @@ export function PanelUstawien({
   blad,
   wynik,
   wydrukTestowy,
+  przelaczRozmiary,
+  naKartce,
 }: {
+  przelaczRozmiary?: (tryb: 'jeden' | 'mieszane') => void;
+  naKartce?: ComponentProps<typeof PanelUkladu>['naKartce'];
   /** Ostatnio zbudowana kartka (siatka startowa własnego układu). */
   wynik?: WynikArkusza;
   wydrukTestowy: () => void;
@@ -279,6 +283,8 @@ export function PanelUstawien({
         {...(wynik ? { wynik } : {})}
         zmienUklad={zmienUklad}
         wydrukTestowy={wydrukTestowy}
+        {...(przelaczRozmiary ? { przelaczRozmiary } : {})}
+        {...(naKartce ? { naKartce } : {})}
       />
       <fieldset className="sekcja-czcionek">
         <legend>{t('czcionki.tytul')}</legend>

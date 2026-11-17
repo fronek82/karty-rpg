@@ -123,15 +123,18 @@ export function PanelKart({
       klucz: `pole:${klucz}:${ids.join(',')}`,
     });
 
-  const rozmiary = typ?.typ.rozmiary ?? [];
+  // Mieszane rozmiary: bez slotów – nie ma położenia w siatce ani zmiany rozmiaru w slotach.
+  const mieszane = arkusz.ustawienia.rozmiary === 'mieszane';
+  const rozmiary = mieszane ? [] : (typ?.typ.rozmiary ?? []);
   const mozliwe = jedna ? mozliweRozmiary(projekt, arkusz.id, jedna.karta.id, rozmiary, ctx) : [];
-  const polozenie = jedna
-    ? t('kartka.polozenie', {
-        strona: jedna.strona + 1,
-        kolumna: jedna.kolumna + 1,
-        rzad: jedna.rzad + 1,
-      })
-    : '';
+  const polozenie =
+    jedna && !mieszane
+      ? t('kartka.polozenie', {
+          strona: jedna.strona + 1,
+          kolumna: jedna.kolumna + 1,
+          rzad: jedna.rzad + 1,
+        })
+      : '';
   const tytul = jedna
     ? nazwaKarty(jedna.karta.dane, ctx.szablony.get(jedna.karta.szablonId)) ||
       typ?.wariant.nazwa ||

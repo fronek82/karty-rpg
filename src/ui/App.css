@@ -546,6 +546,62 @@ textarea:focus-visible {
   font-weight: 300;
 }
 
+.warstwa .wolne-miejsce {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: 1px dashed rgb(42 111 214 / 55%);
+  outline-offset: -1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--zaznaczenie);
+}
+
+.warstwa .wolne-miejsce:hover,
+.warstwa .wolne-miejsce.aktywny {
+  background: rgb(42 111 214 / 12%);
+  outline: 2px solid var(--zaznaczenie);
+}
+
+.wskaznik-wstawienia {
+  pointer-events: none;
+  width: 3px;
+  background: var(--dobrze);
+  box-shadow: 0 0 0 2px rgb(47 143 78 / 25%);
+  z-index: 4;
+}
+
+.menu-stopka {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  padding: 0.35rem 0.6rem 0.2rem;
+  margin: 0;
+}
+
+.na-kartce ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.na-kartce h3 {
+  font-size: 0.9rem;
+  margin: 0.4rem 0 0.2rem;
+}
+
+.probka-koloru {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-right: 0.4rem;
+  background: #888;
+}
+
 .karta-na-kartce {
   touch-action: none;
   margin: 0;

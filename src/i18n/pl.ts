@@ -232,6 +232,39 @@ export const pl = {
   'uklad.wlasny': 'własny układ arkusza',
   'uklad.opis':
     'Automatyczny: karty stykają się, siatka liczona z papieru i marginesów. Własny: stała siatka z odstępami – np. gotowe arkusze z perforowanymi kartami. Tytuł, nagłówki grup i nożyczki nie są wtedy drukowane.',
+  'mieszane.tytul': 'Rozmiary kart na kartce',
+  'mieszane.jeden': 'jeden rozmiar (siatka)',
+  'mieszane.mieszane': 'mieszane',
+  'mieszane.opis':
+    'Mieszane: każda karta ma swój wymiar z szablonu, a aplikacja układa je pasami (cięcie: najpierw wzdłuż pasów, potem w pasie; wspólna krawędź to jedna linia). Karty w slotach (np. 2×1) – jako prostokąt slotów.',
+  'mieszane.kolejnosc': 'Kolejność rozmieszczania',
+  'mieszane.najwieksze': 'od największych',
+  'mieszane.wlasna': 'własna (przeciąganie)',
+  'mieszane.kolejnoscOpis':
+    'Własna: karty układane dokładnie w kolejności listy – przeciągnięcie karty zmienia kolejność, a rozmieszczenie liczy się od nowa (karty nigdy się nie nakładają).',
+  'mieszane.obracaj': 'Obracaj karty o 90°, gdy oszczędza to papier',
+  'mieszane.grupuj': 'Karty tego samego rozmiaru obok siebie (mniej cięć)',
+  'mieszane.odstep': 'Odstęp między kartami (mm)',
+  'mieszane.naKartce': 'Na kartce',
+  'mieszane.pozycja': '{nazwa} · {szer}×{wys} · {liczba} szt.',
+  'mieszane.zajete': 'Strona {numer} z {liczba} · {kart} kart · zajęte {procent} % pola kart',
+  'mieszane.wlasnyUklad':
+    'Własny układ arkusza (perforacja) działa tylko z jednym rozmiarem – przy „mieszane” jest wyłączony. Nagłówki grup: każda grupa zaczyna nowy pas.',
+  'mieszane.przypiecia':
+    'Przypięcia kart w slotach są w trybie „mieszane” ignorowane; po powrocie do siatki karty układają się od nowa.',
+  'mieszane.przelaczono':
+    'Kolejność własna: karty układane w kolejności listy. „Cofnij” przywraca poprzedni układ.',
+  'mieszane.dodajTutaj': 'Dodaj kartę w to miejsce (wolne {szer}×{wys} mm)',
+  'mieszane.nieZmiesciSieTu': 'nie zmieści się tu',
+  'mieszane.menuOpis':
+    'Karta, która się tu nie mieści, trafia w pierwsze wolne miejsce, w którym się zmieści (albo na nową stronę).',
+  'mieszane.wolne': 'wolne {szer}×{wys}',
+  'mieszane.wolneEtykieta': 'Wolne miejsce {szer}×{wys} mm – strona {strona}. Dodaj kartę',
+  'mieszane.kartaEtykieta': '{nazwa} – strona {strona}, {szer}×{wys} mm',
+  'mieszane.wczesniej': 'Wcześniej',
+  'mieszane.pozniej': 'Później',
+  'mieszane.pomoc':
+    'Tryb „mieszane”: kliknij wolne miejsce, by dodać kartę; przeciągnięcie karty zmienia jej kolejność (wskaźnik pokazuje, gdzie trafi), a rozmieszczenie liczy się od nowa.',
   'uklad.lewo': 'Margines lewy (mm)',
   'uklad.gora': 'Margines górny (mm)',
   'uklad.kolumny': 'Kolumny',

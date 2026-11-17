@@ -345,6 +345,34 @@ describe('baza IndexedDB', () => {
     expect(() => importujProjekt(eksportujProjekt(nowy, zasoby))).toThrow();
   });
 
+  it('projekt ze schematu 8 (bez mieszanych rozmiarów) wczytuje się bez zmian; pola mieszane przechodzą walidację', () => {
+    const stary = { ...structuredClone(projekt), wersja: 8 };
+    const wczytany = importujProjekt(eksportujProjekt(stary, zasoby)).projekt;
+    expect(wczytany.wersja).toBe(WERSJA_SCHEMATU);
+    expect(wczytany.arkusze[0]!.ustawienia.rozmiary).toBeUndefined();
+    expect(wczytany.arkusze[0]!.kolejnosc).toBeUndefined();
+    const nowy = structuredClone(projekt);
+    const a = nowy.arkusze[0]!;
+    const karta = nowy.talie.find((t) => t.id === a.taliaId)!.karty[0]!.id;
+    a.ustawienia.rozmiary = 'mieszane';
+    a.ustawienia.mieszane = {
+      kolejnosc: 'wlasna',
+      obracaj: true,
+      grupujRozmiary: false,
+      odstep: 1.5,
+    };
+    a.kolejnosc = [karta];
+    const z = importujProjekt(eksportujProjekt(nowy, zasoby)).projekt.arkusze[0]!;
+    expect(z.ustawienia.rozmiary).toBe('mieszane');
+    expect(z.ustawienia.mieszane).toEqual(a.ustawienia.mieszane);
+    expect(z.kolejnosc).toEqual([karta]);
+    a.ustawienia.mieszane = { ...a.ustawienia.mieszane, odstep: -1 };
+    expect(() => importujProjekt(eksportujProjekt(nowy, zasoby))).toThrow();
+    a.ustawienia.mieszane = { ...a.ustawienia.mieszane, odstep: 0 };
+    a.ustawienia.rozmiary = 'inne' as never;
+    expect(() => importujProjekt(eksportujProjekt(nowy, zasoby))).toThrow();
+  });
+
   it('lista, zmiana samego dokumentu, usuwanie', async () => {
     baza = new BazaProjektow('test-lista');
     await baza.zapisz(projekt, zasoby);

@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { ustawUstawieniaArkusza } from '../../dane/edycja';
-import type { WynikArkusza } from '../../druk/arkusz';
+import { ustawKolejnosc } from '../../dane/kartka';
+import { kolejnoscWidoczna, type WynikArkusza } from '../../druk/arkusz';
 import { t } from '../../i18n';
 import {
   DOPASOWANIE_DOMYSLNE,
   LUZ_MAKS,
+  MIESZANE_DOMYSLNE,
   TOLERANCJA_ROZMIARU,
   wymiaryStrony,
   wymiaryUkladu,
   type Arkusz,
   type DopasowanieDoSlotu,
+  type OpcjeMieszane,
   type PresetUkladu,
   type UkladArkusza,
 } from '../../model/arkusz';
@@ -32,7 +35,20 @@ export function PanelUkladu({
   wynik,
   zmienUklad,
   wydrukTestowy,
+  przelaczRozmiary,
+  naKartce = [],
 }: {
+  /** Przełączenie „jeden rozmiar (siatka)” ↔ „mieszane” (z przeniesieniem kart). */
+  przelaczRozmiary?: (tryb: 'jeden' | 'mieszane') => void;
+  /** Karty na kartce pogrupowane wg szablonu (lista „Na kartce” w trybie mieszanym). */
+  naKartce?: {
+    id: string;
+    nazwa: string;
+    kolor?: string;
+    szer: number;
+    wys: number;
+    liczba: number;
+  }[];
   arkusz: Arkusz;
   /** Ostatnio zbudowana kartka – siatka startowa przy przejściu na własny układ. */
   wynik?: WynikArkusza;
@@ -41,7 +57,10 @@ export function PanelUkladu({
 }) {
   const u = arkusz.ustawienia;
   const A = arkusz.id;
-  const uklad = u.uklad;
+  const mieszane = u.rozmiary === 'mieszane';
+  const opcje: OpcjeMieszane = u.mieszane ?? MIESZANE_DOMYSLNE;
+  // Własny układ (stała siatka) działa tylko z jednym rozmiarem – w trybie mieszanym jest wyłączony.
+  const uklad = mieszane ? undefined : u.uklad;
   const slot = u.slot ?? wynik?.slot ?? { szerokosc: 63, wysokosc: 88 };
   const [moje, ustawMoje] = useState<PresetUkladu[]>();
   const [nazwa, ustawNazwe] = useState('');
@@ -84,6 +103,25 @@ export function PanelUkladu({
       (p) => ustawUstawieniaArkusza(p, A, { dopasowanie: { ...dopasowanie, ...z } }),
       `dopasowanie-${klucz}`,
     );
+
+  const zmienMieszane = (z: Partial<OpcjeMieszane>, klucz: string) =>
+    zmienUklad(
+      (p) => ustawUstawieniaArkusza(p, A, { mieszane: { ...opcje, ...z } }),
+      `mieszane-${klucz}`,
+    );
+  const wybierzKolejnosc = (k: OpcjeMieszane['kolejnosc']) => {
+    if (k === opcje.kolejnosc) return;
+    // Własna kolejność startuje od bieżącego układu, żeby karty nie „skakały”.
+    if (k === 'wlasna')
+      zmienUklad((p) =>
+        ustawKolejnosc(
+          p,
+          A,
+          wynik?.mieszane ? kolejnoscWidoczna(wynik.mieszane) : (arkusz.kolejnosc ?? []),
+        ),
+      );
+    else zmienMieszane({ kolejnosc: k }, 'kolejnosc');
+  };
 
   const wlaczWlasny = () => {
     const w = wynik;
@@ -152,83 +190,185 @@ export function PanelUkladu({
   return (
     <fieldset className="sekcja-ukladu">
       <legend>{t('uklad.tytul')}</legend>
+      {przelaczRozmiary && (
+        <div className="pole-panelu">
+          <span id={`rozmiary-${A}`}>{t('mieszane.tytul')}</span>
+          <div className="przelacznik-segmentowy" role="group" aria-labelledby={`rozmiary-${A}`}>
+            <button
+              type="button"
+              aria-pressed={!mieszane}
+              onClick={() => mieszane && przelaczRozmiary('jeden')}
+            >
+              {t('mieszane.jeden')}
+            </button>
+            <button
+              type="button"
+              aria-pressed={mieszane}
+              onClick={() => !mieszane && przelaczRozmiary('mieszane')}
+            >
+              {t('mieszane.mieszane')}
+            </button>
+          </div>
+        </div>
+      )}
+      {mieszane && (
+        <>
+          <p className="podpis">{t('mieszane.opis')}</p>
+          <div className="pole-panelu">
+            <span id={`kolejnosc-${A}`}>{t('mieszane.kolejnosc')}</span>
+            <div className="przelacznik-segmentowy" role="group" aria-labelledby={`kolejnosc-${A}`}>
+              {(['najwieksze', 'wlasna'] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  aria-pressed={opcje.kolejnosc === k}
+                  onClick={() => wybierzKolejnosc(k)}
+                >
+                  {t(`mieszane.${k}`)}
+                </button>
+              ))}
+            </div>
+            <p className="podpis">{t('mieszane.kolejnoscOpis')}</p>
+          </div>
+          <label className="pole-panelu wybor">
+            <input
+              type="checkbox"
+              checked={opcje.obracaj}
+              onChange={(e) => zmienMieszane({ obracaj: e.target.checked }, 'obracaj')}
+            />
+            {t('mieszane.obracaj')}
+          </label>
+          <label className="pole-panelu wybor">
+            <input
+              type="checkbox"
+              checked={opcje.grupujRozmiary}
+              disabled={opcje.kolejnosc === 'wlasna'}
+              onChange={(e) => zmienMieszane({ grupujRozmiary: e.target.checked }, 'grupuj')}
+            />
+            {t('mieszane.grupuj')}
+          </label>
+          <PoleLiczby
+            id="mieszane-odstep"
+            etykieta={t('mieszane.odstep')}
+            wartosc={opcje.odstep}
+            min={0}
+            max={20}
+            krok={0.5}
+            zmien={(v) => zmienMieszane({ odstep: v }, 'odstep')}
+          />
+          {naKartce.length > 0 && (
+            <div className="na-kartce">
+              <h3>{t('mieszane.naKartce')}</h3>
+              <ul>
+                {naKartce.map((n) => (
+                  <li key={n.id}>
+                    <span
+                      className="probka-koloru"
+                      aria-hidden="true"
+                      style={n.kolor ? { background: n.kolor } : undefined}
+                    />
+                    {t('mieszane.pozycja', {
+                      nazwa: n.nazwa,
+                      szer: zaokr(n.szer),
+                      wys: zaokr(n.wys),
+                      liczba: n.liczba,
+                    })}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <p className="uwaga" role="note">
+            {t('mieszane.wlasnyUklad')}
+            {(arkusz.przypiete?.length ?? 0) > 0 && ` ${t('mieszane.przypiecia')}`}
+          </p>
+        </>
+      )}
       <div className="pole-panelu">
         <span id={`tryb-ukladu-${A}`}>{t('uklad.tryb')}</span>
         <div className="przelacznik-segmentowy" role="group" aria-labelledby={`tryb-ukladu-${A}`}>
           <button type="button" aria-pressed={!uklad} onClick={() => uklad && wylaczWlasny()}>
             {t('uklad.automatyczny')}
           </button>
-          <button type="button" aria-pressed={!!uklad} onClick={() => !uklad && wlaczWlasny()}>
+          <button
+            type="button"
+            aria-pressed={!!uklad}
+            disabled={mieszane}
+            title={mieszane ? t('mieszane.wlasnyUklad') : undefined}
+            onClick={() => !uklad && wlaczWlasny()}
+          >
             {t('uklad.wlasny')}
           </button>
         </div>
         <p className="podpis">{t('uklad.opis')}</p>
       </div>
-      <fieldset className="karta-w-slocie">
-        <legend>{t('dopasowanie.tytul')}</legend>
-        <PoleLiczby
-          id="dopasowanie-luz"
-          etykieta={t('dopasowanie.luz')}
-          wartosc={dopasowanie.luz}
-          min={0}
-          max={LUZ_MAKS}
-          krok={0.5}
-          zmien={(v) => zmienDopasowanie({ luz: v }, 'luz')}
-        />
-        <p className="podpis">
-          {t('dopasowanie.luzOpis', { tolerancja: zaokr(TOLERANCJA_ROZMIARU) })}
-        </p>
-        <div className="pole-panelu">
-          <span id={`dop-polozenie-${A}`}>{t('dopasowanie.polozenie')}</span>
-          <div
-            className="przelacznik-segmentowy"
-            role="group"
-            aria-labelledby={`dop-polozenie-${A}`}
-          >
-            <button
-              type="button"
-              aria-pressed={dopasowanie.polozenie === 'srodek'}
-              onClick={() => zmienDopasowanie({ polozenie: 'srodek' }, 'polozenie')}
-            >
-              {t('dopasowanie.srodek')}
-            </button>
-            <button
-              type="button"
-              aria-pressed={dopasowanie.polozenie === 'lewy-gorny'}
-              onClick={() => zmienDopasowanie({ polozenie: 'lewy-gorny' }, 'polozenie')}
-            >
-              {t('dopasowanie.lewyGorny')}
-            </button>
-          </div>
-        </div>
-        <label className="pole-panelu wybor">
-          <input
-            type="checkbox"
-            checked={dopasowanie.tloDoSlotu}
-            onChange={(e) => zmienDopasowanie({ tloDoSlotu: e.target.checked }, 'tlo')}
+      {!mieszane && (
+        <fieldset className="karta-w-slocie">
+          <legend>{t('dopasowanie.tytul')}</legend>
+          <PoleLiczby
+            id="dopasowanie-luz"
+            etykieta={t('dopasowanie.luz')}
+            wartosc={dopasowanie.luz}
+            min={0}
+            max={LUZ_MAKS}
+            krok={0.5}
+            zmien={(v) => zmienDopasowanie({ luz: v }, 'luz')}
           />
-          {t('dopasowanie.tloDoSlotu')}
-        </label>
-        <div className="pole-panelu">
-          <span id={`dop-linie-${A}`}>{t('dopasowanie.linie')}</span>
-          <div className="przelacznik-segmentowy" role="group" aria-labelledby={`dop-linie-${A}`}>
-            <button
-              type="button"
-              aria-pressed={dopasowanie.linie === 'slot'}
-              onClick={() => zmienDopasowanie({ linie: 'slot' }, 'linie')}
+          <p className="podpis">
+            {t('dopasowanie.luzOpis', { tolerancja: zaokr(TOLERANCJA_ROZMIARU) })}
+          </p>
+          <div className="pole-panelu">
+            <span id={`dop-polozenie-${A}`}>{t('dopasowanie.polozenie')}</span>
+            <div
+              className="przelacznik-segmentowy"
+              role="group"
+              aria-labelledby={`dop-polozenie-${A}`}
             >
-              {t('dopasowanie.wokolSlotu')}
-            </button>
-            <button
-              type="button"
-              aria-pressed={dopasowanie.linie === 'karta'}
-              onClick={() => zmienDopasowanie({ linie: 'karta' }, 'linie')}
-            >
-              {t('dopasowanie.wokolKarty')}
-            </button>
+              <button
+                type="button"
+                aria-pressed={dopasowanie.polozenie === 'srodek'}
+                onClick={() => zmienDopasowanie({ polozenie: 'srodek' }, 'polozenie')}
+              >
+                {t('dopasowanie.srodek')}
+              </button>
+              <button
+                type="button"
+                aria-pressed={dopasowanie.polozenie === 'lewy-gorny'}
+                onClick={() => zmienDopasowanie({ polozenie: 'lewy-gorny' }, 'polozenie')}
+              >
+                {t('dopasowanie.lewyGorny')}
+              </button>
+            </div>
           </div>
-        </div>
-      </fieldset>
+          <label className="pole-panelu wybor">
+            <input
+              type="checkbox"
+              checked={dopasowanie.tloDoSlotu}
+              onChange={(e) => zmienDopasowanie({ tloDoSlotu: e.target.checked }, 'tlo')}
+            />
+            {t('dopasowanie.tloDoSlotu')}
+          </label>
+          <div className="pole-panelu">
+            <span id={`dop-linie-${A}`}>{t('dopasowanie.linie')}</span>
+            <div className="przelacznik-segmentowy" role="group" aria-labelledby={`dop-linie-${A}`}>
+              <button
+                type="button"
+                aria-pressed={dopasowanie.linie === 'slot'}
+                onClick={() => zmienDopasowanie({ linie: 'slot' }, 'linie')}
+              >
+                {t('dopasowanie.wokolSlotu')}
+              </button>
+              <button
+                type="button"
+                aria-pressed={dopasowanie.linie === 'karta'}
+                onClick={() => zmienDopasowanie({ linie: 'karta' }, 'linie')}
+              >
+                {t('dopasowanie.wokolKarty')}
+              </button>
+            </div>
+          </div>
+        </fieldset>
+      )}
       {uklad && (
         <>
           <div className="pole-panelu dwa-pola">
