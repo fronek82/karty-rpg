@@ -53,8 +53,25 @@ export interface OzdobaMotyw {
   /** Odsunięcie pasa od krawędzi węzła (mm, domyślnie 0); ramka karty używa `odsuniecie` ramki. */
   odsuniecie?: Mm;
 }
-/** Ozdoba ramki (w kolejnych etapach dojdzie ramka 9-slice z obrazu). */
-export type Ozdoba = OzdobaMotyw;
+/**
+ * Ramka 9-slice z biblioteki ozdobników (element rodzaju `ramka9`, źródło PNG albo SVG): rogi
+ * skalowane tak, by najgrubszy bok miał `grubosc` mm, boki rozciągnięte albo powtórzone równo,
+ * środek według ustawień elementu. Nieznany element: ostrzeżenie i cienka linia ciągła.
+ */
+export interface OzdobaRamka9 {
+  rodzaj: 'ramka9';
+  /** Identyfikator elementu `ramka9` (własny z biblioteki projektu). */
+  element: string;
+  /** Grubość ramki (mm) – szerokość najgrubszego boku po przeskalowaniu. */
+  grubosc: Mm;
+  /** Kolor rysunku kolorowalnego (źródło SVG „jednolity”); domyślnie czarny. */
+  kolor?: Kolor;
+  /** Odsunięcie od krawędzi węzła (mm, domyślnie 0); ramka karty używa `odsuniecie` ramki. */
+  odsuniecie?: Mm;
+}
+
+/** Ozdoba ramki: motyw powtarzalny albo ramka 9-slice. */
+export type Ozdoba = OzdobaMotyw | OzdobaRamka9;
 
 export interface Obramowanie {
   grubosc: Mm;

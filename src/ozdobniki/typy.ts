@@ -6,6 +6,20 @@ import type { KonturSymbolu } from '../silnik/scena';
  */
 export type RodzajElementu = 'motyw' | 'naroznik' | 'zakonczenie' | 'srodek' | 'ksztalt' | 'ramka9';
 
+/**
+ * Ustawienia ramki 9-slice (element rodzaju `ramka9`). Wcięcia w jednostkach źródła: piksele PNG
+ * albo jednostki rysunku SVG (`szer` × `wys` elementu) – wyznaczają cztery rogi, cztery boki i środek.
+ */
+export interface UstawieniaRamki9 {
+  /** `obraz` – zasób PNG projektu (element nie ma konturów, `szer`/`wys` = piksele); `svg` – kontury elementu. */
+  zrodlo: { typ: 'obraz'; zasob: string } | { typ: 'svg' };
+  wciecia: { gora: number; prawo: number; dol: number; lewo: number };
+  /** Boki: jeden rozciągnięty kawałek albo kawałki powtórzone równo (całkowita liczba, lekko rozciągnięte). */
+  boki: 'rozciagnij' | 'powtarzaj';
+  /** Środek: rozciągnięty na całe wnętrze albo pominięty (karta widoczna przez ramkę). */
+  srodek: 'wypelnij' | 'pomin';
+}
+
 export interface ElementOzdobny {
   /** Wbudowane: `wb:pnacze`; własne: identyfikator zasobu. */
   id: string;
@@ -28,6 +42,8 @@ export interface ElementOzdobny {
    * pliku (albo `'kolor'` dla `currentColor`), więc tryb można przełączać bez straty.
    */
   kolorowanie?: 'jednolity' | 'oryginal';
+  /** Tylko rodzaj `ramka9`: źródło, wcięcia, boki i środek. */
+  ramka9?: UstawieniaRamki9;
   /**
    * Tylko własny kształt wartości: prostokąt na tekst jako ułamki rysunku (x, y, szerokość,
    * wysokość w zakresie 0–1); domyślnie 15 % marginesu z każdej strony.
