@@ -51,6 +51,8 @@ describe('pakiet Mausritter', () => {
         expect(ostrzezenia, `${t.nazwa}: ${k.id} ${k.dane.nazwa ?? ''}`).toEqual([]);
       }
     }
+    // Wszystkie użyte warianty czcionek są w pakiecie (bez zastępowania najbliższym).
+    expect([...czcionki.brakujaceWarianty.values()]).toEqual([]);
   });
 
   const wzorce: [string, (typeof taliaBroni.karty)[number]][] = [

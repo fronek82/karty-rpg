@@ -39,6 +39,7 @@ const odstepy = (wartosc: z.ZodNumber) =>
     wartosc,
     obj({ gora: opc(wartosc), prawo: opc(wartosc), dol: opc(wartosc), lewo: opc(wartosc) }),
   ]);
+const stylLinii = z.enum(['ciagla', 'przerywana', 'kropkowana']);
 const krawedzie = obj({
   gora: opc(z.boolean()),
   prawo: opc(z.boolean()),
@@ -58,7 +59,7 @@ const baza = {
     obj({
       grubosc: nieujemna,
       kolor: z.string(),
-      styl: opc(z.enum(['ciagla', 'przerywana', 'kropkowana'])),
+      styl: opc(stylLinii),
       krawedzie: opc(krawedzie),
     }),
   ),
@@ -76,10 +77,13 @@ const polaStylu = {
   wariant: opc(wariantCzcionki),
   minRozmiar: opc(dodatnia),
   kolor: opc(z.string()),
-  wyrownanie: opc(z.enum(['lewo', 'srodek', 'prawo'])),
+  wyrownanie: opc(z.enum(['lewo', 'srodek', 'prawo', 'justuj'])),
   wyrownaniePionowe: opc(osi),
   interlinia: opc(dodatnia),
   wielkieLitery: opc(z.boolean()),
+  kapitaliki: opc(z.boolean()),
+  wciecie: opc(nieujemna),
+  odstepAkapitow: opc(nieujemna),
   odstepLiter: opc(liczba),
   obwodka: opc(obj({ grubosc: nieujemna, kolor: z.string() })),
 };
@@ -100,15 +104,24 @@ const pole = z.discriminatedUnion('typ', [
     tekst: opc(napis),
     wieleWierszy: opc(z.boolean()),
     etykieta: opc(
-      obj({ tekst: napis, pozycja: z.enum(['nad', 'przed']), styl: opc(stylCzesciowy) }),
+      obj({ tekst: napis, pozycja: z.enum(['nad', 'przed', 'pod']), styl: opc(stylCzesciowy) }),
     ),
+    formatowanie: opc(z.boolean()),
   }),
   obj({
     ...bazaPola,
     typ: z.literal('wartosc'),
     styl: stylTekstu,
     tekst: opc(napis),
-    ksztalt: z.enum(['prostokat', 'kolo', 'sciety']),
+    ksztalt: z.enum(['prostokat', 'kolo', 'sciety', 'romb']),
+    etykieta: opc(
+      obj({
+        tekst: napis,
+        pozycja: z.enum(['nad', 'pod']),
+        styl: opc(stylCzesciowy),
+        odstep: opc(nieujemna),
+      }),
+    ),
   }),
   obj({
     ...bazaPola,
@@ -137,6 +150,39 @@ const pole = z.discriminatedUnion('typ', [
     ikona: z.enum(['gwiazdka', 'nozyczki']),
     rozmiar: dodatnia,
     kolor: opc(z.string()),
+  }),
+  obj({
+    ...bazaPola,
+    typ: z.literal('separator'),
+    kierunek: z.enum(['poziomy', 'pionowy']),
+    grubosc: nieujemna,
+    kolor: opc(z.string()),
+    stylLinii: opc(stylLinii),
+  }),
+  obj({
+    ...bazaPola,
+    typ: z.literal('tabela'),
+    kolumny: z.array(
+      obj({
+        naglowek: z.string(),
+        klucz: z.string().min(1),
+        szerokosc: opc(
+          z.union([z.literal('auto'), obj({ mm: nieujemna }), obj({ wypelnij: dodatnia })]),
+        ),
+      }),
+    ),
+    styl: stylTekstu,
+    stylNaglowka: opc(stylCzesciowy),
+    tloNaglowka: opc(z.string()),
+    linie: opc(
+      obj({
+        grubosc: nieujemna,
+        kolor: z.string(),
+        styl: opc(stylLinii),
+        zewnetrzne: opc(z.boolean()),
+      }),
+    ),
+    paddingKomorki: opc(nieujemna),
   }),
 ]);
 
@@ -168,6 +214,15 @@ const szablon = obj({
   rozmiar: rozmiarKarty,
   promienRogow: opc(nieujemna),
   tlo: opc(z.string()),
+  ramka: opc(
+    obj({
+      grubosc: nieujemna,
+      kolor: z.string(),
+      styl: opc(stylLinii),
+      odsuniecie: opc(nieujemna),
+      promien: opc(nieujemna),
+    }),
+  ),
   korzen: kontener,
   parametry: opc(z.array(obj({ klucz: z.string(), nazwa: z.string(), domyslnie: z.string() }))),
   warianty: opc(z.array(obj({ ...rozmiarSlotow, korzen: kontener }))),
@@ -378,8 +433,9 @@ type Migracja = (dane: Record<string, unknown>) => Record<string, unknown>;
 export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<number, Migracja> } = {
   // 1 → 2: nowe pola są opcjonalne; sprowadzenie do modelu kartki robi normalizacja przy
   // otwarciu (potrzebuje czcionek – patrz src/druk/normalizacja.ts).
-  projekt: { 1: (d) => d },
-  szablon: { 1: (d) => d },
+  // 2→3: nowe, opcjonalne pola (ramka karty, romb, separator, tabela, formatowanie) – bez zmian danych.
+  projekt: { 1: (d) => d, 2: (d) => d },
+  szablon: { 1: (d) => d, 2: (d) => d },
 };
 
 export function migruj(

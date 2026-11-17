@@ -17,6 +17,7 @@ export function rejestrTestowy(): RejestrCzcionek {
     .dodaj('EB Garamond', 'normalny', czcionkaTestowa('EBGaramond-Regular.ttf'))
     .dodaj('EB Garamond', 'pogrubiony', czcionkaTestowa('EBGaramond-Bold.ttf'))
     .dodaj('EB Garamond', 'kursywa', czcionkaTestowa('EBGaramond-Italic.ttf'))
+    .dodaj('EB Garamond', 'pogrubiona-kursywa', czcionkaTestowa('EBGaramond-BoldItalic.ttf'))
     .dodaj('Grenze Gotisch', 'normalny', czcionkaTestowa('GrenzeGotisch-Regular.ttf'))
     .dodaj('Grenze Gotisch', 'pogrubiony', czcionkaTestowa('GrenzeGotisch-Bold.ttf'))
     .przypiszRole('tytul', 'Grenze Gotisch')

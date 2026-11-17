@@ -18,6 +18,7 @@ import {
 import { MAKS_BAJTOW_CZCIONKI, wariantCzcionki, wgrajCzcionke } from './czcionki';
 import { projektZPakietu, rejestrZProjektu } from './pakiet';
 import { BladDanych, MIGRACJE, migruj, ostrzezeniaProjektu } from './schemat';
+import { szablonCzaru, szablonStatystyk, szablonWroga } from '../silnik/__testy__/przyklady';
 
 const czcionka = async (plik: string) => new Uint8Array(readFileSync(`public/czcionki/${plik}`));
 const obraz = async () =>
@@ -55,6 +56,20 @@ describe('eksport i import .kartyrpg', () => {
     const wynik = importujProjekt(bajty);
     expect(wynik.projekt).toEqual(projekt);
     rowne(zasoby, wynik.zasoby);
+  });
+
+  it('szablony z klockami M2 (ramka, romb, tabela, separator, formatowanie) – round-trip', () => {
+    const p: Projekt = {
+      ...projekt,
+      szablony: [...projekt.szablony, szablonCzaru, szablonStatystyk, szablonWroga],
+    };
+    expect(importujProjekt(eksportujProjekt(p, zasoby)).projekt).toEqual(p);
+    const zly = structuredClone(p);
+    const wrog = zly.szablony.at(-1)!;
+    const romb = wrog.korzen.dzieci[1]!;
+    if (!('dzieci' in romb)) throw new Error();
+    (romb.dzieci[0] as { etykieta: { pozycja: string } }).etykieta.pozycja = 'przed';
+    expect(() => importujProjekt(eksportujProjekt(zly, zasoby))).toThrow(/niedozwolona wartość/);
   });
 
   it('plik to ZIP z projekt.json i zasoby/', () => {
@@ -176,20 +191,20 @@ describe('eksport i import .kartyrpg', () => {
   });
 
   it('migracje: osobne kroki dla projektu i szablonu, brak kroku to czytelny błąd', () => {
-    // Fikcyjny krok 2 → 3 (prawdziwy 1 → 2 już istnieje).
-    MIGRACJE.szablon[2] = ({ szablonStary, ...reszta }) => ({ ...reszta, szablon: szablonStary });
+    // Fikcyjny krok 3 → 4 (prawdziwe 1 → 2 → 3 już istnieją).
+    MIGRACJE.szablon[3] = ({ szablonStary, ...reszta }) => ({ ...reszta, szablon: szablonStary });
     try {
-      expect(migruj({ wersja: 1, szablonStary: 'x' }, 'szablon', 3)).toEqual({
-        wersja: 3,
+      expect(migruj({ wersja: 1, szablonStary: 'x' }, 'szablon', 4)).toEqual({
+        wersja: 4,
         szablon: 'x',
       });
-      expect(() => migruj({ wersja: 2 }, 'projekt', 3)).toThrow(
-        /Brak migracji danych ze schematu 2/,
+      expect(() => migruj({ wersja: 3 }, 'projekt', 4)).toThrow(
+        /Brak migracji danych ze schematu 3/,
       );
     } finally {
-      delete MIGRACJE.szablon[2];
+      delete MIGRACJE.szablon[3];
     }
-    expect(migruj({ wersja: 1, a: 1 })).toEqual({ wersja: 2, a: 1 });
+    expect(migruj({ wersja: 1, a: 1 })).toEqual({ wersja: 3, a: 1 });
     expect(() => migruj({ wersja: WERSJA_SCHEMATU + 1 })).toThrow(/nowszej wersji/);
     expect(() => migruj({ wersja: 0.5 })).toThrow(/numeru wersji/);
   });

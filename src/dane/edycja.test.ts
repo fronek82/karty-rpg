@@ -15,6 +15,7 @@ import {
   usunZasob,
   zmienNazweRodziny,
 } from './edycja';
+import { szablonStatystyk } from '../silnik/__testy__/przyklady';
 import { projektZPakietu } from './pakiet';
 import { ostrzezeniaProjektu, przygotujProjekt } from './schemat';
 
@@ -42,6 +43,15 @@ describe('pola kart', () => {
       domyslnie: '-1 obr',
     });
     expect(k.find((x) => x.klucz === 'obraz')?.typPola).toBe('obraz');
+  });
+
+  it('tabela: każda komórka wartości to kolumna danych z nazwą nagłówka', () => {
+    const k = kolumnySzablonu(szablonStatystyk);
+    expect(k.find((x) => x.klucz === 'cecha_ww')).toMatchObject({
+      nazwa: 'WW',
+      typPola: 'tabela',
+    });
+    expect(k.filter((x) => x.typPola === 'tabela')).toHaveLength(12);
   });
 
   it('pusta wartość usuwa klucz; wejście bez zmian', () => {

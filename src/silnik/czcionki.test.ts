@@ -71,3 +71,14 @@ describe('RejestrCzcionek', () => {
     expect([...r.brakujace]).toEqual(['tytul']);
   });
 });
+
+describe('brakujące warianty', () => {
+  it('zastąpiony wariant trafia do brakujaceWarianty, istniejący – nie', () => {
+    const r = rejestrTestowy();
+    r.pobierz('tytul', 'kursywa'); // Grenze Gotisch nie ma kursywy
+    r.pobierz('tresc', 'pogrubiony');
+    expect([...r.brakujaceWarianty.values()]).toEqual([{ nazwa: 'tytul', wariant: 'kursywa' }]);
+    r.ustawRole({ tytul: 'Grenze Gotisch' });
+    expect(r.brakujaceWarianty.size).toBe(0);
+  });
+});

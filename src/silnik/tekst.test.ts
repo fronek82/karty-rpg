@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { pt } from '../model/jednostki';
 import type { StylTekstu } from '../model/szablon';
-import { tekstNaScene, ulozDopasowany, ulozTekst } from './tekst';
+import {
+  parsujFormatowanie,
+  SKALA_KAPITALIKOW,
+  tekstNaScene,
+  ulozDopasowany,
+  ulozTekst,
+} from './tekst';
 import { rejestrTestowy } from './__testy__/pomoc';
 
 const czcionki = rejestrTestowy();
@@ -84,5 +90,157 @@ describe('tekstNaScene', () => {
     if (el?.typ !== 'tekst') return;
     expect(el.glify).toHaveLength(3);
     expect(el.glify[0]!.x).toBeCloseTo(50 - u.szerokosc, 6);
+  });
+});
+
+describe('formatowanie w treści', () => {
+  const w = (t: string, st: StylTekstu = styl) =>
+    parsujFormatowanie(t, st).map((f) => [f.tekst, f.styl.wariant ?? 'normalny']);
+
+  it('**pogrubienie**, *kursywa*, ***oba***', () => {
+    expect(w('a **b** c *d* ***e***')).toEqual([
+      ['a ', 'normalny'],
+      ['b', 'pogrubiony'],
+      [' c ', 'normalny'],
+      ['d', 'kursywa'],
+      [' ', 'normalny'],
+      ['e', 'pogrubiona-kursywa'],
+    ]);
+  });
+
+  it('znacznik bez pary i \\* zostają zwykłym tekstem', () => {
+    expect(w('5 * 3 = 15')).toEqual([['5 * 3 = 15', 'normalny']]);
+    expect(w('\\*gwiazdka\\* **x')).toEqual([['*gwiazdka* **x', 'normalny']]);
+  });
+
+  it('gwiazdki otoczone spacjami nie tworzą pary (np. mnożenie)', () => {
+    expect(w('k6 * 2 albo k8 * 3')).toEqual([['k6 * 2 albo k8 * 3', 'normalny']]);
+    expect(w('a * b *c*')).toEqual([
+      ['a * b ', 'normalny'],
+      ['c', 'kursywa'],
+    ]);
+  });
+
+  it('łączy się z wariantem stylu i zachowuje nowe wiersze', () => {
+    expect(w('**Uwaga:** tekst\n*dalej*', { ...styl, wariant: 'kursywa' })).toEqual([
+      ['Uwaga:', 'pogrubiona-kursywa'],
+      [' tekst\ndalej', 'kursywa'], // *…* w kursywie zostaje kursywą
+    ]);
+  });
+});
+
+describe('akapity, justowanie, kapitaliki', () => {
+  const xGlifow = (u: ReturnType<typeof ulozTekst>, szer: number, wyr: 'lewo' | 'justuj') => {
+    const sl = {};
+    const el = tekstNaScene(u, { x: 0, y: 0, szer, wys: 100 }, wyr, 'poczatek', sl);
+    return el.flatMap((e) => (e.typ === 'tekst' ? e.glify : []));
+  };
+
+  it('justuj: wiersze (bez ostatniego w akapicie) kończą się przy prawej krawędzi', () => {
+    const u = ulozTekst([{ tekst: DLUGI, styl }], 30, czcionki);
+    const lewo = xGlifow(u, 30, 'lewo');
+    const just = xGlifow(u, 30, 'justuj');
+    expect(u.wiersze.at(-1)!.ostatni).toBe(true);
+    expect(u.wiersze[0]!.ostatni).toBe(false);
+    // Pierwszy glif bez zmian, ostatni glif pierwszego wiersza przesunięty w prawo.
+    const n0 = u.wiersze[0]!.glify.length;
+    expect(just[0]!.x).toBeCloseTo(lewo[0]!.x, 6);
+    expect(just[n0 - 1]!.x).toBeGreaterThan(lewo[n0 - 1]!.x + 0.1);
+    // Ostatni wiersz akapitu – jak do lewej.
+    expect(just.at(-1)!.x).toBeCloseTo(lewo.at(-1)!.x, 6);
+  });
+
+  it('wcięcie pierwszego wiersza i odstęp po akapicie', () => {
+    const zwykly = ulozTekst([{ tekst: 'raz\ndwa', styl }], undefined, czcionki);
+    const st = { ...styl, wciecie: 3, odstepAkapitow: 2 };
+    const u = ulozTekst([{ tekst: 'raz\ndwa', styl: st }], undefined, czcionki);
+    expect(u.wiersze[0]!.glify[0]!.x).toBeCloseTo(zwykly.wiersze[0]!.glify[0]!.x + 3, 6);
+    expect(u.wiersze[0]!.szerokosc).toBeCloseTo(zwykly.wiersze[0]!.szerokosc + 3, 6);
+    expect(u.wysokosc).toBeCloseTo(zwykly.wysokosc + 2, 6); // tylko między akapitami
+  });
+
+  it('wcięcie tylko w pierwszym wierszu akapitu i liczone do szerokości', () => {
+    const st = { ...styl, wciecie: 4 };
+    const u = ulozTekst([{ tekst: DLUGI, styl: st }], 30, czcionki);
+    expect(u.wiersze.length).toBeGreaterThan(2);
+    for (const w of u.wiersze) expect(w.szerokosc).toBeLessThanOrEqual(30 + 1e-6);
+    expect(u.wiersze[0]!.glify[0]!.x).toBeGreaterThan(4 - 1e-6);
+    expect(u.wiersze[1]!.glify[0]!.x).toBeLessThan(1);
+  });
+
+  it('bez odstępu akapitu przed samą etykietą (etykieta „pod”)', () => {
+    const st = { ...styl, odstepAkapitow: 2 };
+    const u = ulozTekst(
+      [
+        { tekst: 'wartość', styl: st },
+        { tekst: '\npodpis', styl: st, etykieta: true },
+      ],
+      undefined,
+      czcionki,
+    );
+    const zwykly = ulozTekst([{ tekst: 'wartość\npodpis', styl }], undefined, czcionki);
+    expect(u.wysokosc).toBeCloseTo(zwykly.wysokosc, 6);
+  });
+
+  it('justowanie: jedno słowo w wierszu i tekst szerszy niż ramka bez przesunięć', () => {
+    const u = ulozTekst([{ tekst: 'Słowo', styl }], 100, czcionki);
+    expect(xGlifow(u, 100, 'justuj')).toEqual(xGlifow(u, 100, 'lewo'));
+    const szeroki = ulozTekst([{ tekst: 'raz dwa trzy\ncztery', styl }], undefined, czcionki);
+    expect(xGlifow(szeroki, 2, 'justuj')).toEqual(xGlifow(szeroki, 2, 'lewo'));
+  });
+
+  it('kapitaliki przy wielkich literach nie działają (wszystko wersalikami)', () => {
+    const u = ulozTekst(
+      [{ tekst: 'Ab', styl: { ...styl, kapitaliki: true, wielkieLitery: true } }],
+      undefined,
+      czcionki,
+    );
+    const [a, b] = u.wiersze[0]!.glify;
+    expect(b!.skala).toBeCloseTo(a!.skala, 6);
+  });
+
+  it('akapit z samą etykietą nie dostaje wcięcia ani odstępu', () => {
+    const st = { ...styl, wciecie: 3, odstepAkapitow: 2 };
+    const u = ulozTekst(
+      [
+        { tekst: 'ETYKIETA\n', styl: st, etykieta: true },
+        { tekst: 'wartość', styl: st },
+      ],
+      undefined,
+      czcionki,
+    );
+    const zwykly = ulozTekst([{ tekst: 'ETYKIETA', styl }], undefined, czcionki);
+    expect(u.wiersze[0]!.glify[0]!.x).toBeCloseTo(zwykly.wiersze[0]!.glify[0]!.x, 6);
+    expect(u.wiersze[0]!.wysokosc).toBeCloseTo(zwykly.wiersze[0]!.wysokosc, 6);
+    expect(u.wiersze[1]!.glify[0]!.x).toBeGreaterThan(3 - 1e-6);
+  });
+
+  it('kapitaliki bez cechy smcp: małe litery jako mniejsze wersaliki', () => {
+    const u = ulozTekst(
+      [{ tekst: 'Ab', styl: { ...styl, kapitaliki: true } }],
+      undefined,
+      czcionki,
+    );
+    const [a, b] = u.wiersze[0]!.glify;
+    expect(b!.skala).toBeCloseTo(a!.skala * SKALA_KAPITALIKOW, 6);
+    const B = ulozTekst([{ tekst: 'B', styl }], undefined, czcionki).wiersze[0]!.glify[0]!;
+    expect(b!.id).toBe(B.id); // „b” zamienione na „B”
+  });
+
+  it('kapitaliki z cechą smcp: kształtowanie z cechą, bez zmiany rozmiaru', () => {
+    const cz = czcionki.pobierz('tresc');
+    const ma = vi.spyOn(cz, 'maCeche').mockReturnValue(true);
+    const uloz = vi.spyOn(cz, 'uloz');
+    try {
+      ulozTekst(
+        [{ tekst: 'Kapitaliki', styl: { ...styl, kapitaliki: true } }],
+        undefined,
+        czcionki,
+      );
+      expect(uloz).toHaveBeenCalledWith('Kapitaliki', ['smcp']);
+    } finally {
+      ma.mockRestore();
+      uloz.mockRestore();
+    }
   });
 });

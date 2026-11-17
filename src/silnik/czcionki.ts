@@ -25,6 +25,7 @@ export class Czcionka {
   /** Głębokość pod linią bazową (jednostki czcionki, dodatnia). */
   readonly descent: number;
   private readonly pamiecUkladu = new Map<string, UlozonyGlif[]>();
+  private cechy: Set<string> | undefined;
   private readonly pamiecKonturow = new Map<number, Kontur>();
 
   constructor(
@@ -36,21 +37,38 @@ export class Czcionka {
     this.descent = Math.abs(font.descent);
   }
 
-  /** Kształtuje tekst w jedną linię (bez łamania). Pamięć podręczna LRU (`LIMIT_PAMIECI_UKLADU`). */
-  uloz(tekst: string): UlozonyGlif[] {
-    const zapamietany = this.pamiecUkladu.get(tekst);
+  /** Czy czcionka ma cechę OpenType (np. `smcp` – kapitaliki). */
+  maCeche(cecha: string): boolean {
+    // `availableFeatures` w fontkit liczy się od nowa przy każdym odczycie – zapamiętujemy raz.
+    if (!this.cechy) {
+      try {
+        this.cechy = new Set(this.font.availableFeatures);
+      } catch {
+        this.cechy = new Set();
+      }
+    }
+    return this.cechy.has(cecha);
+  }
+
+  /**
+   * Kształtuje tekst w jedną linię (bez łamania), opcjonalnie z cechami OpenType.
+   * Pamięć podręczna LRU (`LIMIT_PAMIECI_UKLADU`).
+   */
+  uloz(tekst: string, cechy?: string[]): UlozonyGlif[] {
+    const klucz = `${cechy?.join(',') ?? ''}\u0000${tekst}`;
+    const zapamietany = this.pamiecUkladu.get(klucz);
     if (zapamietany) {
       // Odświeżenie pozycji – Map zachowuje kolejność wstawiania, najstarszy jest pierwszy.
-      this.pamiecUkladu.delete(tekst);
-      this.pamiecUkladu.set(tekst, zapamietany);
+      this.pamiecUkladu.delete(klucz);
+      this.pamiecUkladu.set(klucz, zapamietany);
       return zapamietany;
     }
-    const run = this.font.layout(tekst);
+    const run = cechy?.length ? this.font.layout(tekst, cechy) : this.font.layout(tekst);
     const glify = run.glyphs.map((g, i) => {
       const p = run.positions[i];
       return { id: g.id, przesuniecie: p?.xAdvance ?? 0, dx: p?.xOffset ?? 0, dy: p?.yOffset ?? 0 };
     });
-    this.pamiecUkladu.set(tekst, glify);
+    this.pamiecUkladu.set(klucz, glify);
     if (this.pamiecUkladu.size > LIMIT_PAMIECI_UKLADU) {
       const najstarszy = this.pamiecUkladu.keys().next().value;
       if (najstarszy !== undefined) this.pamiecUkladu.delete(najstarszy);
@@ -204,6 +222,8 @@ export class RejestrCzcionek {
   private sledzone: Set<string> | undefined;
   /** Nazwy (role lub rodziny), dla których użyto czcionki zapasowej – do ostrzeżeń w UI. */
   readonly brakujace = new Set<string>();
+  /** Warianty zastąpione najbliższym dostępnym (np. brak pogrubienia) – do ostrzeżeń w UI. */
+  readonly brakujaceWarianty = new Map<string, { nazwa: string; wariant: WariantCzcionki }>();
 
   /**
    * Rodzina zapasowa: gdy szukanej czcionki brak, zamiast błędu używana jest ta rodzina,
@@ -231,6 +251,7 @@ export class RejestrCzcionek {
     this.role.clear();
     for (const [r, f] of Object.entries(role)) this.role.set(r, f);
     this.brakujace.clear();
+    this.brakujaceWarianty.clear();
     return this;
   }
 
@@ -252,8 +273,13 @@ export class RejestrCzcionek {
   }
 
   pobierz(nazwa: string, wariant: WariantCzcionki = 'normalny'): Czcionka {
-    const znaleziona = this.znajdz(this.role.get(nazwa) ?? nazwa, wariant);
-    if (znaleziona) return znaleziona;
+    const rodzina = this.role.get(nazwa) ?? nazwa;
+    const znaleziona = this.znajdz(rodzina, wariant);
+    if (znaleziona) {
+      if (!this.rodziny.get(rodzina)?.[wariant])
+        this.brakujaceWarianty.set(`${nazwa}\u0000${wariant}`, { nazwa, wariant });
+      return znaleziona;
+    }
     const zapasowa = this.zapasowa !== undefined ? this.znajdz(this.zapasowa, wariant) : undefined;
     if (zapasowa) {
       this.brakujace.add(nazwa);

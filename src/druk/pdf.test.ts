@@ -5,6 +5,14 @@ import type { Szablon } from '../model/szablon';
 import { renderujKarte } from '../silnik/karta';
 import { polaczGlify, type ElementSceny, type Scena } from '../silnik/scena';
 import { rejestrTestowy, szablonBroni } from '../silnik/__testy__/pomoc';
+import {
+  daneCzaru,
+  daneStatystyk,
+  daneWroga,
+  szablonCzaru,
+  szablonStatystyk,
+  szablonWroga,
+} from '../silnik/__testy__/przyklady';
 import { scenyDoPdf } from './pdf';
 
 const czcionki = rejestrTestowy();
@@ -70,6 +78,18 @@ const liczUzyciaGlifow = (s: Scena) =>
   );
 
 describe('scenyDoPdf', () => {
+  it('karty z klockami M2 (romb, tabela, separator, ramka karty) dają poprawny PDF', async () => {
+    const sceny = [
+      renderujKarte(szablonCzaru, { dane: daneCzaru }, { czcionki }).scena,
+      renderujKarte(szablonStatystyk, { dane: daneStatystyk }, { czcionki }).scena,
+      renderujKarte(szablonWroga, { dane: daneWroga }, { czcionki }).scena,
+    ];
+    const { bajty } = await scenyDoPdf(sceny);
+    const doc = await PDFDocument.load(bajty);
+    expect(doc.getPageCount()).toBe(3);
+    expect(doc.getPage(1).getWidth()).toBeCloseTo((88 / 25.4) * 72, 1);
+  });
+
   it('tworzy stronę o wymiarach sceny (mm → pt)', async () => {
     const { scena } = renderujKarte(
       szablonBroni,
