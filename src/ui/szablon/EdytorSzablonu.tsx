@@ -11,6 +11,7 @@ import {
   skopiujStyl,
   usunWezly,
   wklejStyl,
+  zmienTypKontenera,
   zmienTypPola,
   type SkopiowanyStyl,
   wstawWezel,
@@ -25,7 +26,13 @@ import { kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty'
 import { wymiaryKarty } from '../../model/szablon';
 import { roleProjektu } from '../../dane/edycja';
 import { t, tJesliJest } from '../../i18n';
-import { czyKontener, type Pole, type Szablon, type Wezel } from '../../model/szablon';
+import {
+  czyKontener,
+  type Kontener,
+  type Pole,
+  type Szablon,
+  type Wezel,
+} from '../../model/szablon';
 import { renderujKarte } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
 import { PoleLiczby } from '../kartka/PoleLiczby';
@@ -589,8 +596,14 @@ export function EdytorSzablonu({
                     aktywne.reduce(
                       (x, id) =>
                         czyKontener(edytowany)
-                          ? zmienWezel(x, id, (w) => ({ ...w, typ }) as Wezel)
-                          : zmienTypPola(x, id, typ as Pole['typ']),
+                          ? zmienTypKontenera(x, id, typ as Kontener['typ'])
+                          : zmienTypPola(
+                              x,
+                              id,
+                              typ as Pole['typ'],
+                              t(`wezel.${typ}`),
+                              zajeteKlucze(),
+                            ),
                       s,
                     ),
                   )
@@ -609,16 +622,39 @@ export function EdytorSzablonu({
               <p className="podpis">{t('szablon.wieleOpis')}</p>
             </>
           ) : (
-            <PanelKarty
-              szablon={szablon}
-              zmienSz={zmienSz}
-              zmienRozmiar={(s, w) => {
-                // Karta, która nie zmieści się na stronie kartki – odrzucona (komunikat w panelu).
-                if (zmienRozmiarSzablonu(projekt, szablonId, s, w) === projekt) return false;
-                zmien((p) => zmienRozmiarSzablonu(p, szablonId, s, w), { klucz: 'rozmiar-karty' });
-                return true;
-              }}
-            />
+            <>
+              <PanelKarty
+                szablon={szablon}
+                zmienSz={zmienSz}
+                zmienRozmiar={(s, w) => {
+                  // Karta, która nie zmieści się na stronie kartki – odrzucona (komunikat w panelu).
+                  if (zmienRozmiarSzablonu(projekt, szablonId, s, w) === projekt) return false;
+                  zmien((p) => zmienRozmiarSzablonu(p, szablonId, s, w), {
+                    klucz: 'rozmiar-karty',
+                  });
+                  return true;
+                }}
+              />
+              {/* Kontener całej karty: odstępy, rozłożenie, wygląd (jak każdy kontener). */}
+              <Sekcja tytul={t('wlasciwosci.ukladKarty')}>
+                <PanelWezla
+                  key={szablon.korzen.id}
+                  szablon={szablon}
+                  wezel={szablon.korzen}
+                  wymiary={wymiary(szablon.korzen.id)}
+                  czcionki={czcionki}
+                  obrazy={obrazy}
+                  zajeteKlucze={zajeteKlucze}
+                  zmienWezel={(f, klucz) =>
+                    zmienSz((s) => zmienWezel(s, s.korzen.id, f), klucz && `korzen:${klucz}`)
+                  }
+                  zmienTyp={(typ) =>
+                    zmienSz((s) => zmienTypKontenera(s, s.korzen.id, typ as Kontener['typ']))
+                  }
+                  zmienPrzyklad={() => undefined}
+                />
+              </Sekcja>
+            </>
           )}
         </aside>
       </div>
@@ -697,10 +733,11 @@ function PanelKarty({
           etykieta={t('wlasciwosci.ramkaKarty')}
           krawedzie={false}
           ramka={szablon.ramka}
-          zmien={(r) =>
+          zmien={(f) =>
             zmienSz((s) => {
               const x = { ...s };
-              if (r) x.ramka = { ...s.ramka, ...r };
+              const r = f(s.ramka);
+              if (r) x.ramka = r;
               else delete x.ramka;
               return x;
             }, 'ramka')
@@ -720,7 +757,12 @@ function PanelKarty({
               etykieta={t('wlasciwosci.promienRamki')}
               wartosc={
                 szablon.ramka.promien ??
-                Math.max(0, (szablon.promienRogow ?? 0) - (szablon.ramka.odsuniecie ?? 0))
+                Math.max(
+                  0,
+                  (szablon.promienRogow ?? 0) -
+                    (szablon.ramka.odsuniecie ?? 0) -
+                    szablon.ramka.grubosc / 2,
+                )
               }
               max={Math.min(szer, wys) / 2}
               zmien={(v) =>
@@ -728,6 +770,21 @@ function PanelKarty({
               }
             />
           </div>
+        )}
+        {szablon.ramka?.promien !== undefined && (
+          <button
+            type="button"
+            className="maly"
+            onClick={() =>
+              zmienSz((s) => {
+                const { promien: _p, ...r } = s.ramka!;
+                void _p;
+                return { ...s, ramka: r };
+              })
+            }
+          >
+            {t('wlasciwosci.jakRogiKarty')}
+          </button>
         )}
       </Sekcja>
       {szablon.warianty?.length ? <p className="podpis">{t('szablon.warianty')}</p> : null}

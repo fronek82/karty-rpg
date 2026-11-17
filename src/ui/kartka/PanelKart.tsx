@@ -178,7 +178,8 @@ export function PanelKart({
             );
           }
           // Nazwa nadana w edytorze szablonu ma pierwszeństwo przed nazwami pól pakietu gry.
-          const nazwa = pole?.nazwa || nazwaPola(kol.klucz, kol.nazwa);
+          const nazwa =
+            pole?.nazwa || (kol.typPola === 'tabela' ? kol.nazwa : nazwaPola(kol.klucz, kol.nazwa));
           const w = wspolna(kol.klucz);
           const id = `pole-${kol.klucz}`;
           if (pole?.typ === 'znaczniki') {
@@ -218,7 +219,16 @@ export function PanelKart({
           const wspolne = {
             id,
             value: w ?? '',
-            placeholder: w === undefined ? t('kartka.rozne') : kol.domyslnie,
+            // Podpowiedź: wartość domyślna pola z szablonu (gdy karta jej nie nadpisuje).
+            placeholder:
+              w === undefined
+                ? t('kartka.rozne')
+                : (kol.domyslnie ??
+                  (pole &&
+                  (pole.typ === 'tekst' || pole.typ === 'wartosc') &&
+                  typeof pole.tekst === 'string'
+                    ? pole.tekst
+                    : undefined)),
             onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
               ustaw(kol.klucz, e.target.value),
           };

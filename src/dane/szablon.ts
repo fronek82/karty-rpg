@@ -506,15 +506,24 @@ export const TYPY_POL = [
 ] as const satisfies readonly Pole['typ'][];
 
 /**
- * Zmiana typu pola: zostają id, nazwa, klucz (gdy nowy typ ma dane), rozmiar, odstępy, tło,
- * ramka i „gdy puste”; reszta – neutralne ustawienia nowego typu. Styl tekstu przechodzi między
- * typami, które go mają.
+ * Zmiana typu pola: zostają id, nazwa, rozmiar, odstępy, tło, ramka i „gdy puste”; pole z danych
+ * zostaje z danych (ten sam klucz), pole stałe – stałe (z tym samym tekstem). Styl tekstu
+ * przechodzi między typami, które go mają; etykieta – między tekstem a wartością w kształcie.
  */
-export function zmienTypPola(s: Szablon, id: string, typ: Pole['typ']): Szablon {
+export function zmienTypPola(
+  s: Szablon,
+  id: string,
+  typ: Pole['typ'],
+  nazwaTypu: string = typ,
+  zajete: Iterable<string> = [],
+): Szablon {
   const w = znajdzWezel(s, id);
   if (!w || czyKontener(w) || w.typ === typ) return s;
   const r = rodzicWezla(s, id);
-  const nowy = nowyWezel(s, typ, w.nazwa || typ, { wWierszu: r?.rodzic.typ === 'wiersz' }) as Pole;
+  const nowy = nowyWezel(s, typ, w.nazwa || nazwaTypu, {
+    wWierszu: r?.rodzic.typ === 'wiersz',
+    zajete,
+  }) as Pole;
   const wspolne = (
     [
       'nazwa',
@@ -532,46 +541,94 @@ export function zmienTypPola(s: Szablon, id: string, typ: Pole['typ']): Szablon 
     ] as const
   ).reduce<Record<string, unknown>>((a, k) => (w[k] !== undefined ? { ...a, [k]: w[k] } : a), {});
   const x = { ...nowy, ...wspolne, id } as Pole;
-  if (w.klucz && 'klucz' in nowy && nowy.klucz !== undefined) x.klucz = w.klucz;
+  if ('klucz' in nowy && nowy.klucz !== undefined) {
+    if (w.klucz) x.klucz = w.klucz;
+    else if (x.typ === 'tekst' || x.typ === 'wartosc') {
+      // Pole stałe zostaje stałe.
+      delete x.klucz;
+      if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.tekst !== undefined) x.tekst = w.tekst;
+    }
+  }
   if ('styl' in w && 'styl' in x && typeof w.styl === 'object' && typeof x.styl === 'object')
     (x as { styl: unknown }).styl = w.styl;
+  if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta) {
+    if (x.typ === 'tekst') x.etykieta = w.etykieta;
+    if (x.typ === 'wartosc')
+      x.etykieta = {
+        ...w.etykieta,
+        pozycja: w.etykieta.pozycja === 'pod' ? 'pod' : 'nad',
+      };
+  }
   return zmienWezel(s, id, () => x);
 }
 
-/** Styl elementu do schowka „Kopiuj styl”: wygląd, odstępy, styl tekstu, etykiety i kształt. */
-export interface SkopiowanyStyl {
-  styl?: unknown;
-  stylEtykiety?: unknown;
-  ksztalt?: string;
-  tlo?: string;
-  obramowanie?: unknown;
-  promien?: number;
-  padding?: unknown;
-  margines?: unknown;
+/** Zmiana typu kontenera; separatory w nim obracają się (w wierszu – pionowe, w kolumnie – poziome). */
+export function zmienTypKontenera(s: Szablon, id: string, typ: Kontener['typ']): Szablon {
+  const w = znajdzWezel(s, id);
+  if (!w || !czyKontener(w) || w.typ === typ) return s;
+  const kierunek = typ === 'wiersz' ? 'pionowy' : typ === 'kolumna' ? 'poziomy' : undefined;
+  return zmienWezel(s, id, () => ({
+    ...w,
+    typ,
+    dzieci: w.dzieci.map((d) =>
+      kierunek && !czyKontener(d) && d.typ === 'separator' ? { ...d, kierunek } : d,
+    ),
+  }));
 }
 
+/** Styl elementu do schowka „Kopiuj styl”: wygląd, odstępy, styl tekstu i etykiety, kształt, linie. */
+export type SkopiowanyStyl = Record<string, unknown> & { stylEtykiety?: unknown };
+
+/** Właściwości wyglądu wspólne dla elementów (bez treści, kluczy i struktury). */
+const WYGLAD = ['tlo', 'obramowanie', 'promien', 'padding', 'margines'] as const;
+/** Właściwości wyglądu zależne od typu – kopiowane tylko do elementu, który je ma. */
+const WYGLAD_TYPU = [
+  'styl',
+  'ksztalt',
+  'linie',
+  'stylNaglowka',
+  'tloNaglowka',
+  'paddingKomorki',
+  'kolor',
+  'grubosc',
+  'stylLinii',
+  'srednica',
+  'odstep',
+] as const;
+
 export function skopiujStyl(w: Wezel): SkopiowanyStyl {
-  const x: SkopiowanyStyl = {};
-  if ('styl' in w && typeof w.styl === 'object') x.styl = structuredClone(w.styl);
+  const x: SkopiowanyStyl = { typ: w.typ };
+  const z = w as unknown as Record<string, unknown>;
+  for (const k of [...WYGLAD, ...WYGLAD_TYPU]) if (z[k] !== undefined) x[k] = structuredClone(z[k]);
   if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta?.styl)
     x.stylEtykiety = structuredClone(w.etykieta.styl);
-  if (w.typ === 'wartosc') x.ksztalt = w.ksztalt;
-  for (const k of ['tlo', 'obramowanie', 'promien', 'padding', 'margines'] as const)
-    if (w[k] !== undefined) (x as Record<string, unknown>)[k] = structuredClone(w[k]);
   return x;
 }
 
-/** Wkleja styl do elementu – tylko to, co ten typ ma (np. styl tekstu do pól z tekstem). */
+/**
+ * Wkleja styl: wygląd (tło, ramka, rogi, odstępy) – do każdego elementu; reszta – tylko tam, gdzie
+ * dany typ ją ma (np. styl tekstu do pól z tekstem, kształt do wartości, linie do tabeli).
+ */
 export function wklejStyl(w: Wezel, st: SkopiowanyStyl): Wezel {
-  const x = { ...w } as Record<string, unknown>;
-  for (const k of ['tlo', 'obramowanie', 'promien', 'padding', 'margines'] as const) {
+  const x = { ...w } as unknown as Record<string, unknown>;
+  for (const k of WYGLAD) {
     if (st[k] !== undefined) x[k] = structuredClone(st[k]);
     else delete x[k];
   }
-  if (st.styl !== undefined && 'styl' in w && typeof w.styl === 'object')
-    x.styl = structuredClone(st.styl);
-  if (st.ksztalt !== undefined && w.typ === 'wartosc') x.ksztalt = st.ksztalt;
-  if (st.stylEtykiety !== undefined && (w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta)
-    x.etykieta = { ...w.etykieta, styl: structuredClone(st.stylEtykiety) };
+  // Właściwości typu: z tego samego typu – wszystkie; z innego – tylko styl tekstu.
+  const ten = st.typ === w.typ;
+  for (const k of WYGLAD_TYPU) {
+    const ma = k in x || (ten && st[k] !== undefined);
+    if (!ma || (!ten && k !== 'styl')) continue;
+    if (k === 'styl' && (typeof x.styl !== 'object' || typeof st.styl !== 'object')) continue;
+    if (st[k] !== undefined) x[k] = structuredClone(st[k]);
+    else if (ten) delete x[k];
+  }
+  if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta) {
+    const e = { ...w.etykieta };
+    if (st.stylEtykiety !== undefined) e.styl = structuredClone(st.stylEtykiety) as typeof e.styl;
+    else delete e.styl;
+    x.etykieta = e;
+  }
   return x as unknown as Wezel;
 }

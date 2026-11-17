@@ -1,11 +1,14 @@
 import { kluczZNazwy, kluczeSzablonu } from '../../dane/szablon';
 import { t } from '../../i18n';
+import { MAKS_ZNACZNIKOW } from '../../silnik/karta';
 import {
   kluczeTabeli,
   type KolumnaTabeli,
   type NazwaIkony,
   type Pole,
+  type PoleObraz,
   type PoleTabela,
+  type StylTekstu,
   type Szablon,
   type Wezel,
 } from '../../model/szablon';
@@ -38,6 +41,7 @@ export function PanelTypu({
   czcionki,
   obrazy,
   wiele,
+  zajeteKlucze,
 }: {
   szablon: Szablon;
   pole: Pole;
@@ -47,8 +51,21 @@ export function PanelTypu({
   obrazy: Opcje;
   /** Edycja kilku pól naraz – bez ustawień unikalnych (kolumny tabeli). */
   wiele: boolean;
+  /** Klucze zajęte poza szablonem (dane kart) – dla nowych kolumn tabeli. */
+  zajeteKlucze: () => Iterable<string>;
 }) {
   const id = pole.id;
+  // Zmiana stylu jako funkcja – przy kilku zaznaczonych stosowana do stylu każdego elementu.
+  const zmienStyl = (
+    k: 'styl' | 'stylNaglowka',
+    f: (s: Partial<StylTekstu>) => Partial<StylTekstu>,
+    klucz?: string,
+  ) =>
+    zmien((w) => {
+      const x = { ...w } as Record<string, unknown>;
+      x[k] = f((x[k] as Partial<StylTekstu> | undefined) ?? {});
+      return x as unknown as Wezel;
+    }, klucz);
   const ustaw = (z: Partial<Pole>, klucz?: string) =>
     zmien((w) => {
       const n = { ...w, ...z } as Record<string, unknown>;
@@ -69,7 +86,9 @@ export function PanelTypu({
                 ? { wyrownaniePionowe: 'srodek' }
                 : {}
           }
-          zmien={(s) => ustaw({ styl: s } as Partial<Pole>, `styl:${id}`)}
+          zmien={(f) => zmienStyl('styl', f, `styl:${id}`)}
+          autoDopasowanie={pole.typ !== 'wpis'}
+          wyrownanie={pole.typ !== 'wpis'}
         />
       </Sekcja>
     ) : null;
@@ -125,7 +144,7 @@ export function PanelTypu({
               etykieta={t('wlasciwosci.kolumny')}
               wartosc={pole.kolumny}
               min={1}
-              max={30}
+              max={Math.floor(MAKS_ZNACZNIKOW / pole.rzedy)}
               krok={1}
               zmien={(v) => ustaw({ kolumny: v })}
             />
@@ -133,7 +152,7 @@ export function PanelTypu({
               etykieta={t('wlasciwosci.rzedy')}
               wartosc={pole.rzedy}
               min={1}
-              max={30}
+              max={Math.floor(MAKS_ZNACZNIKOW / pole.kolumny)}
               krok={1}
               zmien={(v) => ustaw({ rzedy: v })}
             />
@@ -175,7 +194,7 @@ export function PanelTypu({
               zmien={(v) => ustaw({ kolor: v })}
             />
           </div>
-          <p className="podpis">{t('wlasciwosci.znacznikiOpis')}</p>
+          <p className="podpis">{t('wlasciwosci.znacznikiOpis', { maks: MAKS_ZNACZNIKOW })}</p>
         </Sekcja>
       );
     case 'obraz':
@@ -196,14 +215,24 @@ export function PanelTypu({
               wartosc={Math.round((pole.kadr?.x ?? 0.5) * 100)}
               max={100}
               krok={5}
-              zmien={(v) => ustaw({ kadr: { x: v / 100, y: pole.kadr?.y ?? 0.5 } })}
+              zmien={(v) =>
+                zmien(
+                  (w) =>
+                    ({ ...w, kadr: { x: v / 100, y: (w as PoleObraz).kadr?.y ?? 0.5 } }) as Wezel,
+                )
+              }
             />
             <Liczba
               etykieta={t('wlasciwosci.kadrY')}
               wartosc={Math.round((pole.kadr?.y ?? 0.5) * 100)}
               max={100}
               krok={5}
-              zmien={(v) => ustaw({ kadr: { x: pole.kadr?.x ?? 0.5, y: v / 100 } })}
+              zmien={(v) =>
+                zmien(
+                  (w) =>
+                    ({ ...w, kadr: { x: (w as PoleObraz).kadr?.x ?? 0.5, y: v / 100 } }) as Wezel,
+                )
+              }
             />
           </div>
           {!pole.klucz && (
@@ -286,8 +315,11 @@ export function PanelTypu({
           szablon={szablon}
           tabela={pole}
           ustaw={ustaw}
+          zmienStyl={zmienStyl}
+          zmien={zmien}
           czcionki={czcionki}
           wiele={wiele}
+          zajeteKlucze={zajeteKlucze}
         />
       );
   }
@@ -301,14 +333,24 @@ function PanelTabeli({
   szablon,
   tabela,
   ustaw,
+  zmienStyl,
+  zmien,
   czcionki,
   wiele,
+  zajeteKlucze,
 }: {
   szablon: Szablon;
   tabela: PoleTabela;
   ustaw: (z: Partial<Pole>, klucz?: string) => void;
+  zmienStyl: (
+    k: 'styl' | 'stylNaglowka',
+    f: (s: Partial<StylTekstu>) => Partial<StylTekstu>,
+    klucz?: string,
+  ) => void;
+  zmien: Zmiana;
   czcionki: Opcje;
   wiele: boolean;
+  zajeteKlucze: () => Iterable<string>;
 }) {
   const id = tabela.id;
   const kol = tabela.kolumny;
@@ -316,7 +358,7 @@ function PanelTabeli({
     ustaw({ kolumny: k } as Partial<Pole>, klucz);
   const dodajKolumne = () => {
     // Klucz wolny także dla dalszych wierszy (klucz_2, klucz_3…).
-    const zajete = kluczeSzablonu(szablon);
+    const zajete = new Set([...kluczeSzablonu(szablon), ...zajeteKlucze()]);
     let k = kluczZNazwy(`${tabela.nazwa || 'tabela'} ${kol.length + 1}`, zajete);
     for (
       let n = 2;
@@ -326,10 +368,15 @@ function PanelTabeli({
       k = kluczZNazwy(`${tabela.nazwa || 'tabela'} ${kol.length + n}`, zajete);
     zmienKolumny([...kol, { naglowek: String(kol.length + 1), klucz: k }]);
   };
+  // Fokus po przesunięciu / usunięciu kolumny: pole nagłówka kolumny w nowym miejscu
+  // (albo przycisk „Dodaj kolumnę”).
+  const fokus = (sel: string) =>
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(sel)?.focus());
   const przesun = (i: number, o: -1 | 1) => {
     const n = [...kol];
     [n[i], n[i + o]] = [n[i + o]!, n[i]!];
     zmienKolumny(n);
+    fokus(`#kol-${CSS.escape(id)}-${i + o}`);
   };
   const styl = { ...tabela.styl, wariant: 'pogrubiony' as const, ...tabela.stylNaglowka };
   return (
@@ -347,13 +394,13 @@ function PanelTabeli({
                     onChange={(e) =>
                       zmienKolumny(
                         kol.map((x, j) => (j === i ? { ...x, naglowek: e.target.value } : x)),
-                        `kolumna:${id}:${i}`,
+                        `kolumna:${id}:${k.klucz}`,
                       )
                     }
                   />
                 </div>
                 <Przelacznik
-                  etykieta={t('tabela.szerokosc')}
+                  etykieta={t('tabela.szerokosc', { n: i + 1 })}
                   opcje={[
                     { wartosc: 'auto', tekst: t('rozmiar.tryb.auto') },
                     { wartosc: 'wypelnij', tekst: t('rozmiar.tryb.wypelnij') },
@@ -378,21 +425,31 @@ function PanelTabeli({
                     )
                   }
                 />
-                {k.szerokosc && k.szerokosc !== 'auto' && 'mm' in k.szerokosc && (
+                {k.szerokosc && k.szerokosc !== 'auto' && (
                   <Liczba
-                    etykieta={t('rozmiar.liczba.mm')}
-                    wartosc={k.szerokosc.mm}
+                    etykieta={t('mm' in k.szerokosc ? 'tabela.szerokoscMm' : 'tabela.waga', {
+                      n: i + 1,
+                    })}
+                    wartosc={'mm' in k.szerokosc ? k.szerokosc.mm : k.szerokosc.wypelnij}
+                    min={'mm' in k.szerokosc ? 0 : 0.1}
                     max={300}
                     zmien={(v) =>
                       zmienKolumny(
-                        kol.map((x, j) => (j === i ? { ...x, szerokosc: { mm: v } } : x)),
-                        `kolszer:${id}:${i}`,
+                        kol.map((x, j) =>
+                          j !== i || !x.szerokosc || x.szerokosc === 'auto'
+                            ? x
+                            : {
+                                ...x,
+                                szerokosc: 'mm' in x.szerokosc ? { mm: v } : { wypelnij: v },
+                              },
+                        ),
+                        `kolszer:${id}:${k.klucz}`,
                       )
                     }
                   />
                 )}
                 <Przelacznik
-                  etykieta={t('tabela.wyrownanie')}
+                  etykieta={t('tabela.wyrownanie', { n: i + 1 })}
                   opcje={(['domyslnie', 'lewo', 'srodek', 'prawo'] as const).map((w) => ({
                     wartosc: w,
                     tekst: t(w === 'domyslnie' ? 'rozmiar.tryb.domyslnie' : `styl.wyrownanie.${w}`),
@@ -431,7 +488,10 @@ function PanelTabeli({
                     type="button"
                     className="niebezpieczny"
                     disabled={kol.length === 1}
-                    onClick={() => zmienKolumny(kol.filter((_, j) => j !== i))}
+                    onClick={() => {
+                      zmienKolumny(kol.filter((_, j) => j !== i));
+                      fokus(`#dodaj-kolumne-${CSS.escape(id)}`);
+                    }}
                     aria-label={t('tabela.usunKolumne', { n: i + 1 })}
                   >
                     ✕
@@ -440,7 +500,7 @@ function PanelTabeli({
               </li>
             ))}
           </ol>
-          <button type="button" onClick={dodajKolumne}>
+          <button type="button" id={`dodaj-kolumne-${id}`} onClick={dodajKolumne}>
             {t('tabela.dodajKolumne')}
           </button>
         </Sekcja>
@@ -465,9 +525,20 @@ function PanelTabeli({
               etykieta={t('tabela.naglowkiPogrubione')}
               wartosc={styl.wariant === 'pogrubiony' || styl.wariant === 'pogrubiona-kursywa'}
               zmien={(v) =>
-                ustaw({
-                  stylNaglowka: { ...tabela.stylNaglowka, wariant: v ? 'pogrubiony' : 'normalny' },
-                } as Partial<Pole>)
+                // Kursywa nagłówków zostaje – zmienia się tylko pogrubienie.
+                zmienStyl('stylNaglowka', (st) => {
+                  const kursywa = st.wariant === 'kursywa' || st.wariant === 'pogrubiona-kursywa';
+                  return {
+                    ...st,
+                    wariant: v
+                      ? kursywa
+                        ? 'pogrubiona-kursywa'
+                        : 'pogrubiony'
+                      : kursywa
+                        ? 'kursywa'
+                        : 'normalny',
+                  };
+                })
               }
             />
             <PoleKoloru
@@ -491,23 +562,30 @@ function PanelTabeli({
           etykieta={t('tabela.linieSiatki')}
           krawedzie={false}
           ramka={tabela.linie}
-          zmien={(r) =>
-            ustaw({
-              linie: r
-                ? { ...r, ...(tabela.linie?.zewnetrzne === false ? { zewnetrzne: false } : {}) }
-                : undefined,
-            } as Partial<Pole>)
+          zmien={(f) =>
+            zmien((w) => {
+              const t0 = w as PoleTabela;
+              const r = f(t0.linie);
+              const x = { ...t0 } as PoleTabela;
+              if (r) x.linie = r;
+              else delete x.linie;
+              return x;
+            })
           }
         />
         {tabela.linie && (
           <Wybor
             etykieta={t('tabela.obwodka')}
             wartosc={tabela.linie.zewnetrzne !== false}
-            zmien={(v) => {
-              const { zewnetrzne: _z, ...reszta } = tabela.linie!;
-              void _z;
-              ustaw({ linie: v ? reszta : { ...reszta, zewnetrzne: false } } as Partial<Pole>);
-            }}
+            zmien={(v) =>
+              zmien((w) => {
+                const t0 = w as PoleTabela;
+                if (!t0.linie) return w;
+                const { zewnetrzne: _z, ...reszta } = t0.linie;
+                void _z;
+                return { ...t0, linie: v ? reszta : { ...reszta, zewnetrzne: false } } as Wezel;
+              })
+            }
           />
         )}
       </Sekcja>
@@ -516,7 +594,9 @@ function PanelTabeli({
           styl={tabela.styl}
           czcionki={czcionki}
           akapity={false}
-          zmien={(s) => ustaw({ styl: s } as Partial<Pole>, `styl:${id}`)}
+          domyslne={{ wyrownanie: 'srodek' }}
+          wyrownaniePionowe={false}
+          zmien={(f) => zmienStyl('styl', f, `styl:${id}`)}
         />
       </Sekcja>
       {tabela.naglowki !== false && (
@@ -526,7 +606,10 @@ function PanelTabeli({
             bazowy={{ ...tabela.styl, wariant: 'pogrubiony' }}
             czcionki={czcionki}
             akapity={false}
-            zmien={(s) => ustaw({ stylNaglowka: s } as Partial<Pole>, `stylnagl:${id}`)}
+            domyslne={{ wyrownanie: 'srodek' }}
+            wyrownaniePionowe={false}
+            autoDopasowanie={false}
+            zmien={(f) => zmienStyl('stylNaglowka', f, `stylnagl:${id}`)}
           />
         </Sekcja>
       )}

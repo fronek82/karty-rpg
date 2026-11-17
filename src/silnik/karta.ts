@@ -272,7 +272,21 @@ export function renderujKarte(
     // Wartość z etykietą: tło, ramka i treść – tylko w obszarze kształtu, etykieta osobno.
     const podzial =
       !czyKontener(w) && w.typ === 'wartosc' ? podzialWartosci(w, u, dane, ctx) : undefined;
-    const obszar: Ramka = podzial?.ksztalt ?? u;
+    let obszar: Ramka = podzial?.ksztalt ?? u;
+    // Kwadrat i koło zostają równoboczne także w szerszym polu (np. z szeroką etykietą).
+    if (
+      !czyKontener(w) &&
+      w.typ === 'wartosc' &&
+      (w.ksztalt === 'kwadrat' || w.ksztalt === 'kolo')
+    ) {
+      const bok = Math.min(obszar.szer, obszar.wys);
+      obszar = {
+        x: obszar.x + (obszar.szer - bok) / 2,
+        y: obszar.y + (obszar.wys - bok) / 2,
+        szer: bok,
+        wys: bok,
+      };
+    }
     const promien = promienWezla(w, obszar);
     const ksztalt =
       !czyKontener(w) && w.typ === 'wartosc' && KSZTALTY_SCIEZKI.has(w.ksztalt)
@@ -409,6 +423,13 @@ const WNETRZA: Partial<
   Record<PoleWartosc['ksztalt'], { x: number; y: number; szer: number; wys: number }>
 > = {
   romb: { x: 0.25, y: 0.25, szer: 0.5, wys: 0.5 },
+  // Kwadrat wpisany w okrąg: bok = średnica / √2.
+  kolo: {
+    x: (1 - Math.SQRT1_2) / 2,
+    y: (1 - Math.SQRT1_2) / 2,
+    szer: Math.SQRT1_2,
+    wys: Math.SQRT1_2,
+  },
   szesciokat: { x: 0.25, y: 0, szer: 0.5, wys: 1 },
   tarcza: { x: 0.15, y: 0.08, szer: 0.7, wys: 0.55 },
 };

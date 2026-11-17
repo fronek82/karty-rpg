@@ -447,8 +447,9 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 2→3: nowe, opcjonalne pola (ramka karty, romb, separator, tabela, formatowanie) – bez zmian danych.
   // 3→4: nowe formaty papieru, własny papier, margines bezpieczeństwa – bez zmian danych.
   // 4→5: nazwy węzłów i dane przykładowe szablonu (edytor szablonu) – bez zmian danych.
-  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d },
-  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d },
+  // 5→6: tabela (wiersze, nagłówki, wyrównanie kolumn), nowe kształty – bez zmian danych.
+  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d },
+  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d, 5: (d) => d },
 };
 
 export function migruj(

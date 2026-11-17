@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { t } from '../../i18n';
 import { rozwinOdstepy, type Odstepy } from '../../model/szablon';
 import { PoleLiczby } from '../kartka/PoleLiczby';
@@ -169,7 +169,9 @@ export function Liczba({
 
 /**
  * Odstępy z czterech stron (margines, padding): jedna liczba dla wszystkich albo osobno.
- * Zapis: liczba, gdy wszystkie równe – jak w modelu.
+ * Zapis: liczba, gdy wszystkie równe – jak w modelu. Tryb „osobno” trzyma się do zamknięcia
+ * panelu (pola nie zwijają się w trakcie wpisywania). Zmiana jako funkcja – przy kilku
+ * zaznaczonych stosowana do odstępów każdego elementu.
  */
 export function PoleOdstepow({
   etykieta,
@@ -179,27 +181,29 @@ export function PoleOdstepow({
 }: {
   etykieta: string;
   wartosc: number | Partial<Odstepy> | undefined;
-  zmien: (v: number | Odstepy) => void;
+  zmien: (f: (o: number | Partial<Odstepy> | undefined) => number | Odstepy) => void;
   min?: number;
 }) {
   const o = rozwinOdstepy(wartosc);
   const rowne = o.gora === o.prawo && o.gora === o.dol && o.gora === o.lewo;
-  const ustaw = (k: keyof Odstepy, v: number) => {
-    const n = { ...o, [k]: v };
-    zmien(n.gora === n.prawo && n.gora === n.dol && n.gora === n.lewo ? n.gora : n);
-  };
+  const [osobno, ustawOsobno] = useState(!rowne || typeof wartosc === 'object');
+  const ustaw = (k: keyof Odstepy, v: number) =>
+    zmien((stare) => {
+      const n = { ...rozwinOdstepy(stare), [k]: v };
+      return n.gora === n.prawo && n.gora === n.dol && n.gora === n.lewo ? n.gora : n;
+    });
   return (
     <fieldset className="odstepy">
       <legend>{etykieta}</legend>
-      {rowne && typeof wartosc !== 'object' ? (
+      {!osobno ? (
         <div className="dwa-pola">
           <Liczba
             etykieta={t('wlasciwosci.wszystkie')}
             wartosc={o.gora}
             min={min}
-            zmien={(v) => zmien(v)}
+            zmien={(v) => zmien(() => v)}
           />
-          <button type="button" className="maly" onClick={() => zmien({ ...o })}>
+          <button type="button" className="maly" onClick={() => ustawOsobno(true)}>
             {t('wlasciwosci.osobno')}
           </button>
         </div>

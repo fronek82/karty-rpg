@@ -1,5 +1,5 @@
 import { t } from '../../i18n';
-import type { Obramowanie, Odstepy, Wezel, WyrownanieOsi } from '../../model/szablon';
+import type { Obramowanie, Wezel, WyrownanieOsi } from '../../model/szablon';
 import { Liczba, PoleKoloru, PoleOdstepow, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 
 type Zmiana = (f: (w: Wezel) => Wezel, klucz?: string) => void;
@@ -11,23 +11,30 @@ const bez = <T extends object>(o: T, k: keyof T): T => {
 };
 
 /** Ramka z linii: grubość, kolor, styl linii, wybrane krawędzie. */
-export function PoleRamki({
+export function PoleRamki<R extends Obramowanie>({
   etykieta,
   ramka,
   zmien,
   krawedzie = true,
 }: {
   etykieta: string;
-  ramka: Obramowanie | undefined;
-  zmien: (r: Obramowanie | undefined) => void;
+  ramka: R | undefined;
+  /**
+   * Zmiana jako funkcja ramki – przy kilku zaznaczonych stosowana do ramki każdego elementu
+   * (zmienia się tylko ruszona właściwość, reszta – np. odsunięcie ramki karty – zostaje).
+   */
+  zmien: (f: (r: R | undefined) => R | undefined) => void;
   krawedzie?: boolean;
 }) {
+  const zmienRamke = (f: (r: R) => R) => zmien((r) => (r ? f(r) : r));
   return (
     <>
       <Wybor
         etykieta={etykieta}
         wartosc={!!ramka}
-        zmien={(v) => zmien(v ? { grubosc: 0.3, kolor: '#000000' } : undefined)}
+        zmien={(v) =>
+          zmien((r) => (v ? (r ?? ({ grubosc: 0.3, kolor: '#000000' } as R)) : undefined))
+        }
       />
       {ramka && (
         <>
@@ -37,13 +44,13 @@ export function PoleRamki({
               wartosc={ramka.grubosc}
               krok={0.05}
               max={10}
-              zmien={(v) => zmien({ ...ramka, grubosc: v })}
+              zmien={(v) => zmienRamke((r) => ({ ...r, grubosc: v }))}
             />
             <PoleKoloru
               etykieta={t('wlasciwosci.kolorLinii')}
               wartosc={ramka.kolor}
               moznaBrak={false}
-              zmien={(v) => zmien({ ...ramka, kolor: v! })}
+              zmien={(v) => zmienRamke((r) => ({ ...r, kolor: v! }))}
             />
           </div>
           <Przelacznik
@@ -53,7 +60,7 @@ export function PoleRamki({
               tekst: t(`wlasciwosci.linia.${s}`),
             }))}
             wartosc={ramka.styl ?? 'ciagla'}
-            zmien={(v) => zmien(v === 'ciagla' ? bez(ramka, 'styl') : { ...ramka, styl: v })}
+            zmien={(v) => zmienRamke((r) => (v === 'ciagla' ? bez(r, 'styl') : { ...r, styl: v }))}
           />
           {krawedzie && (
             <fieldset className="krawedzie">
@@ -63,17 +70,19 @@ export function PoleRamki({
                   key={k}
                   etykieta={t(`wlasciwosci.strona.${k}`)}
                   wartosc={!ramka.krawedzie || !!ramka.krawedzie[k]}
-                  zmien={(v) => {
-                    const obecne = ramka.krawedzie ?? {
-                      gora: true,
-                      prawo: true,
-                      dol: true,
-                      lewo: true,
-                    };
-                    const n = { ...obecne, [k]: v };
-                    const wszystkie = n.gora && n.prawo && n.dol && n.lewo;
-                    zmien(wszystkie ? bez(ramka, 'krawedzie') : { ...ramka, krawedzie: n });
-                  }}
+                  zmien={(v) =>
+                    zmienRamke((r) => {
+                      const obecne = r.krawedzie ?? {
+                        gora: true,
+                        prawo: true,
+                        dol: true,
+                        lewo: true,
+                      };
+                      const n = { ...obecne, [k]: v };
+                      const wszystkie = n.gora && n.prawo && n.dol && n.lewo;
+                      return wszystkie ? bez(r, 'krawedzie') : { ...r, krawedzie: n };
+                    })
+                  }
                 />
               ))}
             </fieldset>
@@ -93,6 +102,12 @@ export function PanelWygladu({ wezel, zmien }: { wezel: Wezel; zmien: Zmiana }) 
   const ustaw = <K extends keyof Wezel>(k: K, v: Wezel[K] | undefined, klucz?: string) =>
     zmien((w) => (v === undefined ? bez(w, k) : ({ ...w, [k]: v } as Wezel)), klucz);
   const wyr = wezel.wyrownanie ?? {};
+  // Kształty wartości: promień i wybór krawędzi dotyczą tylko prostokątów (ścięte – wielkość ścięcia).
+  const ksztalt = wezel.typ === 'wartosc' ? wezel.ksztalt : undefined;
+  const ksztaltSciezki =
+    !!ksztalt && ['kolo', 'romb', 'tarcza', 'szesciokat', 'sciety'].includes(ksztalt);
+  const sciety = ksztalt === 'sciety';
+  const bezPromienia = ksztaltSciezki && !sciety;
   const ustawWyr = (os: 'poziomo' | 'pionowo', v: WyrownanieOsi | 'rozciagnij') =>
     zmien((w) => {
       const n = { ...(w.wyrownanie ?? {}) };
@@ -119,29 +134,43 @@ export function PanelWygladu({ wezel, zmien }: { wezel: Wezel; zmien: Zmiana }) 
         <PoleRamki
           etykieta={t('wlasciwosci.ramka')}
           ramka={wezel.obramowanie}
-          zmien={(r) => ustaw('obramowanie', r, `ramka:${id}`)}
+          krawedzie={!ksztaltSciezki}
+          zmien={(f) =>
+            zmien((w) => {
+              const r = f(w.obramowanie);
+              return r ? ({ ...w, obramowanie: r } as Wezel) : bez(w, 'obramowanie');
+            }, `ramka:${id}`)
+          }
         />
-        <Liczba
-          etykieta={t('wlasciwosci.promien')}
-          wartosc={wezel.promien ?? 0}
-          max={50}
-          zmien={(v) => ustaw('promien', v || undefined, `promien:${id}`)}
-        />
+        {!bezPromienia && (
+          <Liczba
+            etykieta={t(sciety ? 'wlasciwosci.sciecie' : 'wlasciwosci.promien')}
+            wartosc={wezel.promien ?? 0}
+            max={50}
+            zmien={(v) => ustaw('promien', v || undefined, `promien:${id}`)}
+          />
+        )}
       </Sekcja>
       <Sekcja tytul={t('wlasciwosci.odstepy')}>
         <PoleOdstepow
           etykieta={t('wlasciwosci.margines')}
           wartosc={wezel.margines}
           min={-50}
-          zmien={(v: number | Odstepy) =>
-            ustaw('margines', v === 0 ? undefined : v, `margines:${id}`)
+          zmien={(f) =>
+            zmien((w) => {
+              const v = f(w.margines);
+              return v === 0 ? bez(w, 'margines') : ({ ...w, margines: v } as Wezel);
+            }, `margines:${id}`)
           }
         />
         <PoleOdstepow
           etykieta={t('szablon.padding')}
           wartosc={wezel.padding}
-          zmien={(v: number | Odstepy) =>
-            ustaw('padding', v === 0 ? undefined : v, `padding:${id}`)
+          zmien={(f) =>
+            zmien((w) => {
+              const v = f(w.padding);
+              return v === 0 ? bez(w, 'padding') : ({ ...w, padding: v } as Wezel);
+            }, `padding:${id}`)
           }
         />
         <Przelacznik

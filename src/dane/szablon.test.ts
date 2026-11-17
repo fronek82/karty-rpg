@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Projekt } from '../model/projekt';
-import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
+import {
+  czyKontener,
+  kluczeTabeli,
+  type Kontener,
+  type Szablon,
+  type Wezel,
+} from '../model/szablon';
 import { kolumnySzablonu } from './edycja';
 import {
   danePodgladu,
@@ -17,8 +23,13 @@ import {
   usunWezly,
   wstawWezel,
   wyzej,
+  skopiujStyl,
+  wklejStyl,
+  wszystkieWezly,
   zmienSzablon,
+  zmienTypKontenera,
   zmienTypPola,
+  zmienWezel,
   znajdzWezel,
 } from './szablon';
 
@@ -173,9 +184,22 @@ describe('poprawki po przeglądzie', () => {
     s = wstawWezel(s, 'karta', nowyWezel(s, 'tabela', 'Tabela'));
     s = duplikujWezel(s, 'tabela', '(kopia)').szablon;
     s = duplikujWezel(s, 'tabela', '(kopia)').szablon;
-    const k = kolumnySzablonu(s).map((x) => x.klucz);
+    // Wszystkie klucze (z powtórzeniami) – także komórek dalszych wierszy tabel.
+    const wszystkie = (x: Szablon) =>
+      wszystkieWezly(x).flatMap((w) =>
+        czyKontener(w) ? [] : w.typ === 'tabela' ? kluczeTabeli(w) : w.klucz ? [w.klucz] : [],
+      );
+    const k = wszystkie(s);
     expect(new Set(k).size).toBe(k.length);
     expect(k.slice(0, 3)).toEqual(['tekst', 'tekst_2', 'tekst_3']);
+    // Więcej wierszy w każdej tabeli – nadal bez kolizji.
+    const wiecej = wszystkieWezly(s).reduce(
+      (x, w) =>
+        w.typ === 'tabela' ? zmienWezel(x, w.id, (t) => ({ ...t, wiersze: 3 }) as Wezel) : x,
+      s,
+    );
+    const k3 = wszystkie(wiecej);
+    expect(new Set(k3).size).toBe(k3.length);
   });
 
   it('klucze zajęte w danych kart nie wracają do nowych pól', () => {
@@ -248,5 +272,64 @@ describe('zmiana typu pola', () => {
     const t = zmienTypPola(s, 'tekst', 'separator');
     expect(znajdzWezel(t, 'tekst')).not.toHaveProperty('klucz');
     expect(zmienTypPola(t, 'tekst', 'separator')).toBe(t);
+  });
+});
+
+describe('zmiana typu – przypadki brzegowe, kopiowanie stylu', () => {
+  it('pole stałe zostaje stałe; tekst ↔ tabela; etykieta tekst → wartość; zajęte klucze', () => {
+    let s = pusty();
+    const staly = { ...nowyWezel(s, 'tekst', 'Napis'), tekst: 'Zawsze' } as Wezel;
+    delete (staly as { klucz?: string }).klucz;
+    s = wstawWezel(s, 'karta', staly);
+    const w = znajdzWezel(zmienTypPola(s, 'tekst', 'wartosc'), 'tekst');
+    expect(w).toMatchObject({ typ: 'wartosc', tekst: 'Zawsze' });
+    expect(w).not.toHaveProperty('klucz');
+    // Tekst z etykietą „przed” → wartość: etykieta „nad”.
+    let t = wstawWezel(pusty(), 'karta', {
+      ...nowyWezel(pusty(), 'tekst', 'Moc'),
+      etykieta: { tekst: 'Moc', pozycja: 'przed' },
+    } as Wezel);
+    t = zmienTypPola(t, 'tekst', 'wartosc');
+    expect(znajdzWezel(t, 'tekst')).toMatchObject({ etykieta: { tekst: 'Moc', pozycja: 'nad' } });
+    // Na tabelę: klucze kolumn omijają zajęte (dane kart po usuniętych polach).
+    const tab = zmienTypPola(t, 'tekst', 'tabela', 'Tabela', ['moc_1']);
+    const kol = (znajdzWezel(tab, 'tekst') as { kolumny: { klucz: string }[] }).kolumny;
+    expect(kol.map((k) => k.klucz)).not.toContain('moc_1');
+    // Z tabeli na tekst: nowy klucz z nazwy.
+    expect(znajdzWezel(zmienTypPola(tab, 'tekst', 'tekst'), 'tekst')).toMatchObject({
+      typ: 'tekst',
+    });
+  });
+
+  it('wiersz ↔ kolumna obraca separatory', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'wiersz', 'W'));
+    s = wstawWezel(s, 'wiersz', nowyWezel(s, 'separator', 'S', { wWierszu: true }));
+    expect(znajdzWezel(s, 'separator')).toMatchObject({ kierunek: 'pionowy' });
+    s = zmienTypKontenera(s, 'wiersz', 'kolumna');
+    expect(znajdzWezel(s, 'separator')).toMatchObject({ kierunek: 'poziomy' });
+  });
+
+  it('kopiuj/wklej styl: wygląd do każdego, styl tekstu do pól z tekstem, kształt i linie – tylko ten sam typ', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', {
+      ...nowyWezel(s, 'wartosc', 'A'),
+      ksztalt: 'romb',
+      tlo: '#ff0000',
+      styl: { czcionka: 'tytul', rozmiar: 5 },
+    } as Wezel);
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'tekst', 'B'));
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'wartosc', 'C'));
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'wiersz', 'D'));
+    const st = skopiujStyl(znajdzWezel(s, 'wartosc')!);
+    expect(wklejStyl(znajdzWezel(s, 'tekst')!, st)).toMatchObject({
+      tlo: '#ff0000',
+      styl: { czcionka: 'tytul', rozmiar: 5 },
+    });
+    expect(wklejStyl(znajdzWezel(s, 'tekst')!, st)).not.toHaveProperty('ksztalt');
+    expect(wklejStyl(znajdzWezel(s, 'wartosc-2')!, st)).toMatchObject({ ksztalt: 'romb' });
+    const w = wklejStyl(znajdzWezel(s, 'wiersz')!, st);
+    expect(w).toMatchObject({ tlo: '#ff0000' });
+    expect(w).not.toHaveProperty('styl');
   });
 });

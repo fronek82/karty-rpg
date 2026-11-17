@@ -64,7 +64,7 @@ test('tabela: kolumny, wiersze, nagłówki, linie; komórki to pola karty', asyn
     'Wola (2)',
     'Zręczność (2)',
   ])
-    await expect(karta.getByLabel(n, { exact: true })).toBeVisible();
+    await expect(karta.getByLabel(`Cechy – ${n}`, { exact: true })).toBeVisible();
 });
 
 test('kształt z listy, styl tekstu, stały tekst, ramka pola i karty; kopiuj/wklej styl, wiele naraz', async ({

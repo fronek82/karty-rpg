@@ -810,11 +810,11 @@ describe('M2-4: tabela N wierszy, kształty', () => {
     const s = zTabela({ wiersze: 3 });
     const tab = s.korzen.dzieci[0]!;
     if (tab.typ !== 'tabela') throw new Error();
-    expect(kluczeTabeli(tab)).toEqual(['a', 'b', 'a_2', 'b_2', 'a_3', 'b_3']);
-    const { scena } = renderujKarte(s, { dane: { a: '1', b_3: '9' } }, ctx);
+    expect(kluczeTabeli(tab)).toEqual(['a', 'b', 'a.2', 'b.2', 'a.3', 'b.3']);
+    const { scena } = renderujKarte(s, { dane: { a: '1', 'b.3': '9' } }, ctx);
     const poziome = scena.elementy.filter((e) => e.typ === 'linia' && e.y1 === e.y2);
     expect(poziome).toHaveLength(3); // pod nagłówkiem i między trzema wierszami
-    expect(czyPuste(tab, { b_3: '9' })).toBe(false);
+    expect(czyPuste(tab, { 'b.3': '9' })).toBe(false);
   });
 
   it('bez wiersza nagłówków – tylko wiersze wartości', () => {
@@ -854,6 +854,38 @@ describe('M2-4: tabela N wierszy, kształty', () => {
       const v = wezly.find((w) => w.id === 'v')!;
       if (ksztalt === 'kwadrat') expect(v.szer).toBeCloseTo(v.wys, 6);
       else expect(scena.elementy.filter((e) => e.typ === 'sciezka')).toHaveLength(2);
+    }
+  });
+});
+
+describe('kwadrat i koło z szeroką etykietą', () => {
+  it('kształt zostaje równoboczny (obszar wyśrodkowany), treść koła we wnętrzu okręgu', () => {
+    for (const ksztalt of ['kwadrat', 'kolo'] as const) {
+      const s: Szablon = {
+        id: 's',
+        nazwa: 's',
+        rozmiar: { tryb: 'mm', szerokosc: 60, wysokosc: 30 },
+        korzen: {
+          id: 'k',
+          typ: 'kolumna',
+          dzieci: [
+            {
+              id: 'v',
+              typ: 'wartosc',
+              klucz: 'v',
+              ksztalt,
+              wyrownanie: { poziomo: 'poczatek' },
+              tlo: '#eeeeee',
+              styl: { czcionka: 'tresc', rozmiar: pt(9) },
+              etykieta: { tekst: 'BARDZO DŁUGA ETYKIETA NAD', pozycja: 'nad' },
+            },
+          ],
+        },
+      };
+      const { scena } = renderujKarte(s, { dane: { v: '5' } }, ctx);
+      const tlo = scena.elementy.find((e) => e.typ === 'prostokat' && e.wypelnienie === '#eeeeee');
+      if (tlo?.typ !== 'prostokat') throw new Error(ksztalt);
+      expect(tlo.szer).toBeCloseTo(tlo.wys, 6);
     }
   });
 });

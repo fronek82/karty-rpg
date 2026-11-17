@@ -73,14 +73,12 @@ export function PanelWezla({
   return (
     <>
       {wiele && <p className="uwaga">{t('wlasciwosci.wieleNaraz')}</p>}
-      {!korzen && (
-        <Lista
-          etykieta={t('wlasciwosci.typ')}
-          opcje={typy.map((x) => ({ wartosc: x, tekst: t(`wezel.${x}`) }))}
-          wartosc={wezel.typ}
-          zmien={(v) => zmienTyp(v)}
-        />
-      )}
+      <Lista
+        etykieta={t('wlasciwosci.typ')}
+        opcje={typy.map((x) => ({ wartosc: x, tekst: t(`wezel.${x}`) }))}
+        wartosc={wezel.typ}
+        zmien={(v) => zmienTyp(v)}
+      />
       {!wiele && (
         <div className="pole-panelu">
           <label htmlFor={`nazwa-${id}`}>{t('szablon.nazwaElementu')}</label>
@@ -247,12 +245,15 @@ export function PanelWezla({
                   bazowy={zEtykieta.styl}
                   czcionki={czcionki}
                   akapity={false}
-                  zmien={(s: Partial<StylTekstu>) =>
-                    zmienWezel(
-                      (w) =>
-                        ({ ...w, etykieta: { ...(w as PoleTekst).etykieta!, styl: s } }) as Wezel,
-                      `stylEtykiety:${id}`,
-                    )
+                  // Etykieta tekstu leży w akapicie pola – wyrównanie ma ze stylu pola.
+                  wyrownanie={zEtykieta.typ === 'wartosc'}
+                  wyrownaniePionowe={false}
+                  domyslne={{ wyrownanie: 'srodek' }}
+                  zmien={(f: (s: Partial<StylTekstu>) => Partial<StylTekstu>) =>
+                    zmienWezel((w) => {
+                      const e = (w as PoleTekst).etykieta;
+                      return e ? ({ ...w, etykieta: { ...e, styl: f(e.styl ?? {}) } } as Wezel) : w;
+                    }, `stylEtykiety:${id}`)
                   }
                 />
               </Sekcja>
@@ -331,6 +332,7 @@ export function PanelWezla({
           czcionki={czcionki}
           obrazy={obrazy}
           wiele={wiele}
+          zajeteKlucze={zajeteKlucze}
         />
       )}
 

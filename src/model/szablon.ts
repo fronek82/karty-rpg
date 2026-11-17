@@ -411,9 +411,12 @@ export function stylePola(w: Wezel): Partial<StylTekstu>[] {
   }
 }
 
-/** Klucz danych komórki tabeli: wiersz 1 – klucz kolumny, dalsze – `klucz_2`, `klucz_3`… */
+/**
+ * Klucz danych komórki tabeli: wiersz 1 – klucz kolumny, dalsze – `klucz.2`, `klucz.3`… (kropki
+ * nie ma w kluczach tworzonych z nazw, więc komórki nie zderzą się z innymi polami).
+ */
 export const kluczKomorki = (k: KolumnaTabeli, wiersz: number) =>
-  wiersz === 0 ? k.klucz : `${k.klucz}_${wiersz + 1}`;
+  wiersz === 0 ? k.klucz : `${k.klucz}.${wiersz + 1}`;
 
 /** Klucze wszystkich komórek tabeli (wiersz po wierszu). */
 export function kluczeTabeli(t: PoleTabela): string[] {

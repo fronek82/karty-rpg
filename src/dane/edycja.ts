@@ -65,10 +65,12 @@ export function kolumnySzablonu(s: Szablon): KolumnaDanych[] {
           pole.kolumny.forEach((k, i) => {
             const klucz = kluczKomorki(k, r);
             if (!k.klucz || wynik.has(klucz)) return;
-            const naglowek = k.naglowek || `${pole.nazwa || nazwaKlucza(k.klucz)} ${i + 1}`;
+            // „Tabela – nagłówek (wiersz)”: dwie tabele z tymi samymi nagłówkami się nie mylą.
+            const naglowek = k.naglowek || String(i + 1);
+            const komorka = wiersze > 1 ? `${naglowek} (${r + 1})` : naglowek;
             wynik.set(klucz, {
               klucz,
-              nazwa: wiersze > 1 ? `${naglowek} (${r + 1})` : naglowek,
+              nazwa: pole.nazwa ? `${pole.nazwa} – ${komorka}` : komorka,
               rodzaj: 'pole',
               typPola: 'tabela',
             });
