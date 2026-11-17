@@ -73,7 +73,8 @@ function tresciSymbolu(d: DefinicjaSymbolu): string {
       const lin = obrys
         ? ` stroke="${kolorWSymbolu(obrys.kolor)}" stroke-width="${liczba(obrys.grubosc, 3)}" stroke-linejoin="round" stroke-linecap="round"`
         : '';
-      return `<path d="${konturNaD(c.kontur, 3)}" fill="${wyp}"${lin}/>`;
+      const regula = c.evenodd && wyp !== 'none' ? ' fill-rule="evenodd"' : '';
+      return `<path d="${konturNaD(c.kontur, 3)}" fill="${wyp}"${regula}${lin}/>`;
     })
     .join('');
 }

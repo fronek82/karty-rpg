@@ -1,5 +1,6 @@
 import { czyProjektWlasny, dodajSzablonZKartka } from '../dane/wlasneKarty';
 import { t } from '../i18n';
+import { BibliotekaOzdobnikow } from './biblioteka/BibliotekaOzdobnikow';
 import { EdytorKartki } from './kartka/EdytorKartki';
 import { EdytorSzablonu } from './szablon/EdytorSzablonu';
 import { Kreator } from './szablon/Kreator';
@@ -25,6 +26,7 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
     );
   const sciezka = `#/projekt/${encodeURIComponent(id)}`;
   const zGry = !czyProjektWlasny(stan.projekt);
+  if (podtrasa === 'biblioteka') return <BibliotekaOzdobnikow edycja={stan} />;
   const szablon = /^szablon\/(.+)$/.exec(podtrasa)?.[1];
   if ((szablon || podtrasa === 'nowy-szablon') && zGry)
     // Projekt gry (np. Mausritter): szablony z pakietu nie są edytowane w edytorze od zera.

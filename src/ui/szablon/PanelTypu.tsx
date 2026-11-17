@@ -15,7 +15,9 @@ import {
 import { Liczba, Lista, PoleKoloru, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 import { PanelSeparatora } from './PanelSeparatora';
 import { PanelStylu } from './PanelStylu';
-import { PoleRamki } from './PanelWygladu';
+import { PoleRamki, nazwaElementu } from './PanelWygladu';
+import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
+import { elementyRodzaju, useAdresBiblioteki, useElementyWlasne } from './elementyWlasne';
 
 type Zmiana = (f: (w: Wezel) => Wezel, klucz?: string) => void;
 type Opcje = readonly { wartosc: string; tekst: string }[];
@@ -56,6 +58,8 @@ export function PanelTypu({
   zajeteKlucze: () => Iterable<string>;
 }) {
   const id = pole.id;
+  const adresBiblioteki = useAdresBiblioteki();
+  const wlasneKsztalty = elementyRodzaju('ksztalt', useElementyWlasne());
   // Zmiana stylu jako funkcja – przy kilku zaznaczonych stosowana do stylu każdego elementu.
   const zmienStyl = (
     k: 'styl' | 'stylNaglowka',
@@ -116,10 +120,47 @@ export function PanelTypu({
         <>
           <Lista
             etykieta={t('wlasciwosci.ksztalt')}
-            opcje={KSZTALTY.map((k) => ({ wartosc: k, tekst: t(`ksztalt.${k}`) }))}
+            opcje={[
+              ...KSZTALTY.map((k) => ({ wartosc: k, tekst: t(`ksztalt.${k}`) })),
+              // Własny kształt z biblioteki ozdobników (rodzaj „kształt”).
+              ...(wlasneKsztalty.length > 0 || pole.ksztalt === 'wlasny'
+                ? [{ wartosc: 'wlasny' as const, tekst: t('ksztalt.wlasny') }]
+                : []),
+            ]}
             wartosc={pole.ksztalt}
-            zmien={(v) => ustaw({ ksztalt: v })}
+            zmien={(v) =>
+              ustaw(
+                v === 'wlasny'
+                  ? { ksztalt: v, ksztaltElement: pole.ksztaltElement ?? wlasneKsztalty[0]?.id }
+                  : { ksztalt: v, ksztaltElement: undefined },
+              )
+            }
           />
+          {pole.ksztalt === 'wlasny' && (
+            <div className="pole-panelu">
+              <span id={`ksztalt-el-${id}`}>{t('ksztalt.wlasnyElement')}</span>
+              <div
+                className="wybor-narozniki"
+                role="group"
+                aria-labelledby={`ksztalt-el-${id}`}
+                data-testid="wybor-ksztaltu"
+              >
+                {wlasneKsztalty.map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    aria-pressed={pole.ksztaltElement === e.id}
+                    aria-label={nazwaElementu(e)}
+                    onClick={() => ustaw({ ksztaltElement: e.id })}
+                  >
+                    <MiniaturaOzdobnika element={e} />
+                    <small>{nazwaElementu(e)}</small>
+                  </button>
+                ))}
+              </div>
+              <a href={adresBiblioteki}>{t('biblioteka.otworz')}</a>
+            </div>
+          )}
           {styl}
         </>
       );

@@ -2,8 +2,10 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { t } from '../i18n';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
 import { stylePola, type Szablon, type Wezel } from '../model/szablon';
+import type { ElementOzdobny } from '../ozdobniki/typy';
 import { BladKolekcjiCzcionek, wczytajCzcionke } from '../silnik/czcionki';
 import { MAKS_BAJTOW_CZCIONKI, formatObrazu, unikalneId } from './czcionki';
+import { dolaczElementy, elementyUzyteWSzablonie, przepiszOdwolania } from './biblioteka';
 import {
   BladDanych,
   migruj,
@@ -182,6 +184,8 @@ export interface PaczkaSzablonu {
   role: Record<string, string>;
   zasoby: OpisZasobu[];
   dane: DaneZasobow;
+  /** Własne elementy biblioteki ozdobników użyte przez szablon. */
+  biblioteka?: ElementOzdobny[];
 }
 
 export interface WynikEksportuSzablonu {
@@ -218,7 +222,14 @@ export function eksportujSzablon(
       ),
     ),
   ];
-  const plik = { wersja: projekt.wersja, szablon, role, zasoby: uzyte };
+  const biblioteka = elementyUzyteWSzablonie(projekt, szablon);
+  const plik = {
+    wersja: projekt.wersja,
+    szablon,
+    role,
+    zasoby: uzyte,
+    ...(biblioteka.length > 0 ? { biblioteka } : {}),
+  };
   return {
     bajty: spakuj(
       plik,
@@ -291,6 +302,9 @@ export function dodajSzablon(
   for (const w of wszystkieWezly(szablon)) {
     if (w.typ === 'obraz' && w.zasob) w.zasob = przemianowane.get(w.zasob) ?? w.zasob;
   }
+  // Własne elementy ozdobne szablonu: identyczne współdzielone, inne o zajętym id – nowe id.
+  const elementy = dolaczElementy(projekt, paczka.biblioteka ?? []);
+  przepiszOdwolania(szablon, elementy.mapa);
   const role = { ...projekt.role };
   for (const [rola, rodzina] of Object.entries(paczka.role)) {
     const obecna = role[rola];
@@ -303,6 +317,7 @@ export function dodajSzablon(
     ...projekt,
     role,
     zasoby: opisy,
+    ...(elementy.lista.length > 0 ? { biblioteka: { ozdobniki: elementy.lista } } : {}),
     szablony: [...projekt.szablony, szablon],
     zmieniono: new Date().toISOString(),
   };

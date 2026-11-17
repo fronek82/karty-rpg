@@ -1,4 +1,5 @@
 import type { PlikCzcionki } from '../druk/budowaPdf';
+import type { ElementOzdobny } from '../ozdobniki/typy';
 import type { Szablon } from '../model/szablon';
 import type { RejestrCzcionek } from '../silnik/czcionki';
 import type { InformacjaOObrazie } from '../silnik/karta';
@@ -24,4 +25,6 @@ export interface ZasobyPakietu {
   zapasowa?: string;
   szablony: Map<string, Szablon>;
   obrazy: Map<string, ObrazWPamieci>;
+  /** Własne elementy biblioteki ozdobników projektu. */
+  elementy?: readonly ElementOzdobny[];
 }

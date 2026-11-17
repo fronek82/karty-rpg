@@ -2,6 +2,7 @@ import {
   PDFDocument,
   PDFName,
   PDFOperator,
+  PDFOperatorNames,
   PDFRef,
   type PDFPage,
   appendBezierCurve,
@@ -254,7 +255,18 @@ class BudowniczyPdf {
       }
       ops.push(...operatorySciezki(c.kontur, (v) => Math.round(v * 1e4) / 1e4));
       const wyp = c.wypelnienie !== undefined;
-      ops.push(wyp && o ? fillAndStroke() : wyp ? fill() : stroke());
+      const eo = !!c.evenodd;
+      ops.push(
+        wyp && o
+          ? eo
+            ? PDFOperator.of(PDFOperatorNames.FillEvenOddAndStroke)
+            : fillAndStroke()
+          : wyp
+            ? eo
+              ? PDFOperator.of(PDFOperatorNames.FillEvenOdd)
+              : fill()
+            : stroke(),
+      );
       ops.push(popGraphicsState());
     }
     const m = Math.ceil(zapas) + 1;

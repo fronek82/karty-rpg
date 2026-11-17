@@ -126,7 +126,7 @@ export function scenyStron(
 /** Sceny kart osobno: każda karta talii kartki raz (bez powtórzeń między kartkami). */
 export function scenyKart(
   kartki: { arkusz: Arkusz; talia: Talia }[],
-  zasoby: Pick<ZasobyPakietu, 'czcionki' | 'szablony' | 'obrazy'>,
+  zasoby: Pick<ZasobyPakietu, 'czcionki' | 'szablony' | 'obrazy' | 'elementy'>,
   format: FormatObrazu,
 ): { nazwa: string; scena: Scena; czarnoBialy: boolean }[] {
   const widziane = new Set<string>();
@@ -143,6 +143,7 @@ export function scenyKart(
       const { scena } = renderujKarte(s, karta, {
         czcionki: zasoby.czcionki,
         obraz: (id) => zasoby.obrazy.get(id)?.info,
+        ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
       });
       const opis = nazwaKarty(karta.dane, s) || s.nazwa;
       return {

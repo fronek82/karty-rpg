@@ -27,6 +27,9 @@ import {
 } from '../model/szablon';
 import type { RejestrCzcionek } from './czcionki';
 import { konturIkony } from './ikony';
+import { znajdzElement } from '../ozdobniki/katalog';
+import { konturWlasnegoKsztaltu, wnetrzeWlasnegoKsztaltu } from '../ozdobniki/ksztalt';
+import type { ElementOzdobny } from '../ozdobniki/typy';
 import { ramkaZMotywu } from '../ozdobniki/motyw';
 import { rysujSeparatorOzdobny, wysokoscOzdobySeparatora } from '../ozdobniki/separator';
 import { narozniki as rysujNarozniki, type WynikNarozniki } from '../ozdobniki/narozniki';
@@ -65,6 +68,8 @@ export interface KontekstRenderowania {
   czcionki: RejestrCzcionek;
   /** Wymiary obrazu z biblioteki; undefined = brak zasobu. */
   obraz?: (zasob: string) => InformacjaOObrazie | undefined;
+  /** Własne elementy biblioteki ozdobników projektu (`Projekt.biblioteka.ozdobniki`). */
+  elementy?: readonly ElementOzdobny[];
 }
 
 export interface Ostrzezenie {
@@ -272,7 +277,7 @@ export function renderujKarte(
       ostrzezenia.push({ pole: id, komunikat: 'nieznany-element-ozdobny', szczegoly: w.nieznany });
   };
   const dodajNarozniki = (n: Narozniki, ramka: Ramka, kolor: Kolor, id: string) =>
-    wypiszNarozniki(rysujNarozniki(n, ramka, kolor), id);
+    wypiszNarozniki(rysujNarozniki(n, ramka, kolor, ctx.elementy), id);
 
   /**
    * Ozdoba (motyw) na prostokącie. Nieznany motyw: ostrzeżenie i cienka linia ciągła w kolorze
@@ -281,8 +286,11 @@ export function renderujKarte(
    * Narożniki leżą na tym samym prostokącie co pas (po odsunięciu), kolor domyślny = kolor motywu.
    */
   const dodajOzdobe = (o: Ozdoba, obszar: Ramka, id: string, n: Narozniki | undefined) => {
-    const rogi = n ? rysujNarozniki(n, obszar, o.kolor) : undefined;
-    const w = ramkaZMotywu(o, obszar, { bezKostek: !!rogi && rogi.elementy.length > 0 });
+    const rogi = n ? rysujNarozniki(n, obszar, o.kolor, ctx.elementy) : undefined;
+    const w = ramkaZMotywu(o, obszar, {
+      bezKostek: !!rogi && rogi.elementy.length > 0,
+      ...(ctx.elementy ? { wlasne: ctx.elementy } : {}),
+    });
     elementy.push(...w.elementy);
     Object.assign(symbole, w.symbole);
     if (w.nieznany) {
@@ -353,25 +361,37 @@ export function renderujKarte(
       };
     }
     const promien = promienWezla(w, obszar);
-    const ksztalt =
-      !czyKontener(w) && w.typ === 'wartosc' && KSZTALTY_SCIEZKI.has(w.ksztalt)
-        ? (w.ksztalt as KsztaltSciezki)
+    const pole = !czyKontener(w) && w.typ === 'wartosc' ? w : undefined;
+    // Własny kształt z biblioteki: brak elementu (albo inny rodzaj) = ostrzeżenie i zwykły prostokąt.
+    const wlasny = pole?.ksztalt === 'wlasny' ? ksztaltWlasny(pole, ctx) : undefined;
+    if (pole?.ksztalt === 'wlasny' && !wlasny)
+      ostrzezenia.push({
+        pole: w.id,
+        komunikat: 'nieznany-element-ozdobny',
+        szczegoly: pole.ksztaltElement ?? '',
+      });
+    const ksztalt: KsztaltSciezki | undefined = wlasny
+      ? 'wlasny'
+      : pole && KSZTALTY_SCIEZKI.has(pole.ksztalt)
+        ? (pole.ksztalt as KsztaltSciezki)
         : undefined;
     if (w.tlo) {
       elementy.push(
-        ksztalt === 'sciety'
-          ? { typ: 'sciezka', kontur: konturScietego(obszar, promien ?? 0), wypelnienie: w.tlo }
-          : ksztalt
-            ? { typ: 'sciezka', kontur: konturKsztaltu(ksztalt, obszar), wypelnienie: w.tlo }
-            : {
-                typ: 'prostokat',
-                x: obszar.x,
-                y: obszar.y,
-                szer: obszar.szer,
-                wys: obszar.wys,
-                promien,
-                wypelnienie: w.tlo,
-              },
+        ksztalt === 'wlasny'
+          ? { typ: 'sciezka', kontur: konturWlasnegoKsztaltu(wlasny!, obszar), wypelnienie: w.tlo }
+          : ksztalt === 'sciety'
+            ? { typ: 'sciezka', kontur: konturScietego(obszar, promien ?? 0), wypelnienie: w.tlo }
+            : ksztalt
+              ? { typ: 'sciezka', kontur: konturKsztaltu(ksztalt, obszar), wypelnienie: w.tlo }
+              : {
+                  typ: 'prostokat',
+                  x: obszar.x,
+                  y: obszar.y,
+                  szer: obszar.szer,
+                  wys: obszar.wys,
+                  promien,
+                  wypelnienie: w.tlo,
+                },
       );
     }
     if (podzial?.etykieta) {
@@ -449,7 +469,7 @@ export function renderujKarte(
       );
     } else {
       if (w.obramowanie)
-        elementy.push(...rysujObramowanie(w.obramowanie, obszar, promien, ksztalt));
+        elementy.push(...rysujObramowanie(w.obramowanie, obszar, promien, ksztalt, wlasny));
       if (w.narozniki) dodajNarozniki(w.narozniki, obszar, w.obramowanie?.kolor ?? CZARNY, w.id);
     }
   };
@@ -524,7 +544,7 @@ function rysujRamkeKarty(
  * Romb wpisany w prostokąt; `wciecie` przesuwa boki do środka (prostopadle) – np. o pół grubości
  * linii, żeby zewnętrzna krawędź obrysu pokrywała się z tłem.
  */
-type KsztaltSciezki = 'sciety' | 'romb' | 'tarcza' | 'szesciokat';
+type KsztaltSciezki = 'sciety' | 'romb' | 'tarcza' | 'szesciokat' | 'wlasny';
 const KSZTALTY_SCIEZKI = new Set<string>(['sciety', 'romb', 'tarcza', 'szesciokat']);
 
 /** Prostokąt treści wpisany w kształt – ułamki wymiarów kształtu (x, y, szerokość, wysokość). */
@@ -543,9 +563,22 @@ const WNETRZA: Partial<
   tarcza: { x: 0.15, y: 0.08, szer: 0.7, wys: 0.55 },
 };
 
+/** Własny kształt wartości z biblioteki (rodzaj „kształt”) albo `undefined`. */
+function ksztaltWlasny(pole: PoleWartosc, ctx: KontekstRenderowania): ElementOzdobny | undefined {
+  const e = pole.ksztaltElement ? znajdzElement(pole.ksztaltElement, ctx.elementy) : undefined;
+  return e && e.rodzaj === 'ksztalt' ? e : undefined;
+}
+
+/** Prostokąt treści wpisany w kształt wartości (ułamki wymiarów) albo `undefined` (cała ramka). */
+function wnetrzeKsztaltu(pole: PoleWartosc, ctx: KontekstRenderowania) {
+  if (pole.ksztalt !== 'wlasny') return WNETRZA[pole.ksztalt];
+  const e = ksztaltWlasny(pole, ctx);
+  return e ? wnetrzeWlasnegoKsztaltu(e) : undefined;
+}
+
 /** Kontur kształtu wartości (romb, tarcza, sześciokąt) przesunięty do środka o `wciecie`. */
 export function konturKsztaltu(
-  k: Exclude<KsztaltSciezki, 'sciety'>,
+  k: Exclude<KsztaltSciezki, 'sciety' | 'wlasny'>,
   r: Ramka,
   wciecie: Mm = 0,
 ): Kontur {
@@ -601,10 +634,11 @@ function rysujObramowanie(
   u: Ramka,
   promien: Mm | undefined,
   ksztalt?: KsztaltSciezki,
+  wlasny?: ElementOzdobny,
 ): ElementSceny[] {
   const s = obrys(o);
   if (!s) return [];
-  return osieLinii(o).flatMap((d) => jednaLiniaObramowania(o, s, d, u, promien, ksztalt));
+  return osieLinii(o).flatMap((d) => jednaLiniaObramowania(o, s, d, u, promien, ksztalt, wlasny));
 }
 
 /** Jedna linia obramowania, której oś leży `d` mm od krawędzi węzła. */
@@ -615,9 +649,12 @@ function jednaLiniaObramowania(
   u: Ramka,
   promien: Mm | undefined,
   ksztalt?: KsztaltSciezki,
+  wlasny?: ElementOzdobny,
 ): ElementSceny[] {
+  if (ksztalt === 'wlasny' && wlasny)
+    return [{ typ: 'sciezka', kontur: konturWlasnegoKsztaltu(wlasny, u, d), obrys: s }];
   // Romb, tarcza, sześciokąt – zawsze pełny obrys (wybór krawędzi dotyczy prostokątów).
-  if (ksztalt && ksztalt !== 'sciety')
+  if (ksztalt && ksztalt !== 'sciety' && ksztalt !== 'wlasny')
     return [{ typ: 'sciezka', kontur: konturKsztaltu(ksztalt, u, d), obrys: s }];
   const k = o.krawedzie;
   if (!k && ksztalt === 'sciety') {
@@ -711,7 +748,7 @@ function zmierzPole(
       } else {
         // Kształt z wnętrzem mniejszym niż obrys: rozmiar taki, żeby tekst (z odsunięciem od
         // obrysu) zmieścił się we wnętrzu – odwrotność `wnetrzeKsztaltu`.
-        const w = WNETRZA[pole.ksztalt];
+        const w = wnetrzeKsztaltu(pole, ctx);
         if (w) {
           const m = marginesRombu(pole);
           k = { szer: (u.szerokosc + 2 * m) / w.szer, wys: (u.wysokosc + 2 * m) / w.wys };
@@ -727,7 +764,7 @@ function zmierzPole(
       // kontenery mierzone wg treści. Ozdoby (zakończenia, środek, motyw) wyznaczają wysokość w poprzek linii.
       const w = Math.max(
         pelnaGrubosc({ ...pole, styl: pole.stylLinii }),
-        wysokoscOzdobySeparatora(pole),
+        wysokoscOzdobySeparatora(pole, ctx.elementy),
       );
       return pole.kierunek === 'poziomy' ? { szer: 0, wys: w } : { szer: w, wys: 0 };
     }
@@ -825,7 +862,7 @@ function rysujPole(
     case 'wartosc': {
       const fr = [{ tekst: wartosc, styl: pole.styl }];
       const minSkala = minimalnaSkala(pole.styl);
-      const w = WNETRZA[pole.ksztalt];
+      const w = wnetrzeKsztaltu(pole, ctx);
       if (w) {
         // Treść w prostokącie wpisanym w kształt, odsunięta od obrysu.
         const m = marginesRombu(pole);
@@ -922,6 +959,7 @@ function rysujPole(
         ramka,
         { obrys: s, odsuniecia: pole.stylLinii === 'podwojna' ? [-polowa, polowa] : [0] },
         kolor,
+        ctx.elementy,
       );
       Object.assign(symbole, w.symbole);
       for (const id of w.nieznane)

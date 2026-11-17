@@ -1,7 +1,8 @@
 import { useId } from 'react';
 import { t } from '../../i18n';
 import type { Narozniki, Obramowanie, Ozdoba, Wezel, WyrownanieOsi } from '../../model/szablon';
-import { MOTYWY_WBUDOWANE, NAROZNIKI_WBUDOWANE, type ElementOzdobny } from '../../ozdobniki';
+import { MOTYWY_WBUDOWANE, type ElementOzdobny } from '../../ozdobniki';
+import { elementyRodzaju, useElementyWlasne } from './elementyWlasne';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { Liczba, PoleKoloru, PoleOdstepow, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 
@@ -235,12 +236,13 @@ function WyborMotywu({
   podpowiedz: boolean;
 }) {
   const idEtykiety = useId();
+  const motywy = elementyRodzaju('motyw', useElementyWlasne());
   const ustaw = (z: Partial<Ozdoba>) => zmien({ ...ozdoba, ...z });
   return (
     <div className="pole-panelu">
       <span id={idEtykiety}>{t('motywy.tytul')}</span>
       <div className="wybor-narozniki" role="group" aria-labelledby={idEtykiety}>
-        {MOTYWY_WBUDOWANE.map((e) => (
+        {motywy.map((e) => (
           <button
             key={e.id}
             type="button"
@@ -311,6 +313,7 @@ function WyborNarozniki({
   domyslnyRozmiar: number;
 }) {
   const idEtykiety = useId();
+  const narozniki = elementyRodzaju('naroznik', useElementyWlasne());
   const ustaw = (z: Partial<Narozniki>) => wartosc && zmien({ ...wartosc, ...z });
   return (
     <div className="pole-panelu">
@@ -325,7 +328,7 @@ function WyborNarozniki({
           <span aria-hidden="true">–</span>
           <small>{t('narozniki.brak')}</small>
         </button>
-        {NAROZNIKI_WBUDOWANE.map((e) => (
+        {narozniki.map((e) => (
           <button
             key={e.id}
             type="button"

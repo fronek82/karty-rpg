@@ -6,7 +6,14 @@ import type { ElementOzdobny } from './typy';
 
 /** Definicja symbolu sceny z elementu biblioteki (klucz = identyfikator elementu). */
 export function symbolZElementu(e: ElementOzdobny): DefinicjaSymbolu {
-  return { kontury: e.kontury, szer: e.szer, wys: e.wys };
+  if (e.kolorowanie !== 'jednolity') return { kontury: e.kontury, szer: e.szer, wys: e.wys };
+  // Własny rysunek „jednolity”: wszystkie wypełnienia i obrysy dziedziczą kolor z miejsca użycia.
+  const kontury = e.kontury.map((c) => ({
+    ...c,
+    ...(c.wypelnienie !== undefined ? { wypelnienie: 'kolor' as const } : {}),
+    ...(c.obrys ? { obrys: { ...c.obrys, kolor: 'kolor' as const } } : {}),
+  }));
+  return { kontury, szer: e.szer, wys: e.wys };
 }
 
 /**
@@ -45,8 +52,9 @@ export function narozniki(
   n: Narozniki,
   ramka: { x: Mm; y: Mm; szer: Mm; wys: Mm },
   kolorDomyslny: Kolor,
+  wlasne?: readonly ElementOzdobny[],
 ): WynikNarozniki {
-  const e = znajdzElement(n.element);
+  const e = znajdzElement(n.element, wlasne);
   if (!e || e.rodzaj !== 'naroznik') return { elementy: [], symbole: {}, nieznany: n.element };
   const rozmiar = Math.min(n.rozmiar, ramka.szer / 2, ramka.wys / 2);
   if (!(rozmiar > 0)) return { elementy: [], symbole: {} };

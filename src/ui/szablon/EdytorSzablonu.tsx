@@ -25,6 +25,7 @@ import {
 import { kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty';
 import { wymiaryKarty } from '../../model/szablon';
 import { roleProjektu } from '../../dane/edycja';
+import { ElementyWlasneKontekst } from './elementyWlasne';
 import { t, tJesliJest } from '../../i18n';
 import {
   czyKontener,
@@ -121,7 +122,11 @@ export function EdytorSzablonu({
       const w = renderujKarte(
         sz,
         { dane: danePodgladu(sz) },
-        { czcionki: zasoby.czcionki, obraz: (id) => zasoby.obrazy.get(id)?.info },
+        {
+          czcionki: zasoby.czcionki,
+          obraz: (id) => zasoby.obrazy.get(id)?.info,
+          ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
+        },
       );
       return {
         ...w,
@@ -133,7 +138,7 @@ export function EdytorSzablonu({
     } catch (e) {
       return { blad: e instanceof Error ? e.message : String(e) };
     }
-  }, [kluczRysunku, zasoby.czcionki, zasoby.obrazy]);
+  }, [kluczRysunku, zasoby.czcionki, zasoby.obrazy, zasoby.elementy]);
   const wezlyPoId = useMemo(
     () => new Map(szablon ? wszystkieWezly(szablon).map((w) => [w.id, w] as const) : []),
     [szablon],
@@ -366,309 +371,322 @@ export function EdytorSzablonu({
   }
 
   return (
-    <div className="edytor-szablonu">
-      <h1 className="tylko-czytnik">{t('szablon.tytulEdytora')}</h1>
-      <header className="pasek-gorny">
-        <a href="#/" className="logo">
-          {t('aplikacja.nazwa')}
-        </a>
-        <input
-          className="nazwa-projektu"
-          aria-label={t('szablon.nazwaSzablonu')}
-          value={szablon.nazwa}
-          onChange={(e) => zmienSz((s) => ({ ...s, nazwa: e.target.value }), 'nazwa')}
-        />
-        <span className="status-zapisu" role="status">
-          {tekstZapisu(edycja.zapis)}
-        </span>
-        <span className="odstep" />
-        <a className="przycisk" href={`#/projekt/${idProjektu}`}>
-          {t('szablon.wrocDoKartek')}
-        </a>
-        <button
-          type="button"
-          aria-label={t('kartka.cofnij')}
-          disabled={!edycja.mozeCofnac}
-          onClick={edycja.cofnij}
-        >
-          ↶
-        </button>
-        <button
-          type="button"
-          aria-label={t('kartka.ponow')}
-          disabled={!edycja.mozePonowic}
-          onClick={edycja.ponow}
-        >
-          ↷
-        </button>
-        <button type="button" className="glowny" onClick={robKarty}>
-          {t('szablon.robKarty')}
-        </button>
-      </header>
-      <div className="uklad-szablonu">
-        <aside className="panel-drzewa" aria-label={t('szablon.struktura')}>
-          <h2>{t('szablon.struktura')}</h2>
-          <div ref={drzewo}>
-            <DrzewoSzablonu korzen={szablon.korzen} zaznaczone={aktywne} wybierz={wybierz} />
-          </div>
-          <div className="akcje-drzewa">
-            <div className="menu-dodaj">
-              <button
-                ref={przyciskDodaj}
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded={menuDodaj}
-                onClick={() => ustawMenuDodaj((x) => !x)}
-              >
-                {t('szablon.dodaj')}
-              </button>
-              {menuDodaj && (
-                <div
-                  ref={menu}
-                  className="menu-typu"
-                  role="menu"
-                  aria-label={t('szablon.dodaj')}
-                  onKeyDown={klawiszMenu}
-                >
-                  {RODZAJE.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      role="menuitem"
-                      className="menu-pozycja"
-                      onClick={() => dodaj(r)}
-                    >
-                      <span>
-                        <span className="ikona" aria-hidden="true">
-                          {IKONY_WEZLOW[typIkony(r)]}
-                        </span>{' '}
-                        {t(`wezel.${r}`)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
+    <ElementyWlasneKontekst.Provider
+      value={{
+        elementy: projekt.biblioteka?.ozdobniki ?? [],
+        adresBiblioteki: `#/projekt/${idProjektu}/biblioteka`,
+      }}
+    >
+      <div className="edytor-szablonu">
+        <h1 className="tylko-czytnik">{t('szablon.tytulEdytora')}</h1>
+        <header className="pasek-gorny">
+          <a href="#/" className="logo">
+            {t('aplikacja.nazwa')}
+          </a>
+          <input
+            className="nazwa-projektu"
+            aria-label={t('szablon.nazwaSzablonu')}
+            value={szablon.nazwa}
+            onChange={(e) => zmienSz((s) => ({ ...s, nazwa: e.target.value }), 'nazwa')}
+          />
+          <span className="status-zapisu" role="status">
+            {tekstZapisu(edycja.zapis)}
+          </span>
+          <span className="odstep" />
+          <a className="przycisk" href={`#/projekt/${idProjektu}/biblioteka`}>
+            {t('biblioteka.tytul')}
+          </a>
+          <a className="przycisk" href={`#/projekt/${idProjektu}`}>
+            {t('szablon.wrocDoKartek')}
+          </a>
+          <button
+            type="button"
+            aria-label={t('kartka.cofnij')}
+            disabled={!edycja.mozeCofnac}
+            onClick={edycja.cofnij}
+          >
+            ↶
+          </button>
+          <button
+            type="button"
+            aria-label={t('kartka.ponow')}
+            disabled={!edycja.mozePonowic}
+            onClick={edycja.ponow}
+          >
+            ↷
+          </button>
+          <button type="button" className="glowny" onClick={robKarty}>
+            {t('szablon.robKarty')}
+          </button>
+        </header>
+        <div className="uklad-szablonu">
+          <aside className="panel-drzewa" aria-label={t('szablon.struktura')}>
+            <h2>{t('szablon.struktura')}</h2>
+            <div ref={drzewo}>
+              <DrzewoSzablonu korzen={szablon.korzen} zaznaczone={aktywne} wybierz={wybierz} />
             </div>
-            <button
-              type="button"
-              disabled={!moznaWyzej}
-              onClick={() => ruch((s, id) => przesunWezel(s, id, -1))}
-            >
-              {t('szablon.wyzej')}
-            </button>
-            <button
-              type="button"
-              disabled={!moznaNizej}
-              onClick={() => ruch((s, id) => przesunWezel(s, id, 1))}
-            >
-              {t('szablon.nizej')}
-            </button>
-            <button
-              type="button"
-              disabled={!moznaDoKontenera}
-              onClick={() => ruch(doPoprzedniegoKontenera)}
-            >
-              {t('szablon.doKontenera')}
-            </button>
-            <button type="button" disabled={!moznaWyjac} onClick={() => ruch(wyzej)}>
-              {t('szablon.wyjmij')}
-            </button>
-            <button type="button" disabled={!moznaOpakowac} onClick={() => opakujW('wiersz')}>
-              {t('szablon.opakujWiersz')}
-            </button>
-            <button type="button" disabled={!moznaOpakowac} onClick={() => opakujW('kolumna')}>
-              {t('szablon.opakujKolumne')}
-            </button>
-            <button type="button" disabled={!jeden || korzenZazn} onClick={duplikuj}>
-              {t('kartka.duplikuj')}
-            </button>
-            <button
-              type="button"
-              className="niebezpieczny"
-              disabled={aktywne.length === 0 || aktywne.includes(szablon.korzen.id)}
-              onClick={usun}
-            >
-              {t('kartka.usun')}
-            </button>
-          </div>
-          <p className="podpis">{t('szablon.pomocDrzewa')}</p>
-        </aside>
-
-        <section className="podglad-szablonu" aria-label={t('szablon.podglad')}>
-          {podglad && 'blad' in podglad ? (
-            <p role="alert" className="uwaga">
-              {t('szablon.bladPodgladu', { szczegoly: String(podglad.blad) })}
-            </p>
-          ) : (
-            podglad && (
-              <>
-                <div
-                  className="karta-podgladu"
-                  style={{
-                    aspectRatio: `${szer} / ${wys}`,
-                    width: `min(100%, ${(szer / wys) * 70}vh)`,
-                  }}
-                  onClick={() => ustawZazn([])}
-                >
-                  <div
-                    className="svg-opakowanie"
-                    dangerouslySetInnerHTML={{ __html: podglad.svg }}
-                  />
-                  {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
-                  {[...podglad.wezly]
-                    .sort((a, b) => b.szer * b.wys - a.szer * a.wys)
-                    .map((w) => {
-                      const wezel = wezlyPoId.get(w.id);
-                      if (!wezel) return null;
-                      return (
-                        <button
-                          key={w.id}
-                          type="button"
-                          tabIndex={-1}
-                          className={`obszar-wezla${aktywne.includes(w.id) ? ' zaznaczony' : ''}${czyKontener(wezel) ? ' kontener' : ''}`}
-                          data-obszar={w.id}
-                          aria-label={nazwaWezla(wezel)}
-                          style={{
-                            left: `${(w.x / szer) * 100}%`,
-                            top: `${(w.y / wys) * 100}%`,
-                            width: `${(w.szer / szer) * 100}%`,
-                            height: `${(w.wys / wys) * 100}%`,
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            wybierz(w.id, e.shiftKey);
-                          }}
-                        />
-                      );
-                    })}
-                </div>
-                {podglad.ostrzezenia.length > 0 && (
-                  <ul className="ostrzezenia-karty">
-                    {podglad.ostrzezenia.map((o, i) => {
-                      const w = znajdzWezel(szablon, o.pole);
-                      return (
-                        <li key={i}>
-                          {tekstOstrzezenia({ ...o, pole: w ? nazwaWezla(w) : o.pole })}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </>
-            )
-          )}
-          <p className="podpis">{t('szablon.pomocPodgladu')}</p>
-        </section>
-
-        <aside className="panel-edytora" aria-label={t('szablon.wlasciwosci')}>
-          {edytowany ? (
-            <>
-              <h2>
-                {aktywne.length > 1
-                  ? t('szablon.zaznaczono', { liczba: aktywne.length })
-                  : nazwaWezla(edytowany)}
-              </h2>
-              <p className="akcje-stylu">
-                <button type="button" onClick={() => ustawSchowek(skopiujStyl(edytowany))}>
-                  {t('wlasciwosci.kopiujStyl')}
-                </button>
+            <div className="akcje-drzewa">
+              <div className="menu-dodaj">
                 <button
+                  ref={przyciskDodaj}
                   type="button"
-                  disabled={!schowek}
-                  onClick={() =>
-                    schowek &&
-                    zmienSz((s) =>
-                      aktywne.reduce((x, id) => zmienWezel(x, id, (w) => wklejStyl(w, schowek)), s),
-                    )
-                  }
+                  aria-haspopup="menu"
+                  aria-expanded={menuDodaj}
+                  onClick={() => ustawMenuDodaj((x) => !x)}
                 >
-                  {t('wlasciwosci.wklejStyl')}
+                  {t('szablon.dodaj')}
                 </button>
+                {menuDodaj && (
+                  <div
+                    ref={menu}
+                    className="menu-typu"
+                    role="menu"
+                    aria-label={t('szablon.dodaj')}
+                    onKeyDown={klawiszMenu}
+                  >
+                    {RODZAJE.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        role="menuitem"
+                        className="menu-pozycja"
+                        onClick={() => dodaj(r)}
+                      >
+                        <span>
+                          <span className="ikona" aria-hidden="true">
+                            {IKONY_WEZLOW[typIkony(r)]}
+                          </span>{' '}
+                          {t(`wezel.${r}`)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                disabled={!moznaWyzej}
+                onClick={() => ruch((s, id) => przesunWezel(s, id, -1))}
+              >
+                {t('szablon.wyzej')}
+              </button>
+              <button
+                type="button"
+                disabled={!moznaNizej}
+                onClick={() => ruch((s, id) => przesunWezel(s, id, 1))}
+              >
+                {t('szablon.nizej')}
+              </button>
+              <button
+                type="button"
+                disabled={!moznaDoKontenera}
+                onClick={() => ruch(doPoprzedniegoKontenera)}
+              >
+                {t('szablon.doKontenera')}
+              </button>
+              <button type="button" disabled={!moznaWyjac} onClick={() => ruch(wyzej)}>
+                {t('szablon.wyjmij')}
+              </button>
+              <button type="button" disabled={!moznaOpakowac} onClick={() => opakujW('wiersz')}>
+                {t('szablon.opakujWiersz')}
+              </button>
+              <button type="button" disabled={!moznaOpakowac} onClick={() => opakujW('kolumna')}>
+                {t('szablon.opakujKolumne')}
+              </button>
+              <button type="button" disabled={!jeden || korzenZazn} onClick={duplikuj}>
+                {t('kartka.duplikuj')}
+              </button>
+              <button
+                type="button"
+                className="niebezpieczny"
+                disabled={aktywne.length === 0 || aktywne.includes(szablon.korzen.id)}
+                onClick={usun}
+              >
+                {t('kartka.usun')}
+              </button>
+            </div>
+            <p className="podpis">{t('szablon.pomocDrzewa')}</p>
+          </aside>
+
+          <section className="podglad-szablonu" aria-label={t('szablon.podglad')}>
+            {podglad && 'blad' in podglad ? (
+              <p role="alert" className="uwaga">
+                {t('szablon.bladPodgladu', { szczegoly: String(podglad.blad) })}
               </p>
-              <PanelWezla
-                key={aktywne.join(',')}
-                szablon={szablon}
-                wezel={edytowany}
-                wiele={aktywne.length > 1}
-                wymiary={wymiary(edytowany.id)}
-                czcionki={czcionki}
-                obrazy={obrazy}
-                zajeteKlucze={zajeteKlucze}
-                // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
-                zmienWezel={(f, klucz) =>
-                  zmienSz(
-                    (s) => aktywne.reduce((x, id) => zmienWezel(x, id, f), s),
-                    klucz && `${klucz}:${aktywne.join(',')}`,
-                  )
-                }
-                zmienTyp={(typ) =>
-                  zmienSz((s) =>
-                    aktywne.reduce(
-                      (x, id) =>
-                        czyKontener(edytowany)
-                          ? zmienTypKontenera(x, id, typ as Kontener['typ'])
-                          : zmienTypPola(
-                              x,
-                              id,
-                              typ as Pole['typ'],
-                              t(`wezel.${typ}`),
-                              zajeteKlucze(),
-                            ),
-                      s,
-                    ),
-                  )
-                }
-                zmienPrzyklad={(klucz, v) =>
-                  zmienSz(
-                    (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
-                    `przyklad:${klucz}`,
-                  )
-                }
-              />
-            </>
-          ) : aktywne.length > 1 ? (
-            <>
-              <h2>{t('szablon.zaznaczono', { liczba: aktywne.length })}</h2>
-              <p className="podpis">{t('szablon.wieleOpis')}</p>
-            </>
-          ) : (
-            <>
-              <PanelKarty
-                szablon={szablon}
-                zmienSz={zmienSz}
-                zmienRozmiar={(s, w) => {
-                  // Karta, która nie zmieści się na stronie kartki – odrzucona (komunikat w panelu).
-                  if (zmienRozmiarSzablonu(projekt, szablonId, s, w) === projekt) return false;
-                  zmien((p) => zmienRozmiarSzablonu(p, szablonId, s, w), {
-                    klucz: 'rozmiar-karty',
-                  });
-                  return true;
-                }}
-              />
-              {/* Kontener całej karty: odstępy, rozłożenie, wygląd (jak każdy kontener). */}
-              <Sekcja tytul={t('wlasciwosci.ukladKarty')}>
+            ) : (
+              podglad && (
+                <>
+                  <div
+                    className="karta-podgladu"
+                    style={{
+                      aspectRatio: `${szer} / ${wys}`,
+                      width: `min(100%, ${(szer / wys) * 70}vh)`,
+                    }}
+                    onClick={() => ustawZazn([])}
+                  >
+                    <div
+                      className="svg-opakowanie"
+                      dangerouslySetInnerHTML={{ __html: podglad.svg }}
+                    />
+                    {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
+                    {[...podglad.wezly]
+                      .sort((a, b) => b.szer * b.wys - a.szer * a.wys)
+                      .map((w) => {
+                        const wezel = wezlyPoId.get(w.id);
+                        if (!wezel) return null;
+                        return (
+                          <button
+                            key={w.id}
+                            type="button"
+                            tabIndex={-1}
+                            className={`obszar-wezla${aktywne.includes(w.id) ? ' zaznaczony' : ''}${czyKontener(wezel) ? ' kontener' : ''}`}
+                            data-obszar={w.id}
+                            aria-label={nazwaWezla(wezel)}
+                            style={{
+                              left: `${(w.x / szer) * 100}%`,
+                              top: `${(w.y / wys) * 100}%`,
+                              width: `${(w.szer / szer) * 100}%`,
+                              height: `${(w.wys / wys) * 100}%`,
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              wybierz(w.id, e.shiftKey);
+                            }}
+                          />
+                        );
+                      })}
+                  </div>
+                  {podglad.ostrzezenia.length > 0 && (
+                    <ul className="ostrzezenia-karty">
+                      {podglad.ostrzezenia.map((o, i) => {
+                        const w = znajdzWezel(szablon, o.pole);
+                        return (
+                          <li key={i}>
+                            {tekstOstrzezenia({ ...o, pole: w ? nazwaWezla(w) : o.pole })}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </>
+              )
+            )}
+            <p className="podpis">{t('szablon.pomocPodgladu')}</p>
+          </section>
+
+          <aside className="panel-edytora" aria-label={t('szablon.wlasciwosci')}>
+            {edytowany ? (
+              <>
+                <h2>
+                  {aktywne.length > 1
+                    ? t('szablon.zaznaczono', { liczba: aktywne.length })
+                    : nazwaWezla(edytowany)}
+                </h2>
+                <p className="akcje-stylu">
+                  <button type="button" onClick={() => ustawSchowek(skopiujStyl(edytowany))}>
+                    {t('wlasciwosci.kopiujStyl')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!schowek}
+                    onClick={() =>
+                      schowek &&
+                      zmienSz((s) =>
+                        aktywne.reduce(
+                          (x, id) => zmienWezel(x, id, (w) => wklejStyl(w, schowek)),
+                          s,
+                        ),
+                      )
+                    }
+                  >
+                    {t('wlasciwosci.wklejStyl')}
+                  </button>
+                </p>
                 <PanelWezla
-                  key={szablon.korzen.id}
+                  key={aktywne.join(',')}
                   szablon={szablon}
-                  wezel={szablon.korzen}
-                  wymiary={wymiary(szablon.korzen.id)}
+                  wezel={edytowany}
+                  wiele={aktywne.length > 1}
+                  wymiary={wymiary(edytowany.id)}
                   czcionki={czcionki}
                   obrazy={obrazy}
                   zajeteKlucze={zajeteKlucze}
+                  // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
                   zmienWezel={(f, klucz) =>
-                    zmienSz((s) => zmienWezel(s, s.korzen.id, f), klucz && `korzen:${klucz}`)
+                    zmienSz(
+                      (s) => aktywne.reduce((x, id) => zmienWezel(x, id, f), s),
+                      klucz && `${klucz}:${aktywne.join(',')}`,
+                    )
                   }
                   zmienTyp={(typ) =>
-                    zmienSz((s) => zmienTypKontenera(s, s.korzen.id, typ as Kontener['typ']))
+                    zmienSz((s) =>
+                      aktywne.reduce(
+                        (x, id) =>
+                          czyKontener(edytowany)
+                            ? zmienTypKontenera(x, id, typ as Kontener['typ'])
+                            : zmienTypPola(
+                                x,
+                                id,
+                                typ as Pole['typ'],
+                                t(`wezel.${typ}`),
+                                zajeteKlucze(),
+                              ),
+                        s,
+                      ),
+                    )
                   }
-                  zmienPrzyklad={() => undefined}
+                  zmienPrzyklad={(klucz, v) =>
+                    zmienSz(
+                      (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
+                      `przyklad:${klucz}`,
+                    )
+                  }
                 />
-              </Sekcja>
-            </>
-          )}
-        </aside>
+              </>
+            ) : aktywne.length > 1 ? (
+              <>
+                <h2>{t('szablon.zaznaczono', { liczba: aktywne.length })}</h2>
+                <p className="podpis">{t('szablon.wieleOpis')}</p>
+              </>
+            ) : (
+              <>
+                <PanelKarty
+                  szablon={szablon}
+                  zmienSz={zmienSz}
+                  zmienRozmiar={(s, w) => {
+                    // Karta, która nie zmieści się na stronie kartki – odrzucona (komunikat w panelu).
+                    if (zmienRozmiarSzablonu(projekt, szablonId, s, w) === projekt) return false;
+                    zmien((p) => zmienRozmiarSzablonu(p, szablonId, s, w), {
+                      klucz: 'rozmiar-karty',
+                    });
+                    return true;
+                  }}
+                />
+                {/* Kontener całej karty: odstępy, rozłożenie, wygląd (jak każdy kontener). */}
+                <Sekcja tytul={t('wlasciwosci.ukladKarty')}>
+                  <PanelWezla
+                    key={szablon.korzen.id}
+                    szablon={szablon}
+                    wezel={szablon.korzen}
+                    wymiary={wymiary(szablon.korzen.id)}
+                    czcionki={czcionki}
+                    obrazy={obrazy}
+                    zajeteKlucze={zajeteKlucze}
+                    zmienWezel={(f, klucz) =>
+                      zmienSz((s) => zmienWezel(s, s.korzen.id, f), klucz && `korzen:${klucz}`)
+                    }
+                    zmienTyp={(typ) =>
+                      zmienSz((s) => zmienTypKontenera(s, s.korzen.id, typ as Kontener['typ']))
+                    }
+                    zmienPrzyklad={() => undefined}
+                  />
+                </Sekcja>
+              </>
+            )}
+          </aside>
+        </div>
       </div>
-    </div>
+    </ElementyWlasneKontekst.Provider>
   );
 }
 

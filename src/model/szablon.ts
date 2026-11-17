@@ -192,6 +192,11 @@ export interface PoleWartosc extends PoleBazowe {
   styl: StylTekstu;
   /** `sciety` – prostokąt ze ściętymi rogami (wielkość ścięcia w `promien`). */
   ksztalt: KsztaltWartosci;
+  /**
+   * Przy kształcie `wlasny`: identyfikator elementu biblioteki (rodzaj „kształt”, własny SVG).
+   * Nieznany element: ostrzeżenie `nieznany-element-ozdobny` i zwykły prostokąt.
+   */
+  ksztaltElement?: string;
   /** Etykieta nad albo pod kształtem (np. „WYTRZYMAŁOŚĆ” nad rombem); tło i ramka – tylko kształt. */
   etykieta?: {
     tekst: NapisSzablonu;
@@ -207,7 +212,7 @@ export interface PoleWartosc extends PoleBazowe {
  * kwadrat – równe boki wg dłuższego wymiaru treści.
  */
 export type KsztaltWartosci =
-  'prostokat' | 'kwadrat' | 'kolo' | 'sciety' | 'romb' | 'tarcza' | 'szesciokat';
+  'prostokat' | 'kwadrat' | 'kolo' | 'sciety' | 'romb' | 'tarcza' | 'szesciokat' | 'wlasny';
 
 export interface PoleObraz extends PoleBazowe {
   typ: 'obraz';

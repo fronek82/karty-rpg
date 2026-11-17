@@ -22,4 +22,15 @@ export interface ElementOzdobny {
    * (zewnętrzne krawędzie przy górze i po lewej), odbijany na cztery rogi ramki.
    */
   kostka?: KonturSymbolu[];
+  /**
+   * Tylko własne (z biblioteki projektu): `jednolity` – wszystkie wypełnienia i obrysy mają kolor
+   * z miejsca użycia (rysunek kolorowalny), `oryginal` – kolory z pliku. Kontury trzymają kolory
+   * pliku (albo `'kolor'` dla `currentColor`), więc tryb można przełączać bez straty.
+   */
+  kolorowanie?: 'jednolity' | 'oryginal';
+  /**
+   * Tylko własny kształt wartości: prostokąt na tekst jako ułamki rysunku (x, y, szerokość,
+   * wysokość w zakresie 0–1); domyślnie 15 % marginesu z każdej strony.
+   */
+  tresc?: { x: number; y: number; szer: number; wys: number };
 }

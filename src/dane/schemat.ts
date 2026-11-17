@@ -3,6 +3,9 @@ import { t } from '../i18n';
 import { PAPIERY } from '../model/arkusz';
 import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
 import type { Kontener, Szablon, Wezel } from '../model/szablon';
+import { znajdzElement } from '../ozdobniki/katalog';
+import { LIMITY_SVG } from '../ozdobniki/svgImport';
+import { odwolaniaDoElementow } from './biblioteka';
 
 /** Błąd wczytywania danych z komunikatem po polsku, gotowym do pokazania użytkownikowi. */
 export class BladDanych extends Error {
@@ -127,7 +130,17 @@ const pole = z.discriminatedUnion('typ', [
     typ: z.literal('wartosc'),
     styl: stylTekstu,
     tekst: opc(napis),
-    ksztalt: z.enum(['prostokat', 'kwadrat', 'kolo', 'sciety', 'romb', 'tarcza', 'szesciokat']),
+    ksztalt: z.enum([
+      'prostokat',
+      'kwadrat',
+      'kolo',
+      'sciety',
+      'romb',
+      'tarcza',
+      'szesciokat',
+      'wlasny',
+    ]),
+    ksztaltElement: opc(identyfikator),
     etykieta: opc(
       obj({
         tekst: napis,
@@ -395,6 +408,40 @@ const arkusz = obj({
   ),
 });
 
+const kolorSymbolu = z.string().regex(/^(#[0-9a-fA-F]{6}|kolor)$/);
+const komendaKonturu = z.union([
+  z.tuple([z.literal('M'), liczba, liczba]),
+  z.tuple([z.literal('L'), liczba, liczba]),
+  z.tuple([z.literal('C'), liczba, liczba, liczba, liczba, liczba, liczba]),
+  z.tuple([z.literal('Z')]),
+]);
+const konturSymbolu = obj({
+  kontur: z.array(komendaKonturu),
+  wypelnienie: opc(kolorSymbolu),
+  obrys: opc(obj({ grubosc: nieujemna, kolor: kolorSymbolu })),
+  evenodd: opc(z.boolean()),
+});
+const ulamek = liczba.min(0).max(1);
+
+/** Własny element biblioteki ozdobników (z importu SVG); wbudowane (`wb:`) żyją w kodzie. */
+const elementOzdobny = obj({
+  id: z.string().regex(/^wl:[\w.-]{1,100}$/),
+  nazwa: opc(z.string().max(200)),
+  rodzaj: z.enum(['motyw', 'naroznik', 'zakonczenie', 'srodek', 'ksztalt', 'ramka9']),
+  szer: dodatnia,
+  wys: dodatnia,
+  kontury: z
+    .array(konturSymbolu)
+    .max(LIMITY_SVG.ksztalty)
+    .refine(
+      (k) => k.reduce((n, c) => n + c.kontur.length, 0) <= LIMITY_SVG.komendy,
+      `za dużo komend (najwyżej ${LIMITY_SVG.komendy})`,
+    ),
+  kostka: opc(z.array(konturSymbolu).max(LIMITY_SVG.ksztalty)),
+  kolorowanie: opc(z.enum(['jednolity', 'oryginal'])),
+  tresc: opc(obj({ x: ulamek, y: ulamek, szer: ulamek, wys: ulamek })),
+});
+
 const opisZasobu = z.discriminatedUnion('rodzaj', [
   obj({
     rodzaj: z.literal('obraz'),
@@ -427,6 +474,7 @@ export const schematProjektu = obj({
   talie: z.array(talia),
   arkusze: z.array(arkusz),
   pakiet: opc(z.string()),
+  biblioteka: opc(obj({ ozdobniki: z.array(elementOzdobny) })),
 });
 
 export const schematPlikuSzablonu = obj({
@@ -434,6 +482,8 @@ export const schematPlikuSzablonu = obj({
   szablon,
   role: z.record(z.string(), z.string()),
   zasoby: z.array(opisZasobu),
+  /** Własne elementy biblioteki ozdobników użyte przez szablon. */
+  biblioteka: opc(z.array(elementOzdobny)),
 });
 
 /**
@@ -521,6 +571,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 9→10: styl linii `podwojna`, `przerwa`, `narozniki` (ramka karty i węzły szablonu) – bez zmian danych.
   // 10→11: `ozdoba` (motyw zamiast linii; ramka karty i węzły szablonu) – bez zmian danych.
   // 11→12: separator ozdobny (`rysunek`, `zakonczenia`, `srodek`, `dlugosc`, `odstepOdOzdoby`) – bez zmian danych.
+  // 12→13: `biblioteka.ozdobniki` (własne SVG), kształt wartości `wlasny` – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -533,6 +584,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     9: (d) => d,
     10: (d) => d,
     11: (d) => d,
+    12: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -546,6 +598,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     9: (d) => d,
     10: (d) => d,
     11: (d) => d,
+    12: (d) => d,
   },
 };
 
@@ -611,6 +664,10 @@ export function sprawdzSpojnosc(p: Projekt): void {
   powtorzony(
     p.zasoby.map((z) => z.id),
     t('dane.gdzie.zasoby'),
+  );
+  powtorzony(
+    (p.biblioteka?.ozdobniki ?? []).map((e) => e.id),
+    t('dane.gdzie.biblioteka'),
   );
   powtorzony(
     p.szablony.map((s) => s.id),
@@ -693,6 +750,15 @@ export function ostrzezeniaProjektu(p: Projekt): string[] {
     for (const id of new Set(zasobySzablonu(s))) {
       if (!zasoby.has(id)) {
         wynik.push(t('dane.nieznanyZasob', { gdzie: t('dane.gdzie.szablon', { id: s.id }), id }));
+      }
+    }
+  }
+  // Element ozdobny użyty w szablonie, którego nie ma w bibliotece – silnik pominie ozdobę.
+  const wlasne = p.biblioteka?.ozdobniki;
+  for (const s of p.szablony) {
+    for (const id of new Set(odwolaniaDoElementow(s))) {
+      if (!znajdzElement(id, wlasne)) {
+        wynik.push(t('dane.nieznanyElement', { gdzie: t('dane.gdzie.szablon', { id: s.id }), id }));
       }
     }
   }

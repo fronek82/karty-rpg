@@ -63,6 +63,7 @@ export function zasobyProjektu(projekt: Projekt, dane: DaneZasobow): ZasobyProje
         ...(zapasowa !== undefined ? { zapasowa } : {}),
         szablony: new Map(szablony.map((s) => [s.id, s])),
         obrazy,
+        ...(projekt.biblioteka?.ozdobniki.length ? { elementy: projekt.biblioteka.ozdobniki } : {}),
       },
       ostrzezenia,
       zwolnij,

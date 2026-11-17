@@ -615,6 +615,7 @@ const WYGLAD = [
 const WYGLAD_TYPU = [
   'styl',
   'ksztalt',
+  'ksztaltElement',
   'linie',
   'stylNaglowka',
   'tloNaglowka',

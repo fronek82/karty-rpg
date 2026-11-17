@@ -254,6 +254,7 @@ export function useProjekt(id: string): StanProjektu {
   // Zasoby silnika (parsowanie czcionek, adresy blob:) tylko przy zmianie biblioteki lub szablonów;
   // role czcionek przypisywane do istniejącego rejestru (bez ponownego parsowania).
   const bibl = projekt?.zasoby;
+  const biblioteka = projekt?.biblioteka;
   const szablony = projekt?.szablony;
   const projektRef = useRef(projekt);
   useEffect(() => {
@@ -265,8 +266,9 @@ export function useProjekt(id: string): StanProjektu {
     const z = zasobyProjektu(p, dane);
     ustawZasoby(z);
     return () => z.zwolnij();
-    // Biblioteka zasobów zależy od zasobów i bajtów – nie od szablonów (te podmienia zRolami).
-  }, [bibl, dane]);
+    // Zależy od zasobów, bajtów i biblioteki ozdobników (własne SVG) – nie od szablonów (te
+    // podmienia zRolami).
+  }, [bibl, dane, biblioteka]);
 
   const role = projekt?.role;
   const zasobyZRolami = useMemo(

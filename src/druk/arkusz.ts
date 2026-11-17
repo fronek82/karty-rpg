@@ -1,3 +1,4 @@
+import type { ElementOzdobny } from '../ozdobniki/typy';
 import type { Mm } from '../model/jednostki';
 import {
   MIESZANE_DOMYSLNE,
@@ -51,6 +52,8 @@ export interface KontekstArkusza {
   czcionki: RejestrCzcionek;
   szablony: Map<string, Szablon>;
   obraz?: (zasob: string) => InformacjaOObrazie | undefined;
+  /** Własne elementy biblioteki ozdobników projektu. */
+  elementy?: readonly ElementOzdobny[];
   /**
    * Pamięć wyrenderowanych kart między wywołaniami (edytor: zmiana jednej karty nie renderuje
    * pozostałych). Klucz – obiekt karty (niezmienny); ważna tylko dla tych samych czcionek,
@@ -189,6 +192,7 @@ function fabrykaScenKart(
         w = renderujKarte(szablon(k)!, k, {
           czcionki: ctx.czcionki,
           ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
+          ...(ctx.elementy ? { elementy: ctx.elementy } : {}),
         });
         ctx.pamiecKart?.set(k, w);
       }

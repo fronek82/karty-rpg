@@ -590,9 +590,9 @@ describe('eksport i import szablonu', () => {
   });
 
   it('M2b-5: migracja 11→12 jest tożsamościowa; separator ozdobny przechodzi eksport i walidację', () => {
-    expect(WERSJA_SCHEMATU).toBe(12);
-    expect(migruj({ wersja: 11, a: 1 }, 'szablon')).toEqual({ wersja: 12, a: 1 });
-    expect(migruj({ wersja: 11, a: 1 })).toEqual({ wersja: 12, a: 1 });
+    expect(WERSJA_SCHEMATU).toBeGreaterThanOrEqual(12);
+    expect(migruj({ wersja: 11, a: 1 }, 'szablon', 12)).toEqual({ wersja: 12, a: 1 });
+    expect(migruj({ wersja: 11, a: 1 }, 'projekt', 12)).toEqual({ wersja: 12, a: 1 });
     const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
     const sep = {
       id: 'sep-oz',

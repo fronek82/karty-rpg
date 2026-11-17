@@ -44,6 +44,8 @@ export interface KonturSymbolu {
   wypelnienie?: KolorSymbolu;
   /** Grubość w jednostkach symbolu (skaluje się razem z nim). */
   obrys?: { grubosc: number; kolor: KolorSymbolu };
+  /** Wypełnienie parzysto-nieparzyste (SVG `fill-rule="evenodd"`, PDF `f*`) – dziury we własnych SVG. */
+  evenodd?: boolean;
 }
 
 /** Rysunek wstawiany wielokrotnie (`typ: 'symbol'`); współrzędne w jednostkach `szer` × `wys`, oś Y w dół. */
