@@ -186,3 +186,42 @@ test('konwersja kolumna → swobodny → kolumna: nic się nie przesuwa, kolejno
   await expect(polozenie(page)).toHaveCount(0);
   await nazwij(page, 'W panelu');
 });
+
+test('swobodny korzeń przeżywa przeładowanie; kotwicę zmienia się strzałkami (radiogroup)', async ({
+  page,
+}) => {
+  await kreator(page, {
+    nazwa: 'Zapis swobodnego',
+    format: 'Standard / Poker',
+    uklad: 'Swobodny: pola w dowolnych miejscach',
+  });
+  await dodaj(page, 'Tekst', 'Napis');
+  const p = polozenie(page);
+  await ustawXY(p, 12, 34);
+  await p.getByRole('button', { name: '270°', exact: true }).click();
+
+  // Kotwica: jeden przystanek Tab, strzałka w prawo przenosi zaznaczenie i fokus.
+  const siatka = p.getByRole('radiogroup', { name: 'Liczone od' });
+  await expect(siatka.getByRole('radio', { name: 'lewy górny róg' })).toBeChecked();
+  await siatka.getByRole('radio', { name: 'lewy górny róg' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(siatka.getByRole('radio', { name: 'środek góry' })).toBeChecked();
+  await expect(siatka.getByRole('radio', { name: 'środek góry' })).toBeFocused();
+  await expect(siatka.locator('[role=radio][tabindex="0"]')).toHaveCount(1);
+  await page.keyboard.press('ArrowLeft');
+  await expect(siatka.getByRole('radio', { name: 'lewy górny róg' })).toBeChecked();
+  await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+
+  await page.reload();
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+  await expect(drzewo(page).getByRole('treeitem', { name: /^Karta – Swobodny/ })).toBeVisible();
+  const napis = drzewo(page).getByRole('treeitem', { name: /^Napis – / });
+  await expect(napis).toContainText('12 · 34');
+  await expect(napis).toContainText('↻270°');
+  await zaznacz(page, 'Napis');
+  await expect(polozenie(page).getByLabel('X (mm)')).toHaveValue('12');
+  await expect(polozenie(page).getByRole('button', { name: '270°', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});

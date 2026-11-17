@@ -2,8 +2,8 @@ import type { Mm } from '../model/jednostki';
 import {
   czyKontener,
   rozwinOdstepy,
+  ulamkiKotwicy,
   type Kontener,
-  type Kotwica,
   type Pole,
   type Rozmiar,
   type Wezel,
@@ -52,30 +52,6 @@ export interface Prostokat {
   y: Mm;
   szer: Mm;
   wys: Mm;
-}
-
-/** Ułamki szerokości i wysokości, które wyznaczają punkt kotwicy (0, 0.5 albo 1). */
-export function ulamkiKotwicy(k: Kotwica | undefined): { fx: number; fy: number } {
-  switch (k) {
-    case 'gorny':
-      return { fx: 0.5, fy: 0 };
-    case 'prawy-gorny':
-      return { fx: 1, fy: 0 };
-    case 'lewy':
-      return { fx: 0, fy: 0.5 };
-    case 'srodek':
-      return { fx: 0.5, fy: 0.5 };
-    case 'prawy':
-      return { fx: 1, fy: 0.5 };
-    case 'lewy-dolny':
-      return { fx: 0, fy: 1 };
-    case 'dolny':
-      return { fx: 0.5, fy: 1 };
-    case 'prawy-dolny':
-      return { fx: 1, fy: 1 };
-    default:
-      return { fx: 0, fy: 0 };
-  }
 }
 
 /** Prostokąt obrócony o wielokrotność 90° (zgodnie z zegarem) wokół punktu (cx, cy). */
@@ -197,8 +173,8 @@ function zmierzKontener(k: Kontener, wnetrze: Ograniczenie, ctx: KontekstUkladu)
       const { fx, fy } = ulamkiKotwicy(poz?.kotwica);
       const x = poz?.x ?? 0;
       const y = poz?.y ?? 0;
-      szer = Math.max(szer, fx === 0 ? x + r.prostokatSzer : r.prostokatSzer + Math.abs(x));
-      wys = Math.max(wys, fy === 0 ? y + r.prostokatWys : r.prostokatWys + Math.abs(y));
+      szer = Math.max(szer, obwiednia(fx, x, r.prostokatSzer));
+      wys = Math.max(wys, obwiednia(fy, y, r.prostokatWys));
     }
     return { szer, wys };
   }
@@ -372,6 +348,17 @@ export function rozmiesc(
       : rozmiesc(d, ramka.x + pozPop, ramka.y + start, rozmiarPop, rozmiarGl, ctx);
   });
   return wynik;
+}
+
+/**
+ * Wkład dziecka w rozmiar kontenera „wg treści” w jednej osi (`f` – ułamek kotwicy, `x` – przesunięcie,
+ * `d` – rozmiar elementu): przy kotwicy na początku element sięga `x + d`; przy środkowej kontener
+ * musi być symetryczny wokół punktu, więc `d + 2|x|`; przy końcowej (f = 1) liczy się `d + |x|`
+ * (dodatnie `x` wyprowadza element poza kontener, więc nie powiększa go bardziej niż ujemne).
+ */
+function obwiednia(f: number, x: Mm, d: Mm): Mm {
+  if (f === 0) return x + d;
+  return f === 0.5 ? d + 2 * Math.abs(x) : d + Math.abs(x);
 }
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { pt } from '../model/jednostki';
-import type { Kontener, Pole, Szablon, Wezel } from '../model/szablon';
+import type { Kontener, Pole, Pozycja, Szablon, Wezel } from '../model/szablon';
 import { rejestrTestowy } from './__testy__/pomoc';
 import { renderujKarte } from './karta';
 import type { ElementSceny } from './scena';
@@ -127,24 +127,15 @@ describe('kontener swobodny – układ', () => {
 
   it('obrót tekstu: pomiar łamie tekst do boku, który po obrocie leży wzdłuż karty', () => {
     // Tekst 40 mm bez stałej szerokości: bez obrotu łamany do 20 mm (wnętrze 20 × 88),
-    // obrócony o 90° – szerokość przed obrotem to wysokość wnętrza (88 → jeden wiersz).
-    const bez = rozmiesc(
-      swobodny([ikona('t', 1, { typ: 'tekst' } as Partial<Pole>)]),
-      0,
-      0,
-      20,
-      88,
-      ctx,
-    );
+    // obrócony o 90° – szerokość przed obrotem ogranicza wysokość wnętrza (88 → jeden wiersz).
     const t = (obrot: 0 | 90): Wezel =>
       ({ id: 't', typ: 'tekst', pozycja: { x: 0, y: 0, obrot } }) as unknown as Wezel;
     const a = rozmiesc(swobodny([t(0)]), 0, 0, 20, 88, ctx).dzieci[0]!;
     const b = rozmiesc(swobodny([t(90)]), 0, 0, 20, 88, ctx).dzieci[0]!;
-    expect(bez).toBeTruthy();
     expect(prost(a)).toEqual([0, 0, 20, 4]);
     // Ramka przed obrotem 40 × 2 ma środek (1, 20), więc zaczyna się w (−19, 19).
     expect(prost(b)).toEqual([-19, 19, 40, 2]);
-    // Ramka przed obrotem: 40 × 2, na karcie zajmuje 2 × 40 i leży przy lewej krawędzi.
+    // Na karcie zajmuje 2 × 40 i leży przy lewej krawędzi.
     expect(prostokatPoObrocie(b)).toEqual({ x: 0, y: 0, szer: 2, wys: 40 });
   });
 
@@ -185,6 +176,52 @@ describe('kontener swobodny – układ', () => {
       }),
     ]);
     expect(zmierz(o, {}, ctx)).toEqual({ szer: 3, wys: 10 });
+  });
+
+  it('kotwica środkowa w obwiedni: d + 2|x|, końcowa: d + |x|', () => {
+    const k = (kotwica: Pozycja['kotwica'], x: number) =>
+      swobodny([ikona('a', 4, { pozycja: { x, y: 0, kotwica } })]);
+    expect(zmierz(k('srodek', 5), {}, ctx).szer).toBe(14);
+    expect(zmierz(k('srodek', -5), {}, ctx).szer).toBe(14);
+    expect(zmierz(k('prawy', -3), {}, ctx).szer).toBe(7);
+    // Dodatnie x przy kotwicy końcowej wyprowadza element poza kontener – liczy się odległość.
+    expect(zmierz(k('prawy', 3), {}, ctx).szer).toBe(7);
+    expect(zmierz(k('lewy', 3), {}, ctx).szer).toBe(7);
+    const y = swobodny([ikona('a', 4, { pozycja: { x: 0, y: 2, kotwica: 'dolny' } })]);
+    expect(zmierz(y, {}, ctx).wys).toBe(6);
+    const sr = swobodny([ikona('a', 4, { pozycja: { x: 0, y: 2, kotwica: 'srodek' } })]);
+    expect(zmierz(sr, {}, ctx).wys).toBe(8);
+  });
+
+  it('margines i wyrównanie dziecka są ignorowane, minSzerokosc – tylko przy rozmiarze wg treści', () => {
+    const k = swobodny([
+      ikona('a', 4, {
+        margines: 7,
+        wyrownanie: { poziomo: 'koniec', pionowo: 'srodek' },
+        pozycja: { x: 2, y: 3 },
+      }),
+      ikona('b', 4, { minSzerokosc: 20, pozycja: { x: 0, y: 0 } }),
+      ikona('c', 4, { minSzerokosc: 20, szerokosc: { mm: 10 }, pozycja: { x: 0, y: 0 } }),
+    ]);
+    const u = rozmiesc(k, 0, 0, 60, 40, ctx);
+    expect(prost(u.dzieci[0]!)).toEqual([2, 3, 4, 4]);
+    // Wg treści: minimum obowiązuje; stały rozmiar ma pierwszeństwo przed minimum.
+    expect(prost(u.dzieci[1]!)).toEqual([0, 0, 20, 4]);
+    expect(prost(u.dzieci[2]!)).toEqual([0, 0, 10, 4]);
+  });
+
+  it('procenty przy obrocie 90° liczą się od wnętrza w tej samej osi (przed obrotem)', () => {
+    const k = swobodny([
+      ikona('a', 4, {
+        szerokosc: { procent: 50 },
+        wysokosc: { procent: 10 },
+        pozycja: { x: 0, y: 0, obrot: 90 },
+      }),
+    ]);
+    const a = rozmiesc(k, 0, 0, 60, 40, ctx).dzieci[0]!;
+    expect(a.szer).toBe(30);
+    expect(a.wys).toBe(4);
+    expect(prostokatPoObrocie(a)).toEqual({ x: 0, y: 0, szer: 4, wys: 30 });
   });
 
   it('obrocProstokat: kolejne obroty o 90° wracają do punktu wyjścia', () => {
@@ -285,6 +322,70 @@ describe('kontener swobodny – scena', () => {
     expect(wew.wys).toBe(40);
     expect(wew.x + wew.szer).toBeCloseTo(20, 6);
     expect(wew.y).toBe(10);
+  });
+
+  it('dwa poziomy obrotów: prostokąty węzłów po obrocie przodków, ramki lokalne bez nich', () => {
+    const wnuk = tekst('wnuk', 'W', {
+      szerokosc: { mm: 10 },
+      wysokosc: { mm: 4 },
+      pozycja: { x: 2, y: 3, obrot: 90 },
+    });
+    const dziecko: Kontener = {
+      id: 'dziecko',
+      typ: 'swobodny',
+      szerokosc: { mm: 30 },
+      wysokosc: { mm: 20 },
+      pozycja: { x: 10, y: 10, obrot: 90 },
+      dzieci: [wnuk],
+    };
+    const w = renderujKarte(szablon(swobodny([dziecko])), { dane: {} }, { czcionki });
+    // Dziecko: ramka 30 × 20 w (10, 10) obrócona o 90° – na karcie 20 × 30 o tym samym lewym górnym rogu.
+    const d = w.wezly.find((x) => x.id === 'dziecko')!;
+    expect([d.x, d.y, d.szer, d.wys]).toEqual([10, 10, 20, 30]);
+    // Wnuk w układzie dziecka: (2, 3), potem obrót wnuka (4 × 10) i obrót dziecka wokół jego środka (25, 25).
+    const n = w.wezly.find((x) => x.id === 'wnuk')!;
+    expect(n.lokalne).toMatchObject({ szer: 10, wys: 4 });
+    expect(n.obrot).toBe(90);
+    // Ramka dziecka przed obrotem: (5, 15) 30 × 20 (środek (20, 25)). Wnuk 4 × 10 stoi w niej w (7, 18),
+    // środek (9, 23); obrót dziecka o 90° wokół (20, 25): (−11, −2) → (2, −11), czyli (22, 14).
+    expect(n.x + n.szer / 2).toBeCloseTo(22, 6);
+    expect(n.y + n.wys / 2).toBeCloseTo(14, 6);
+    // Wnuk obrócony o 90° zajmuje w ramce dziecka 4 × 10, a po obrocie dziecka – 10 × 4 na karcie.
+    expect([n.szer, n.wys]).toEqual([10, 4]);
+  });
+
+  it('obraz omija obrócone pole: przeszkodą jest prostokąt po obrocie', () => {
+    const obraz = (obrot: 0 | 90) =>
+      szablon(
+        swobodny([
+          {
+            id: 'ob',
+            typ: 'obraz',
+            zasob: 'x',
+            dopasowanie: 'dopasuj',
+            omijaj: ['bok'],
+            szerokosc: { mm: 50 },
+            wysokosc: { mm: 50 },
+            pozycja: { x: 0, y: 0 },
+          } as Pole,
+          tekst('bok', 'STWÓR', {
+            szerokosc: { mm: 30 },
+            wysokosc: { mm: 6 },
+            pozycja: { x: 0, y: 0, obrot },
+          }),
+        ]),
+      );
+    const kontekst = { czcionki, obraz: () => ({ szerokosc: 100, wysokosc: 100 }) };
+    const pozioma = renderujKarte(obraz(0), { dane: {} }, kontekst).scena.elementy.find(
+      (e) => e.typ === 'obraz',
+    ) as Extract<ElementSceny, { typ: 'obraz' }>;
+    const pionowa = renderujKarte(obraz(90), { dane: {} }, kontekst).scena.elementy.find(
+      (e) => e.typ === 'obraz',
+    ) as Extract<ElementSceny, { typ: 'obraz' }>;
+    // Pole 30 × 6 zabiera pas u góry – obraz 43,5 × 43,5 leży pod nim; obrócone (6 × 30) zabiera pas
+    // z lewej – obraz leży na prawo od niego.
+    expect([pozioma.x, pozioma.y]).toEqual([3.25, 6.5]);
+    expect([pionowa.x, pionowa.y]).toEqual([6.5, 3.25]);
   });
 
   it('SVG jest deterministyczny i nie zawiera text ani foreignObject', async () => {

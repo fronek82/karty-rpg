@@ -43,8 +43,17 @@ export function PanelPolozenia({
   const p: Pozycja = pozycja ?? { x: 0, y: 0 };
   const kotwica = p.kotwica ?? 'lewy-gorny';
   const idKotwicy = useId();
+  const ustawKotwice = (k: Kotwica) =>
+    zmien((q, id) => {
+      const r = zmienKotwice(q, k, rozmiary(id));
+      // Domyślna kotwica nie jest zapisywana.
+      if (k !== 'lewy-gorny') return r;
+      const { kotwica: _k, ...reszta } = r;
+      void _k;
+      return reszta;
+    }, 'poz-kotwica');
   return (
-    <fieldset className="polozenie" aria-label={t('polozenie.tytul')}>
+    <fieldset className="polozenie">
       <legend>
         <strong>{t('polozenie.tytul')}</strong>{' '}
         <span className="podpis">{t('polozenie.wKontenerze', { kontener })}</span>
@@ -68,7 +77,25 @@ export function PanelPolozenia({
       <p className="podpis">{t('polozenie.opis')}</p>
       <div className="pole-panelu">
         <span id={idKotwicy}>{t('polozenie.kotwica')}</span>
-        <div className="siatka-kotwic" role="radiogroup" aria-labelledby={idKotwicy}>
+        <div
+          className="siatka-kotwic"
+          role="radiogroup"
+          aria-labelledby={idKotwicy}
+          onKeyDown={(e) => {
+            // Wzorzec APG „radio group”: strzałki przenoszą fokus i zaznaczenie (z zawinięciem).
+            const krok =
+              e.key === 'ArrowRight' || e.key === 'ArrowDown'
+                ? 1
+                : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+                  ? -1
+                  : 0;
+            if (!krok) return;
+            e.preventDefault();
+            const n = (KOTWICE.indexOf(kotwica) + krok + KOTWICE.length) % KOTWICE.length;
+            ustawKotwice(KOTWICE[n]!);
+            e.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[n]?.focus();
+          }}
+        >
           {KOTWICE.map((k: Kotwica) => (
             <button
               key={k}
@@ -77,17 +104,13 @@ export function PanelPolozenia({
               aria-checked={kotwica === k}
               aria-label={t(`polozenie.kotwica.${k}`)}
               title={t(`polozenie.kotwica.${k}`)}
-              onClick={() =>
-                zmien((q, id) => {
-                  const r = zmienKotwice(q, k, rozmiary(id));
-                  // Domyślna kotwica nie jest zapisywana.
-                  if (k !== 'lewy-gorny') return r;
-                  const { kotwica: _k, ...reszta } = r;
-                  void _k;
-                  return reszta;
-                }, 'poz-kotwica')
-              }
-            />
+              // Jeden przystanek Tab: zaznaczony punkt.
+              tabIndex={kotwica === k ? 0 : -1}
+              onClick={() => ustawKotwice(k)}
+            >
+              {/* Zaznaczenie nie tylko kolorem: kropka w środku przycisku. */}
+              <span aria-hidden="true">{kotwica === k ? '●' : ''}</span>
+            </button>
           ))}
         </div>
       </div>

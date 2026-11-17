@@ -566,7 +566,9 @@ export function renderujKarte(
         const przeszkody = (w.omijaj ?? [])
           .filter((id) => id !== w.id)
           .map((id) => ulozone.get(id))
-          .filter((x): x is UlozonyWezel => x !== undefined);
+          .filter((x): x is UlozonyWezel => x !== undefined)
+          // Przeszkoda obrócona (swobodny) zajmuje prostokąt po obrocie, w układzie swojego rodzica.
+          .map(prostokatPoObrocie);
         elementy.push(
           ...rysujPoleObrazu(w, ramka, dane, ctx, ostrzezenia, przeszkody, karta.obrazy?.[w.id]),
         );

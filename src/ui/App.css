@@ -1594,9 +1594,18 @@ button.maly {
   border-radius: 4px;
   background: #fff;
 }
+.siatka-kotwic button {
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1;
+}
 .siatka-kotwic button[aria-checked='true'] {
   background: #2a6fd6;
-  border-color: #2a6fd6;
+  border-color: #1f4fa3;
+}
+.siatka-kotwic button:focus-visible {
+  outline: 3px solid #f2a900;
+  outline-offset: 2px;
 }
 .wiersz-przyciskow {
   display: flex;

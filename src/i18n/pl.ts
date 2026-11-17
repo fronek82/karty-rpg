@@ -429,11 +429,15 @@ export const pl = {
   'polozenie.naSpod': 'Na spód',
   'polozenie.znacznik': '{x} · {y}',
   'polozenie.znacznikObrot': 'obrót {kat}°',
+  'polozenie.znacznikObrotKrotki': '↻{kat}°',
+  'polozenie.opisWDrzewie': 'położenie {x}, {y} mm, liczone od: {kotwica}',
   'polozenie.zamienNaSwobodny': 'Zamień na swobodny',
   'polozenie.zamienNaKolumne': 'Zamień na kolumnę',
   'polozenie.zamienNaWiersz': 'Zamień na wiersz',
+  'polozenie.konwersjaNaSwobodnyOpis':
+    'Dzieci dostają X·Y i rozmiary w mm z bieżącego układu (stałe wysokości zostają, pozostałe stają się stałe w mm – tekst o zmiennej długości już nie zmieni wysokości pola). Pola „ukryj, gdy puste” dostaną X = Y = 0 i pojawią się w lewym górnym rogu, gdy ich wartość się pojawi – ustaw je ręcznie.',
   'polozenie.konwersjaOpis':
-    '„Zamień na swobodny” zachowuje bieżące położenia dzieci (nic się na karcie nie przesuwa); „Zamień na kolumnę / wiersz” ustawia kolejność wg położenia (góra→dół, lewo→prawo) i usuwa X·Y oraz obrót.',
+    '„Zamień na swobodny” zachowuje bieżące położenia dzieci (nic się na karcie nie przesuwa); „Zamień na kolumnę / wiersz” ustawia kolejność wg położenia (góra→dół, lewo→prawo) i usuwa X·Y, kotwicę i obrót; rozmiary w mm zostają.',
   'szablon.podglad': 'Podgląd karty',
   'szablon.pomocPodgladu':
     'Kliknij element na karcie, żeby go zaznaczyć. Podgląd pokazuje wartości przykładowe.',

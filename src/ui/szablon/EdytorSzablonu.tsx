@@ -649,6 +649,7 @@ export function EdytorSzablonu({
                   zajeteKlucze={zajeteKlucze}
                   {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
                   rozmiaryKotwicy={rozmiaryKotwicy}
+                  mozeNaSwobodny={!!uklad}
                   kolejnosc={(jak) => zmienSz((s) => zmienKolejnoscRysowania(s, edytowany.id, jak))}
                   // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
                   zmienWezel={(f, klucz) =>
@@ -708,6 +709,7 @@ export function EdytorSzablonu({
                     szablon={szablon}
                     wezel={szablon.korzen}
                     wymiary={wymiary(szablon.korzen.id)}
+                    mozeNaSwobodny={!!uklad}
                     czcionki={czcionki}
                     obrazy={obrazy}
                     zajeteKlucze={zajeteKlucze}

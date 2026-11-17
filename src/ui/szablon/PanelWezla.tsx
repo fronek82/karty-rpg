@@ -44,6 +44,7 @@ export function PanelWezla({
   rodzicSwobodny,
   rozmiaryKotwicy,
   kolejnosc,
+  mozeNaSwobodny = true,
 }: {
   szablon: Szablon;
   wezel: Wezel;
@@ -64,6 +65,8 @@ export function PanelWezla({
   rozmiaryKotwicy?: (id: string) => RozmiaryKotwicy | undefined;
   /** Zmiana kolejności rysowania (tylko jeden element). */
   kolejnosc?: (jak: ZmianaKolejnosci) => void;
+  /** Konwersja na swobodny wymaga układu z podglądu – bez niego przycisk jest wyłączony. */
+  mozeNaSwobodny?: boolean;
 }) {
   const id = wezel.id;
   const korzen = wezel.id === szablon.korzen.id;
@@ -298,6 +301,7 @@ export function PanelWezla({
             etykieta={t('szablon.szerokosc')}
             wartosc={wezel.szerokosc}
             domyslneMm={wymiary?.szer ?? 10}
+            bezWypelnij={!!rodzicSwobodny}
             zmien={(r) =>
               zmienWezel((w) => {
                 const x = { ...w };
@@ -312,6 +316,7 @@ export function PanelWezla({
             etykieta={t('szablon.wysokosc')}
             wartosc={wezel.wysokosc}
             domyslneMm={wymiary?.wys ?? 10}
+            bezWypelnij={!!rodzicSwobodny}
             zmien={(r) =>
               zmienWezel((w) => {
                 const x = { ...w };
@@ -326,12 +331,14 @@ export function PanelWezla({
 
       {czyKontener(wezel) && (
         <>
-          <Liczba
-            etykieta={t('szablon.odstepDzieci')}
-            wartosc={(wezel as Kontener).odstep ?? 0}
-            max={50}
-            zmien={(v) => zmienWezel((w) => ({ ...w, odstep: v }) as Wezel, `odstep:${id}`)}
-          />
+          {(wezel.typ === 'wiersz' || wezel.typ === 'kolumna') && (
+            <Liczba
+              etykieta={t('szablon.odstepDzieci')}
+              wartosc={(wezel as Kontener).odstep ?? 0}
+              max={50}
+              zmien={(v) => zmienWezel((w) => ({ ...w, odstep: v }) as Wezel, `odstep:${id}`)}
+            />
+          )}
           {wezel.typ !== 'warstwy' && wezel.typ !== 'swobodny' && (
             <Przelacznik
               etykieta={t('wlasciwosci.rozklad')}
@@ -354,7 +361,12 @@ export function PanelWezla({
             <div className="pole-panelu konwersja">
               <div className="wiersz-przyciskow">
                 {wezel.typ !== 'swobodny' && (
-                  <button type="button" className="maly" onClick={() => zmienTyp('swobodny')}>
+                  <button
+                    type="button"
+                    className="maly"
+                    disabled={!mozeNaSwobodny}
+                    onClick={() => zmienTyp('swobodny')}
+                  >
                     {t('polozenie.zamienNaSwobodny')}
                   </button>
                 )}
@@ -369,7 +381,13 @@ export function PanelWezla({
                   </>
                 )}
               </div>
-              {wezel.typ === 'swobodny' && <p className="podpis">{t('polozenie.konwersjaOpis')}</p>}
+              <p className="podpis">
+                {t(
+                  wezel.typ === 'swobodny'
+                    ? 'polozenie.konwersjaOpis'
+                    : 'polozenie.konwersjaNaSwobodnyOpis',
+                )}
+              </p>
             </div>
           )}
         </>

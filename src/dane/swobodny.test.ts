@@ -4,7 +4,9 @@ import { rejestrTestowy } from '../silnik/__testy__/pomoc';
 import { renderujKarte } from '../silnik/karta';
 import { scenaDoSvg } from '../silnik/svg';
 import {
+  doPoprzedniegoKontenera,
   dostosujDoSwobodnego,
+  duplikujWezel,
   nowySzablon,
   nowyWezel,
   opakuj,
@@ -61,10 +63,8 @@ describe('kreator „swobodny”', () => {
       if (r !== 'tekst') expect(w.wysokosc).toEqual({ mm: 30 });
       s = wstawWezel(s, 'karta', w);
     }
-    const sceny = rysuj(s);
-    expect(sceny.ostrzezenia.filter((o) => o.komunikat === 'brak-obrazu').length).toBeGreaterThan(
-      -1,
-    );
+    expect(dzieci(s, 'karta')).toHaveLength(3);
+    expect(rysuj(s).wezly.map((w) => w.id)).toContain('karta');
   });
 });
 
@@ -173,6 +173,138 @@ describe('konwersja kolumna → swobodny → kolumna', () => {
   });
 });
 
+describe('konwersje – poprawki po przeglądzie', () => {
+  const swob = (): Szablon => {
+    let s = startowy('swobodny');
+    for (const n of ['a', 'b', 'c']) s = wstawWezel(s, 'karta', nowyWezel(s, 'ikona', n));
+    return s;
+  };
+  const ids = (s: Szablon) => dzieci(s, 'karta').map((d) => d.id);
+
+  it('swobodny → warstwy zostawia kolejność z drzewa i usuwa tylko pozycję', () => {
+    let s = swob();
+    const [a, b, c] = ids(s) as [string, string, string];
+    s = zmienWezel(s, a, (w) => ({ ...w, pozycja: { x: 0, y: 50 } }) as Wezel);
+    s = zmienWezel(s, c, (w) => ({ ...w, pozycja: { x: 0, y: 1, obrot: 90 } }) as Wezel);
+    const w = zmienTypKontenera(s, 'karta', 'warstwy');
+    expect(w.korzen.typ).toBe('warstwy');
+    expect(ids(w)).toEqual([a, b, c]);
+    expect(dzieci(w, 'karta').every((d) => d.pozycja === undefined)).toBe(true);
+  });
+
+  it('klucz sortowania z prostokąta po obrocie (układ z obrotem)', () => {
+    const s = swob();
+    const [a, b, c] = ids(s) as [string, string, string];
+    // „a” 40 × 4 obrócony o 90° (zajmuje 4 × 40) przy y = 10 – ramka przed obrotem zaczyna się
+    // wyżej niż „b” (y = 20), ale na karcie jego górna krawędź jest niżej (y = 28 > 20).
+    const uklad = new Map([
+      [a, { x: -8, y: 28, szer: 40, wys: 4, obrot: 90 as const }],
+      [b, { x: 0, y: 20, szer: 10, wys: 4 }],
+      [c, { x: 0, y: 90, szer: 10, wys: 4 }],
+    ]);
+    // Prostokąt po obrocie „a”: środek (12, 30) → 4 × 40 od (10, 10).
+    const kol = zmienTypKontenera(s, 'karta', 'kolumna', uklad);
+    expect(ids(kol).slice(0, 2)).toEqual([a, b]);
+    const uklad2 = new Map([
+      [a, { x: -8, y: 48, szer: 40, wys: 4, obrot: 90 as const }],
+      [b, { x: 0, y: 20, szer: 10, wys: 4 }],
+      [c, { x: 0, y: 90, szer: 10, wys: 4 }],
+    ]);
+    // Środek „a” (12, 50) → po obrocie górna krawędź y = 30 > 20, więc „b” idzie przed „a”.
+    expect(ids(zmienTypKontenera(s, 'karta', 'kolumna', uklad2)).slice(0, 2)).toEqual([b, a]);
+  });
+
+  it('bez układu klucz uwzględnia kotwicę (prawy dolny róg jest „dalej”)', () => {
+    let s = swob();
+    const [a, b, c] = ids(s) as [string, string, string];
+    s = zmienWezel(
+      s,
+      a,
+      (w) => ({ ...w, pozycja: { x: -2, y: -2, kotwica: 'prawy-dolny' } }) as Wezel,
+    );
+    s = zmienWezel(s, b, (w) => ({ ...w, pozycja: { x: 5, y: 80 } }) as Wezel);
+    s = zmienWezel(s, c, (w) => ({ ...w, pozycja: { x: 5, y: 10, kotwica: 'srodek' } }) as Wezel);
+    // Kolumna: lewy-górny y=80 (b) < środek (c) < prawy-dolny (a).
+    expect(ids(zmienTypKontenera(s, 'karta', 'kolumna'))).toEqual([b, c, a]);
+  });
+
+  it('konwersja na swobodny z dzieckiem ukrytym: (0, 0) i rozmiary bez zmian, reszta jak w układzie', () => {
+    let s = startowy('tytul-opis');
+    // Pole „ukryj, gdy puste” bez danych jest poza układem.
+    s = wstawWezel(s, 'karta', {
+      ...nowyWezel(s, 'tekst', 'Ukryte'),
+      gdyPuste: 'ukryj',
+      wysokosc: { mm: 7 },
+    } as Wezel);
+    const przed = rysuj(s);
+    expect(przed.wezly.some((w) => w.id === 'tekst_2' || w.id === 'tekst')).toBe(true);
+    const ukryty = dzieci(s, 'karta').at(-1)!;
+    expect(przed.wezly.find((w) => w.id === ukryty.id)).toBeUndefined();
+    const sw = zmienTypKontenera(s, 'karta', 'swobodny', ukladZWezlow(przed.wezly));
+    const u = znajdzWezel(sw, ukryty.id)!;
+    expect(u.pozycja).toEqual({ x: 0, y: 0 });
+    expect(u.wysokosc).toEqual({ mm: 7 });
+    const t = znajdzWezel(sw, dzieci(sw, 'karta')[0]!.id)!;
+    expect(t.szerokosc).toMatchObject({ mm: expect.any(Number) });
+  });
+
+  it('przeniesienie bez pozycji do swobodnego daje pozycję i rozmiar jak nowy element', () => {
+    let s = startowy('tytul-opis');
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'kolumna', 'S'));
+    const sw = dzieci(s, 'karta').find((d) => d.typ === 'kolumna')!;
+    s = zmienTypKontenera(s, sw.id, 'swobodny');
+    const t = dzieci(s, 'karta')[0]!;
+    const z = przeniesWezel(s, t.id, sw.id, 0);
+    expect(znajdzWezel(z, t.id)!.pozycja).toEqual({ x: 3, y: 3 });
+    expect(znajdzWezel(z, t.id)!.szerokosc).toEqual({ mm: 30 });
+    // „Do kontenera powyżej” używa tej samej ścieżki.
+    const kolejny = nowyWezel(z, 'ikona', 'I');
+    const z2 = doPoprzedniegoKontenera(wstawWezel(z, 'karta', kolejny), kolejny.id);
+    expect(znajdzWezel(z2, kolejny.id)!.pozycja).toEqual({ x: 3, y: 3 });
+  });
+
+  it('duplikat w swobodnym leży 3 mm w prawo i w dół od oryginału', () => {
+    let s = startowy('swobodny');
+    s = wstawWezel(s, 'karta', {
+      ...dostosujDoSwobodnego(nowyWezel(s, 'tekst', 'T')),
+      pozycja: { x: 10, y: 20, kotwica: 'srodek' },
+    });
+    const t = dzieci(s, 'karta')[0]!;
+    const d = duplikujWezel(s, t.id, '(kopia)');
+    expect(znajdzWezel(d.szablon, d.id)!.pozycja).toEqual({ x: 13, y: 23, kotwica: 'srodek' });
+    // W zwykłej kolumnie kopia nie dostaje pozycji.
+    const k = startowy('tytul-opis');
+    const kopia = duplikujWezel(k, dzieci(k, 'karta')[0]!.id, '(kopia)');
+    expect(znajdzWezel(kopia.szablon, kopia.id)!.pozycja).toBeUndefined();
+  });
+
+  it('opakowanie elementu swobodnego zachowuje całą jego pozycję (x, y, kotwica, obrót)', () => {
+    let s = startowy('swobodny');
+    s = wstawWezel(s, 'karta', {
+      ...dostosujDoSwobodnego(nowyWezel(s, 'tekst', 'T')),
+      pozycja: { x: 12, y: -20, kotwica: 'prawy-dolny', obrot: 90 },
+    });
+    const t = dzieci(s, 'karta')[0]!;
+    const o = opakuj(s, [t.id], 'kolumna', 'K');
+    expect(znajdzWezel(o.szablon, o.id)!.pozycja).toEqual({
+      x: 12,
+      y: -20,
+      kotwica: 'prawy-dolny',
+      obrot: 90,
+    });
+  });
+
+  it('separator w swobodnym: długość 30 mm tylko wzdłuż, grubość wg treści', () => {
+    const s = startowy('swobodny');
+    const poz = dostosujDoSwobodnego(nowyWezel(s, 'separator', 'P', { wWierszu: false }));
+    const pion = dostosujDoSwobodnego(nowyWezel(s, 'separator', 'V', { wWierszu: true }));
+    expect(poz).toMatchObject({ szerokosc: { mm: 30 } });
+    expect(poz.wysokosc).toBeUndefined();
+    expect(pion).toMatchObject({ wysokosc: { mm: 30 } });
+    expect(pion.szerokosc).toBeUndefined();
+  });
+});
+
 describe('kolejność rysowania i kotwica w panelu', () => {
   it('na wierzch / wyżej / niżej / na spód przesuwają w drzewie', () => {
     let s = startowy('swobodny');
@@ -225,6 +357,15 @@ describe('schemat 15', () => {
     expect(zly({ x: 0, y: 0, kotwica: 'nigdzie' })).toBe(false);
     expect(zly({ x: Number.NaN, y: 0 })).toBe(false);
     expect(czyKontener(s.korzen)).toBe(true);
+  });
+
+  it('zapis i odczyt: swobodny korzeń z pozycjami wraca bez zmian z eksportu szablonu', () => {
+    let s = startowy('swobodny');
+    s = wstawWezel(s, 'karta', {
+      ...dostosujDoSwobodnego(nowyWezel(s, 'tekst', 'T')),
+      pozycja: { x: 1.5, y: -2, kotwica: 'dolny', obrot: 180 },
+    });
+    expect(JSON.parse(JSON.stringify(s))).toEqual(s);
   });
 
   it('wersja schematu to 15, a eksport i import szablonu zachowuje swobodny korzeń i pozycje', () => {

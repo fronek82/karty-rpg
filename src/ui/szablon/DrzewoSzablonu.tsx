@@ -1,6 +1,13 @@
 import { t } from '../../i18n';
 import { czyKontener, type Kontener, type Wezel } from '../../model/szablon';
 
+const opisPolozenia = (p: NonNullable<Wezel['pozycja']>) =>
+  t('polozenie.opisWDrzewie', {
+    x: liczba(p.x),
+    y: liczba(p.y),
+    kotwica: t(`polozenie.kotwica.${p.kotwica ?? 'lewy-gorny'}`),
+  }) + (p.obrot ? `, ${t('polozenie.znacznikObrot', { kat: p.obrot })}` : '');
+
 const liczba = (v: number) => String(Math.round(v * 10) / 10).replace('.', ',');
 
 export const IKONY_WEZLOW: Record<Wezel['typ'], string> = {
@@ -45,7 +52,7 @@ export function DrzewoSzablonu({
         role="treeitem"
         aria-level={poziom}
         aria-selected={wybrany}
-        aria-label={`${nazwaWezla(w)} – ${t(`wezel.${w.typ}`)}`}
+        aria-label={`${nazwaWezla(w)} – ${t(`wezel.${w.typ}`)}${poz ? `, ${opisPolozenia(poz)}` : ''}`}
         data-wezel={w.id}
         // Jeden przystanek Tab: pierwszy zaznaczony element, bez zaznaczenia – korzeń.
         tabIndex={(zaznaczone.length ? zaznaczone[0] === w.id : poziom === 1) ? 0 : -1}
@@ -67,7 +74,12 @@ export function DrzewoSzablonu({
               title={t(`polozenie.kotwica.${poz.kotwica ?? 'lewy-gorny'}`)}
             >
               {t('polozenie.znacznik', { x: liczba(poz.x), y: liczba(poz.y) })}
-              {poz.obrot ? ` ↻${poz.obrot}°` : ''}
+              {poz.obrot ? (
+                <span title={t('polozenie.znacznikObrot', { kat: poz.obrot })}>
+                  {' '}
+                  {t('polozenie.znacznikObrotKrotki', { kat: poz.obrot })}
+                </span>
+              ) : null}
             </span>
           )}
         </span>

@@ -128,6 +128,30 @@ export interface Pozycja {
   obrot?: ObrotSwobodny;
 }
 
+/** Ułamki szerokości i wysokości, które wyznaczają punkt kotwicy (0, 0.5 albo 1). */
+export function ulamkiKotwicy(k: Kotwica | undefined): { fx: number; fy: number } {
+  switch (k) {
+    case 'gorny':
+      return { fx: 0.5, fy: 0 };
+    case 'prawy-gorny':
+      return { fx: 1, fy: 0 };
+    case 'lewy':
+      return { fx: 0, fy: 0.5 };
+    case 'srodek':
+      return { fx: 0.5, fy: 0.5 };
+    case 'prawy':
+      return { fx: 1, fy: 0.5 };
+    case 'lewy-dolny':
+      return { fx: 0, fy: 1 };
+    case 'dolny':
+      return { fx: 0.5, fy: 1 };
+    case 'prawy-dolny':
+      return { fx: 1, fy: 1 };
+    default:
+      return { fx: 0, fy: 0 };
+  }
+}
+
 interface WezelBazowy {
   /** Identyfikator unikalny w obrębie szablonu. */
   id: string;

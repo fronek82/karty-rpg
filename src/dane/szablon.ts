@@ -4,16 +4,16 @@ import {
   czyKontener,
   kluczeTabeli,
   rozwinOdstepy,
+  ulamkiKotwicy,
   type Kolor,
   type Kotwica,
-  type ObrotSwobodny,
   type Kontener,
   type Pole,
   type Szablon,
   type Wezel,
 } from '../model/szablon';
 import { unikalneId } from './czcionki';
-import { ulamkiKotwicy } from '../silnik/uklad';
+import { prostokatPoObrocie } from '../silnik/uklad';
 
 /**
  * Edycja szablonu od zera: operacje na drzewie wierszy, kolumn i pól (czyste funkcje – projekt
@@ -293,7 +293,9 @@ export function przeniesWezel(s: Szablon, id: string, rodzicId: string, indeks: 
   const bez = usunWezly(s, [id]);
   const dlugosc = (znajdzWezel(bez, rodzicId) as Kontener).dzieci.length;
   // Położenie ma sens tylko w kontenerze swobodnym – poza nim jest usuwane.
-  const przeniesiony = cel.typ === 'swobodny' ? w : bezPozycji(w);
+  // Do swobodnego trafia z położeniem i rozmiarem w mm (jak nowy element), jeśli ich nie miał.
+  const przeniesiony =
+    cel.typ === 'swobodny' ? (w.pozycja ? w : dostosujDoSwobodnego(w)) : bezPozycji(w);
   return wstawDo(bez, rodzicId, Math.max(0, Math.min(j, dlugosc)), przeniesiony);
 }
 
@@ -335,14 +337,15 @@ export function opakuj(
   const wybrane = r.rodzic.dzieci.filter((d) => zbior.has(d.id));
   const dzieci = wSwobodnym ? wybrane.map(bezPozycji) : wybrane;
   const pierwszy = r.rodzic.dzieci.findIndex((d) => zbior.has(d.id));
-  // W kontenerze swobodnym nowy kontener staje na miejscu pierwszego z opakowanych elementów.
+  // W kontenerze swobodnym nowy kontener dziedziczy całą `pozycja` pierwszego z opakowanych elementów
+  // (x, y, kotwicę i obrót); opakowane elementy ją tracą i obracają się razem z kontenerem.
   const pozycja = wSwobodnym ? wybrane[0]?.pozycja : undefined;
   const nowy: Kontener = {
     id: noweIdWezla(s, typ),
     nazwa,
     typ,
     odstep: 1,
-    ...(pozycja ? { pozycja: { ...pozycja, obrot: 0 } } : {}),
+    ...(pozycja ? { pozycja: { ...pozycja } } : {}),
     dzieci,
   };
   const zmieniony = zmienWezel(s, r.rodzic.id, (k) => {
@@ -396,7 +399,13 @@ export function duplikujWezel(
       ? { ...x, omijaj: x.omijaj.map((id) => noweIds.get(id) ?? id) }
       : x,
   );
-  return { szablon: wstawDo(s, r.rodzic.id, r.indeks + 1, poprawiona), id: poprawiona.id };
+  // Kopia w kontenerze swobodnym leży 3 mm w prawo i w dół od oryginału (inaczej zakrywa go dokładnie).
+  const poz = poprawiona.pozycja ?? { x: 0, y: 0 };
+  const kopiaWPozycji: Wezel =
+    r.rodzic.typ === 'swobodny'
+      ? { ...poprawiona, pozycja: { ...poz, x: poz.x + 3, y: poz.y + 3 } }
+      : poprawiona;
+  return { szablon: wstawDo(s, r.rodzic.id, r.indeks + 1, kopiaWPozycji), id: poprawiona.id };
 }
 
 // --- Projekt.
@@ -625,6 +634,8 @@ export interface RamkaUkladu {
   y: Mm;
   szer: Mm;
   wys: Mm;
+  /** Obrót własny węzła (ramka jest przed obrotem). */
+  obrot?: 90 | 180 | 270;
 }
 
 /** Układ do konwersji: identyfikator węzła → ramka w układzie rodzica (przed obrotem węzła). */
@@ -632,6 +643,7 @@ export type UkladWezlow = ReadonlyMap<string, RamkaUkladu>;
 
 /** Zaokrąglenie do 0,001 mm – ułamki z układu nie zostawiają śmieci w szablonie. */
 const zaokr = (v: number) => Math.round(v * 1000) / 1000;
+const zaokr01 = (v: number) => Math.round(v * 100) / 100;
 
 /**
  * Zmiana typu kontenera; separatory w nim obracają się (w wierszu – pionowe, w kolumnie – poziome).
@@ -673,20 +685,34 @@ export function zmienTypKontenera(
       } as Wezel;
     });
   } else if (w.typ === 'swobodny') {
-    const klucz = (d: Wezel) => {
-      const r = uklad?.get(d.id);
-      return r ? { x: r.x, y: r.y } : { x: d.pozycja?.x ?? 0, y: d.pozycja?.y ?? 0 };
-    };
-    const z = [...dzieci.entries()];
-    z.sort(([i, a], [j, b]) => {
-      const ka = klucz(a);
-      const kb = klucz(b);
-      const [a1, b1, a2, b2] =
-        typ === 'wiersz' ? [ka.x, kb.x, ka.y, kb.y] : [ka.y, kb.y, ka.x, kb.x];
-      // Stabilnie: równe położenia zostają w kolejności rysowania.
-      return a1 - b1 || a2 - b2 || i - j;
-    });
-    dzieci = z.map(([, d]) => bezPozycji(d));
+    if (typ === 'kolumna' || typ === 'wiersz') {
+      // Klucz sortowania: lewy górny róg prostokąta zajętego na karcie (po obrocie), z układu;
+      // bez układu – `pozycja` z poprawką na kotwicę (kotwica prawa / dolna = dalej), 0,01 mm.
+      const klucz = (d: Wezel) => {
+        const r = uklad?.get(d.id);
+        if (r) {
+          const q = prostokatPoObrocie(r);
+          return { x: zaokr01(q.x), y: zaokr01(q.y) };
+        }
+        const { fx, fy } = ulamkiKotwicy(d.pozycja?.kotwica);
+        return {
+          x: zaokr01(fx * 10000 + (d.pozycja?.x ?? 0)),
+          y: zaokr01(fy * 10000 + (d.pozycja?.y ?? 0)),
+        };
+      };
+      const z = [...dzieci.entries()];
+      z.sort(([i, a], [j, b]) => {
+        const ka = klucz(a);
+        const kb = klucz(b);
+        const [a1, b1, a2, b2] =
+          typ === 'wiersz' ? [ka.x, kb.x, ka.y, kb.y] : [ka.y, kb.y, ka.x, kb.x];
+        // Stabilnie: równe położenia zostają w kolejności rysowania.
+        return a1 - b1 || a2 - b2 || i - j;
+      });
+      dzieci = z.map(([, d]) => d);
+    }
+    // Wszystkie typy poza swobodnym: `pozycja` (z obrotem i kotwicą) jest usuwana.
+    dzieci = dzieci.map(bezPozycji);
   }
   return zmienWezel(s, id, () => ({ ...w, typ, dzieci }));
 }
@@ -716,6 +742,17 @@ export function zmienKolejnoscRysowania(s: Szablon, id: string, jak: ZmianaKolej
 export function dostosujDoSwobodnego(w: Wezel): Wezel {
   const wypelnij = (r: Wezel['szerokosc']) => r !== undefined && r !== 'auto' && 'wypelnij' in r;
   const x: Wezel = { ...w, pozycja: { x: 3, y: 3 } };
+  // Separator ma jeden wymiar „długość” (30 mm), drugi – grubość – zostaje wg treści.
+  if (!czyKontener(x) && x.typ === 'separator') {
+    if (x.kierunek === 'pionowy') {
+      delete x.szerokosc;
+      if (x.wysokosc === undefined || wypelnij(x.wysokosc)) x.wysokosc = { mm: 30 };
+    } else {
+      delete x.wysokosc;
+      if (x.szerokosc === undefined || wypelnij(x.szerokosc)) x.szerokosc = { mm: 30 };
+    }
+    return x;
+  }
   if (wypelnij(x.szerokosc) || x.szerokosc === undefined) x.szerokosc = { mm: 30 };
   if (wypelnij(x.wysokosc)) x.wysokosc = { mm: czyKontener(x) || x.typ === 'obraz' ? 30 : 10 };
   else if (x.wysokosc === undefined && (czyKontener(x) || x.typ === 'obraz'))
@@ -739,8 +776,6 @@ export function zmienKotwice(
     y: zaokr(p.y + (a.fy - b.fy) * (rozmiary.ramka.wys - rozmiary.element.wys)),
   };
 }
-
-export type { ObrotSwobodny };
 
 /** Styl elementu do schowka „Kopiuj styl”: wygląd, odstępy, styl tekstu i etykiety, kształt, linie. */
 export type SkopiowanyStyl = Record<string, unknown> & { stylEtykiety?: unknown };
@@ -815,6 +850,10 @@ export function wklejStyl(w: Wezel, st: SkopiowanyStyl): Wezel {
 }
 
 /** Układ do konwersji kontenerów z wyniku renderowania (`WyrenderowanaKarta.wezly`). */
-export function ukladZWezlow(wezly: readonly { id: string; lokalne: RamkaUkladu }[]): UkladWezlow {
-  return new Map(wezly.map((w) => [w.id, w.lokalne]));
+export function ukladZWezlow(
+  wezly: readonly { id: string; lokalne: RamkaUkladu; obrot?: 90 | 180 | 270 }[],
+): UkladWezlow {
+  return new Map(
+    wezly.map((w) => [w.id, w.obrot ? { ...w.lokalne, obrot: w.obrot } : w.lokalne] as const),
+  );
 }
