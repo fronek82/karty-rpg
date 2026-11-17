@@ -1,7 +1,7 @@
 # Karty RPG
 
 Aplikacja przeglądarkowa do projektowania i drukowania kart do gier RPG i planszowych.
-Specyfikacja: [`SPEC.md`](SPEC.md), bieżący plan: [`docs/plan-M1.md`](docs/plan-M1.md).
+Specyfikacja: [`SPEC.md`](SPEC.md), bieżący plan: [`docs/plan-M2.md`](docs/plan-M2.md).
 
 **Aplikacja online:** <https://fronek82.github.io/karty-rpg/>. Działa w całości w przeglądarce;
 projekty zostają na Twoim komputerze (IndexedDB).
@@ -19,6 +19,25 @@ projekty zostają na Twoim komputerze (IndexedDB).
 5. **Ustawienia**: tytuł kartki, czarno-biały, papier, czcionki (także własne).
 6. **Pobierz PDF** i drukuj w **skali 100%** (bez „dopasuj do strony”). **Eksportuj** zapisuje
    projekt do pliku `.kartyrpg` (kopia zapasowa, przeniesienie na inny komputer – import na starcie).
+
+## Własne karty (od zera)
+
+1. Na starcie **„Stwórz własne karty”** → **„＋ Nowy szablon od zera”**: nazwa, format karty
+   (Poker, Bridge, Mini Euro, Mini American, Tarot, kwadrat albo własny w mm), orientacja, rogi,
+   kolor i neutralny układ startowy.
+2. **Edytor szablonu**: z lewej drzewo wierszy, kolumn i pól (**＋ Dodaj**, ↑/↓, do kontenera,
+   opakuj, duplikuj, usuń; klawiatura), w środku podgląd karty (klik zaznacza element), z prawej
+   **właściwości**: typ, nazwa, treść z danych karty albo stała, etykieta, szerokość i wysokość,
+   styl tekstu, tło, ramka, odstępy, kształt wartości, tabela (kolumny, wiersze, nagłówki, linie).
+   Shift + klik – kilka elementów naraz; Kopiuj / Wklej styl.
+3. **„Rób karty ►”** – kartka dla rozmiaru szablonu; klik w slot dodaje kartę, panel pokazuje pola
+   z nazwami z szablonu. W treści pól działa formatowanie: `**pogrubienie**`, `*kursywa*`,
+   `***oba***` (`\*` – zwykła gwiazdka). **„Edytuj szablon”** wraca do edytora.
+4. Papier: A4, Letter, A5, zdjęcia 10×15 / 13×18 / 15×21 cm (strefa bezpieczeństwa 3 mm) albo
+   własny. Szablon eksportuje się do pliku `.kartyrpg-szablon` i importuje w innym projekcie.
+
+Przykładowe szablony do wypróbowania (do testów, nie gotowe pakiety gier):
+[`docs/przyklady/`](docs/przyklady/).
 
 ## Uruchomienie
 
@@ -45,6 +64,10 @@ Aplikacja działa pod adresem `http://localhost:5173/karty-rpg/`.
 | `npm run test:nakladka` | nakładka arkuszy na oryginał (lokalnie, raport HTML) |
 | `npm run lint`          | ESLint                                               |
 | `npm run format:check`  | sprawdzenie formatowania (Prettier)                  |
+
+Wzorce wizualne (`*-snapshots/*-chromium-linux.png`) są dla Chromium na Linuksie (jak w CI); na innym
+systemie porównania zrzutów nie przejdą – uruchamiaj e2e w kontenerze Linuksa albo zaktualizuj wzorce
+lokalnie `npx playwright test --update-snapshots` (bez commitowania).
 
 ## Struktura
 
