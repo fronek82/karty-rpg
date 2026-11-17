@@ -16,6 +16,7 @@ import { dodajKarteWSlocie, ustawDaneKart } from './kartka';
 import { rejestrZProjektu } from './pakiet';
 import {
   dodajSzablonZKartka,
+  kartkaDlaSzablonu,
   nowyProjektWlasny,
   pakietWlasny,
   pasujeDoSlotu,
@@ -23,6 +24,7 @@ import {
   slotyNaStronie,
   typyZSzablonow,
   ustawieniaKartkiDla,
+  zmienRozmiarSzablonu,
 } from './wlasneKarty';
 
 const czcionka = async (plik: string) => new Uint8Array(readFileSync(`public/czcionki/${plik}`));
@@ -220,5 +222,29 @@ describe('arkusz: karty w mm i strefa bezpieczeństwa', () => {
       { czcionki: rejestr, szablony },
     );
     expect(ok.ostrzezenia.filter((o) => o.komunikat === 'karta-w-strefie-przyciecia')).toEqual([]);
+  });
+});
+
+describe('rozmiar szablonu i kartka dla szablonu', () => {
+  it('zmiana rozmiaru: kartka szablonu dostaje nowy slot i lepszą orientację; za duża – odrzucona', async () => {
+    const { projekt } = await nowyProjektWlasny(paczka(), czcionka, 'r1');
+    const w = zmienRozmiarSzablonu(projekt, 'test-czar', 88, 63);
+    expect(w.szablony[0]!.rozmiar).toEqual({ tryb: 'mm', szerokosc: 88, wysokosc: 63 });
+    expect(w.arkusze[0]!.ustawienia.slot).toEqual({ szerokosc: 88, wysokosc: 63 });
+    expect(w.arkusze[0]!.ustawienia.orientacja).toBe('pozioma');
+    expect(zmienRozmiarSzablonu(projekt, 'test-czar', 290, 290)).toBe(projekt);
+  });
+
+  it('kartka dla szablonu: istniejąca tego rozmiaru albo nowa bez tytułu', async () => {
+    const { projekt, zasoby } = await nowyProjektWlasny(paczka(), czcionka, 'r2');
+    expect(kartkaDlaSzablonu(projekt, 'test-czar')).toEqual({
+      projekt,
+      arkuszId: projekt.arkusze[0]!.id,
+    });
+    const z = dodajSzablonZKartka(projekt, zasoby, paczka(szablonStatystyk));
+    const bez = { ...z.projekt, arkusze: z.projekt.arkusze.slice(0, 1) };
+    const n = kartkaDlaSzablonu(bez, 'test-statystyki');
+    expect(n.projekt.arkusze).toHaveLength(2);
+    expect(n.projekt.arkusze[1]!.ustawienia.tytul?.tekst).toBe('');
   });
 });

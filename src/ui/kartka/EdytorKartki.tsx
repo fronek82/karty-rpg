@@ -28,6 +28,7 @@ import {
   type KontekstKartki,
   type Polozenie,
 } from '../../dane/kartka';
+import { nazwaKarty } from '../../dane/szablon';
 import { zbudujArkusz, zSzarymiObrazami, type WynikArkusza } from '../../druk/arkusz';
 import { kartyOdlozone, pakietProjektu } from '../../druk/normalizacja';
 import { t, tJesliJest } from '../../i18n';
@@ -38,6 +39,7 @@ import {
   korzenKarty,
   type Karta,
   type PoleObraz,
+  type Szablon,
   type Talia,
   type Wezel,
 } from '../../model/szablon';
@@ -151,8 +153,27 @@ const wPolu = (e: Element | null) =>
   (e.matches('input, textarea, select, [contenteditable="true"]') || !!e.closest('[role="menu"]'));
 
 /** Edytor kartki: strony A4 z siatką slotów, karty klikane, przeciągane i edytowane w panelu. */
-export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
+export function EdytorKartki({
+  edycja,
+  pokazKartke,
+}: {
+  edycja: ProjektWEdycji;
+  /** Kartka do pokazania po wejściu (np. po „Rób karty” z edytora szablonu). */
+  pokazKartke?: string;
+}) {
   const { projekt, zmien } = edycja;
+  // Po wejściu z edytora szablonu – przewiń do kartki dla jego rozmiaru.
+  useEffect(() => {
+    if (!pokazKartke) return;
+    const z = setTimeout(
+      () =>
+        document
+          .querySelector(`.kartka[data-kartka="${CSS.escape(pokazKartke)}"]`)
+          ?.scrollIntoView({ block: 'start' }),
+      100,
+    );
+    return () => clearTimeout(z);
+  }, [pokazKartke]);
   const idPakietu = pakietProjektu(projekt);
   const pakietGry = usePakiet(idPakietu);
   // Projekt bez pakietu gry (własne karty): typy kart z szablonów projektu.
@@ -297,7 +318,10 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       if (!zasoby) return false;
       const nowy = f(projekt);
       // Sprawdzenie z NOWYMI rolami czcionek (tymczasowo na wspólnym rejestrze – przywracane).
-      const z = nowy.role === projekt.role ? zasoby : edycja.zasoby.zRolami(nowy.role).zasoby;
+      const z =
+        nowy.role === projekt.role
+          ? zasoby
+          : edycja.zasoby.zRolami(nowy.role, nowy.szablony).zasoby;
       let ok = true;
       try {
         for (const a of nowy.arkusze) {
@@ -328,7 +352,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
           }
         }
       } finally {
-        if (nowy.role !== projekt.role) edycja.zasoby.zRolami(projekt.role);
+        if (nowy.role !== projekt.role) edycja.zasoby.zRolami(projekt.role, projekt.szablony);
       }
       if (!ok) {
         ustawBladUkladu(t('kartka.zmianaNieMiesci'));
@@ -352,7 +376,11 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
     }
     if (aktywne?.rodzaj !== 'karty' || zaznaczoneKarty.length === 0) return;
     const n = zaznaczoneKarty.length;
-    const nazwa = zaznaczoneKarty[0]!.karta.dane.nazwa;
+    const k0 = zaznaczoneKarty[0]!.karta;
+    const nazwa = nazwaKarty(
+      k0.dane,
+      projekt.szablony.find((x) => x.id === k0.szablonId),
+    );
     zmien((p) => usunKarty(p, aktywne.arkuszId, aktywne.ids));
     ustawZazn(undefined);
     ustawToast({
@@ -362,7 +390,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
           : t('kartka.usunietoKarty', { liczba: n }),
       cofnij: true,
     });
-  }, [aktywne, zaznaczoneKarty, zmien, zmienUklad, ustawZazn, ustawToast]);
+  }, [aktywne, zaznaczoneKarty, zmien, zmienUklad, ustawZazn, ustawToast, projekt.szablony]);
 
   const duplikuj = useCallback(
     (n: number) => {
@@ -839,7 +867,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
       }
     : undefined;
   // Własne karty: nowa kartka dopasowana do rozmiaru szablonu (bez tytułu, papier jak zaznaczona).
-  const kartkaDlaSzablonu = (szablonId: string) => {
+  const nowaKartkaDlaSzablonu = (szablonId: string) => {
     const s = projekt.szablony.find((x) => x.id === szablonId);
     if (!s) return;
     const papier = arkuszZazn?.ustawienia;
@@ -869,6 +897,11 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
         duplikuj={duplikuj}
         usun={usunZaznaczone}
         zamknij={() => ustawZazn(undefined)}
+        {...(bezGry && zaznaczoneKarty[0]
+          ? {
+              edytujSzablon: `#/projekt/${encodeURIComponent(projekt.id)}/szablon/${encodeURIComponent(zaznaczoneKarty[0].karta.szablonId)}`,
+            }
+          : {})}
         ostrzezenia={(kartki.find((x) => x.arkusz.id === arkuszZazn.id)?.wynik?.ostrzezenia ?? [])
           .filter((o) => o.kartaId && aktywne.ids.includes(o.kartaId))
           .map((o) =>
@@ -877,7 +910,10 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
               ? tekstOstrzezeniaArkusza({ komunikat: o.komunikat })
               : tekstOstrzezeniaArkusza(
                   o,
-                  zaznaczoneKarty.find((k) => k.karta.id === o.kartaId)?.karta.dane.nazwa,
+                  (() => {
+                    const k = zaznaczoneKarty.find((x) => x.karta.id === o.kartaId)?.karta;
+                    return k && nazwaKarty(k.dane, zasoby?.szablony.get(k.szablonId));
+                  })(),
                 ),
           )}
         {...(mozeNaglowek
@@ -946,7 +982,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
         zmienUklad={zmienUklad}
         {...(bladUkladu ? { blad: bladUkladu } : {})}
         {...(nowaKartka ? { nowaKartka } : {})}
-        {...(bezGry ? { kartkaDlaSzablonu } : {})}
+        {...(bezGry ? { kartkaDlaSzablonu: nowaKartkaDlaSzablonu } : {})}
         zamknij={() => ustawZazn(undefined)}
       />
     );
@@ -1141,6 +1177,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
           {kartki.map((k) => (
             <WidokKartki
               key={k.arkusz.id}
+              szablony={zasoby?.szablony}
               k={k}
               wiele={kartki.length > 1}
               karty={kartyNaKartkach.get(k.arkusz.id) ?? []}
@@ -1234,6 +1271,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
 
 /** Jedna kartka: jej strony (SVG z silnika) z warstwą slotów, kart, nagłówków i podglądów. */
 function WidokKartki({
+  szablony,
   k,
   wiele,
   karty,
@@ -1254,6 +1292,7 @@ function WidokKartki({
   otworzMenu,
   wybierzKarte,
 }: {
+  szablony: ReadonlyMap<string, Szablon> | undefined;
   otworzMenu: (p: Polozenie) => void;
   wybierzKarte: (id: string, shift: boolean) => void;
   k: Kartka;
@@ -1294,7 +1333,7 @@ function WidokKartki({
     );
   }
   return (
-    <section className="kartka" aria-label={k.arkusz.nazwa}>
+    <section className="kartka" data-kartka={k.arkusz.id} aria-label={k.arkusz.nazwa}>
       {wiele && <h2 className="tytul-kartki">{k.arkusz.nazwa}</h2>}
       {Array.from({ length: Math.max(liczbaStron, k.svg.length) }, (_, s) => {
         const naStronie = karty.filter((x) => x.strona === s);
@@ -1421,7 +1460,9 @@ function WidokKartki({
                         aria-pressed={zaznaczone.has(c.karta.id)}
                         onClick={(e) => e.detail === 0 && wybierzKarte(c.karta.id, e.shiftKey)}
                         aria-label={t('kartka.kartaEtykieta', {
-                          nazwa: c.karta.dane.nazwa || t('karta.bezNazwy'),
+                          nazwa:
+                            nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) ||
+                            t('karta.bezNazwy'),
                           strona: s + 1,
                           kolumna: c.kolumna + 1,
                           rzad: c.rzad + 1,

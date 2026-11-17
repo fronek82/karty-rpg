@@ -48,3 +48,17 @@ export async function nowyProjektZSzablonu(
   await baza().zapisz(projekt, zasoby);
   return projekt.id;
 }
+
+/** Nowy projekt własnych kart z szablonu z kreatora – zapisany w bazie; zwraca id. */
+export async function nowyProjektZSzablonuKreatora(
+  szablon: import('../model/szablon').Szablon,
+  bazaUrl: string = import.meta.env.BASE_URL,
+): Promise<string> {
+  const { nowyProjektWlasny } = await import('../dane/wlasneKarty');
+  const { projekt, zasoby } = await nowyProjektWlasny(
+    { szablon, role: {}, zasoby: [], dane: new Map() },
+    (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
+  );
+  await baza().zapisz(projekt, zasoby);
+  return projekt.id;
+}

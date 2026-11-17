@@ -74,6 +74,13 @@ export function SzablonyProjektu({
               <strong>{s.nazwa}</strong> <span className="podpis">{opisRozmiaruSzablonu(s)}</span>
             </span>
             <span className="akcje-szablonu">
+              <a
+                className="przycisk"
+                href={`#/projekt/${encodeURIComponent(projekt.id)}/szablon/${encodeURIComponent(s.id)}`}
+                aria-label={t('szablony.edytujEtykieta', { nazwa: s.nazwa })}
+              >
+                {t('szablony.edytuj')}
+              </a>
               <button
                 type="button"
                 aria-label={t('szablony.eksportujEtykieta', { nazwa: s.nazwa })}
@@ -92,6 +99,9 @@ export function SzablonyProjektu({
           </li>
         ))}
       </ul>
+      <a className="przycisk" href={`#/projekt/${encodeURIComponent(projekt.id)}/nowy-szablon`}>
+        {t('szablony.nowy')}
+      </a>{' '}
       <button type="button" onClick={() => plik.current?.click()}>
         {t('szablony.importuj')}
       </button>

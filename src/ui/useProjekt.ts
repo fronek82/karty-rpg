@@ -261,16 +261,17 @@ export function useProjekt(id: string): StanProjektu {
   });
   useEffect(() => {
     const p = projektRef.current;
-    if (!bibl || !szablony || !p || !dane) return;
+    if (!bibl || !p || !dane) return;
     const z = zasobyProjektu(p, dane);
     ustawZasoby(z);
     return () => z.zwolnij();
-  }, [bibl, szablony, dane]);
+    // Biblioteka zasobów zależy od zasobów i bajtów – nie od szablonów (te podmienia zRolami).
+  }, [bibl, dane]);
 
   const role = projekt?.role;
   const zasobyZRolami = useMemo(
-    () => (zasoby && role ? zasoby.zRolami(role) : undefined),
-    [zasoby, role],
+    () => (zasoby && role && szablony ? zasoby.zRolami(role, szablony) : undefined),
+    [zasoby, role, szablony],
   );
   const talie = projekt?.talie;
   const ostrzezenia = useMemo(

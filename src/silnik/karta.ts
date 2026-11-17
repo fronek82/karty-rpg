@@ -65,6 +65,8 @@ export interface Ostrzezenie {
 export interface WyrenderowanaKarta {
   scena: Scena;
   ostrzezenia: Ostrzezenie[];
+  /** Położenia widocznych węzłów (mm od rogu karty) – do zaznaczania w edytorze szablonu. */
+  wezly: { id: string; x: Mm; y: Mm; szer: Mm; wys: Mm }[];
 }
 
 const CZARNY = '#000000';
@@ -353,7 +355,17 @@ export function renderujKarte(
   if (szablon.ramka)
     elementy.push(...rysujRamkeKarty(szablon.ramka, szer, wys, szablon.promienRogow));
 
-  return { scena: { szer, wys, elementy, glify }, ostrzezenia };
+  return {
+    scena: { szer, wys, elementy, glify },
+    ostrzezenia,
+    wezly: [...ulozone.values()].map((u) => ({
+      id: u.wezel.id,
+      x: u.x,
+      y: u.y,
+      szer: u.szer,
+      wys: u.wys,
+    })),
+  };
 }
 
 /** Ramka całej karty: linia w odległości `odsuniecie` od krawędzi, rogi zgodne z kartą. */

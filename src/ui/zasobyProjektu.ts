@@ -1,5 +1,6 @@
 import { rejestrZProjektu } from '../dane/pakiet';
 import type { DaneZasobow, Projekt } from '../model/projekt';
+import type { Szablon } from '../model/szablon';
 import type { ObrazWPamieci, ZasobyPakietu } from './zasoby';
 
 export interface ZasobyProjektu {
@@ -12,7 +13,7 @@ export interface ZasobyProjektu {
    * Te same zasoby z rolami czcionek projektu (rejestr współdzielony – role podmieniane bez
    * ponownego parsowania czcionek). Czcionka zapasowa: rodzina roli „treść” albo pierwsza.
    */
-  zRolami(role: Record<string, string>): ZasobyProjektu;
+  zRolami(role: Record<string, string>, szablony?: readonly Szablon[]): ZasobyProjektu;
 }
 
 /**
@@ -45,7 +46,11 @@ export function zasobyProjektu(projekt: Projekt, dane: DaneZasobow): ZasobyProje
     });
   }
   const zwolnij = () => adresy.forEach((a) => URL.revokeObjectURL(a));
-  const zRolami = (role: Record<string, string>): ZasobyProjektu => {
+  // Szablony podmieniane bez ponownego parsowania czcionek (edycja szablonu na żywo).
+  const zRolami = (
+    role: Record<string, string>,
+    szablony: readonly Szablon[] = projekt.szablony,
+  ): ZasobyProjektu => {
     // Brak czcionki (np. rola bez rodziny po usunięciu pliku) nie przerywa podglądu ani PDF.
     const tresc = role.tresc;
     const zapasowa = tresc && rodziny.includes(tresc) ? tresc : rodziny[0];
@@ -56,7 +61,7 @@ export function zasobyProjektu(projekt: Projekt, dane: DaneZasobow): ZasobyProje
         plikiCzcionek,
         role,
         ...(zapasowa !== undefined ? { zapasowa } : {}),
-        szablony: new Map(projekt.szablony.map((s) => [s.id, s])),
+        szablony: new Map(szablony.map((s) => [s.id, s])),
         obrazy,
       },
       ostrzezenia,

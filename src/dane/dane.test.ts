@@ -191,20 +191,21 @@ describe('eksport i import .kartyrpg', () => {
   });
 
   it('migracje: osobne kroki dla projektu i szablonu, brak kroku to czytelny błąd', () => {
-    // Fikcyjny krok 4 → 5 (prawdziwe 1 → … → 4 już istnieją).
-    MIGRACJE.szablon[4] = ({ szablonStary, ...reszta }) => ({ ...reszta, szablon: szablonStary });
+    // Fikcyjny krok N → N+1 (prawdziwe 1 → … → N już istnieją).
+    const N = WERSJA_SCHEMATU;
+    MIGRACJE.szablon[N] = ({ szablonStary, ...reszta }) => ({ ...reszta, szablon: szablonStary });
     try {
-      expect(migruj({ wersja: 1, szablonStary: 'x' }, 'szablon', 5)).toEqual({
-        wersja: 5,
+      expect(migruj({ wersja: 1, szablonStary: 'x' }, 'szablon', N + 1)).toEqual({
+        wersja: N + 1,
         szablon: 'x',
       });
-      expect(() => migruj({ wersja: 4 }, 'projekt', 5)).toThrow(
-        /Brak migracji danych ze schematu 4/,
+      expect(() => migruj({ wersja: N }, 'projekt', N + 1)).toThrow(
+        new RegExp(`Brak migracji danych ze schematu ${N}`),
       );
     } finally {
-      delete MIGRACJE.szablon[4];
+      delete MIGRACJE.szablon[N];
     }
-    expect(migruj({ wersja: 1, a: 1 })).toEqual({ wersja: 4, a: 1 });
+    expect(migruj({ wersja: 1, a: 1 })).toEqual({ wersja: N, a: 1 });
     expect(() => migruj({ wersja: WERSJA_SCHEMATU + 1 })).toThrow(/nowszej wersji/);
     expect(() => migruj({ wersja: 0.5 })).toThrow(/numeru wersji/);
   });

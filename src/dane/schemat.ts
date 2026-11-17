@@ -50,6 +50,7 @@ const krawedzie = obj({
 
 const baza = {
   id: identyfikator,
+  nazwa: opc(z.string()),
   szerokosc: opc(rozmiar),
   wysokosc: opc(rozmiar),
   margines: opc(odstepy(liczba)),
@@ -215,6 +216,7 @@ const szablon = obj({
   rozmiar: rozmiarKarty,
   promienRogow: opc(nieujemna),
   tlo: opc(z.string()),
+  przyklad: opc(z.record(z.string(), z.string())),
   ramka: opc(
     obj({
       grubosc: nieujemna,
@@ -441,8 +443,9 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // otwarciu (potrzebuje czcionek – patrz src/druk/normalizacja.ts).
   // 2→3: nowe, opcjonalne pola (ramka karty, romb, separator, tabela, formatowanie) – bez zmian danych.
   // 3→4: nowe formaty papieru, własny papier, margines bezpieczeństwa – bez zmian danych.
-  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d },
-  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d },
+  // 4→5: nazwy węzłów i dane przykładowe szablonu (edytor szablonu) – bez zmian danych.
+  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d },
+  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d, 4: (d) => d },
 };
 
 export function migruj(

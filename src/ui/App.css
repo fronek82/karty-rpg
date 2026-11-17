@@ -920,3 +920,263 @@ textarea:focus-visible {
 .dwa-pola input {
   width: 100%;
 }
+
+/* --- Edytor szablonu --- */
+.edytor-szablonu {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.uklad-szablonu {
+  display: grid;
+  grid-template-columns: 17rem minmax(0, 1fr) 22rem;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: start;
+}
+@media (max-width: 70rem) {
+  .uklad-szablonu {
+    grid-template-columns: 1fr;
+  }
+}
+.panel-drzewa {
+  background: var(--tlo-panelu);
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.75rem;
+  padding: 0.8rem;
+  position: sticky;
+  top: 4.5rem;
+  max-height: calc(100vh - 5.5rem);
+  overflow: auto;
+}
+.panel-drzewa h2 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+.drzewo-szablonu,
+.drzewo-szablonu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.wezel-drzewa > .wezel-etykieta {
+  display: block;
+  padding: 0.25rem 0.4rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wezel-drzewa > .wezel-etykieta:hover {
+  background: rgb(42 111 214 / 8%);
+}
+.wezel-drzewa.wybrany > .wezel-etykieta {
+  background: rgb(42 111 214 / 15%);
+  outline: 1.5px solid #2a6fd6;
+}
+.wezel-drzewa:focus-visible {
+  outline: none;
+}
+.wezel-drzewa:focus-visible > .wezel-etykieta {
+  outline: 2px solid #2a6fd6;
+}
+.ikona-wezla {
+  display: inline-block;
+  width: 1.3em;
+  color: #8a8478;
+}
+.akcje-drzewa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.8rem 0 0.4rem;
+}
+.akcje-drzewa button {
+  font-size: 0.82rem;
+  padding: 0.25rem 0.5rem;
+}
+.menu-dodaj {
+  position: relative;
+  width: 100%;
+}
+.menu-dodaj > button {
+  width: 100%;
+}
+.menu-dodaj .menu-typu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 20;
+}
+.podglad-szablonu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+.karta-podgladu {
+  position: relative;
+  background: repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 0 0 / 16px 16px;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 15%);
+}
+.karta-podgladu .svg-opakowanie,
+.karta-podgladu .svg-opakowanie svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.obszar-wezla {
+  position: absolute;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.obszar-wezla:hover {
+  outline: 1px dashed rgb(42 111 214 / 70%);
+}
+.obszar-wezla.zaznaczony {
+  outline: 2px solid #2a6fd6;
+  background: rgb(42 111 214 / 8%);
+}
+.sekcja-panelu {
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  margin: 0.6rem 0;
+}
+.wiersz-pola {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.pole-rozmiaru .przelacznik-segmentowy button {
+  font-size: 0.82rem;
+}
+
+/* --- Kreator szablonu --- */
+.kreator {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18rem;
+  gap: 1.5rem;
+  max-width: 64rem;
+  margin: 0 auto;
+}
+@media (max-width: 50rem) {
+  .kreator {
+    grid-template-columns: 1fr;
+  }
+}
+.formaty,
+.uklady {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.6rem;
+  border: 0;
+  padding: 0;
+  margin: 0.8rem 0;
+}
+.formaty legend,
+.uklady legend {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 0.3rem;
+}
+.format,
+.uklad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.6rem;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.6rem;
+  background: var(--tlo-panelu);
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.88rem;
+}
+.format input,
+.uklad input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.format.wybrany,
+.uklad.wybrany {
+  outline: 3px solid #2a6fd6;
+}
+.format:focus-within,
+.uklad:focus-within {
+  outline: 3px solid rgb(42 111 214 / 60%);
+}
+.format-ksztalt {
+  border: 1.5px solid #555;
+  border-radius: 3px;
+  background: #fafafa;
+}
+.uklad-miniatura {
+  width: 4.2rem;
+  height: 5.8rem;
+  border: 1px solid #999;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+}
+.uklad-miniatura i {
+  display: block;
+  background: rgb(255 255 255 / 85%);
+  border: 1px solid #bbb;
+  border-radius: 2px;
+}
+.uklad-miniatura .m-tytul {
+  height: 9px;
+}
+.uklad-miniatura .m-siatka {
+  height: 18px;
+}
+.uklad-miniatura .m-opis {
+  flex: 1;
+}
+.uklad-miniatura .m-stopka {
+  height: 6px;
+}
+.kreator-podglad {
+  align-self: start;
+  background: var(--tlo-panelu);
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.kreator-karta {
+  border: 1px solid #999;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  margin: 0.5rem 0;
+}
+.akcje-kreatora {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+input[type='color'] {
+  width: 3.2rem;
+  height: 2.2rem;
+  padding: 0.15rem;
+  display: block;
+}
+.tylko-czytnik {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

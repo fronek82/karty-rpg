@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { kolumnySzablonu } from '../../dane/edycja';
+import { nazwaKarty } from '../../dane/szablon';
 import {
   mozliweRozmiary,
   ustawDaneKart,
@@ -61,6 +62,7 @@ export function PanelKart({
   duplikuj,
   usun,
   dodajNaglowek,
+  edytujSzablon,
   zamknij,
   ostrzezenia = [],
 }: {
@@ -74,6 +76,8 @@ export function PanelKart({
   duplikuj: (n: number) => void;
   usun: () => void;
   dodajNaglowek?: () => void;
+  /** Adres edytora szablonu zaznaczonych kart (własne karty). */
+  edytujSzablon?: string;
   zamknij: () => void;
 }) {
   const { projekt, zmien } = edycja;
@@ -128,7 +132,9 @@ export function PanelKart({
       })
     : '';
   const tytul = jedna
-    ? jedna.karta.dane.nazwa || typ?.wariant.nazwa || t('karta.bezNazwy')
+    ? nazwaKarty(jedna.karta.dane, ctx.szablony.get(jedna.karta.szablonId)) ||
+      typ?.wariant.nazwa ||
+      t('karta.bezNazwy')
     : t('kartka.zaznaczono', { liczba: karty.length });
 
   return (
@@ -291,6 +297,13 @@ export function PanelKart({
           <button type="button" onClick={dodajNaglowek}>
             {t('kartka.dodajNaglowek')}
           </button>
+        </p>
+      )}
+      {edytujSzablon && szablon && (
+        <p>
+          <a className="przycisk" href={edytujSzablon}>
+            {t('kartka.edytujSzablon', { nazwa: szablon.nazwa })}
+          </a>
         </p>
       )}
     </aside>

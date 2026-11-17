@@ -12,18 +12,16 @@ test('start: wybór gry po polsku, pusta lista projektów', async ({ page }) => 
   await expect(page.getByText('Nie masz jeszcze żadnych projektów.')).toBeVisible();
 });
 
-test('własne karty: zapowiedź edytora od zera, bez listy gier; stara trasa działa', async ({
+test('własne karty: strona z nowym szablonem i importem, bez listy gier; stara trasa działa', async ({
   page,
 }) => {
   await page.goto('./');
   await expect(page.getByText('Od zera: własny rozmiar karty i własny układ pól')).toBeVisible();
   await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
   await expect(page).toHaveURL(/#\/wlasne$/);
-  const naglowek = page.getByRole('heading', {
-    level: 1,
-    name: 'Edytor własnych kart – w budowie',
-  });
+  const naglowek = page.getByRole('heading', { level: 1, name: 'Stwórz własne karty' });
   await expect(naglowek).toBeVisible();
+  await expect(page.getByRole('link', { name: /Nowy szablon od zera/ })).toBeVisible();
   for (const gra of ['Dungeons & Dragons', 'Warhammer', 'Jedyny Pierścień'])
     await expect(page.getByText(gra)).toHaveCount(0);
   await page.goto('./#/gry/inne');

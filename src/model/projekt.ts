@@ -7,8 +7,9 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  * 2 – edytor kartki: `liczbaStron`, ręczne nagłówki, slot w ustawieniach, `pakiet` projektu.
  * 3 – M2: ramka karty, romb i etykieta wartości, separator, tabela, formatowanie i styl akapitów.
  * 4 – M2-2: formaty papieru (A5, zdjęciowe, własny), margines bezpieczeństwa kartki.
+ * 5 – M2-3: nazwy węzłów szablonu, dane przykładowe szablonu.
  */
-export const WERSJA_SCHEMATU = 4;
+export const WERSJA_SCHEMATU = 5;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

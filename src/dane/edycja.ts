@@ -71,7 +71,7 @@ export function kolumnySzablonu(s: Szablon): KolumnaDanych[] {
       if (pole.klucz && !wynik.has(pole.klucz)) {
         wynik.set(pole.klucz, {
           klucz: pole.klucz,
-          nazwa: nazwaKlucza(pole.klucz),
+          nazwa: pole.nazwa || nazwaKlucza(pole.klucz),
           rodzaj: 'pole',
           typPola: pole.typ,
         });
