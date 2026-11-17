@@ -41,7 +41,6 @@ import {
   zbudujArkusz,
   zSzarymiObrazami,
   type WynikArkusza,
-  type WynikMieszane,
 } from '../../druk/arkusz';
 import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
 import { t, tJesliJest } from '../../i18n';
@@ -72,7 +71,15 @@ import { nazwaPliku, zapiszPlik } from '../pliki';
 import { useZSzarymiObrazami } from '../szareObrazy';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
 import type { ZasobyPakietu } from '../zasoby';
-import { geometria, slotPodPunktem, stylMm, stylProstokata, type Geometria } from './geometria';
+import {
+  celKolejnosci,
+  geometria,
+  slotPodPunktem,
+  stylMm,
+  stylProstokata,
+  type CelKolejnosci,
+  type Geometria,
+} from './geometria';
 import { MenuPobierz } from './MenuPobierz';
 import { MenuTypu } from './MenuTypu';
 import { skalaZKolka, zaokr, zmienObrazKarty } from './obrazKarty';
@@ -138,15 +145,6 @@ type Gest =
       mmNaPx: number;
     };
 
-/** Miejsce wstawienia przeciąganej karty: przed kartą `przedId` (brak – na końcu), wskaźnik w mm. */
-interface CelKolejnosci {
-  przedId?: string;
-  strona: number;
-  x: number;
-  y: number;
-  wys: number;
-}
-
 interface Kartka {
   arkusz: Arkusz;
   talia: Talia;
@@ -159,50 +157,6 @@ interface Kartka {
 const PROG_RUCHU = 4;
 /** Na dotyku karta „podnosi się” po tylu ms przytrzymania (wcześniejszy ruch przewija). */
 const PRZYTRZYMANIE_MS = 300;
-
-/**
- * Miejsce wstawienia przeciąganej karty (tryb mieszany): najbliższa karta na stronie pod punktem
- * `pt` (mm) – przed nią, gdy punkt jest w jej lewej połowie, inaczej za nią. Przenoszone karty
- * (`ids`) nie są celem.
- */
-export function celKolejnosci(
-  m: Pick<WynikMieszane, 'karty' | 'obszar'>,
-  ids: string[],
-  strona: number,
-  pt: { x: number; y: number },
-): CelKolejnosci {
-  const lista = kolejnoscWidoczna(m);
-  const naStronie = m.karty.filter((c) => c.strona === strona && !ids.includes(c.kartaId));
-  if (naStronie.length === 0) {
-    // Strona bez innych kart: początek obszaru; przed pierwszą kartą z dalszych stron.
-    const dalsza = m.karty.find((c) => c.strona > strona && !ids.includes(c.kartaId));
-    return {
-      ...(dalsza ? { przedId: dalsza.kartaId } : {}),
-      strona,
-      x: m.obszar.x,
-      y: m.obszar.y,
-      wys: 20,
-    };
-  }
-  const odleglosc = (c: (typeof naStronie)[number]) =>
-    Math.hypot(
-      Math.max(c.x - pt.x, 0, pt.x - (c.x + c.szer)),
-      Math.max(c.y - pt.y, 0, pt.y - (c.y + c.wys)),
-    );
-  let najblizsza = naStronie[0]!;
-  for (const c of naStronie) if (odleglosc(c) < odleglosc(najblizsza) - 1e-9) najblizsza = c;
-  const c = najblizsza;
-  if (pt.x < c.x + c.szer / 2) return { przedId: c.kartaId, strona, x: c.x, y: c.y, wys: c.wys };
-  const i = lista.indexOf(c.kartaId);
-  const nastepna = lista.slice(i + 1).find((id) => !ids.includes(id));
-  return {
-    ...(nastepna ? { przedId: nastepna } : {}),
-    strona,
-    x: c.x + c.szer,
-    y: c.y,
-    wys: c.wys,
-  };
-}
 
 /** Pakiet gry projektu (typy kart, gotowe układy) – ładowany z rejestru gier. */
 function usePakiet(id: string | undefined): Pakiet | undefined {
@@ -342,6 +296,20 @@ export function EdytorKartki({
       return k;
     });
   }, [arkusze, talie, zasoby, pamiecKart, pamiecKartek]);
+
+  // Menu wolnego miejsca wskazuje je indeksem na liście układu – po zmianie układu (mieszane
+  // rozmiary) lista jest inna, więc menu zamykamy.
+  const menuRef = useRef(menu);
+  useEffect(() => {
+    menuRef.current = menu;
+  });
+  useEffect(() => {
+    const m = menuRef.current;
+    if (m && projekt.arkusze.some((a) => a.id === m.arkuszId && czyMieszane(a)))
+      ustawMenu(undefined);
+    // Tylko zmiana wyniku układu (nowa lista wolnych miejsc) zamyka menu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kartki]);
 
   // Siatka z BIEŻĄCYCH ustawień (podgląd stron jest odroczony): budowa bez kart – tania.
   const siatkiNaZywo = useMemo(() => {
@@ -521,7 +489,11 @@ export function EdytorKartki({
         if (!m) return;
         const lista = kolejnoscWidoczna(m);
         const nowa = przesunWKolejnosci(lista, aktywne.ids, o.kolumna + o.rzad < 0 ? -1 : 1);
-        if (nowa.join() !== lista.join()) zmien((p) => ustawKolejnosc(p, arkuszK.id, nowa));
+        if (nowa.join() !== lista.join()) {
+          const przelacza = arkuszK.ustawienia.mieszane?.kolejnosc !== 'wlasna';
+          zmien((p) => ustawKolejnosc(p, arkuszK.id, nowa));
+          if (przelacza) ustawToast({ tekst: t('mieszane.przelaczono'), cofnij: true });
+        }
         return;
       }
       const w = przesunKarty(projekt, aktywne.arkuszId, aktywne.ids, o, ctx);
@@ -534,7 +506,7 @@ export function EdytorKartki({
       if (document.activeElement?.matches('.karta-na-kartce'))
         fokusPo(`[data-karta="${aktywne.ids[0]}"]`);
     },
-    [aktywne, kontekst, projekt, zmien, kartki],
+    [aktywne, kontekst, projekt, zmien, kartki, ustawToast],
   );
 
   // --- Skróty klawiszowe.
@@ -1261,13 +1233,16 @@ export function EdytorKartki({
         wydrukTestowy={() => wTle(() => wydrukTestowy(arkuszZazn))}
         przelaczRozmiary={(tryb) => {
           if (tryb === 'mieszane') zmienUklad((p) => naMieszane(p, arkuszZazn.id));
-          else if (zasoby)
-            zmien((p) =>
-              wrocDoSiatki(p, arkuszZazn.id, {
-                czcionki: zasoby.czcionki,
-                obraz: (id) => zasoby.obrazy.get(id)?.info,
-              }),
-            );
+          else if (zasoby) {
+            const ctxSiatki = {
+              czcionki: zasoby.czcionki,
+              obraz: (id: string) => zasoby.obrazy.get(id)?.info,
+            };
+            const { odlozone } = wrocDoSiatki(projekt, arkuszZazn.id, ctxSiatki);
+            zmien((p) => wrocDoSiatki(p, arkuszZazn.id, ctxSiatki).projekt);
+            if (odlozone > 0)
+              ustawToast({ tekst: t('mieszane.odlozono', { liczba: odlozone }), cofnij: true });
+          }
         }}
         naKartce={naKartce(arkuszZazn)}
         {...(bladUkladu ? { blad: bladUkladu } : {})}

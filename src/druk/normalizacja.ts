@@ -212,30 +212,32 @@ export function normalizujKartki(
 /**
  * Powrót kartki z mieszanych rozmiarów do siatki slotów: karty dostają przypięcia tam, gdzie
  * siatka układa je automatycznie (jak przy normalizacji starych projektów); karty, które się nie
- * mieszczą, zostają w talii jako odłożone (ilość 0), nic nie ginie.
+ * mieszczą, zostają w talii jako odłożone (ilość 0), nic nie ginie. `odlozone` – ile kart
+ * (ze stanu „na kartce”) trafiło w ten sposób do odłożonych.
  */
 export function wrocDoSiatki(
   p: Projekt,
   arkuszId: string,
   ctx: { czcionki: RejestrCzcionek; obraz?: (z: string) => InformacjaOObrazie | undefined },
-): Projekt {
+): { projekt: Projekt; odlozone: number } {
   const a = p.arkusze.find((x) => x.id === arkuszId);
   const talia = a && p.talie.find((x) => x.id === a.taliaId);
-  if (!a || !talia) return p;
+  if (!a || !talia) return { projekt: p, odlozone: 0 };
   const { rozmiary: _r, ...ustawienia } = a.ustawienia;
-  const { liczbaStron: _l, przypiete: _p, ...reszta } = a;
-  void [_r, _l, _p];
-  // Stare przypięcia (sprzed trybu mieszanego) nie pasują do nowych kart – układ od nowa.
-  const w = normalizujKartki(
-    { ...p, arkusze: [{ ...reszta, ustawienia }], talie: [talia] },
-    ctx,
-  ).projekt;
-  const arkusz = w.arkusze.find((x) => x.id === arkuszId)!;
-  const nowaTalia = w.talie.find((x) => x.id === talia.id)!;
+  const { liczbaStron: _l, przypiete: _p, kolejnosc: _k, ...reszta } = a;
+  void [_r, _l, _p, _k];
+  // Stare przypięcia i kolejność własna (z trybu mieszanego) nie pasują do siatki – układ od nowa.
+  const w = normalizujKartki({ ...p, arkusze: [{ ...reszta, ustawienia }], talie: [talia] }, ctx);
+  const arkusz = w.projekt.arkusze.find((x) => x.id === arkuszId)!;
+  const nowaTalia = w.projekt.talie.find((x) => x.id === talia.id)!;
+  const bylyNaKartce = new Set(talia.karty.filter((k) => k.ilosc >= 1).map((k) => k.id));
   return {
-    ...p,
-    zmieniono: new Date().toISOString(),
-    arkusze: p.arkusze.map((x) => (x.id === arkuszId ? arkusz : x)),
-    talie: p.talie.map((x) => (x.id === talia.id ? nowaTalia : x)),
+    projekt: {
+      ...p,
+      zmieniono: new Date().toISOString(),
+      arkusze: p.arkusze.map((x) => (x.id === arkuszId ? arkusz : x)),
+      talie: p.talie.map((x) => (x.id === talia.id ? nowaTalia : x)),
+    },
+    odlozone: w.pominiete.filter((id) => bylyNaKartce.has(id)).length,
   };
 }

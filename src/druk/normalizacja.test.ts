@@ -148,13 +148,59 @@ describe('mieszane rozmiary a normalizacja', () => {
           : a,
       ),
     };
-    const wrot = wrocDoSiatki(m, A, { czcionki, obraz });
+    const { projekt: wrot, odlozone } = wrocDoSiatki(m, A, { czcionki, obraz });
+    expect(odlozone).toBe(0);
     const a = wrot.arkusze.find((x) => x.id === A)!;
     expect(a.ustawienia.rozmiary).toBeUndefined();
     const talia = wrot.talie.find((t) => t.id === a.taliaId)!;
     const wsz = talia.karty.filter((k) => k.ilosc === 1).length;
     expect(a.przypiete).toHaveLength(wsz);
     expect(wsz + kartyOdlozone(wrot, A).length).toBeGreaterThanOrEqual(talia.karty.length);
+    expect(() => przygotujProjekt(wrot)).not.toThrow();
+  });
+
+  it('powrót do siatki: ilość > 1 rozwinięta w egzemplarze, karta za duża odłożona i policzona, kolejność wyczyszczona', () => {
+    const { projekt: n } = normalizujKartki(p, { czcionki, obraz });
+    const A = n.arkusze[0]!.id;
+    const taliaId = n.arkusze[0]!.taliaId;
+    const karty = n.talie.find((t) => t.id === taliaId)!.karty;
+    const duza = karty[0]!.id;
+    const trzy = karty[1]!.id;
+    const m: Projekt = {
+      ...n,
+      talie: n.talie.map((t) =>
+        t.id === taliaId
+          ? {
+              ...t,
+              karty: t.karty.map((k) =>
+                k.id === duza
+                  ? { ...k, rozmiar: { kolumny: 60, rzedy: 1 } }
+                  : k.id === trzy
+                    ? { ...k, ilosc: 3 }
+                    : k,
+              ),
+            }
+          : t,
+      ),
+      arkusze: n.arkusze.map((a) =>
+        a.id === A
+          ? {
+              ...a,
+              przypiete: [],
+              kolejnosc: [trzy, duza],
+              ustawienia: { ...a.ustawienia, rozmiary: 'mieszane' as const },
+            }
+          : a,
+      ),
+    };
+    const { projekt: wrot, odlozone } = wrocDoSiatki(m, A, { czcionki, obraz });
+    expect(odlozone).toBe(1);
+    const a = wrot.arkusze.find((x) => x.id === A)!;
+    expect(a.kolejnosc).toBeUndefined();
+    const talia = wrot.talie.find((t) => t.id === taliaId)!;
+    expect(talia.karty.find((k) => k.id === duza)!.ilosc).toBe(0);
+    expect(talia.karty.filter((k) => k.id === trzy || k.id.startsWith(`${trzy}-`))).toHaveLength(3);
+    expect(talia.karty.every((k) => k.ilosc <= 1)).toBe(true);
     expect(() => przygotujProjekt(wrot)).not.toThrow();
   });
 });

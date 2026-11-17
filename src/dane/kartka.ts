@@ -382,7 +382,15 @@ export function usunKarty(p: Projekt, arkuszId: string, ids: string[]): Projekt 
       przypiete: (a.przypiete ?? []).filter((x) => !usuwane.has(x.kartaId)),
       ...(a.kolejnosc ? { kolejnosc: a.kolejnosc.filter((id) => !usuwane.has(id)) } : {}),
     },
-    talia: { ...t, karty: t.karty.filter((k) => !usuwane.has(k.id)) },
+    talia: {
+      ...t,
+      karty: t.karty.filter((k) => !usuwane.has(k.id)),
+      ...(t.grupy
+        ? {
+            grupy: t.grupy.map((g) => ({ ...g, karty: g.karty.filter((id) => !usuwane.has(id)) })),
+          }
+        : {}),
+    },
   }));
 }
 
@@ -569,6 +577,14 @@ export function dodajKartke(
  * operacje na kolejności (`Arkusz.kolejnosc`); położenie liczy za każdym razem algorytm pasów.
  */
 
+/** Talia z nową kartą dopisaną do grupy karty `sasiad` (grupy talii zostają spójne z kartkami). */
+function zNowaWGrupie(t: Talia, sasiad: string | undefined, nowa: Karta): Talia {
+  const grupy = t.grupy?.map((g) =>
+    sasiad !== undefined && g.karty.includes(sasiad) ? { ...g, karty: [...g.karty, nowa.id] } : g,
+  );
+  return { ...t, karty: [...t.karty, nowa], ...(grupy ? { grupy } : {}) };
+}
+
 /** Lista `ids` bez przenoszonych i z nimi wstawionymi przed `przedId` (brak – na końcu). */
 export function przeniesWKolejnosci(lista: string[], ids: string[], przedId?: string): string[] {
   const ruszane = lista.filter((id) => ids.includes(id));
@@ -624,7 +640,7 @@ export function dodajKarteMieszane(
     const i = po === undefined ? -1 : lista.indexOf(po);
     const nowa =
       i < 0 ? [...lista, kartaId] : [...lista.slice(0, i + 1), kartaId, ...lista.slice(i + 1)];
-    return { arkusz: { ...a, kolejnosc: nowa }, talia: { ...t, karty: [...t.karty, karta] } };
+    return { arkusz: { ...a, kolejnosc: nowa }, talia: zNowaWGrupie(t, po, karta) };
   });
   return { projekt, kartaId };
 }
@@ -661,7 +677,7 @@ export function duplikujKartyMieszane(
     }
     return {
       arkusz: { ...a, kolejnosc: lista },
-      talia: { ...t, karty: [...t.karty, ...kopie.map((k) => k.karta)] },
+      talia: kopie.reduce((tt, k) => zNowaWGrupie(tt, k.po, k.karta), t),
     };
   });
   return { projekt, kopie: kopie.map((k) => k.karta.id) };
@@ -677,7 +693,8 @@ export function naMieszane(p: Projekt, arkuszId: string): Projekt {
     const wgSiatki = [...(a.przypiete ?? [])]
       .sort((x, y) => (x.strona ?? 0) - (y.strona ?? 0) || x.rzad - y.rzad || x.kolumna - y.kolumna)
       .map((x) => x.kartaId);
-    const kolejnosc = a.kolejnosc ?? wgSiatki;
+    // Świeży układ z siatki; stara lista (z wcześniejszego trybu mieszanego) nie jest aktualna.
+    const kolejnosc = wgSiatki.length > 0 ? wgSiatki : (a.kolejnosc ?? []);
     return {
       arkusz: {
         ...a,

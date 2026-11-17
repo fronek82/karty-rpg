@@ -126,13 +126,51 @@ describe('ulozPasy', () => {
     expect(poz('f')).toMatchObject({ x: 0, y: 100, pas: 1 });
   });
 
-  it('kolejność własna: nic nie jest układane pod kartami, wolne miejsca tylko do wstawienia za kartą', () => {
+  it('kolejność własna: układanie pod kartą tylko w ostatnim pasie grupy', () => {
     const o = { ...A4, obszar: { szer: 100, wys: 200 }, kolejnosc: 'wlasna' as const };
     const karty = [karta('c', 0, 60, 100), karta('d', 0, 40, 30), karta('e', 0, 40, 30)];
     const w = ulozPasy(karty, o);
-    expect(w.karty.find((k) => k.kartaId === 'e')).toMatchObject({ pas: 1, y: 100 });
-    // Brak wolnych miejsc „pod kartą” (x = 60, y = 30) w tym trybie.
-    expect(w.wolne.some((x) => x.x === 60 && x.y === 30)).toBe(false);
+    expect(w.karty.find((k) => k.kartaId === 'e')).toMatchObject({ pas: 0, x: 60, y: 30 });
+    // Kolejna karta po nowym pasie nie wraca pod karty pasa 0.
+    const w2 = ulozPasy([...karty, karta('f', 0, 90, 50), karta('g', 0, 10, 10)], o);
+    expect(w2.karty.find((k) => k.kartaId === 'g')).toMatchObject({ pas: 1, x: 90, y: 100 });
+    expect(w2.wolne.some((x) => x.x === 60 && x.y === 60 && x.strona === 0)).toBe(false);
+  });
+
+  it('widoczna kolejność odtwarza ten sam układ w trybie własnym (także z układaniem pod kartami)', () => {
+    const zestawy: [KartaDoPasow[], OpcjePasow][] = [
+      [przykladE(), A4],
+      [[...przykladE(), ...kopie('zeton', 3, 40, 40)], A4],
+      [
+        [
+          karta('c', 0, 60, 100),
+          karta('d', 0, 40, 30),
+          karta('e', 0, 40, 30),
+          karta('f', 0, 70, 30),
+        ],
+        { ...A4, obszar: { szer: 100, wys: 200 }, grupujRozmiary: false },
+      ],
+    ];
+    for (const [karty, o] of zestawy) {
+      const a = ulozPasy(karty, o);
+      const kolejnosc = [...new Set(a.karty.map((k) => k.kartaId))];
+      // Wejście: egzemplarze w widocznej kolejności (po pasach).
+      const byKlucz = new Map(karty.map((k) => [k.klucz, k]));
+      const wejscie = a.karty.map((k) => byKlucz.get(k.klucz)!);
+      expect(kolejnosc.length).toBeGreaterThan(0);
+      const w = ulozPasy(wejscie, { ...o, kolejnosc: 'wlasna' });
+      const poz = (r: typeof a) =>
+        Object.fromEntries(r.karty.map((k) => [k.klucz, [k.strona, k.x, k.y, k.obrocona]]));
+      expect(poz(w)).toEqual(poz(a));
+    }
+  });
+
+  it('obracanie: karta mieszcząca się nieobrócona w kolumnie pod inną kartą nie jest obracana', () => {
+    const o = { ...A4, obszar: { szer: 130, wys: 200 }, obracaj: true, grupujRozmiary: false };
+    // e 40×30 nie mieści się na końcu pasa (100 + 40 > 130), a obrócona 30×40 – tak; mimo to
+    // wybieramy układanie bez obrotu pod d (50 + 30 ≤ 100).
+    const w = ulozPasy([karta('c', 0, 60, 100), karta('d', 0, 40, 50), karta('e', 0, 40, 30)], o);
+    expect(w.karty.find((k) => k.kartaId === 'e')).toMatchObject({ obrocona: false, x: 60, y: 50 });
   });
 
   it('po nowej stronie karty nie wracają do pasów poprzedniej', () => {

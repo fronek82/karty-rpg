@@ -725,10 +725,9 @@ function zbudujMieszane(w: {
       : {}),
   });
   const kartaPoId = new Map(w.karty.map((k) => [k.id, k]));
-  for (const klucz of uklad.pominiete) {
-    const kartaId = klucz.slice(0, klucz.lastIndexOf('#'));
+  // Jedno ostrzeżenie na kartę (nie na każdy egzemplarz).
+  for (const kartaId of new Set(uklad.pominiete.map((k) => k.slice(0, k.lastIndexOf('#')))))
     ostrzezenia.push({ kartaId, komunikat: 'karta-wieksza-niz-strona' });
-  }
   const liczbaStron = Math.max(1, uklad.liczbaStron);
   // Współrzędne na stronie (mm od rogu).
   const karty = uklad.karty.map((k) => ({

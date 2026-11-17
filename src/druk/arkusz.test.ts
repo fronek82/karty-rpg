@@ -866,6 +866,76 @@ describe('zbudujArkusz – mieszane rozmiary kart (M2b-2)', () => {
     expect(tekst).not.toContain('#ff0000');
   });
 
+  it('ilość 0 – karta odłożona nie jest układana; ilość > 1 w kolejności własnej – egzemplarze razem', () => {
+    const a = arkuszM(
+      { mieszane: { kolejnosc: 'wlasna', obracaj: false, grupujRozmiary: true, odstep: 0 } },
+      { kolejnosc: ['przedmiot', 'czar'] },
+    );
+    const w = zbudujArkusz(a, taliaM([0, 2, 3]), ctxM);
+    expect(w.ostrzezenia).toEqual([]);
+    expect(w.mieszane!.karty.map((k) => k.kartaId)).toEqual([
+      'przedmiot',
+      'przedmiot',
+      'przedmiot',
+      'czar',
+      'czar',
+    ]);
+  });
+
+  it('tytuł z lewej: pionowy, wzdłuż lewej krawędzi obszaru kart, obszar węższy o pas tytułu', () => {
+    const a = arkuszM({
+      tytul: {
+        tekst: 'Pionowy',
+        polozenie: 'lewo',
+        styl: { czcionka: 'tytul', rozmiar: 6, kolor: '#000000' },
+        odstep: 2,
+      },
+    });
+    const w = zbudujArkusz(a, taliaM([1, 0, 0]), ctxM);
+    const m = w.mieszane!;
+    expect(m.obszar.x).toBeGreaterThan(10);
+    expect(m.obszar.szer).toBeLessThan(190);
+    const tytul = w.strony[0]!.elementy.find((e) => e.typ === 'grupa' && e.obrot === -90);
+    expect(tytul).toMatchObject({ y: m.obszar.y + m.obszar.wys });
+    expect((tytul as { x: number }).x).toBeLessThan(m.obszar.x);
+    expect(w.ostrzezenia).toEqual([]);
+  });
+
+  it('obrócona karta: linie cięcia obrysowują prostokąt po obrocie', () => {
+    const a = arkuszM({
+      papier: 'wlasny',
+      wymiaryPapieru: { szer: 100, wys: 200 },
+      marginesy: { gora: 5, prawo: 5, dol: 5, lewo: 5 },
+      mieszane: { kolejnosc: 'najwieksze', obracaj: true, grupujRozmiary: true, odstep: 0 },
+    });
+    const t: Talia = {
+      id: 't',
+      nazwa: 't',
+      karty: [{ id: 'arkana', szablonId: 'arkana', dane: daneCzaru, ilosc: 1 }],
+    };
+    const c = { ...ctxM, szablony: new Map([['arkana', szablonMm('arkana', 120, 70)]]) };
+    const w = zbudujArkusz(a, t, c);
+    const k = w.mieszane!.karty[0]!;
+    expect(k.obrocona).toBe(true);
+    const l = linie(w.strony[0]!);
+    expect(l).toContainEqual(expect.objectContaining({ x1: k.x, y1: k.y, x2: k.x + 70, y2: k.y }));
+    expect(l).toContainEqual(
+      expect.objectContaining({ x1: k.x + 70, y1: k.y, x2: k.x + 70, y2: k.y + 120 }),
+    );
+  });
+
+  it('kartka sprzed schematu 9 (bez rozmiarów) buduje się jak „jeden rozmiar”', () => {
+    const bez = arkuszM({ rozmiary: undefined });
+    const jeden = arkuszM({ rozmiary: 'jeden' });
+    const t = taliaM([1, 0, 0]);
+    const w1 = zbudujArkusz(bez, t, ctxM);
+    const w2 = zbudujArkusz(jeden, t, ctxM);
+    expect(w1.mieszane).toBeUndefined();
+    expect(w2.mieszane).toBeUndefined();
+    expect(JSON.stringify(w1.strony)).toBe(JSON.stringify(w2.strony));
+    expect(w1.siatka.kolumny).toBeGreaterThan(0);
+  });
+
   it('PDF z mieszanymi rozmiarami powstaje i ma jedną stronę', async () => {
     const w = zbudujArkusz(arkuszM(), taliaM(), ctxM);
     const { bajty } = await scenyDoPdf(w.strony);

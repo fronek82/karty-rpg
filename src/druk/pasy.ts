@@ -191,10 +191,15 @@ export function ulozPasy(wejscie: KartaDoPasow[], o: OpcjePasow): WynikPasow {
       p.karty.push(u);
     };
 
-    /** Kolumna z miejscem pod swoimi kartami (tylko „od największych”). */
+    /**
+     * Kolumna z miejscem pod swoimi kartami: „od największych” – w dowolnym pasie strony,
+     * własna – tylko w ostatnim pasie grupy (kolejność listy; ten sam układ co przy odtworzeniu
+     * widocznej kolejności).
+     */
     const znajdzKolumne = (szer: Mm, wys: Mm) => {
-      if (o.kolejnosc !== 'najwieksze') return undefined;
-      for (const p of pasyGrupy.filter((x) => x.strona === strona))
+      const naStronie = pasyGrupy.filter((x) => x.strona === strona);
+      const kandydaci = o.kolejnosc === 'wlasna' ? naStronie.slice(-1) : naStronie;
+      for (const p of kandydaci)
         for (const kol of p.kolumny)
           if (szer <= kol.szer + E && kol.uzyteY + odstep + wys <= p.wys + E) return { p, kol };
       return undefined;
@@ -207,7 +212,8 @@ export function ulozPasy(wejscie: KartaDoPasow[], o: OpcjePasow): WynikPasow {
           ? [{ szer: k.wys, wys: k.szer, obrocona: true }]
           : []),
       ];
-      // 1. Istniejący pas grupy (najpierw bez obrotu, potem – gdy dozwolony – z obrotem).
+      // 1. Istniejący pas grupy: bez obrotu (koniec pasa, potem pod kartą), dopiero potem
+      // – gdy dozwolony – z obrotem (tak samo).
       let gotowe = false;
       for (const op of opcje) {
         const p = znajdz(op.szer, op.wys);
@@ -216,16 +222,13 @@ export function ulozPasy(wejscie: KartaDoPasow[], o: OpcjePasow): WynikPasow {
           gotowe = true;
           break;
         }
-      }
-      if (!gotowe)
-        for (const op of opcje) {
-          const m = znajdzKolumne(op.szer, op.wys);
-          if (m) {
-            wstaw(m.p, k, op.szer, op.wys, op.obrocona, m.kol);
-            gotowe = true;
-            break;
-          }
+        const m = znajdzKolumne(op.szer, op.wys);
+        if (m) {
+          wstaw(m.p, k, op.szer, op.wys, op.obrocona, m.kol);
+          gotowe = true;
+          break;
         }
+      }
       if (gotowe) continue;
       // 2. Nowy pas pod spodem (z nagłówkiem, jeśli to pierwszy pas grupy), inaczej nowa strona.
       const naglowek = pierwszyPasGrupy ? g.naglowek : 0;
@@ -298,7 +301,7 @@ function wolneMiejsca(
   obszar: { szer: Mm; wys: Mm },
   odstep: Mm,
   liczbaStron: number,
-  podKartami: boolean,
+  najwieksze: boolean,
 ): WolneMiejsce[] {
   const wynik: WolneMiejsce[] = [];
   const dodaj = (w: WolneMiejsce) => {
@@ -309,7 +312,11 @@ function wolneMiejsca(
     for (const p of naStronie) {
       const ostatnia = p.karty.at(-1);
       // Pod kartami pasa: tylko gdy algorytm może tam coś ułożyć („od największych”).
-      if (podKartami)
+      // Pod kartami: „od największych” w każdym pasie; własna – tylko w ostatnim pasie grupy.
+      const ostatniGrupy = !pasy.some(
+        (x) => x.grupaId === p.grupaId && pasy.indexOf(x) > pasy.indexOf(p),
+      );
+      if (najwieksze || ostatniGrupy)
         for (const kol of p.kolumny) {
           dodaj({
             strona: s,

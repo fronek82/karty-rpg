@@ -254,6 +254,8 @@ export const pl = {
     'Przypięcia kart w slotach są w trybie „mieszane” ignorowane; po powrocie do siatki karty układają się od nowa.',
   'mieszane.przelaczono':
     'Kolejność własna: karty układane w kolejności listy. „Cofnij” przywraca poprzedni układ.',
+  'mieszane.odlozono':
+    '{liczba} kart odłożono – nie mieszczą się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
   'mieszane.dodajTutaj': 'Dodaj kartę w to miejsce (wolne {szer}×{wys} mm)',
   'mieszane.nieZmiesciSieTu': 'nie zmieści się tu',
   'mieszane.menuOpis':

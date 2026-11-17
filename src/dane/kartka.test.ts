@@ -13,6 +13,7 @@ import {
   duplikujKarty,
   duplikujKartyMieszane,
   kartyKartki,
+  naMieszane,
   kartyWObszarze,
   liczbaStronKartki,
   mozliweRozmiary,
@@ -331,5 +332,53 @@ describe('kartka – mieszane rozmiary: kolejność kart', () => {
     expect(ark.kolejnosc).toEqual([b.kartaId, a.kartaId]);
     expect(ark.ustawienia.mieszane).toMatchObject({ kolejnosc: 'wlasna', odstep: 0 });
     expect(() => przygotujProjekt(x)).not.toThrow();
+  });
+
+  it('przesunWKolejnosci / przeniesWKolejnosci: zaznaczenie nieciągłe i granice', () => {
+    const l = ['a', 'b', 'c', 'd', 'e'];
+    // Nieciągłe zaznaczenie b, d: blok wstawiany przed poprzednim elementem pierwszego.
+    expect(przesunWKolejnosci(l, ['b', 'd'], -1)).toEqual(['b', 'd', 'a', 'c', 'e']);
+    expect(przesunWKolejnosci(l, ['b', 'd'], 1)).toEqual(['a', 'c', 'e', 'b', 'd']);
+    expect(przesunWKolejnosci(l, ['a', 'c'], -1)).toEqual(l);
+    expect(przesunWKolejnosci(l, ['c', 'e'], 1)).toEqual(l);
+    expect(przesunWKolejnosci(l, [], 1)).toEqual(l);
+    expect(przesunWKolejnosci(l, ['x'], 1)).toEqual(l);
+    expect(przeniesWKolejnosci(l, ['b', 'd'], 'a')).toEqual(['b', 'd', 'a', 'c', 'e']);
+    expect(przeniesWKolejnosci(l, ['a'], 'zly')).toEqual(['b', 'c', 'd', 'e', 'a']);
+    expect(przeniesWKolejnosci(l, ['e'], 'e')).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+
+  it('naMieszane startuje od układu z siatki, a nie od starej kolejności', () => {
+    const a0 = pelny.arkusze.find((a) => a.id === A)!;
+    const stary: Projekt = {
+      ...pelny,
+      arkusze: pelny.arkusze.map((a) => (a.id === A ? { ...a, kolejnosc: ['nieaktualna'] } : a)),
+    };
+    const m = naMieszane(stary, A).arkusze.find((a) => a.id === A)!;
+    const oczekiwana = [...(a0.przypiete ?? [])]
+      .sort((x, y) => (x.strona ?? 0) - (y.strona ?? 0) || x.rzad - y.rzad || x.kolumna - y.kolumna)
+      .map((x) => x.kartaId);
+    expect(m.kolejnosc).toEqual(oczekiwana);
+    expect(m.ustawienia.rozmiary).toBe('mieszane');
+  });
+
+  it('nowa karta i kopia trafiają do grupy sąsiada; usunięcie czyści grupę', () => {
+    const baza = mieszana(pusty);
+    const a = ok(dodajKarteMieszane(baza, A, { szablonId: BRON.szablonId }));
+    const talia = a.projekt.arkusze.find((x) => x.id === A)!.taliaId;
+    const zGrupa: Projekt = {
+      ...a.projekt,
+      talie: a.projekt.talie.map((t) =>
+        t.id === talia ? { ...t, grupy: [{ id: 'g', naglowek: 'G', karty: [a.kartaId] }] } : t,
+      ),
+    };
+    const b = ok(dodajKarteMieszane(zGrupa, A, { szablonId: ZBROJA.szablonId }, a.kartaId));
+    const d = duplikujKartyMieszane(b.projekt, A, [a.kartaId], 1);
+    const g = () => (p: Projekt) => p.talie.find((t) => t.id === talia)!.grupy![0]!.karty;
+    expect(g()(d.projekt)).toEqual([a.kartaId, b.kartaId, ...d.kopie]);
+    expect(() => przygotujProjekt(d.projekt)).not.toThrow();
+    const u = usunKarty(d.projekt, A, [b.kartaId]);
+    expect(g()(u)).toEqual([a.kartaId, ...d.kopie]);
+    expect(() => przygotujProjekt(u)).not.toThrow();
   });
 });
