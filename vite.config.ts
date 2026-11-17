@@ -13,5 +13,7 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.{ts,tsx}', 'testy/**/*.test.ts'],
     environment: 'node',
+    // „dot” – tylko podsumowanie i nieudane testy (pełna lista: --reporter=default).
+    reporters: ['dot'],
   },
 });

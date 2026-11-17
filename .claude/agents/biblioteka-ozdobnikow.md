@@ -1,6 +1,7 @@
 ---
 name: biblioteka-ozdobnikow
 description: Wektorowe elementy ozdobne – linie, motywy powtarzalne wzdłuż krawędzi, narożniki, separatory, styl szkicowy (chropowatość), postrzępione krawędzie, ramki 9-slice, zestawy stylów, kształty wartości (romb, tarcza…) i ikony. Używaj przy pracy nad ramkami, ozdobnikami i symbolami.
+model: sonnet
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 

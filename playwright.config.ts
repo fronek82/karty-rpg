@@ -9,7 +9,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  // Lokalnie „line” – tylko postęp w jednej linii, nieudane testy i podsumowanie.
+  reporter: process.env.CI ? 'github' : 'line',
   use: {
     baseURL: `http://localhost:${port}/karty-rpg/`,
     trace: 'off',

@@ -1,6 +1,7 @@
 ---
 name: druk-pdf
 description: Rozmieszczanie kart na arkuszu (pakowanie kart różnych rozmiarów, liczba sztuk), linie cięcia, tytuły i nagłówki grup, spady i znaczniki cięcia, druk dwustronny z kalibracją oraz generowanie PDF (tekst jako krzywe, każdy glif zapisany raz jako XObject). Używaj przy wszystkim, co dotyczy arkusza i eksportu PDF.
+model: sonnet
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 

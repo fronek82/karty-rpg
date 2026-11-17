@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "BASH_MAX_OUTPUT_LENGTH": "10000"
+  },
+  "permissions": {
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./test-results/**)",
+      "Read(./playwright-report/**)",
+      "Read(./coverage/**)",
+      "Read(./package-lock.json)",
+      "Read(./**/*.lock)",
+      "Edit(./node_modules/**)",
+      "Edit(./dist/**)",
+      "Edit(./package-lock.json)"
+    ]
+  }
+}

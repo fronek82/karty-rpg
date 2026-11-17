@@ -1,6 +1,7 @@
 ---
 name: edytor-ui
 description: Interfejs użytkownika aplikacji (React) – edytor szablonów, panel właściwości, tabela danych kart z kolumną „Ilość”, edytor rewersu, podgląd karty i arkusza, nawigacja, i18n (teksty po polsku). Używaj przy pracy nad komponentami, stanem aplikacji i UX.
+model: sonnet
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 

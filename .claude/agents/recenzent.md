@@ -1,6 +1,7 @@
 ---
 name: recenzent
 description: Przegląd kodu po każdym etapie pracy – tylko odczyt. Sprawdza spójność z SPEC.md i architekturą, poprawność, wydajność, czytelność, pokrycie testami i zasady projektu (mm w modelu, jedno źródło SVG, i18n, LICENCJE.md). Używaj po zakończeniu etapu, przed commitem/pushem.
+model: sonnet
 tools: Read, Glob, Grep
 ---
 
