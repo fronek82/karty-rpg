@@ -1,6 +1,7 @@
 ---
 name: silnik-layoutu
 description: Model danych szablonu karty, algorytm układu (wiersze/kolumny, rozmiary mm/%/auto/wypełnij, padding, gap), pomiar i łamanie tekstu, auto-dopasowanie czcionki oraz renderowanie karty do SVG. Używaj przy zmianach w typach pól, drzewie kontenerów, tekście i generowaniu SVG karty.
+model: sonnet
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 

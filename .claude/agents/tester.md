@@ -1,6 +1,7 @@
 ---
 name: tester
 description: Testy projektu – jednostkowe i komponentowe w Vitest, end-to-end i wizualne w Playwright (porównywanie wyrenderowanych kart i arkuszy PDF ze wzorcami i z referencjami w zasoby-prywatne/referencje/ – tylko lokalnie). Używaj do pisania i uruchamiania testów oraz diagnozy regresji.
+model: sonnet
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 

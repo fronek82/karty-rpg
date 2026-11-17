@@ -1,6 +1,7 @@
 ---
 name: dane-import
 description: Przechowywanie danych (IndexedDB przez Dexie), schemat i migracje projektu, biblioteka zasobów (czcionki, obrazy), eksport/import projektu (.kartyrpg = ZIP z JSON i zasobami) i pojedynczych szablonów, import CSV/XLSX z mapowaniem kolumn. Używaj przy warstwie danych i plikach.
+model: sonnet
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
