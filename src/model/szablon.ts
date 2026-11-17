@@ -281,6 +281,19 @@ export interface PoleSeparator extends PoleBazowe {
   stylLinii?: StylLinii;
   /** Przerwa między liniami stylu `podwojna` (mm, domyślnie 2× grubość). */
   przerwa?: Mm;
+  /**
+   * Rysunek separatora: `'linia'` (domyślnie, styl z `stylLinii`) albo motyw z biblioteki
+   * (pas `szerokosc` mm, kafelki rozłożone równo; kolor = `kolor`).
+   */
+  rysunek?: 'linia' | { motyw: string; szerokosc: Mm };
+  /** Zakończenia: element biblioteki na lewym (górnym) końcu i jego odbicie na prawym (dolnym). */
+  zakonczenia?: { element: string; rozmiar: Mm };
+  /** Środek: element biblioteki w połowie długości, linia w tym miejscu przerwana. */
+  srodek?: { element: string; rozmiar: Mm };
+  /** Długość rysunku (domyślnie całe dostępne miejsce): w mm albo w % dostępnego miejsca. */
+  dlugosc?: { mm: Mm } | { procent: number };
+  /** Odstęp linii (motywu) od zakończeń i środka, mm (domyślnie 0,4). Nieznany element: ostrzeżenie. */
+  odstepOdOzdoby?: Mm;
 }
 
 /** Kolumna tabeli: nagłówek stały z szablonu, wartość z danych karty. */

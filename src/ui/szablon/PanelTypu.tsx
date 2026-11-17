@@ -13,6 +13,7 @@ import {
   type Wezel,
 } from '../../model/szablon';
 import { Liczba, Lista, PoleKoloru, Przelacznik, Sekcja, Wybor } from './Kontrolki';
+import { PanelSeparatora } from './PanelSeparatora';
 import { PanelStylu } from './PanelStylu';
 import { PoleRamki } from './PanelWygladu';
 
@@ -272,52 +273,7 @@ export function PanelTypu({
         </Sekcja>
       );
     case 'separator':
-      return (
-        <Sekcja tytul={t('wezel.separator')} otwarta>
-          <Przelacznik
-            etykieta={t('wlasciwosci.kierunek')}
-            opcje={(['poziomy', 'pionowy'] as const).map((k) => ({
-              wartosc: k,
-              tekst: t(`wlasciwosci.kierunek.${k}`),
-            }))}
-            wartosc={pole.kierunek}
-            zmien={(v) => ustaw({ kierunek: v })}
-          />
-          <div className="dwa-pola">
-            <Liczba
-              etykieta={t('wlasciwosci.grubosc')}
-              wartosc={pole.grubosc}
-              krok={0.05}
-              max={10}
-              zmien={(v) => ustaw({ grubosc: v })}
-            />
-            <PoleKoloru
-              etykieta={t('wlasciwosci.kolorLinii')}
-              wartosc={pole.kolor ?? '#000000'}
-              moznaBrak={false}
-              zmien={(v) => ustaw({ kolor: v })}
-            />
-          </div>
-          <Przelacznik
-            etykieta={t('wlasciwosci.stylLinii')}
-            opcje={(['ciagla', 'przerywana', 'kropkowana', 'podwojna'] as const).map((s) => ({
-              wartosc: s,
-              tekst: t(`wlasciwosci.linia.${s}`),
-            }))}
-            wartosc={pole.stylLinii ?? 'ciagla'}
-            zmien={(v) => ustaw({ stylLinii: v === 'ciagla' ? undefined : v })}
-          />
-          {pole.stylLinii === 'podwojna' && (
-            <Liczba
-              etykieta={t('wlasciwosci.przerwa')}
-              wartosc={pole.przerwa ?? 2 * pole.grubosc}
-              krok={0.05}
-              max={10}
-              zmien={(v) => ustaw({ przerwa: v })}
-            />
-          )}
-        </Sekcja>
-      );
+      return <PanelSeparatora pole={pole} ustaw={ustaw} />;
     case 'tabela':
       return (
         <PanelTabeli

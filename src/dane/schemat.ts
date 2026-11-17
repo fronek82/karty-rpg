@@ -31,7 +31,7 @@ const xy = obj({ x: liczba, y: liczba });
 
 const rozmiar = z.union([
   obj({ mm: nieujemna }),
-  obj({ procent: nieujemna }),
+  obj({ procent: nieujemna.max(100) }),
   obj({ wypelnij: dodatnia }),
   z.literal('auto'),
 ]);
@@ -173,6 +173,13 @@ const pole = z.discriminatedUnion('typ', [
     kolor: opc(z.string()),
     stylLinii: opc(stylLinii),
     przerwa: opc(nieujemna),
+    rysunek: opc(
+      z.union([z.literal('linia'), obj({ motyw: z.string().min(1), szerokosc: nieujemna })]),
+    ),
+    zakonczenia: opc(obj({ element: z.string().min(1), rozmiar: nieujemna })),
+    srodek: opc(obj({ element: z.string().min(1), rozmiar: nieujemna })),
+    dlugosc: opc(z.union([obj({ mm: nieujemna }), obj({ procent: nieujemna.max(100) })])),
+    odstepOdOzdoby: opc(nieujemna),
   }),
   obj({
     ...bazaPola,
@@ -513,6 +520,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // bez zmian danych; kartki bez pól mają jeden rozmiar (siatka) jak dotąd.
   // 9→10: styl linii `podwojna`, `przerwa`, `narozniki` (ramka karty i węzły szablonu) – bez zmian danych.
   // 10→11: `ozdoba` (motyw zamiast linii; ramka karty i węzły szablonu) – bez zmian danych.
+  // 11→12: separator ozdobny (`rysunek`, `zakonczenia`, `srodek`, `dlugosc`, `odstepOdOzdoby`) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -524,6 +532,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     8: (d) => d,
     9: (d) => d,
     10: (d) => d,
+    11: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -536,6 +545,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     8: (d) => d,
     9: (d) => d,
     10: (d) => d,
+    11: (d) => d,
   },
 };
 

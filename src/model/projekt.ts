@@ -14,8 +14,9 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  * 9 – M2b-2: mieszane rozmiary kart (`ustawienia.rozmiary`, `ustawienia.mieszane`, `Arkusz.kolejnosc`).
  * 10 – M2b-3: styl linii `podwojna` (+ `przerwa`), `narozniki` na ramce karty i węzłach szablonu.
  * 11 – M2b-4: `ozdoba` (motyw powtarzalny zamiast linii) na ramce karty i węzłach szablonu.
+ * 12 – M2b-5: separator ozdobny (`rysunek`, `zakonczenia`, `srodek`, `dlugosc`, `odstepOdOzdoby`).
  */
-export const WERSJA_SCHEMATU = 11;
+export const WERSJA_SCHEMATU = 12;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

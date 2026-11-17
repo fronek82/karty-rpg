@@ -55,8 +55,18 @@ const RODZAJE: RodzajNowego[] = [
   'wpis',
   'ikona',
   'separator',
+  'separator-zakonczenia',
+  'separator-motyw',
   'tabela',
 ];
+
+/** Typ elementu, którego ikona jest w menu „+ Dodaj” (wzory separatora mają ikonę separatora). */
+const typIkony = (r: RodzajNowego) =>
+  r === 'etykieta-wartosc'
+    ? 'tekst'
+    : r === 'separator-zakonczenia' || r === 'separator-motyw'
+      ? 'separator'
+      : r;
 
 const wPolu = (e: Element | null) =>
   !!e &&
@@ -430,7 +440,7 @@ export function EdytorSzablonu({
                     >
                       <span>
                         <span className="ikona" aria-hidden="true">
-                          {IKONY_WEZLOW[r === 'etykieta-wartosc' ? 'tekst' : r]}
+                          {IKONY_WEZLOW[typIkony(r)]}
                         </span>{' '}
                         {t(`wezel.${r}`)}
                       </span>

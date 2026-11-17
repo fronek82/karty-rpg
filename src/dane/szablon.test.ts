@@ -7,6 +7,7 @@ import {
   type Szablon,
   type Wezel,
 } from '../model/szablon';
+import { znajdzElement } from '../ozdobniki';
 import { kolumnySzablonu } from './edycja';
 import {
   danePodgladu,
@@ -361,5 +362,85 @@ describe('M2b-4: ozdoba (motyw) w edycji szablonu', () => {
     s = wstawWezel(s, 'karta', { ...nowyWezel(s, 'tekst', 'Siła'), ozdoba: oz } as Wezel);
     s = zmienTypPola(s, 'tekst', 'wartosc');
     expect(znajdzWezel(s, 'tekst')).toMatchObject({ typ: 'wartosc', ozdoba: oz });
+  });
+});
+
+describe('M2b-5: separator ozdobny w edycji szablonu', () => {
+  const sep = {
+    rysunek: { motyw: 'wb:przeplot', szerokosc: 2.5 },
+    zakonczenia: { element: 'wb:zak-kolec', rozmiar: 2 },
+    srodek: { element: 'wb:sr-gwiazda', rozmiar: 3 },
+    dlugosc: { procent: 70 },
+    odstepOdOzdoby: 0.6,
+  };
+
+  it('wzory startowe: linia, linia z zakończeniami i środkiem, motyw; w wierszu – pionowe', () => {
+    const s = pusty();
+    const linia = nowyWezel(s, 'separator', 'S');
+    expect(linia).toMatchObject({ typ: 'separator', kierunek: 'poziomy' });
+    expect(linia).not.toHaveProperty('zakonczenia');
+    const zak = nowyWezel(s, 'separator-zakonczenia', 'S', { wWierszu: true });
+    expect(zak).toMatchObject({
+      typ: 'separator',
+      kierunek: 'pionowy',
+      zakonczenia: { element: 'wb:zak-grot' },
+      srodek: { element: 'wb:sr-romb' },
+    });
+    const motyw = nowyWezel(s, 'separator-motyw', 'S');
+    expect(motyw).toMatchObject({ typ: 'separator', rysunek: { motyw: 'wb:lancuch' } });
+    expect(zak.id).toMatch(/^separator/);
+    expect(motyw.id).toMatch(/^separator/);
+    for (const e of [zak, motyw] as Extract<Wezel, { typ: 'separator' }>[]) {
+      expect(znajdzElement(e.zakonczenia!.element)).toBeDefined();
+    }
+  });
+
+  it('skopiujStyl i wklejStyl przenoszą nowe pola, a przy ich braku w źródle czyszczą cel', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', { ...nowyWezel(s, 'separator', 'A'), ...sep } as Wezel);
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'separator', 'B'));
+    s = wstawWezel(s, 'karta', { ...nowyWezel(s, 'separator', 'C'), ...sep } as Wezel);
+    const st = skopiujStyl(znajdzWezel(s, 'separator')!);
+    expect(st).toMatchObject(sep);
+    const b = wklejStyl(znajdzWezel(s, 'separator-2')!, st);
+    expect(b).toMatchObject(sep);
+    const pusta = skopiujStyl(znajdzWezel(s, 'separator-2')!);
+    const c = wklejStyl(znajdzWezel(s, 'separator-3')!, pusta);
+    for (const k of ['rysunek', 'zakonczenia', 'srodek', 'dlugosc', 'odstepOdOzdoby'])
+      expect(c).not.toHaveProperty(k);
+  });
+
+  it('wklejenie stylu separatora do innego typu nie wnosi pól separatora', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', { ...nowyWezel(s, 'separator', 'A'), ...sep } as Wezel);
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'tekst', 'T'));
+    const t = wklejStyl(znajdzWezel(s, 'tekst')!, skopiujStyl(znajdzWezel(s, 'separator')!));
+    for (const k of ['rysunek', 'zakonczenia', 'srodek', 'dlugosc', 'odstepOdOzdoby'])
+      expect(t).not.toHaveProperty(k);
+  });
+
+  it('zmiana typu: tekst → separator daje zwykłą linię; separator → tekst gubi pola ozdób, zostaje ozdoba ramki', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'tekst', 'Siła'));
+    s = zmienTypPola(s, 'tekst', 'separator');
+    expect(znajdzWezel(s, 'tekst')).toMatchObject({ typ: 'separator' });
+    expect(znajdzWezel(s, 'tekst')).not.toHaveProperty('zakonczenia');
+    s = zmienWezel(s, 'tekst', (w) => ({
+      ...w,
+      ...sep,
+      ozdoba: { rodzaj: 'motyw', element: 'wb:runy', szerokosc: 4, kolor: '#000000' },
+    }));
+    // Ten sam typ – bez zmian (pola zostają).
+    expect(zmienTypPola(s, 'tekst', 'separator')).toBe(s);
+    const t = znajdzWezel(zmienTypPola(s, 'tekst', 'wartosc'), 'tekst');
+    expect(t).toMatchObject({ typ: 'wartosc', ozdoba: { element: 'wb:runy' } });
+    expect(t).not.toHaveProperty('zakonczenia');
+  });
+
+  it('zmiana typu kontenera obraca separatory ozdobne, zachowując ich pola', () => {
+    let s = pusty();
+    s = wstawWezel(s, 'karta', { ...nowyWezel(s, 'separator', 'A'), ...sep } as Wezel);
+    const w = zmienTypKontenera(s, 'karta', 'wiersz');
+    expect(znajdzWezel(w, 'separator')).toMatchObject({ kierunek: 'pionowy', ...sep });
   });
 });

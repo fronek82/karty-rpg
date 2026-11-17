@@ -1,6 +1,7 @@
 import type { Kontur } from '../silnik/scena';
 import { gwiazda, lisc, okrag, pierscien, wielokat } from './rysunek';
 import { MOTYWY_WBUDOWANE } from './motywy';
+import { SRODKI_WBUDOWANE, ZAKONCZENIA_WBUDOWANE } from './separatory';
 import type { ElementOzdobny } from './typy';
 
 /**
@@ -50,7 +51,12 @@ export const NAROZNIKI_WBUDOWANE: ElementOzdobny[] = [
   naroznik('wb:zawijas', [{ kontur: ZAWIJAS, obrys: { grubosc: 0.9, kolor: 'kolor' } }]),
 ];
 
-export const ELEMENTY_WBUDOWANE: ElementOzdobny[] = [...NAROZNIKI_WBUDOWANE, ...MOTYWY_WBUDOWANE];
+export const ELEMENTY_WBUDOWANE: ElementOzdobny[] = [
+  ...NAROZNIKI_WBUDOWANE,
+  ...MOTYWY_WBUDOWANE,
+  ...ZAKONCZENIA_WBUDOWANE,
+  ...SRODKI_WBUDOWANE,
+];
 
 /** Element po identyfikatorze (na razie tylko wbudowane); brak = `undefined`. */
 export function znajdzElement(id: string): ElementOzdobny | undefined {
