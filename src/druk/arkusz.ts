@@ -173,25 +173,35 @@ export function wSkaliSzarosci(elementy: ElementSceny[]): ElementSceny[] {
   });
 }
 
+/** Dopuszczalna różnica wymiaru karty w mm i slotu kartki (mm). */
+export const TOLERANCJA_ROZMIARU: Mm = 0.5;
+
 export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza): WynikArkusza {
   const u = arkusz.ustawienia;
   const strona = wymiaryStrony(u);
   const ostrzezenia: OstrzezenieArkusza[] = [];
   const szablon = (k: Karta) => ctx.szablony.get(k.szablonId);
 
-  // Slot z pierwszego szablonu w trybie slotów (M1: wszystkie karty arkusza w siatce slotów).
-  const zSlotem = talia.karty.map(szablon).find((s) => s?.rozmiar.tryb === 'sloty');
+  // Slot z ustawień albo z pierwszego szablonu (w trybie slotów – slot, w mm – wymiar karty).
+  const pierwszy = talia.karty.map(szablon).find((s) => s !== undefined);
   const slot = u.slot
     ? u.slot
-    : zSlotem && zSlotem.rozmiar.tryb === 'sloty'
-      ? zSlotem.rozmiar.slot
-      : { szerokosc: 63, wysokosc: 88 };
+    : pierwszy?.rozmiar.tryb === 'sloty'
+      ? pierwszy.rozmiar.slot
+      : pierwszy
+        ? { szerokosc: pierwszy.rozmiar.szerokosc, wysokosc: pierwszy.rozmiar.wysokosc }
+        : { szerokosc: 63, wysokosc: 88 };
   const karty = talia.karty.filter((k) => {
     const s = szablon(k);
     if (!s) ostrzezenia.push({ kartaId: k.id, komunikat: 'brak-szablonu' });
-    else if (s.rozmiar.tryb !== 'sloty')
-      ostrzezenia.push({ kartaId: k.id, komunikat: 'karta-poza-siatka-slotow' });
-    return s?.rozmiar.tryb === 'sloty';
+    // Karta w mm zajmuje jeden slot (kartka ma slot = wymiar karty); inny wymiar – ostrzeżenie.
+    else if (
+      s.rozmiar.tryb === 'mm' &&
+      (Math.abs(s.rozmiar.szerokosc - slot.szerokosc) > TOLERANCJA_ROZMIARU ||
+        Math.abs(s.rozmiar.wysokosc - slot.wysokosc) > TOLERANCJA_ROZMIARU)
+    )
+      ostrzezenia.push({ kartaId: k.id, komunikat: 'karta-inny-rozmiar' });
+    return s !== undefined;
   });
 
   // Tytuł.
@@ -220,6 +230,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   // Grupy: wysokość pasa nagłówków zależy od szerokości grup, a ta od liczby rzędów – dwa przybliżenia.
   const grupy = u.grupy && talia.grupy && talia.grupy.length > 0 ? talia.grupy : undefined;
   const lista = egzemplarze(karty, (k) => {
+    if (szablon(k)!.rozmiar.tryb === 'mm') return { kolumny: 1, rzedy: 1 };
     const { szer, wys } = wymiaryKarty(szablon(k)!, k);
     // Karta mniejsza niż slot zajmuje cały slot (inaczej rozmiar 0 dałby nakładanie).
     return {
@@ -365,6 +376,21 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         elementy: s.elementy,
       });
     });
+    // Strefa bezpieczeństwa (np. przycięcie w punkcie foto): karta nie powinna w nią wchodzić.
+    const mb = u.marginesBezpieczenstwa ?? 0;
+    if (mb > 0) {
+      naStronie.forEach((c, i) => {
+        const p = prostokaty[i]!;
+        const { szer, wys } = wymiaryKarty(szablon(c.karta)!, c.karta);
+        if (
+          p.x < mb - 1e-6 ||
+          p.y < mb - 1e-6 ||
+          p.x + szer > strona.szer - mb + 1e-6 ||
+          p.y + wys > strona.wys - mb + 1e-6
+        )
+          ostrzezenia.push({ kartaId: c.karta.id, komunikat: 'karta-w-strefie-przyciecia' });
+      });
+    }
     const odcinki = odcinkiCiecia(prostokaty, slot);
     for (const o of odcinki) elementy.push(liniaCiecia(o, u.linie));
 

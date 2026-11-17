@@ -860,3 +860,48 @@ textarea:focus-visible {
   color: #8fb8ff;
   font-weight: 600;
 }
+
+/* Strefa przycięcia przy krawędzi kartki (formaty zdjęciowe) – tylko w edytorze. */
+.strefa-bezpieczenstwa {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.strefa-bezpieczenstwa > div {
+  position: absolute;
+  outline: 1px dashed color-mix(in srgb, #c0392b 70%, transparent);
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, #c0392b 10%, transparent);
+}
+.sekcja-szablonow {
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.8rem;
+}
+.lista-szablonow {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.6rem;
+  display: grid;
+  gap: 0.4rem;
+}
+.lista-szablonow li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: space-between;
+  align-items: center;
+}
+.akcje-szablonu {
+  display: flex;
+  gap: 0.3rem;
+}
+.dwa-pola {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.dwa-pola input {
+  width: 100%;
+}

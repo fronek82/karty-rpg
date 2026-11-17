@@ -5,8 +5,19 @@ import type { Odstepy, StylTekstu } from './szablon';
 export const PAPIERY = {
   A4: { szer: 210, wys: 297 },
   Letter: { szer: 215.9, wys: 279.4 },
+  A5: { szer: 148, wys: 210 },
+  /** Odbitki fotograficzne (rozmiary z punktów foto). */
+  'foto-10x15': { szer: 102, wys: 152 },
+  'foto-13x18': { szer: 127, wys: 178 },
+  'foto-15x21': { szer: 152, wys: 210 },
 } as const satisfies Record<string, { szer: Mm; wys: Mm }>;
-export type Papier = keyof typeof PAPIERY;
+/** Format papieru; `wlasny` – wymiary w `UstawieniaArkusza.wymiaryPapieru`. */
+export type Papier = keyof typeof PAPIERY | 'wlasny';
+
+/** Formaty zdjęciowe – punkty foto przycinają brzegi, więc mają strefę bezpieczeństwa. */
+export const czyFormatZdjeciowy = (p: Papier) => p.startsWith('foto-');
+/** Domyślny margines bezpieczeństwa formatów zdjęciowych (mm). */
+export const MARGINES_BEZPIECZENSTWA_FOTO: Mm = 3;
 
 export interface TytulArkusza {
   tekst: string;
@@ -46,7 +57,14 @@ export interface Nozyczki {
 
 export interface UstawieniaArkusza {
   papier: Papier;
+  /** Wymiary własnego papieru (w orientacji pionowej) – gdy `papier` to `wlasny`. */
+  wymiaryPapieru?: { szer: Mm; wys: Mm };
   orientacja: 'pionowa' | 'pozioma';
+  /**
+   * Strefa przy krawędzi kartki, w którą karta nie powinna wchodzić (np. przycięcie w punkcie
+   * foto) – karta w strefie daje ostrzeżenie; strefa widoczna w edytorze.
+   */
+  marginesBezpieczenstwa?: Mm;
   marginesy: Odstepy;
   tytul?: TytulArkusza;
   /** Nagłówki grup nad kolumnami (gdy talia ma grupy). */
@@ -112,10 +130,13 @@ export interface Arkusz {
 }
 
 /** Wymiary strony w mm z uwzględnieniem orientacji. */
-export function wymiaryStrony(u: Pick<UstawieniaArkusza, 'papier' | 'orientacja'>): {
+export function wymiaryStrony(
+  u: Pick<UstawieniaArkusza, 'papier' | 'orientacja' | 'wymiaryPapieru'>,
+): {
   szer: Mm;
   wys: Mm;
 } {
-  const p = PAPIERY[u.papier];
+  const p =
+    u.papier === 'wlasny' ? (u.wymiaryPapieru ?? PAPIERY.A4) : (PAPIERY[u.papier] ?? PAPIERY.A4);
   return u.orientacja === 'pionowa' ? { szer: p.szer, wys: p.wys } : { szer: p.wys, wys: p.szer };
 }

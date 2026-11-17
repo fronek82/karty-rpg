@@ -1,6 +1,13 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
 import {
+  opisRozmiaruSzablonu,
+  PAKIET_WLASNY,
+  pakietWlasny,
+  pasujeDoKartki,
+  ustawieniaKartkiDla,
+} from '../../dane/wlasneKarty';
+import {
   dodajKarteWSlocie,
   dodajKartke,
   dodajNaglowek,
@@ -146,7 +153,16 @@ const wPolu = (e: Element | null) =>
 /** Edytor kartki: strony A4 z siatką slotów, karty klikane, przeciągane i edytowane w panelu. */
 export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
   const { projekt, zmien } = edycja;
-  const pakiet = usePakiet(pakietProjektu(projekt));
+  const idPakietu = pakietProjektu(projekt);
+  const pakietGry = usePakiet(idPakietu);
+  // Projekt bez pakietu gry (własne karty): typy kart z szablonów projektu.
+  const bezGry = idPakietu === undefined || idPakietu === PAKIET_WLASNY;
+  const pakietZSzablonow = useMemo(
+    () => (bezGry ? pakietWlasny(projekt) : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tylko szablony i pierwsza kartka
+    [bezGry, projekt.szablony, projekt.arkusze[0]?.ustawienia],
+  );
+  const pakiet = pakietGry ?? pakietZSzablonow;
   const zasoby = useZSzarymiObrazami(edycja.zasoby.zasoby, projekt);
   const [zazn, ustawZaznSurowe] = useState<Zaznaczenie>();
   const [menu, ustawMenu] = useState<{ arkuszId: string } & Polozenie>();
@@ -812,11 +828,27 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
   const nowaKartka = pakiet
     ? () => {
         const nazwa = t('kartka.nazwaKartki', { numer: projekt.arkusze.length + 1 });
-        const w = dodajKartke(projekt, pakiet.nowaKartka, nazwa);
-        zmien((p) => dodajKartke(p, pakiet.nowaKartka, nazwa).projekt);
+        // Własne karty: nowa kartka bez tytułu, z ustawieniami zaznaczonej (ten sam rozmiar kart).
+        const wzor =
+          bezGry && arkuszZazn ? { nazwa, ustawienia: arkuszZazn.ustawienia } : pakiet.nowaKartka;
+        const w = dodajKartke(projekt, wzor, nazwa, !bezGry);
+        zmien((p) => dodajKartke(p, wzor, nazwa, !bezGry).projekt);
         ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
       }
     : undefined;
+  // Własne karty: nowa kartka dopasowana do rozmiaru szablonu (bez tytułu, papier jak zaznaczona).
+  const kartkaDlaSzablonu = (szablonId: string) => {
+    const s = projekt.szablony.find((x) => x.id === szablonId);
+    if (!s) return;
+    const papier = arkuszZazn?.ustawienia;
+    const wzor = {
+      nazwa: s.nazwa,
+      ustawienia: ustawieniaKartkiDla(s, papier?.papier, papier?.wymiaryPapieru),
+    };
+    const w = dodajKartke(projekt, wzor, s.nazwa, false);
+    zmien((p) => dodajKartke(p, wzor, s.nazwa, false).projekt);
+    ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
+  };
   let panel: React.ReactNode;
   if (aktywne?.rodzaj === 'karty' && arkuszZazn && kontekst(arkuszZazn.id)) {
     const ctx = kontekst(arkuszZazn.id)!;
@@ -904,6 +936,7 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
         zmienUklad={zmienUklad}
         {...(bladUkladu ? { blad: bladUkladu } : {})}
         {...(nowaKartka ? { nowaKartka } : {})}
+        {...(bezGry ? { kartkaDlaSzablonu } : {})}
         zamknij={() => ustawZazn(undefined)}
       />
     );
@@ -919,10 +952,30 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
   );
 
   // Ostrzeżenia kartek (nie kart): przypięcia poza siatką, nagłówki, tytuł; karty odłożone.
+  const ileKart = (k: Kartka, kod: string) =>
+    new Set((k.wynik?.ostrzezenia ?? []).filter((o) => o.komunikat === kod).map((o) => o.kartaId))
+      .size;
   const ostrzezeniaKartek = kartki.flatMap((k) => [
     ...(k.wynik?.ostrzezenia ?? [])
       .filter((o) => !o.kartaId)
       .map((o) => `${k.arkusz.nazwa}: ${tekstOstrzezeniaArkusza(o)}`),
+    // Ostrzeżenia kart dotyczące całej kartki (rozmiar, strefa przycięcia) – zbiorczo.
+    ...(ileKart(k, 'karta-w-strefie-przyciecia')
+      ? [
+          t('kartka.wStrefie', {
+            kartka: k.arkusz.nazwa,
+            liczba: ileKart(k, 'karta-w-strefie-przyciecia'),
+          }),
+        ]
+      : []),
+    ...(ileKart(k, 'karta-inny-rozmiar')
+      ? [
+          t('kartka.innyRozmiarKart', {
+            kartka: k.arkusz.nazwa,
+            liczba: ileKart(k, 'karta-inny-rozmiar'),
+          }),
+        ]
+      : []),
     ...(kartyOdlozone(projekt, k.arkusz.id).length
       ? [
           t('kartka.odlozone', {
@@ -1086,9 +1139,13 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
               gest={gest}
               menu={menu?.arkuszId === k.arkusz.id ? menu : undefined}
               typy={pakiet?.typyKart ?? []}
-              miesciSie={(typ) => {
+              blokada={(typ) => {
                 const ctx = kontekst(k.arkusz.id);
-                return (
+                const s = ctx?.szablony.get(typ.warianty[0]!.szablonId);
+                // Własne karty: jedna kartka = jeden rozmiar karty.
+                if (bezGry && s && !pasujeDoKartki(s, k.arkusz.ustawienia))
+                  return t('kartka.innyRozmiar', { rozmiar: opisRozmiaruSzablonu(s) });
+                const ok =
                   !!menu &&
                   !!ctx &&
                   !(
@@ -1100,8 +1157,8 @@ export function EdytorKartki({ edycja }: { edycja: ProjektWEdycji }) {
                       { szablonId: typ.warianty[0]!.szablonId, rozmiary: typ.rozmiary },
                       ctx,
                     )
-                  )
-                );
+                  );
+                return ok ? undefined : t('kartka.nieMiesci');
               }}
               dodaj={dodajZMenu}
               zamknijMenu={zamknijMenu}
@@ -1174,7 +1231,7 @@ function WidokKartki({
   gest,
   menu,
   typy,
-  miesciSie,
+  blokada,
   dodaj,
   zamknijMenu,
   poczatekGestu,
@@ -1196,7 +1253,8 @@ function WidokKartki({
   gest: Gest | undefined;
   menu: Polozenie | undefined;
   typy: TypKarty[];
-  miesciSie: (typ: TypKarty) => boolean;
+  /** Powód, dla którego typu nie można dodać w tym slocie (undefined – można). */
+  blokada: (typ: TypKarty) => string | undefined;
   dodaj: (typ: TypKarty, wariant: number) => void;
   zamknijMenu: () => void;
   poczatekGestu: (e: React.PointerEvent, k: Kartka, strona: number) => void;
@@ -1281,6 +1339,20 @@ function WidokKartki({
                 className="svg-opakowanie"
                 dangerouslySetInnerHTML={{ __html: k.svg[s] ?? '' }}
               />
+              {g && (k.arkusz.ustawienia.marginesBezpieczenstwa ?? 0) > 0 && (
+                // Strefa przycięcia (np. punkt foto) – tylko w edytorze, nie w druku.
+                <div className="strefa-bezpieczenstwa" aria-hidden="true">
+                  <div
+                    style={stylMm(
+                      g,
+                      k.arkusz.ustawienia.marginesBezpieczenstwa!,
+                      k.arkusz.ustawienia.marginesBezpieczenstwa!,
+                      g.szer - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!,
+                      g.wys - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!,
+                    )}
+                  />
+                </div>
+              )}
               {g && (
                 <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
                   {Array.from({ length: g.siatka.rzedy }, (_, r) =>
@@ -1418,7 +1490,7 @@ function WidokKartki({
                             }
                           : { left: p.left, top: p.top };
                       })()}
-                      miesciSie={miesciSie}
+                      blokada={blokada}
                       wybierz={dodaj}
                       zamknij={zamknijMenu}
                     />

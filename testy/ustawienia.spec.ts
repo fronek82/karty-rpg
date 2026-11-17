@@ -29,12 +29,10 @@ test('tytuł, położenie tytułu, czarno-biały, czcionki; zmiana papieru odrzu
   await expect(ustawienia(page).getByLabel('Tytuł kartki')).toHaveValue('Moja broń');
 
   // Letter jest węższy – pełna siatka 10 kolumn się nie zmieści.
-  await ustawienia(page).getByRole('button', { name: 'Letter' }).click();
+  const papier = ustawienia(page).getByLabel('Papier', { exact: true });
+  await papier.selectOption('Letter');
   await expect(ustawienia(page).getByRole('alert')).toContainText('nie zmieściłyby się');
-  await expect(ustawienia(page).getByRole('button', { name: 'A4' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  await expect(papier).toHaveValue('A4');
 
   // Czarno-biały: ilustracje w skali szarości.
   const obraz = page.locator('.strona-kartki image').first();

@@ -520,11 +520,13 @@ export function dodajKartke(
   p: Projekt,
   wzor: { nazwa: string; ustawienia: Arkusz['ustawienia'] },
   nazwa: string,
+  /** Tytuł kartki = jej nazwa (gry z pakietu); bez – kartka bez tytułu (własne karty). */
+  zTytulem = true,
 ): { projekt: Projekt; arkuszId: string } {
   const zajete = new Set([...p.arkusze.map((a) => a.id), ...p.talie.map((t) => t.id)]);
   const id = unikalneId('kartka', zajete);
   const ustawienia = structuredClone(wzor.ustawienia);
-  if (ustawienia.tytul) ustawienia.tytul.tekst = nazwa;
+  if (ustawienia.tytul) ustawienia.tytul.tekst = zTytulem ? nazwa : '';
   return {
     projekt: {
       ...p,

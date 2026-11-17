@@ -279,7 +279,9 @@ const arkusz = obj({
     ),
   ),
   ustawienia: obj({
-    papier: z.enum(['A4', 'Letter']),
+    papier: z.enum(['A4', 'Letter', 'A5', 'foto-10x15', 'foto-13x18', 'foto-15x21', 'wlasny']),
+    wymiaryPapieru: opc(obj({ szer: dodatnia, wys: dodatnia })),
+    marginesBezpieczenstwa: opc(nieujemna),
     orientacja: z.enum(['pionowa', 'pozioma']),
     marginesy: obj({ gora: nieujemna, prawo: nieujemna, dol: nieujemna, lewo: nieujemna }),
     tytul: opc(
@@ -434,8 +436,9 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 1 → 2: nowe pola są opcjonalne; sprowadzenie do modelu kartki robi normalizacja przy
   // otwarciu (potrzebuje czcionek – patrz src/druk/normalizacja.ts).
   // 2→3: nowe, opcjonalne pola (ramka karty, romb, separator, tabela, formatowanie) – bez zmian danych.
-  projekt: { 1: (d) => d, 2: (d) => d },
-  szablon: { 1: (d) => d, 2: (d) => d },
+  // 3→4: nowe formaty papieru, własny papier, margines bezpieczeństwa – bez zmian danych.
+  projekt: { 1: (d) => d, 2: (d) => d, 3: (d) => d },
+  szablon: { 1: (d) => d, 2: (d) => d, 3: (d) => d },
 };
 
 export function migruj(

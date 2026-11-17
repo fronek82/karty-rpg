@@ -12,13 +12,14 @@ const rozmiar = (r: { kolumny: number; rzedy: number; nazwa?: string }) =>
 export function MenuTypu({
   typy,
   styl,
-  miesciSie,
+  blokada,
   wybierz,
   zamknij,
 }: {
   typy: TypKarty[];
   styl: React.CSSProperties;
-  miesciSie: (typ: TypKarty) => boolean;
+  /** Powód blokady typu w tym slocie (np. „nie mieści się”); undefined – można dodać. */
+  blokada: (typ: TypKarty) => string | undefined;
   wybierz: (typ: TypKarty, wariant: number) => void;
   zamknij: () => void;
 }) {
@@ -69,7 +70,8 @@ export function MenuTypu({
     >
       <div className="menu-tytul">{t('kartka.dodajKarteTutaj')}</div>
       {typy.map((typ) => {
-        const mozna = miesciSie(typ);
+        const powod = blokada(typ);
+        const mozna = powod === undefined;
         const warianty = typ.warianty.length > 1;
         return (
           <div key={typ.id}>
@@ -78,7 +80,7 @@ export function MenuTypu({
               role="menuitem"
               className="menu-pozycja"
               disabled={!mozna}
-              title={mozna ? undefined : t('kartka.nieMiesci')}
+              title={powod}
               aria-haspopup={warianty ? 'menu' : undefined}
               aria-expanded={warianty ? rozwiniety === typ.id : undefined}
               onClick={() =>
@@ -94,7 +96,7 @@ export function MenuTypu({
                 {typ.nazwa}
                 {warianty && ' ▸'}
               </span>
-              <small>{typ.rozmiary.map(rozmiar).join(' · ')}</small>
+              <small>{typ.opisRozmiaru ?? typ.rozmiary.map(rozmiar).join(' · ')}</small>
             </button>
             {warianty && rozwiniety === typ.id && (
               <div className="menu-warianty">
