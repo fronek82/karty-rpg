@@ -623,6 +623,7 @@ describe('eksport i import szablonu', () => {
       przygotujProjekt(z({ ...sep, zakonczenia: { element: '', rozmiar: 1 } })),
     ).toThrow();
     expect(() => przygotujProjekt(z({ ...sep, odstepOdOzdoby: -1 }))).toThrow();
+    expect(() => przygotujProjekt(z({ ...sep, dlugosc: { procent: 101 } }))).toThrow();
     expect(przygotujProjekt(z({ ...sep, rysunek: 'linia', dlugosc: { mm: 30 } }))).toBeDefined();
   });
 

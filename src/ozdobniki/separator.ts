@@ -62,7 +62,7 @@ export function dlugoscSeparatora(pole: PoleSeparator, dostepna: Mm): Mm {
 
 /**
  * Separator ozdobny w `ramka`: oś wzdłuż separatora to `u` (od początku rysunku), w poprzek `v`
- * (od osi linii). Poziomy: `x = u`, `y = v`; pionowy: `x = v`, `y = u` (rysunek obrócony o 90°).
+ * (od osi linii). Poziomy: `x = u`, `y = v`; pionowy: `x = −v`, `y = u` (rysunek obrócony o 90° zgodnie z zegarem).
  * Zakończenie lewe (górne), jego odbicie prawe (dolne), środek na środku długości z przerwą
  * w linii; motyw zamiast linii rozkładany równo na każdym odcinku (jak bok ramki).
  *
@@ -93,8 +93,9 @@ export function rysujSeparatorOzdobny(
   };
 
   // Macierz symbolu: rysunek (px, py) → u = ou + sx·px, v = ov + sy·py.
+  // Pionowy: obrót o 90° zgodnie z ruchem wskazówek zegara (x = środek − v, y = u).
   const macierz = (ou: Mm, sx: number, ov: Mm, sy: number): Macierz =>
-    poziomy ? [sx, 0, 0, sy, ou, srodekPoprzek + ov] : [0, sx, sy, 0, srodekPoprzek + ov, ou];
+    poziomy ? [sx, 0, 0, sy, ou, srodekPoprzek + ov] : [0, sx, -sy, 0, srodekPoprzek - ov, ou];
   const symbol = (e: ElementOzdobny, m: Macierz) => {
     symbole[e.id] = symbolZ(e);
     elementy.push({ typ: 'symbol', klucz: e.id, macierz: m, kolor });
@@ -111,7 +112,9 @@ export function rysujSeparatorOzdobny(
   let ws = 0;
   if (sr && pole.srodek!.rozmiar > 0) {
     ws = (pole.srodek!.rozmiar * sr.szer) / sr.wys;
-    if (dl - 2 * wz < ws) ws = 0;
+    // Środek wraz z odstępami po obu stronach (i odstępami przy zakończeniach) musi się zmieścić.
+    const odstepy = 2 * odstep + (wz > 0 ? 2 * odstep : 0);
+    if (dl - 2 * wz - odstepy < ws) ws = 0;
   }
 
   const od = wz > 0 ? u0 + wz + odstep : u0;
@@ -139,7 +142,7 @@ export function rysujSeparatorOzdobny(
         );
     } else if (linia.obrys) {
       for (const v of linia.odsuniecia) {
-        const c = srodekPoprzek + v;
+        const c = srodekPoprzek + (poziomy ? v : -v);
         elementy.push(
           poziomy
             ? { typ: 'linia', x1: a, y1: c, x2: b, y2: c, obrys: linia.obrys }

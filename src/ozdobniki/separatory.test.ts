@@ -174,6 +174,14 @@ describe('separator ozdobny – geometria', () => {
     // Obrót o 90°: skala osi linii leży w `b` (y), a nie w `a`.
     expect(gora!.macierz[0]).toBe(0);
     expect(gora!.macierz[1]).toBeCloseTo(0.5);
+    // Prawdziwy obrót o 90°: c = −b·(sy/sx) < 0 (nie transpozycja), wyznacznik dodatni.
+    expect(gora!.macierz[2]).toBeCloseTo(-0.5);
+    expect(gora!.macierz[3]).toBe(0);
+    const [a, b, c, d] = gora!.macierz;
+    expect(a * d - b * c).toBeGreaterThan(0);
+    // Pas ozdób 3 mm leży na x = 0…3; rysunek (y rysunku → −x) zaczyna się przy x = 3.
+    expect(gora!.macierz[4]).toBeCloseTo(3);
+    expect(dol!.macierz[4]).toBeCloseTo(3);
     expect(gora!.macierz[5]).toBeCloseTo(10);
     expect(dol!.macierz[1]).toBeCloseTo(-0.5);
     expect(dol!.macierz[5]).toBeCloseTo(30);
@@ -239,6 +247,80 @@ describe('separator ozdobny – geometria', () => {
       expect(k.macierz[0]).toBe(0);
       expect(k.kolor).toBe('#aa0000');
     }
+  });
+});
+
+describe('separator ozdobny – przypadki brzegowe', () => {
+  it('punkt wejścia linii (x = szer) każdego zakończenia leży na osi wys / 2', () => {
+    for (const e of ZAKONCZENIA_WBUDOWANE) {
+      const ys: number[] = [];
+      for (const c of e.kontury)
+        for (const k of c.kontur) {
+          const v = k.slice(1) as number[];
+          for (let i = 0; i + 1 < v.length; i += 2)
+            if (Math.abs(v[i]! - e.szer) < 1e-9) ys.push(v[i + 1]!);
+        }
+      expect(ys.length, e.id).toBeGreaterThan(0);
+      expect((Math.min(...ys) + Math.max(...ys)) / 2, e.id).toBeCloseTo(e.wys / 2);
+    }
+  });
+
+  it('graniczna długość: środek wraz z odstępami nie daje ujemnych odcinków', () => {
+    // Grot 6 mm, romb 4,5 mm, odstęp 0,5: potrzeba 4,5 + 12 + 4 · 0,5 = 18,5 mm.
+    for (const mm of [17, 18, 18.4, 18.5, 18.6, 19, 25]) {
+      const { scena } = rysuj(karta([sep({ ...OZDOBNY, dlugosc: { mm } })]));
+      const klucze = symbole(scena.elementy).map((x) => x.klucz);
+      expect(klucze.includes('wb:sr-romb'), `${mm} mm`).toBe(mm >= 18.5 - 1e-9);
+      expect(klucze.filter((k) => k === 'wb:zak-grot')).toHaveLength(2);
+      for (const l of linie(scena.elementy)) expect(l.x2, `${mm} mm`).toBeGreaterThan(l.x1);
+    }
+    // 17 mm: linia między zakończeniami ma 17 − 12 − 1 = 4 mm, bez środka.
+    const l = linie(rysuj(karta([sep({ ...OZDOBNY, dlugosc: { mm: 17 } })])).scena.elementy);
+    expect(l).toHaveLength(1);
+    expect(l[0]!.x2 - l[0]!.x1).toBeCloseTo(4);
+  });
+
+  it('grubość 0 z ozdobami: bez linii, ozdoby rysowane', () => {
+    const { scena, ostrzezenia } = rysuj(karta([sep({ ...OZDOBNY, grubosc: 0 })]));
+    expect(ostrzezenia).toEqual([]);
+    expect(linie(scena.elementy)).toHaveLength(0);
+    expect(symbole(scena.elementy)).toHaveLength(3);
+  });
+
+  it('rozmiar ozdoby 0: ozdoba pominięta, linia na całą długość', () => {
+    const { scena } = rysuj(
+      karta([
+        sep({
+          zakonczenia: { element: 'wb:zak-grot', rozmiar: 0 },
+          srodek: { element: 'wb:sr-romb', rozmiar: 0 },
+        }),
+      ]),
+    );
+    expect(symbole(scena.elementy)).toHaveLength(0);
+    const l = linie(scena.elementy);
+    expect(l).toHaveLength(1);
+    expect([l[0]!.x1, l[0]!.x2]).toEqual([0, 60]);
+  });
+
+  it('ujemny odstęp jest traktowany jak 0', () => {
+    const a = rysuj(karta([sep({ ...OZDOBNY, odstepOdOzdoby: -2 })])).scena;
+    const b = rysuj(karta([sep({ ...OZDOBNY, odstepOdOzdoby: 0 })])).scena;
+    expect(scenaDoSvg(a)).toBe(scenaDoSvg(b));
+  });
+
+  it('pionowy separator w kolumnie (regresja): skończone współrzędne, bez wyjścia poza kartę', () => {
+    const { scena, ostrzezenia } = rysuj(
+      karta([sep({ kierunek: 'pionowy', ...OZDOBNY, dlugosc: { procent: 50 } })]),
+    );
+    expect(ostrzezenia).toEqual([]);
+    for (const e of linie(scena.elementy))
+      for (const v of [e.x1, e.y1, e.x2, e.y2]) expect(Number.isFinite(v)).toBe(true);
+    for (const s of symbole(scena.elementy))
+      for (const v of s.macierz) expect(Number.isFinite(v)).toBe(true);
+  });
+
+  it('długość w % poza zakresem: schemat odrzuca > 100, silnik przycina do miejsca', () => {
+    expect(dlugoscSeparatora(sep({ dlugosc: { procent: 250 } }), 40)).toBe(40);
   });
 });
 

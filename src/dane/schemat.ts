@@ -31,7 +31,7 @@ const xy = obj({ x: liczba, y: liczba });
 
 const rozmiar = z.union([
   obj({ mm: nieujemna }),
-  obj({ procent: nieujemna }),
+  obj({ procent: nieujemna.max(100) }),
   obj({ wypelnij: dodatnia }),
   z.literal('auto'),
 ]);
@@ -178,7 +178,7 @@ const pole = z.discriminatedUnion('typ', [
     ),
     zakonczenia: opc(obj({ element: z.string().min(1), rozmiar: nieujemna })),
     srodek: opc(obj({ element: z.string().min(1), rozmiar: nieujemna })),
-    dlugosc: opc(z.union([obj({ mm: nieujemna }), obj({ procent: nieujemna })])),
+    dlugosc: opc(z.union([obj({ mm: nieujemna }), obj({ procent: nieujemna.max(100) })])),
     odstepOdOzdoby: opc(nieujemna),
   }),
   obj({

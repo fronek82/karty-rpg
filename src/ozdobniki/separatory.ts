@@ -20,13 +20,13 @@ const obrysem = (kontur: Kontur, grubosc: number) => ({
   obrys: { grubosc, kolor: 'kolor' as const },
 });
 
-/** Zawijas: linia kończy się spiralą skręconą do góry. */
+/** Zawijas: ogon na osi linii (y = wys / 2), koniec zwinięty w spiralę do góry. */
 const ZAWIJAS: Kontur = [
-  ['M', 12, 4],
-  ['L', 6, 4],
-  ['C', 3.6, 4, 1.4, 3.4, 1.4, 1.9],
-  ['C', 1.4, 0.8, 2.4, 0.6, 3, 1.1],
-  ['C', 3.6, 1.7, 3, 2.6, 2.3, 2.4],
+  ['M', 12, 3],
+  ['L', 6, 3],
+  ['C', 3.6, 3, 1.4, 2.5, 1.4, 1.4],
+  ['C', 1.4, 0.5, 2.4, 0.4, 3, 0.9],
+  ['C', 3.6, 1.4, 3, 2.1, 2.3, 1.9],
 ];
 
 export const ZAKONCZENIA_WBUDOWANE: ElementOzdobny[] = [

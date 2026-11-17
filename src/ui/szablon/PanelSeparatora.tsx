@@ -4,6 +4,7 @@ import type { Pole, PoleSeparator } from '../../model/szablon';
 import {
   MOTYWY_WBUDOWANE,
   ODSTEP_OZDOBY_DOMYSLNY,
+  znajdzElement,
   SRODKI_WBUDOWANE,
   ZAKONCZENIA_WBUDOWANE,
   type ElementOzdobny,
@@ -89,6 +90,9 @@ export function PanelSeparatora({
       ? ('mm' as const)
       : ('procent' as const)
     : ('calosc' as const);
+  // Motyw nieznany lub bez szerokości nie rysuje się – separator wraca do zwykłej linii.
+  const motywDziala =
+    !!rysunek && rysunek.szerokosc > 0 && znajdzElement(rysunek.motyw)?.rodzaj === 'motyw';
   const ozdoby = !!pole.zakonczenia || !!pole.srodek || !!rysunek;
   return (
     <Sekcja tytul={t('wezel.separator')} otwarta>
@@ -114,7 +118,7 @@ export function PanelSeparatora({
           })
         }
       />
-      {rysunek ? (
+      {rysunek && (
         <div className="pole-panelu">
           <span id={idMotywu}>{t('motywy.tytul')}</span>
           <div className="wybor-narozniki" role="group" aria-labelledby={idMotywu}>
@@ -141,7 +145,8 @@ export function PanelSeparatora({
             zmien={(v) => ustaw({ rysunek: { ...rysunek, szerokosc: v } })}
           />
         </div>
-      ) : (
+      )}
+      {!motywDziala && (
         <Przelacznik
           etykieta={t('wlasciwosci.stylLinii')}
           opcje={(['ciagla', 'przerywana', 'kropkowana', 'podwojna'] as const).map((s) => ({
@@ -153,7 +158,7 @@ export function PanelSeparatora({
         />
       )}
       <div className="dwa-pola">
-        {!rysunek && (
+        {!motywDziala && (
           <Liczba
             etykieta={t('wlasciwosci.grubosc')}
             wartosc={pole.grubosc}
@@ -169,7 +174,7 @@ export function PanelSeparatora({
           zmien={(v) => ustaw({ kolor: v })}
         />
       </div>
-      {!rysunek && pole.stylLinii === 'podwojna' && (
+      {!motywDziala && pole.stylLinii === 'podwojna' && (
         <Liczba
           etykieta={t('wlasciwosci.przerwa')}
           wartosc={pole.przerwa ?? 2 * pole.grubosc}
