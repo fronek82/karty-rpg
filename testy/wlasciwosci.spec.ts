@@ -124,7 +124,10 @@ test('kształt z listy, styl tekstu, stały tekst, ramka pola i karty; kopiuj/wk
   await page.keyboard.press('Escape');
   await page.locator('.karta-podgladu').click({ position: { x: 2, y: 2 } });
   const r = await otworz(page, 'Ramka karty');
-  await r.getByLabel('Ramka karty', { exact: true }).check();
+  await r
+    .getByRole('group', { name: 'Ramka karty', exact: true })
+    .getByRole('button', { name: 'linia', exact: true })
+    .click();
   await r.getByLabel('Odsunięcie od krawędzi (mm)').fill('2');
   await expect(page.locator('.karta-podgladu svg rect[stroke]').last()).toBeAttached();
 });

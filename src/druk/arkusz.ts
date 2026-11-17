@@ -23,6 +23,8 @@ import { renderujKarte, type InformacjaOObrazie, type Ostrzezenie } from '../sil
 import {
   kolorSceny,
   polaczGlify,
+  symboleSceny,
+  type DefinicjaSymbolu,
   type DefinicjaGlifu,
   type ElementSceny,
   type Scena,
@@ -297,6 +299,8 @@ export function wSkaliSzarosci(elementy: ElementSceny[]): ElementSceny[] {
         return { ...e, obrys: obr(e.obrys) };
       case 'obraz':
         return e;
+      case 'symbol':
+        return e.kolor ? { ...e, kolor: szary(e.kolor) } : e;
       default:
         return {
           ...e,
@@ -503,6 +507,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
     const glify: Record<string, DefinicjaGlifu>[] = [];
+    const symbole: (Record<string, DefinicjaSymbolu> | undefined)[] = [];
     const naStronie = rozmieszczenie.karty.filter((c) => c.strona === n);
     const prostokaty = naStronie.map((c) => {
       const x = poczatek.x + c.xRegionu + odstepKolumny(n, c.kolumna) + c.kolumna * slot.szerokosc;
@@ -545,6 +550,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     naStronie.forEach((c, i) => {
       const s = scenaKarty(c.karta);
       glify.push(s.glify);
+      symbole.push(s.symbole);
       const k = prostokaty[i]!.karta;
       elementy.push({ typ: 'grupa', x: k.x, y: k.y, elementy: s.elementy });
     });
@@ -640,6 +646,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       wys: strona.wys,
       elementy: u.czarnoBialy ? wSkaliSzarosci(elementy) : elementy,
       glify: polaczGlify(...glify),
+      ...symboleSceny(...symbole),
     });
   }
   return {
@@ -758,10 +765,12 @@ function zbudujMieszane(w: {
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
     const glify: Record<string, DefinicjaGlifu>[] = [];
+    const symbole: (Record<string, DefinicjaSymbolu> | undefined)[] = [];
     const naStronie = karty.filter((c) => c.strona === n);
     for (const c of naStronie) {
       const s = scenaKarty(c.karta);
       glify.push(s.glify);
+      symbole.push(s.symbole);
       // Obrót o 90° zgodnie z ruchem wskazówek: obrócona karta zajmuje (wys × szer) od (x, y).
       elementy.push(
         c.obrocona
@@ -839,6 +848,7 @@ function zbudujMieszane(w: {
       wys: strona.wys,
       elementy: u.czarnoBialy ? wSkaliSzarosci(elementy) : elementy,
       glify: polaczGlify(...glify),
+      ...symboleSceny(...symbole),
     });
   }
   return {

@@ -139,7 +139,10 @@ export async function wyglad(
     await s.getByLabel('Tło', { exact: true }).fill(o.tlo);
   }
   if (o.ramka) {
-    await s.getByLabel('Ramka z linii').check();
+    await s
+      .getByRole('group', { name: 'Ramka z linii', exact: true })
+      .getByRole('button', { name: 'linia', exact: true })
+      .click();
     await s.getByLabel('Grubość linii (mm)').fill(String(o.ramka.grubosc));
     await s.getByLabel('Kolor linii').fill(o.ramka.kolor);
   }

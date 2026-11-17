@@ -1,5 +1,8 @@
+import { useId } from 'react';
 import { t } from '../../i18n';
-import type { Obramowanie, Wezel, WyrownanieOsi } from '../../model/szablon';
+import type { Narozniki, Obramowanie, Wezel, WyrownanieOsi } from '../../model/szablon';
+import { NAROZNIKI_WBUDOWANE } from '../../ozdobniki';
+import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { Liczba, PoleKoloru, PoleOdstepow, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 
 type Zmiana = (f: (w: Wezel) => Wezel, klucz?: string) => void;
@@ -16,6 +19,8 @@ export function PoleRamki<R extends Obramowanie>({
   ramka,
   zmien,
   krawedzie = true,
+  rodzaj = false,
+  narozniki,
 }: {
   etykieta: string;
   ramka: R | undefined;
@@ -25,17 +30,44 @@ export function PoleRamki<R extends Obramowanie>({
    */
   zmien: (f: (r: R | undefined) => R | undefined) => void;
   krawedzie?: boolean;
+  /** Wybór rodzaju ramki (brak / linia / motyw / z obrazu) zamiast pola „włącz”. */
+  rodzaj?: boolean;
+  /** Wybór narożników (przy rodzaju „linia”); brak = bez narożników. */
+  narozniki?: { wartosc: Narozniki | undefined; zmien: (n: Narozniki | undefined) => void };
 }) {
   const zmienRamke = (f: (r: R) => R) => zmien((r) => (r ? f(r) : r));
   return (
     <>
-      <Wybor
-        etykieta={etykieta}
-        wartosc={!!ramka}
-        zmien={(v) =>
-          zmien((r) => (v ? (r ?? ({ grubosc: 0.3, kolor: '#000000' } as R)) : undefined))
-        }
-      />
+      {rodzaj ? (
+        <>
+          <Przelacznik
+            etykieta={etykieta}
+            opcje={[
+              { wartosc: 'brak', tekst: t('ramka.rodzaj.brak') },
+              { wartosc: 'linia', tekst: t('ramka.rodzaj.linia') },
+              { wartosc: 'motyw', tekst: t('ramka.rodzaj.motyw'), wylaczona: true },
+              { wartosc: 'obraz', tekst: t('ramka.rodzaj.obraz'), wylaczona: true },
+            ]}
+            wartosc={ramka ? 'linia' : 'brak'}
+            zmien={(v) => {
+              if (v === 'brak') {
+                zmien(() => undefined);
+                narozniki?.zmien(undefined);
+              } else if (v === 'linia')
+                zmien((r) => r ?? ({ grubosc: 0.3, kolor: '#000000' } as R));
+            }}
+          />
+          <p className="podpis">{t('ramka.wKolejnychEtapach')}</p>
+        </>
+      ) : (
+        <Wybor
+          etykieta={etykieta}
+          wartosc={!!ramka}
+          zmien={(v) =>
+            zmien((r) => (v ? (r ?? ({ grubosc: 0.3, kolor: '#000000' } as R)) : undefined))
+          }
+        />
+      )}
       {ramka && (
         <>
           <div className="dwa-pola">
@@ -55,13 +87,23 @@ export function PoleRamki<R extends Obramowanie>({
           </div>
           <Przelacznik
             etykieta={t('wlasciwosci.stylLinii')}
-            opcje={(['ciagla', 'przerywana', 'kropkowana'] as const).map((s) => ({
+            opcje={(['ciagla', 'przerywana', 'kropkowana', 'podwojna'] as const).map((s) => ({
               wartosc: s,
               tekst: t(`wlasciwosci.linia.${s}`),
             }))}
             wartosc={ramka.styl ?? 'ciagla'}
             zmien={(v) => zmienRamke((r) => (v === 'ciagla' ? bez(r, 'styl') : { ...r, styl: v }))}
           />
+          {ramka.styl === 'podwojna' && (
+            <Liczba
+              etykieta={t('wlasciwosci.przerwa')}
+              wartosc={ramka.przerwa ?? 2 * ramka.grubosc}
+              krok={0.05}
+              max={10}
+              zmien={(v) => zmienRamke((r) => ({ ...r, przerwa: v }))}
+            />
+          )}
+          {narozniki && <WyborNarozniki {...narozniki} kolorLinii={ramka.kolor} />}
           {krawedzie && (
             <fieldset className="krawedzie">
               <legend>{t('wlasciwosci.krawedzie')}</legend>
@@ -90,6 +132,71 @@ export function PoleRamki<R extends Obramowanie>({
         </>
       )}
     </>
+  );
+}
+
+/** Wybór narożnika z biblioteki (miniatury), jego rozmiaru i koloru. */
+function WyborNarozniki({
+  wartosc,
+  zmien,
+  kolorLinii,
+}: {
+  wartosc: Narozniki | undefined;
+  zmien: (n: Narozniki | undefined) => void;
+  kolorLinii: string;
+}) {
+  const idEtykiety = useId();
+  const ustaw = (z: Partial<Narozniki>) => wartosc && zmien({ ...wartosc, ...z });
+  return (
+    <div className="pole-panelu">
+      <span id={idEtykiety}>{t('narozniki.tytul')}</span>
+      <div className="wybor-narozniki" role="group" aria-labelledby={idEtykiety}>
+        <button
+          type="button"
+          aria-pressed={!wartosc}
+          aria-label={t('narozniki.brak')}
+          onClick={() => zmien(undefined)}
+        >
+          <span aria-hidden="true">–</span>
+          <small>{t('narozniki.brak')}</small>
+        </button>
+        {NAROZNIKI_WBUDOWANE.map((e) => (
+          <button
+            key={e.id}
+            type="button"
+            aria-pressed={wartosc?.element === e.id}
+            aria-label={e.nazwa}
+            style={{ color: wartosc?.kolor ?? kolorLinii }}
+            onClick={() =>
+              zmien(wartosc ? { ...wartosc, element: e.id } : { element: e.id, rozmiar: 6 })
+            }
+          >
+            <MiniaturaOzdobnika element={e} />
+            <small>{e.nazwa}</small>
+          </button>
+        ))}
+      </div>
+      {wartosc && (
+        <div className="dwa-pola">
+          <Liczba
+            etykieta={t('narozniki.rozmiar')}
+            wartosc={wartosc.rozmiar}
+            min={1}
+            max={30}
+            krok={0.5}
+            zmien={(v) => ustaw({ rozmiar: v })}
+          />
+          <PoleKoloru
+            etykieta={t('narozniki.kolor')}
+            wartosc={wartosc.kolor}
+            domyslny={kolorLinii}
+            zmien={(v) =>
+              wartosc && zmien(v === undefined ? bez(wartosc, 'kolor') : { ...wartosc, kolor: v })
+            }
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -135,6 +242,11 @@ export function PanelWygladu({ wezel, zmien }: { wezel: Wezel; zmien: Zmiana }) 
           etykieta={t('wlasciwosci.ramka')}
           ramka={wezel.obramowanie}
           krawedzie={!ksztaltSciezki}
+          rodzaj
+          narozniki={{
+            wartosc: wezel.narozniki,
+            zmien: (n) => ustaw('narozniki', n, `narozniki:${id}`),
+          }}
           zmien={(f) =>
             zmien((w) => {
               const r = f(w.obramowanie);

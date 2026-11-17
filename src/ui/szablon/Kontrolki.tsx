@@ -29,7 +29,7 @@ export function Przelacznik<T extends string>({
   zmien,
 }: {
   etykieta: string;
-  opcje: readonly { wartosc: T; tekst: string }[];
+  opcje: readonly { wartosc: T; tekst: string; wylaczona?: boolean }[];
   wartosc: T | undefined;
   zmien: (v: T) => void;
 }) {
@@ -43,6 +43,7 @@ export function Przelacznik<T extends string>({
             key={o.wartosc}
             type="button"
             aria-pressed={wartosc === o.wartosc}
+            disabled={o.wylaczona}
             onClick={() => zmien(o.wartosc)}
           >
             {o.tekst}

@@ -164,3 +164,11 @@ export function kolorSceny(k: string | undefined): string {
 export function czyObrys(o: Obrys | undefined): o is Obrys {
   return o !== undefined && o.grubosc > 0;
 }
+
+/** Fragment sceny ze słownikiem symboli – pusty, gdy żadnego nie użyto (scena bez ozdobników bez zmian). */
+export function symboleSceny(...slowniki: (Record<string, DefinicjaSymbolu> | undefined)[]): {
+  symbole?: Record<string, DefinicjaSymbolu>;
+} {
+  const symbole = polaczSymbole(...slowniki);
+  return Object.keys(symbole).length > 0 ? { symbole } : {};
+}

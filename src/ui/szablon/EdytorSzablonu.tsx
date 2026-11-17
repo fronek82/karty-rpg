@@ -732,6 +732,17 @@ function PanelKarty({
         <PoleRamki
           etykieta={t('wlasciwosci.ramkaKarty')}
           krawedzie={false}
+          rodzaj
+          narozniki={{
+            wartosc: szablon.ramka?.narozniki,
+            zmien: (n) =>
+              zmienSz((s) => {
+                if (!s.ramka) return s;
+                const { narozniki: _n, ...r } = s.ramka;
+                void _n;
+                return { ...s, ramka: n ? { ...r, narozniki: n } : r };
+              }, 'ramka-narozniki'),
+          }}
           ramka={szablon.ramka}
           zmien={(f) =>
             zmienSz((s) => {

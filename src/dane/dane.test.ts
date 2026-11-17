@@ -517,6 +517,47 @@ describe('eksport i import szablonu', () => {
     for (const o of wynik.projekt.zasoby) expect(wynik.zasoby.has(o.id)).toBe(true);
   });
 
+  it('M2b-3: linia podwójna i narożniki przechodzą eksport/import szablonu bez zmian', () => {
+    const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
+    const ozdobny = {
+      ...wzor,
+      ramka: {
+        grubosc: 0.3,
+        kolor: '#2f5d8a',
+        styl: 'podwojna' as const,
+        przerwa: 0.5,
+        narozniki: { element: 'wb:lisc', rozmiar: 6, kolor: '#8b0000' },
+      },
+      korzen: {
+        ...wzor.korzen,
+        obramowanie: { grubosc: 0.3, kolor: '#000000', styl: 'podwojna' as const },
+        narozniki: { element: 'wb:kat', rozmiar: 4 },
+      },
+    };
+    const p: Projekt = {
+      ...projekt,
+      szablony: projekt.szablony.map((s) => (s.id === ozdobny.id ? ozdobny : s)),
+    };
+    const paczka = importujSzablon(eksportujSzablon(p, zasoby, ozdobny.id).bajty);
+    expect(paczka.szablon).toEqual(ozdobny);
+    const caly = importujProjekt(eksportujProjekt(p, zasoby));
+    expect(caly.projekt.szablony.find((s) => s.id === ozdobny.id)).toEqual(ozdobny);
+  });
+
+  it('M2b-3: niepoprawne narożniki są odrzucane', () => {
+    const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
+    const zly: Projekt = {
+      ...projekt,
+      szablony: [
+        {
+          ...wzor,
+          ramka: { grubosc: 0.3, kolor: '#000', narozniki: { element: 'x', rozmiar: -1 } },
+        },
+      ],
+    };
+    expect(() => importujProjekt(eksportujProjekt(zly, zasoby))).toThrow();
+  });
+
   it('ostrzega o czcionce z własnego pliku', () => {
     const wlasny = structuredClone(projekt);
     for (const o of wlasny.zasoby) if (o.rodzaj === 'czcionka') o.zrodlo = 'wlasna';

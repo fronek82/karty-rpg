@@ -15,6 +15,8 @@ import {
   type PoleTabela,
   type PoleTekst,
   type PoleWartosc,
+  type Kolor,
+  type Narozniki,
   type RamkaKarty,
   type StylLinii,
   type StylTekstu,
@@ -24,7 +26,16 @@ import {
 } from '../model/szablon';
 import type { RejestrCzcionek } from './czcionki';
 import { konturIkony } from './ikony';
-import type { DefinicjaGlifu, ElementSceny, Kontur, Obrys, Scena } from './scena';
+import { narozniki as rysujNarozniki } from '../ozdobniki/narozniki';
+import {
+  symboleSceny,
+  type DefinicjaGlifu,
+  type DefinicjaSymbolu,
+  type ElementSceny,
+  type Kontur,
+  type Obrys,
+  type Scena,
+} from './scena';
 import {
   parsujFormatowanie,
   tekstNaScene,
@@ -60,7 +71,8 @@ export interface Ostrzezenie {
     | 'brak-obrazu'
     | 'brak-znakow'
     | 'brak-miejsca-na-obraz'
-    | 'nieznane-pole-do-omijania';
+    | 'nieznane-pole-do-omijania'
+    | 'nieznany-element-ozdobny';
   szczegoly?: string;
 }
 
@@ -222,6 +234,21 @@ function obrys(o: Obramowanie): Obrys | undefined {
     : { kolor: o.kolor, grubosc: o.grubosc };
 }
 
+/**
+ * Odsunięcia osi kolejnych linii od krawędzi (mm): jedna linia – pół grubości; `podwojna` – dwie
+ * linie o grubości `grubosc` rozdzielone przerwą (domyślnie 2× grubość).
+ */
+export function osieLinii(o: { grubosc: Mm; styl?: StylLinii; przerwa?: Mm }): Mm[] {
+  const g = o.grubosc;
+  if (o.styl !== 'podwojna') return [g / 2];
+  return [g / 2, g / 2 + g + (o.przerwa ?? 2 * g)];
+}
+
+/** Całkowita grubość obramowania: dla `podwojna` obie linie z przerwą. */
+export function pelnaGrubosc(o: { grubosc: Mm; styl?: StylLinii; przerwa?: Mm }): Mm {
+  return o.styl === 'podwojna' ? 2 * o.grubosc + (o.przerwa ?? 2 * o.grubosc) : o.grubosc;
+}
+
 /** Renderuje kartę na scenę (mm). Silnik nie zależy od DOM – działa w testach, workerze i UI. */
 export function renderujKarte(
   szablon: Szablon,
@@ -231,8 +258,17 @@ export function renderujKarte(
   const { szer, wys } = wymiaryKarty(szablon, karta);
   const dane = daneZParametrami(szablon, karta.dane);
   const glify: Record<string, DefinicjaGlifu> = {};
+  const symbole: Record<string, DefinicjaSymbolu> = {};
   const elementy: ElementSceny[] = [];
   const ostrzezenia: Ostrzezenie[] = [];
+  /** Narożniki z biblioteki: elementy na scenę, rysunek do słownika symboli, ostrzeżenie o nieznanym. */
+  const dodajNarozniki = (n: Narozniki, ramka: Ramka, kolor: Kolor, id: string) => {
+    const w = rysujNarozniki(n, ramka, kolor);
+    elementy.push(...w.elementy);
+    Object.assign(symbole, w.symbole);
+    if (w.nieznany)
+      ostrzezenia.push({ pole: id, komunikat: 'nieznany-element-ozdobny', szczegoly: w.nieznany });
+  };
 
   const kontekst: KontekstUkladu = {
     czyUkryty: (w) =>
@@ -368,13 +404,26 @@ export function renderujKarte(
     }
     u.dzieci.forEach(rysuj);
     if (w.obramowanie) elementy.push(...rysujObramowanie(w.obramowanie, obszar, promien, ksztalt));
+    if (w.narozniki) dodajNarozniki(w.narozniki, obszar, w.obramowanie?.kolor ?? CZARNY, w.id);
   };
   rysuj(korzen);
-  if (szablon.ramka)
-    elementy.push(...rysujRamkeKarty(szablon.ramka, szer, wys, szablon.promienRogow));
+  if (szablon.ramka) {
+    const r = szablon.ramka;
+    elementy.push(...rysujRamkeKarty(r, szer, wys, szablon.promienRogow));
+    if (r.narozniki) {
+      // Narożniki na zewnętrznej krawędzi ramki (po odsunięciu), nad linią.
+      const o = r.odsuniecie ?? 0;
+      dodajNarozniki(
+        r.narozniki,
+        { x: o, y: o, szer: szer - 2 * o, wys: wys - 2 * o },
+        r.kolor,
+        'ramka-karty',
+      );
+    }
+  }
 
   return {
-    scena: { szer, wys, elementy, glify },
+    scena: { szer, wys, elementy, glify, ...symboleSceny(symbole) },
     ostrzezenia,
     wezly: [...ulozone.values()].map((u) => ({
       id: u.wezel.id,
@@ -395,11 +444,15 @@ function rysujRamkeKarty(
 ): ElementSceny[] {
   const s = obrys({ grubosc: r.grubosc, kolor: r.kolor, styl: r.styl });
   if (!s) return [];
-  const o = (r.odsuniecie ?? 0) + r.grubosc / 2;
-  if (szer - 2 * o <= 0 || wys - 2 * o <= 0) return [];
-  const promien = r.promien ?? Math.max(0, (promienRogow ?? 0) - o);
-  return [
-    {
+  const wynik: ElementSceny[] = [];
+  for (const os of osieLinii(r)) {
+    const o = (r.odsuniecie ?? 0) + os;
+    if (szer - 2 * o <= 0 || wys - 2 * o <= 0) continue;
+    const promien =
+      r.promien !== undefined
+        ? Math.max(0, r.promien - (os - r.grubosc / 2))
+        : Math.max(0, (promienRogow ?? 0) - o);
+    wynik.push({
       typ: 'prostokat',
       x: o,
       y: o,
@@ -407,8 +460,9 @@ function rysujRamkeKarty(
       wys: wys - 2 * o,
       ...(promien > 0 ? { promien } : {}),
       obrys: s,
-    },
-  ];
+    });
+  }
+  return wynik;
 }
 
 /**
@@ -493,40 +547,51 @@ function rysujObramowanie(
   promien: Mm | undefined,
   ksztalt?: KsztaltSciezki,
 ): ElementSceny[] {
-  const g = o.grubosc;
   const s = obrys(o);
   if (!s) return [];
+  return osieLinii(o).flatMap((d) => jednaLiniaObramowania(o, s, d, u, promien, ksztalt));
+}
+
+/** Jedna linia obramowania, której oś leży `d` mm od krawędzi węzła. */
+function jednaLiniaObramowania(
+  o: Obramowanie,
+  s: Obrys,
+  d: Mm,
+  u: Ramka,
+  promien: Mm | undefined,
+  ksztalt?: KsztaltSciezki,
+): ElementSceny[] {
   // Romb, tarcza, sześciokąt – zawsze pełny obrys (wybór krawędzi dotyczy prostokątów).
   if (ksztalt && ksztalt !== 'sciety')
-    return [{ typ: 'sciezka', kontur: konturKsztaltu(ksztalt, u, g / 2), obrys: s }];
+    return [{ typ: 'sciezka', kontur: konturKsztaltu(ksztalt, u, d), obrys: s }];
   const k = o.krawedzie;
   if (!k && ksztalt === 'sciety') {
     const wew = {
-      x: u.x + g / 2,
-      y: u.y + g / 2,
-      szer: Math.max(0, u.szer - g),
-      wys: Math.max(0, u.wys - g),
+      x: u.x + d,
+      y: u.y + d,
+      szer: Math.max(0, u.szer - 2 * d),
+      wys: Math.max(0, u.wys - 2 * d),
     };
-    // Ścięcie mierzone na zewnętrznej krawędzi (jak tło). Ośmiokąt przesunięty do środka o g/2
-    // ma ścięcie mniejsze o (2 − √2)·g/2 – wtedy zewnętrzna krawędź linii pokrywa się z tłem.
+    // Ścięcie mierzone na zewnętrznej krawędzi (jak tło). Ośmiokąt przesunięty do środka o d
+    // ma ścięcie mniejsze o (2 − √2)·d – wtedy zewnętrzna krawędź linii pokrywa się z tłem.
     return [
       {
         typ: 'sciezka',
-        kontur: konturScietego(wew, Math.max(0, (promien ?? 0) - ((2 - Math.SQRT2) * g) / 2)),
+        kontur: konturScietego(wew, Math.max(0, (promien ?? 0) - (2 - Math.SQRT2) * d)),
         obrys: s,
       },
     ];
   }
   if (!k) {
-    // Linia w całości wewnątrz węzła: przesunięta o pół grubości.
+    // Linia w całości wewnątrz węzła: przesunięta o `d` od krawędzi.
     return [
       {
         typ: 'prostokat',
-        x: u.x + g / 2,
-        y: u.y + g / 2,
-        szer: Math.max(0, u.szer - g),
-        wys: Math.max(0, u.wys - g),
-        promien: promien === undefined ? undefined : Math.max(0, promien - g / 2),
+        x: u.x + d,
+        y: u.y + d,
+        szer: Math.max(0, u.szer - 2 * d),
+        wys: Math.max(0, u.wys - 2 * d),
+        promien: promien === undefined ? undefined : Math.max(0, promien - d),
         obrys: s,
       },
     ];
@@ -534,12 +599,12 @@ function rysujObramowanie(
   const l = u.x;
   const p = u.x + u.szer;
   const gr = u.y;
-  const d = u.y + u.wys;
+  const dn = u.y + u.wys;
   const linie: ElementSceny[] = [];
-  if (k.gora) linie.push({ typ: 'linia', x1: l, y1: gr + g / 2, x2: p, y2: gr + g / 2, obrys: s });
-  if (k.dol) linie.push({ typ: 'linia', x1: l, y1: d - g / 2, x2: p, y2: d - g / 2, obrys: s });
-  if (k.lewo) linie.push({ typ: 'linia', x1: l + g / 2, y1: gr, x2: l + g / 2, y2: d, obrys: s });
-  if (k.prawo) linie.push({ typ: 'linia', x1: p - g / 2, y1: gr, x2: p - g / 2, y2: d, obrys: s });
+  if (k.gora) linie.push({ typ: 'linia', x1: l, y1: gr + d, x2: p, y2: gr + d, obrys: s });
+  if (k.dol) linie.push({ typ: 'linia', x1: l, y1: dn - d, x2: p, y2: dn - d, obrys: s });
+  if (k.lewo) linie.push({ typ: 'linia', x1: l + d, y1: gr, x2: l + d, y2: dn, obrys: s });
+  if (k.prawo) linie.push({ typ: 'linia', x1: p - d, y1: gr, x2: p - d, y2: dn, obrys: s });
   return linie;
 }
 
@@ -606,8 +671,8 @@ function zmierzPole(
       // Długość 0 – linię wydłuża rozciągnięcie w rodzicu; inaczej separator rozpychałby
       // kontenery mierzone wg treści.
       return pole.kierunek === 'poziomy'
-        ? { szer: 0, wys: pole.grubosc }
-        : { szer: pole.grubosc, wys: 0 };
+        ? { szer: 0, wys: pelnaGrubosc({ ...pole, styl: pole.stylLinii }) }
+        : { szer: pelnaGrubosc({ ...pole, styl: pole.stylLinii }), wys: 0 };
     case 'tabela': {
       if (pole.kolumny.length === 0) return { szer: 0, wys: 0 };
       const t = ukladTabeli(pole, dane, ctx, skalaTabeli(pole, dane, ctx, ogr.szer));
@@ -793,11 +858,28 @@ function rysujPole(
       if (!s) return [];
       const cx = ramka.x + ramka.szer / 2;
       const cy = ramka.y + ramka.wys / 2;
-      return [
+      // Linia podwójna: dwie linie symetrycznie względem środka pola.
+      const polowa = (pelnaGrubosc({ ...pole, styl: pole.stylLinii }) - pole.grubosc) / 2;
+      const odsuniecia = pole.stylLinii === 'podwojna' ? [-polowa, polowa] : [0];
+      return odsuniecia.map((d) =>
         pole.kierunek === 'poziomy'
-          ? { typ: 'linia', x1: ramka.x, y1: cy, x2: ramka.x + ramka.szer, y2: cy, obrys: s }
-          : { typ: 'linia', x1: cx, y1: ramka.y, x2: cx, y2: ramka.y + ramka.wys, obrys: s },
-      ];
+          ? {
+              typ: 'linia',
+              x1: ramka.x,
+              y1: cy + d,
+              x2: ramka.x + ramka.szer,
+              y2: cy + d,
+              obrys: s,
+            }
+          : {
+              typ: 'linia',
+              x1: cx + d,
+              y1: ramka.y,
+              x2: cx + d,
+              y2: ramka.y + ramka.wys,
+              obrys: s,
+            },
+      );
     }
     case 'tabela':
       return rysujTabele(pole, ramka, dane, ctx, glify, ostrzezenia);
@@ -1023,7 +1105,6 @@ function rysujTabele(
   const l = pole.linie;
   const s = l ? obrys({ grubosc: l.grubosc, kolor: l.kolor, styl: l.styl }) : undefined;
   if (l && s) {
-    const g = l.grubosc;
     let lx = x;
     for (const sz of t.kolumny.slice(0, -1)) {
       lx += sz;
@@ -1035,14 +1116,15 @@ function rysujTabele(
       wynik.push({ typ: 'linia', x1: x, y1: ly, x2: x + t.szer, y2: ly, obrys: s });
     }
     if (l.zewnetrzne !== false)
-      wynik.push({
-        typ: 'prostokat',
-        x: x + g / 2,
-        y: y + g / 2,
-        szer: Math.max(0, t.szer - g),
-        wys: Math.max(0, t.wys - g),
-        obrys: s,
-      });
+      for (const d of osieLinii(l))
+        wynik.push({
+          typ: 'prostokat',
+          x: x + d,
+          y: y + d,
+          szer: Math.max(0, t.szer - 2 * d),
+          wys: Math.max(0, t.wys - 2 * d),
+          obrys: s,
+        });
   }
   return wynik;
 }

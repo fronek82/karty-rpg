@@ -180,7 +180,10 @@ test('A. karta czaru: kolorowa karta, białe panele, siatka 2×2 etykieta/warto�
   // Ramka całej karty i odstępy karty.
   await karta(page);
   const r = await sekcja(page, 'Ramka karty');
-  await r.getByLabel('Ramka karty', { exact: true }).check();
+  await r
+    .getByRole('group', { name: 'Ramka karty', exact: true })
+    .getByRole('button', { name: 'linia', exact: true })
+    .click();
   await r.getByLabel('Grubość linii (mm)').fill('0.3');
   await r.getByLabel('Kolor linii').fill('#ffffff');
   await r.getByLabel('Odsunięcie od krawędzi (mm)').fill('1');
@@ -257,7 +260,10 @@ test('B. blok statystyk: tytuł kapitalikami, tabela cech, separator, akapity wy
 
   await karta(page);
   const r = await sekcja(page, 'Ramka karty');
-  await r.getByLabel('Ramka karty', { exact: true }).check();
+  await r
+    .getByRole('group', { name: 'Ramka karty', exact: true })
+    .getByRole('button', { name: 'linia', exact: true })
+    .click();
   await r.getByLabel('Grubość linii (mm)').fill('0.4');
   await r.getByLabel('Kolor linii').fill('#5a4630');
   await sekcja(page, 'Układ karty (odstępy, rozłożenie, wygląd)');
