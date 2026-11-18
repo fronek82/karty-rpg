@@ -156,7 +156,8 @@ Aplikacja działa pod adresem `http://localhost:5173/karty-rpg/`.
 | `npm run format:check`  | sprawdzenie formatowania (Prettier)                  |
 
 Zrzuty ekranu w instrukcji (`public/instrukcja-zrzuty/<pl|en>/`) odświeżasz po zmianie wyglądu
-ekranów poleceniem `ZRZUTY_INSTRUKCJI=1 npx playwright test testy/zrzuty-instrukcji.spec.ts`.
+ekranów poleceniem `ZRZUTY_INSTRUKCJI=1 npx playwright test testy/zrzuty-instrukcji.spec.ts`
+(potem opcjonalnie `python3 narzedzia/kwantyzuj-zrzuty.py` zmniejsza pliki PNG).
 Treść instrukcji jest w `instrukcja/index.html`; test `src/instrukcja/tresc.test.ts` pilnuje, żeby
 nazwy przycisków w cudzysłowach zgadzały się z interfejsem, oraz stylu tekstu.
 

@@ -12,7 +12,7 @@ import {
 /**
  * Generator zrzutów ekranu do instrukcji (D9). Domyślnie pomijany; uruchom:
  *   ZRZUTY_INSTRUKCJI=1 npx playwright test testy/zrzuty-instrukcji.spec.ts
- * Zapisuje `public/instrukcja-zrzuty/<język>/<nazwa>.png` (1280×800, skala 1, jasny motyw, świeża
+ * Zapisuje `public/instrukcja-zrzuty/<język>/<nazwa>.png` (1440×900, skala 1, jasny motyw, świeża
  * przeglądarka bez zapisanych projektów, więc dane są zawsze takie same). Napisy interfejsu bierze
  * ze słowników, więc test nie psuje się po zmianie brzmienia przycisku.
  */
@@ -87,6 +87,11 @@ for (const jezyk of JEZYKI_ZRZUTOW) {
     test('start', async ({ page }) => {
       await page.goto('./');
       await expect(page.getByRole('heading', { name: t('start.mojeProjekty') })).toBeVisible();
+      // Bez numeru wersji w stopce (zrzut ma być taki sam po każdej zmianie wersji).
+      await page
+        .locator('.stopka span')
+        .first()
+        .evaluate((el, nazwa) => (el.textContent = nazwa), t('aplikacja.nazwa'));
       await zapisz(page, 'start');
     });
 

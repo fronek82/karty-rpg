@@ -363,7 +363,7 @@ for (const kolor of ['light', 'dark'] as const) {
 }
 
 test.describe('zrzuty ekranu w instrukcji', () => {
-  test('wszystkie pliki istnieją, mają 1280×800 px i są lekkie', () => {
+  test('wszystkie pliki istnieją, mają 1440×900 px i są lekkie', () => {
     for (const j of JEZYKI_ZRZUTOW)
       for (const nazwa of NAZWY_ZRZUTOW) {
         const sciezka = sciezkaZrzutu(j, nazwa);
@@ -422,7 +422,7 @@ test.describe('zrzuty ekranu w instrukcji', () => {
       })),
     );
     for (const w of wymiary) {
-      expect(w.a).toBe('1280x800');
+      expect(w.a).toBe('1440x900');
       expect(w.b).toBeCloseTo(1.6, 1);
     }
   });

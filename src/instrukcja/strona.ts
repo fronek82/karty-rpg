@@ -68,6 +68,8 @@ function zastosujJezyk(jezyk: Jezyk, odswiezAdres = true): void {
     b.setAttribute('aria-pressed', String(b.dataset.jezykPrzycisk === jezyk));
   });
   zastosujEtykiety(jezyk);
+  const opis = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+  if (opis) opis.content = opis.getAttribute(`data-${jezyk}`) ?? opis.content;
   przepiszHasz(jezyk);
   if (odswiezAdres) {
     // `?lang=` ma pierwszeństwo przy ładowaniu – adres odzwierciedla bieżący wybór.
@@ -137,7 +139,12 @@ function obserwujSekcje(): void {
 
 /** Fokus na nagłówku docelowym: czytnik i Tab zaczynają od niego, a nie od początku strony. */
 function fokusNaCelu(): void {
-  const id = decodeURIComponent(window.location.hash.slice(1));
+  let id: string;
+  try {
+    id = decodeURIComponent(window.location.hash.slice(1));
+  } catch {
+    return; // uszkodzony hasz (np. „#%E0%A4%A”) – zostajemy na początku strony
+  }
   if (!id) return;
   const cel = document.getElementById(id);
   if (!cel) return;

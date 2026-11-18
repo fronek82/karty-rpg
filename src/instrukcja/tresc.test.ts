@@ -38,6 +38,20 @@ const SKROTY: Record<Jezyk, string[]> = {
   en: ['Add a card here'],
 };
 
+/**
+ * Ograniczenie testu: sprawdza, że nazwa jest GDZIEKOLWIEK w słowniku interfejsu, a nie że stoi w tym
+ * miejscu, które opisuje zdanie (np. „Eksportuj” przy szablonie i przy projekcie to ten sam tekst, ale
+ * dwa różne przyciski). Dla kluczowych nazw poniżej sprawdzamy dodatkowo dokładny klucz słownika.
+ */
+const KLUCZOWE: Record<string, (j: Jezyk) => string> = {
+  'kartka.ustawienia': (j) => SLOWNIKI[j]['kartka.ustawienia']!,
+  'projekty.eksportuj': (j) => SLOWNIKI[j]['projekty.eksportuj']!,
+  'arkusze.pobierzPdf': (j) => SLOWNIKI[j]['arkusze.pobierzPdf']!,
+  'start.importujPliki': (j) => SLOWNIKI[j]['start.importujPliki']!,
+  'start.stworzDo': (j) =>
+    SLOWNIKI[j]['start.stworzDo']!.replace('{gra}', SLOWNIKI[j]['gra.mausritter.nazwaDo']!),
+};
+
 const CUDZYSLOW: Record<Jezyk, RegExp> = { pl: /„([^„”]+)”/g, en: /“([^“”]+)”/g };
 
 /** Bez ozdobników z początku (＋ ⤒ ✎ ← →…) i końca (… ► ▾) – tak, jak nazwy podaje instrukcja. */
@@ -86,6 +100,12 @@ describe.each(JEZYKI)('nazwy w cudzysłowach (%s) istnieją w interfejsie', (j) 
         !SKROTY[j].includes(n),
     );
     expect(brakujace).toEqual([]);
+  });
+
+  it('kluczowe nazwy występują i zgadzają się z dokładnym kluczem słownika', () => {
+    const cytaty = new Set(wszystkie);
+    for (const [klucz, wartosc] of Object.entries(KLUCZOWE))
+      expect(cytaty.has(goly(wartosc(j))), `${klucz}: „${wartosc(j)}”`).toBe(true);
   });
 
   it('skróty z listy wyjątków są początkiem tekstów interfejsu', () => {
@@ -173,6 +193,16 @@ const ZAKAZANE: Record<Jezyk, string[]> = {
     'doskonał',
     'mamy nadzieję',
     'nie przegap',
+    'umożliwia',
+    'ułatwi',
+    'intuicyjn',
+    'łatwo i szybko',
+    'pamiętaj, że',
+    'co więcej',
+    'ponadto',
+    'podsumowując',
+    'zachęcamy',
+    'nie martw się',
   ],
   en: [
     'dive into',
@@ -200,6 +230,20 @@ const ZAKAZANE: Record<Jezyk, string[]> = {
     'amazing',
     'simply',
     'we hope',
+    'easily',
+    'intuitive',
+    'powerful',
+    'streamline',
+    'ensure',
+    'please note',
+    'note that',
+    'feel free',
+    'moreover',
+    'furthermore',
+    'additionally',
+    'utilize',
+    'in order to',
+    'crucial',
   ],
 };
 
@@ -258,6 +302,35 @@ describe.each(JEZYKI)('styl treści (%s)', (j) => {
   });
 });
 
+// ---------- styl całej strony (pasek, spis, komunikat noscript, treść) ----------
+
+describe('styl całej strony', () => {
+  const kopia = dok.body.cloneNode(true) as HTMLElement;
+  kopia.querySelectorAll('script, style').forEach((e) => e.remove());
+  // Krzywy apostrof ’ traktujemy jak prosty, żeby lista zakazanych zwrotów działała dla obu.
+  const calosc = tekst(kopia).replace(/’/g, "'");
+  const atrybuty = [...dok.body.querySelectorAll('[alt],[title],[aria-label]')]
+    .map(
+      (e) => `${e.getAttribute('alt')} ${e.getAttribute('title')} ${e.getAttribute('aria-label')}`,
+    )
+    .join(' ');
+
+  it('bez emoji, ikon, wykrzykników i zakazanych zwrotów (obie wersje językowe)', () => {
+    expect(IKONY.exec(calosc)?.[0]).toBeUndefined();
+    expect(IKONY.exec(atrybuty)?.[0]).toBeUndefined();
+    expect(/.{0,30}!.{0,10}/.exec(`${calosc} ${atrybuty}`)?.[0]).toBeUndefined();
+    const maly = ` ${calosc.toLowerCase()}`;
+    const zakazane = [...ZAKAZANE.pl, ...ZAKAZANE.en];
+    expect(zakazane.filter((z) => maly.includes(z.startsWith('oto ') ? ` ${z}` : z))).toEqual([]);
+  });
+
+  it('bez pauzy i półpauzy w zdaniach (dozwolone tylko wewnątrz nazw z interfejsu w cudzysłowach)', () => {
+    // Nazwy interfejsu mają półpauzy (np. „Obrazy stron – JPG, 300 dpi”), więc cytaty pomijamy.
+    const bezCytatow = calosc.replace(/„[^„”]*”|“[^“”]*”/g, '');
+    expect(/.{0,25}[–—].{0,25}/.exec(bezCytatow)?.[0]).toBeUndefined();
+  });
+});
+
 // ---------- struktura ----------
 
 describe('parytet sekcji PL ↔ EN', () => {
@@ -275,6 +348,28 @@ describe('parytet sekcji PL ↔ EN', () => {
         expect(h.id).toMatch(new RegExp(`^${j}-`));
     const wszystkie = [...dok.querySelectorAll('[id]')].map((e) => e.id);
     expect(new Set(wszystkie).size).toBe(wszystkie.length);
+  });
+
+  /** Liczba akapitów, pozycji list i rysunków pod każdym nagłówkiem h2/h3 (do następnego nagłówka). */
+  const zawartosc = (j: Jezyk) => {
+    const wynik = new Map<string, { p: number; li: number; figure: number }>();
+    let klucz = '';
+    for (const el of artykul(j).children) {
+      if (/^H[23]$/.test(el.tagName)) {
+        klucz = el.id.replace(/^(pl|en)-/, '');
+        wynik.set(klucz, { p: 0, li: 0, figure: 0 });
+      } else if (klucz) {
+        const w = wynik.get(klucz)!;
+        if (el.tagName === 'P') w.p++;
+        if (el.tagName === 'FIGURE') w.figure++;
+        w.li += el.querySelectorAll(':scope > li').length;
+      }
+    }
+    return Object.fromEntries(wynik);
+  };
+
+  it('w każdej sekcji tyle samo akapitów, pozycji list i rysunków', () => {
+    expect(zawartosc('en')).toEqual(zawartosc('pl'));
   });
 
   it('każdy nagłówek ma w treści tyle samo rysunków i list w obu językach', () => {
@@ -319,8 +414,8 @@ describe('zrzuty ekranu w treści', () => {
     for (const f of rysunki) {
       const img = f.querySelector('img')!;
       expect(img.getAttribute('alt')!.length).toBeGreaterThan(15);
-      expect(img.getAttribute('width')).toBe('1280');
-      expect(img.getAttribute('height')).toBe('800');
+      expect(img.getAttribute('width')).toBe('1440');
+      expect(img.getAttribute('height')).toBe('900');
       expect(img.getAttribute('loading')).toBe('lazy');
       expect(tekst(f.querySelector('figcaption')!).length).toBeGreaterThan(15);
       // Alt opisuje obraz, a podpis go uzupełnia – nie powtarzają się.
@@ -340,6 +435,7 @@ describe('strona', () => {
 
   it('tokeny kolorów są ładowane z aplikacji, a CSS i skrypt nie mają literałów #rrggbb', () => {
     expect(zrodlo).toContain('href="/src/ui/tokeny.css"');
+    expect(zrodlo).toContain('href="/src/ui/pasek.css"');
     for (const plik of ['instrukcja.css', 'strona.ts', 'wybor.ts']) {
       const kod = readFileSync(resolve('src/instrukcja', plik), 'utf8');
       expect(kod, plik).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);

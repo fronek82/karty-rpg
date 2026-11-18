@@ -13,7 +13,7 @@ export const NAZWY_ZRZUTOW = [
 ] as const;
 
 /** Rozmiar okna przeglądarki, a więc i zrzutu (deviceScaleFactor 1). */
-export const ROZMIAR_ZRZUTU = { width: 1280, height: 800 } as const;
+export const ROZMIAR_ZRZUTU = { width: 1440, height: 900 } as const;
 
 /** Najwyżej tyle bajtów na jeden plik PNG (repozytorium ma zostać lekkie). */
 export const MAKS_BAJTOW_ZRZUTU = 250 * 1024;

@@ -1,7 +1,7 @@
 /*
  * Styl strony instrukcji (instrukcja/index.html). Kolory wyłącznie z tokenów (src/ui/tokeny.css,
- * ładowanych osobno w index.html), bez literałów #rrggbb. Pasek górny odtwarza pasek aplikacji
- * (src/ui/App.css: .naglowek, .seg, .przycisk-kontur); układ strony według makiety
+ * ładowanych osobno w index.html), bez literałów #rrggbb. Pasek górny jest wspólny z aplikacją
+ * (src/ui/pasek.css, ładowany osobno w index.html); układ strony według makiety
  * docs/obrazy/makieta-ui-5-instrukcja-jasny.png.
  */
 
@@ -50,15 +50,6 @@ html[lang='en'] [data-jezyk='pl'] {
   display: none;
 }
 
-.ukryte {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* Link „Przejdź do treści”: widoczny dopiero po sfokusowaniu. */
 .pomin {
   position: absolute;
@@ -79,111 +70,18 @@ html[lang='en'] [data-jezyk='pl'] {
 }
 
 /* ---------- pasek górny ---------- */
-.naglowek {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-  min-height: 3.25rem;
-  padding: 0.5rem 1.25rem;
-  background: var(--pasek);
-  color: var(--pasek-tekst);
-  box-shadow: var(--cien-paska);
-}
-
-.naglowek .odstep {
-  flex: 1;
-}
-
-.naglowek a.logo {
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: 0.01em;
-  text-decoration: none;
-  color: var(--pasek-tekst);
-}
-
+/* Wygląd paska (.naglowek, .narzedzia-paska, .przycisk-kontur, .seg) jest we wspólnym src/ui/pasek.css. */
 .naglowek a.powrot {
   color: var(--pasek-tekst);
 }
 
-.naglowek :is(a, button):focus-visible {
-  outline: 3px solid var(--pasek-tekst);
-  outline-offset: 2px;
-}
-
-.narzedzia-paska {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-left: auto;
-}
-
-.przycisk-kontur {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 2.1rem;
-  padding: 0 0.85rem;
-  font-weight: 500;
-  color: var(--pasek-tekst);
-  border: 1.5px solid var(--pasek-tekst);
-  border-radius: 0.4rem;
-}
-
-/* Bieżąca strona: podświetlona i podkreślona (jak w makiecie). */
-.przycisk-kontur[aria-current='page'] {
+/* Bieżąca strona: podświetlona i podkreślona (jak w makiecie), bez reakcji na najechanie. */
+.przycisk-kontur[aria-current='page'],
+.przycisk-kontur[aria-current='page']:hover {
   background: color-mix(in srgb, var(--pasek-tekst) 20%, transparent);
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 4px;
-}
-
-.seg {
-  display: inline-flex;
-  height: 2.1rem;
-  overflow: hidden;
-  border: 1.5px solid var(--pasek-tekst);
-  border-radius: 0.4rem;
-}
-
-.seg button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.5rem;
-  padding: 0 0.7rem;
-  font: inherit;
-  font-weight: 600;
-  color: var(--pasek-tekst);
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  cursor: pointer;
-}
-
-.seg button + button {
-  border-left: 1.5px solid var(--pasek-tekst);
-}
-
-.seg button:hover {
-  background: color-mix(in srgb, black 22%, var(--pasek));
-}
-
-.seg button[aria-pressed='true'],
-.seg button[aria-pressed='true']:hover {
-  background: var(--pasek-tekst);
-  color: var(--pasek);
-}
-
-.seg button:focus-visible {
-  outline-offset: -4px;
-}
-
-.seg svg {
-  display: block;
-  width: 1.1rem;
-  height: 1.1rem;
 }
 
 /* ---------- układ: spis treści + treść ---------- */
@@ -354,4 +252,12 @@ main:focus {
   margin-top: 0.4rem;
   font-size: 0.9rem;
   color: var(--tekst-przygaszony);
+}
+
+/* Komunikat <noscript> nad paskiem. */
+.bez-js {
+  margin: 0;
+  padding: 0.5rem 1.25rem;
+  background: var(--tlo-panelu);
+  border-bottom: 1px solid var(--obramowanie);
 }
