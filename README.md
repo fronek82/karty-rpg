@@ -1,7 +1,7 @@
 # Karty RPG
 
 Aplikacja przeglądarkowa do projektowania i drukowania kart do gier RPG i planszowych.
-Specyfikacja: [`SPEC.md`](SPEC.md), bieżący plan: [`docs/plan-M2.md`](docs/plan-M2.md).
+Specyfikacja: [`SPEC.md`](SPEC.md), plany: [`docs/plan-M2.md`](docs/plan-M2.md), [`docs/plan-M2b.md`](docs/plan-M2b.md).
 
 **Aplikacja online:** <https://fronek82.github.io/karty-rpg/>. Działa w całości w przeglądarce;
 projekty zostają na Twoim komputerze (IndexedDB).
@@ -48,6 +48,79 @@ projekty zostają na Twoim komputerze (IndexedDB).
 
 Przykładowe szablony do wypróbowania (do testów, nie gotowe pakiety gier):
 [`docs/przyklady/`](docs/przyklady/).
+
+## Ozdobniki
+
+Ramki, narożniki i separatory z biblioteki albo z własnych plików SVG – w podglądzie i w PDF wyglądają
+tak samo (powtarzane kafelki trafiają do PDF tylko raz).
+
+1. **Ramka karty**: w edytorze szablonu zaznacz **Karta** → sekcja „Ramka karty”. Rodzaje: **brak**,
+   **linia** (ciągła, przerywana, kropkowana, **podwójna** – przerwę ustawisz osobno), **motyw**
+   (pnącze, przeplot, łuski, runy, łańcuch, gwiazdki; szerokość pasa, kolor, szyny, odsunięcie)
+   i **z obrazu (9-slice)**. Ta sama ramka jest w „Wyglądzie” każdego pola i panelu.
+2. **Narożniki** (liść, okucie, gwiazda, węzeł, zawijas, kątownik): wybierz miniaturę w „Narożniki”
+   i ustaw rozmiar – pasują do linii i do motywu. Promień zaokrąglenia dotyczy tylko linii; motyw biegnie
+   po prostych bokach.
+   ![Ramka z motywu i narożnikami](docs/obrazy/m2b-3-ramka-narozniki.png)
+   ![Motywy](docs/obrazy/m2b-4-motywy.png)
+3. **Separator ozdobny**: **＋ Dodaj** → „Separator z zakończeniami” (albo zwykły „Separator” i w jego
+   właściwościach: rysunek linia / motyw, zakończenia, środek, długość w mm lub %). Działa poziomo
+   w kolumnie i pionowo w wierszu.
+   ![Separatory](docs/obrazy/m2b-5-separatory.png)
+4. **Własne SVG i biblioteka**: link **„Biblioteka ozdobników”** w edytorze → **Importuj SVG…**. Plik jest
+   sprawdzany (skrypty, obrazy i odwołania zewnętrzne są usuwane, tekst trzeba zamienić na krzywe,
+   limit 512 KB). Wybierz, do czego element służy – kafelek motywu, narożnik, zakończenie, środek
+   separatora, **kształt wartości** albo **ramka 9-slice** – i kolor: jednolity (kolorowalny) albo
+   z pliku. Elementy są w projekcie i jadą z eksportem projektu oraz pliku szablonu.
+   ![Biblioteka ozdobników](docs/obrazy/m2b-6-biblioteka-ozdobnikow.png)
+5. **Ramka 9-slice z PNG lub SVG**: w bibliotece wgraj obraz, ustaw cztery wcięcia (pola liczb albo
+   przeciągane linie w podglądzie), sposób wypełnienia boków (rozciągnij / powtarzaj równo) i środka.
+   Potem w „Ramka karty” wybierz **z obrazu (9-slice)** i grubość w mm. Aplikacja ostrzega,
+   gdy obraz po przeskalowaniu ma poniżej 300 dpi.
+   ![Ramka 9-slice](docs/obrazy/m2b-7-ramka-9slice.png)
+   ![Przykład: ozdobna karta](docs/obrazy/m2b-7-przyklad-d.png)
+
+## Karty różnych rozmiarów
+
+1. **Ustawienia kartki** → „Rozmiary kart na kartce” → **mieszane**. Karty o różnych rozmiarach
+   (np. 70×120, 63×88 i 44×68 mm) układają się na jednej stronie w pasach, a wspólne krawędzie mają
+   jedną linię cięcia – wygodne cięcie na trymerze. Własny układ siatki jest wtedy wyłączony.
+2. Opcje: kolejność **od największych** albo **własna** (przeciągnij kartę – zmienia się jej miejsce
+   w kolejności, karty nigdy się nie nakładają), **obracanie o 90°**, gdy oszczędza papier,
+   grupowanie kart tego samego rozmiaru, odstęp między kartami.
+3. **Wolne miejsce** na kartce otwiera menu „Dodaj kartę w to miejsce”; szablon, który się tu nie
+   zmieści, jest oznaczony, ale trafi w pierwsze pasujące miejsce.
+   ![Mieszane rozmiary](docs/obrazy/m2b-2-mieszane-rozmiary.png)
+4. **Luz w slocie** (arkusze z perforacją, sloty większe niż karta): w „Układ arkusza” → „Karta
+   w slocie”. Luz mówi, o ile karta może być mniejsza od slotu (domyślnie 1 mm, 0–5 mm) – np. karta
+   63×88 mm w slocie 63,5×89 mm. Wybierz położenie (środek albo lewy górny róg), **tło do krawędzi
+   slotu** (przy przesunięciu druku nie widać białego paska) i linie wokół slotu albo karty.
+   Luz zapisuje się w „Moje układy”, więc preset arkusza zawiera już dobrany luz; sprawdzisz go
+   **wydrukiem testowym**. Kartki sprzed tej funkcji zachowują dawną tolerancję 0,5 mm.
+   ![Karta w slocie](docs/obrazy/m2b-1-karta-w-slocie.png)
+
+## Tryb swobodny
+
+Pola układasz tam, gdzie chcesz – jak w programie graficznym. Nie trzeba go używać: kolumny i wiersze
+działają jak dotąd.
+
+1. W kreatorze wybierz układ **„Swobodny: pola w dowolnych miejscach”** albo zaznacz kontener
+   (też korzeń karty) i w „Położenie” użyj **Zamień na swobodny** – nic się wtedy nie przesuwa.
+   Kontener swobodny może być wewnątrz zwykłej kolumny, a w nim – zwykłe kolumny i wiersze.
+2. **＋ Dodaj** i **przeciągnij pole** w podglądzie. Uchwyty w rogach i na bokach zmieniają rozmiar
+   (Shift – proporcje), strzałki przesuwają o 0,5 mm (Shift – 5 mm). Pole przyciąga się do siatki
+   i do krawędzi lub środków innych pól (Alt wyłącza); prowadnice widać tylko w edytorze.
+   Jedno przeciągnięcie to jeden krok Cofnij.
+   ![Przeciąganie w trybie swobodnym](docs/obrazy/m2b-9-tryb-swobodny-mysz.png)
+3. **Panel „Położenie”** robi to samo z klawiatury: X i Y w mm, punkt, od którego liczone jest
+   położenie (np. prawy dolny róg – pole zostaje tam po zmianie rozmiaru karty), obrót 0/90/180/270°
+   i kolejność rysowania (na wierzch / wyżej / niżej / na spód). Kilka zaznaczonych pól wyrównasz
+   i rozłożysz równo jednym przyciskiem.
+   ![Panel położenia](docs/obrazy/m2b-8-tryb-swobodny-panel.png)
+4. **Podkład ze wzoru**: **„Podkład…”** wczytuje zdjęcie lub skan karty, który leży pod podglądem
+   (domyślnie w połowie przezroczysty, można go ukryć). Nie łapie kliknięć i **nie jest drukowany**.
+   Przeciągnij pola na miejsca ze wzoru. Podkład jedzie z eksportem projektu, ale nie z plikiem szablonu.
+   ![Podkład ze wzoru](docs/obrazy/m2b-9-podklad.png)
 
 ## Uruchomienie
 

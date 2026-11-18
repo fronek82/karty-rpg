@@ -24,7 +24,6 @@ import { dodaj, drzewo, karta, panel, zaznacz } from './szablonUI';
 
 test.use({ viewport: { width: 1440, height: 1000 } });
 
-
 test('przeciąganie: prowadnice i podpowiedź tylko w edytorze, siatka, Alt, jeden krok Cofnij na gest', async ({
   page,
 }) => {

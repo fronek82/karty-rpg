@@ -9,7 +9,13 @@ import type { Szablon, Talia } from '../src/model/szablon';
 /** Wspólne dane i kroki testów kartki z mieszanymi rozmiarami (M2b-2): E(1) i test mieszanych. */
 
 /** Prosty szablon karty w mm: kolorowe tło, tytuł i biały panel z wymiarem. */
-export const szablonProstokata = (id: string, nazwa: string, szer: number, wys: number, kolor: string) =>
+export const szablonProstokata = (
+  id: string,
+  nazwa: string,
+  szer: number,
+  wys: number,
+  kolor: string,
+) =>
   ({
     id,
     nazwa,
@@ -126,5 +132,5 @@ export async function polozenia(page: Page) {
   }
   return wynik;
 }
-export const bliskie = (a: number[], b: number[]) => a.forEach((v, i) => expect(v).toBeCloseTo(b[i]!, 0));
-
+export const bliskie = (a: number[], b: number[]) =>
+  a.forEach((v, i) => expect(v).toBeCloseTo(b[i]!, 0));

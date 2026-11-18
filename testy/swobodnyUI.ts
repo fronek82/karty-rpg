@@ -48,7 +48,8 @@ export async function uchwyt(page: Page, u: string, dx: number, dy: number) {
   const k = await pxNaMm(page);
   await przeciagnij(page, s, { x: s.x + dx * k, y: s.y + dy * k });
 }
-export const cofnij = (page: Page) => page.getByRole('button', { name: 'Cofnij', exact: true }).click();
+export const cofnij = (page: Page) =>
+  page.getByRole('button', { name: 'Cofnij', exact: true }).click();
 
 export async function swobodny(page: Page, nazwa: string) {
   await kreator(page, {

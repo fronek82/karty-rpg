@@ -286,3 +286,76 @@ export const daneWroga = {
   bron: 'Kły (5), Pazury (3)',
   zdolnosci: '**Zgraja.** Atakuje razem z innymi.',
 };
+
+/**
+ * D. Ozdobna karta (M2b): pergamin, ramka z motywu (pnącze) z narożnikami (liść), pod tytułem
+ * separator z zakończeniami i środkiem, panel z podwójną linią, wartość w kształcie z własnego
+ * elementu biblioteki `wl:Gwiazdka`. Własny element trzeba podać w `ctx.elementy` przy renderze.
+ */
+export const szablonOzdobny: Szablon = {
+  id: 'test-ozdobna',
+  nazwa: 'Ozdobna (test)',
+  rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+  promienRogow: 3,
+  tlo: '#f3e6c8',
+  ramka: {
+    grubosc: 0.3,
+    kolor: '#000000',
+    narozniki: { element: 'wb:lisc', rozmiar: 5 },
+    ozdoba: { rodzaj: 'motyw', element: 'wb:pnacze', szerokosc: 5, kolor: '#5b3a1e' },
+  },
+  korzen: {
+    id: 'karta',
+    typ: 'kolumna',
+    padding: 3,
+    odstep: 1.5,
+    dzieci: [
+      {
+        id: 'tytul',
+        typ: 'tekst',
+        klucz: 'tytul',
+        wieleWierszy: false,
+        styl: {
+          czcionka: 'tresc',
+          rozmiar: 4.2333333333333325,
+          wariant: 'pogrubiony',
+          wyrownanie: 'srodek',
+        },
+      },
+      {
+        id: 'dekor',
+        typ: 'separator',
+        kierunek: 'poziomy',
+        grubosc: 0.3,
+        kolor: '#5b3a1e',
+        zakonczenia: { element: 'wb:zak-grot', rozmiar: 2.4 },
+        srodek: { element: 'wb:sr-romb', rozmiar: 2.4 },
+        odstepOdOzdoby: 0.4,
+      },
+      {
+        id: 'opis',
+        typ: 'tekst',
+        klucz: 'opis',
+        wysokosc: { wypelnij: 1 },
+        padding: 1.5,
+        tlo: '#ffffff',
+        promien: 1,
+        obramowanie: { grubosc: 0.3, kolor: '#5b3a1e', styl: 'podwojna' },
+        styl: { czcionka: 'tresc', rozmiar: 3.175 },
+      },
+      {
+        id: 'sila',
+        typ: 'wartosc',
+        klucz: 'sila',
+        szerokosc: { mm: 16 },
+        padding: 0.8,
+        wyrownanie: { poziomo: 'poczatek', pionowo: 'poczatek' },
+        tlo: '#fff8e6',
+        obramowanie: { grubosc: 0.3, kolor: '#000000' },
+        styl: { czcionka: 'tresc', rozmiar: 3.175, wariant: 'pogrubiony' },
+        ksztalt: 'wlasny',
+        ksztaltElement: 'wl:Gwiazdka',
+      },
+    ],
+  },
+};

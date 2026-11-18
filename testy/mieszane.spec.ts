@@ -26,7 +26,6 @@ import {
 test.use({ viewport: { width: 1440, height: 1100 } });
 test.setTimeout(120_000);
 
-
 test('PDF wygląda jak SVG: mieszane rozmiary, także z obróconą kartą', async ({ page }) => {
   await przygotujStrone(page);
   // Papier 150×230: karta 120×70 (obrócona) nie mieści się inaczej niż po obrocie? Tu mieści się
