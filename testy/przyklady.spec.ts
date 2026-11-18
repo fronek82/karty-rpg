@@ -710,8 +710,8 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
   // Cała siatka 3×3: karta i osiem kopii.
   await page.locator('[data-karta]').first().click();
   const dane = page.getByRole('complementary', { name: 'Zaznaczone karty' });
-  await dane.getByLabel('Liczba kopii').fill('8');
-  await dane.getByRole('button', { name: 'Duplikuj ×8' }).click();
+  await dane.getByLabel('Liczba kopii').fill('9');
+  await dane.getByLabel('Liczba kopii').press('Enter');
   await expect(page.locator('[data-karta]')).toHaveCount(9);
   await page.getByRole('button', { name: /Ustawienia/ }).click();
   const ust = page.getByRole('complementary', { name: 'Ustawienia' });

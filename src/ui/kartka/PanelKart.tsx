@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { kolumnySzablonu } from '../../dane/edycja';
 import { nazwaKarty } from '../../dane/szablon';
 import {
+  egzemplarzeKarty,
+  MAKS_EGZEMPLARZY,
   mozliweRozmiary,
+  ustawLiczbeEgzemplarzy,
   ustawDaneKart,
   zmienRozmiarKarty,
   type KartaNaKartce,
@@ -85,12 +88,17 @@ export function PanelKart({
   zamknij: () => void;
 }) {
   const { projekt, zmien } = edycja;
-  const [ile, ustawIle] = useState(2);
+  const [wpisaneKopie, ustawWpisaneKopie] = useState<string>();
   const [bladRozmiaru, ustawBladRozmiaru] = useState<string>();
   const ids = karty.map((k) => k.karta.id);
   const szablonIds = new Set(karty.map((k) => k.karta.szablonId));
   const szablon = szablonIds.size === 1 ? ctx.szablony.get([...szablonIds][0]!) : undefined;
   const jedna = karty.length === 1 ? karty[0] : undefined;
+  const liczbaKopii = jedna ? egzemplarzeKarty(projekt, arkusz.id, jedna.karta.id).length : 0;
+  const zatwierdzKopie = (liczba: number) => {
+    ustawWpisaneKopie(undefined);
+    if (jedna) zmien((p) => ustawLiczbeEgzemplarzy(p, arkusz.id, jedna.karta.id, liczba, ctx));
+  };
   const typ = szablon ? typDlaSzablonu(pakiet, szablon.id) : undefined;
   const polaMapa = szablon ? polaSzablonu(szablon) : new Map<string, Pole>();
   // Kolejność w panelu: tekst i wartości najpierw, znaczniki potem, ilustracja na końcu.
@@ -295,19 +303,38 @@ export function PanelKart({
         <button type="button" onClick={() => duplikuj(1)}>
           {t('kartka.duplikuj')}
         </button>
-        <span className="duplikuj-n">
-          <input
-            type="number"
-            min={1}
-            max={100}
-            value={ile}
-            aria-label={t('kartka.ileKopii')}
-            onChange={(e) => ustawIle(Math.max(1, Math.min(100, e.target.valueAsNumber || 1)))}
-          />
-          <button type="button" onClick={() => duplikuj(ile)}>
-            {t('kartka.duplikujN', { n: ile })}
-          </button>
-        </span>
+        {jedna && (
+          <label className="duplikuj-n">
+            {t('kartka.ileKopii')}
+            <input
+              type="number"
+              min={1}
+              max={Math.max(liczbaKopii, MAKS_EGZEMPLARZY)}
+              value={wpisaneKopie ?? liczbaKopii}
+              onChange={(e) => {
+                if (e.nativeEvent instanceof InputEvent && e.nativeEvent.inputType)
+                  ustawWpisaneKopie(e.target.value);
+                else zatwierdzKopie(e.target.valueAsNumber);
+              }}
+              onBlur={(e) => {
+                if (wpisaneKopie !== undefined) zatwierdzKopie(e.target.valueAsNumber);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.stopPropagation();
+                  ustawWpisaneKopie(undefined);
+                } else if (e.key === 'Enter' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  const aktualna = e.currentTarget.valueAsNumber;
+                  const krok = e.key === 'ArrowUp' ? 1 : e.key === 'ArrowDown' ? -1 : 0;
+                  zatwierdzKopie(
+                    (krok && !Number.isFinite(aktualna) ? liczbaKopii : aktualna) + krok,
+                  );
+                }
+              }}
+            />
+          </label>
+        )}
         <button type="button" className="niebezpieczny" onClick={usun}>
           {t('kartka.usun')}
         </button>

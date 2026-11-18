@@ -322,6 +322,22 @@ export function zmienRozmiarKarty(
   };
 }
 
+/** Kolejność utworzenia jest niezależna od kolejności kart w układzie arkusza. */
+function numerujKopie(talia: Talia) {
+  const wgId = new Map(talia.karty.map((k) => [k.id, k]));
+  const ostatni = new Map<string, number>();
+  for (const { kopiaKarty: kopia } of talia.karty)
+    if (kopia) ostatni.set(kopia.oryginal, Math.max(ostatni.get(kopia.oryginal) ?? 0, kopia.numer));
+  return (karta: Karta) => {
+    const zapisany = karta.kopiaKarty?.oryginal;
+    const oryginal =
+      zapisany && wgId.get(zapisany)?.szablonId === karta.szablonId ? zapisany : karta.id;
+    const numer = (ostatni.get(oryginal) ?? 0) + 1;
+    ostatni.set(oryginal, numer);
+    return { oryginal, numer };
+  };
+}
+
 /**
  * N kopii każdej karty w kolejne wolne sloty za oryginałem (dalej na następnych stronach;
  * gdy brak miejsca – nowe strony). Zwraca id kopii w kolejności.
@@ -335,6 +351,7 @@ export function duplikujKarty(
 ): { projekt: Projekt; kopie: string[] } {
   const { arkusz, talia } = arkuszITalia(p, arkuszId);
   const zajete = kartyKartki(p, arkuszId, ctx.szablony);
+  const numerKopii = numerujKopie(talia);
   const nowyId = noweId(p);
   const kopie: { karta: Karta; pol: Polozenie }[] = [];
   let strony = liczbaStronKartki(p, arkuszId);
@@ -358,11 +375,16 @@ export function duplikujKarty(
         if (!pol) break; // karta większa niż siatka
         strony++;
       }
-      const karta: Karta = { ...structuredClone(zrodlo.karta), id: nowyId(`${id}-kopia`) };
+      const karta: Karta = {
+        ...structuredClone(zrodlo.karta),
+        id: nowyId(`${id}-kopia`),
+        kopiaKarty: numerKopii(zrodlo.karta),
+      };
       zajete.push({ karta, ...pol, ...r });
       kopie.push({ karta, pol });
     }
   }
+  if (!kopie.length) return { projekt: p, kopie: [] };
   const projekt = zmienKartke(p, arkuszId, (a) => ({
     arkusz: {
       ...a,
@@ -372,6 +394,53 @@ export function duplikujKarty(
     talia: { ...talia, karty: [...talia.karty, ...kopie.map((k) => k.karta)] },
   }));
   return { projekt, kopie: kopie.map((k) => k.karta.id) };
+}
+
+/** Oryginał i jego egzemplarze w kolejności utworzenia. */
+export function egzemplarzeKarty(p: Projekt, arkuszId: string, id: string): string[] {
+  const { talia } = arkuszITalia(p, arkuszId);
+  const karta = talia.karty.find((k) => k.id === id);
+  if (!karta) return [];
+  const kandydat = talia.karty.find((k) => k.id === karta.kopiaKarty?.oryginal);
+  const oryginal = kandydat?.szablonId === karta.szablonId ? kandydat : karta;
+  const kopie = talia.karty
+    .filter(
+      (k) =>
+        k.id !== oryginal.id &&
+        k.kopiaKarty?.oryginal === oryginal.id &&
+        k.szablonId === oryginal.szablonId,
+    )
+    .sort((a, b) => a.kopiaKarty!.numer - b.kopiaKarty!.numer);
+  return [oryginal.id, ...kopie.map((k) => k.id)];
+}
+
+export const MAKS_EGZEMPLARZY = 100;
+
+export function ustawLiczbeEgzemplarzy(
+  p: Projekt,
+  arkuszId: string,
+  id: string,
+  liczba: number,
+  ctx: KontekstKartki,
+): Projekt {
+  if (!Number.isInteger(liczba) || liczba < 1) return p;
+  const ids = egzemplarzeKarty(p, arkuszId, id);
+  const oryginal = ids[0];
+  if (!oryginal || liczba === ids.length) return p;
+  if (liczba < ids.length) return usunKarty(p, arkuszId, ids.slice(liczba));
+  if (liczba > MAKS_EGZEMPLARZY) return p;
+  const { arkusz, talia } = arkuszITalia(p, arkuszId);
+  const ile = liczba - ids.length;
+  if (czyMieszane(arkusz)) {
+    const kolejnosc = kolejnoscKartki(arkusz, talia);
+    const grupa = new Set(ids);
+    const za = kolejnosc.findLast((k) => grupa.has(k));
+    const zrodlo = kolejnosc.includes(oryginal) ? oryginal : id;
+    return duplikujKartyMieszane(p, arkuszId, [zrodlo], ile, za).projekt;
+  }
+  const widoczne = kartyKartki(p, arkuszId, ctx.szablony);
+  const zrodlo = widoczne.some((k) => k.karta.id === oryginal) ? oryginal : id;
+  return duplikujKarty(p, arkuszId, [zrodlo], ile, ctx).projekt;
 }
 
 export function usunKarty(p: Projekt, arkuszId: string, ids: string[]): Projekt {
@@ -384,7 +453,14 @@ export function usunKarty(p: Projekt, arkuszId: string, ids: string[]): Projekt 
     },
     talia: {
       ...t,
-      karty: t.karty.filter((k) => !usuwane.has(k.id)),
+      karty: t.karty
+        .filter((k) => !usuwane.has(k.id))
+        .map((k) => {
+          if (!k.kopiaKarty || !usuwane.has(k.kopiaKarty.oryginal)) return k;
+          const samodzielna = { ...k };
+          delete samodzielna.kopiaKarty;
+          return samodzielna;
+        }),
       ...(t.grupy
         ? {
             grupy: t.grupy.map((g) => ({ ...g, karty: g.karty.filter((id) => !usuwane.has(id)) })),
@@ -651,21 +727,29 @@ export function duplikujKartyMieszane(
   arkuszId: string,
   ids: string[],
   n: number,
+  za?: string,
 ): { projekt: Projekt; kopie: string[] } {
   const nowyId = noweId(p);
   const ile = Math.max(0, Math.min(500, Math.floor(n)));
   const kopie: { karta: Karta; po: string }[] = [];
   const { talia } = arkuszITalia(p, arkuszId);
+  const numerKopii = numerujKopie(talia);
   for (const id of ids) {
     const zrodlo = talia.karty.find((k) => k.id === id);
     if (!zrodlo) continue;
-    let po = id;
+    let po = za ?? id;
     for (let i = 0; i < ile; i++) {
-      const karta: Karta = { ...structuredClone(zrodlo), id: nowyId(`${id}-kopia`), ilosc: 1 };
+      const karta: Karta = {
+        ...structuredClone(zrodlo),
+        id: nowyId(`${id}-kopia`),
+        ilosc: 1,
+        kopiaKarty: numerKopii(zrodlo),
+      };
       kopie.push({ karta, po });
       po = karta.id;
     }
   }
+  if (!kopie.length) return { projekt: p, kopie: [] };
   const projekt = zmienKartke(p, arkuszId, (a, t) => {
     let lista = kolejnoscKartki(a, t);
     for (const k of kopie) {

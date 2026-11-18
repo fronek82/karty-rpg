@@ -320,6 +320,7 @@ const karta = obj({
   szablonId: identyfikator,
   dane: z.record(z.string(), z.string()),
   ilosc: calkowita.min(0),
+  kopiaKarty: opc(obj({ oryginal: identyfikator, numer: calkowita.min(1) })),
   rozmiar: opc(obj(rozmiarSlotow)),
   obrazy: opc(z.record(z.string(), ustawieniaObrazu)),
 });

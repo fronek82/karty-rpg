@@ -12,6 +12,8 @@ import {
   dodajStrone,
   duplikujKarty,
   duplikujKartyMieszane,
+  egzemplarzeKarty,
+  ustawLiczbeEgzemplarzy,
   kartyKartki,
   naMieszane,
   kartyWObszarze,
@@ -382,3 +384,25 @@ describe('kartka – mieszane rozmiary: kolejność kart', () => {
     expect(() => przygotujProjekt(u)).not.toThrow();
   });
 });
+
+it.each([false, true])(
+  'liczba egzemplarzy przeżywa zapis i usuwa najnowsze kopie (mieszane: %s)',
+  (mieszane) => {
+    const { projekt, kartaId } = ok(
+      dodajKarteWSlocie(pusty, A, { strona: 0, kolumna: 0, rzad: 0 }, BRON, ctx),
+    );
+    const start = mieszane ? naMieszane(projekt, A) : projekt;
+    const cztery = ustawLiczbeEgzemplarzy(start, A, kartaId, 4, ctx);
+    const ids = egzemplarzeKarty(cztery, A, kartaId);
+    expect(ids).toHaveLength(4);
+    const poZmianieKolejnosci = {
+      ...cztery,
+      talie: cztery.talie.map((t) => ({ ...t, karty: t.karty.toReversed() })),
+    };
+    const zapis = przygotujProjekt(JSON.parse(JSON.stringify(poZmianieKolejnosci)));
+    expect(egzemplarzeKarty(zapis, A, ids[2]!)).toEqual(ids);
+    const dwa = ustawLiczbeEgzemplarzy(zapis, A, ids[2]!, 2, ctx);
+    expect(egzemplarzeKarty(dwa, A, kartaId)).toEqual(ids.slice(0, 2));
+    expect(egzemplarzeKarty(usunKarty(dwa, A, [kartaId]), A, ids[1]!)).toEqual([ids[1]]);
+  },
+);
