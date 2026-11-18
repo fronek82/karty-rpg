@@ -39,7 +39,6 @@ export const pl = {
   'dane.ramka9Pusta': '„{gdzie}” ma źródło SVG bez rysunku – nic nie zostanie narysowane',
   'dane.ramka9BezObrazu':
     'Plik szablonu: ramka 9-slice „{id}” wskazuje obraz „{zasob}”, którego nie ma w paczce',
-  'dane.zaDuzoElementow': 'Biblioteka ozdobników przekroczyłaby limit {limit} elementów.',
   'dane.elementZProjektu':
     'Szablon odwołuje się do elementu ozdobnego „{id}”, którego nie ma w pliku – użyto elementu o tym id z projektu.',
   'dane.nieznanyElement':
@@ -274,15 +273,12 @@ export const pl = {
   'mieszane.odstep': 'Odstęp między kartami (mm)',
   'mieszane.naKartce': 'Na kartce',
   'mieszane.pozycja': '{nazwa} · {szer}×{wys} · {liczba} szt.',
-  'mieszane.zajete': 'Strona {numer} z {liczba} · {kart} kart · zajęte {procent} % pola kart',
   'mieszane.wlasnyUklad':
     'Własny układ arkusza (perforacja) działa tylko z jednym rozmiarem – przy „mieszane” jest wyłączony. Nagłówki grup: każda grupa zaczyna nowy pas.',
   'mieszane.przypiecia':
     'Przypięcia kart w slotach są w trybie „mieszane” ignorowane; po powrocie do siatki karty układają się od nowa.',
   'mieszane.przelaczono':
     'Kolejność własna: karty układane w kolejności listy. „Cofnij” przywraca poprzedni układ.',
-  'mieszane.odlozono':
-    '{liczba} kart odłożono – nie mieszczą się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
   'mieszane.dodajTutaj': 'Dodaj kartę w to miejsce (wolne {szer}×{wys} mm)',
   'mieszane.nieZmiesciSieTu': 'nie zmieści się tu',
   'mieszane.menuOpis':
@@ -867,7 +863,6 @@ export const pl = {
     'rysunek ma zbyt wiele komend (limit {limitKomend} po spłaszczeniu).',
   'biblioteka.blad.pusty': 'w pliku nie ma kształtów, które da się zaimportować.',
   'biblioteka.blad.wymiary': 'rysunek ma zerowy, zbyt duży lub niepoprawny rozmiar.',
-  'biblioteka.limit': 'Biblioteka może mieć najwyżej {limit} własnych elementów.',
   'biblioteka.uzyjJako': 'Użyj jako',
   'biblioteka.kolor': 'Kolor',
   'biblioteka.kolor.jednolity': 'jednolity (kolorowalny)',
@@ -941,3 +936,40 @@ export const pl = {
 
 export type KluczTekstu = keyof typeof pl;
 export type Slownik = Record<KluczTekstu, string>;
+
+/** Formy liczby mnogiej tekstu; `other` jest wymagane (liczby ułamkowe i brak innej formy). */
+export type FormyMnogie = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };
+
+/**
+ * Teksty z liczbą mnogą (`tn`). Polski ma formy one (1), few (2–4, 22–24…), many (0, 5–21…)
+ * i other (liczby ułamkowe); parametr `{n}` to liczba, według której wybrano formę.
+ */
+export const plMnoga = {
+  'mieszane.zajete': {
+    one: 'Strona {numer} z {liczba} · {n} karta · zajęte {procent} % pola kart',
+    few: 'Strona {numer} z {liczba} · {n} karty · zajęte {procent} % pola kart',
+    many: 'Strona {numer} z {liczba} · {n} kart · zajęte {procent} % pola kart',
+    other: 'Strona {numer} z {liczba} · {n} kart · zajęte {procent} % pola kart',
+  },
+  'mieszane.odlozono': {
+    one: '{n} kartę odłożono – nie mieści się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
+    few: '{n} karty odłożono – nie mieszczą się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
+    many: '{n} kart odłożono – nie mieszczą się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
+    other: '{n} kart odłożono – nie mieszczą się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
+  },
+  'dane.zaDuzoElementow': {
+    one: 'Biblioteka ozdobników przekroczyłaby limit {n} elementu.',
+    few: 'Biblioteka ozdobników przekroczyłaby limit {n} elementów.',
+    many: 'Biblioteka ozdobników przekroczyłaby limit {n} elementów.',
+    other: 'Biblioteka ozdobników przekroczyłaby limit {n} elementu.',
+  },
+  'biblioteka.limit': {
+    one: 'Biblioteka może mieć najwyżej {n} własny element.',
+    few: 'Biblioteka może mieć najwyżej {n} własne elementy.',
+    many: 'Biblioteka może mieć najwyżej {n} własnych elementów.',
+    other: 'Biblioteka może mieć najwyżej {n} własnego elementu.',
+  },
+} as const satisfies Record<string, FormyMnogie>;
+
+export type KluczMnogi = keyof typeof plMnoga;
+export type SlownikMnogi = Record<KluczMnogi, FormyMnogie>;

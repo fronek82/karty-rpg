@@ -2,7 +2,7 @@ import type { Projekt } from '../model/projekt';
 import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
 import { czyWbudowany } from '../ozdobniki/katalog';
 import type { ElementOzdobny } from '../ozdobniki/typy';
-import { t } from '../i18n';
+import { t, tn } from '../i18n';
 import { identyfikatorZNazwy } from './czcionki';
 import { BladDanych, zasobySzablonu } from './schemat';
 import { przytnijWciecia } from '../ozdobniki/ramka9';
@@ -186,7 +186,7 @@ export function dodajRamke9ZObrazu(
   obraz: Pick<OpisObrazu, 'id' | 'szerokosc' | 'wysokosc'>,
 ): { projekt: Projekt; id: string } {
   if (elementyProjektu(p).length >= MAKS_ELEMENTOW_BIBLIOTEKI)
-    throw new BladDanych(t('dane.zaDuzoElementow', { limit: MAKS_ELEMENTOW_BIBLIOTEKI }));
+    throw new BladDanych(tn('dane.zaDuzoElementow', MAKS_ELEMENTOW_BIBLIOTEKI));
   return dodajElementDoBiblioteki(p, nazwa, {
     rodzaj: 'ramka9',
     szer: obraz.szerokosc,
@@ -263,6 +263,6 @@ export function dolaczElementy(
     lista.push({ ...e, id });
   }
   if (lista.length > MAKS_ELEMENTOW_BIBLIOTEKI)
-    throw new BladDanych(t('dane.zaDuzoElementow', { limit: MAKS_ELEMENTOW_BIBLIOTEKI }));
+    throw new BladDanych(tn('dane.zaDuzoElementow', MAKS_ELEMENTOW_BIBLIOTEKI));
   return { lista, mapa };
 }

@@ -43,7 +43,7 @@ import {
   type WynikArkusza,
 } from '../../druk/arkusz';
 import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
-import { t, tJesliJest } from '../../i18n';
+import { liczba, t, tJesliJest, tn } from '../../i18n';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
@@ -1245,7 +1245,7 @@ export function EdytorKartki({
             const { odlozone } = wrocDoSiatki(projekt, arkuszZazn.id, ctxSiatki);
             zmien((p) => wrocDoSiatki(p, arkuszZazn.id, ctxSiatki).projekt);
             if (odlozone > 0)
-              ustawToast({ tekst: t('mieszane.odlozono', { liczba: odlozone }), cofnij: true });
+              ustawToast({ tekst: tn('mieszane.odlozono', odlozone), cofnij: true });
           }
         }}
         naKartce={naKartce(arkuszZazn)}
@@ -1686,10 +1686,9 @@ function WidokKartki({
           <div key={s} className="strona-opakowanie">
             <div className="etykieta-strony">
               {mieszane
-                ? t('mieszane.zajete', {
+                ? tn('mieszane.zajete', kartyMieszane.length, {
                     numer: s + 1,
                     liczba: liczbaStron,
-                    kart: kartyMieszane.length,
                     procent: polePol > 0 ? Math.round((zajetePole / polePol) * 100) : 0,
                   })
                 : t('kartka.strona', { numer: s + 1, liczba: liczbaStron })}
