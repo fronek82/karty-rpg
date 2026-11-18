@@ -42,7 +42,7 @@ Każdy etap kończy się zielonymi kontrolami typów, lintem, formatowaniem, Vit
 
 ## 4. Etapy
 
-Jeden etap to jedna gałąź od aktualnego `main` i jeden PR. Status ✓ z datą oznacza zakończony etap. Po pozytywnym przeglądzie i sprawdzeniach scal PR, zaczekaj na weryfikację wdrożenia i rozpocznij kolejny etap od nowego `main`.
+Jeden etap to jedna gałąź od aktualnego `main` i jeden PR. Status ✓ z datą oznacza zakończony etap. Po pozytywnym przeglądzie i sprawdzeniach scal PR. Potwierdź wdrożenie na Pages i rozpocznij kolejny etap od nowego `main`.
 
 | Etap  | Status       | Wielkość | Zakres z testami                                                                                                                                                                                                                                                                                                                                            | Agenci                                                |
 | ----- | ------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
@@ -80,11 +80,12 @@ M3 zgodnie z [planem M2b](plan-M2b.md), w tym zestawy stylów i dalsze rozszerze
 
 ## 9. Decyzje podjęte bez konsultacji
 
-| #    | Etap  | Sprawa                              | Decyzja                                                                                                                                            |
-| ---- | ----- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B218 | Plan  | Dane globalne                       | Katalog i paczki są przechowywane w osobnych, transakcyjnie aktualizowanych tabelach IndexedDB.                                                    |
-| B219 | Plan  | Kartki projektów pakietowych        | Własny szablon trafia na osobną kartkę w tym samym projekcie. Arkusze pakietu zostają przypisane do dotychczasowych typów.                         |
-| B220 | Plan  | Zasięg testów między przeglądarkami | Pełne e2e zachowuje projekt Chromium. Firefox i WebKit uruchamiają scenariusze pobierania obrazów.                                                 |
-| B221 | M2c-1 | Powiązanie kartki z szablonem       | Schemat 17 dodaje opcjonalne `Arkusz.wlasnySzablonId`. Migracja zachowuje stare kartki i ich pakiety.                                              |
-| B222 | M2c-1 | Plik ozdobnika                      | `.kartyrpg-ozdobnik` to ZIP z `ozdobnik.json` w wersji 1 i obrazem ramki 9-slice, jeśli jest wymagany.                                             |
-| B223 | M2c-1 | Obrazy ramek i cofanie              | Zapis globalnej ramki sprawdza format, wymiary i dekodowanie obrazu. Import zachowuje identyfikatory i bajty zasobów używane przez historię zmian. |
+| #    | Etap  | Sprawa                              | Decyzja                                                                                                                                                                |
+| ---- | ----- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B218 | Plan  | Dane globalne                       | Katalog i paczki są przechowywane w osobnych, transakcyjnie aktualizowanych tabelach IndexedDB.                                                                        |
+| B219 | Plan  | Kartki projektów pakietowych        | Własny szablon trafia na osobną kartkę w tym samym projekcie. Arkusze pakietu zostają przypisane do dotychczasowych typów.                                             |
+| B220 | Plan  | Zasięg testów między przeglądarkami | Pełne e2e zachowuje projekt Chromium. Firefox i WebKit uruchamiają scenariusze pobierania obrazów.                                                                     |
+| B221 | M2c-1 | Powiązanie kartki z szablonem       | Schemat 17 dodaje opcjonalne `Arkusz.wlasnySzablonId`. Migracja zachowuje stare kartki i ich pakiety.                                                                  |
+| B222 | M2c-1 | Plik ozdobnika                      | `.kartyrpg-ozdobnik` to ZIP z `ozdobnik.json` w wersji 1 i obrazem ramki 9-slice, jeśli jest wymagany.                                                                 |
+| B223 | M2c-1 | Obrazy ramek i cofanie              | Zapis globalnej ramki sprawdza format, wymiary i dekodowanie obrazu. Import zachowuje identyfikatory i bajty zasobów używane przez historię zmian.                     |
+| B224 | M2c-2 | Dostęp do wymiarów                  | Podgląd rozwija się w panelu układu. Rysunek i lista korzystają z tych samych wartości. Etykiety edytowalne prowadzą do pól, a odstępy bez sąsiedniego slotu pomijamy. |

@@ -15,6 +15,64 @@ const wymiaryPng = (b: Uint8Array) => {
   return [v.getUint32(16), v.getUint32(20)];
 };
 
+test('diagram wymiarów pokazuje całą siatkę i prowadzi do edycji pola', async ({ page }) => {
+  const ust = await kartkaCzaru(page);
+  await ust.getByRole('button', { name: 'własny układ arkusza' }).click();
+  await ust.getByLabel('Margines lewy (mm)').fill('5');
+  await ust.getByLabel('Margines górny (mm)').fill('10');
+  await ust.getByLabel('Odstęp poziomy (mm)').fill('3');
+  await ust.getByLabel('Odstęp pionowy (mm)').fill('4');
+  await expect(ust).toContainText('prawy margines 10 mm · dolny 15 mm');
+  const strona = page.locator('.strona-kartki .svg-strony').first();
+  const scenaPrzed = await strona.innerHTML();
+  const podglad = ust.locator('.podglad-wymiarow');
+  await ust.getByText('Podgląd wymiarów', { exact: true }).click();
+  await expect(podglad).toContainText('Siatka 3 × 3 · 195 × 272 mm');
+  const wymiar = (etykieta: string) => podglad.locator('dl > div').filter({ hasText: etykieta });
+  await expect(wymiar('Szerokość papieru')).toContainText('210 mm');
+  await expect(wymiar('Wysokość papieru')).toContainText('297 mm');
+  await expect(wymiar('Margines prawy')).toContainText('10 mm');
+  await expect(wymiar('Margines dolny')).toContainText('15 mm');
+  await expect(wymiar('Margines prawy').getByRole('button')).toHaveCount(0);
+  expect(await strona.innerHTML()).toBe(scenaPrzed);
+
+  const lewyMargines = ust.getByLabel('Margines lewy (mm)');
+  await podglad
+    .getByRole('button', { name: 'Margines lewy, 5 mm. Przejdź do pola.' })
+    .press('Enter');
+  await expect(lewyMargines).toBeFocused();
+  await podglad.locator('svg text').filter({ hasText: /^4$/ }).click();
+  await expect(ust.getByLabel('Odstęp pionowy (mm)')).toBeFocused();
+  await ust.getByLabel('Odstęp poziomy (mm)').fill('5');
+  await expect(podglad).toContainText('Siatka 3 × 3 · 199 × 272 mm');
+  await expect(wymiar('Margines prawy')).toContainText('6 mm');
+  await ust.getByLabel('Nazwa układu').fill('Siatka z odstępami');
+  await ust.getByRole('button', { name: 'Zapisz jako mój układ' }).click();
+  await expect(ust).toContainText('Zapisano układ „Siatka z odstępami”');
+
+  await ust.getByLabel('Kolumny').fill('4');
+  await expect(
+    ust.getByRole('alert').filter({ hasText: 'Siatka wychodzi poza papier' }),
+  ).toBeVisible();
+  await expect(wymiar('Margines prawy')).toContainText('-62 mm');
+  await ust.getByLabel('Kolumny').fill('1');
+  await ust.getByLabel('Rzędy').fill('2');
+  await expect(wymiar('Odstęp poziomy')).toHaveCount(0);
+  await ust.getByLabel('Odstęp pionowy (mm)').fill('0');
+  await expect(wymiar('Odstęp pionowy')).toContainText('0 mm');
+  await ust.getByRole('button', { name: 'poziomo', exact: true }).click();
+  await expect(wymiar('Szerokość papieru')).toContainText('297 mm');
+  await expect(wymiar('Wysokość papieru')).toContainText('210 mm');
+  await ust.getByRole('button', { name: 'Użyj układu Siatka z odstępami' }).click();
+  await expect(wymiar('Szerokość papieru')).toContainText('210 mm');
+  await expect(podglad).toContainText('Siatka 3 × 3 · 199 × 272 mm');
+
+  if (process.env.ZRZUTY) {
+    await podglad.scrollIntoViewIfNeeded();
+    await podglad.screenshot({ path: 'docs/obrazy/m2c-2-podglad-wymiarow.png' });
+  }
+});
+
 test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem, presety', async ({
   page,
 }) => {

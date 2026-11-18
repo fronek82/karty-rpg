@@ -20,14 +20,15 @@ import type { Projekt } from '../../model/projekt';
 import { baza } from '../baza';
 import { MAKS_PRZESUNIECIA, odczytajKalibracje, zapiszKalibracje } from '../kalibracja';
 import { PoleLiczby } from './PoleLiczby';
+import { PodgladWymiarowUkladu } from './PodgladWymiarowUkladu';
 
 const zaokr = (x: number) => formatujLiczbe(x, 1);
 const nowyId = () => `uklad-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 /**
  * Układ arkusza kartki: automatyczny (karty stykają się) albo własny – stała siatka z marginesem
- * górnym i lewym, odstępami i rozmiarem karty (gotowe arkusze z perforacją). Podgląd na żywo to
- * sama kartka obok. „Moje układy” w tej przeglądarce (IndexedDB), kalibracja drukarki
+ * górnym i lewym, odstępami i rozmiarem karty (gotowe arkusze z perforacją). Kartka obok i diagram
+ * w panelu aktualizują się na żywo. „Moje układy” w tej przeglądarce (IndexedDB), kalibracja drukarki
  * (localStorage) i wydruk testowy.
  */
 export function PanelUkladu({
@@ -184,7 +185,8 @@ export function PanelUkladu({
     zapiszKalibracje(k);
   };
 
-  const wymiary = uklad && wymiaryUkladu(uklad, slot, wymiaryStrony(u));
+  const papier = wymiaryStrony(u);
+  const wymiary = uklad && wymiaryUkladu(uklad, slot, papier);
   const poza = wymiary && (wymiary.prawo < -1e-6 || wymiary.dol < -1e-6);
 
   return (
@@ -471,6 +473,9 @@ export function PanelUkladu({
                 })
               : ''}
           </p>
+          {wymiary && (
+            <PodgladWymiarowUkladu uklad={uklad} slot={slot} papier={papier} siatka={wymiary} />
+          )}
           <div className="pole-panelu zapis-ukladu">
             <label htmlFor="nazwa-ukladu">{t('uklad.nazwa')}</label>
             <input
