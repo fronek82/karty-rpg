@@ -51,6 +51,7 @@ export function DrzewoSzablonu({
         key={w.id}
         role="treeitem"
         aria-level={poziom}
+        aria-expanded={kontener && w.dzieci.length > 0 ? true : undefined}
         aria-selected={wybrany}
         aria-label={`${nazwaWezla(w)} – ${t(`wezel.${w.typ}`)}${poz ? `, ${opisPolozenia(poz)}` : ''}`}
         data-wezel={w.id}

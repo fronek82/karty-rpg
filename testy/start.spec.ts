@@ -49,3 +49,23 @@ test('nieznana trasa i dawne trasy', async ({ page }) => {
   await page.goto('./#/projekt/nie-ma');
   await expect(page.getByRole('alert')).toContainText('Nie ma projektu „nie-ma”');
 });
+
+test('odnośnik pomija pasek, a przejścia klawiaturą przenoszą fokus do głównego nagłówka', async ({
+  page,
+}) => {
+  await page.goto('./');
+  const main = page.getByRole('main');
+  await expect(main.getByRole('heading', { level: 1 })).toBeVisible();
+  const pomin = page.getByRole('link', { name: 'Przejdź do treści' });
+  await page.keyboard.press('Tab');
+  await expect(pomin).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(main.getByRole('heading', { level: 1 })).toBeFocused();
+  await page.getByRole('link', { name: /Stwórz karty do Mausrittera/ }).press('Enter');
+  await expect(main.getByRole('heading', { level: 1, name: 'Karty do Mausrittera' })).toBeFocused();
+  await page.getByRole('button', { name: /Pusta kartka A4/ }).press('Enter');
+  const edytor = main.getByRole('heading', { level: 1 });
+  await expect(edytor).toBeFocused();
+  await expect(main).toHaveCount(1);
+  await expect(page.getByRole('banner')).toHaveCount(1);
+});

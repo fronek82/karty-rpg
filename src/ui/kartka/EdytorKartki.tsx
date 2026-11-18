@@ -254,6 +254,11 @@ export function EdytorKartki({
     void f().finally(() => ustawZajete(false));
   };
   const kartkiRef = useRef<HTMLDivElement>(null);
+  const przyciskUstawien = useRef<HTMLButtonElement>(null);
+  const zamknijUstawienia = useCallback(() => {
+    ustawZazn(undefined);
+    przyciskUstawien.current?.focus();
+  }, [ustawZazn]);
 
   // --- Budowa stron (ta sama scena co w PDF), z pamięcią kart i kartek między renderami.
   // Nowa pamięć kart przy każdej zmianie zasobów (czcionki, obrazy, szablony).
@@ -539,7 +544,8 @@ export function EdytorKartki({
         }
       } else if (e.key === 'Escape') {
         ustawMenu(undefined);
-        ustawZazn(undefined);
+        if (aktywne?.rodzaj === 'ustawienia') zamknijUstawienia();
+        else ustawZazn(undefined);
       } else if (
         aktywne?.rodzaj === 'karty' &&
         e.key.startsWith('Arrow') &&
@@ -556,7 +562,7 @@ export function EdytorKartki({
     };
     window.addEventListener('keydown', klawisz);
     return () => window.removeEventListener('keydown', klawisz);
-  }, [aktywne, duplikuj, edycja, przesunZaznaczone, usunZaznaczone, ustawZazn]);
+  }, [aktywne, duplikuj, edycja, przesunZaznaczone, usunZaznaczone, ustawZazn, zamknijUstawienia]);
 
   // Miniatura pierwszej strony na liście projektów (bez obrazów – adresy blob: są chwilowe).
   const pierwszaStrona = kartki[0]?.wynik?.strony[0];
@@ -1257,7 +1263,7 @@ export function EdytorKartki({
         {...(bladUkladu ? { blad: bladUkladu } : {})}
         {...(nowaKartka ? { nowaKartka } : {})}
         {...(bezGry ? { kartkaDlaSzablonu: nowaKartkaDlaSzablonu } : {})}
-        zamknij={() => ustawZazn(undefined)}
+        zamknij={zamknijUstawienia}
       />
     );
   }
@@ -1322,7 +1328,7 @@ export function EdytorKartki({
 
   // --- Widok.
   const naglowekProjektu = (
-    <header className="pasek-gorny">
+    <header className="pasek-gorny" role="banner">
       <a href="#/" className="logo">
         {t('aplikacja.nazwa')}
       </a>
@@ -1367,6 +1373,7 @@ export function EdytorKartki({
       </button>
       <button
         type="button"
+        ref={przyciskUstawien}
         aria-pressed={aktywne?.rodzaj === 'ustawienia'}
         disabled={projekt.arkusze.length === 0}
         onClick={() => {
@@ -1416,6 +1423,7 @@ export function EdytorKartki({
   return (
     <div className="edytor-kartki">
       {naglowekProjektu}
+      <h1 className="tylko-czytnik">{projekt.nazwa || t('kartka.nazwaProjektu')}</h1>
       {(edycja.ostrzezenia.length > 0 ||
         brakujaceCzcionki.length > 0 ||
         brakujaceWarianty.length > 0 ||
@@ -1523,6 +1531,10 @@ export function EdytorKartki({
                 ustawZazn(undefined);
                 ustawMenu({ arkuszId: k.arkusz.id, ...p });
               }}
+              wybierzNaglowek={(id) => {
+                ustawMenu(undefined);
+                ustawZazn({ rodzaj: 'naglowek', arkuszId: k.arkusz.id, id });
+              }}
               wybierzKarte={(id, shift) => {
                 const obecne =
                   aktywne?.rodzaj === 'karty' && aktywne.arkuszId === k.arkusz.id
@@ -1597,9 +1609,11 @@ function WidokKartki({
   usunStrone,
   otworzMenu,
   wybierzKarte,
+  wybierzNaglowek,
 }: {
   szablony: ReadonlyMap<string, Szablon> | undefined;
   otworzMenu: (p: Polozenie) => void;
+  wybierzNaglowek: (id: string) => void;
   wybierzKarte: (id: string, shift: boolean) => void;
   k: Kartka;
   wiele: boolean;
@@ -1872,6 +1886,10 @@ function WidokKartki({
                           type="button"
                           className={`naglowek-grupy${zazn?.rodzaj === 'naglowek' && zazn.id === h.id ? ' zaznaczony' : ''}`}
                           data-naglowek={h.id}
+                          aria-pressed={
+                            zazn?.rodzaj === 'naglowek' && zazn.arkuszId === id && zazn.id === h.id
+                          }
+                          onClick={(e) => e.detail === 0 && wybierzNaglowek(h.id)}
                           style={stylMm(g, h.x, h.y, h.szer, h.wys)}
                           aria-label={t('kartka.naglowekEtykieta', { tekst: n?.naglowek ?? '' })}
                         />

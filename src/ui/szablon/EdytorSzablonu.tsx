@@ -512,8 +512,7 @@ export function EdytorSzablonu({
       }}
     >
       <div className="edytor-szablonu">
-        <h1 className="tylko-czytnik">{t('szablon.tytulEdytora')}</h1>
-        <header className="pasek-gorny">
+        <header className="pasek-gorny" role="banner">
           <a href="#/" className="logo">
             {t('aplikacja.nazwa')}
           </a>
@@ -571,6 +570,7 @@ export function EdytorSzablonu({
           </button>
           <NarzedziaPaska />
         </header>
+        <h1 className="tylko-czytnik">{t('szablon.tytulEdytora')}</h1>
         <div role="status">
           {kopia && (
             <a href={`#/projekt/${idProjektu}/szablon/${encodeURIComponent(kopia.id)}`}>

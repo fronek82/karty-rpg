@@ -26,6 +26,12 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
 
   // Numer odczytu: wynik starszego, wolniejszego odczytu nie nadpisuje nowszego.
   const odczyt = useRef(0);
+  const naglowek = useRef<HTMLHeadingElement>(null);
+  const otwierajacy = useRef<HTMLButtonElement>(null);
+  const anulujUsuniecie = () => {
+    ustawDoUsuniecia(undefined);
+    otwierajacy.current?.focus();
+  };
 
   const odswiez = useCallback(() => {
     const numer = ++odczyt.current;
@@ -71,7 +77,9 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   return (
     <section className="lista-projektow" aria-labelledby="moje-projekty">
       <div className="naglowek-sekcji">
-        <h2 id="moje-projekty">{t('start.mojeProjekty')}</h2>
+        <h2 id="moje-projekty" ref={naglowek} tabIndex={-1}>
+          {t('start.mojeProjekty')}
+        </h2>
         <p role="status" aria-live="polite" className="status">
           {trwa ? t('projekty.trwa') : status}
         </p>
@@ -86,7 +94,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           role="alertdialog"
           aria-labelledby="usun-tytul"
           className="uwaga"
-          onKeyDown={(e) => e.key === 'Escape' && ustawDoUsuniecia(undefined)}
+          onKeyDown={(e) => e.key === 'Escape' && anulujUsuniecie()}
         >
           <p id="usun-tytul">{t('projekty.potwierdzUsuniecie', { nazwa: doUsuniecia.nazwa })}</p>
           <button
@@ -94,6 +102,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
             onClick={() =>
               void wykonaj(async () => {
                 ustawDoUsuniecia(undefined);
+                naglowek.current?.focus();
                 await baza().usun(doUsuniecia.id);
                 return t('projekty.usunieto', { nazwa: doUsuniecia.nazwa });
               })
@@ -101,7 +110,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           >
             {t('projekty.usun')}
           </button>{' '}
-          <button type="button" autoFocus onClick={() => ustawDoUsuniecia(undefined)}>
+          <button type="button" autoFocus onClick={anulujUsuniecie}>
             {t('projekty.anuluj')}
           </button>
         </div>
@@ -151,7 +160,10 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                     type="button"
                     disabled={trwa}
                     aria-label={t('start.usunProjekt', { nazwa: p.nazwa })}
-                    onClick={() => ustawDoUsuniecia(p)}
+                    onClick={(e) => {
+                      otwierajacy.current = e.currentTarget;
+                      ustawDoUsuniecia(p);
+                    }}
                   >
                     {t('projekty.usun')}
                   </button>
