@@ -153,4 +153,16 @@ describe('tokeny motywów', () => {
       .map(([k]) => k);
     expect(roz).toEqual([]);
   });
+  it('start: menu (bordo, granat), tytuł i przygaszony napis – kontrast w obu motywach', () => {
+    for (const m of [jasny, ciemny]) {
+      // Napis na kolorowych paskach menu startowego (bordo i --kolor-4, biały lub beż).
+      expect(kontrast(m['bordo-tekst']!, m.bordo!)).toBeGreaterThanOrEqual(4.5);
+      expect(kontrast(m['akcent-tekst']!, m['kolor-4']!)).toBeGreaterThanOrEqual(4.5);
+      // Tytuł (duża czcionka, 3:1) na tle strony.
+      expect(kontrast(m.tytul!, m.tlo!)).toBeGreaterThanOrEqual(4.5);
+      // Obrys strefy upuszczania i opis importu.
+      expect(kontrast(m['tekst-przygaszony']!, m.tlo!)).toBeGreaterThanOrEqual(4.5);
+      expect(kontrast(m['obramowanie-karty']!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(1.5);
+    }
+  });
 });

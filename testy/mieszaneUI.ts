@@ -110,7 +110,7 @@ export async function plikProjektu() {
 
 export async function otworzProjekt(page: Page) {
   await page.goto('./#/');
-  await page.getByTestId('plik-projektu').setInputFiles(await plikProjektu());
+  await page.getByTestId('plik-importu').setInputFiles(await plikProjektu());
   await page.getByRole('link', { name: 'Mieszane' }).first().click();
   await expect(page.locator('[data-karta]')).toHaveCount(10, { timeout: 15000 });
 }

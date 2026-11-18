@@ -127,6 +127,7 @@ describe('parytet słowników pl ↔ en', () => {
       'styl.kursywa',
       'separator.dlugosc.mm',
       'separator.dlugosc.procent',
+      'start.import',
     ]);
   });
 });

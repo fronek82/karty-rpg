@@ -16,7 +16,7 @@ test('własne karty: strona z nowym szablonem i importem, bez listy gier; stara 
   page,
 }) => {
   await page.goto('./');
-  await expect(page.getByText('Od zera: własny rozmiar karty i własny układ pól')).toBeVisible();
+  await expect(page.getByText('Własny szablon, własny format')).toBeVisible();
   await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
   await expect(page).toHaveURL(/#\/wlasne$/);
   const naglowek = page.getByRole('heading', { level: 1, name: 'Stwórz własne karty' });

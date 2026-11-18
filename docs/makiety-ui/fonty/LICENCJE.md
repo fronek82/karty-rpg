@@ -1,8 +1,9 @@
 # Czcionki do makiet tytułu
 
 Wszystkie trzy na licencji SIL Open Font License 1.1 (OFL), pobrane z Google Fonts.
-Służą tylko do makiet w `docs/makiety-ui/`; nie są częścią aplikacji.
-Gdy któraś zostanie wybrana do aplikacji, trzeba ją wpisać do głównego `LICENCJE.md`.
+Służą do makiet w `docs/makiety-ui/`. Cinzel Decorative Bold został wybrany do aplikacji (D1):
+jego kopia i tekst licencji są w `public/czcionki/`, wpis w głównym `LICENCJE.md`.
+Pozostałe dwie nie są częścią aplikacji.
 
 | Plik                        | Czcionka               | Autor                             |
 | --------------------------- | ---------------------- | --------------------------------- |

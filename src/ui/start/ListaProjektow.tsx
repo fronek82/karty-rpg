@@ -1,14 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  eksportujProjekt,
-  importujProjekt,
-  jakoKopia,
-  ROZSZERZENIE_PROJEKTU,
-} from '../../dane/archiwum';
+import { useCallback, useEffect, useState } from 'react';
+import { eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
 import type { PodsumowanieProjektu } from '../../dane/baza';
 import { BladDanych } from '../../dane/schemat';
 import { formatujDate, t } from '../../i18n';
-import type { DaneZasobow, Projekt } from '../../model/projekt';
 import { baza } from '../baza';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import { poOstatnimZapisie } from '../useProjekt';
@@ -18,16 +12,17 @@ const komunikat = (e: unknown) =>
     ? e.message
     : t('projekty.bladNieoczekiwany', { szczegoly: String(e instanceof Error ? e.message : e) });
 
-/** „Moje projekty”: kafelki z miniaturą pierwszej strony; import, eksport, usuwanie. */
-export function ListaProjektow() {
+/**
+ * „Moje projekty”: kafelki z miniaturą pierwszej strony; eksport i usuwanie (import jest w
+ * `PanelImportu`). Zmiana `odswiezenie` wczytuje listę ponownie.
+ */
+export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   const [lista, ustawListe] = useState<PodsumowanieProjektu[]>();
   const [miniatury, ustawMiniatury] = useState<Map<string, string>>(new Map());
   const [blad, ustawBlad] = useState<string>();
   const [status, ustawStatus] = useState('');
   const [trwa, ustawTrwa] = useState(false);
-  const [kolizja, ustawKolizje] = useState<{ projekt: Projekt; zasoby: DaneZasobow }>();
   const [doUsuniecia, ustawDoUsuniecia] = useState<PodsumowanieProjektu>();
-  const plik = useRef<HTMLInputElement>(null);
 
   const odswiez = useCallback(() => {
     // Zapis zamkniętego właśnie projektu jest asynchroniczny – lista czeka na niego.
@@ -41,7 +36,7 @@ export function ListaProjektow() {
         (e: unknown) => ustawBlad(komunikat(e)),
       );
   }, []);
-  useEffect(odswiez, [odswiez]);
+  useEffect(odswiez, [odswiez, odswiezenie]);
 
   const wykonaj = async (zadanie: () => Promise<string | void>) => {
     ustawTrwa(true);
@@ -56,26 +51,6 @@ export function ListaProjektow() {
       ustawTrwa(false);
     }
   };
-
-  const zapiszImport = (projekt: Projekt, zasoby: DaneZasobow) =>
-    wykonaj(async () => {
-      ustawKolizje(undefined);
-      await baza().zapisz(projekt, zasoby);
-      // Zastąpiony projekt – stara miniatura nieaktualna (nowa powstanie przy otwarciu).
-      await baza().usunMiniature(projekt.id);
-      return t('projekty.zaimportowano', { nazwa: projekt.nazwa });
-    });
-
-  const importuj = (f: File) =>
-    wykonaj(async () => {
-      const wynik = importujProjekt(new Uint8Array(await f.arrayBuffer()));
-      if (await baza().istnieje(wynik.projekt.id)) {
-        ustawKolizje(wynik);
-        return;
-      }
-      await baza().zapisz(wynik.projekt, wynik.zasoby);
-      return t('projekty.zaimportowano', { nazwa: wynik.projekt.nazwa });
-    });
 
   const eksportuj = (p: PodsumowanieProjektu) =>
     wykonaj(async () => {
@@ -92,21 +67,6 @@ export function ListaProjektow() {
     <section className="lista-projektow" aria-labelledby="moje-projekty">
       <div className="naglowek-sekcji">
         <h2 id="moje-projekty">{t('start.mojeProjekty')}</h2>
-        <button type="button" disabled={trwa} onClick={() => plik.current?.click()}>
-          ⤒ {t('projekty.importuj')}
-        </button>
-        <input
-          ref={plik}
-          type="file"
-          accept={`${ROZSZERZENIE_PROJEKTU},application/zip`}
-          hidden
-          data-testid="plik-projektu"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            e.target.value = '';
-            if (f) void importuj(f);
-          }}
-        />
         <p role="status" aria-live="polite" className="status">
           {trwa ? t('projekty.trwa') : status}
         </p>
@@ -115,40 +75,6 @@ export function ListaProjektow() {
         <p role="alert" className="uwaga">
           {blad}
         </p>
-      )}
-      {kolizja && (
-        <div
-          role="alertdialog"
-          aria-labelledby="kolizja-tytul"
-          className="uwaga"
-          onKeyDown={(e) => e.key === 'Escape' && ustawKolizje(undefined)}
-        >
-          <p id="kolizja-tytul">{t('projekty.kolizja', { nazwa: kolizja.projekt.nazwa })}</p>
-          <button
-            type="button"
-            autoFocus
-            onClick={() => void zapiszImport(kolizja.projekt, kolizja.zasoby)}
-          >
-            {t('projekty.zastap')}
-          </button>{' '}
-          <button
-            type="button"
-            onClick={() =>
-              void zapiszImport(
-                jakoKopia(
-                  kolizja.projekt,
-                  t('projekty.nazwaKopii', { nazwa: kolizja.projekt.nazwa }),
-                ),
-                kolizja.zasoby,
-              )
-            }
-          >
-            {t('projekty.jakoKopia')}
-          </button>{' '}
-          <button type="button" onClick={() => ustawKolizje(undefined)}>
-            {t('projekty.anuluj')}
-          </button>
-        </div>
       )}
       {doUsuniecia && (
         <div
@@ -178,7 +104,9 @@ export function ListaProjektow() {
       {lista === undefined ? (
         <p>{t('projekty.wczytywanie')}</p>
       ) : lista.length === 0 ? (
-        <p className="podpis">{t('projekty.brak')}</p>
+        <p className="podpis">
+          {t('projekty.brak')} {t('start.pustaPodpowiedz')}
+        </p>
       ) : (
         <ul className="kafelki-projektow">
           {lista.map((p) => (

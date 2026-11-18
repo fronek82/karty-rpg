@@ -846,8 +846,7 @@ export const en: Slownik = {
   'import.wyniki': 'Import results',
   'import.szablon': 'Created a project from the template “{plik}”.',
   'import.blad': '“{plik}”: {szczegoly}',
-  'import.nieznanyRodzaj':
-    'File type not recognized (expected .kartyrpg or .kartyrpg-szablon).',
+  'import.nieznanyRodzaj': 'File type not recognized (expected .kartyrpg or .kartyrpg-szablon).',
   'import.pominiety': 'Skipped file “{plik}” – project “{nazwa}” already exists.',
   'import.podsumowanie': 'Imported {ok} of {wszystkie} files.',
   'start.stworzDo': 'Create cards for {gra}',
