@@ -10,6 +10,7 @@ import {
   uruchomLiczenie,
   useBladLadowania as useBladZrodla,
   useWynikPodgladu as useWynikZrodla,
+  wyczyscPamiecPodgladow,
   wynikZPamieci,
   type WynikPodgladu,
 } from './pamiecPodgladow';
@@ -25,7 +26,7 @@ export const ZRODLO_PRZYKLADOW = 'przyklady';
 let czcionki: Promise<unknown> | undefined;
 
 /** Kroki liczenia podglądów (czcionki pobierane raz; nieudane pobranie nie zostaje w pamięci). */
-async function przygotuj() {
+async function przygotuj(j: Jezyk) {
   const modul = await import('./podgladyPrzykladow');
   if (!czcionki) {
     czcionki = modul.wczytajCzcionkiPrzykladow(adresCzcionki, pobierzBajty);
@@ -35,17 +36,20 @@ async function przygotuj() {
   const przyklady = await Promise.all(
     KAFELKI_SZABLONOW.map(async (o) => ({ id: o.id, przyklad: await o.laduj() })),
   );
+  // Język zmieniony w trakcie ładowania: teksty przykładów powstały w innym języku niż klucz
+  // wyniku – przerywamy, wynik nie trafia pod zły klucz (po powrocie liczy się od nowa).
+  if (jezyk() !== j) return undefined;
   return modul.krokiPrzykladow(przyklady, zasoby);
 }
 
 /** Zaczyna liczyć podglądy w danym języku (raz; kolejne wywołania czekają na to samo). */
 export function uruchomPodgladyPrzykladow(j: Jezyk = jezyk()): Promise<void> {
-  return uruchomLiczenie(ZRODLO_PRZYKLADOW, j, przygotuj);
+  return uruchomLiczenie(ZRODLO_PRZYKLADOW, j, () => przygotuj(j));
 }
 
 /** „Spróbuj ponownie” po błędzie wczytania. */
 export function ponowPodgladyPrzykladow(j: Jezyk = jezyk()): Promise<void> {
-  return ponowLiczenie(ZRODLO_PRZYKLADOW, j, przygotuj);
+  return ponowLiczenie(ZRODLO_PRZYKLADOW, j, () => przygotuj(j));
 }
 
 export function wynikPrzykladu(j: Jezyk, id: string): WynikPodgladu | undefined {
@@ -70,7 +74,8 @@ export const useWynikPrzykladu = (id: string) => useWynikZrodla(ZRODLO_PRZYKLADO
 /** Hook: komunikat o błędzie wczytania zasobów podglądów. */
 export const useBladPodgladowPrzykladow = () => useBladZrodla(ZRODLO_PRZYKLADOW);
 
-/** Tylko do testów: zapomina pobrane czcionki (pamięć wyników czyści `wyczyscPodgladyDoTestow`). */
-export function wyczyscCzcionkiPrzykladowDoTestow() {
+/** Tylko do testów: czyści pamięć wyników i zapomina pobrane czcionki. */
+export function wyczyscPodgladyPrzykladowDoTestow() {
+  wyczyscPamiecPodgladow();
   czcionki = undefined;
 }

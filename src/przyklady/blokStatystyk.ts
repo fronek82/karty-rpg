@@ -4,7 +4,7 @@ import { tresc } from './pomoc';
 import type { Przyklad } from './typy';
 
 const KOLUMNY = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-const WARTOSCI = [4, 35, 30, 3, 12, 30, 25, 9];
+const WARTOSCI = [1, 2, 3, 4, 5, 6, 7, 8];
 const LINIA = '#5a4630';
 
 /**

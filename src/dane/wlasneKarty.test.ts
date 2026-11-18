@@ -18,6 +18,7 @@ import {
   dodajSzablonZKartka,
   kartkaDlaSzablonu,
   nowyProjektWlasny,
+  nowyProjektZPrzykladu,
   pakietWlasny,
   pasujeDoSlotu,
   PAKIET_WLASNY,
@@ -246,5 +247,29 @@ describe('rozmiar szablonu i kartka dla szablonu', () => {
     const n = kartkaDlaSzablonu(bez, 'test-statystyki');
     expect(n.projekt.arkusze).toHaveLength(2);
     expect(n.projekt.arkusze[1]!.ustawienia.tytul?.tekst).toBe('');
+  });
+});
+
+describe('nowyProjektZPrzykladu', () => {
+  it('karta większa niż strona papieru: czytelny błąd zamiast projektu bez karty', async () => {
+    const olbrzym = {
+      ...szablonCzaru,
+      rozmiar: { tryb: 'mm' as const, szerokosc: 400, wysokosc: 500 },
+    };
+    await expect(
+      nowyProjektZPrzykladu({ szablon: olbrzym, dane: {} }, czcionka, 'duzy'),
+    ).rejects.toThrow(/nie mieści się/);
+  });
+
+  it('zwykła karta: jedna karta z danymi w pierwszym slocie', async () => {
+    const { projekt } = await nowyProjektZPrzykladu(
+      { szablon: szablonCzaru, dane: daneCzaru },
+      czcionka,
+      'ok',
+    );
+    expect(projekt.talie[0]!.karty).toHaveLength(1);
+    expect(projekt.arkusze[0]!.przypiete).toEqual([
+      expect.objectContaining({ kolumna: 0, rzad: 0 }),
+    ]);
   });
 });

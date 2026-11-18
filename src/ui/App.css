@@ -736,20 +736,24 @@ button.pasek-menu:focus-visible {
   height: 16rem;
 }
 
+.miniatura-karty {
+  --wysokosc-karty: 14.5rem; /* wysokość miniatury bez paddingu */
+}
+
+/*
+ * Karta w miniaturze: szerokość = mniejsza z szerokości kafelka i wysokości × proporcje
+ * (`--proporcja` ustawia komponent), a wysokość wynika z `aspect-ratio` – bez zniekształceń
+ * dla kart pionowych i poziomych.
+ */
 .miniatura-karty > .papier,
-.miniatura-karty > .szkielet,
 .miniatura-karty > .szkielet > .szkielet-papier {
-  width: auto;
-  height: 100%;
-  max-width: 100%;
+  width: min(100%, calc(var(--wysokosc-karty) * var(--proporcja, 0.7)));
+  height: auto;
 }
 
-.miniatura-karty > .szkielet-papier {
-  height: 100%;
-}
-
-.miniatura-karty > .papier {
-  flex: 0 1 auto;
+.miniatura-karty > .szkielet {
+  display: flex;
+  justify-content: center;
 }
 
 .rozmiar-pustej {

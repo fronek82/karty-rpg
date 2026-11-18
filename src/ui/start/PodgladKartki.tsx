@@ -37,7 +37,11 @@ export function Papier({ strona, styl }: { strona: StronaPodgladu; styl?: React.
   return (
     <span
       className="papier"
-      style={{ aspectRatio: `${strona.szerokosc} / ${strona.wysokosc}`, ...styl }}
+      style={{
+        aspectRatio: `${strona.szerokosc} / ${strona.wysokosc}`,
+        ['--proporcja' as string]: strona.szerokosc / strona.wysokosc,
+        ...styl,
+      }}
     >
       <span className="papier-svg" dangerouslySetInnerHTML={{ __html: strona.svg }} />
       <SiatkaSlotow strona={strona} />
@@ -60,7 +64,10 @@ export const PodgladKartki = memo(function PodgladKartki({
   // memo nie przepuszcza zmiany języka z rodzica – napisy szkieletu odświeżamy sami.
   useJezyk();
   const stylSzkieletu = proporcje
-    ? { aspectRatio: `${proporcje.szerokosc} / ${proporcje.wysokosc}` }
+    ? ({
+        aspectRatio: `${proporcje.szerokosc} / ${proporcje.wysokosc}`,
+        '--proporcja': proporcje.szerokosc / proporcje.wysokosc,
+      } as React.CSSProperties)
     : undefined;
   if (!wynik)
     return (

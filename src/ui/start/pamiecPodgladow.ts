@@ -13,8 +13,11 @@ import type { KrokPodgladu, Podglad } from './podglady';
 
 export type WynikPodgladu = { podglad: Podglad } | { blad: string };
 
-/** Źródło podglądów przygotowuje (leniwie) listę kroków liczenia dla danego języka. */
-export type PrzygotujKroki = () => Promise<KrokPodgladu[]>;
+/**
+ * Źródło podglądów przygotowuje (leniwie) listę kroków liczenia dla danego języka; `undefined`
+ * oznacza przerwanie (język zmienił się w trakcie przygotowania, więc teksty byłyby w złym języku).
+ */
+export type PrzygotujKroki = () => Promise<KrokPodgladu[] | undefined>;
 
 const wyniki = new Map<string, WynikPodgladu>();
 /** Błąd wczytania zasobów (czcionki, obraz) – jeden na źródło i język. */
@@ -61,6 +64,7 @@ async function licz(zrodlo: string, j: Jezyk, przygotuj: PrzygotujKroki): Promis
   performance.clearMarks(znacznikKoniec);
   performance.mark(znacznikStart);
   const kroki = await przygotuj();
+  if (!kroki) return false;
   for (const krok of kroki) {
     await oddajWatek();
     // Język zmieniony w trakcie – tych wyników nikt już nie czeka (po powrocie liczą się od nowa).

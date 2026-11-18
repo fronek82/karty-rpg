@@ -16,7 +16,7 @@ const wartoscWRombie = (n: number) => ({
   obramowanie: { grubosc: 0.35, kolor: KOLOR },
   styl: tresc(9, { wariant: 'pogrubiony' }),
   etykieta: {
-    tekst: t('przyklad.potwor.etykieta.wartosc', { n }),
+    tekst: t('przyklad.rzad.etykieta.wartosc', { n }),
     pozycja: 'nad' as const,
     styl: {
       czcionka: 'tresc',
@@ -38,7 +38,7 @@ const poleZEtykieta = (id: 'lista' | 'dodatki' | 'opis', kursywa = false) => ({
     ? {}
     : {
         etykieta: {
-          tekst: t(`przyklad.potwor.etykieta.${id as 'lista' | 'dodatki'}`),
+          tekst: t(`przyklad.rzad.etykieta.${id as 'lista' | 'dodatki'}`),
           pozycja: 'przed' as const,
           styl: { wariant: 'pogrubiony' as const },
         },
@@ -46,14 +46,14 @@ const poleZEtykieta = (id: 'lista' | 'dodatki' | 'opis', kursywa = false) => ({
 });
 
 /**
- * Karta potwora: zagnieżdżony nagłówek (nazwa i podtytuł obok wartości), rząd wartości
+ * Karta z rzędem wartości: zagnieżdżony nagłówek (nazwa i podtytuł obok wartości), rząd wartości
  * w rombach, separator i pola, które znikają, gdy są puste (tu: ostatnie).
  */
 export function przyklad(): Przyklad {
   return {
     szablon: {
-      id: 'potwor',
-      nazwa: t('przyklad.potwor.nazwa'),
+      id: 'rzad',
+      nazwa: t('przyklad.rzad.nazwa'),
       rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
       tlo: '#fbf7ee',
       korzen: {
@@ -103,15 +103,15 @@ export function przyklad(): Przyklad {
       },
     },
     dane: {
-      nazwa: t('przyklad.potwor.dane.nazwa'),
-      podtytul: t('przyklad.potwor.dane.podtytul'),
+      nazwa: t('przyklad.rzad.dane.nazwa'),
+      podtytul: t('przyklad.rzad.dane.podtytul'),
       wartosc1: '3',
       wartosc2: '14',
       wartosc3: '4',
       wartosc4: '2',
       wartosc5: '3',
-      lista: t('przyklad.potwor.dane.lista'),
-      dodatki: t('przyklad.potwor.dane.dodatki'),
+      lista: t('przyklad.rzad.dane.lista'),
+      dodatki: t('przyklad.rzad.dane.dodatki'),
     },
   };
 }

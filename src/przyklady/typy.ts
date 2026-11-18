@@ -12,7 +12,7 @@ export interface Przyklad {
 }
 
 /** Identyfikatory kafelków: pusta karta i przykłady. */
-export type IdPrzykladu = 'pusta' | 'opis' | 'statystyki' | 'potwor' | 'ozdobna' | 'swobodna';
+export type IdPrzykladu = 'pusta' | 'opis' | 'statystyki' | 'rzad' | 'ozdobna' | 'swobodna';
 
 /** Opis przykładu na ekranie „Stwórz własne karty”; sam szablon ładuje się leniwie. */
 export interface OpisPrzykladu {

@@ -52,6 +52,15 @@ const ZAKAZANE = [
   'magic: the',
   'pokémon',
   'pokemon',
+  // Terminy mechaniki gier.
+  'czar',
+  'spell',
+  'zdolność',
+  'armor',
+  'hit points',
+  'punkty życia',
+  'potwór',
+  'monster',
 ];
 
 /** Wszystkie napisy z wartości zagnieżdżonego obiektu. */
@@ -98,7 +107,7 @@ describe('katalog przykładów', () => {
     }
     expect(pl['przyklad.opis.nazwa']).toBe('Karta z opisem');
     expect(pl['przyklad.statystyki.nazwa']).toBe('Blok statystyk');
-    expect(pl['przyklad.potwor.nazwa']).toBe('Karta potwora');
+    expect(pl['przyklad.rzad.nazwa']).toBe('Karta z rzędem wartości');
     expect(pl['przyklad.ozdobna.nazwa']).toBe('Karta ozdobna');
     expect(pl['przyklad.swobodna.nazwa']).toBe('Karta swobodna');
     expect(pl['przyklad.pusta.nazwa']).toBe('Pusta karta');

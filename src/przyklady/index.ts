@@ -25,9 +25,9 @@ export const PRZYKLADY: readonly OpisPrzykladu[] = [
     laduj: () => import('./blokStatystyk').then((m) => m.przyklad()),
   },
   {
-    id: 'potwor',
+    id: 'rzad',
     rozmiar: { szerokosc: 63, wysokosc: 88 },
-    laduj: () => import('./kartaPotwora').then((m) => m.przyklad()),
+    laduj: () => import('./kartaZRzedem').then((m) => m.przyklad()),
   },
   {
     id: 'ozdobna',

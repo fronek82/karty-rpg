@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { strToU8, zipSync } from 'fflate';
 import { plikSzablonu } from './kartkaUI';
 
 /**
@@ -10,7 +11,7 @@ const NAZWY = [
   'Pusta karta',
   'Karta z opisem',
   'Blok statystyk',
-  'Karta potwora',
+  'Karta z rzędem wartości',
   'Karta ozdobna',
   'Karta swobodna',
 ];
@@ -45,6 +46,24 @@ test('wejście: okruszki, menu, sześć kafelków z podglądem z silnika', async
   // Żadnych nazw gier na ekranie.
   for (const gra of ['Mausritter', 'Dungeons', 'Warhammer', 'Pierścień'])
     await expect(page.getByText(gra)).toHaveCount(0);
+});
+
+test('miniatury nie są zniekształcone: proporcje papieru poziomego i pionowego', async ({
+  page,
+}) => {
+  await wejdz(page);
+  const proporcje = async (id: string) => {
+    const r = (await page.locator(`[data-podglad="${id}"] .papier`).boundingBox())!;
+    return r.width / r.height;
+  };
+  expect(Math.abs((await proporcje('statystyki')) - 88 / 63)).toBeLessThan(0.02);
+  expect(Math.abs((await proporcje('opis')) - 63 / 88)).toBeLessThan(0.02);
+  expect(Math.abs((await proporcje('pusta')) - 63 / 88)).toBeLessThan(0.02);
+  // Karta pozioma mieści się w kafelku i w miniaturze.
+  const kafelek = (await page.locator('[data-podglad="statystyki"]').boundingBox())!;
+  const papier = (await page.locator('[data-podglad="statystyki"] .papier').boundingBox())!;
+  expect(papier.width).toBeLessThanOrEqual(kafelek.width);
+  expect(papier.height).toBeLessThanOrEqual(16 * 16);
 });
 
 test('klik w „Karta z opisem” tworzy projekt z kartą i otwiera edytor kartki', async ({ page }) => {
@@ -110,11 +129,25 @@ test('„Importuj szablon” z błędnym plikiem pokazuje komunikat i zostaje na
   await expect(page.getByRole('button', { name: 'Karta z opisem' })).toBeEnabled();
 });
 
+test('„Importuj szablon” z plikiem projektu podpowiada ekran startowy', async ({ page }) => {
+  await wejdz(page);
+  await page.getByTestId('plik-szablonu-start').setInputFiles({
+    name: 'moj.kartyrpg',
+    mimeType: 'application/zip',
+    buffer: Buffer.from(zipSync({ 'projekt.json': strToU8('{}') })),
+  });
+  await expect(page.getByRole('alert')).toContainText('To jest plik projektu');
+  await expect(page.getByRole('alert')).toContainText('Importuj pliki…');
+  await expect(page).toHaveURL(/#\/wlasne$/);
+  // Po błędzie fokus wraca na przycisk importu.
+  await expect(page.getByRole('button', { name: /Importuj szablon/ })).toBeFocused();
+});
+
 test('klawiatura: Enter i Spacja na kafelku tworzą projekt, Tab przechodzi po kafelkach', async ({
   page,
 }) => {
   await wejdz(page);
-  const k = page.getByRole('button', { name: 'Karta potwora' });
+  const k = page.getByRole('button', { name: 'Karta z rzędem wartości' });
   await k.focus();
   await page.keyboard.press('Enter');
   await edytorOtwarty(page);
@@ -158,7 +191,7 @@ test.describe('angielski', () => {
       'Blank card',
       'Card with a description',
       'Stat block',
-      'Monster card',
+      'Card with a row of values',
       'Ornate card',
       'Free-form card',
     ];

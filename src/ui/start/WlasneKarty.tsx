@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LIMITY_ARCHIWUM, ROZSZERZENIE_SZABLONU } from '../../dane/archiwum';
 import { formatujLiczbe, t } from '../../i18n';
+import { rozpoznajRodzaj } from './importPlikow';
 import { KAFELKI_SZABLONOW } from '../../przyklady';
 import type { OpisPrzykladu } from '../../przyklady/typy';
 import { nowyProjektZPrzykladu } from '../baza';
@@ -23,7 +24,7 @@ function KafelekSzablonu({
 }: {
   opis: OpisPrzykladu;
   wylaczony: boolean;
-  utworz: (opis: OpisPrzykladu) => void;
+  utworz: (opis: OpisPrzykladu, el: HTMLElement) => void;
 }) {
   const wynik = useWynikPrzykladu(opis.id);
   const { szerokosc, wysokosc } = opis.rozmiar;
@@ -33,9 +34,9 @@ function KafelekSzablonu({
       className="kafelek-podgladu"
       data-podglad={opis.id}
       aria-labelledby={`szablon-${opis.id}-nazwa`}
-      aria-describedby={`szablon-${opis.id}-podpowiedz`}
+      aria-describedby={`szablon-${opis.id}-rozmiar`}
       disabled={wylaczony}
-      onClick={() => utworz(opis)}
+      onClick={(e) => utworz(opis, e.currentTarget)}
     >
       <span className="miniatura-podgladu miniatura-karty">
         <PodgladKartki wynik={wynik} proporcje={opis.rozmiar} />
@@ -50,8 +51,15 @@ function KafelekSzablonu({
       </span>
       <span className="opis-podgladu">
         <b id={`szablon-${opis.id}-nazwa`}>{t(`przyklad.${opis.id}.nazwa`)}</b>
-        <span id={`szablon-${opis.id}-podpowiedz`} className="podpowiedz">
+        {/* Podpowiedź widoczna na każdym kafelku; czytnik dostaje ją raz, w opisie grupy. */}
+        <span className="podpowiedz" aria-hidden="true">
           {t('wlasne.kliknij')}
+        </span>
+        <span id={`szablon-${opis.id}-rozmiar`} className="ukryte">
+          {t('rozmiar.mm', {
+            szer: formatujLiczbe(szerokosc, 1),
+            wys: formatujLiczbe(wysokosc, 1),
+          })}
         </span>
       </span>
     </button>
@@ -66,38 +74,67 @@ function KafelekSzablonu({
  */
 export function WlasneKarty() {
   const plik = useRef<HTMLInputElement>(null);
+  const przyciskImportu = useRef<HTMLButtonElement>(null);
+  // Element, który wywołał tworzenie – po błędzie dostaje fokus z powrotem (był `disabled`).
+  const fokusPo = useRef<HTMLElement | null>(null);
+  // Po odmontowaniu (np. przejście na inną trasę w trakcie tworzenia) nie nawigujemy ani nie ustawiamy stanu.
+  const zamontowany = useRef(true);
   // Ref chroni przed podwójnym kliknięciem w tym samym renderze (stan `trwa` bywa spóźniony).
   const wToku = useRef(false);
   const [trwa, ustawTrwa] = useState(false);
   const [blad, ustawBlad] = useState<string>();
   useUruchomPodgladyPrzykladow();
+  useEffect(() => {
+    zamontowany.current = true;
+    return () => {
+      zamontowany.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!trwa && fokusPo.current) {
+      fokusPo.current.focus();
+      fokusPo.current = null;
+    }
+  }, [trwa]);
   const bladPodgladow = useBladPodgladowPrzykladow();
 
   /** Tworzy projekt (przykład albo import) i otwiera go; po błędzie wraca do ekranu. */
-  const wykonaj = async (zadanie: () => Promise<{ id: string } | { blad: string }>) => {
+  const wykonaj = async (
+    zadanie: () => Promise<{ id: string } | { blad: string }>,
+    zrodlo: HTMLElement | null,
+  ) => {
     if (wToku.current) return;
     wToku.current = true;
     ustawTrwa(true);
     ustawBlad(undefined);
+    let komunikat: string | undefined;
+    let id = '';
     try {
       const wynik = await zadanie();
-      if ('blad' in wynik) throw new Error(wynik.blad);
-      window.location.hash = adresProjektu(wynik.id);
+      if ('blad' in wynik) komunikat = wynik.blad;
+      else id = wynik.id;
     } catch (e) {
-      ustawBlad(e instanceof Error ? e.message : String(e));
-      wToku.current = false;
-      ustawTrwa(false);
+      komunikat = e instanceof Error ? e.message : String(e);
     }
+    if (!zamontowany.current) return;
+    if (komunikat === undefined) {
+      window.location.hash = adresProjektu(id);
+      return;
+    }
+    fokusPo.current = zrodlo;
+    ustawBlad(komunikat);
+    wToku.current = false;
+    ustawTrwa(false);
   };
 
-  const utworz = (opis: OpisPrzykladu) =>
+  const utworz = (opis: OpisPrzykladu, el: HTMLElement) =>
     void wykonaj(async () => {
       try {
         return { id: await nowyProjektZPrzykladu(await opis.laduj()) };
       } catch (e) {
-        throw new Error(opisBleduImportu(e), { cause: e });
+        return { blad: opisBleduImportu(e) };
       }
-    });
+    }, el);
 
   const importuj = (f: File) =>
     void wykonaj(async () => {
@@ -114,8 +151,11 @@ export function WlasneKarty() {
       } catch {
         return { blad: t('import.nieczytelny') };
       }
+      // Plik projektu (.kartyrpg) to nie szablon – podpowiadamy właściwe miejsce importu.
+      if (rozpoznajRodzaj(f.name, bajty) === 'projekt')
+        return { blad: t('wlasne.toProjekt', { przycisk: t('start.importujPliki') }) };
       return importujPlikSzablonu(bajty);
-    });
+    }, przyciskImportu.current);
 
   return (
     <section className="wybor-gry wlasne-karty">
@@ -135,6 +175,7 @@ export function WlasneKarty() {
           </a>
           <button
             type="button"
+            ref={przyciskImportu}
             className="pasek-menu pasek-turkus"
             disabled={trwa}
             onClick={() => plik.current?.click()}
@@ -156,10 +197,17 @@ export function WlasneKarty() {
           />
         </nav>
 
-        <section className="grupa-podgladow" aria-labelledby="wlasne-przyklady">
+        <section
+          className="grupa-podgladow"
+          aria-labelledby="wlasne-przyklady"
+          aria-describedby="wlasne-podpowiedz"
+        >
           <h2 id="wlasne-przyklady">
             {t('wlasne.przyklady')} <small>{t('wlasne.przykladyPodpis')}</small>
           </h2>
+          <p id="wlasne-podpowiedz" className="ukryte">
+            {t('wlasne.kliknij')}
+          </p>
           <div className="siatka-szablonow">
             {KAFELKI_SZABLONOW.map((o) => (
               <KafelekSzablonu key={o.id} opis={o} wylaczony={trwa} utworz={utworz} />
