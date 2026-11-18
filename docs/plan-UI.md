@@ -2,7 +2,7 @@
 
 Kamień milowy po M2b (`docs/plan-M2b.md`). Zmienia **tylko warstwę interfejsu**: ekrany startowe, motyw kolorystyczny, język, instrukcję i kilka poprawek edytorów. **Silnik układu, PDF i format zapisu zostają bez zmian** (żadnej zmiany schematu `WERSJA_SCHEMATU`; wybór języka i motywu trafia do `localStorage`, nie do projektu).
 
-**Status:** projekt do akceptacji. Kod jeszcze nie powstał. Po akceptacji makiet i punktów z sekcji 6 realizacja etapami UI-1…UI-9 jednym ciągiem (sekcja 4).
+**Status:** plan i makiety zaakceptowane (18.11.2026) z poprawkami: czcionka tytułu Cinzel Decorative Bold (D1), kolor linków `#1F6C92` w tekście ciągłym (D2), ciemny motyw bez różu – bordo `#8E2C48`, tytuł i wyróżnienia w złotym `#E9A645` (sekcja 3.1), instrukcja ze zrzutami generowanymi testem Playwright (D9). Realizacja etapami UI-1…UI-9 jednym ciągiem (sekcja 4). Następny krok: UI-1.
 
 Makiety (`docs/obrazy/`, źródła HTML i skrypt generujący w `docs/makiety-ui/`; podglądy kart i arkuszy są **wyrenderowane prawdziwym silnikiem**):
 
@@ -54,19 +54,20 @@ Poza zakresem: nowe funkcje silnika, zmiany PDF i formatu plików, kolejne gry, 
 
 Paleta wzorowana na załączonym zrzucie Obsidiana: morski pasek tytułu i wstążka, ciepły beż, kolorowe paski w panelu bocznym, karty z fioletowo-bordowym obramowaniem, niebieskie linki. Wszystkie kolory jako zmienne CSS w jednym pliku (`src/ui/tokeny.css`), motyw na `<html data-theme="light|dark">`.
 
-| Token                 | Jasny                                      | Ciemny    | Zastosowanie                                          |
-| --------------------- | ------------------------------------------ | --------- | ----------------------------------------------------- |
-| `--tlo`               | `#EDE4DC`                                  | `#1E1A1D` | tło strony                                            |
-| `--tlo-panelu`        | `#F6F0EA`                                  | `#2A2528` | panele, karty, menu                                   |
-| `--tekst`             | `#2B2A2E`                                  | `#ECE4DC` | tekst (ciemny grafit w jasnym)                        |
-| `--tekst-przygaszony` | `#5C5560`                                  | `#B9AEA8` | podpisy, opisy                                        |
-| `--akcent`            | `#1B7FA8`                                  | `#1F6E94` | pasek górny, przycisk główny (biały tekst)            |
-| `--pasek-gorny`       | `#1B7FA8`                                  | `#154B63` | tło paska górnego                                     |
-| `--link`              | `#2A7FA8`                                  | `#6FB8DA` | linki (zawsze podkreślone)                            |
-| `--bordo`             | `#7D2240`                                  | `#B8536F` | akcent drugorzędny, ostrzeżenia nieblokujące, aktywne |
-| `--kolor-1…4`         | `#E0876A`, `#E9A645`, `#5F9EA8`, `#356D8A` | te same   | kolorowe paski menu i sekcji panelu                   |
-| `--obramowanie-karty` | `#B4A0C8`                                  | `#B4A0C8` | obramowanie kart i kafelków (drugie: bordo)           |
-| `--obramowanie`       | `#D3C6BA`                                  | `#4A4248` | cienkie linie podziału                                |
+| Token                 | Jasny                                      | Ciemny    | Zastosowanie                                                                     |
+| --------------------- | ------------------------------------------ | --------- | -------------------------------------------------------------------------------- |
+| `--tlo`               | `#EDE4DC`                                  | `#1E1A1D` | tło strony                                                                       |
+| `--tlo-panelu`        | `#F6F0EA`                                  | `#2A2528` | panele, karty, menu                                                              |
+| `--tekst`             | `#2B2A2E`                                  | `#ECE4DC` | tekst (ciemny grafit w jasnym)                                                   |
+| `--tekst-przygaszony` | `#5C5560`                                  | `#B9AEA8` | podpisy, opisy                                                                   |
+| `--akcent`            | `#1B7FA8`                                  | `#1F6E94` | pasek górny, przycisk główny (biały tekst)                                       |
+| `--pasek-gorny`       | `#1B7FA8`                                  | `#154B63` | tło paska górnego                                                                |
+| `--link`              | `#2A7FA8`                                  | `#6FB8DA` | linki (zawsze podkreślone)                                                       |
+| `--bordo`             | `#7D2240`                                  | `#8E2C48` | wypełnienia i ozdoby (w ciemnym z tekstem `#ECE4DC`), obramowania dolne kafelków |
+| `--wyroznienie`       | `#7D2240`                                  | `#E9A645` | tytuł strony, wyróżnione napisy, numeracja (w ciemnym złoty, nie jasne bordo)    |
+| `--kolor-1…4`         | `#E0876A`, `#E9A645`, `#5F9EA8`, `#356D8A` | te same   | kolorowe paski menu i sekcji panelu                                              |
+| `--obramowanie-karty` | `#B4A0C8`                                  | `#B4A0C8` | obramowanie kart i kafelków (drugie: bordo)                                      |
+| `--obramowanie`       | `#D3C6BA`                                  | `#4A4248` | cienkie linie podziału                                                           |
 
 `--zaznaczenie` (dziś niebieski `#2a6fd6`) zmieniamy na morski `--akcent`; `--zle` i `--dobrze` zostają czerwony i zielony (czytelność ostrzeżeń), tylko w dwóch wariantach.
 
@@ -84,7 +85,7 @@ Paleta wzorowana na załączonym zrzucie Obsidiana: morski pasek tytułu i wstą
 | ciemny: bordo `#B8536F` na tle | 3,7:1     | tylko elementy graficzne (≥3:1)          |
 | ciemny: biały na `#1F6E94`     | 5,7:1     | AA                                       |
 
-Punkt do decyzji (sekcja 6, D2): link w jasnym motywie w wybranym kolorze nie spełnia AA dla zwykłego tekstu. Zawsze będzie podkreślony (spełnia wymóg „nie tylko kolorem”), a proponuję dla linków w tekście ciągłym `#1F6C92` (ten sam odcień, ciemniejszy), a `#2A7FA8` zostawić dla większych elementów i najechania.
+**Decyzja D2:** w tekście ciągłym linki w jasnym motywie mają `#1F6C92` (4,6:1, AA), a `#2A7FA8` zostaje dla większych elementów i najechania; linki zawsze podkreślone. W ciemnym motywie nie ma różu: zamiast jasnego bordo tytuł i wyróżnione napisy są złote (`--wyroznienie`).
 
 **Przełącznik:** stan w `localStorage` (`karty.motyw` = `light|dark|system`), przy pierwszym wejściu z `prefers-color-scheme`. Krótki skrypt w `index.html` ustawia `data-theme` przed pierwszym malowaniem (bez migotania). Edytory kart: sama karta na podglądzie jest zawsze w kolorach szablonu (nie zależy od motywu aplikacji).
 
@@ -100,7 +101,7 @@ Jeden komponent `NaglowekAplikacji` dla ekranów startowych i dla instrukcji; w 
 - **Lewa:** dwa przyciski pionowo, w stylu kolorowych pasków z Obsidiana: „Stwórz własne karty”, pod spodem „Stwórz karty do Mausrittera” (kolejność jak w opisie; kolory z `--kolor-*`).
 - **Środek:** „Moje projekty” – siatka kafelków z miniaturą pierwszej strony, nazwą, liczbą stron i kart, datą, akcjami Otwórz / Eksportuj / Usuń (obecna logika `ListaProjektow.tsx`, bez zmian zachowania). Pusta lista: krótka podpowiedź.
 - **Prawa:** „Importuj pliki…” (przycisk i strefa przeciągnij-i-upuść; przyjmuje `.kartyrpg` i `.kartyrpg-szablon`, rozpoznaje rodzaj po rozszerzeniu; wiele plików naraz). Dziś import projektu jest w obrębie listy projektów, import szablonu w „Stwórz własne karty”; po zmianie oba są dostępne też z ekranów własnych kart (D6).
-- **Tytuł:** „Karty do gier – zaprojektuj i wydrukuj” (EN: „Game Cards – Design and Print”), większą czcionką ozdobną. Trzy propozycje (wszystkie OFL, wszystkie z kompletem polskich znaków – sprawdzone w pliku czcionki; Almendra Display odpadła, bo nie ma ą, ę, ś, ź, ż):
+- **Tytuł:** „Karty do gier – zaprojektuj i wydrukuj” (EN: „Game Cards – Design and Print”), większą czcionką ozdobną. **Wybrana: Cinzel Decorative Bold (D1).** Rozważane trzy (wszystkie OFL, wszystkie z kompletem polskich znaków – sprawdzone w pliku czcionki; Almendra Display odpadła, bo nie ma ą, ę, ś, ź, ż):
 
 | #   | Czcionka               | Charakter                                        | Licencja | Waga pliku |
 | --- | ---------------------- | ------------------------------------------------ | -------- | ---------- |
@@ -137,7 +138,7 @@ Wybrana czcionka trafia do `public/czcionki/` (obok EB Garamond i Grenze Gotisch
 - **Zawartość (obie wersje):** karty do Mausrittera, własne szablony (edytor, ozdobniki, tryb swobodny w skrócie), edycja kart na kartce, druk w skali 100%, kalibracja drukarki i wydruk testowy, eksport i import projektu oraz szablonu.
 - **Styl (wymagania autora):** zwykły, rzeczowy język; krótkie zdania; konkretne nazwy przycisków dokładnie jak w interfejsie; bez schematycznych zwrotów („oto przewodnik”, „zanurz się”, „wspaniale”), bez ikon i emoji, bez pustych linii między wierszami list (struktura nagłówek + lista numerowana). Przed zamknięciem etapu przegląd tekstu pod kątem powyższych zasad (lista kontrolna w planie etapu UI-6).
 - **Spójność z aplikacją:** test jednostkowy wyciąga z instrukcji nazwy w cudzysłowach („…”, “…”) i sprawdza, że istnieją jako teksty interfejsu w odpowiednim języku – zmiana nazwy przycisku bez poprawki instrukcji psuje test.
-- **Zrzuty ekranu** w instrukcji: bez (mniej do utrzymania; instrukcja opisuje kroki słowami).
+- **Zrzuty ekranu** (D9): kilka (start, ekran Mausrittera, edytor kartki z menu typów, edytor szablonu, ustawienia i druk), w jasnym motywie, osobno dla PL i EN. Generuje je test Playwright (`testy/zrzuty-instrukcji.spec.ts` uruchamiany `ZRZUTY_INSTRUKCJI=1 npx playwright test …`) do `instrukcja/zrzuty/<jezyk>/…png`, więc po zmianie interfejsu wystarczy odświeżyć; zwykły `npm run e2e` tylko sprawdza, że pliki istnieją i mają oczekiwane wymiary. Podpisy pod zrzutami bez ikon.
 
 ### 3.8 Edytory (kartka i szablon)
 
@@ -162,7 +163,7 @@ Każdy etap: jeden ciąg pracy i jeden PR od aktualnego `main`: kod + testy (typ
 | **UI-3** | M        | **Ekran startowy.** Układ trzech kolumn, tytuł wybraną czcionką (plik, licencja, `LICENCJE.md`), menu pasków, „Moje projekty” z miniaturami, „Importuj pliki…” z przeciąganiem i obsługą dwóch rozszerzeń, układ responsywny. Testy e2e importu obu rodzajów plików.                                                                                     | edytor-ui, tester                 |
 | **UI-4** | M        | **Ekran Mausrittera.** Menu po lewej, podglądy pustej kartki i układów z silnika (leniwie, ze szkieletem, pomiar czasu), klik tworzy projekt; menu typów kart bez ikon. Testy: podglądy zgodne z arkuszami pakietu (SVG sceny), e2e utworzenia projektu z podglądu.                                                                                      | edytor-ui, silnik-layoutu, tester |
 | **UI-5** | M        | **Ekran własnych kart.** Katalog `src/przyklady/` z ogólnymi szablonami (nazwy i dane neutralne), podglądy z silnika, klik = nowy projekt, „Nowy szablon od zera” i „Importuj szablon”. Testy: każdy przykład ładuje się bez ostrzeżeń, e2e z kliknięcia kafelka.                                                                                        | edytor-ui, silnik-layoutu, tester |
-| **UI-6** | M        | **Instrukcja.** Druga strona Vite, treść PL i EN (lista kontrolna stylu z sekcji 3.7), spis treści, przełącznik języka i motywu, przycisk „Instrukcja” otwiera ją w nowym oknie. Testy: strona buduje się i działa pod ścieżką Pages, test spójności nazw przycisków z interfejsem, e2e otwarcia w nowym oknie.                                          | edytor-ui, tester                 |
+| **UI-6** | M        | **Instrukcja.** Druga strona Vite, treść PL i EN (lista kontrolna stylu z sekcji 3.7), spis treści, przełącznik języka i motywu, przycisk „Instrukcja” otwiera ją w nowym oknie, zrzuty generowane testem (sekcja 3.7). Testy: strona buduje się i działa pod ścieżką Pages, test spójności nazw przycisków z interfejsem, e2e otwarcia w nowym oknie.   | edytor-ui, tester                 |
 | **UI-7** | M        | **Edytory w nowej palecie.** Edytor kartki i szablonu na tokenach, kolorowe znaczniki sekcji paneli, przejrzenie wszystkich ekranów w obu motywach (kontrast, fokus, zaznaczenie), odnowienie wzorców zrzutów stron, jeśli występują. Zrzuty do `docs/obrazy/`.                                                                                          | edytor-ui, tester                 |
 | **UI-8** | L        | **Poprawki edytorów (sekcja 3.9).** Duplikuj szablon, liczba kopii od razu, przeciąganie między kontenerami, wspólna zmiana rozmiaru, wyśrodkowanie cyfry w kształcie, tytuł w F. Testy jednostkowe operacji, e2e przeciągania między kontenerami i wspólnego skalowania, poprawione przykłady D i F.                                                    | edytor-ui, silnik-layoutu, tester |
 | **UI-9** | S        | **Domknięcie.** README (nowy start, język, motyw, instrukcja), zrzuty ekranów wszystkich nowych widoków w obu motywach i językach, aktualizacja tego planu i `CLAUDE.md`, końcowy przegląd dostępności (klawiatura, fokus, czytnik) i wydajności startu (pomiar). Plan następnego kamienia (M2c) bez zmian.                                              | tester, edytor-ui, recenzent      |
@@ -180,19 +181,19 @@ Kolejność: najpierw fundament (UI-1 motyw i pasek, UI-2 język), bo dotyka ka�
 - **Zmiana języka w trakcie edycji** – komponenty trzymają przetłumaczone teksty w stanie. Ograniczenie: przerysowanie z kontekstu, test e2e zmiany języka w edytorze.
 - **Przeciąganie między kontenerami** – trafianie w zagnieżdżone i obrócone elementy, jeden krok „Cofnij”. Ograniczenie: te same prostokąty co scena, wyłączenie celów za obróconym przodkiem, ta sama operacja z klawiatury.
 
-## 6. Punkty do Twojej decyzji
+## 6. Decyzje D1–D9 (zatwierdzone)
 
-| #   | Sprawa                           | Propozycja                                                                                                                                                                                               |
-| --- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Czcionka tytułu                  | Wybierz jedną z trzech z makiet `makieta-ui-czcionka-*`. Moja rekomendacja: **Uncial Antiqua** (baśniowy klimat Mausrittera) albo **Cinzel Decorative** (uniwersalna).                                   |
-| D2  | Kolor linków w jasnym motywie    | `#2A7FA8` ma 3,6:1 na beżu (AA wymaga 4,5:1). Rekomendacja: `#1F6C92` w tekście ciągłym, `#2A7FA8` dla większych elementów i najechania; linki zawsze podkreślone. Makiety pokazują dokładnie `#2A7FA8`. |
-| D3  | Lewe menu ekranu Mausrittera     | „Pusta kartka” i „Zacznij od gotowego układu” jako **skróty do grup** w środku, gdzie widać oba rodzaje podglądów naraz (zgodnie z opisem „na środku podglądy: pusta kartka i każdy gotowy układ”).      |
-| D4  | Zawartość kart po angielsku      | Tłumaczymy interfejs i nazwy typów/układów pakietu; **dane przykładowe kart i treść wpisana przez użytkownika zostają bez zmian**.                                                                       |
-| D5  | Przykładowe szablony w aplikacji | Zestaw **neutralnych** szablonów (opis, statystyki, potwór, ozdobna, swobodna) z nowego `src/przyklady/`. CLAUDE.md zakazuje gotowców pod konkretne gry – przykłady nie zawierają zasad ani nazw gier.   |
-| D6  | Import na starcie                | „Importuj pliki…” przyjmuje oba rozszerzenia i sam rozpoznaje rodzaj; „Importuj szablon” na ekranie własnych kart zostaje jako skrót.                                                                    |
-| D7  | Znaczenie „Liczba kopii”         | Pole = **łączna liczba egzemplarzy** karty (zmiana od razu dodaje/usuwa kopie). Alternatywa: pole „dodaj N kopii” z zatwierdzeniem Enter – mniej intuicyjne przy zmniejszaniu.                           |
-| D8  | Język domyślny                   | Z ustawień przeglądarki (pl → PL, reszta EN), potem zapamiętany wybór.                                                                                                                                   |
-| D9  | Zrzuty w instrukcji              | Bez zrzutów (opis słowami); do rozważenia po pierwszej wersji.                                                                                                                                           |
+| #   | Sprawa                           | Decyzja                                                                                                                           |
+| --- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Czcionka tytułu                  | **Cinzel Decorative Bold** (OFL 1.1, Natanael Gama).                                                                              |
+| D2  | Kolor linków w jasnym motywie    | `#1F6C92` w tekście ciągłym, `#2A7FA8` dla większych elementów i najechania; linki podkreślone.                                   |
+| D3  | Lewe menu ekranu Mausrittera     | „Pusta kartka” i „Zacznij od gotowego układu” jako skróty do grup w środku; oba rodzaje podglądów widoczne naraz.                 |
+| D4  | Zawartość kart po angielsku      | Tłumaczymy interfejs i nazwy typów oraz układów pakietu; dane przykładowe kart i treść użytkownika bez zmian.                     |
+| D5  | Przykładowe szablony w aplikacji | Neutralne szablony (opis, statystyki, potwór, ozdobna, swobodna) w `src/przyklady/`, bez zasad i nazw gier.                       |
+| D6  | Import na starcie                | „Importuj pliki…” przyjmuje oba rozszerzenia i rozpoznaje rodzaj; „Importuj szablon” na ekranie własnych kart zostaje jako skrót. |
+| D7  | Znaczenie „Liczba kopii”         | Pole = łączna liczba egzemplarzy karty; zmiana od razu dodaje lub usuwa kopie; przycisk „Duplikuj” dla jednej kopii.              |
+| D8  | Język domyślny                   | Z ustawień przeglądarki (pl → PL, reszta EN), potem zapamiętany wybór.                                                            |
+| D9  | Zrzuty w instrukcji              | Kilka zrzutów generowanych testem Playwright (jasny motyw, PL i EN); bez ikon i bez pustych linii między wierszami.               |
 
 ## 7. Decyzje podjęte bez konsultacji
 
