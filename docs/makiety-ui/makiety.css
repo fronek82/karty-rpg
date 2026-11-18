@@ -651,10 +651,12 @@ h2 {
 }
 .btn-m.niebezp {
   border-color: var(--ob-bordo);
-  color: var(--ob-bordo);
+  color: var(--wyroznienie);
 }
 [data-theme='dark'] .btn-m.niebezp {
-  color: #e9a0b4;
+  background: #8e2c48;
+  border-color: #8e2c48;
+  color: #ece4dc;
 }
 .sep-panel {
   border: 0;
@@ -727,7 +729,7 @@ h2 {
 }
 .tekst li::marker {
   font-weight: 700;
-  color: var(--bordo);
+  color: var(--wyroznienie);
 }
 .tekst kbd {
   font-family: ui-monospace, Menlo, Consolas, monospace;
