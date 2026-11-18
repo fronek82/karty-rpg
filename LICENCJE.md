@@ -25,6 +25,7 @@ Własne rysunki projektu (licencja jak kod, MIT), generowane skryptami z `narzed
 | Zakończenia (5: grot, zawijas, liść, kropka, kolec) i środki (4: romb, gwiazda, liść, kropka) separatorów  | `src/ozdobniki/separatory.ts` (ścieżki wektorowe w kodzie) | rysowane ręcznie jako kontury, ogólne, bez zasobów zewnętrznych, licencja projektu                                 |
 | Rysunek testowy SVG (gwiazdka z otworem) do testów importu własnego SVG                                    | `testy/zasoby/gwiazdka.svg`                                | narysowany ręcznie na potrzeby testów, bez zasobów zewnętrznych, licencja projektu (MIT)                           |
 | Obrazek testowy PNG ramki 9-slice (120×120 px) do testów ramek z obrazu                                    | `testy/zasoby/ramka-testowa.png`                           | `narzedzia/ramka-testowa.mjs` – generowany deterministycznie, własny rysunek projektu, licencja projektu (MIT)     |
+| Obrazek testowy PNG podkładu ze wzoru (252×352 px) do testów podkładu i trybu swobodnego                   | `testy/zasoby/podklad-testowy.png`                         | `narzedzia/podklad-testowy.mjs` – generowany deterministycznie, własny rysunek projektu, licencja projektu (MIT)   |
 
 ## Zależności w aplikacji (środowisko uruchomieniowe)
 

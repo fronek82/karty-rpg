@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { kluczZNazwy, kluczeSzablonu, TYPY_POL, type ZmianaKolejnosci } from '../../dane/szablon';
 import { t } from '../../i18n';
 import {
@@ -44,6 +45,7 @@ export function PanelWezla({
   rodzicSwobodny,
   rozmiaryKotwicy,
   kolejnosc,
+  wyrownanie,
   mozeNaSwobodny = true,
 }: {
   szablon: Szablon;
@@ -65,6 +67,8 @@ export function PanelWezla({
   rozmiaryKotwicy?: (id: string) => RozmiaryKotwicy | undefined;
   /** Zmiana kolejności rysowania (tylko jeden element). */
   kolejnosc?: (jak: ZmianaKolejnosci) => void;
+  /** Wyrównanie i rozłożenie zaznaczonych elementów swobodnych (koniec sekcji „Położenie”). */
+  wyrownanie?: ReactNode;
   /** Konwersja na swobodny wymaga układu z podglądu – bez niego przycisk jest wyłączony. */
   mozeNaSwobodny?: boolean;
 }) {
@@ -133,7 +137,9 @@ export function PanelWezla({
             )
           }
           {...(kolejnosc && !wiele ? { kolejnosc } : {})}
-        />
+        >
+          {wyrownanie}
+        </PanelPolozenia>
       )}
 
       {pole && ZE_ZRODLEM.has(pole.typ) && !wiele && (

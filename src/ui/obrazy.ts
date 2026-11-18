@@ -13,6 +13,10 @@ export interface PrzygotowanyObraz {
 /** Bezpieczny limit powierzchni kanwy (Safari na iOS: ~16,7 Mpx). */
 const MAKS_PIKSELI = 16_000_000;
 
+/** Współczynnik zmniejszenia (≤ 1), by obraz mieścił się w limicie powierzchni kanwy. */
+export const wspolczynnikSkali = (szer: number, wys: number, maks = MAKS_PIKSELI): number =>
+  szer * wys > maks ? Math.sqrt(maks / (szer * wys)) : 1;
+
 const dekoduj = (dane: Uint8Array, typ: string) =>
   createImageBitmap(new Blob([dane as Uint8Array<ArrayBuffer>], { type: typ }), {
     imageOrientation: 'none',
@@ -36,7 +40,9 @@ export async function przygotujObraz(dane: Uint8Array): Promise<PrzygotowanyObra
   }
   try {
     const orientacja = format === 'jpg' ? (orientacjaExif(dane) ?? 1) : 1;
-    if (orientacja === 1) return { dane, szerokosc: bitmapa.width, wysokosc: bitmapa.height };
+    // Obraz w limicie i bez obrotu zostaje bez zmian; zbyt duży (także PNG / JPEG bez EXIF) jest zmniejszany.
+    if (orientacja === 1 && wspolczynnikSkali(bitmapa.width, bitmapa.height) === 1)
+      return { dane, szerokosc: bitmapa.width, wysokosc: bitmapa.height };
 
     // Czy przeglądarka mimo „none” obróciła już piksele (wymiary zamienione względem SOF)?
     const sof = wymiaryJpeg(dane);
@@ -47,7 +53,7 @@ export async function przygotujObraz(dane: Uint8Array): Promise<PrzygotowanyObra
       bitmapa.width === sof.wysokosc &&
       bitmapa.height === sof.szerokosc;
     const o = juzObrocona ? 1 : orientacja;
-    const k = Math.min(1, Math.sqrt(MAKS_PIKSELI / (bitmapa.width * bitmapa.height)));
+    const k = wspolczynnikSkali(bitmapa.width, bitmapa.height);
     const szer = Math.max(1, Math.round(bitmapa.width * k));
     const wys = Math.max(1, Math.round(bitmapa.height * k));
     const wynik = wymiaryPoObrocie(o, szer, wys);
@@ -59,7 +65,9 @@ export async function przygotujObraz(dane: Uint8Array): Promise<PrzygotowanyObra
     if (!ctx) throw new BladDanych(t('dane.bladObrotu'));
     ctx.setTransform(...macierzOrientacji(o, szer, wys));
     ctx.drawImage(bitmapa, 0, 0, szer, wys);
-    const blob = await new Promise<Blob | null>((ok) => kanwa.toBlob(ok, 'image/jpeg', 0.92));
+    const blob = await new Promise<Blob | null>((ok) =>
+      kanwa.toBlob(ok, format === 'png' && orientacja === 1 ? 'image/png' : 'image/jpeg', 0.92),
+    );
     // Bez przekodowania obraz w PDF byłby nieobrócony i zniekształcony – lepiej jasny błąd.
     if (!blob) throw new BladDanych(t('dane.bladObrotu'));
     return { dane: new Uint8Array(await blob.arrayBuffer()), ...wynik };

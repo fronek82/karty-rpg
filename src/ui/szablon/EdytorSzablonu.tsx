@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { opisObrazu, MAKS_BAJTOW_OBRAZU } from '../../dane/obrazy';
+import { ustawPodklad, usunPodklad } from '../../dane/podklad';
 import {
   danePodgladu,
   doPoprzedniegoKontenera,
@@ -34,6 +36,7 @@ import {
   czyKontener,
   type Kontener,
   type Pole,
+  type PodkladSzablonu,
   type Szablon,
   type Wezel,
 } from '../../model/szablon';
@@ -46,6 +49,18 @@ import { DrzewoSzablonu, IKONY_WEZLOW, nazwaWezla } from './DrzewoSzablonu';
 import { Liczba, Sekcja } from './Kontrolki';
 import { PanelWezla } from './PanelWezla';
 import { PoleRamki } from './PanelWygladu';
+import { NakladkaSwobodna } from './NakladkaSwobodna';
+import { PanelWyrownania } from './PanelWyrownania';
+import { przygotujObraz } from '../obrazy';
+import {
+  budujCel,
+  budujCele,
+  SIATKA_DOMYSLNA,
+  zastosujZmiany,
+  type Cel,
+  type ZmianaPola,
+} from './swobodnyMysz';
+import { useGestSwobodny } from './useGestSwobodny';
 
 const RODZAJE: RodzajNowego[] = [
   'wiersz',
@@ -95,6 +110,11 @@ export function EdytorSzablonu({
   const [menuDodaj, ustawMenuDodaj] = useState(false);
   const [schowek, ustawSchowek] = useState<SkopiowanyStyl>();
   const drzewo = useRef<HTMLDivElement>(null);
+  const kartaRef = useRef<HTMLDivElement>(null);
+  // Stan tymczasowy gestu myszy (zapis dopiero na pointerup – jeden krok „Cofnij”).
+  const [tmp, ustawTmp] = useState<Map<string, ZmianaPola> | undefined>();
+  const [przyciaganie, ustawPrzyciaganie] = useState({ siatka: SIATKA_DOMYSLNA, obiekty: true });
+  const [bladPodkladu, ustawBladPodkladu] = useState('');
   const idProjektu = encodeURIComponent(projekt.id);
 
   // Zaznaczenie bez usuniętych węzłów (np. po „Cofnij”).
@@ -117,7 +137,9 @@ export function EdytorSzablonu({
   // Podgląd: karta z danymi przykładowymi (silnik jak na kartce i w PDF). Zależy tylko od
   // tego, co widać na karcie – zmiana nazwy szablonu nie rysuje karty od nowa.
   const zasoby = edycja.zasoby.zasoby;
-  const doRysunku = szablon && { ...szablon, nazwa: '' };
+  // Podkład ze wzoru nie bierze udziału w rysunku karty (jest tylko pod podglądem w edytorze).
+  const widoczny = szablon && tmp ? zastosujZmiany(szablon, tmp) : szablon;
+  const doRysunku = widoczny && { ...widoczny, nazwa: '', podklad: undefined };
   const kluczRysunku = doRysunku ? JSON.stringify(doRysunku) : '';
   const podglad = useMemo(() => {
     if (!kluczRysunku) return undefined;
@@ -153,6 +175,19 @@ export function EdytorSzablonu({
     () => (podglad && 'wezly' in podglad ? ukladZWezlow(podglad.wezly) : undefined),
     [podglad],
   );
+
+  const wezlyKarty = podglad && 'wezly' in podglad ? podglad.wezly : undefined;
+  const gest = useGestSwobodny({
+    szablon,
+    wezly: wezlyKarty,
+    zaznaczone: aktywne,
+    ustawZazn,
+    karta: kartaRef,
+    szerMm: szablon ? wymiaryKarty(szablon).szer : 1,
+    przyciaganie,
+    ustawTmp,
+    zatwierdz: (zmiany, klucz) => zmienSz((s) => zastosujZmiany(s, zmiany), klucz),
+  });
 
   // Operacje liczone w aktualizatorze (na najnowszym szablonie); nowe id przekazywane przez zmienną.
   const zajeteKlucze = () => kluczeDanychKart(projekt, szablonId);
@@ -268,6 +303,12 @@ export function EdytorSzablonu({
   const klawisze = useRef<(e: KeyboardEvent) => void>(() => undefined);
   const obsluzKlawisz = (e: KeyboardEvent) => {
     if (wPolu(document.activeElement)) return;
+    // W trakcie gestu myszą działa tylko Escape (bez Cofnij, Delete, Ctrl+D i strzałek).
+    if (gest.aktywny()) {
+      if (e.key === 'Escape') gest.anuluj();
+      if (!['Shift', 'Alt', 'Control', 'Meta'].includes(e.key)) e.preventDefault();
+      return;
+    }
     const ctrl = e.ctrlKey || e.metaKey;
     const k = e.key.toLowerCase();
     const wDrzewie = !!drzewo.current?.contains(document.activeElement);
@@ -285,7 +326,16 @@ export function EdytorSzablonu({
       e.preventDefault();
       usun();
     } else if (e.key === 'Escape') {
-      ustawZazn([]);
+      // Escape przerywa trwający gest; poza gestem zdejmuje zaznaczenie.
+      if (!gest.anuluj()) ustawZazn([]);
+    } else if (
+      !e.altKey &&
+      !ctrl &&
+      kartaRef.current?.contains(document.activeElement) &&
+      gest.strzalki(e)
+    ) {
+      // Strzałki w podglądzie przesuwają zaznaczone pola swobodne (0,5 mm, Shift – 5 mm).
+      e.preventDefault();
     } else if (
       wDrzewie &&
       ['ArrowUp', 'ArrowDown', 'Home', 'End', 'ArrowLeft', 'ArrowRight'].includes(e.key)
@@ -343,6 +393,44 @@ export function EdytorSzablonu({
     );
   }
 
+  const adresPodkladu = szablon.podklad
+    ? zasoby.obrazy.get(szablon.podklad.zasob)?.adres
+    : undefined;
+  const wczytajPodklad = async (f: File) => {
+    ustawBladPodkladu('');
+    try {
+      if (f.size > MAKS_BAJTOW_OBRAZU)
+        throw new Error(t('dane.zaDuzy', { plik: f.name, mb: (f.size / 1024 / 1024).toFixed(1) }));
+      const { dane, ...wymiary } = await przygotujObraz(new Uint8Array(await f.arrayBuffer()));
+      await edycja.zmienZZasobami((p, d) => {
+        const opis = opisObrazu(f.name, dane, wymiary, new Set(p.zasoby.map((z) => z.id)));
+        return ustawPodklad(p, d, szablonId, { opis, dane });
+      });
+    } catch (e) {
+      ustawBladPodkladu(
+        t('podklad.blad', { plik: f.name, powod: e instanceof Error ? e.message : String(e) }),
+      );
+    }
+  };
+  // Uchwyty rozmiaru: jedno zaznaczone pole swobodne (bez obróconych przodków – uchwyty są wtedy
+  // w układzie karty); w trakcie przeciągania pola ukryte.
+  const celUchwytow =
+    aktywne.length === 1 && wezlyKarty ? budujCel(szablon, wezlyKarty, aktywne[0]!) : undefined;
+  const prostokatUchwytow =
+    celUchwytow && celUchwytow.obrotPrzodkow === 0 && gest.stan?.rodzaj !== 'przesun'
+      ? celUchwytow.rect
+      : undefined;
+  // Wyrównanie: wszystkie zaznaczone elementy leżą w jednym kontenerze swobodnym.
+  const celeZazn: Cel[] = wezlyKarty ? budujCele(szablon, wezlyKarty, aktywne) : [];
+  const wyrownanie =
+    celeZazn.length > 0 &&
+    celeZazn.length === aktywne.length &&
+    new Set(aktywne.map((id) => rodzicWezla(szablon, id)?.rodzic.id)).size === 1 ? (
+      <PanelWyrownania
+        cele={celeZazn}
+        zastosuj={(zmiany) => zmienSz((x) => zastosujZmiany(x, zmiany))}
+      />
+    ) : undefined;
   const wymiary = (id: string) =>
     podglad && 'wezly' in podglad ? podglad.wezly.find((w) => w.id === id) : undefined;
   const { szer, wys } = wymiaryKarty(szablon);
@@ -553,17 +641,38 @@ export function EdytorSzablonu({
               podglad && (
                 <>
                   <div
+                    ref={kartaRef}
                     className="karta-podgladu"
+                    role="group"
+                    aria-label={t('nakladka.opis')}
+                    tabIndex={0}
                     style={{
                       aspectRatio: `${szer} / ${wys}`,
                       width: `min(100%, ${(szer / wys) * 70}vh)`,
+                      touchAction: 'none',
                     }}
-                    onClick={() => ustawZazn([])}
+                    onPointerDown={gest.onPointerDown}
+                    onPointerMove={gest.onPointerMove}
+                    onPointerUp={gest.onPointerUp}
+                    onPointerCancel={gest.onPointerCancel}
+                    onLostPointerCapture={gest.onLostPointerCapture}
                   >
                     <div
                       className="svg-opakowanie"
                       dangerouslySetInnerHTML={{ __html: podglad.svg }}
                     />
+                    {/* Podkład ze wzoru: nad kartą (tło karty jest kryjące), nie łapie kliknięć. */}
+                    {szablon.podklad?.widoczny && adresPodkladu && (
+                      <img
+                        className="podklad-podgladu"
+                        data-testid="podklad-podgladu"
+                        src={adresPodkladu}
+                        alt=""
+                        aria-hidden="true"
+                        draggable={false}
+                        style={{ opacity: 1 - szablon.podklad.przezroczystosc / 100 }}
+                      />
+                    )}
                     {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
                     {[...podglad.wezly]
                       .sort((a, b) => b.szer * b.wys - a.szer * a.wys)
@@ -586,12 +695,48 @@ export function EdytorSzablonu({
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              wybierz(w.id, e.shiftKey);
+                              // Klik myszą obsługuje już `pointerdown` (zaznaczanie i przeciąganie);
+                              // tu zostaje aktywacja z klawiatury i technologii asystujących.
+                              if (e.detail === 0) wybierz(w.id, e.shiftKey);
                             }}
                           />
                         );
                       })}
+                    <NakladkaSwobodna
+                      szer={szer}
+                      wys={wys}
+                      stan={gest.stan}
+                      siatka={przyciaganie.siatka}
+                      prostokat={prostokatUchwytow}
+                      uchwytDown={gest.onUchwytDown}
+                      uchwytKlawisz={(u, e) => {
+                        if (e.altKey || e.ctrlKey || e.metaKey) return;
+                        if (gest.strzalkiUchwytu(u, e)) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      }}
+                    />
                   </div>
+                  {celUchwytow && celUchwytow.obrotPrzodkow !== 0 && (
+                    <p className="podpis" role="status">
+                      {t('nakladka.uchwytyNiedostepne')}
+                    </p>
+                  )}
+                  <NarzedziaPodgladu
+                    przyciaganie={przyciaganie}
+                    ustawPrzyciaganie={ustawPrzyciaganie}
+                    podklad={szablon.podklad}
+                    bladPodkladu={bladPodkladu}
+                    brakObrazu={!!szablon.podklad && !adresPodkladu}
+                    wczytaj={wczytajPodklad}
+                    zmienPodklad={(f) =>
+                      zmienSz((x) => (x.podklad ? { ...x, podklad: f(x.podklad) } : x), 'podklad')
+                    }
+                    usunPodklad={() =>
+                      void edycja.zmienZZasobami((p, d) => usunPodklad(p, d, szablonId))
+                    }
+                  />
                   {podglad.ostrzezenia.length > 0 && (
                     <ul className="ostrzezenia-karty">
                       {podglad.ostrzezenia.map((o, i) => {
@@ -649,6 +794,7 @@ export function EdytorSzablonu({
                   zajeteKlucze={zajeteKlucze}
                   {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
                   rozmiaryKotwicy={rozmiaryKotwicy}
+                  {...(wyrownanie ? { wyrownanie } : {})}
                   mozeNaSwobodny={!!uklad}
                   kolejnosc={(jak) => zmienSz((s) => zmienKolejnoscRysowania(s, edytowany.id, jak))}
                   // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
@@ -687,6 +833,14 @@ export function EdytorSzablonu({
               <>
                 <h2>{t('szablon.zaznaczono', { liczba: aktywne.length })}</h2>
                 <p className="podpis">{t('szablon.wieleOpis')}</p>
+                {wyrownanie && (
+                  <fieldset className="polozenie">
+                    <legend>
+                      <strong>{t('polozenie.tytul')}</strong>
+                    </legend>
+                    {wyrownanie}
+                  </fieldset>
+                )}
               </>
             ) : (
               <>
@@ -893,3 +1047,111 @@ const jedenWezelUwaga = (k: Wezel) =>
   czyKontener(k) && k.dzieci.length === 0 ? (
     <p className="uwaga">{t('szablon.pustaKarta')}</p>
   ) : null;
+
+/** Pasek pod podglądem: przyciąganie (siatka, krawędzie) i podkład ze wzoru (wczytanie, widoczność, przezroczystość). */
+function NarzedziaPodgladu({
+  przyciaganie,
+  ustawPrzyciaganie,
+  podklad,
+  bladPodkladu,
+  brakObrazu,
+  wczytaj,
+  zmienPodklad,
+  usunPodklad,
+}: {
+  przyciaganie: { siatka: number; obiekty: boolean };
+  ustawPrzyciaganie: (p: { siatka: number; obiekty: boolean }) => void;
+  podklad: PodkladSzablonu | undefined;
+  bladPodkladu: string;
+  /** Podkład wskazuje obraz, którego nie ma w bibliotece projektu. */
+  brakObrazu: boolean;
+  wczytaj: (f: File) => void;
+  zmienPodklad: (f: (p: PodkladSzablonu) => PodkladSzablonu) => void;
+  usunPodklad: () => void;
+}) {
+  const plik = useRef<HTMLInputElement>(null);
+  return (
+    <div className="narzedzia-podgladu">
+      <fieldset>
+        <legend>{t('przyciaganie.tytul')}</legend>
+        <PoleLiczby
+          id="przyciaganie-siatka"
+          etykieta={t('przyciaganie.siatka')}
+          wartosc={przyciaganie.siatka}
+          min={0}
+          max={20}
+          krok={0.5}
+          zmien={(v) => ustawPrzyciaganie({ ...przyciaganie, siatka: v })}
+        />
+        <label className="pole-wyboru">
+          <input
+            type="checkbox"
+            checked={przyciaganie.obiekty}
+            onChange={(e) => ustawPrzyciaganie({ ...przyciaganie, obiekty: e.target.checked })}
+          />{' '}
+          {t('przyciaganie.obiekty')}
+        </label>
+        <p className="podpis">{t('przyciaganie.alt')}</p>
+      </fieldset>
+      <fieldset>
+        <legend>{t('podklad.tytul')}</legend>
+        <input
+          ref={plik}
+          type="file"
+          accept="image/png,image/jpeg"
+          data-testid="plik-podkladu"
+          className="tylko-czytnik"
+          tabIndex={-1}
+          aria-label={t('podklad.wczytaj')}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = '';
+            if (f) wczytaj(f);
+          }}
+        />
+        <div className="wiersz-przyciskow">
+          <button type="button" onClick={() => plik.current?.click()}>
+            {podklad ? t('podklad.zmien') : t('podklad.wczytaj')}
+          </button>
+          {podklad && (
+            <button type="button" className="niebezpieczny" onClick={usunPodklad}>
+              {t('podklad.usun')}
+            </button>
+          )}
+        </div>
+        {podklad && (
+          <>
+            <label className="pole-wyboru">
+              <input
+                type="checkbox"
+                checked={podklad.widoczny}
+                onChange={(e) => zmienPodklad((p) => ({ ...p, widoczny: e.target.checked }))}
+              />{' '}
+              {t('podklad.pokaz')}
+            </label>
+            <label>
+              {t('podklad.przezroczystosc')}
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={podklad.przezroczystosc}
+                onChange={(e) =>
+                  zmienPodklad((p) => ({ ...p, przezroczystosc: Number(e.target.value) }))
+                }
+              />
+            </label>
+          </>
+        )}
+        {brakObrazu && <p className="uwaga">{t('podklad.brakObrazu')}</p>}
+        {bladPodkladu && (
+          <p role="alert" className="blad-pola">
+            {bladPodkladu}
+          </p>
+        )}
+        <p className="podpis">{t('podklad.opis')}</p>
+      </fieldset>
+    </div>
+  );
+}

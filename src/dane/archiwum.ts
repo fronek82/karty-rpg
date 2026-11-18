@@ -224,9 +224,12 @@ export function eksportujSzablon(
     ),
   ];
   const biblioteka = elementyUzyteWSzablonie(projekt, szablon);
+  // Podkład ze wzoru zostaje w projekcie: bywa duży i dotyczy pracy nad wzorem, nie samego szablonu.
+  const { podklad: _podklad, ...szablonBezPodkladu } = szablon;
+  void _podklad;
   const plik = {
     wersja: projekt.wersja,
-    szablon,
+    szablon: szablonBezPodkladu,
     role,
     zasoby: uzyte,
     ...(biblioteka.length > 0 ? { biblioteka } : {}),
@@ -245,6 +248,12 @@ export function importujSzablon(bajty: Uint8Array): PaczkaSzablonu {
   const pliki = rozpakuj(bajty, PLIK_SZABLONU);
   const zmigrowane = migruj(odczytajJson(pliki, PLIK_SZABLONU), 'szablon');
   const plik = sprawdz(schematPlikuSzablonu, zmigrowane) as Omit<PaczkaSzablonu, 'dane'>;
+  // Plik szablonu nie niesie podkładu (obcy plik mógłby wskazywać cudzy zasób) – szablon bez podkładu.
+  if (plik.szablon.podklad) {
+    const { podklad: _podklad, ...reszta } = plik.szablon;
+    void _podklad;
+    plik.szablon = reszta;
+  }
   const ids = (plik.biblioteka ?? []).map((e) => e.id);
   const powtorzony = ids.find((id, i) => ids.indexOf(id) !== i);
   if (powtorzony !== undefined)
