@@ -48,11 +48,15 @@ export function App() {
     if (!obszar) return;
     const poczatkowyFokus = document.activeElement;
     const przeniesFokus = () => {
-      const naglowek = obszar.querySelector<HTMLElement>('h1, [role=alert]');
+      // Suspense może ukryć poprzedni widok, nadal trzymając jego nagłówek w DOM.
+      const naglowek = Array.from(obszar.querySelectorAll<HTMLElement>('h1, [role=alert]')).find(
+        (el) => el.getClientRects().length > 0,
+      );
       if (!naglowek) return false;
       if (document.activeElement === poczatkowyFokus || document.activeElement === document.body) {
         naglowek.setAttribute('tabindex', '-1');
         naglowek.focus({ preventScroll: true });
+        return document.activeElement === naglowek;
       }
       return true;
     };
@@ -61,7 +65,11 @@ export function App() {
     const obserwator = new MutationObserver(() => {
       if (przeniesFokus()) obserwator.disconnect();
     });
-    obserwator.observe(obszar, { childList: true, subtree: true });
+    obserwator.observe(obszar, {
+      childList: true,
+      subtree: true,
+      attributeFilter: ['style', 'hidden'],
+    });
     return () => obserwator.disconnect();
   }, [trasa]);
 
