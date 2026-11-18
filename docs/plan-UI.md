@@ -1,8 +1,8 @@
 # Plan UI – przebudowa interfejsu
 
-Kamień milowy po M2b (`docs/plan-M2b.md`). Zmienia **tylko warstwę interfejsu**: ekrany startowe, motyw kolorystyczny, język, instrukcję i kilka poprawek edytorów. **Silnik układu, PDF i format zapisu zostają bez zmian** (żadnej zmiany schematu `WERSJA_SCHEMATU`; wybór języka i motywu trafia do `localStorage`, nie do projektu).
+Kamień milowy po M2b (`docs/plan-M2b.md`). Zmienia **tylko warstwę interfejsu**: ekrany startowe, motyw kolorystyczny, język, instrukcję i kilka poprawek edytorów. **Silnik układu i PDF zostają bez zmian.** Format projektu zachowuje wersję `WERSJA_SCHEMATU`. UI-8 zapisuje opcjonalne metadane egzemplarzy kart (B212). Wybór języka i motywu trafia do `localStorage`.
 
-**Status:** plan i makiety zaakceptowane (18.11.2026) z poprawkami: czcionka tytułu Cinzel Decorative Bold (D1), kolor linków `#1F6C92` w tekście ciągłym (D2), ciemny motyw bez różu – bordo `#8E2C48`, tytuł i wyróżnienia w złotym `#E9A645` (sekcja 3.1), instrukcja ze zrzutami generowanymi testem Playwright (D9). Realizacja etapami UI-1…UI-9 jednym ciągiem (sekcja 4). **UI-1…UI-7 zrobione; następny UI-8.**
+**Status:** plan i makiety zaakceptowane (18.11.2026) z poprawkami: czcionka tytułu Cinzel Decorative Bold (D1), kolor linków `#1F6C92` w tekście ciągłym (D2), ciemny motyw bez różu – bordo `#8E2C48`, tytuł i wyróżnienia w złotym `#E9A645` (sekcja 3.1), instrukcja ze zrzutami generowanymi testem Playwright (D9). Realizacja etapami UI-1…UI-9 jednym ciągiem (sekcja 4). **UI-1…UI-8 zrobione (UI-8: 18.11.2026). Następny etap: UI-9.**
 
 Makiety (`docs/obrazy/`, źródła HTML i skrypt generujący w `docs/makiety-ui/`; podglądy kart i arkuszy są **wyrenderowane prawdziwym silnikiem**):
 
