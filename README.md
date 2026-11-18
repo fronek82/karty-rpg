@@ -1,7 +1,7 @@
 # Karty RPG
 
 Aplikacja przeglądarkowa do projektowania i drukowania kart do gier RPG i planszowych.
-Specyfikacja: [`SPEC.md`](SPEC.md), plany: [`docs/plan-M2.md`](docs/plan-M2.md), [`docs/plan-M2b.md`](docs/plan-M2b.md).
+Specyfikacja: [`SPEC.md`](SPEC.md), plany: [interfejs](docs/plan-UI.md), [M2](docs/plan-M2.md) i [M2b](docs/plan-M2b.md).
 
 **Aplikacja online:** <https://fronek82.github.io/karty-rpg/>. Działa w całości w przeglądarce;
 projekty zostają na Twoim komputerze (IndexedDB).
@@ -9,6 +9,19 @@ projekty zostają na Twoim komputerze (IndexedDB).
 **Instrukcja** (PL i EN, zrzuty ekranu): przycisk „Instrukcja” na pasku górnym albo bezpośrednio
 <https://fronek82.github.io/karty-rpg/instrukcja/> (`?lang=pl` / `?lang=en`). To osobna, statyczna
 strona (bez Reacta), z tym samym przełącznikiem języka i motywu co aplikacja.
+
+## Ekran startowy
+
+Wybierz **„Stwórz karty do Mausrittera”** lub **„Stwórz własne karty”**. Pośrodku są **„Moje projekty”**,
+a panel importu pozwala wybrać lub upuścić pliki projektów i szablonów.
+
+Przyciski **PL / EN** i **Motyw jasny / Motyw ciemny** znajdują się na pasku górnym.
+Wybór pamięta przeglądarka i korzysta z niego również instrukcja. Bez zapisanego wyboru aplikacja
+używa polskiego w polskiej przeglądarce, angielskiego w pozostałych i motywu systemowego.
+
+![Ekran startowy w jasnym motywie](docs/obrazy/ui-9/pl/light/start.png)
+
+[Galeria ekranów po polsku i po angielsku, w obu motywach](docs/obrazy/ui-9/README.md).
 
 ## Jak zacząć (Mausritter)
 
@@ -18,8 +31,9 @@ strona (bez Reacta), z tym samym przełącznikiem języka i motywu co aplikacja.
    stan, pusta karta). Karta pojawia się w domyślnym rozmiarze dla typu.
 3. **Kliknij kartę** – w panelu z prawej edytujesz jej pola, rozmiar i ilustrację (także zdjęcia
    z telefonu). Shift + klik albo prostokąt zaznaczają kilka kart – wspólne pola zmieniasz naraz.
-4. Karty **przeciągasz myszą** (także na kolejną stronę); „Duplikuj ×N”, Delete, Ctrl+D,
-   Ctrl+Z, strzałki. Na arkuszu stanów dodasz **nagłówek grupy** nad kolumnami.
+4. Karty **przeciągasz myszą**, także na kolejną stronę. **„Duplikuj”** dodaje jedną kopię.
+   **„Liczba kopii”** obejmuje oryginał i kopie. Zmień ją strzałkami, zatwierdź Enterem lub opuść pole.
+   Na arkuszu stanów dodasz **nagłówek grupy** nad kolumnami.
 5. **Ustawienia**: tytuł kartki, czarno-biały, papier, czcionki (także własne).
 6. **Pobierz PDF** i drukuj w **skali 100%** (bez „dopasuj do strony”). **Eksportuj** zapisuje
    projekt do pliku `.kartyrpg` (kopia zapasowa, przeniesienie na inny komputer – import na starcie).
@@ -36,7 +50,9 @@ strona (bez Reacta), z tym samym przełącznikiem języka i motywu co aplikacja.
    opakuj, duplikuj, usuń; klawiatura), w środku podgląd karty (klik zaznacza element), z prawej
    **właściwości**: typ, nazwa, treść z danych karty albo stała, etykieta, szerokość i wysokość,
    styl tekstu, tło, ramka, odstępy, kształt wartości, tabela (kolumny, wiersze, nagłówki, linie).
-   Shift + klik – kilka elementów naraz; Kopiuj / Wklej styl.
+   Shift + klik zaznacza kilka elementów. Przeciągaj pola między kontenerami, a w kontenerze
+   swobodnym zmieniaj wspólny rozmiar zaznaczenia uchwytami lub w panelu. Przycisk **„Duplikuj szablon”**
+   udostępnia kopię do dalszej edycji.
 3. **„Rób karty ►”** – kartka dla rozmiaru szablonu; klik w slot dodaje kartę, panel pokazuje pola
    z nazwami z szablonu. W treści pól działa formatowanie: `**pogrubienie**`, `*kursywa*`,
    `***oba***` (`\*` – zwykła gwiazdka). **„Edytuj szablon”** wraca do edytora.
