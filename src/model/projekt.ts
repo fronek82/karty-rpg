@@ -23,8 +23,9 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  * 15 – M2b-8: tryb swobodny – kontener `swobodny` i `pozycja` węzła (x, y, kotwica, obrót 0/90/180/270).
  * 16 – M2b-9: `Szablon.podklad` (podkład ze wzoru pod podglądem edytora: zasób obrazu projektu,
  *      przezroczystość, widoczność); poza plikiem szablonu, nigdy w scenie, PDF ani eksporcie obrazów.
+ * 17 – M2c-1: `Arkusz.wlasnySzablonId` dla własnej kartki w projekcie pakietowym.
  */
-export const WERSJA_SCHEMATU = 16;
+export const WERSJA_SCHEMATU = 17;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

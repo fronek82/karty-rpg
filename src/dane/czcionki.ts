@@ -43,9 +43,12 @@ export function identyfikatorZNazwy(nazwa: string, przedrostek: string): string 
 }
 
 /** `id`, a gdy zajęte – `id-2`, `id-3`, … */
-export function unikalneId(id: string, zajete: ReadonlySet<string>): string {
+export function unikalneId(id: string, zajete: ReadonlySet<string>, limit = Infinity): string {
   let wynik = id;
-  for (let n = 2; zajete.has(wynik); n++) wynik = `${id}-${n}`;
+  for (let n = 2; zajete.has(wynik); n++) {
+    const sufiks = `-${n}`;
+    wynik = id.slice(0, limit - sufiks.length) + sufiks;
+  }
   return wynik;
 }
 

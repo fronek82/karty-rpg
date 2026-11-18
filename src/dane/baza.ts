@@ -32,7 +32,15 @@ interface WpisMiniatury {
   svg: string;
 }
 
+export interface WpisBibliotekiGlobalnej {
+  id: string;
+  rodzaj: 'szablon' | 'ozdobnik';
+  nazwa: string;
+}
+
 class BazaDexie extends Dexie {
+  bibliotekaGlobalna!: EntityTable<WpisBibliotekiGlobalnej, 'id'>;
+  paczkiBiblioteki!: EntityTable<{ id: string; dane: Blob }, 'id'>;
   projekty!: EntityTable<WpisProjektu, 'id'>;
   zasoby!: Dexie.Table<WpisZasobu, [string, string]>;
   miniatury!: EntityTable<WpisMiniatury, 'id'>;
@@ -59,6 +67,8 @@ class BazaDexie extends Dexie {
       miniatury: 'id',
       uklady: 'id, nazwa',
     });
+    // Metadane są odczytywane bez ładowania bajtów wszystkich paczek.
+    this.version(4).stores({ bibliotekaGlobalna: 'id, rodzaj', paczkiBiblioteki: 'id' });
   }
 }
 
@@ -122,6 +132,39 @@ export class BazaProjektow {
 
   async usunUklad(id: string): Promise<void> {
     await this.db.uklady.delete(id);
+  }
+
+  async bibliotekaGlobalna(
+    rodzaj: WpisBibliotekiGlobalnej['rodzaj'],
+  ): Promise<WpisBibliotekiGlobalnej[]> {
+    return this.db.bibliotekaGlobalna.where('rodzaj').equals(rodzaj).sortBy('nazwa');
+  }
+
+  async zapiszWBibliotece(
+    rodzaj: WpisBibliotekiGlobalnej['rodzaj'],
+    nazwa: string,
+    bajty: Uint8Array,
+  ): Promise<void> {
+    const id = crypto.randomUUID();
+    const { bibliotekaGlobalna, paczkiBiblioteki } = this.db;
+    await this.db.transaction('rw', bibliotekaGlobalna, paczkiBiblioteki, async () => {
+      await bibliotekaGlobalna.add({ id, rodzaj, nazwa });
+      await paczkiBiblioteki.add({ id, dane: new Blob([bajty as Uint8Array<ArrayBuffer>]) });
+    });
+  }
+
+  async odczytajZBiblioteki(id: string): Promise<Uint8Array> {
+    const paczka = await this.db.paczkiBiblioteki.get(id);
+    if (!paczka) throw new BladDanych(t('globalna.brakWpisu'));
+    return new Uint8Array(await paczka.dane.arrayBuffer());
+  }
+
+  async usunZBiblioteki(id: string): Promise<void> {
+    const { bibliotekaGlobalna, paczkiBiblioteki } = this.db;
+    await this.db.transaction('rw', bibliotekaGlobalna, paczkiBiblioteki, async () => {
+      await bibliotekaGlobalna.delete(id);
+      await paczkiBiblioteki.delete(id);
+    });
   }
 
   async istnieje(id: string): Promise<boolean> {

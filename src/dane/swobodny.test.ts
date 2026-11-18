@@ -368,10 +368,9 @@ describe('schemat 15 i 16', () => {
     expect(JSON.parse(JSON.stringify(s))).toEqual(s);
   });
 
-  it('wersja schematu to 16 (migracja z 14 tożsamościowa), a eksport i import szablonu zachowuje swobodny korzeń i pozycje', () => {
-    expect(WERSJA_SCHEMATU).toBe(16);
-    expect(migruj({ wersja: 14, a: 1 }, 'projekt')).toEqual({ wersja: 16, a: 1 });
-    expect(migruj({ wersja: 14, a: 1 }, 'szablon')).toEqual({ wersja: 16, a: 1 });
+  it('migracja z 14 do 16 jest tożsamościowa, a eksport i import zachowuje swobodny korzeń i pozycje', () => {
+    expect(migruj({ wersja: 14, a: 1 }, 'projekt', 16)).toEqual({ wersja: 16, a: 1 });
+    expect(migruj({ wersja: 14, a: 1 }, 'szablon', 16)).toEqual({ wersja: 16, a: 1 });
     let s = startowy('swobodny');
     s = wstawWezel(s, 'karta', {
       ...dostosujDoSwobodnego(nowyWezel(s, 'tekst', 'T')),

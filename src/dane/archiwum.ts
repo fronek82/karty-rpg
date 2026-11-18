@@ -5,20 +5,37 @@ import { stylePola, type Szablon, type Wezel } from '../model/szablon';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { BladKolekcjiCzcionek, wczytajCzcionke } from '../silnik/czcionki';
 import { MAKS_BAJTOW_CZCIONKI, formatObrazu, unikalneId } from './czcionki';
+import {
+  MAKS_BAJTOW_OBRAZU,
+  MAKS_PIKSELI,
+  orientacjaExif,
+  wymiaryJpeg,
+  wymiaryPoObrocie,
+} from './obrazy';
 import { czyWbudowany } from '../ozdobniki/katalog';
 import {
   dolaczElementy,
   elementyProjektu,
   elementyUzyteWSzablonie,
   zasobyObrazowSzablonu,
+  zasobyElementow,
   odwolaniaDoElementow,
   przepiszOdwolania,
 } from './biblioteka';
-import { BladDanych, migruj, przygotujProjekt, schematPlikuSzablonu, sprawdz } from './schemat';
+import {
+  BladDanych,
+  MAKS_DLUGOSC_ID_ZASOBU,
+  migruj,
+  przygotujProjekt,
+  schematPaczkiOzdobnika,
+  schematPlikuSzablonu,
+  sprawdz,
+} from './schemat';
 
 /** Rozszerzenie pliku projektu i szablonu (ZIP z JSON-em i zasobami). */
 export const ROZSZERZENIE_PROJEKTU = '.kartyrpg';
 export const ROZSZERZENIE_SZABLONU = '.kartyrpg-szablon';
+export const ROZSZERZENIE_OZDOBNIKA = '.kartyrpg-ozdobnik';
 
 export const PLIK_PROJEKTU = 'projekt.json';
 export const PLIK_SZABLONU = 'szablon.json';
@@ -274,27 +291,19 @@ export function importujSzablon(bajty: Uint8Array): PaczkaSzablonu {
 const takieSame = (a: Uint8Array, b: Uint8Array) =>
   a.length === b.length && a.every((x, i) => x === b[i]);
 
-/**
- * Dodaje zaimportowany szablon do projektu (zwraca nowy projekt) bez zmiany wyglądu
- * istniejących kart:
- * - zasób identyczny (opis i bajty) jest współdzielony; o zajętym id – dostaje nowe id,
- *   a odwołania szablonu do obrazu są przepisane;
- * - czcionka o rodzinie i wariancie, które projekt już ma, nie jest dodawana (ostrzeżenie);
- * - rola istniejąca w projekcie zostaje (ostrzeżenie, gdy wskazuje inną rodzinę);
- * - szablon o zajętym id dostaje nowe id.
- */
-export function dodajSzablon(
+function dolaczZasobyPaczki(
   projekt: Projekt,
   zasoby: DaneZasobow,
-  paczka: PaczkaSzablonu,
-): { projekt: Projekt; zasoby: DaneZasobow; szablonId: string; ostrzezenia: string[] } {
+  przenoszone: Pick<PaczkaSzablonu, 'zasoby' | 'dane'>,
+) {
   const ostrzezenia: string[] = [];
   const noweZasoby: DaneZasobow = new Map(zasoby);
   const opisy = [...projekt.zasoby];
-  const zajete = new Set(opisy.map((o) => o.id));
+  // Bajty usuniętych opisów mogą być jeszcze potrzebne historii edycji.
+  const zajete = new Set([...opisy.map((o) => o.id), ...zasoby.keys()]);
   const przemianowane = new Map<string, string>();
-  for (const opis of paczka.zasoby) {
-    const dane = bajtyZasobu(paczka.dane, opis.id);
+  for (const opis of przenoszone.zasoby) {
+    const dane = bajtyZasobu(przenoszone.dane, opis.id);
     const istniejacy = opisy.find((o) => o.id === opis.id);
     if (
       istniejacy &&
@@ -316,12 +325,120 @@ export function dodajSzablon(
         continue;
       }
     }
-    const id = unikalneId(opis.id, zajete);
+    const id = unikalneId(opis.id, zajete, MAKS_DLUGOSC_ID_ZASOBU);
     zajete.add(id);
     if (id !== opis.id) przemianowane.set(opis.id, id);
     opisy.push({ ...opis, id });
     noweZasoby.set(id, dane);
   }
+  return { ostrzezenia, noweZasoby, opisy, przemianowane };
+}
+
+function przepiszObrazRamki(e: ElementOzdobny, mapa: ReadonlyMap<string, string>): ElementOzdobny {
+  const z = e.ramka9?.zrodlo;
+  if (!e.ramka9 || z?.typ !== 'obraz') return e;
+  const zasob = mapa.get(z.zasob);
+  return zasob ? { ...e, ramka9: { ...e.ramka9, zrodlo: { ...z, zasob } } } : e;
+}
+
+const PLIK_OZDOBNIKA = 'ozdobnik.json';
+
+/** Samodzielny zapis do lokalnej biblioteki, wraz z obrazem ramki 9-slice. */
+export function eksportujOzdobnik(projekt: Projekt, dane: DaneZasobow, id: string): Uint8Array {
+  const element = elementyProjektu(projekt).find((e) => e.id === id);
+  if (!element) throw new BladDanych(t('globalna.brakWpisu'));
+  const zasoby = zasobyElementow([element]).map((id) => {
+    const z = projekt.zasoby.find((x) => x.id === id && x.rodzaj === 'obraz');
+    if (!z) throw new BladDanych(t('globalna.brakObrazu', { id: element.id, zasob: id }));
+    return z;
+  });
+  return spakuj(
+    { wersja: 1, element, zasoby },
+    PLIK_OZDOBNIKA,
+    zasoby.map((z) => [z, bajtyZasobu(dane, z.id)]),
+  );
+}
+
+export function importujOzdobnik(bajty: Uint8Array) {
+  const pliki = rozpakuj(bajty, PLIK_OZDOBNIKA);
+  const { element, zasoby } = sprawdz(schematPaczkiOzdobnika, odczytajJson(pliki, PLIK_OZDOBNIKA));
+  const obraz = zasobyElementow([element])[0];
+  if (obraz === undefined && zasoby.length) throw new BladDanych(t('dane.nieArchiwum'));
+  const opis = zasoby[0];
+  if (obraz !== undefined && (opis?.rodzaj !== 'obraz' || opis.id !== obraz))
+    throw new BladDanych(t('globalna.brakObrazu', { id: element.id, zasob: obraz }));
+  const dane = zbierzZasoby(pliki, PLIK_OZDOBNIKA, zasoby);
+  if (opis?.rodzaj === 'obraz') {
+    const plik = bajtyZasobu(dane, opis.id);
+    if (
+      plik.length > MAKS_BAJTOW_OBRAZU ||
+      opis.szerokosc * opis.wysokosc > MAKS_PIKSELI ||
+      formatObrazu(plik) !== opis.format
+    )
+      throw new BladDanych(t('globalna.zlyObraz', { id: opis.id }));
+    const v = new DataView(plik.buffer, plik.byteOffset, plik.byteLength);
+    const wymiarySurowe = opis.format === 'jpg' ? wymiaryJpeg(plik) : undefined;
+    const wymiary =
+      opis.format === 'png' && v.byteLength >= 33 && v.getUint32(12) === 0x49484452
+        ? { szerokosc: v.getUint32(16), wysokosc: v.getUint32(20) }
+        : wymiarySurowe &&
+          wymiaryPoObrocie(
+            orientacjaExif(plik) ?? 1,
+            wymiarySurowe.szerokosc,
+            wymiarySurowe.wysokosc,
+          );
+    if (
+      wymiary?.szerokosc !== opis.szerokosc ||
+      wymiary.wysokosc !== opis.wysokosc ||
+      element.szer !== opis.szerokosc ||
+      element.wys !== opis.wysokosc
+    )
+      throw new BladDanych(t('globalna.zlyObraz', { id: opis.id }));
+  }
+  return { element, zasoby, dane };
+}
+
+export function dodajOzdobnikZPaczki(projekt: Projekt, dane: DaneZasobow, bajty: Uint8Array) {
+  const paczka = importujOzdobnik(bajty);
+  const { element } = paczka;
+  const { noweZasoby, opisy, przemianowane } = dolaczZasobyPaczki(projekt, dane, paczka);
+  const elementy = dolaczElementy(projekt, [przepiszObrazRamki(element, przemianowane)]);
+  // Ten sam ozdobnik z tymi samymi zasobami może już być w projekcie.
+  const wynik =
+    elementy.lista.length === elementyProjektu(projekt).length
+      ? projekt
+      : przygotujProjekt({
+          ...projekt,
+          zasoby: opisy,
+          biblioteka: { ...projekt.biblioteka, ozdobniki: elementy.lista },
+          zmieniono: new Date().toISOString(),
+        });
+  return {
+    projekt: wynik,
+    dane: wynik === projekt ? dane : noweZasoby,
+    id: elementy.mapa.get(element.id) ?? element.id,
+  };
+}
+
+/**
+ * Dodaje zaimportowany szablon do projektu (zwraca nowy projekt) bez zmiany wyglądu
+ * istniejących kart:
+ * - zasób identyczny (opis i bajty) jest współdzielony; o zajętym id – dostaje nowe id,
+ *   a odwołania szablonu do obrazu są przepisane;
+ * - czcionka o rodzinie i wariancie, które projekt już ma, nie jest dodawana (ostrzeżenie);
+ * - rola istniejąca w projekcie zostaje (ostrzeżenie, gdy wskazuje inną rodzinę);
+ * - szablon o zajętym id dostaje nowe id.
+ */
+export function dodajSzablon(
+  projekt: Projekt,
+  zasoby: DaneZasobow,
+  paczka: PaczkaSzablonu,
+): { projekt: Projekt; zasoby: DaneZasobow; szablonId: string; ostrzezenia: string[] } {
+  const { ostrzezenia, noweZasoby, opisy, przemianowane } = dolaczZasobyPaczki(
+    projekt,
+    zasoby,
+    paczka,
+  );
   const szablon: Szablon = structuredClone(paczka.szablon);
   for (const w of wszystkieWezly(szablon)) {
     if (w.typ === 'obraz' && w.zasob) w.zasob = przemianowane.get(w.zasob) ?? w.zasob;
@@ -333,15 +450,9 @@ export function dodajSzablon(
     if (!wPaczce.has(id) && elementyProjektu(projekt).some((e) => e.id === id))
       ostrzezenia.push(t('dane.elementZProjektu', { id }));
   // Obrazy ramek 9-slice, którym nadano nowe id, wskazują nowe id także w elementach z paczki.
-  const bibliotekaPaczki = (paczka.biblioteka ?? []).map((e) => {
-    const z = e.ramka9?.zrodlo;
-    return e.ramka9 && z?.typ === 'obraz' && przemianowane.has(z.zasob)
-      ? {
-          ...e,
-          ramka9: { ...e.ramka9, zrodlo: { ...z, zasob: przemianowane.get(z.zasob)! } },
-        }
-      : e;
-  });
+  const bibliotekaPaczki = (paczka.biblioteka ?? []).map((e) =>
+    przepiszObrazRamki(e, przemianowane),
+  );
   const elementy = dolaczElementy(projekt, bibliotekaPaczki, uzyte);
   przepiszOdwolania(szablon, elementy.mapa);
   const role = { ...projekt.role };

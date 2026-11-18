@@ -25,7 +25,12 @@ const dodatnia = liczba.positive();
 const calkowita = liczba.int();
 const identyfikator = z.string().min(1);
 /** Id zasobu: litery, cyfry, `_`, `-`, `.`, `/` (w nazwie pliku w archiwum kodowany). */
-const idZasobu = z.string().regex(/^[\w./-]{1,100}$/);
+export const MAKS_DLUGOSC_ID_ZASOBU = 100;
+const idZasobu = z
+  .string()
+  .min(1)
+  .max(MAKS_DLUGOSC_ID_ZASOBU)
+  .regex(/^[\w./-]+$/);
 const obj = z.looseObject;
 const opc = <T extends z.ZodType>(s: T) => s.optional();
 const osi = z.enum(['poczatek', 'srodek', 'koniec']);
@@ -374,6 +379,7 @@ const arkusz = obj({
   id: identyfikator,
   nazwa: z.string(),
   taliaId: identyfikator,
+  wlasnySzablonId: opc(identyfikator),
   liczbaStron: opc(calkowita.min(1).max(500)),
   naglowki: opc(
     z.array(
@@ -570,6 +576,12 @@ export const schematProjektu = obj({
   biblioteka: opc(obj({ ozdobniki: z.array(elementOzdobny).max(MAKS_ELEMENTOW_BIBLIOTEKI) })),
 });
 
+export const schematPaczkiOzdobnika = obj({
+  wersja: z.literal(1),
+  element: elementOzdobny,
+  zasoby: z.array(opisZasobu).max(1),
+});
+
 export const schematPlikuSzablonu = obj({
   wersja: calkowita,
   szablon,
@@ -673,6 +685,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 13→14: ramka 9-slice (`ozdoba.rodzaj: 'ramka9'`, element `ramka9` z PNG albo SVG) – bez zmian danych.
   // 14→15: tryb swobodny (kontener `swobodny`, `pozycja` węzła) – bez zmian danych.
   // 15→16: `Szablon.podklad` (podkład ze wzoru w edytorze) – bez zmian danych.
+  // 16→17: opcjonalny `Arkusz.wlasnySzablonId` – stare arkusze zachowują typy pakietu.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -689,6 +702,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     13: (d) => d,
     14: (d) => d,
     15: (d) => d,
+    16: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -706,6 +720,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     13: (d) => d,
     14: (d) => d,
     15: (d) => d,
+    16: (d) => d,
   },
 };
 
@@ -826,6 +841,9 @@ export function sprawdzSpojnosc(p: Projekt): void {
     }
   }
   for (const a of p.arkusze) {
+    if (a.wlasnySzablonId && !szablony.has(a.wlasnySzablonId)) {
+      blad(t('dane.nieznanySzablonArkusza', { arkusz: a.id, szablon: a.wlasnySzablonId }));
+    }
     powtorzony(
       (a.naglowki ?? []).map((n) => n.id),
       t('dane.gdzie.arkusz', { id: a.id }),

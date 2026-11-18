@@ -4,6 +4,8 @@ import { formatObrazu, identyfikatorZNazwy, unikalneId } from './czcionki';
 import { BladDanych } from './schemat';
 
 export const MAKS_BAJTOW_OBRAZU = 20 * 1024 * 1024;
+/** Bezpieczny limit powierzchni kanwy (Safari na iOS: ~16,7 Mpx). */
+export const MAKS_PIKSELI = 16_000_000;
 
 /**
  * Opis obrazu do biblioteki projektu. Format z sygnatury pliku (nie z rozszerzenia), wymiary

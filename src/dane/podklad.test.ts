@@ -53,9 +53,8 @@ const szablonZPodkladem = (): Szablon =>
 
 describe('schemat 16: podkład szablonu', () => {
   it('wersja 16, migracja z 15 tożsamościowa (projekt i szablon)', () => {
-    expect(WERSJA_SCHEMATU).toBe(16);
-    expect(migruj({ wersja: 15, a: 1 }, 'projekt')).toEqual({ wersja: 16, a: 1 });
-    expect(migruj({ wersja: 15, a: 1 }, 'szablon')).toEqual({ wersja: 16, a: 1 });
+    expect(migruj({ wersja: 15, a: 1 }, 'projekt', 16)).toEqual({ wersja: 16, a: 1 });
+    expect(migruj({ wersja: 15, a: 1 }, 'szablon', 16)).toEqual({ wersja: 16, a: 1 });
   });
 
   it('zod: poprawny podkład przechodzi, limity i brakujące pola są odrzucane', () => {

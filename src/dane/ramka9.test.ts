@@ -6,10 +6,13 @@ import type { Szablon } from '../model/szablon';
 import { importujSvg } from '../ozdobniki';
 import { pakietMausritter } from '../pakiety/mausritter';
 import {
+  dodajOzdobnikZPaczki,
   dodajSzablon,
+  eksportujOzdobnik,
   eksportujProjekt,
   eksportujSzablon,
   importujProjekt,
+  importujOzdobnik,
   importujSzablon,
 } from './archiwum';
 import {
@@ -83,6 +86,65 @@ function projektZRamkami(): { p: Projekt; d: DaneZasobow; szablon: Szablon } {
   };
   return { p: { ...p, szablony: [...p.szablony, szablon] }, d: w.dane, szablon };
 }
+
+describe('niezależna paczka ozdobnika', () => {
+  it('przenosi dokładnie wskazaną ramkę i jej obraz, również przy kolizji identyfikatora', () => {
+    const { p, d } = projektZRamkami();
+    const bajty = eksportujOzdobnik(p, d, 'wl:Ramka-PNG');
+    const paczka = importujOzdobnik(bajty);
+    expect(Array.from(paczka.dane.keys())).toEqual(['ramka-testowa']);
+    const kolizja = {
+      ...baza,
+      zasoby: [...baza.zasoby, { ...opisPng('ramka-testowa'), nazwa: 'Inny obraz' }],
+    };
+    const stareDane = new Map([...zasoby, ['ramka-testowa', PNG]]);
+    const wynik = dodajOzdobnikZPaczki(kolizja, stareDane, bajty);
+    const zrodlo = elementyProjektu(wynik.projekt)[0]!.ramka9!.zrodlo;
+    expect(zrodlo.typ).toBe('obraz');
+    if (zrodlo.typ !== 'obraz') throw new Error();
+    expect(zrodlo.zasob).not.toBe('ramka-testowa');
+    expect(wynik.dane.get(zrodlo.zasob)).toEqual(PNG);
+    expect(wynik.projekt.zasoby.find((z) => z.id === 'ramka-testowa')?.nazwa).toBe('Inny obraz');
+    expect(kolizja.biblioteka).toBeUndefined();
+    expect(importujOzdobnik(eksportujOzdobnik(p, d, 'wl:Ramka-SVG')).dane.size).toBe(0);
+  });
+
+  it('odrzuca uszkodzony plik, brak obrazu i nierozpoznaną wersję przed zmianą projektu', () => {
+    const { p, d } = projektZRamkami();
+    const pliki = unzipSync(eksportujOzdobnik(p, d, 'wl:Ramka-PNG'));
+    const wadliwa = { ...pliki };
+    const obraz = Object.keys(wadliwa).find((n) => n.startsWith('zasoby/'))!;
+    delete wadliwa[obraz];
+    const przed = structuredClone(baza);
+    expect(() => dodajOzdobnikZPaczki(baza, zasoby, zipSync(wadliwa))).toThrow();
+    expect(baza).toEqual(przed);
+    expect(() => importujOzdobnik(zipSync({ ...pliki, [obraz]: PNG.subarray(0, 20) }))).toThrow();
+    const inneWymiary = PNG.slice();
+    new DataView(inneWymiary.buffer).setUint32(16, 121);
+    expect(() => importujOzdobnik(zipSync({ ...pliki, [obraz]: inneWymiary }))).toThrow();
+    expect(() =>
+      importujOzdobnik(zipSync({ ...pliki, [obraz]: Uint8Array.of(255, 216, 255) })),
+    ).toThrow();
+    const json = JSON.parse(strFromU8(pliki['ozdobnik.json']!)) as { wersja: number };
+    json.wersja = 2;
+    pliki['ozdobnik.json'] = strToU8(JSON.stringify(json));
+    expect(() => importujOzdobnik(zipSync(pliki))).toThrow();
+  });
+
+  it('zachowuje bajty potrzebne historii cofania, także przy kolizji 100-znakowego id', () => {
+    const id = 'a'.repeat(100);
+    const opis = opisPng(id);
+    const wynik = dodajRamke9ZObrazu({ ...baza, zasoby: [...baza.zasoby, opis] }, 'Nowa', opis);
+    const plik = eksportujOzdobnik(wynik.projekt, new Map([...zasoby, [id, PNG]]), wynik.id);
+    const starszeBajty = Uint8Array.of(3, 1, 4);
+    // Ten zasób zniknął z dokumentu, ale jego bajty są nadal dostępne dla Cofnij.
+    const d = new Map([...zasoby, [id, starszeBajty]]);
+    const odczyt = dodajOzdobnikZPaczki(baza, d, plik);
+    const zrodlo = elementyProjektu(odczyt.projekt)[0]!.ramka9!.zrodlo;
+    expect(zrodlo).toEqual({ typ: 'obraz', zasob: `${'a'.repeat(98)}-2` });
+    expect(odczyt.dane.get(id)).toEqual(starszeBajty);
+  });
+});
 
 describe('schemat 14 i ramka 9-slice', () => {
   it('numer wersji i migracja 13→14 tożsamościowa (projekt i szablon)', () => {
