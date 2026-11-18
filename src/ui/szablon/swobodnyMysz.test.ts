@@ -8,6 +8,7 @@ import {
   doLokalnych,
   mmNaPx,
   naSiatke,
+  ograniczDoRodzica,
   przesunCele,
   przyciagnijLinie,
   pxNaMm,
@@ -335,5 +336,51 @@ describe('wyrównaj i rozłóż równo', () => {
     expect(prost(p, 'c')[1]).toBe(12.5);
     expect(prost(p, 'b')[1]).toBe(30);
     expect(rozlozRowno(cele.slice(0, 2), 'poziomo').size).toBe(0);
+  });
+});
+
+describe('jeden rodzic, rozłożenie z szerokim elementem, najmniejszy rozmiar z proporcjami', () => {
+  it('ograniczDoRodzica zostawia elementy rodzica pierwszego (albo wskazanego) celu', () => {
+    const s = szablon([
+      ik('a'),
+      {
+        id: 'p',
+        typ: 'swobodny',
+        szerokosc: { mm: 30 },
+        wysokosc: { mm: 30 },
+        pozycja: { x: 20, y: 20 },
+        dzieci: [ik('w')],
+      } as Kontener,
+    ]);
+    const cele = budujCele(s, wezlyDla(s), ['a', 'w']);
+    expect(ograniczDoRodzica(cele).map((c) => c.id)).toEqual(['a']);
+    expect(ograniczDoRodzica(cele, 'w').map((c) => c.id)).toEqual(['w']);
+    expect(ograniczDoRodzica([])).toEqual([]);
+    // Gest przesuwa tylko jeden rodzic.
+    expect(przesunCele(ograniczDoRodzica(cele), 2, 2, BEZ).zmiany.size).toBe(1);
+  });
+
+  it('rozłóż równo: obwiednia zostaje także, gdy szeroki element nie jest ostatni wg początku', () => {
+    const s = szablon([
+      ik('a', { pozycja: { x: 0, y: 3 }, szerokosc: { mm: 10 } }),
+      ik('b', { pozycja: { x: 12, y: 3 }, szerokosc: { mm: 50 } }),
+      ik('c', { pozycja: { x: 20, y: 3 }, szerokosc: { mm: 10 } }),
+    ]);
+    const z = zastosujZmiany(s, rozlozRowno(budujCele(s, wezlyDla(s), ['a', 'b', 'c']), 'poziomo'));
+    const r = ['a', 'b', 'c'].map((id) => prost(z, id));
+    // Obwiednia 0–62, szerokości 70 → odstęp −4; początek i koniec obwiedni bez zmian.
+    expect(r[0]![0]).toBe(0);
+    expect(Math.max(...r.map((x) => x[0]! + x[2]!))).toBe(62);
+    expect(r[1]![0]! - (r[0]![0]! + r[0]![2]!)).toBeCloseTo(r[2]![0]! - (r[1]![0]! + r[1]![2]!));
+  });
+
+  it('Shift: najmniejszy rozmiar 1 mm dla obu osi', () => {
+    const s = szablon([ik('a', { szerokosc: { mm: 20 }, wysokosc: { mm: 2 } })]);
+    const cel = budujCel(s, wezlyDla(s), 'a')!;
+    const z = zmienRozmiar(cel, 'e', -19.5, 0, BEZ, true).zmiany.get('a')!;
+    // Szerokość 0,5 → po proporcjach 0,05 wysokości: obie osie podniesione do ≥ 1 mm.
+    expect(z.szerokosc!.mm).toBeGreaterThanOrEqual(1);
+    expect(z.wysokosc!.mm).toBeGreaterThanOrEqual(1);
+    expect(z.szerokosc!.mm / z.wysokosc!.mm).toBeCloseTo(10);
   });
 });

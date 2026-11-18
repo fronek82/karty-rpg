@@ -414,3 +414,74 @@ test('zrzut: przeciąganie z prowadnicami i podpowiedzią', async ({ page }) => 
   await page.screenshot({ path: 'docs/obrazy/m2b-9-tryb-swobodny-mysz.png' });
   await page.mouse.up();
 });
+
+test('Escape, Ctrl+Z i ruch poniżej 3 px w trakcie gestu nie dodają kroków Cofnij', async ({
+  page,
+}) => {
+  await swobodny(page, 'Przerwanie');
+  await dodaj(page, 'Tekst', 'A');
+  const k = await pxNaMm(page);
+  const s = await srodek(page, obszar(page, 'A'));
+  const podpowiedz = page.getByTestId('podpowiedz-przeciagania');
+
+  // Escape w trakcie przeciągania: karta wraca, po zwolnieniu przycisku nic się nie zapisuje.
+  await page.mouse.move(s.x, s.y);
+  await page.mouse.down();
+  await page.mouse.move(s.x + 10 * k, s.y, { steps: 6 });
+  await expect(podpowiedz).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(podpowiedz).toHaveCount(0);
+  await page.mouse.move(s.x + 12 * k, s.y, { steps: 3 });
+  await page.mouse.up();
+  wTolerancji((await prostokatMm(page, 'A')).x, 3);
+
+  // Ruch o 2 px to jeszcze klik.
+  await page.mouse.move(s.x, s.y);
+  await page.mouse.down();
+  await page.mouse.move(s.x + 2, s.y);
+  await page.mouse.up();
+  wTolerancji((await prostokatMm(page, 'A')).x, 3);
+
+  // Ctrl+Z w trakcie gestu jest ignorowany (gest trwa, nazwa zostaje).
+  await page.mouse.move(s.x, s.y);
+  await page.mouse.down();
+  await page.mouse.move(s.x + 10 * k, s.y, { steps: 6 });
+  await page.keyboard.press('Control+z');
+  await expect(podpowiedz).toBeVisible();
+  await page.mouse.up();
+  wTolerancji((await prostokatMm(page, 'A')).x, 13);
+  await expect(drzewo(page).getByRole('treeitem', { name: /^A – / })).toBeVisible();
+
+  // Pierwszy Cofnij cofa gest, drugi – dopiero nazwanie elementu (żadnych kroków po drodze).
+  await cofnij(page);
+  wTolerancji((await prostokatMm(page, 'A')).x, 3);
+  await expect(drzewo(page).getByRole('treeitem', { name: /^A – / })).toBeVisible();
+  await cofnij(page);
+  await expect(drzewo(page).getByRole('treeitem', { name: /^A – / })).toHaveCount(0);
+});
+
+test('zaznaczone pole przeciąga się za potomka, klik bez ruchu zaznacza potomka', async ({
+  page,
+}) => {
+  await swobodny(page, 'Potomek');
+  await dodaj(page, 'Kolumna', 'Panel');
+  await dodaj(page, 'Tekst', 'Wnętrze');
+  await zaznacz(page, 'Panel');
+  const k = await pxNaMm(page);
+  const s = await srodek(page, obszar(page, 'Wnętrze'));
+  await przeciagnij(page, s, { x: s.x + 10 * k, y: s.y });
+  const p = await prostokatMm(page, 'Panel');
+  wTolerancji(p.x, 13);
+  wTolerancji(p.y, 3);
+  await expect(drzewo(page).getByRole('treeitem', { name: /^Panel – / })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  // Klik bez ruchu zawęża zaznaczenie do klikniętego potomka.
+  const c = await srodek(page, obszar(page, 'Wnętrze'));
+  await page.mouse.click(c.x, c.y);
+  await expect(drzewo(page).getByRole('treeitem', { name: /^Wnętrze – / })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+});

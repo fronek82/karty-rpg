@@ -1,10 +1,17 @@
-import { useRef, useState, type PointerEvent as PointerReact, type RefObject } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as PointerReact,
+  type RefObject,
+} from 'react';
 import { rodzicWezla } from '../../dane/szablon';
 import type { Mm } from '../../model/jednostki';
 import type { Szablon } from '../../model/szablon';
 import {
   budujCel,
   budujCele,
+  ograniczDoRodzica,
   KROK_STRZALKI,
   KROK_STRZALKI_DUZY,
   przesunCele,
@@ -114,18 +121,82 @@ export function useGestSwobodny({
     const skala = r.width / szerMm;
     return { skala, x: (e.clientX - r.left) / skala, y: (e.clientY - r.top) / skala };
   };
-  const zakoncz = (e: PointerReact, zapisz: boolean) => {
+  /** Ostatnie zdarzenie ruchu czeka na klatkę (jedna aktualizacja na klatkę). */
+  const oczekujacy = useRef<
+    | { pointerId: number; clientX: number; clientY: number; altKey: boolean; shiftKey: boolean }
+    | undefined
+  >(undefined);
+  const klatka = useRef<number | undefined>(undefined);
+  const ostatniaMapa = useRef<Map<string, ZmianaPola> | undefined>(undefined);
+  const przerwijKlatke = () => {
+    if (klatka.current !== undefined) cancelAnimationFrame(klatka.current);
+    klatka.current = undefined;
+    oczekujacy.current = undefined;
+  };
+  // Odmontowanie w trakcie gestu: zwalniamy oczekującą klatkę.
+  useEffect(() => przerwijKlatke, []);
+  const rowne = (x: Map<string, ZmianaPola> | undefined, y: Map<string, ZmianaPola>) =>
+    !!x && JSON.stringify([...x]) === JSON.stringify([...y]);
+
+  /** Liczy i pokazuje stan tymczasowy dla ruchu myszy (z klatki albo przed zwolnieniem przycisku). */
+  const ruch = (z: NonNullable<typeof oczekujacy.current>) => {
     const a = aktywny.current;
-    if (!a || a.pointerId !== e.pointerId) return;
+    if (!a || a.pointerId !== z.pointerId) return;
+    const dpx = { x: z.clientX - a.start.x, y: z.clientY - a.start.y };
+    if (!a.ruszono && Math.hypot(dpx.x, dpx.y) < PROG_RUCHU_PX) return;
+    if (a.rodzaj === 'przesun' && a.cele.length === 0) return;
+    a.ruszono = true;
+    const dx = dpx.x / a.skala;
+    const dy = dpx.y / a.skala;
+    const kursor = pomiar(z);
+    const w =
+      a.rodzaj === 'przesun'
+        ? przesunCele(a.cele, dx, dy, przyc(z.altKey, a.skala))
+        : zmienRozmiar(a.cel, a.uchwyt, dx, dy, przyc(z.altKey, a.skala), z.shiftKey);
+    a.ostatnie = w.zmiany;
+    // Ta sama mapa zmian (np. ruch w obrębie kroku siatki) – bez ponownego rysowania karty.
+    if (!rowne(ostatniaMapa.current, w.zmiany)) {
+      ostatniaMapa.current = w.zmiany;
+      ustawTmp(w.zmiany);
+    }
+    const pierwszy = a.rodzaj === 'przesun' ? a.cele[0]! : a.cel;
+    ustawStan({
+      rodzaj: a.rodzaj,
+      skala: a.skala,
+      prowadnice: w.prowadnice,
+      ...(w.podpowiedz ? { podpowiedz: w.podpowiedz } : {}),
+      kursor: { x: kursor.x, y: kursor.y },
+      poczatekSiatki: { x: pierwszy.ramka.x, y: pierwszy.ramka.y },
+    });
+  };
+  const sprzatnij = () => {
+    const a = aktywny.current;
     aktywny.current = undefined;
-    karta.current?.releasePointerCapture?.(e.pointerId);
-    if (zapisz && a.ruszono && a.ostatnie) zatwierdz(a.ostatnie);
-    else if (zapisz && !a.ruszono && a.rodzaj === 'przesun') {
-      if (a.zwezDo) ustawZazn([a.zwezDo]);
-      else if (a.tlo && !e.shiftKey) ustawZazn([]);
+    przerwijKlatke();
+    ostatniaMapa.current = undefined;
+    if (a) {
+      try {
+        karta.current?.releasePointerCapture?.(a.pointerId);
+      } catch {
+        // Przechwyt już zwolniony.
+      }
     }
     ustawTmp(undefined);
     ustawStan(undefined);
+  };
+  const zakoncz = (e: PointerReact, zapisz: boolean) => {
+    const a = aktywny.current;
+    if (!a || a.pointerId !== e.pointerId) return;
+    // Ruch czekający na klatkę liczymy przed zapisem (ostatnie położenie myszy).
+    if (zapisz && oczekujacy.current) ruch(oczekujacy.current);
+    const ostatnie = a.ostatnie;
+    const ruszono = a.ruszono;
+    sprzatnij();
+    if (zapisz && ruszono && ostatnie) zatwierdz(ostatnie);
+    else if (zapisz && !ruszono && a.rodzaj === 'przesun') {
+      if (a.zwezDo) ustawZazn([a.zwezDo]);
+      else if (a.tlo && !e.shiftKey) ustawZazn([]);
+    }
   };
 
   return {
@@ -134,13 +205,12 @@ export function useGestSwobodny({
     /** Anuluje trwający gest (Escape) – bez zapisu. */
     anuluj: () => {
       if (!aktywny.current) return false;
-      aktywny.current = undefined;
-      ustawTmp(undefined);
-      ustawStan(undefined);
+      sprzatnij();
       return true;
     },
     onPointerDown: (e: PointerReact) => {
-      if (e.button !== 0 || !szablon || !wezly) return;
+      // Trwający gest (np. drugi palec) i nie-główne wskaźniki nie zaczynają nowego.
+      if (e.button !== 0 || !e.isPrimary || aktywny.current || !szablon || !wezly) return;
       const m = pomiar(e);
       karta.current?.focus({ preventScroll: true });
       const trafiony = trafionyWezel(wezly, m.x, m.y);
@@ -165,7 +235,10 @@ export function useGestSwobodny({
           ustawZazn(wybrane);
         }
       }
-      const cele = id && wybrane.includes(id) ? budujCele(szablon, wezly, wybrane) : [];
+      const cele =
+        id && wybrane.includes(id) ? ograniczDoRodzica(budujCele(szablon, wezly, wybrane), id) : [];
+      // Bez celów i bez tła nie ma czego śledzić (brak przechwytu wskaźnika, brak stanu gestu).
+      if (cele.length === 0 && id) return;
       aktywny.current = {
         rodzaj: 'przesun',
         pointerId: e.pointerId,
@@ -183,11 +256,12 @@ export function useGestSwobodny({
           : {}),
         tlo: !id,
       };
-      if (cele.length > 0 || !id) karta.current?.setPointerCapture?.(e.pointerId);
+      karta.current?.setPointerCapture?.(e.pointerId);
     },
     onUchwytDown: (uchwyt: Uchwyt, e: PointerReact) => {
       e.stopPropagation();
-      if (e.button !== 0 || !szablon || !wezly || zaznaczone.length !== 1) return;
+      if (e.button !== 0 || !e.isPrimary || aktywny.current || !szablon || !wezly) return;
+      if (zaznaczone.length !== 1) return;
       const cel = budujCel(szablon, wezly, zaznaczone[0]!);
       if (!cel) return;
       karta.current?.focus({ preventScroll: true });
@@ -205,31 +279,32 @@ export function useGestSwobodny({
     onPointerMove: (e: PointerReact) => {
       const a = aktywny.current;
       if (!a || a.pointerId !== e.pointerId) return;
-      const dpx = { x: e.clientX - a.start.x, y: e.clientY - a.start.y };
-      if (!a.ruszono && Math.hypot(dpx.x, dpx.y) < PROG_RUCHU_PX) return;
-      if (a.rodzaj === 'przesun' && a.cele.length === 0) return;
-      a.ruszono = true;
-      const dx = dpx.x / a.skala;
-      const dy = dpx.y / a.skala;
-      const kursor = pomiar(e);
-      const w =
-        a.rodzaj === 'przesun'
-          ? przesunCele(a.cele, dx, dy, przyc(e.altKey, a.skala))
-          : zmienRozmiar(a.cel, a.uchwyt, dx, dy, przyc(e.altKey, a.skala), e.shiftKey);
-      a.ostatnie = w.zmiany;
-      ustawTmp(w.zmiany);
-      const pierwszy = a.rodzaj === 'przesun' ? a.cele[0]! : a.cel;
-      ustawStan({
-        rodzaj: a.rodzaj,
-        skala: a.skala,
-        prowadnice: w.prowadnice,
-        ...(w.podpowiedz ? { podpowiedz: w.podpowiedz } : {}),
-        kursor: { x: kursor.x, y: kursor.y },
-        poczatekSiatki: { x: pierwszy.ramka.x, y: pierwszy.ramka.y },
-      });
+      // Przycisk puszczony poza oknem / utracony: gest się kończy bez zapisu.
+      if (e.buttons === 0 && e.pointerType === 'mouse') {
+        sprzatnij();
+        return;
+      }
+      oczekujacy.current = {
+        pointerId: e.pointerId,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        altKey: e.altKey,
+        shiftKey: e.shiftKey,
+      };
+      if (klatka.current === undefined)
+        klatka.current = requestAnimationFrame(() => {
+          klatka.current = undefined;
+          const z = oczekujacy.current;
+          oczekujacy.current = undefined;
+          if (z) ruch(z);
+        });
     },
     onPointerUp: (e: PointerReact) => zakoncz(e, true),
     onPointerCancel: (e: PointerReact) => zakoncz(e, false),
+    /** Utrata przechwytu wskaźnika (inny element, zmiana karty) – anuluje gest bez zapisu. */
+    onLostPointerCapture: (e: PointerReact) => {
+      if (aktywny.current?.pointerId === e.pointerId) sprzatnij();
+    },
     /**
      * Strzałki w podglądzie: zaznaczone pola swobodne o 0,5 mm (Shift – 5 mm). Zwraca, czy obsłużono.
      * Kolejne naciśnięcia scalają się w jeden krok „Cofnij” (klucz zależny od zaznaczenia).
@@ -237,7 +312,7 @@ export function useGestSwobodny({
     strzalki: (e: { key: string; shiftKey: boolean }): boolean => {
       const kierunek = KIERUNKI[e.key];
       if (!kierunek || !szablon || !wezly) return false;
-      const cele = budujCele(szablon, wezly, zaznaczone);
+      const cele = ograniczDoRodzica(budujCele(szablon, wezly, zaznaczone));
       if (cele.length === 0) return false;
       const krok = e.shiftKey ? KROK_STRZALKI_DUZY : KROK_STRZALKI;
       const w = przesunCele(cele, kierunek[0] * krok, kierunek[1] * krok, {

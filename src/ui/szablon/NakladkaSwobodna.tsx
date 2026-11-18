@@ -34,6 +34,15 @@ export function NakladkaSwobodna({
   if (siatka > 0 && px > 0) while (krok * px < 6) krok += siatka;
   return (
     <>
+      {/* Aktualny rozmiar zaznaczonego pola dla czytników ekranu (po zmianie uchwytem z klawiatury). */}
+      <div className="tylko-czytnik" role="status" aria-live="polite">
+        {prostokat
+          ? t('nakladka.rozmiarKomunikat', {
+              szer: liczbaMm(prostokat.szer),
+              wys: liczbaMm(prostokat.wys),
+            })
+          : ''}
+      </div>
       {stan && siatka > 0 && px > 0 && (
         <div
           className="siatka-podgladu"

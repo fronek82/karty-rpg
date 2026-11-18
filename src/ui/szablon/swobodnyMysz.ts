@@ -78,6 +78,8 @@ export function doLokalnych(dx: Mm, dy: Mm, kat: ObrotSwobodny): [Mm, Mm] {
 /** Element kontenera swobodnego przygotowany do gestu: prostokąt, ramka rodzica i rodzeństwo (układ lokalny). */
 export interface Cel {
   id: string;
+  /** Rodzic (kontener swobodny) – gest dotyczy elementów jednego rodzica. */
+  rodzicId: string;
   /** Prostokąt zajęty na karcie po własnym obrocie, w układzie rodzica. */
   rect: Prostokat;
   /** Wnętrze rodzica (po paddingu) – od niego liczą się `pozycja` i kotwica. */
@@ -117,6 +119,7 @@ export function budujCel(szablon: Szablon, wezly: WezlyKarty, id: string): Cel |
   const pionowaDlugosc = separator ? pionowy : true;
   return {
     id,
+    rodzicId: r.rodzic.id,
     rect: rect(w),
     ramka: {
       x: rw.lokalne.x + p.lewo,
@@ -146,6 +149,16 @@ export function budujCele(szablon: Szablon, wezly: WezlyKarty, ids: readonly str
     const c = budujCel(szablon, wezly, id);
     return c ? [c] : [];
   });
+}
+
+/**
+ * Gest dotyczy elementów jednego kontenera (jak wyrównanie): zostają te z rodzicem pierwszego
+ * celu albo – gdy podano `preferowany` – rodzicem tego elementu. Układy lokalne różnych rodziców
+ * (padding, obroty) są niezależne, więc wspólne przesunięcie i przyciąganie nie mają sensu.
+ */
+export function ograniczDoRodzica(cele: readonly Cel[], preferowany?: string): Cel[] {
+  const wzor = cele.find((c) => c.id === preferowany) ?? cele[0];
+  return wzor ? cele.filter((c) => c.rodzicId === wzor.rodzicId) : [];
 }
 
 export interface Przyciaganie {
@@ -341,6 +354,10 @@ export function zmienRozmiar(
       h = Math.max(MIN_ROZMIAR, p.wylacz || p.siatka <= 0 ? h : naSiatke(h, p.siatka));
       w = h * wsp;
     }
+    // Najmniejszy rozmiar dotyczy obu osi (przy zachowaniu proporcji).
+    const mnoznik = Math.max(1, MIN_ROZMIAR / w, MIN_ROZMIAR / h);
+    w *= mnoznik;
+    h *= mnoznik;
     if (lewo) l = R.x + R.szer - w;
     else if (prawo) r = l + w;
     else {
@@ -447,7 +464,7 @@ export function wyrownaj(cele: readonly Cel[], jak: Wyrownanie): Map<string, Zmi
   });
 }
 
-/** Rozłożenie równo: skrajne elementy stoją, odstępy między kolejnymi (wg położenia) są równe. Co najmniej 3 elementy. */
+/** Rozłożenie równo: równe odstępy między kolejnymi elementami (wg początku), obwiednia zaznaczenia zostaje. Co najmniej 3 elementy. */
 export function rozlozRowno(
   cele: readonly Cel[],
   os: 'poziomo' | 'pionowo',
@@ -458,8 +475,8 @@ export function rozlozRowno(
   const dl = (c: Cel) => (x ? c.rect.szer : c.rect.wys);
   const posortowane = [...cele].sort((a, b) => start(a) - start(b));
   const pierwszy = posortowane[0]!;
-  const ostatni = posortowane.at(-1)!;
-  const rozpietosc = start(ostatni) + dl(ostatni) - start(pierwszy);
+  // Obwiednia zaznaczenia zostaje: od najmniejszego początku do największego końca.
+  const rozpietosc = Math.max(...cele.map((c) => start(c) + dl(c))) - start(pierwszy);
   const odstep = (rozpietosc - posortowane.reduce((s, c) => s + dl(c), 0)) / (cele.length - 1);
   const cel = new Map<string, number>();
   let poz = start(pierwszy);

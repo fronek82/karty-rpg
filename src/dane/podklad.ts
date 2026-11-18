@@ -1,6 +1,8 @@
 import type { DaneZasobow, OpisObrazu, Projekt } from '../model/projekt';
 import type { PodkladSzablonu, Szablon } from '../model/szablon';
 import { dodajZasoby, usunZasob } from './edycja';
+import { zasobyElementow } from './biblioteka';
+import { zasobySzablonu } from './schemat';
 import { zmienSzablon } from './szablon';
 
 /** Domyślna przezroczystość nowego podkładu (%). */
@@ -14,15 +16,15 @@ const bezPodkladu = (s: Szablon): Szablon => {
 
 /**
  * Czy zasób jest gdzieś jeszcze użyty (stałe obrazy pól, ramki 9-slice, podkłady innych szablonów,
- * dane kart). Szukamy identyfikatora w całej reszcie projektu – fałszywy trop tylko zostawia obraz.
+ * dane kart). Przechodzimy po strukturach modelu, bez serializowania całego projektu.
  */
 function uzywanyPozaPodkladem(p: Projekt, id: string, szablonId: string): boolean {
-  const reszta = {
-    szablony: p.szablony.map((s) => (s.id === szablonId ? bezPodkladu(s) : s)),
-    biblioteka: p.biblioteka,
-    talie: p.talie,
-  };
-  return JSON.stringify(reszta).includes(JSON.stringify(id));
+  for (const s of p.szablony) {
+    if (s.id !== szablonId && s.podklad?.zasob === id) return true;
+    if (zasobySzablonu(s).includes(id)) return true;
+  }
+  if (zasobyElementow(p.biblioteka?.ozdobniki ?? []).includes(id)) return true;
+  return p.talie.some((t) => t.karty.some((k) => Object.values(k.dane).includes(id)));
 }
 
 /** Zasób starego podkładu znika z biblioteki, gdy nic innego go nie używa. */

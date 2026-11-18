@@ -453,6 +453,9 @@ export const pl = {
   'nakladka.strona.sw': 'lewy dolny róg',
   'nakladka.strona.w': 'lewa krawędź',
   'nakladka.strona.nw': 'lewy górny róg',
+  'nakladka.rozmiarKomunikat': 'Rozmiar {szer} × {wys} mm',
+  'nakladka.uchwytyNiedostepne':
+    'Uchwyty rozmiaru są niedostępne dla pól w obróconym kontenerze – ustaw rozmiar w panelu.',
   'nakladka.podpowiedz': 'X {x} · Y {y} mm',
   'nakladka.podpowiedzRozmiar': 'X {x} · Y {y} mm · {szer} × {wys} mm',
   'nakladka.prowadnica': 'Prowadnica',

@@ -303,6 +303,12 @@ export function EdytorSzablonu({
   const klawisze = useRef<(e: KeyboardEvent) => void>(() => undefined);
   const obsluzKlawisz = (e: KeyboardEvent) => {
     if (wPolu(document.activeElement)) return;
+    // W trakcie gestu myszą działa tylko Escape (bez Cofnij, Delete, Ctrl+D i strzałek).
+    if (gest.aktywny()) {
+      if (e.key === 'Escape') gest.anuluj();
+      if (!['Shift', 'Alt', 'Control', 'Meta'].includes(e.key)) e.preventDefault();
+      return;
+    }
     const ctrl = e.ctrlKey || e.metaKey;
     const k = e.key.toLowerCase();
     const wDrzewie = !!drzewo.current?.contains(document.activeElement);
@@ -649,6 +655,7 @@ export function EdytorSzablonu({
                     onPointerMove={gest.onPointerMove}
                     onPointerUp={gest.onPointerUp}
                     onPointerCancel={gest.onPointerCancel}
+                    onLostPointerCapture={gest.onLostPointerCapture}
                   >
                     <div
                       className="svg-opakowanie"
@@ -711,6 +718,11 @@ export function EdytorSzablonu({
                       }}
                     />
                   </div>
+                  {celUchwytow && celUchwytow.obrotPrzodkow !== 0 && (
+                    <p className="podpis" role="status">
+                      {t('nakladka.uchwytyNiedostepne')}
+                    </p>
+                  )}
                   <NarzedziaPodgladu
                     przyciaganie={przyciaganie}
                     ustawPrzyciaganie={ustawPrzyciaganie}
