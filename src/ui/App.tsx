@@ -48,6 +48,10 @@ export function App() {
     if (dawna) window.location.replace('#/');
   }, [dawna]);
 
+  // Ekrany startowe (start, gra, własne karty) mają szeroką treść; kreator jest wąski.
+  const wlasne = trasa === '/wlasne' || trasa === '/gry/inne';
+  const szerokaTresc = trasa === '/' || dawna || !!gra || wlasne;
+
   if (projekt) {
     // Edytor kartki zajmuje cały ekran (własny pasek górny).
     return (
@@ -62,7 +66,7 @@ export function App() {
   return (
     <div className="aplikacja">
       <NaglowekAplikacji />
-      <main className={trasa === '/' || dawna || gra ? 'tresc tresc-start' : 'tresc'}>
+      <main className={szerokaTresc ? 'tresc tresc-start' : 'tresc'}>
         {trasa === '/' || dawna ? (
           <Leniwa>
             <Start />
@@ -75,7 +79,7 @@ export function App() {
           <Leniwa>
             <KreatorStrona />
           </Leniwa>
-        ) : trasa === '/wlasne' || trasa === '/gry/inne' ? (
+        ) : wlasne ? (
           <Leniwa>
             <WlasneKarty />
           </Leniwa>

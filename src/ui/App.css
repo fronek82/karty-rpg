@@ -461,6 +461,11 @@ a.pasek-menu.pasek-bordo {
   color: var(--bordo-tekst);
 }
 
+a.pasek-menu.pasek-koral {
+  background: var(--kolor-1);
+  color: var(--na-jasnym);
+}
+
 a.pasek-menu.pasek-granat {
   background: var(--kolor-4);
   color: var(--akcent-tekst);
@@ -716,6 +721,50 @@ button.pasek-menu:focus-visible {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
   gap: 1.1rem;
+}
+
+/* Własne karty: siatka kafelków z podglądem jednej karty (stała wysokość miniatury). */
+.siatka-szablonow {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1.1rem;
+}
+
+.miniatura-karty {
+  position: relative;
+  box-sizing: border-box;
+  height: 16rem;
+}
+
+.miniatura-karty {
+  --wysokosc-karty: 14.5rem; /* wysokość miniatury bez paddingu */
+}
+
+/*
+ * Karta w miniaturze: szerokość = mniejsza z szerokości kafelka i wysokości × proporcje
+ * (`--proporcja` ustawia komponent), a wysokość wynika z `aspect-ratio` – bez zniekształceń
+ * dla kart pionowych i poziomych.
+ */
+.miniatura-karty > .papier,
+.miniatura-karty > .szkielet > .szkielet-papier {
+  width: min(100%, calc(var(--wysokosc-karty) * var(--proporcja, 0.7)));
+  height: auto;
+}
+
+.miniatura-karty > .szkielet {
+  display: flex;
+  justify-content: center;
+}
+
+.rozmiar-pustej {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: var(--tekst-przygaszony);
+  pointer-events: none;
 }
 
 /* Kafelek podglądu – jeden przycisk: kartka z silnika, nazwa i podpowiedź. */

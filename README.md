@@ -22,7 +22,10 @@ projekty zostają na Twoim komputerze (IndexedDB).
 
 ## Własne karty (od zera)
 
-1. Na starcie **„Stwórz własne karty”** → **„＋ Nowy szablon od zera”**: nazwa, format karty
+1. Na starcie **„Stwórz własne karty”**. Ekran ma po lewej **„Nowy szablon od zera”** i **„Importuj szablon”**, a pośrodku
+   kafelki z podglądem: **Pusta karta** i przykładowe szablony (karta z opisem, blok statystyk, karta z rzędem
+   wartości, karta ozdobna, karta swobodna). Kliknięcie kafelka tworzy projekt z szablonem i jedną kartą
+   z danymi przykładowymi. **„Nowy szablon od zera”** otwiera kreator: nazwa, format karty
    (Poker, Bridge, Mini Euro, Mini American, Tarot, kwadrat albo własny w mm), orientacja, rogi,
    kolor i neutralny układ startowy.
 2. **Edytor szablonu**: z lewej drzewo wierszy, kolumn i pól (**＋ Dodaj**, ↑/↓, do kontenera,
