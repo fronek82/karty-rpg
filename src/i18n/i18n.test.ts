@@ -106,6 +106,7 @@ describe('parytet słowników pl ↔ en', () => {
       'rozmiar.mm',
       'pakiet.param.pojemnosc',
       'czcionki.zrodlo.google',
+      'uklad.diagram.mm',
       'papier.A4',
       'papier.Letter',
       'papier.A5',
