@@ -101,13 +101,18 @@ test('diagram małego slotu rozdziela etykiety rozmiaru i zerowego odstępu', as
   const podpis = (pole: string) => ust.locator(`.podglad-wymiarow svg text[data-pole="${pole}"]`);
   const rozmiar = podpis('uklad-szerokosc');
   const odstep = podpis('uklad-odstep-x');
+  const wysokosc = podpis('uklad-wysokosc');
   await expect(rozmiar).toHaveText('25,75');
   await expect(odstep).toHaveText('0');
   const a = (await rozmiar.boundingBox())!;
   const b = (await odstep.boundingBox())!;
+  const c = (await wysokosc.boundingBox())!;
   expect(b.y).toBeGreaterThanOrEqual(a.y + a.height);
+  expect(c.x + c.width).toBeLessThanOrEqual(a.x);
   await rozmiar.click();
   await expect(ust.getByLabel('Szerokość karty (mm)')).toBeFocused();
+  await wysokosc.click();
+  await expect(ust.getByLabel('Wysokość karty (mm)')).toBeFocused();
   await odstep.click();
   await expect(ust.getByLabel('Odstęp poziomy (mm)')).toBeFocused();
 });

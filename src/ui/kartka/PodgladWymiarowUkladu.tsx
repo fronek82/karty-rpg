@@ -31,7 +31,8 @@ export function PodgladWymiarowUkladu({
   const skala = Math.min(186 / papier.szer, 180 / papier.wys);
   const szer = papier.szer * skala;
   const wys = papier.wys * skala;
-  const lewo = (320 - szer) / 2;
+  const szerRysunku = 340;
+  const lewo = (szerRysunku - szer) / 2;
   const gora = 42;
   const prawo = lewo + szer;
   const dol = gora + wys;
@@ -57,7 +58,7 @@ export function PodgladWymiarowUkladu({
       nazwa: 'uklad.diagram.papierWys',
       mm: papier.wys,
       ...(polaPapieru ? { pole: polaPapieru.wys } : {}),
-      strzalka: pionowa(gora, dol, prawo + 27),
+      strzalka: pionowa(gora, dol, prawo + 43),
     },
     {
       nazwa: 'uklad.diagram.slotSzer',
@@ -69,7 +70,7 @@ export function PodgladWymiarowUkladu({
       nazwa: 'uklad.diagram.slotWys',
       mm: slot.wysokosc,
       pole: 'uklad-wysokosc',
-      strzalka: pionowa(y1, y2, x2 - 12),
+      strzalka: pionowa(y1, y2, lewo - 33),
     },
     {
       nazwa: 'uklad.diagram.lewo',
@@ -102,14 +103,14 @@ export function PodgladWymiarowUkladu({
       nazwa: 'uklad.diagram.odstepY',
       mm: uklad.odstepPionowy,
       pole: 'uklad-odstep-y',
-      strzalka: pionowa(y2, y(uklad.gora + slot.wysokosc + uklad.odstepPionowy), x2 + 23),
+      strzalka: pionowa(y2, y(uklad.gora + slot.wysokosc + uklad.odstepPionowy), prawo + 8),
     });
 
   const poza = siatka.prawo < -1e-6 || siatka.dol < -1e-6;
   return (
     <details className="podglad-wymiarow">
       <summary>{t('uklad.diagram.tytul')}</summary>
-      <svg aria-hidden="true" viewBox={`0 0 320 ${dol + 48}`}>
+      <svg aria-hidden="true" viewBox={`0 0 ${szerRysunku} ${dol + 48}`}>
         <defs>
           <clipPath id={`${id}-papier`}>
             <rect x={lewo} y={gora} width={szer} height={wys} />
