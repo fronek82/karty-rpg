@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { unzipSync } from 'fflate';
 import { kartkaCzaru } from './kartkaUI';
-import { slot } from './pomoc';
+import { nowaPustaKartka, slot } from './pomoc';
 
 /** M2-6: własny układ arkusza, „Moje układy”, kalibracja, wydruk testowy, eksport obrazów. */
 
@@ -71,6 +71,45 @@ test('diagram wymiarów pokazuje całą siatkę i prowadzi do edycji pola', asyn
     await podglad.scrollIntoViewIfNeeded();
     await podglad.screenshot({ path: 'docs/obrazy/m2c-2-podglad-wymiarow.png' });
   }
+
+  await slot(page, 1, 3, 1).click();
+  await page.getByRole('menuitem', { name: /Czar \(test\)/ }).click();
+  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await ust.getByText('Podgląd wymiarów', { exact: true }).click();
+  await ust.getByLabel('Kolumny').fill('2');
+  await expect(ust.getByText(/Po tej zmianie karty nie zmieściłyby się/)).toBeVisible();
+  await expect(podglad).toContainText('Siatka 3 × 3 · 199 × 272 mm');
+  await expect(wymiar('Margines prawy')).toContainText('6 mm');
+  await expect(page.locator('[data-karta]')).toHaveCount(2);
+
+  await ust.getByLabel('Papier', { exact: true }).selectOption('wlasny');
+  await ust.getByRole('button', { name: 'poziomo', exact: true }).click();
+  await podglad
+    .getByRole('button', { name: 'Szerokość papieru, 297 mm. Przejdź do pola.' })
+    .press('Space');
+  await expect(ust.locator('#papier-wys')).toBeFocused();
+  await podglad.locator('svg text[data-pole="papier-szer"]').click();
+  await expect(ust.locator('#papier-szer')).toBeFocused();
+});
+
+test('diagram małego slotu rozdziela etykiety rozmiaru i zerowego odstępu', async ({ page }) => {
+  await nowaPustaKartka(page);
+  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  await ust.getByRole('button', { name: 'własny układ arkusza' }).click();
+  await ust.getByText('Podgląd wymiarów', { exact: true }).click();
+  const podpis = (pole: string) => ust.locator(`.podglad-wymiarow svg text[data-pole="${pole}"]`);
+  const rozmiar = podpis('uklad-szerokosc');
+  const odstep = podpis('uklad-odstep-x');
+  await expect(rozmiar).toHaveText('25,75');
+  await expect(odstep).toHaveText('0');
+  const a = (await rozmiar.boundingBox())!;
+  const b = (await odstep.boundingBox())!;
+  expect(b.y).toBeGreaterThanOrEqual(a.y + a.height);
+  await rozmiar.click();
+  await expect(ust.getByLabel('Szerokość karty (mm)')).toBeFocused();
+  await odstep.click();
+  await expect(ust.getByLabel('Odstęp poziomy (mm)')).toBeFocused();
 });
 
 test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem, presety', async ({

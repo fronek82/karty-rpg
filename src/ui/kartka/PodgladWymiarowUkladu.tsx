@@ -11,6 +11,7 @@ type Wymiar = {
 };
 
 const ustawFokus = (pole: string) => document.getElementById(pole)?.focus();
+const zaokr = (mm: number) => formatujLiczbe(Math.abs(mm) < 1e-6 ? 0 : mm, 2);
 
 /** Rysunek formularza przedstawia geometrię modelu. Nie należy do sceny eksportu. */
 export function PodgladWymiarowUkladu({
@@ -18,11 +19,13 @@ export function PodgladWymiarowUkladu({
   slot,
   papier,
   siatka,
+  polaPapieru,
 }: {
   uklad: UkladArkusza;
   slot: PresetUkladu['slot'];
   papier: { szer: number; wys: number };
   siatka: ReturnType<typeof wymiaryUkladu>;
+  polaPapieru?: { szer: string; wys: string };
 }) {
   const id = useId();
   const skala = Math.min(186 / papier.szer, 180 / papier.wys);
@@ -47,9 +50,15 @@ export function PodgladWymiarowUkladu({
     {
       nazwa: 'uklad.diagram.papierSzer',
       mm: papier.szer,
+      ...(polaPapieru ? { pole: polaPapieru.szer } : {}),
       strzalka: pozioma(lewo, prawo, dol + 27),
     },
-    { nazwa: 'uklad.diagram.papierWys', mm: papier.wys, strzalka: pionowa(gora, dol, prawo + 27) },
+    {
+      nazwa: 'uklad.diagram.papierWys',
+      mm: papier.wys,
+      ...(polaPapieru ? { pole: polaPapieru.wys } : {}),
+      strzalka: pionowa(gora, dol, prawo + 27),
+    },
     {
       nazwa: 'uklad.diagram.slotSzer',
       mm: slot.szerokosc,
@@ -60,7 +69,7 @@ export function PodgladWymiarowUkladu({
       nazwa: 'uklad.diagram.slotWys',
       mm: slot.wysokosc,
       pole: 'uklad-wysokosc',
-      strzalka: pionowa(y1, y2, x2 - 6),
+      strzalka: pionowa(y1, y2, x2 - 12),
     },
     {
       nazwa: 'uklad.diagram.lewo',
@@ -86,14 +95,14 @@ export function PodgladWymiarowUkladu({
       nazwa: 'uklad.diagram.odstepX',
       mm: uklad.odstepPoziomy,
       pole: 'uklad-odstep-x',
-      strzalka: pozioma(x2, x(uklad.lewo + slot.szerokosc + uklad.odstepPoziomy), y1 + 14),
+      strzalka: pozioma(x2, x(uklad.lewo + slot.szerokosc + uklad.odstepPoziomy), y1 + 34),
     });
   if (uklad.rzedy > 1)
     wymiary.push({
       nazwa: 'uklad.diagram.odstepY',
       mm: uklad.odstepPionowy,
       pole: 'uklad-odstep-y',
-      strzalka: pionowa(y2, y(uklad.gora + slot.wysokosc + uklad.odstepPionowy), x2 - 6),
+      strzalka: pionowa(y2, y(uklad.gora + slot.wysokosc + uklad.odstepPionowy), x2 + 23),
     });
 
   const poza = siatka.prawo < -1e-6 || siatka.dol < -1e-6;
@@ -152,8 +161,9 @@ export function PodgladWymiarowUkladu({
                 textAnchor={pionowa ? (na < lewo ? 'end' : 'start') : 'middle'}
                 onClick={pole ? () => ustawFokus(pole) : undefined}
                 className={pole ? 'wymiary-do-pola' : undefined}
+                data-pole={pole}
               >
-                {formatujLiczbe(mm, 1)}
+                {zaokr(mm)}
               </text>
             </g>
           );
@@ -163,8 +173,8 @@ export function PodgladWymiarowUkladu({
         {t('uklad.diagram.siatka', {
           kolumny: uklad.kolumny,
           rzedy: uklad.rzedy,
-          szer: formatujLiczbe(siatka.szer, 1),
-          wys: formatujLiczbe(siatka.wys, 1),
+          szer: zaokr(siatka.szer),
+          wys: zaokr(siatka.wys),
         })}
       </p>
       <dl className="wymiary-lista">
@@ -177,15 +187,15 @@ export function PodgladWymiarowUkladu({
                   type="button"
                   aria-label={t('uklad.diagram.edytuj', {
                     pole: t(nazwa),
-                    mm: formatujLiczbe(mm, 1),
+                    mm: zaokr(mm),
                   })}
                   onClick={() => ustawFokus(pole)}
                 >
-                  {t('uklad.diagram.mm', { mm: formatujLiczbe(mm, 1) })}
+                  {t('uklad.diagram.mm', { mm: zaokr(mm) })}
                 </button>
               ) : (
                 <span className={mm < -1e-6 ? 'poza' : undefined}>
-                  {t('uklad.diagram.mm', { mm: formatujLiczbe(mm, 1) })}
+                  {t('uklad.diagram.mm', { mm: zaokr(mm) })}
                 </span>
               )}
             </dd>

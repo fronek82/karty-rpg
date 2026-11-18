@@ -474,7 +474,20 @@ export function PanelUkladu({
               : ''}
           </p>
           {wymiary && (
-            <PodgladWymiarowUkladu uklad={uklad} slot={slot} papier={papier} siatka={wymiary} />
+            <PodgladWymiarowUkladu
+              uklad={uklad}
+              slot={slot}
+              papier={papier}
+              siatka={wymiary}
+              {...(u.papier === 'wlasny'
+                ? {
+                    polaPapieru:
+                      u.orientacja === 'pionowa'
+                        ? { szer: 'papier-szer', wys: 'papier-wys' }
+                        : { szer: 'papier-wys', wys: 'papier-szer' },
+                  }
+                : {})}
+            />
           )}
           <div className="pole-panelu zapis-ukladu">
             <label htmlFor="nazwa-ukladu">{t('uklad.nazwa')}</label>
