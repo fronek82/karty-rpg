@@ -48,22 +48,75 @@ const swobodna = {
     id: 'karta',
     typ: 'swobodny',
     dzieci: [
-      { id: 'i', nazwa: 'Ilustracja', typ: 'obraz', klucz: 'ilustracja', pozycja: { x: 0, y: 0 }, szerokosc: { mm: 63 }, wysokosc: { mm: 46 } },
-      { id: 't', nazwa: 'Tytuł', typ: 'tekst', klucz: 'tytul', pozycja: { x: 6, y: 34 }, szerokosc: { mm: 51 }, wysokosc: { mm: 12 },
-        styl: { czcionka: 'tytul', rozmiar: 5.5, wariant: 'pogrubiony', wyrownanie: 'srodek', kolor: '#ffffff' } },
-      { id: 'k', nazwa: 'Koszt', typ: 'wartosc', klucz: 'koszt', ksztalt: 'kolo', pozycja: { x: 3, y: 3 }, szerokosc: { mm: 12 }, wysokosc: { mm: 12 },
-        tlo: '#fff8e6', obramowanie: { grubosc: 0.4, kolor: '#7d2240' }, styl: { czcionka: 'tresc', rozmiar: 5, wariant: 'pogrubiony' } },
-      { id: 'n', nazwa: 'Typ', typ: 'tekst', klucz: 'typ', pozycja: { x: 57, y: 8, obrot: 90 }, szerokosc: { mm: 40 }, wysokosc: { mm: 4.5 },
-        styl: { czcionka: 'tresc', rozmiar: 2.8, wariant: 'kursywa', kolor: '#ffffff' } },
-      { id: 'o', nazwa: 'Opis', typ: 'kolumna', pozycja: { x: 4, y: 50 }, szerokosc: { mm: 55 }, wysokosc: { mm: 30 },
-        dzieci: [{ id: 'oo', typ: 'tekst', klucz: 'opis', wysokosc: { wypelnij: 1 }, styl: { czcionka: 'tresc', rozmiar: 3.4 } }] },
+      {
+        id: 'i',
+        nazwa: 'Ilustracja',
+        typ: 'obraz',
+        klucz: 'ilustracja',
+        pozycja: { x: 0, y: 0 },
+        szerokosc: { mm: 63 },
+        wysokosc: { mm: 46 },
+      },
+      {
+        id: 't',
+        nazwa: 'Tytuł',
+        typ: 'tekst',
+        klucz: 'tytul',
+        pozycja: { x: 6, y: 34 },
+        szerokosc: { mm: 51 },
+        wysokosc: { mm: 12 },
+        styl: { czcionka: 'tytul', rozmiar: 5.5, wariant: 'pogrubiony', wyrownanie: 'srodek' },
+      },
+      {
+        id: 'k',
+        nazwa: 'Koszt',
+        typ: 'wartosc',
+        klucz: 'koszt',
+        ksztalt: 'kolo',
+        pozycja: { x: 3, y: 3 },
+        szerokosc: { mm: 12 },
+        wysokosc: { mm: 12 },
+        tlo: '#fff8e6',
+        obramowanie: { grubosc: 0.4, kolor: '#7d2240' },
+        styl: { czcionka: 'tresc', rozmiar: 5, wariant: 'pogrubiony' },
+      },
+      {
+        id: 'n',
+        nazwa: 'Typ',
+        typ: 'tekst',
+        klucz: 'typ',
+        pozycja: { x: 57, y: 8, obrot: 90 },
+        szerokosc: { mm: 40 },
+        wysokosc: { mm: 4.5 },
+        styl: { czcionka: 'tresc', rozmiar: 2.8, wariant: 'kursywa', kolor: '#7d2240' },
+      },
+      {
+        id: 'o',
+        nazwa: 'Opis',
+        typ: 'kolumna',
+        pozycja: { x: 4, y: 50 },
+        szerokosc: { mm: 55 },
+        wysokosc: { mm: 30 },
+        dzieci: [
+          {
+            id: 'oo',
+            typ: 'tekst',
+            klucz: 'opis',
+            wysokosc: { wypelnij: 1 },
+            styl: { czcionka: 'tresc', rozmiar: 3.4 },
+          },
+        ],
+      },
     ],
   },
 } as unknown as Szablon;
 
 /** Szablon D bez własnego elementu biblioteki (wl:Gwiazdka) – wartość w kształcie rombu. */
 const ozdobna = JSON.parse(
-  JSON.stringify(szablonOzdobny).replace('"ksztalt":"wlasny","ksztaltElement":"wl:Gwiazdka"', '"ksztalt":"romb"'),
+  JSON.stringify(szablonOzdobny).replace(
+    '"ksztalt":"wlasny","ksztaltElement":"wl:Gwiazdka"',
+    '"ksztalt":"romb"',
+  ),
 ) as Szablon;
 
 it('podglądy do makiet', () => {
@@ -97,14 +150,26 @@ it('podglądy do makiet', () => {
   // Strona do makiety edytora: kilka kart i puste sloty (jedna karta 1x2 i puste miejsca).
   const wszystkie = [...pakietMausritter.talie.flatMap((t) => t.karty), ...taliaStanow.karty];
   const uklad: [string, number, number][] = [
-    ['bron-sztylet', 0, 0], ['bron-miecz', 1, 0], ['zbroja-ciezka', 2, 0], ['przedmiot-pochodnie', 3, 0],
-    ['przedmiot-latarnia', 4, 0], ['zaklecie', 5, 0], ['stan-ranna', 6, 0], ['sakiewka', 0, 1],
-    ['bron-luk', 1, 1], ['przedmiot-prowiant', 3, 1], ['stan-glodna', 4, 1], ['bron-topor', 5, 1],
+    ['bron-sztylet', 0, 0],
+    ['bron-miecz', 1, 0],
+    ['zbroja-ciezka', 2, 0],
+    ['przedmiot-pochodnie', 3, 0],
+    ['przedmiot-latarnia', 4, 0],
+    ['zaklecie', 5, 0],
+    ['stan-ranna', 6, 0],
+    ['sakiewka', 0, 1],
+    ['bron-luk', 1, 1],
+    ['przedmiot-prowiant', 3, 1],
+    ['stan-glodna', 4, 1],
+    ['bron-topor', 5, 1],
   ];
   const kartyEdycji = uklad.map(([id]) => ({ ...wszystkie.find((k) => k.id === id)!, ilosc: 1 }));
   const we = zbudujArkusz(
     {
-      id: 'edycja', nazwa: 'Moje karty', taliaId: 'te', liczbaStron: 1,
+      id: 'edycja',
+      nazwa: 'Moje karty',
+      taliaId: 'te',
+      liczbaStron: 1,
       ustawienia: pakietMausritter.nowaKartka.ustawienia,
       przypiete: uklad.map(([kartaId, kolumna, rzad]) => ({ kartaId, kolumna, rzad })),
     },
@@ -112,7 +177,13 @@ it('podglądy do makiet', () => {
     ctx,
   );
   zapisz('arkusz-edycja.svg', scenaDoSvg(we.strony[0]!, svgOpcje('edycja-')));
-  info.edycja = { poczatek: we.poczatekSiatki, slot: we.slot, siatka: we.siatka, ostrzezenia: we.ostrzezenia, uklad };
+  info.edycja = {
+    poczatek: we.poczatekSiatki,
+    slot: we.slot,
+    siatka: we.siatka,
+    ostrzezenia: we.ostrzezenia,
+    uklad,
+  };
 
   writeFileSync(`${WYJSCIE}/info.json`, JSON.stringify(info, null, 1));
 
@@ -121,8 +192,26 @@ it('podglądy do makiet', () => {
     ['czar', szablonCzaru, daneCzaru],
     ['statystyki', szablonStatystyk, daneStatystyk],
     ['potwor', szablonWroga, daneWroga as Record<string, string>],
-    ['ozdobna', ozdobna, { tytul: 'Smocza łuska', opis: 'Pancerz z łusek dawno pokonanego smoka. Chroni przed ogniem i zimnem.', sila: '7' }],
-    ['swobodna', swobodna, { tytul: 'Ognisty smok', koszt: '3', typ: 'Stwór', opis: 'Zionie ogniem na wszystko przed sobą.' }],
+    [
+      'ozdobna',
+      ozdobna,
+      {
+        tytul: 'Smocza łuska',
+        opis: 'Pancerz z łusek dawno pokonanego smoka. Chroni przed ogniem i zimnem.',
+        sila: '7',
+      },
+    ],
+    [
+      'swobodna',
+      swobodna,
+      {
+        ilustracja: OBRAZ_ZASTEPCZY,
+        tytul: 'Ognisty smok',
+        koszt: '3',
+        typ: 'Stwór',
+        opis: 'Zionie ogniem na wszystko przed sobą.',
+      },
+    ],
   ];
   for (const [id, s, dane] of karty) {
     const r = renderujKarte(s, { id: 'x', szablonId: s.id, ilosc: 1, dane } as never, ctx);

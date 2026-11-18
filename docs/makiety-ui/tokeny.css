@@ -1,0 +1,53 @@
+/* Tokeny makiet interfejsu – jedno źródło wartości dla motywu jasnego i ciemnego. */
+:root,
+[data-theme='light'] {
+  --tlo: #ede4dc;
+  --panel: #f6f0ea;
+  --tekst: #2b2a2e;
+  --tekst-przygaszony: #655e63;
+  --linia: #d6c9bd;
+  --pasek: #1b7fa8;
+  --pasek-tekst: #ffffff;
+  --przycisk: #1b7fa8;
+  --przycisk-tekst: #ffffff;
+  --link: #2a7fa8;
+  --bordo: #7d2240;
+  --bordo-tekst: #ffffff;
+  --losos: #e0876a;
+  --bursztyn: #e9a645;
+  --turkus: #5f9ea8;
+  --granat: #356d8a;
+  --na-jasnym: #2b2a2e;
+  --ob-fiolet: #b4a0c8;
+  --ob-bordo: #7d2240;
+  --zaznaczenie: #2f7fd8;
+  --pole: #fffaf5;
+  --cien: 0 1px 2px rgb(60 40 30 / 12%), 0 4px 14px rgb(60 40 30 / 8%);
+  --tytul: #7d2240;
+}
+
+[data-theme='dark'] {
+  --tlo: #1e1a1d;
+  --panel: #2a2528;
+  --tekst: #ece4dc;
+  --tekst-przygaszony: #b9aea8;
+  --linia: #433c40;
+  --pasek: #154b63;
+  --pasek-tekst: #ffffff;
+  --przycisk: #1f6e94;
+  --przycisk-tekst: #ffffff;
+  --link: #6fb8da;
+  --bordo: #b8536f;
+  --bordo-tekst: #ffffff;
+  --losos: #e0876a;
+  --bursztyn: #e9a645;
+  --turkus: #5f9ea8;
+  --granat: #356d8a;
+  --na-jasnym: #2b2a2e;
+  --ob-fiolet: #b4a0c8;
+  --ob-bordo: #b8536f;
+  --zaznaczenie: #5aa5f0;
+  --pole: #1f1b1e;
+  --cien: 0 1px 2px rgb(0 0 0 / 40%), 0 4px 14px rgb(0 0 0 / 30%);
+  --tytul: #e08aa4;
+}

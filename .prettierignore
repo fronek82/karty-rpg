@@ -6,3 +6,5 @@ zasoby-prywatne
 package-lock.json
 SPEC.md
 .claude
+docs/makiety-ui/html
+docs/makiety-ui/podglady
