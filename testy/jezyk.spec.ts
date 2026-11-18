@@ -137,7 +137,7 @@ test('ekran Mausrittera i nazwy gotowych układów po angielsku', async ({ page 
   await page.goto('./#/gra/mausritter');
   await wybierz(page, 'EN');
   await expect(page.getByRole('heading', { level: 1, name: 'Cards for Mausritter' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Blank sheet/ })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /Blank A4 sheet/ })).toBeEnabled();
   for (const u of ['Weapons and armor', 'Gear', 'Conditions', 'All three'])
     await expect(page.getByRole('button', { name: u, exact: true })).toBeVisible();
 });
@@ -163,7 +163,7 @@ test.describe('edytor kartki po angielsku', () => {
   }) => {
     await page.goto('./#/');
     await page.getByRole('link', { name: /Create cards for Mausritter/ }).click();
-    await page.getByRole('button', { name: /Blank sheet/ }).click();
+    await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     await expect(
       page.getByRole('button', { name: 'Download', exact: false }).first(),
@@ -195,7 +195,7 @@ test.describe('edytor kartki po angielsku', () => {
   }) => {
     await page.goto('./#/');
     await page.getByRole('link', { name: /Create cards for Mausritter/ }).click();
-    await page.getByRole('button', { name: /Blank sheet/ }).click();
+    await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     await page
       .getByRole('button', {
@@ -234,7 +234,7 @@ test.describe('edytor kartki po angielsku', () => {
   test('ustawienia kartki po angielsku: tytuł, papier, kalibracja', async ({ page }) => {
     await page.goto('./#/');
     await page.getByRole('link', { name: /Create cards for Mausritter/ }).click();
-    await page.getByRole('button', { name: /Blank sheet/ }).click();
+    await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     await page.getByRole('button', { name: /Settings/ }).click();
     const ustawienia = page.getByRole('complementary', { name: 'Settings' });
@@ -292,7 +292,7 @@ test.describe('zrzuty UI-2', () => {
     await page.screenshot({ path: 'docs/obrazy/ui-2-start-en-jasny.png' });
     await page.getByRole('button', { name: 'Dark theme' }).click();
     await page.getByRole('link', { name: /Create cards for Mausritter/ }).click();
-    await page.getByRole('button', { name: /Blank sheet/ }).click();
+    await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     await page
       .getByRole('button', {

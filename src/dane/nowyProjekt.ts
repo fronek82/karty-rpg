@@ -66,7 +66,11 @@ export function lokalizujNazwy(projekt: Projekt, nazwaProjektu: string): Projekt
 }
 
 /** Pusta kartka pakietu (talia bez kart i arkusz) z nazwą w bieżącym języku – jak w nowym projekcie. */
-export function pustaKartkaPakietu(pakiet: Pakiet): { talia: Talia; arkusz: Arkusz; nazwa: string } {
+export function pustaKartkaPakietu(pakiet: Pakiet): {
+  talia: Talia;
+  arkusz: Arkusz;
+  nazwa: string;
+} {
   const id = 'kartka-1';
   const nazwa = tJesliJest('pakiet.nowaKartka') ?? pakiet.nowaKartka.nazwa;
   const ustawienia = structuredClone(pakiet.nowaKartka.ustawienia);

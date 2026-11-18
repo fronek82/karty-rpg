@@ -62,7 +62,7 @@ export function App() {
   return (
     <div className="aplikacja">
       <NaglowekAplikacji />
-      <main className={trasa === '/' || dawna ? 'tresc tresc-start' : 'tresc'}>
+      <main className={trasa === '/' || dawna || gra ? 'tresc tresc-start' : 'tresc'}>
         {trasa === '/' || dawna ? (
           <Leniwa>
             <Start />
