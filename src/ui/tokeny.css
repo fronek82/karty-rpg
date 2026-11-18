@@ -3,6 +3,12 @@
  * Motyw ustawia atrybut data-theme na <html> (skrypt w index.html i src/ui/motyw.ts).
  * Kontrasty tych par sprawdza test src/ui/tokeny.test.ts, który czyta ten plik.
  * Kolory kart na podglądzie pochodzą z szablonu i nie zależą od motywu.
+ *
+ * Tokeny „-papier” służą do nakładek rysowanych na białym papierze kartki i karty (zaznaczenie,
+ * pole wstawiania, ostrzeżenie): papier jest biały w obu motywach, więc te kolory nie jadą za
+ * motywem i mają kontrast >= 3:1 względem bieli. --papier-ozdobnika to kolor papieru, na którym
+ * rysuje się podgląd ozdobnika (dane karty, nie motyw). --obramowanie-pola to obrys pól formularzy
+ * (>= 3:1 względem pola i panelu); --obramowanie zostaje na linie podziału i obramowania ozdobne.
  */
 :root,
 [data-theme='light'] {
@@ -47,6 +53,14 @@
   --zle-jasny: #ff9a9a;
   --link-na-ciemnym: #8fb8ff;
   --prowadnica: #d6247f;
+  --obramowanie-pola: #857970;
+  --niebezpieczny-tlo: var(--tlo-panelu);
+  --niebezpieczny-tekst: var(--bordo);
+  --niebezpieczny-obrys: var(--bordo);
+  --papier-ozdobnika: #f7f0dc;
+  --zaznaczenie-papier: #1b7fa8;
+  --dobrze-papier: #2f8f4e;
+  --zle-papier: #b03226;
   --cien: 0 2px 10px rgb(0 0 0 / 18%);
   --cien-paska: 0 1px 3px rgb(0 0 0 / 12%);
 }
@@ -93,6 +107,14 @@
   --zle-jasny: #ee7a6c;
   --link-na-ciemnym: #8fb8ff;
   --prowadnica: #d6247f;
+  --obramowanie-pola: #8a7f85;
+  --niebezpieczny-tlo: var(--bordo);
+  --niebezpieczny-tekst: var(--bordo-tekst);
+  --niebezpieczny-obrys: var(--bordo);
+  --papier-ozdobnika: #f7f0dc;
+  --zaznaczenie-papier: #1f6e94;
+  --dobrze-papier: #2f8f4e;
+  --zle-papier: #b03226;
   --cien: 0 2px 10px rgb(0 0 0 / 45%);
   --cien-paska: 0 1px 3px rgb(0 0 0 / 40%);
 }

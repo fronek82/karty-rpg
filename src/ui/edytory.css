@@ -1,0 +1,446 @@
+/*
+ * UI-7: edytory (kartka, szablon, biblioteka ozdobników, kreator) w nowej palecie.
+ * Warstwa wspólna dla kontrolek i sekcji paneli; ładowana po App.css. Wyłącznie tokeny z
+ * tokeny.css, żadnych literałów kolorów. Zmienia wygląd kontrolek oraz ramkę i odstępy sekcji
+ * paneli (pasek znacznika, padding); poza tym układ ekranów zostaje.
+ *
+ * Skróty selektorów (zakres warstwy): .edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow,
+ * .kreator – ekrany edycji; ekrany startowe mają własne style z UI-2…UI-5.
+ */
+
+/* ---------- Pola formularzy ---------- */
+
+/* Pola tekstowe, liczbowe, listy: wspólny wygląd; obrys >= 3:1 względem pola i panelu. */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(
+    input:not(
+      [type='checkbox'],
+      [type='radio'],
+      [type='color'],
+      [type='range'],
+      [type='file'],
+      .nazwa-projektu
+    ),
+    select,
+    textarea
+  ) {
+  color: var(--tekst);
+  background: var(--pole);
+  border: 1px solid var(--obramowanie-pola);
+  border-radius: 0.4rem;
+}
+
+/* Zero specyficzności: dopełnia tylko kontrolki bez własnych odstępów (np. „Skala”, „Obrót”). */
+:where(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :where(input[type='number'], input[type='text'], select, textarea) {
+  font: inherit;
+  padding: 0.3rem 0.5rem;
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(input, select, textarea):disabled {
+  color: var(--tekst-przygaszony);
+  background: var(--tlo-panelu);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(input::placeholder, textarea::placeholder) {
+  color: var(--tekst-przygaszony);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(input[type='checkbox'], input[type='radio']) {
+  accent-color: var(--akcent);
+}
+
+/* Próbnik koloru ma obrys jak inne pola. */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) input[type='color'] {
+  background: var(--pole);
+  border: 1px solid var(--obramowanie-pola);
+  border-radius: 0.4rem;
+}
+
+/* ---------- Przyciski w edytorach ---------- */
+
+/* Przyciski segmentowe: zaznaczony – morski z białym tekstem; hover tylko na niezaznaczonych. */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .przelacznik-segmentowy {
+  border-color: var(--obramowanie-pola);
+  background: var(--tlo-panelu);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .przelacznik-segmentowy
+  button {
+  border-right-color: var(--obramowanie-pola);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .przelacznik-segmentowy
+  button:hover:not(:disabled, [aria-pressed='true']) {
+  background: var(--zaznaczenie-tlo);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .przelacznik-segmentowy
+  button:focus-visible {
+  outline-offset: -4px;
+}
+
+/* Licznik (+/−) przy liczbie użyć karty. */
+:is(.edytor-kartki, .edytor-szablonu) .licznik {
+  border-color: var(--obramowanie-pola);
+}
+
+/* Główny przycisk w panelach i dialogach: morski z białym tekstem (jak na pasku). */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  button.glowny:hover:not(:disabled),
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) a.przycisk.glowny:hover {
+  background: color-mix(in srgb, black 18%, var(--akcent));
+  border-color: color-mix(in srgb, black 18%, var(--akcent));
+}
+
+/* Przycisk zwykły w panelu: obrys wyraźniejszy niż linia podziału. */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(.panel-edytora, .panel-drzewa, .panel-biblioteki, .kreator-formularz)
+  :is(button, a.przycisk):not(.glowny, .niebezpieczny, :disabled) {
+  border-color: var(--obramowanie-pola);
+}
+
+/* ---------- Sekcje paneli z kolorowymi znacznikami ---------- */
+
+/*
+ * Sekcja panelu ma stonowany pasek po lewej w jednym z kolorów --kolor-1…4 (jak w panelu
+ * Obsidiana). Pasek jest ozdobą – sekcję rozpoznaje się po nagłówku (summary/legend), więc
+ * kontrast paska nie jest wymagany. Zmienia się ramka i wewnętrzny odstęp sekcji (pasek 4 px,
+ * padding 0,5/0,7 rem), reszta układu panelu zostaje.
+ *
+ * Kolor wg :nth-of-type, czyli liczy się tylko sekcje tego samego rodzaju (details albo
+ * fieldset), a nie wszystkie rodzeństwo – cykl jest regularny, a fieldsety zaczynają od innego
+ * koloru niż details (przesunięcie o 2), żeby sąsiednie sekcje różnych rodzajów różniły się.
+ * Sekcja w sekcji dziedziczy --znacznik od rodzica (własnego koloru nie dostaje), ma pasek 2 px.
+ */
+:is(
+  details.sekcja-panelu,
+  fieldset.sekcja-ukladu,
+  fieldset.sekcja-obrazu,
+  fieldset.sekcja-czcionek,
+  fieldset.sekcja-szablonow,
+  fieldset.tresc-ksztaltu,
+  fieldset.karta-w-slocie,
+  fieldset.kalibracja,
+  .narzedzia-podgladu > fieldset
+) {
+  min-width: 0;
+  margin-inline: 0;
+  padding: 0.5rem 0.7rem 0.6rem 0.8rem;
+  border: 1px solid var(--obramowanie);
+  border-left: 4px solid var(--znacznik, var(--kolor-3));
+  border-radius: 0.4rem 0.5rem 0.5rem 0.4rem;
+  background: var(--tlo-panelu);
+}
+
+details.sekcja-panelu:nth-of-type(4n + 1) {
+  --znacznik: color-mix(in srgb, var(--kolor-1) 85%, var(--tlo-panelu));
+}
+
+details.sekcja-panelu:nth-of-type(4n + 2) {
+  --znacznik: color-mix(in srgb, var(--kolor-2) 85%, var(--tlo-panelu));
+}
+
+details.sekcja-panelu:nth-of-type(4n + 3) {
+  --znacznik: color-mix(in srgb, var(--kolor-3) 85%, var(--tlo-panelu));
+}
+
+details.sekcja-panelu:nth-of-type(4n) {
+  --znacznik: color-mix(in srgb, var(--kolor-4) 85%, var(--tlo-panelu));
+}
+
+fieldset:is(
+    .sekcja-ukladu,
+    .sekcja-obrazu,
+    .sekcja-czcionek,
+    .sekcja-szablonow,
+    .tresc-ksztaltu,
+    .karta-w-slocie,
+    .kalibracja
+  ):nth-of-type(4n + 1),
+.narzedzia-podgladu > fieldset:nth-of-type(4n + 1) {
+  --znacznik: color-mix(in srgb, var(--kolor-3) 85%, var(--tlo-panelu));
+}
+
+fieldset:is(
+    .sekcja-ukladu,
+    .sekcja-obrazu,
+    .sekcja-czcionek,
+    .sekcja-szablonow,
+    .tresc-ksztaltu,
+    .karta-w-slocie,
+    .kalibracja
+  ):nth-of-type(4n + 2),
+.narzedzia-podgladu > fieldset:nth-of-type(4n + 2) {
+  --znacznik: color-mix(in srgb, var(--kolor-4) 85%, var(--tlo-panelu));
+}
+
+fieldset:is(
+    .sekcja-ukladu,
+    .sekcja-obrazu,
+    .sekcja-czcionek,
+    .sekcja-szablonow,
+    .tresc-ksztaltu,
+    .karta-w-slocie,
+    .kalibracja
+  ):nth-of-type(4n + 3),
+.narzedzia-podgladu > fieldset:nth-of-type(4n + 3) {
+  --znacznik: color-mix(in srgb, var(--kolor-1) 85%, var(--tlo-panelu));
+}
+
+fieldset:is(
+    .sekcja-ukladu,
+    .sekcja-obrazu,
+    .sekcja-czcionek,
+    .sekcja-szablonow,
+    .tresc-ksztaltu,
+    .karta-w-slocie,
+    .kalibracja
+  ):nth-of-type(4n),
+.narzedzia-podgladu > fieldset:nth-of-type(4n) {
+  --znacznik: color-mix(in srgb, var(--kolor-2) 85%, var(--tlo-panelu));
+}
+
+/* Sekcja w sekcji: pasek 2 px w kolorze rodzica (własnej wartości --znacznik nie ustawia). */
+:is(details.sekcja-panelu, fieldset.sekcja-ukladu, fieldset.sekcja-obrazu, fieldset.sekcja-czcionek)
+  :is(details.sekcja-panelu, fieldset.sekcja-ukladu, fieldset.karta-w-slocie, fieldset.kalibracja) {
+  --znacznik: inherit;
+  border-left-width: 2px;
+  background: transparent;
+}
+
+/* Nagłówki sekcji: summary i legend wyglądają tak samo. */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  details.sekcja-panelu
+  > summary,
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(
+    fieldset.sekcja-ukladu,
+    fieldset.sekcja-obrazu,
+    fieldset.sekcja-czcionek,
+    fieldset.sekcja-szablonow,
+    fieldset.tresc-ksztaltu,
+    fieldset.karta-w-slocie,
+    fieldset.kalibracja,
+    fieldset.polozenie,
+    .narzedzia-podgladu > fieldset
+  )
+  > legend {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--tekst);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) fieldset > legend {
+  padding: 0 0.3rem;
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  details.sekcja-panelu
+  > summary {
+  border-radius: 0.3rem;
+  padding-inline: 0.2rem;
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  details.sekcja-panelu
+  > summary:hover {
+  background: var(--zaznaczenie-tlo);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  details.sekcja-panelu
+  > summary:focus-visible {
+  outline: 3px solid var(--zaznaczenie);
+  outline-offset: 2px;
+}
+
+/* Podpisy w legendach bez zmiany układu: opisy pod nagłówkiem sekcji. */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(fieldset, details.sekcja-panelu)
+  > .podpis {
+  margin-block: 0.25rem;
+}
+
+/* ---------- Ostrzeżenia i komunikaty ---------- */
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .uwaga {
+  border-color: var(--obramowanie-pola);
+  color: var(--tekst);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .uwaga[role='alert'],
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .uwaga.blad {
+  border-color: var(--zle);
+  border-left-width: 4px;
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .ostrzezenia-karty {
+  padding-left: 1.1rem;
+}
+
+/* ---------- Drzewo szablonu ---------- */
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .wezel-drzewa
+  > .wezel-etykieta:hover {
+  background: var(--zaznaczenie-tlo);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .wezel-drzewa.wybrany
+  > .wezel-etykieta {
+  background: var(--zaznaczenie-tlo);
+  outline: 2px solid var(--zaznaczenie);
+  outline-offset: -2px;
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .wezel-drzewa:focus-visible
+  > .wezel-etykieta {
+  outline: 3px solid var(--zaznaczenie);
+  outline-offset: 1px;
+}
+
+/* Lista pozycji w bibliotece: zaznaczona ma tło i obrys w kolorze zaznaczenia. */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .lista-biblioteki
+  li
+  > button:hover:not([aria-pressed='true']) {
+  background: var(--zaznaczenie-tlo);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .lista-biblioteki
+  li
+  > button[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px var(--zaznaczenie);
+}
+
+/* ---------- Kreator: kafelki formatów i układów ---------- */
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) :is(.format, .uklad):hover {
+  border-color: var(--obramowanie-pola);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(.format, .uklad).wybrany {
+  background: var(--zaznaczenie-tlo);
+}
+
+/* Wybór narożnika ramki: obrys przycisków jak przy innych kontrolkach. */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .wybor-narozniki button {
+  border-color: var(--obramowanie-pola);
+  color: var(--tekst);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .wybor-narozniki
+  button:hover:not([aria-pressed='true']) {
+  background: var(--zaznaczenie-tlo);
+}
+
+/* ---------- Siatka kotwic (tryb swobodny) ---------- */
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .siatka-kotwic button {
+  border-color: var(--obramowanie-pola);
+}
+
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .siatka-kotwic
+  button:hover:not([aria-checked='true']) {
+  background: var(--zaznaczenie-tlo);
+}
+
+/* ---------- Fokus na papierze kartki i podglądzie karty ---------- */
+
+/* Papier jest biały w obu motywach: fokus rysujemy kolorem czytelnym na bieli, nie na ciemnym tle. */
+.strona-kartki :focus-visible:not(.menu-pozycja),
+.karta-podgladu :focus-visible {
+  outline-color: var(--zaznaczenie-papier);
+}
+
+/* Podkład szablonu i obrazy źródłowe leżą w ramce w kolorze obramowania pól. */
+.podglad-elementu,
+.zrodlo-ramki9 {
+  border-color: var(--obramowanie-pola);
+}
+
+/* ---------- Miniatury ozdobników ---------- */
+
+/*
+ * Ozdobnik trafia na papier karty, więc miniatura leży na „pergaminie” jak podgląd elementu
+ * (kolor papieru to dane karty, nie motyw): rysunki w kolorze stałym (import SVG) są czytelne
+ * także w ciemnym motywie, a rysunki kolorowalne (currentColor) dostają ciemny grafit.
+ */
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .miniatura-ozdobnika {
+  background: var(--papier-ozdobnika);
+  color: var(--na-jasnym);
+  border-radius: 3px;
+}
+
+/* ---------- Tryb wysokiego kontrastu (forced-colors) ---------- */
+
+/*
+ * Kolory systemowe zastępują paletę, a tła znikają – zaznaczenie musi być widać bez tła:
+ * obrys Highlight i, tam gdzie tło było jedynym znacznikiem, pełne Highlight z HighlightText.
+ */
+@media (forced-colors: active) {
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    .przelacznik-segmentowy
+    button[aria-pressed='true'],
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    .siatka-kotwic
+    button[aria-checked='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+    border-color: HighlightText;
+  }
+
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    :is(
+      .wybor-narozniki button[aria-pressed='true'],
+      .lista-biblioteki li > button[aria-pressed='true']
+    ) {
+    outline: 3px solid Highlight;
+    outline-offset: -3px;
+  }
+
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    :is(.format, .uklad).wybrany {
+    outline: 4px solid Highlight;
+  }
+
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    .wezel-drzewa.wybrany
+    > .wezel-etykieta {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  :is(.edytor-kartki, .edytor-szablonu) .wezel-drzewa.wybrany .ikona-wezla {
+    color: inherit;
+  }
+
+  .karta-na-kartce.zaznaczona,
+  .obszar-wezla.zaznaczony,
+  .naglowek-grupy.zaznaczony {
+    outline: 3px solid Highlight;
+    outline-offset: 1px;
+  }
+
+  /* Znaczniki sekcji to tylko ozdoba: w trybie systemowym zostaje zwykły obrys. */
+  :is(details.sekcja-panelu, fieldset) {
+    border-color: CanvasText;
+  }
+}

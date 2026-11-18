@@ -126,8 +126,19 @@
   color: var(--pasek);
 }
 
+/* Wyłączone na pasku: pełny biały napis (kontrast), stan pokazuje przerywany obrys. */
+.pasek-gorny > :is(button, a.przycisk):disabled,
+.pasek-gorny .menu-pobierz > button:disabled {
+  color: var(--pasek-tekst);
+  background: transparent;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--pasek-tekst) 70%, var(--pasek));
+  cursor: not-allowed;
+}
+
 .seg button:disabled {
-  opacity: 0.6;
+  color: var(--pasek-tekst);
+  cursor: not-allowed;
 }
 
 .seg svg {

@@ -46,7 +46,8 @@ import { scenaDoSvg } from '../../silnik/svg';
 import { PoleLiczby } from '../kartka/PoleLiczby';
 import { tekstOstrzezenia } from '../ostrzezenia';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
-import { DrzewoSzablonu, IKONY_WEZLOW, nazwaWezla } from './DrzewoSzablonu';
+import { DrzewoSzablonu, nazwaWezla } from './DrzewoSzablonu';
+import { PozycjeMenuDodaj } from './PozycjeMenuDodaj';
 import { Liczba, Sekcja } from './Kontrolki';
 import { PanelWezla } from './PanelWezla';
 import { PoleRamki } from './PanelWygladu';
@@ -62,32 +63,6 @@ import {
   type ZmianaPola,
 } from './swobodnyMysz';
 import { useGestSwobodny } from './useGestSwobodny';
-
-const RODZAJE: RodzajNowego[] = [
-  'wiersz',
-  'kolumna',
-  'warstwy',
-  'swobodny',
-  'tekst',
-  'etykieta-wartosc',
-  'wartosc',
-  'obraz',
-  'znaczniki',
-  'wpis',
-  'ikona',
-  'separator',
-  'separator-zakonczenia',
-  'separator-motyw',
-  'tabela',
-];
-
-/** Typ elementu, którego ikona jest w menu „+ Dodaj” (wzory separatora mają ikonę separatora). */
-const typIkony = (r: RodzajNowego) =>
-  r === 'etykieta-wartosc'
-    ? 'tekst'
-    : r === 'separator-zakonczenia' || r === 'separator-motyw'
-      ? 'separator'
-      : r;
 
 const wPolu = (e: Element | null) =>
   !!e &&
@@ -573,22 +548,7 @@ export function EdytorSzablonu({
                     aria-label={t('szablon.dodaj')}
                     onKeyDown={klawiszMenu}
                   >
-                    {RODZAJE.map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        role="menuitem"
-                        className="menu-pozycja"
-                        onClick={() => dodaj(r)}
-                      >
-                        <span>
-                          <span className="ikona" aria-hidden="true">
-                            {IKONY_WEZLOW[typIkony(r)]}
-                          </span>{' '}
-                          {t(`wezel.${r}`)}
-                        </span>
-                      </button>
-                    ))}
+                    <PozycjeMenuDodaj dodaj={dodaj} />
                   </div>
                 )}
               </div>

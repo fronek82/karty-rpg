@@ -91,14 +91,9 @@ a:hover {
   cursor: pointer;
 }
 
-.uwaga button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
 .podpis {
   font-size: 0.9rem;
-  opacity: 0.8;
+  color: var(--tekst-przygaszony);
 }
 
 .okruszki {
@@ -118,12 +113,11 @@ a:hover {
 .status-zapisu {
   margin: 0;
   font-size: 0.85rem;
-  opacity: 0.75;
+  color: var(--tekst-przygaszony);
 }
 
 .status-zapisu.blad {
   color: var(--zle);
-  opacity: 1;
   font-weight: 600;
 }
 
@@ -172,7 +166,7 @@ a:hover {
 
 .czcionki .zrodlo {
   font-size: 0.8rem;
-  opacity: 0.7;
+  color: var(--tekst-przygaszony);
 }
 
 .korekta {
@@ -203,9 +197,14 @@ a.przycisk:hover {
   border-color: var(--akcent);
 }
 
+/* Wyłączony przycisk: bez przezroczystości (tekst zostaje czytelny), przygaszony kolor,
+   obrys przerywany i kursor „zakaz” – stan widać nie tylko po barwie. */
 button:disabled {
-  opacity: 0.45;
-  cursor: default;
+  color: var(--tekst-przygaszony);
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--obramowanie-pola);
+  cursor: not-allowed;
 }
 
 button.glowny,
@@ -215,8 +214,34 @@ a.przycisk.glowny {
   color: var(--akcent-tekst);
 }
 
-button.niebezpieczny {
-  color: var(--zle);
+/* Wyłączone wypełnione przyciski (po regułach wypełnienia, żeby je przebić): bez wypełnienia,
+   przygaszony napis i widoczny obrys przerywany – różnią się od aktywnych kolorem, tłem i obrysem. */
+button.glowny:disabled,
+button.pasek-menu.pasek-menu:disabled,
+button.kafelek-podgladu:disabled {
+  background: transparent;
+  color: var(--tekst-przygaszony);
+  border: 2px dashed var(--obramowanie-pola);
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+button.kafelek-podgladu:disabled {
+  border-bottom: 5px dashed var(--obramowanie-pola);
+}
+
+/* Przycisk niebezpieczny: jasny motyw – bordowy napis i obrys, ciemny – bordo z beżowym tekstem. */
+button.niebezpieczny:not(:disabled) {
+  color: var(--niebezpieczny-tekst);
+  background: var(--niebezpieczny-tlo);
+  border-color: var(--niebezpieczny-obrys);
+}
+
+button.niebezpieczny:hover:not(:disabled) {
+  border-color: var(--niebezpieczny-obrys);
+  filter: brightness(1.12);
 }
 
 button:focus-visible,
@@ -814,7 +839,16 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   }
 }
 
+/* Jedyny blok prefers-reduced-motion: wyłącza animacje i przejścia dekoracyjne (szkielet,
+   najechanie, wciśnięcie). Wskaźniki postępu („Tworzę…”) nie są animowane, więc zostają. */
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .szkielet-papier {
     animation: none;
   }
@@ -866,8 +900,13 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 }
 
 .kafelek-gry .opis-kafelka {
-  opacity: 0.85;
+  /* Kolor zamiast opacity: >= 4,5:1 na panelu; na wypełnionym (.glowny) pełny biały tekst. */
+  color: var(--tekst-przygaszony);
   font-size: 0.95rem;
+}
+
+.kafelek-gry.glowny .opis-kafelka {
+  color: var(--akcent-tekst);
 }
 
 .przyciski-ukladow {
@@ -991,10 +1030,6 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   font-weight: 600;
 }
 
-.pasek-gorny .okruszek {
-  opacity: 0.9;
-}
-
 .nazwa-projektu {
   font: inherit;
   font-size: 1.05rem;
@@ -1012,8 +1047,9 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   width: 11rem;
   min-width: 0;
   text-overflow: ellipsis;
-  background: rgb(255 255 255 / 12%);
-  border-color: rgb(255 255 255 / 35%);
+  /* Ciemniejsze tło pola niż pasek: biały napis zachowuje kontrast 4,5:1 w obu motywach. */
+  background: color-mix(in srgb, black 22%, var(--pasek));
+  border-color: color-mix(in srgb, var(--pasek-tekst) 55%, var(--pasek));
   color: var(--pasek-tekst);
 }
 
@@ -1028,7 +1064,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 .pasek-gorny .status-zapisu,
 .pasek-gorny .status-pdf {
   font-size: 0.85rem;
-  opacity: 0.92;
+  color: var(--pasek-tekst);
 }
 
 .pasek-gorny .status-zapisu.blad {
@@ -1082,7 +1118,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 
 .etykieta-strony {
   font-size: 0.85rem;
-  opacity: 0.75;
+  color: var(--tekst-przygaszony);
   display: flex;
   gap: 0.75rem;
   align-items: center;
@@ -1132,7 +1168,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 .warstwa .slot:hover,
 .warstwa .slot.aktywny {
   background: color-mix(in srgb, var(--zaznaczenie-karty) 12%, transparent);
-  outline: 2px solid var(--zaznaczenie);
+  outline: 2px solid var(--zaznaczenie-papier);
 }
 
 .warstwa .slot:hover::after {
@@ -1143,7 +1179,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   align-items: center;
   justify-content: center;
   font-size: 1.8rem;
-  color: var(--zaznaczenie);
+  color: var(--zaznaczenie-papier);
   font-weight: 300;
 }
 
@@ -1160,26 +1196,26 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   align-items: center;
   justify-content: center;
   font-size: 0.6rem;
-  color: var(--zaznaczenie);
+  color: var(--zaznaczenie-papier);
 }
 
 .warstwa .wolne-miejsce:hover,
 .warstwa .wolne-miejsce.aktywny {
   background: color-mix(in srgb, var(--zaznaczenie-karty) 12%, transparent);
-  outline: 2px solid var(--zaznaczenie);
+  outline: 2px solid var(--zaznaczenie-papier);
 }
 
 .wskaznik-wstawienia {
   pointer-events: none;
   width: 3px;
-  background: var(--dobrze);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dobrze) 25%, transparent);
+  background: var(--dobrze-papier);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dobrze-papier) 25%, transparent);
   z-index: 4;
 }
 
 .menu-stopka {
   font-size: 0.75rem;
-  opacity: 0.7;
+  color: var(--tekst-przygaszony);
   padding: 0.35rem 0.6rem 0.2rem;
   margin: 0;
 }
@@ -1219,7 +1255,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 }
 
 .karta-na-kartce.zaznaczona {
-  outline: 3px solid var(--zaznaczenie);
+  outline: 3px solid var(--zaznaczenie-papier);
   outline-offset: 1px;
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--zaznaczenie-karty) 15%, transparent);
   z-index: 2;
@@ -1233,21 +1269,21 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 
 .podglad-celu {
   pointer-events: none;
-  background: color-mix(in srgb, var(--dobrze) 18%, transparent);
-  outline: 2px dashed var(--dobrze);
+  background: color-mix(in srgb, var(--dobrze-papier) 18%, transparent);
+  outline: 2px dashed var(--dobrze-papier);
   outline-offset: -2px;
   z-index: 3;
 }
 
 .podglad-celu.zly {
-  background: color-mix(in srgb, var(--zle) 16%, transparent);
-  outline-color: var(--zle);
+  background: color-mix(in srgb, var(--zle-papier) 16%, transparent);
+  outline-color: var(--zle-papier);
 }
 
 .obszar-zaznaczenia {
   pointer-events: none;
   background: color-mix(in srgb, var(--zaznaczenie-karty) 10%, transparent);
-  outline: 1px solid var(--zaznaczenie);
+  outline: 1px solid var(--zaznaczenie-papier);
   z-index: 3;
 }
 
@@ -1264,7 +1300,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 }
 
 .naglowek-grupy.zaznaczony {
-  border: 3px solid var(--zaznaczenie);
+  border: 3px solid var(--zaznaczenie-papier);
   background: color-mix(in srgb, var(--zaznaczenie-karty) 8%, transparent);
 }
 
@@ -1288,7 +1324,9 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   padding: 0.3rem 0.6rem;
 }
 
-.pasek-karty button.niebezpieczny {
+.pasek-karty button.niebezpieczny:not(:disabled) {
+  background: transparent;
+  border-color: transparent;
   color: var(--zle-jasny);
 }
 
@@ -1308,7 +1346,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  opacity: 0.6;
+  color: var(--tekst-przygaszony);
   padding: 0.35rem 0.6rem 0.2rem;
 }
 
@@ -1330,7 +1368,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 }
 
 .menu-pozycja small {
-  opacity: 0.6;
+  color: var(--tekst-przygaszony);
   font-size: 0.75rem;
 }
 
@@ -1345,7 +1383,6 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 
 .menu-pozycja .powod-blokady {
   flex-basis: 100%;
-  opacity: 0.85;
   color: var(--wyroznienie);
 }
 
@@ -1401,7 +1438,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 .pole-panelu > span {
   font-size: 0.8rem;
   font-weight: 500;
-  opacity: 0.8;
+  color: var(--tekst-przygaszony);
 }
 
 .pole-panelu input,
@@ -1543,8 +1580,8 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 }
 .strefa-bezpieczenstwa > div {
   position: absolute;
-  outline: 1px dashed color-mix(in srgb, var(--zle) 70%, transparent);
-  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--zle) 10%, transparent);
+  outline: 1px dashed color-mix(in srgb, var(--zle-papier) 70%, transparent);
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--zle-papier) 10%, transparent);
 }
 .sekcja-szablonow {
   border: 1px solid var(--obramowanie);
@@ -1764,13 +1801,17 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   opacity: 0;
   pointer-events: none;
 }
+/* Wybrany: obrys 2 px przy krawędzi; fokus: pełny, grubszy obrys z odstępem (rozróżnialne,
+   także gdy kafelek jest jednocześnie wybrany i z fokusem). */
 .format.wybrany,
 .uklad.wybrany {
-  outline: 3px solid var(--zaznaczenie);
+  outline: 2px solid var(--zaznaczenie);
+  outline-offset: 0;
 }
 .format:focus-within,
 .uklad:focus-within {
-  outline: 3px solid color-mix(in srgb, var(--zaznaczenie) 60%, transparent);
+  outline: 3px solid var(--zaznaczenie);
+  outline-offset: 3px;
 }
 .format-ksztalt {
   border: 1.5px solid var(--tekst-przygaszony);
@@ -1997,8 +2038,18 @@ button.maly {
   color: var(--tekst-przygaszony);
 }
 .przelacznik-segmentowy button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+  border-style: solid;
+  border-color: var(--obramowanie);
+  background: transparent;
+}
+
+/* Zaznaczony i wyłączony segment (np. „bez tytułu”, gdy pole tytułu jest puste): stonowany
+   akcent z pełnym tekstem – widać wybór i czyta się napis (>= 4,5:1), wyłączenie widać po
+   braku wypełnienia pełnym akcentem i kursorze. */
+.przelacznik-segmentowy button[aria-pressed='true']:disabled {
+  background: color-mix(in srgb, var(--akcent) 35%, var(--tlo-panelu));
+  color: var(--tekst);
+  box-shadow: inset 0 -3px 0 var(--obramowanie-pola);
 }
 
 /* Biblioteka ozdobników projektu (własne SVG). */
@@ -2007,8 +2058,8 @@ button.maly {
   flex-direction: column;
   min-height: 100vh;
 }
-.biblioteka-ozdobnikow .okruszek {
-  color: var(--tekst-przygaszony);
+.biblioteka-ozdobnikow .pasek-gorny .okruszek {
+  color: var(--pasek-tekst);
 }
 .uklad-biblioteki {
   display: grid;
@@ -2074,7 +2125,7 @@ button.maly {
 }
 .podglad-elementu {
   align-self: center;
-  background: #f7f0dc;
+  background: var(--papier-ozdobnika);
   border: 1px solid var(--obramowanie);
   line-height: 0;
 }
@@ -2108,7 +2159,7 @@ button.maly {
 .zrodlo-ramki9 {
   position: relative;
   width: 100%;
-  background: #f7f0dc;
+  background: var(--papier-ozdobnika);
   border: 1px solid var(--obramowanie);
   line-height: 0;
 }

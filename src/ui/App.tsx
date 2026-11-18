@@ -6,6 +6,7 @@ import { useTrasa } from './useTrasa';
 import { NaglowekAplikacji } from './NaglowekAplikacji';
 import './tokeny.css';
 import './App.css';
+import './edytory.css';
 
 // Strony ładowane leniwie: silnik (fontkit) i pakiet dopiero przy kartce; PDF – przy pobraniu.
 const Start = lazy(() => import('./start/Start').then((m) => ({ default: m.Start })));

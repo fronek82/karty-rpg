@@ -45,6 +45,14 @@ function barwa(hex: string): { h: number; s: number } {
   return { h: (h * 60 + 360) % 360, s: d / (1 - Math.abs(2 * l - 1)) };
 }
 
+/** Mieszanie w sRGB: `procent` % koloru `a` i reszta `b` (jak color-mix(in srgb, a N%, b)). */
+function mieszaj(a: string, procent: number, b: string): string {
+  const skladowe = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [skladowe(a), skladowe(b)];
+  const w = x.map((v, i) => Math.round((v * procent + y[i]! * (100 - procent)) / 100));
+  return `#${w.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
 function kontrast(a: string, b: string): number {
   const [x, y] = [luminancja(a), luminancja(b)].sort((p, q) => q - p);
   return (x! + 0.05) / (y! + 0.05);
@@ -139,9 +147,9 @@ describe('tokeny motywów', () => {
   });
 
   it('ciemny: żaden token nie ma odcienia różu (barwa 300–345°), poza jawnymi wyjątkami', () => {
-    // Wyjątki: bordo to wymagany kolor ozdób (#8E2C48); prowadnica leży wyłącznie na białym
-    // papierze karty (świadomy wyjątek, B120).
-    const wyjatki = new Set(['bordo', 'prowadnica']);
+    // Wyjątki: bordo to wymagany kolor ozdób (#8E2C48), a przycisk niebezpieczny w ciemnym to
+    // to samo bordo (UI-7); prowadnica leży wyłącznie na białym papierze karty (B120).
+    const wyjatki = new Set(['bordo', 'prowadnica', 'niebezpieczny-tlo', 'niebezpieczny-obrys']);
     // Kontrola detektora: wyjątki faktycznie są różowawe.
     expect(barwa(ciemny.prowadnica!).h).toBeGreaterThan(300);
     const roz = Object.entries(ciemny)
@@ -164,5 +172,132 @@ describe('tokeny motywów', () => {
       expect(kontrast(m['tekst-przygaszony']!, m.tlo!)).toBeGreaterThanOrEqual(4.5);
       expect(kontrast(m['obramowanie-karty']!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(1.5);
     }
+  });
+
+  it('start: opis kafelka gry (kolor zamiast opacity) – AA na panelu i na wypełnionym kafelku', () => {
+    for (const m of [jasny, ciemny]) {
+      expect(kontrast(m['tekst-przygaszony']!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(4.5);
+      expect(kontrast(m['akcent-tekst']!, m.akcent!)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  describe('edytory (UI-7)', () => {
+    it('oba motywy: tekst i przygaszony tekst na panelu, polu i zaznaczeniu – AA', () => {
+      for (const m of [jasny, ciemny]) {
+        for (const tlo of [m['tlo-panelu']!, m.pole!, m['zaznaczenie-tlo']!, m.tlo!]) {
+          expect(kontrast(m.tekst!, tlo)).toBeGreaterThanOrEqual(7);
+        }
+        // Podpisy, opisy, etykiety pól, nagłówki menu, wyłączone przyciski i pola.
+        for (const tlo of [m['tlo-panelu']!, m.pole!, m.tlo!])
+          expect(kontrast(m['tekst-przygaszony']!, tlo)).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+
+    it('oba motywy: link i znacznik położenia (link na zaznaczeniu) oraz link na panelu – AA', () => {
+      for (const m of [jasny, ciemny]) {
+        expect(kontrast(m.link!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(4.5);
+        expect(kontrast(m.link!, m['zaznaczenie-tlo']!)).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+
+    it('oba motywy: obrys pól formularza – 3:1 względem pola, panelu i tła', () => {
+      for (const m of [jasny, ciemny])
+        for (const tlo of [m.pole!, m['tlo-panelu']!, m.tlo!])
+          expect(kontrast(m['obramowanie-pola']!, tlo)).toBeGreaterThanOrEqual(3);
+    });
+
+    it('oba motywy: zaznaczenie (obrys i tło) – obrys 3:1 na tle zaznaczenia i panelu', () => {
+      for (const m of [jasny, ciemny]) {
+        expect(kontrast(m.zaznaczenie!, m['zaznaczenie-tlo']!)).toBeGreaterThanOrEqual(3);
+        expect(kontrast(m.zaznaczenie!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(3);
+        expect(kontrast(m.zaznaczenie!, m.pole!)).toBeGreaterThanOrEqual(3);
+      }
+    });
+
+    it('oba motywy: przycisk niebezpieczny – tekst AA na własnym tle, wypełnienie i obrys to --bordo', () => {
+      for (const m of [jasny, ciemny]) {
+        expect(kontrast(m['niebezpieczny-tekst']!, m['niebezpieczny-tlo']!)).toBeGreaterThanOrEqual(
+          4.5,
+        );
+        // Obrys to wprost --bordo (nie inna barwa) – w obu motywach.
+        expect(m['niebezpieczny-obrys']!.toLowerCase()).toBe(m.bordo!.toLowerCase());
+        // Próg 1,8:1 dotyczy tylko obrysu względem panelu: w ciemnym przycisk jest wypełniony
+        // bordo z etykietą o kontraście >= 4,5:1, więc o rozpoznaniu decyduje wypełnienie i
+        // tekst, a obrys (bordo na ciemnym panelu 1,9:1) tylko domyka kształt.
+        expect(kontrast(m['niebezpieczny-obrys']!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(1.8);
+      }
+      // Jasny: bordowy napis (AAA) na panelu, bez wypełnienia.
+      expect(jasny['niebezpieczny-tekst']!.toLowerCase()).toBe(jasny.bordo!.toLowerCase());
+      expect(kontrast(jasny['niebezpieczny-tekst']!, jasny['tlo-panelu']!)).toBeGreaterThanOrEqual(
+        7,
+      );
+      // Ciemny: wypełnienie to zatwierdzone bordo #8E2C48 (winne bordo, nie róż) z beżem.
+      expect(ciemny['niebezpieczny-tlo']!.toLowerCase()).toBe(ciemny.bordo!.toLowerCase());
+      expect(ciemny['niebezpieczny-tlo']!.toLowerCase()).toBe('#8e2c48');
+      expect(ciemny['niebezpieczny-tekst']!.toLowerCase()).toBe('#ece4dc');
+    });
+
+    it('oba motywy: ostrzeżenie (--zle) i powód blokady (--wyroznienie) na panelu i polu – AA', () => {
+      for (const m of [jasny, ciemny])
+        for (const tlo of [m['tlo-panelu']!, m.pole!]) {
+          expect(kontrast(m.zle!, tlo)).toBeGreaterThanOrEqual(4.5);
+          expect(kontrast(m.wyroznienie!, tlo)).toBeGreaterThanOrEqual(4.5);
+        }
+    });
+
+    it('oba motywy: komunikat „dobrze” – tekst AA na własnym tle, obrys 3:1 na panelu', () => {
+      for (const m of [jasny, ciemny]) {
+        expect(kontrast(m['dobrze-tekst']!, m['dobrze-tlo']!)).toBeGreaterThanOrEqual(4.5);
+        expect(kontrast(m.dobrze!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(3);
+      }
+    });
+
+    it('oba motywy: nakładki na białym papierze (zaznaczenie, ostrzeżenie, wstawianie, prowadnica) – 3:1', () => {
+      for (const m of [jasny, ciemny]) {
+        expect(m.papier!.toLowerCase()).toBe('#ffffff');
+        for (const k of [
+          'zaznaczenie-papier',
+          'zaznaczenie-karty',
+          'dobrze-papier',
+          'zle-papier',
+          'prowadnica',
+        ])
+          expect(kontrast(m[k]!, m.papier!), k).toBeGreaterThanOrEqual(3);
+      }
+    });
+
+    it('oba motywy: etykietka i pasek akcji na ciemnym tle podpowiedzi – AA', () => {
+      for (const m of [jasny, ciemny])
+        for (const k of ['tekst-podpowiedzi', 'zle-jasny', 'link-na-ciemnym'])
+          expect(kontrast(m[k]!, m['tlo-podpowiedzi']!), k).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it('oba motywy: pole nazwy projektu na pasku (czarne 22% nad paskiem) – biały tekst AA', () => {
+      for (const m of [jasny, ciemny])
+        expect(
+          kontrast(m['pasek-tekst']!, mieszaj('#000000', 22, m.pasek!)),
+        ).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it('oba motywy: hover przycisków głównego i paska (czarne nad akcentem) – biały tekst AA', () => {
+      for (const m of [jasny, ciemny]) {
+        expect(
+          kontrast(m['akcent-tekst']!, mieszaj('#000000', 18, m.akcent!)),
+        ).toBeGreaterThanOrEqual(4.5);
+        expect(
+          kontrast(m['pasek-tekst']!, mieszaj('#000000', 32, m.pasek!)),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+
+    it('znaczniki sekcji: pasek ozdobny, ale tekst nagłówka czytelny na tle panelu', () => {
+      // Pasek (--kolor-1…4 w 85 % na panelu) nie niesie informacji – sekcję rozpoznaje nagłówek.
+      for (const m of [jasny, ciemny])
+        for (const k of ['kolor-1', 'kolor-2', 'kolor-3', 'kolor-4']) {
+          const pasek = mieszaj(m[k]!, 85, m['tlo-panelu']!);
+          // Kontrola, że pasek faktycznie odróżnia się od panelu (nie jest „niewidzialny”).
+          expect(kontrast(pasek, m['tlo-panelu']!), k).toBeGreaterThanOrEqual(1.4);
+        }
+    });
   });
 });
