@@ -1,6 +1,8 @@
 import { tJesliJest } from '../i18n';
 import { normalizujKartki } from '../druk/normalizacja';
+import type { Arkusz } from '../model/arkusz';
 import type { DaneZasobow, Projekt } from '../model/projekt';
+import type { Talia } from '../model/szablon';
 import type { Pakiet } from '../pakiety/typy';
 import { projektZPakietu, rejestrZProjektu } from './pakiet';
 
@@ -11,7 +13,7 @@ type Pobieranie = (plik: string) => Promise<Uint8Array>;
  * z chwili utworzenia – tłumaczenia pod kluczami `pakiet.*`; brak klucza zostawia nazwę z danych.
  * Później nazwy są zwykłą treścią projektu i nie zmieniają się razem z językiem interfejsu.
  */
-function lokalizujNazwy(projekt: Projekt, nazwaProjektu: string): Projekt {
+export function lokalizujNazwy(projekt: Projekt, nazwaProjektu: string): Projekt {
   const nazwaArkusza = new Map<string, string>();
   const arkusze = projekt.arkusze.map((a) => {
     const nazwa = tJesliJest(`pakiet.arkusz.${a.id}`) ?? a.nazwa;
@@ -63,6 +65,19 @@ function lokalizujNazwy(projekt: Projekt, nazwaProjektu: string): Projekt {
   };
 }
 
+/** Pusta kartka pakietu (talia bez kart i arkusz) z nazwą w bieżącym języku – jak w nowym projekcie. */
+export function pustaKartkaPakietu(pakiet: Pakiet): { talia: Talia; arkusz: Arkusz; nazwa: string } {
+  const id = 'kartka-1';
+  const nazwa = tJesliJest('pakiet.nowaKartka') ?? pakiet.nowaKartka.nazwa;
+  const ustawienia = structuredClone(pakiet.nowaKartka.ustawienia);
+  if (ustawienia.tytul?.tekst === pakiet.nowaKartka.nazwa) ustawienia.tytul.tekst = nazwa;
+  return {
+    talia: { id, nazwa, karty: [] },
+    arkusz: { id, nazwa, taliaId: id, liczbaStron: 1, ustawienia },
+    nazwa,
+  };
+}
+
 /**
  * Nowy projekt gry z pakietu: biblioteka (czcionki, obrazy) i szablony z pakietu, a na kartkach –
  * pusta kartka albo wybrany gotowy układ (jego karty jako zwykłe, przypięte karty).
@@ -82,16 +97,13 @@ export async function nowyProjektGry(
   const uklad = opcje.uklad ? pakiet.gotoweUklady.find((u) => u.id === opcje.uklad) : undefined;
   if (opcje.uklad && !uklad) throw new Error(`Nieznany układ „${opcje.uklad}”.`);
   if (!uklad) {
-    const id = 'kartka-1';
-    const nazwa = tJesliJest('pakiet.nowaKartka') ?? pakiet.nowaKartka.nazwa;
-    const ustawienia = structuredClone(pakiet.nowaKartka.ustawienia);
-    if (ustawienia.tytul?.tekst === pakiet.nowaKartka.nazwa) ustawienia.tytul.tekst = nazwa;
+    const { talia, arkusz, nazwa } = pustaKartkaPakietu(pakiet);
     return {
       projekt: {
         ...lokalizujNazwy(projekt, nazwa),
         pakiet: pakiet.id,
-        talie: [{ id, nazwa, karty: [] }],
-        arkusze: [{ id, nazwa, taliaId: id, liczbaStron: 1, ustawienia }],
+        talie: [talia],
+        arkusze: [arkusz],
       },
       zasoby,
     };
