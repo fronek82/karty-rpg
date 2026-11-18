@@ -71,6 +71,40 @@ const wPolu = (e: Element | null) =>
   !!e &&
   (e.matches('input, textarea, select, [contenteditable="true"]') || !!e.closest('[role="menu"]'));
 
+function usePodgladSzablonu(kluczRysunku: string, zasoby: ProjektWEdycji['zasoby']['zasoby']) {
+  return useMemo(() => {
+    if (!kluczRysunku) return undefined;
+    const sz = JSON.parse(kluczRysunku) as Szablon;
+    try {
+      const w = renderujKarte(
+        sz,
+        { dane: danePodgladu(sz) },
+        {
+          czcionki: zasoby.czcionki,
+          obraz: (id) => zasoby.obrazy.get(id)?.info,
+          ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
+        },
+      );
+      return {
+        ...w,
+        svg: scenaDoSvg(w.scena, {
+          adresObrazu: (id) => zasoby.obrazy.get(id)?.adres,
+          przedrostekId: 'sz-',
+        }),
+      };
+    } catch (e) {
+      return { blad: e instanceof Error ? e.message : String(e) };
+    }
+  }, [kluczRysunku, zasoby.czcionki, zasoby.obrazy, zasoby.elementy]);
+}
+
+function useIndeksWezlow(szablon: Szablon | undefined) {
+  return useMemo(
+    () => new Map(szablon ? wszystkieWezly(szablon).map((w) => [w.id, w] as const) : []),
+    [szablon],
+  );
+}
+
 /**
  * Edytor szablonu karty od zera: drzewo wierszy, kolumn i pól (lewa kolumna), podgląd karty
  * z danymi przykładowymi i zaznaczaniem klikiem (środek), właściwości zaznaczonego elementu
@@ -122,34 +156,8 @@ export function EdytorSzablonu({
   const widoczny = szablon && tmp ? zastosujZmiany(szablon, tmp) : szablon;
   const doRysunku = widoczny && { ...widoczny, nazwa: '', podklad: undefined };
   const kluczRysunku = doRysunku ? JSON.stringify(doRysunku) : '';
-  const podglad = useMemo(() => {
-    if (!kluczRysunku) return undefined;
-    const sz = JSON.parse(kluczRysunku) as Szablon;
-    try {
-      const w = renderujKarte(
-        sz,
-        { dane: danePodgladu(sz) },
-        {
-          czcionki: zasoby.czcionki,
-          obraz: (id) => zasoby.obrazy.get(id)?.info,
-          ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
-        },
-      );
-      return {
-        ...w,
-        svg: scenaDoSvg(w.scena, {
-          adresObrazu: (id) => zasoby.obrazy.get(id)?.adres,
-          przedrostekId: 'sz-',
-        }),
-      };
-    } catch (e) {
-      return { blad: e instanceof Error ? e.message : String(e) };
-    }
-  }, [kluczRysunku, zasoby.czcionki, zasoby.obrazy, zasoby.elementy]);
-  const wezlyPoId = useMemo(
-    () => new Map(szablon ? wszystkieWezly(szablon).map((w) => [w.id, w] as const) : []),
-    [szablon],
-  );
+  const podglad = usePodgladSzablonu(kluczRysunku, zasoby);
+  const wezlyPoId = useIndeksWezlow(szablon);
 
   // Układ do konwersji kontenerów (swobodny ↔ kolumna / wiersz): ramki z bieżącego podglądu.
   const uklad = useMemo(
@@ -411,9 +419,12 @@ export function EdytorSzablonu({
             zmien={(wartosc) => {
               const rect = celUchwytow.rect;
               if (Math.abs(rect[os] - wartosc) < 0.0005) return;
-              const zmiany = skalujZaznaczenie(szablon, celeZazn, rect, { ...rect, [os]: wartosc });
               zmienSz(
-                (s) => zastosujZmiany(s, zmiany),
+                (s) =>
+                  zastosujZmiany(
+                    s,
+                    skalujZaznaczenie(s, celeZazn, rect, { ...rect, [os]: wartosc }),
+                  ),
                 `rozmiar-zaznaczenia:${aktywne.join(',')}:${os}`,
               );
             }}
