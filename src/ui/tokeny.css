@@ -1,0 +1,98 @@
+/*
+ * Tokeny kolorów interfejsu – jedno źródło wartości dla motywu jasnego i ciemnego.
+ * Motyw ustawia atrybut data-theme na <html> (skrypt w index.html i src/ui/motyw.ts).
+ * Kontrasty tych par sprawdza test src/ui/tokeny.test.ts, który czyta ten plik.
+ * Kolory kart na podglądzie pochodzą z szablonu i nie zależą od motywu.
+ */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --tlo: #ede4dc;
+  --tlo-panelu: #f6f0ea;
+  --pole: #fffaf5;
+  --tekst: #2b2a2e;
+  --tekst-przygaszony: #5c5560;
+  --obramowanie: #d3c6ba;
+  --obramowanie-karty: #b4a0c8;
+  --pasek: #1b7fa8;
+  --pasek-tekst: #ffffff;
+  --akcent: #1b7fa8;
+  --akcent-tekst: #ffffff;
+  --przycisk: var(--akcent);
+  --przycisk-tekst: var(--akcent-tekst);
+  --link: #1f6c92;
+  --link-duzy: #2a7fa8;
+  --bordo: #7d2240;
+  --bordo-tekst: #ffffff;
+  --wyroznienie: #7d2240;
+  --tytul: #7d2240;
+  --kolor-1: #e0876a;
+  --kolor-2: #e9a645;
+  --kolor-3: #5f9ea8;
+  --kolor-4: #356d8a;
+  --na-jasnym: #2b2a2e;
+  --zaznaczenie: #1b7fa8;
+  --zaznaczenie-tlo: #e3f0f6;
+  --zaznaczenie-karty: #2a6fd6;
+  --dobrze: #2f8f4e;
+  --dobrze-tlo: #e3f1e5;
+  --dobrze-tekst: #285a28;
+  --zle: #b03226;
+  --tlo-podpowiedzi: #1f2430;
+  --tekst-podpowiedzi: #ffffff;
+  --przezroczyste-tlo: #e6e0d8;
+  --szachownica-1: #e4e0da;
+  --szachownica-2: #ffffff;
+  --papier: #ffffff;
+  --zle-jasny: #ff9a9a;
+  --link-na-ciemnym: #8fb8ff;
+  --prowadnica: #d6247f;
+  --cien: 0 2px 10px rgb(0 0 0 / 18%);
+  --cien-paska: 0 1px 3px rgb(0 0 0 / 12%);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --tlo: #1e1a1d;
+  --tlo-panelu: #2a2528;
+  --pole: #1f1b1e;
+  --tekst: #ece4dc;
+  --tekst-przygaszony: #b9aea8;
+  --obramowanie: #4a4248;
+  --obramowanie-karty: #b4a0c8;
+  --pasek: #154b63;
+  --pasek-tekst: #ffffff;
+  --akcent: #1f6e94;
+  --akcent-tekst: #ffffff;
+  --przycisk: var(--akcent);
+  --przycisk-tekst: var(--akcent-tekst);
+  --link: #6fb8da;
+  --link-duzy: #6fb8da;
+  --bordo: #8e2c48;
+  --bordo-tekst: #ece4dc;
+  --wyroznienie: #e9a645;
+  --tytul: #e9a645;
+  --kolor-1: #e0876a;
+  --kolor-2: #e9a645;
+  --kolor-3: #5f9ea8;
+  --kolor-4: #356d8a;
+  --na-jasnym: #2b2a2e;
+  --zaznaczenie: #5ab0d8;
+  --zaznaczenie-tlo: #22404f;
+  --zaznaczenie-karty: #2a6fd6;
+  --dobrze: #5cc47e;
+  --dobrze-tlo: #213a28;
+  --dobrze-tekst: #a9dfb5;
+  --zle: #ee7a6c;
+  --tlo-podpowiedzi: #0f1218;
+  --tekst-podpowiedzi: #ffffff;
+  --przezroczyste-tlo: #3a3438;
+  --szachownica-1: #3a3438;
+  --szachownica-2: #4a4248;
+  --papier: #ffffff;
+  --zle-jasny: #ee7a6c;
+  --link-na-ciemnym: #8fb8ff;
+  --prowadnica: #d6247f;
+  --cien: 0 2px 10px rgb(0 0 0 / 45%);
+  --cien-paska: 0 1px 3px rgb(0 0 0 / 40%);
+}

@@ -9,6 +9,21 @@
       content="Projektowanie i drukowanie kart do gier RPG i planszowych – w całości w przeglądarce."
     />
     <meta name="wersja" content="%VITE_WERSJA%" />
+    <script>
+      // Motyw przed pierwszym malowaniem (bez migotania); logika jak w src/ui/motyw.ts.
+      (function () {
+        var ciemny = false;
+        var wybor = null;
+        try {
+          ciemny = matchMedia('(prefers-color-scheme: dark)').matches;
+        } catch (e) {}
+        try {
+          wybor = localStorage.getItem('karty.motyw');
+        } catch (e) {}
+        var motyw = wybor === 'dark' || (wybor !== 'light' && ciemny) ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', motyw);
+      })();
+    </script>
     <title>Karty RPG</title>
   </head>
   <body>

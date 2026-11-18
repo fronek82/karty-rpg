@@ -44,6 +44,7 @@ import {
 } from '../../druk/arkusz';
 import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
 import { t, tJesliJest } from '../../i18n';
+import { NarzedziaPaska } from '../NaglowekAplikacji';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
 import {
@@ -1326,6 +1327,7 @@ export function EdytorKartki({
       </a>
       <input
         className="nazwa-projektu"
+        title={projekt.nazwa}
         aria-label={t('kartka.nazwaProjektu')}
         value={projekt.nazwa}
         onChange={(e) =>
@@ -1406,6 +1408,7 @@ export function EdytorKartki({
       <span role="status" aria-live="polite" className="status-pdf">
         {statusPdf}
       </span>
+      <NarzedziaPaska />
     </header>
   );
 

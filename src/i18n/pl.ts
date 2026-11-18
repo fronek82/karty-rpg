@@ -5,6 +5,18 @@
  */
 export const pl = {
   'aplikacja.nazwa': 'Karty RPG',
+  'pasek.narzedzia': 'Narzędzia aplikacji',
+  'pasek.instrukcja': 'Instrukcja',
+  'pasek.instrukcjaOpis': 'Instrukcja (otwiera się w nowym oknie)',
+  'pasek.noweOkno': ' (nowe okno)',
+  'jezyk.grupa': 'Język',
+  'jezyk.pl': 'PL',
+  'jezyk.en': 'EN',
+  'jezyk.plOpis': 'Polski',
+  'jezyk.enOpis': 'English (wkrótce)',
+  'motyw.grupa': 'Motyw',
+  'motyw.jasny': 'Motyw jasny',
+  'motyw.ciemny': 'Motyw ciemny',
   'dane.nieArchiwum': 'To nie jest poprawny plik .kartyrpg (nie da się go rozpakować).',
   'dane.brakProjektu': 'W pliku brakuje pliku „{plik}”.',
   'dane.zlyJson': 'Plik „{plik}” jest uszkodzony (niepoprawny JSON).',

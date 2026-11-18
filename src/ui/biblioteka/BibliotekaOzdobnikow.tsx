@@ -13,6 +13,7 @@ import {
   zmienElementBiblioteki,
 } from '../../dane/biblioteka';
 import { t } from '../../i18n';
+import { NarzedziaPaska } from '../NaglowekAplikacji';
 import {
   ELEMENTY_WBUDOWANE,
   BladImportuSvg,
@@ -292,6 +293,7 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
         <a className="przycisk glowny" href={`#/projekt/${idProjektu}`}>
           {t('biblioteka.gotowe')}
         </a>
+        <NarzedziaPaska />
       </header>
       <div className="uklad-biblioteki">
         <aside className="panel-biblioteki" aria-label={t('biblioteka.tytul')}>
