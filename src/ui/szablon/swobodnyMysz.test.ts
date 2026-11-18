@@ -5,6 +5,8 @@ import { renderujKarte } from '../../silnik/karta';
 import {
   budujCel,
   budujCele,
+  celSkalowania,
+  zmienRozmiarGrupy,
   doLokalnych,
   mmNaPx,
   naSiatke,
@@ -20,6 +22,8 @@ import {
   type Przyciaganie,
   type WezlyKarty,
 } from './swobodnyMysz';
+
+import { przygotujUpuszczenie, upuscWezel } from './upuszczanie';
 
 const czcionki = rejestrTestowy();
 const ik = (id: string, extra: Partial<Pole> = {}): Pole =>
@@ -382,5 +386,56 @@ describe('jeden rodzic, rozłożenie z szerokim elementem, najmniejszy rozmiar z
     expect(z.szerokosc!.mm).toBeGreaterThanOrEqual(1);
     expect(z.wysokosc!.mm).toBeGreaterThanOrEqual(1);
     expect(z.szerokosc!.mm / z.wysokosc!.mm).toBeCloseTo(10);
+  });
+});
+
+it('skaluje grupę z Shift, zachowując procentową szerokość i wysokość wg treści', () => {
+  const s = szablon([
+    ik('a'),
+    ik('b', { szerokosc: { procent: 20 }, wysokosc: 'auto', pozycja: { x: 23, y: 23 } }),
+  ]);
+  const cele = budujCele(s, wezlyDla(s), ['a', 'b']);
+  const cel = celSkalowania(cele)!;
+  const w = zmienRozmiarGrupy(s, cele, cel, 'se', cel.rect.szer, 0, BEZ, true);
+  expect(w.zmiany.get('a')).toMatchObject({ szerokosc: { mm: 20 }, wysokosc: { mm: 20 } });
+  expect(w.zmiany.get('b')).toEqual({ pozycja: { x: 43, y: 43 } });
+});
+
+it('upuszcza z zachowaniem chwytu i paddingu, pomija własne poddrzewo i obrócone cele', () => {
+  const s = szablon([
+    {
+      id: 'a',
+      typ: 'kolumna',
+      pozycja: { x: 3, y: 3 },
+      szerokosc: { mm: 20 },
+      wysokosc: { mm: 20 },
+      dzieci: [{ id: 'potomek', typ: 'kolumna', dzieci: [ik('i')] }],
+    },
+    {
+      id: 'b',
+      typ: 'swobodny',
+      pozycja: { x: 27, y: 30 },
+      szerokosc: { mm: 30 },
+      wysokosc: { mm: 30 },
+      padding: 2,
+      dzieci: [],
+    },
+    {
+      id: 'obrocony',
+      typ: 'swobodny',
+      pozycja: { x: 3, y: 60, obrot: 90 },
+      szerokosc: { mm: 14 },
+      wysokosc: { mm: 14 },
+      dzieci: [{ id: 'wnetrze', typ: 'kolumna', dzieci: [ik('j')] }],
+    },
+  ]);
+  const cel = przygotujUpuszczenie(s, wezlyDla(s), 'a', { x: 8, y: 8 })!;
+  expect(cel({ x: 8, y: 8 })).toBeUndefined();
+  expect(cel({ x: 8, y: 65 })).toBeUndefined();
+  const w = cel({ x: 39, y: 42 })!;
+  expect(w).toMatchObject({ rodzicId: 'b', pozycja: { x: 5, y: 5 } });
+  const przeniesiony = upuscWezel(s, w);
+  expect(przeniesiony.korzen.dzieci.find((d) => d.id === 'b')).toMatchObject({
+    dzieci: [{ id: 'a', pozycja: { x: 5, y: 5 } }],
   });
 });

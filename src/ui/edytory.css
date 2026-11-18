@@ -444,3 +444,10 @@ fieldset:is(
     border-color: CanvasText;
   }
 }
+
+.cel-upuszczenia {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  outline: 2px solid var(--zaznaczenie-papier);
+}

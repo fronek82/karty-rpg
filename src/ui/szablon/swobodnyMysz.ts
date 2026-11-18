@@ -9,7 +9,7 @@
  * w trakcie gestu jako stan tymczasowy, na `pointerup` – jako jeden krok „Cofnij”.
  */
 import { formatujLiczbeZUlamkiem } from '../../i18n';
-import { rodzicWezla, zmienWezel } from '../../dane/szablon';
+import { rodzicWezla, znajdzWezel, zmienWezel } from '../../dane/szablon';
 import {
   rozwinOdstepy,
   ulamkiKotwicy,
@@ -300,14 +300,14 @@ export function punktUchwytu(r: Prostokat, u: Uchwyt): { x: Mm; y: Mm } {
  * krawędź (róg) stoi w miejscu; ruchome krawędzie przyciągają się do kandydatów albo siatki.
  * `proporcje` (Shift) zachowuje stosunek boków: róg wg większej zmiany, krawędź – drugi bok wokół środka.
  */
-export function zmienRozmiar(
+function prostokatPoZmianie(
   cel: Cel,
   uchwyt: Uchwyt,
   dxKarta: Mm,
   dyKarta: Mm,
   p: Przyciaganie,
   proporcje = false,
-): WynikGestu {
+): { prostokat: Prostokat; prowadnice: Prowadnica[] } {
   const R = cel.rect;
   const [dx0, dy0] = doLokalnych(dxKarta, dyKarta, cel.obrotPrzodkow);
   const lewo = uchwyt.includes('w') && cel.osie.szer;
@@ -387,15 +387,100 @@ export function zmienRozmiar(
       else b = t + MIN_ROZMIAR;
     }
   }
-  const nowy: Prostokat = { x: l, y: t, szer: r - l, wys: b - t };
+  return { prostokat: { x: l, y: t, szer: r - l, wys: b - t }, prowadnice };
+}
+
+export function zmienRozmiar(
+  cel: Cel,
+  uchwyt: Uchwyt,
+  dx: Mm,
+  dy: Mm,
+  p: Przyciaganie,
+  proporcje = false,
+): WynikGestu {
+  const { prostokat: nowy, prowadnice } = prostokatPoZmianie(cel, uchwyt, dx, dy, p, proporcje);
+  const zmiana = zmianaZProstokata(cel, nowy);
   return {
-    zmiany: new Map([[cel.id, zmianaZProstokata(cel, nowy)]]),
+    zmiany: new Map([[cel.id, zmiana]]),
     prowadnice,
     podpowiedz: {
-      x: zmianaZProstokata(cel, nowy).pozycja.x,
-      y: zmianaZProstokata(cel, nowy).pozycja.y,
+      x: zmiana.pozycja.x,
+      y: zmiana.pozycja.y,
       szer: zaokr(nowy.szer),
       wys: zaokr(nowy.wys),
+    },
+  };
+}
+
+export function celSkalowania(cele: readonly Cel[]): Cel | undefined {
+  const pierwszy = cele[0];
+  if (!pierwszy || pierwszy.obrotPrzodkow || cele.some((c) => c.rodzicId !== pierwszy.rodzicId))
+    return undefined;
+  if (cele.length === 1) return pierwszy;
+  const ids = new Set(cele.map((c) => c.id));
+  return {
+    ...pierwszy,
+    rect: obwiednia(cele.map((c) => c.rect)),
+    rodzenstwo: pierwszy.rodzenstwo.filter((c) => !ids.has(c.id)),
+    osie: { szer: true, wys: true },
+    obrot: 0,
+  };
+}
+
+export function skalujZaznaczenie(
+  szablon: Szablon,
+  cele: readonly Cel[],
+  przed: Prostokat,
+  po: Prostokat,
+): Map<string, ZmianaPola> {
+  const zmiany = new Map<string, ZmianaPola>();
+  const sx = przed.szer ? po.szer / przed.szer : 1;
+  const sy = przed.wys ? po.wys / przed.wys : 1;
+  const jestMm = (r: Wezel['szerokosc']) => !!r && r !== 'auto' && 'mm' in r;
+  for (const c of cele) {
+    const w = znajdzWezel(szablon, c.id);
+    if (!w) continue;
+    const bok = c.obrot === 90 || c.obrot === 270;
+    const dostosowany = {
+      ...c,
+      osie: {
+        szer: c.osie.szer && jestMm(bok ? w.wysokosc : w.szerokosc),
+        wys: c.osie.wys && jestMm(bok ? w.szerokosc : w.wysokosc),
+      },
+    };
+    const { x, y, szer, wys } = c.rect;
+    zmiany.set(
+      c.id,
+      zmianaZProstokata(dostosowany, {
+        x: po.x + (x - przed.x) * sx,
+        y: po.y + (y - przed.y) * sy,
+        szer: dostosowany.osie.szer && sx !== 1 ? Math.max(MIN_ROZMIAR, szer * sx) : szer,
+        wys: dostosowany.osie.wys && sy !== 1 ? Math.max(MIN_ROZMIAR, wys * sy) : wys,
+      }),
+    );
+  }
+  return zmiany;
+}
+
+export function zmienRozmiarGrupy(
+  szablon: Szablon,
+  cele: readonly Cel[],
+  grupa: Cel,
+  uchwyt: Uchwyt,
+  dx: Mm,
+  dy: Mm,
+  p: Przyciaganie,
+  proporcje = false,
+): WynikGestu {
+  const { prostokat, prowadnice } = prostokatPoZmianie(grupa, uchwyt, dx, dy, p, proporcje);
+  return {
+    zmiany: skalujZaznaczenie(szablon, cele, grupa.rect, prostokat),
+    prowadnice,
+    podpowiedz: {
+      x: prostokat.x - grupa.ramka.x,
+      y: prostokat.y - grupa.ramka.y,
+      szer: prostokat.szer,
+      wys: prostokat.wys,
     },
   };
 }

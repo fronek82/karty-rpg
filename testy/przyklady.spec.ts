@@ -811,6 +811,11 @@ test('F. karta swobodna: ilustracja, tytuł na pasku, koło w rogu, napis obróc
     kolor: '#ffffff',
     pogrubienie: true,
   });
+  const stylTytulu = await sekcja(page, 'Styl tekstu');
+  await stylTytulu
+    .getByRole('group', { name: 'W pionie' })
+    .getByRole('button', { name: 'środek' })
+    .click();
   await przesun(page, 'Tytuł', 3, 30);
   let t = await prostokatMm(page, 'Tytuł');
   wTolerancji(t.x, 6);

@@ -13,6 +13,8 @@ import {
   danePodgladu,
   doPoprzedniegoKontenera,
   duplikujWezel,
+  duplikujSzablon,
+  nazwaKopiiSzablonu,
   kluczZNazwy,
   nazwaKarty,
   nowySzablon,
@@ -443,4 +445,24 @@ describe('M2b-5: separator ozdobny w edycji szablonu', () => {
     const w = zmienTypKontenera(s, 'karta', 'wiersz');
     expect(znajdzWezel(w, 'separator')).toMatchObject({ kierunek: 'pionowy', ...sep });
   });
+});
+
+it('kopia szablonu ma odrębne węzły, jego obraz omija skopiowany tekst', () => {
+  let s = pusty();
+  const tekst = nowyWezel(s, 'tekst', 'Tytuł');
+  s = wstawWezel(s, s.korzen.id, tekst);
+  const obraz = nowyWezel(s, 'obraz', 'Zdjęcie');
+  if (obraz.typ !== 'obraz') throw new Error('Oczekiwano obrazu');
+  s = wstawWezel(s, s.korzen.id, { ...obraz, omijaj: [tekst.id] });
+  s = { ...s, warianty: [{ kolumny: 1, rzedy: 1, korzen: s.korzen }] };
+  const kopia = duplikujSzablon(s, 'inna', 'Moja karta (kopia)');
+  expect(wszystkieWezly(kopia).map((w) => w.id)).not.toEqual(wszystkieWezly(s).map((w) => w.id));
+  expect(kopia.korzen.dzieci[1]).toMatchObject({ omijaj: [kopia.korzen.dzieci[0]!.id] });
+  const wariant = kopia.warianty![0]!.korzen;
+  expect(wariant.dzieci[1]).toMatchObject({ omijaj: [wariant.dzieci[0]!.id] });
+  expect(
+    nazwaKopiiSzablonu(kopia.nazwa, [s.nazwa, kopia.nazwa], (n) =>
+      n === 1 ? '(kopia)' : `(kopia ${n})`,
+    ),
+  ).toBe('Moja karta (kopia 2)');
 });

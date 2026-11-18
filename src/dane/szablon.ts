@@ -116,7 +116,7 @@ export function nowyWezel(
         wyrownanie: { poziomo: 'poczatek', pionowo: 'poczatek' },
         padding: 0.8,
         obramowanie: { grubosc: 0.3, kolor: CZARNY },
-        styl: tresc(9),
+        styl: { ...tresc(9), wyrownanie: 'srodek', wyrownaniePionowe: 'srodek' },
       };
     case 'obraz':
       return {
@@ -443,29 +443,31 @@ export function nazwaKopiiSzablonu(
 export function duplikujSzablon(s: Szablon, id: string, nazwa: string): Szablon {
   const kopia = structuredClone(s);
   const zajete = new Set(wszystkieWezly(s).map((w) => w.id));
-  const nowe = new Map<string, string>();
-  const przepisz = (w: Wezel): Wezel => {
-    const baza = w.id.replace(/-\d+$/, '') || w.id;
-    const nid = unikalneId(baza, zajete);
-    zajete.add(nid);
-    nowe.set(w.id, nid);
-    const x = { ...w, id: nid } as Wezel;
-    return czyKontener(x) ? { ...x, dzieci: x.dzieci.map(przepisz) } : x;
-  };
-  const korzen = przepisz(kopia.korzen) as Kontener;
-  const warianty = kopia.warianty?.map((v) => ({ ...v, korzen: przepisz(v.korzen) as Kontener }));
-  const popraw = (w: Wezel): Wezel => {
-    if (czyKontener(w)) return { ...w, dzieci: w.dzieci.map(popraw) };
-    return w.typ === 'obraz' && w.omijaj
-      ? { ...w, omijaj: w.omijaj.map((o) => nowe.get(o) ?? o) }
-      : w;
+  const kopiujDrzewo = (korzen: Kontener): Kontener => {
+    const nowe = new Map<string, string>();
+    for (const w of wezly(korzen)) {
+      const baza = w.id.replace(/-\d+$/, '') || w.id;
+      const nid = unikalneId(baza, zajete);
+      zajete.add(nid);
+      nowe.set(w.id, nid);
+    }
+    return mapuj(korzen, (w) => {
+      const x = { ...w, id: nowe.get(w.id)! };
+      return x.typ === 'obraz' && x.omijaj
+        ? { ...x, omijaj: x.omijaj.map((o) => nowe.get(o) ?? o) }
+        : x;
+    }) as Kontener;
   };
   return {
     ...kopia,
     id,
     nazwa,
-    korzen: popraw(korzen) as Kontener,
-    ...(warianty ? { warianty: warianty.map((v) => ({ ...v, korzen: popraw(v.korzen) as Kontener })) } : {}),
+    korzen: kopiujDrzewo(kopia.korzen),
+    ...(kopia.warianty
+      ? {
+          warianty: kopia.warianty.map((v) => ({ ...v, korzen: kopiujDrzewo(v.korzen) })),
+        }
+      : {}),
   };
 }
 
@@ -481,8 +483,15 @@ export function duplikujSzablonWProjekcie(
   const i = p.szablony.findIndex((x) => x.id === szablonId);
   const s = p.szablony[i];
   if (!s) return { projekt: p, id: '' };
-  const id = unikalneId(`${s.id.replace(/-kopia(-\d+)?$/, '')}-kopia`, new Set(p.szablony.map((x) => x.id)));
-  const nazwa = nazwaKopiiSzablonu(s.nazwa, p.szablony.map((x) => x.nazwa), sufiks);
+  const id = unikalneId(
+    `${s.id.replace(/-kopia(-\d+)?$/, '')}-kopia`,
+    new Set(p.szablony.map((x) => x.id)),
+  );
+  const nazwa = nazwaKopiiSzablonu(
+    s.nazwa,
+    p.szablony.map((x) => x.nazwa),
+    sufiks,
+  );
   const kopia = duplikujSzablon(s, id, nazwa);
   const szablony = [...p.szablony];
   szablony.splice(i + 1, 0, kopia);
