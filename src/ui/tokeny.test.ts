@@ -174,6 +174,13 @@ describe('tokeny motywów', () => {
     }
   });
 
+  it('start: opis kafelka gry (kolor zamiast opacity) – AA na panelu i na wypełnionym kafelku', () => {
+    for (const m of [jasny, ciemny]) {
+      expect(kontrast(m['tekst-przygaszony']!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(4.5);
+      expect(kontrast(m['akcent-tekst']!, m.akcent!)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   describe('edytory (UI-7)', () => {
     it('oba motywy: tekst i przygaszony tekst na panelu, polu i zaznaczeniu – AA', () => {
       for (const m of [jasny, ciemny]) {
@@ -207,17 +214,25 @@ describe('tokeny motywów', () => {
       }
     });
 
-    it('oba motywy: przycisk niebezpieczny – tekst AA na własnym tle', () => {
+    it('oba motywy: przycisk niebezpieczny – tekst AA na własnym tle, wypełnienie i obrys to --bordo', () => {
       for (const m of [jasny, ciemny]) {
         expect(kontrast(m['niebezpieczny-tekst']!, m['niebezpieczny-tlo']!)).toBeGreaterThanOrEqual(
           4.5,
         );
+        // Obrys to wprost --bordo (nie inna barwa) – w obu motywach.
+        expect(m['niebezpieczny-obrys']!.toLowerCase()).toBe(m.bordo!.toLowerCase());
+        // Próg 1,8:1 dotyczy tylko obrysu względem panelu: w ciemnym przycisk jest wypełniony
+        // bordo z etykietą o kontraście >= 4,5:1, więc o rozpoznaniu decyduje wypełnienie i
+        // tekst, a obrys (bordo na ciemnym panelu 1,9:1) tylko domyka kształt.
         expect(kontrast(m['niebezpieczny-obrys']!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(1.8);
       }
-      // Jasny: bordowy napis (AAA); ciemny: bordo #8E2C48 z beżowym tekstem, bez różu.
+      // Jasny: bordowy napis (AAA) na panelu, bez wypełnienia.
+      expect(jasny['niebezpieczny-tekst']!.toLowerCase()).toBe(jasny.bordo!.toLowerCase());
       expect(kontrast(jasny['niebezpieczny-tekst']!, jasny['tlo-panelu']!)).toBeGreaterThanOrEqual(
         7,
       );
+      // Ciemny: wypełnienie to zatwierdzone bordo #8E2C48 (winne bordo, nie róż) z beżem.
+      expect(ciemny['niebezpieczny-tlo']!.toLowerCase()).toBe(ciemny.bordo!.toLowerCase());
       expect(ciemny['niebezpieczny-tlo']!.toLowerCase()).toBe('#8e2c48');
       expect(ciemny['niebezpieczny-tekst']!.toLowerCase()).toBe('#ece4dc');
     });

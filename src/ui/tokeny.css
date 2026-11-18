@@ -6,7 +6,8 @@
  *
  * Tokeny „-papier” służą do nakładek rysowanych na białym papierze kartki i karty (zaznaczenie,
  * pole wstawiania, ostrzeżenie): papier jest biały w obu motywach, więc te kolory nie jadą za
- * motywem i mają kontrast >= 3:1 względem bieli. --obramowanie-pola to obrys pól formularzy
+ * motywem i mają kontrast >= 3:1 względem bieli. --papier-ozdobnika to kolor papieru, na którym
+ * rysuje się podgląd ozdobnika (dane karty, nie motyw). --obramowanie-pola to obrys pól formularzy
  * (>= 3:1 względem pola i panelu); --obramowanie zostaje na linie podziału i obramowania ozdobne.
  */
 :root,
@@ -56,6 +57,7 @@
   --niebezpieczny-tlo: var(--tlo-panelu);
   --niebezpieczny-tekst: var(--bordo);
   --niebezpieczny-obrys: var(--bordo);
+  --papier-ozdobnika: #f7f0dc;
   --zaznaczenie-papier: #1b7fa8;
   --dobrze-papier: #2f8f4e;
   --zle-papier: #b03226;
@@ -109,6 +111,7 @@
   --niebezpieczny-tlo: var(--bordo);
   --niebezpieczny-tekst: var(--bordo-tekst);
   --niebezpieczny-obrys: var(--bordo);
+  --papier-ozdobnika: #f7f0dc;
   --zaznaczenie-papier: #1f6e94;
   --dobrze-papier: #2f8f4e;
   --zle-papier: #b03226;

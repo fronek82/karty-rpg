@@ -1,7 +1,8 @@
 /*
  * UI-7: edytory (kartka, szablon, biblioteka ozdobników, kreator) w nowej palecie.
  * Warstwa wspólna dla kontrolek i sekcji paneli; ładowana po App.css. Wyłącznie tokeny z
- * tokeny.css, żadnych literałów kolorów. Układu i wymiarów nie zmienia (poza ramką sekcji).
+ * tokeny.css, żadnych literałów kolorów. Zmienia wygląd kontrolek oraz ramkę i odstępy sekcji
+ * paneli (pasek znacznika, padding); poza tym układ ekranów zostaje.
  *
  * Skróty selektorów (zakres warstwy): .edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow,
  * .kreator – ekrany edycji; ekrany startowe mają własne style z UI-2…UI-5.
@@ -111,9 +112,14 @@
 
 /*
  * Sekcja panelu ma stonowany pasek po lewej w jednym z kolorów --kolor-1…4 (jak w panelu
- * Obsidiana); kolory wracają co cztery sekcje. Pasek jest ozdobą – sekcję rozpoznaje się po
- * nagłówku (summary/legend), więc kontrast paska nie jest wymagany. Sekcje zagnieżdżone mają
- * cieńszy pasek w kolorze sekcji nadrzędnej.
+ * Obsidiana). Pasek jest ozdobą – sekcję rozpoznaje się po nagłówku (summary/legend), więc
+ * kontrast paska nie jest wymagany. Zmienia się ramka i wewnętrzny odstęp sekcji (pasek 4 px,
+ * padding 0,5/0,7 rem), reszta układu panelu zostaje.
+ *
+ * Kolor wg :nth-of-type, czyli liczy się tylko sekcje tego samego rodzaju (details albo
+ * fieldset), a nie wszystkie rodzeństwo – cykl jest regularny, a fieldsety zaczynają od innego
+ * koloru niż details (przesunięcie o 2), żeby sąsiednie sekcje różnych rodzajów różniły się.
+ * Sekcja w sekcji dziedziczy --znacznik od rodzica (własnego koloru nie dostaje), ma pasek 2 px.
  */
 :is(
   details.sekcja-panelu,
@@ -123,82 +129,100 @@
   fieldset.sekcja-szablonow,
   fieldset.tresc-ksztaltu,
   fieldset.karta-w-slocie,
+  fieldset.kalibracja,
   .narzedzia-podgladu > fieldset
 ) {
-  --znacznik: color-mix(in srgb, var(--kolor-3) 85%, var(--tlo-panelu));
-  --znacznik-dzieci: var(--znacznik);
   min-width: 0;
   margin-inline: 0;
   padding: 0.5rem 0.7rem 0.6rem 0.8rem;
   border: 1px solid var(--obramowanie);
-  border-left: 4px solid var(--znacznik);
+  border-left: 4px solid var(--znacznik, var(--kolor-3));
   border-radius: 0.4rem 0.5rem 0.5rem 0.4rem;
   background: var(--tlo-panelu);
 }
 
-:is(
-  details.sekcja-panelu,
-  fieldset.sekcja-ukladu,
-  fieldset.sekcja-obrazu,
-  fieldset.sekcja-czcionek,
-  fieldset.sekcja-szablonow,
-  fieldset.tresc-ksztaltu,
-  fieldset.karta-w-slocie,
-  .narzedzia-podgladu > fieldset
-):nth-child(4n + 1) {
+details.sekcja-panelu:nth-of-type(4n + 1) {
   --znacznik: color-mix(in srgb, var(--kolor-1) 85%, var(--tlo-panelu));
 }
 
-:is(
-  details.sekcja-panelu,
-  fieldset.sekcja-ukladu,
-  fieldset.sekcja-obrazu,
-  fieldset.sekcja-czcionek,
-  fieldset.sekcja-szablonow,
-  fieldset.tresc-ksztaltu,
-  fieldset.karta-w-slocie,
-  .narzedzia-podgladu > fieldset
-):nth-child(4n + 2) {
+details.sekcja-panelu:nth-of-type(4n + 2) {
   --znacznik: color-mix(in srgb, var(--kolor-2) 85%, var(--tlo-panelu));
 }
 
-:is(
-  details.sekcja-panelu,
-  fieldset.sekcja-ukladu,
-  fieldset.sekcja-obrazu,
-  fieldset.sekcja-czcionek,
-  fieldset.sekcja-szablonow,
-  fieldset.tresc-ksztaltu,
-  fieldset.karta-w-slocie,
-  .narzedzia-podgladu > fieldset
-):nth-child(4n + 3) {
+details.sekcja-panelu:nth-of-type(4n + 3) {
   --znacznik: color-mix(in srgb, var(--kolor-3) 85%, var(--tlo-panelu));
 }
 
-:is(
-  details.sekcja-panelu,
-  fieldset.sekcja-ukladu,
-  fieldset.sekcja-obrazu,
-  fieldset.sekcja-czcionek,
-  fieldset.sekcja-szablonow,
-  fieldset.tresc-ksztaltu,
-  fieldset.karta-w-slocie,
-  .narzedzia-podgladu > fieldset
-):nth-child(4n) {
+details.sekcja-panelu:nth-of-type(4n) {
   --znacznik: color-mix(in srgb, var(--kolor-4) 85%, var(--tlo-panelu));
 }
 
-/* Sekcja w sekcji: ten sam kolor, cieńszy pasek, bez dodatkowego tła. */
-:is(details.sekcja-panelu, fieldset.sekcja-ukladu, fieldset.sekcja-obrazu)
+fieldset:is(
+    .sekcja-ukladu,
+    .sekcja-obrazu,
+    .sekcja-czcionek,
+    .sekcja-szablonow,
+    .tresc-ksztaltu,
+    .karta-w-slocie,
+    .kalibracja
+  ):nth-of-type(4n + 1),
+.narzedzia-podgladu > fieldset:nth-of-type(4n + 1) {
+  --znacznik: color-mix(in srgb, var(--kolor-3) 85%, var(--tlo-panelu));
+}
+
+fieldset:is(
+    .sekcja-ukladu,
+    .sekcja-obrazu,
+    .sekcja-czcionek,
+    .sekcja-szablonow,
+    .tresc-ksztaltu,
+    .karta-w-slocie,
+    .kalibracja
+  ):nth-of-type(4n + 2),
+.narzedzia-podgladu > fieldset:nth-of-type(4n + 2) {
+  --znacznik: color-mix(in srgb, var(--kolor-4) 85%, var(--tlo-panelu));
+}
+
+fieldset:is(
+    .sekcja-ukladu,
+    .sekcja-obrazu,
+    .sekcja-czcionek,
+    .sekcja-szablonow,
+    .tresc-ksztaltu,
+    .karta-w-slocie,
+    .kalibracja
+  ):nth-of-type(4n + 3),
+.narzedzia-podgladu > fieldset:nth-of-type(4n + 3) {
+  --znacznik: color-mix(in srgb, var(--kolor-1) 85%, var(--tlo-panelu));
+}
+
+fieldset:is(
+    .sekcja-ukladu,
+    .sekcja-obrazu,
+    .sekcja-czcionek,
+    .sekcja-szablonow,
+    .tresc-ksztaltu,
+    .karta-w-slocie,
+    .kalibracja
+  ):nth-of-type(4n),
+.narzedzia-podgladu > fieldset:nth-of-type(4n) {
+  --znacznik: color-mix(in srgb, var(--kolor-2) 85%, var(--tlo-panelu));
+}
+
+/* Sekcja w sekcji: pasek 2 px w kolorze rodzica (własnej wartości --znacznik nie ustawia). */
+:is(details.sekcja-panelu, fieldset.sekcja-ukladu, fieldset.sekcja-obrazu, fieldset.sekcja-czcionek)
   :is(details.sekcja-panelu, fieldset.sekcja-ukladu, fieldset.karta-w-slocie, fieldset.kalibracja) {
-  --znacznik: var(--znacznik-dzieci);
-  border-left: 2px solid var(--znacznik-dzieci);
+  --znacznik: inherit;
+  border-left-width: 2px;
   background: transparent;
 }
 
 /* Nagłówki sekcji: summary i legend wyglądają tak samo. */
-details.sekcja-panelu > summary,
-:is(
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  details.sekcja-panelu
+  > summary,
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(
     fieldset.sekcja-ukladu,
     fieldset.sekcja-obrazu,
     fieldset.sekcja-czcionek,
@@ -215,27 +239,34 @@ details.sekcja-panelu > summary,
   color: var(--tekst);
 }
 
-fieldset > legend {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) fieldset > legend {
   padding: 0 0.3rem;
 }
 
-details.sekcja-panelu > summary {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  details.sekcja-panelu
+  > summary {
   border-radius: 0.3rem;
   padding-inline: 0.2rem;
 }
 
-details.sekcja-panelu > summary:hover {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  details.sekcja-panelu
+  > summary:hover {
   background: var(--zaznaczenie-tlo);
 }
 
-details.sekcja-panelu > summary:focus-visible {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  details.sekcja-panelu
+  > summary:focus-visible {
   outline: 3px solid var(--zaznaczenie);
   outline-offset: 2px;
 }
 
 /* Podpisy w legendach bez zmiany układu: opisy pod nagłówkiem sekcji. */
-fieldset > .podpis,
-details.sekcja-panelu > .podpis {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(fieldset, details.sekcja-panelu)
+  > .podpis {
   margin-block: 0.25rem;
 }
 
@@ -252,65 +283,80 @@ details.sekcja-panelu > .podpis {
   border-left-width: 4px;
 }
 
-.ostrzezenia-karty {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .ostrzezenia-karty {
   padding-left: 1.1rem;
 }
 
 /* ---------- Drzewo szablonu ---------- */
 
-.wezel-drzewa > .wezel-etykieta:hover {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .wezel-drzewa
+  > .wezel-etykieta:hover {
   background: var(--zaznaczenie-tlo);
 }
 
-.wezel-drzewa.wybrany > .wezel-etykieta {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .wezel-drzewa.wybrany
+  > .wezel-etykieta {
   background: var(--zaznaczenie-tlo);
   outline: 2px solid var(--zaznaczenie);
   outline-offset: -2px;
 }
 
-.wezel-drzewa:focus-visible > .wezel-etykieta {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .wezel-drzewa:focus-visible
+  > .wezel-etykieta {
   outline: 3px solid var(--zaznaczenie);
   outline-offset: 1px;
 }
 
 /* Lista pozycji w bibliotece: zaznaczona ma tło i obrys w kolorze zaznaczenia. */
-.lista-biblioteki li > button:hover:not([aria-pressed='true']) {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .lista-biblioteki
+  li
+  > button:hover:not([aria-pressed='true']) {
   background: var(--zaznaczenie-tlo);
 }
 
-.lista-biblioteki li > button[aria-pressed='true'] {
-  border-width: 2px;
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .lista-biblioteki
+  li
+  > button[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px var(--zaznaczenie);
 }
 
 /* ---------- Kreator: kafelki formatów i układów ---------- */
 
-.format:hover,
-.uklad:hover {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) :is(.format, .uklad):hover {
   border-color: var(--obramowanie-pola);
 }
 
-.format.wybrany,
-.uklad.wybrany {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(.format, .uklad).wybrany {
   background: var(--zaznaczenie-tlo);
 }
 
 /* Wybór narożnika ramki: obrys przycisków jak przy innych kontrolkach. */
-.wybor-narozniki button {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .wybor-narozniki button {
   border-color: var(--obramowanie-pola);
   color: var(--tekst);
 }
 
-.wybor-narozniki button:hover:not([aria-pressed='true']) {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .wybor-narozniki
+  button:hover:not([aria-pressed='true']) {
   background: var(--zaznaczenie-tlo);
 }
 
 /* ---------- Siatka kotwic (tryb swobodny) ---------- */
 
-.siatka-kotwic button {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .siatka-kotwic button {
   border-color: var(--obramowanie-pola);
 }
 
-.siatka-kotwic button:hover:not([aria-checked='true']) {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  .siatka-kotwic
+  button:hover:not([aria-checked='true']) {
   background: var(--zaznaczenie-tlo);
 }
 
@@ -328,19 +374,6 @@ details.sekcja-panelu > .podpis {
   border-color: var(--obramowanie-pola);
 }
 
-/* ---------- Ruch ---------- */
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
 /* ---------- Miniatury ozdobników ---------- */
 
 /*
@@ -348,8 +381,66 @@ details.sekcja-panelu > .podpis {
  * (kolor papieru to dane karty, nie motyw): rysunki w kolorze stałym (import SVG) są czytelne
  * także w ciemnym motywie, a rysunki kolorowalne (currentColor) dostają ciemny grafit.
  */
-.miniatura-ozdobnika {
-  background: #f7f0dc;
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .miniatura-ozdobnika {
+  background: var(--papier-ozdobnika);
   color: var(--na-jasnym);
   border-radius: 3px;
+}
+
+/* ---------- Tryb wysokiego kontrastu (forced-colors) ---------- */
+
+/*
+ * Kolory systemowe zastępują paletę, a tła znikają – zaznaczenie musi być widać bez tła:
+ * obrys Highlight i, tam gdzie tło było jedynym znacznikiem, pełne Highlight z HighlightText.
+ */
+@media (forced-colors: active) {
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    .przelacznik-segmentowy
+    button[aria-pressed='true'],
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    .siatka-kotwic
+    button[aria-checked='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+    border-color: HighlightText;
+  }
+
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    :is(
+      .wybor-narozniki button[aria-pressed='true'],
+      .lista-biblioteki li > button[aria-pressed='true']
+    ) {
+    outline: 3px solid Highlight;
+    outline-offset: -3px;
+  }
+
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    :is(.format, .uklad).wybrany {
+    outline: 4px solid Highlight;
+  }
+
+  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+    .wezel-drzewa.wybrany
+    > .wezel-etykieta {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  :is(.edytor-kartki, .edytor-szablonu) .wezel-drzewa.wybrany .ikona-wezla {
+    color: inherit;
+  }
+
+  .karta-na-kartce.zaznaczona,
+  .obszar-wezla.zaznaczony,
+  .naglowek-grupy.zaznaczony {
+    outline: 3px solid Highlight;
+    outline-offset: 1px;
+  }
+
+  /* Znaczniki sekcji to tylko ozdoba: w trybie systemowym zostaje zwykły obrys. */
+  :is(details.sekcja-panelu, fieldset) {
+    border-color: CanvasText;
+  }
 }

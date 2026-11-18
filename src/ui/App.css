@@ -91,13 +91,6 @@ a:hover {
   cursor: pointer;
 }
 
-.uwaga button:disabled {
-  color: var(--tekst-przygaszony);
-  border-style: dashed;
-  border-color: var(--obramowanie-pola);
-  cursor: not-allowed;
-}
-
 .podpis {
   font-size: 0.9rem;
   color: var(--tekst-przygaszony);
@@ -219,6 +212,24 @@ a.przycisk.glowny {
   background: var(--akcent);
   border-color: var(--akcent);
   color: var(--akcent-tekst);
+}
+
+/* Wyłączone wypełnione przyciski (po regułach wypełnienia, żeby je przebić): bez wypełnienia,
+   przygaszony napis i widoczny obrys przerywany – różnią się od aktywnych kolorem, tłem i obrysem. */
+button.glowny:disabled,
+button.pasek-menu.pasek-menu:disabled,
+button.kafelek-podgladu:disabled {
+  background: transparent;
+  color: var(--tekst-przygaszony);
+  border: 2px dashed var(--obramowanie-pola);
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+button.kafelek-podgladu:disabled {
+  border-bottom: 5px dashed var(--obramowanie-pola);
 }
 
 /* Przycisk niebezpieczny: jasny motyw – bordowy napis i obrys, ciemny – bordo z beżowym tekstem. */
@@ -828,7 +839,16 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   }
 }
 
+/* Jedyny blok prefers-reduced-motion: wyłącza animacje i przejścia dekoracyjne (szkielet,
+   najechanie, wciśnięcie). Wskaźniki postępu („Tworzę…”) nie są animowane, więc zostają. */
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .szkielet-papier {
     animation: none;
   }
@@ -880,8 +900,13 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 }
 
 .kafelek-gry .opis-kafelka {
-  opacity: 0.85;
+  /* Kolor zamiast opacity: >= 4,5:1 na panelu; na wypełnionym (.glowny) pełny biały tekst. */
+  color: var(--tekst-przygaszony);
   font-size: 0.95rem;
+}
+
+.kafelek-gry.glowny .opis-kafelka {
+  color: var(--akcent-tekst);
 }
 
 .przyciski-ukladow {
@@ -1776,13 +1801,17 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   opacity: 0;
   pointer-events: none;
 }
+/* Wybrany: obrys 2 px przy krawędzi; fokus: pełny, grubszy obrys z odstępem (rozróżnialne,
+   także gdy kafelek jest jednocześnie wybrany i z fokusem). */
 .format.wybrany,
 .uklad.wybrany {
-  outline: 3px solid var(--zaznaczenie);
+  outline: 2px solid var(--zaznaczenie);
+  outline-offset: 0;
 }
 .format:focus-within,
 .uklad:focus-within {
-  outline: 3px solid color-mix(in srgb, var(--zaznaczenie) 60%, transparent);
+  outline: 3px solid var(--zaznaczenie);
+  outline-offset: 3px;
 }
 .format-ksztalt {
   border: 1.5px solid var(--tekst-przygaszony);
@@ -2014,6 +2043,15 @@ button.maly {
   background: transparent;
 }
 
+/* Zaznaczony i wyłączony segment (np. „bez tytułu”, gdy pole tytułu jest puste): stonowany
+   akcent z pełnym tekstem – widać wybór i czyta się napis (>= 4,5:1), wyłączenie widać po
+   braku wypełnienia pełnym akcentem i kursorze. */
+.przelacznik-segmentowy button[aria-pressed='true']:disabled {
+  background: color-mix(in srgb, var(--akcent) 35%, var(--tlo-panelu));
+  color: var(--tekst);
+  box-shadow: inset 0 -3px 0 var(--obramowanie-pola);
+}
+
 /* Biblioteka ozdobników projektu (własne SVG). */
 .biblioteka-ozdobnikow {
   display: flex;
@@ -2087,7 +2125,7 @@ button.maly {
 }
 .podglad-elementu {
   align-self: center;
-  background: #f7f0dc;
+  background: var(--papier-ozdobnika);
   border: 1px solid var(--obramowanie);
   line-height: 0;
 }
@@ -2121,7 +2159,7 @@ button.maly {
 .zrodlo-ramki9 {
   position: relative;
   width: 100%;
-  background: #f7f0dc;
+  background: var(--papier-ozdobnika);
   border: 1px solid var(--obramowanie);
   line-height: 0;
 }

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { kontrastObrysu, kontrastTekstu, pomiarFokusu } from './kontrastUI';
+import { kontrastObrysu, kontrastTekstu, pomiarFokusu, trybKlawiatury } from './kontrastUI';
 import { gotowyUklad, karta, nowaPustaKartka } from './pomoc';
 import { dodaj, drzewo, kreator, panel, sekcja, zaznacz } from './szablonUI';
 
@@ -11,6 +11,8 @@ import { dodaj, drzewo, kreator, panel, sekcja, zaznacz } from './szablonUI';
 test.use({ viewport: { width: 1440, height: 1000 } });
 
 const MOTYWY = ['light', 'dark'] as const;
+/** Podgląd karty ma tło z gradientu (szachownica) – kolor karty w teście to biel. */
+const BIEL = 'rgb(255, 255, 255)';
 
 /** Tekst elementu ma kontrast >= min (domyślnie AA, 4,5). */
 async function tekst(el: Locator, opis: string, min = 4.5) {
@@ -30,7 +32,7 @@ async function obrys(el: Locator, opis: string, min = 3) {
  * rysuje obrys, jeśli to nie sam element z fokusem (np. etykieta węzła drzewa).
  */
 async function fokus(page: Page, el: Locator, opis: string, obrysowany: Locator = el) {
-  await page.keyboard.press('Tab'); // tryb klawiatury: :focus-visible także po focus()
+  await trybKlawiatury(page); // :focus-visible także po focus(), bez Tab (nie zamyka menu)
   await el.focus();
   const p = await pomiarFokusu(obrysowany);
   expect(p.styl, `${opis}: styl obrysu`).toBe('solid');
@@ -83,8 +85,10 @@ for (const motyw of MOTYWY) {
     await tekst(pasek.locator('.nazwa-projektu'), 'nazwa projektu na pasku');
     await tekst(pasek.getByRole('button', { name: /Ustawienia/ }), 'przycisk na pasku');
     await tekst(pasek.getByRole('button', { name: /Pobierz PDF/ }), 'przycisk główny na pasku');
+    // „Cofnij” jest wyłączone, dopóki nic nie zmieniono – test wymaga takiego przycisku.
     const wylaczony = pasek.locator('button:disabled').first();
-    if (await wylaczony.count()) await tekst(wylaczony, 'przycisk wyłączony na pasku');
+    await expect(wylaczony).toBeDisabled();
+    await tekst(wylaczony, 'przycisk wyłączony na pasku');
     await fokus(page, pasek.getByRole('button', { name: /Ustawienia/ }), 'fokus na pasku');
 
     // Zaznaczenie karty na papierze (biały w obu motywach): obrys >= 3:1 z bielą.
@@ -98,6 +102,24 @@ for (const motyw of MOTYWY) {
     await tekst(u.locator('legend').first(), 'legenda sekcji');
     await tekst(u.locator('.podpis').first(), 'opis w ustawieniach');
     await tekst(u.locator('label').first(), 'etykieta w ustawieniach');
+
+    // Zaznaczony i wyłączony segment: w aplikacji ten stan jest trudno osiągalny, więc
+    // ustawiamy go na prawdziwych przyciskach panelu (CSS reaguje na atrybuty).
+    const segmenty = u.locator('.przelacznik-segmentowy').first().locator('button');
+    await segmenty.nth(0).evaluate((e: HTMLButtonElement) => {
+      e.setAttribute('aria-pressed', 'true');
+      e.disabled = true;
+    });
+    await segmenty.nth(1).evaluate((e: HTMLButtonElement) => {
+      e.setAttribute('aria-pressed', 'false');
+      e.disabled = true;
+    });
+    const tla = async (l: Locator) => l.evaluate((e) => getComputedStyle(e).backgroundColor);
+    await tekst(segmenty.nth(0), 'segment zaznaczony i wyłączony');
+    await tekst(segmenty.nth(1), 'segment niezaznaczony i wyłączony');
+    expect(await tla(segmenty.nth(0)), 'zaznaczony wyłączony ma tło stonowanego akcentu').not.toBe(
+      await tla(segmenty.nth(1)),
+    );
 
     // Menu „Pobierz”.
     await page.getByRole('button', { name: /^Pobierz$/ }).click();
@@ -172,7 +194,7 @@ for (const motyw of MOTYWY) {
     await fokus(page, etykieta.locator(':scope > summary'), 'fokus na nagłówku sekcji');
 
     // Siatka kotwic (tryb swobodny).
-    const kotwica = pan.locator('.siatka-kotwic button').first();
+    const kotwica = pan.locator('.siatka-kotwic button[aria-checked="false"]').first();
     await obrys(kotwica, 'obrys przycisku kotwicy');
 
     // Menu „+ Dodaj”: tylko napisy.
@@ -184,11 +206,162 @@ for (const motyw of MOTYWY) {
 
     // Nakładki trybu swobodnego na podglądzie: uchwyt i obrys zaznaczenia.
     const uchwyt = page.locator('.karta-podgladu .uchwyt').first();
-    await obrys(uchwyt, 'uchwyt zmiany rozmiaru', 3);
+    const p = await kontrastObrysu(uchwyt, { tlo: BIEL });
+    expect(p.kontrast, `uchwyt: ${p.tekst} na ${p.tlo}`).toBeGreaterThanOrEqual(3);
     const wezel = page.locator('.karta-podgladu .obszar-wezla.zaznaczony').first();
-    const ow = await pomiarFokusu(wezel);
+    const ow = await pomiarFokusu(wezel, { tlo: BIEL });
     expect(ow.kontrast, `obrys zaznaczonego pola: ${ow.tekst} na ${ow.tlo}`).toBeGreaterThanOrEqual(
       3,
     );
   });
+
+  test(`sekcje paneli (${motyw}): zagnieżdżona ma cieńszy pasek w kolorze rodzica`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: motyw });
+    await kreator(page, {
+      nazwa: 'Sekcje',
+      format: 'Standard / Poker',
+      uklad: 'Tytuł i opis',
+    });
+    await dodaj(page, 'Etykieta + wartość', 'Siła');
+    // Pierwsza sekcja, która zawiera zagnieżdżoną sekcję (np. „Etykieta” ze „Stylem etykiety”).
+    const rodzic = panel(page).locator('details.sekcja-panelu:has(details.sekcja-panelu)').first();
+    await rodzic.evaluate((e: HTMLDetailsElement) => (e.open = true));
+    const dziecko = rodzic.locator('details.sekcja-panelu').first();
+    await dziecko.evaluate((e: HTMLDetailsElement) => (e.open = true));
+    await expect(dziecko).toBeVisible();
+    const pasek = (l: Locator) =>
+      l.evaluate((e) => {
+        const cs = getComputedStyle(e);
+        return { szer: cs.borderLeftWidth, kolor: cs.borderLeftColor };
+      });
+    const [r, d] = [await pasek(rodzic), await pasek(dziecko)];
+    expect(r.szer).toBe('4px');
+    expect(d.szer).toBe('2px');
+    expect(d.kolor, 'zagnieżdżona dziedziczy kolor paska rodzica').toBe(r.kolor);
+    // Kolor paska jest prawdziwym kolorem (nie przezroczysty ani wynik cyklu zmiennych).
+    expect(r.kolor).not.toMatch(/rgba\(0, 0, 0, 0\)|^$/);
+  });
+
+  test(`biblioteka ozdobników (${motyw}): panel, lista, pola, komunikaty`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: motyw });
+    await kreator(page, {
+      nazwa: 'Biblioteka',
+      format: 'Standard / Poker',
+      uklad: 'Pusta karta',
+    });
+    await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
+    await expect(page.getByTestId('lista-wlasnych')).toBeAttached();
+    await page.getByTestId('plik-svg').setInputFiles('testy/zasoby/gwiazdka.svg');
+    await expect(page.getByTestId('podglad-elementu')).toBeVisible();
+    await page.getByLabel('Nazwa', { exact: true }).fill('Gwiazdka');
+    // Komunikat „dobrze”, segmenty i przycisk główny widać przed dodaniem do biblioteki.
+    await tekst(page.locator('.raport-ok').first(), 'komunikat „dobrze”');
+    await tekst(
+      page.getByRole('group', { name: 'Użyj jako' }).locator('button[aria-pressed="true"]').first(),
+      'segment „Użyj jako” zaznaczony',
+    );
+    await tekst(
+      page.getByRole('button', { name: 'Dodaj do biblioteki' }),
+      'przycisk główny w bibliotece',
+    );
+    await page.getByRole('button', { name: 'Dodaj do biblioteki' }).click();
+
+    const pasek = page.locator('.pasek-gorny');
+    await tekst(pasek.locator('.okruszek'), 'okruszek na pasku');
+    await tekst(pasek.locator('.status-zapisu'), 'status zapisu na pasku');
+    const panelB = page.locator('.panel-biblioteki');
+    await tekst(panelB.locator('h2'), 'nagłówek biblioteki');
+    await tekst(panelB.locator('h3').first(), 'podtytuł listy');
+    const lista = page.getByTestId('lista-wlasnych');
+    await tekst(lista.getByRole('button').first(), 'pozycja listy (zaznaczona)');
+    const o = await pomiarFokusu(lista.getByRole('button').first());
+    expect(o.kontrast, `obrys zaznaczonej pozycji ${o.tekst} na ${o.tlo}`).toBeGreaterThanOrEqual(
+      1,
+    );
+    const nazwa = page.getByLabel('Nazwa', { exact: true });
+    await tekst(nazwa, 'tekst w polu nazwy');
+    await obrys(nazwa, 'obrys pola nazwy');
+    await fokus(page, nazwa, 'fokus w polu nazwy');
+  });
+
+  test(`kreator szablonu (${motyw}): pola, kafelki, przycisk wyłączony i fokus`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: motyw });
+    await page.goto('./#/wlasne/nowy');
+    const dalej = page.getByRole('button', { name: /Dalej: układ pól/ });
+    await page.getByLabel('Nazwa szablonu').fill('');
+    // Bez nazwy przycisk jest wyłączony – musi się różnić od aktywnego (tło, kolor, obrys).
+    await expect(dalej).toBeDisabled();
+    const styl = (l: Locator) =>
+      l.evaluate((e) => {
+        const cs = getComputedStyle(e);
+        return `${cs.backgroundColor}|${cs.color}|${cs.borderTopStyle}|${cs.borderTopColor}`;
+      });
+    const wylaczonyStyl = await styl(dalej);
+    await tekst(dalej, 'przycisk „Dalej” wyłączony');
+    await obrys(dalej, 'obrys przycisku „Dalej” wyłączonego');
+    await page.getByLabel('Nazwa szablonu').fill('Test');
+    await expect(dalej).toBeEnabled();
+    const aktywnyStyl = await styl(dalej);
+    expect(aktywnyStyl, 'wyłączony różni się od aktywnego').not.toBe(wylaczonyStyl);
+    expect(aktywnyStyl.split('|')[2]).toBe('solid');
+    expect(wylaczonyStyl.split('|')[2]).toBe('dashed');
+    await tekst(dalej, 'przycisk „Dalej” aktywny');
+
+    const pole = page.getByLabel('Nazwa szablonu');
+    await tekst(pole, 'tekst w polu nazwy');
+    await obrys(pole, 'obrys pola nazwy');
+    await tekst(page.locator('.formaty legend'), 'legenda formatów');
+    await tekst(page.locator('label.format').first(), 'kafelek formatu');
+    await tekst(page.locator('label.format.wybrany'), 'kafelek formatu wybrany');
+    await tekst(
+      page.locator('.kreator-podglad .podpis, .kreator-podglad p').first(),
+      'opis podglądu',
+    );
+
+    // Fokus kafelka: pełny obrys 3 px >= 3:1, a wybrany bez fokusu ma cieńszy obrys przy krawędzi.
+    const wybrany = page.locator('label.format.wybrany');
+    const bezFokusu = await wybrany.evaluate((e) => {
+      const cs = getComputedStyle(e);
+      return { szer: parseFloat(cs.outlineWidth), odstep: parseFloat(cs.outlineOffset) };
+    });
+    await trybKlawiatury(page);
+    await wybrany.locator('input').focus();
+    const f = await pomiarFokusu(wybrany);
+    expect(f.styl).toBe('solid');
+    expect(f.szerokosc).toBe(3);
+    expect(f.kontrast, `fokus kafelka: ${f.tekst} na ${f.tlo}`).toBeGreaterThanOrEqual(3);
+    const zFokusem = await wybrany.evaluate((e) => parseFloat(getComputedStyle(e).outlineOffset));
+    expect(zFokusem, 'fokus odróżnia się od zaznaczenia odstępem').toBeGreaterThan(
+      bezFokusu.odstep,
+    );
+    expect(bezFokusu.szer).toBeLessThan(f.szerokosc);
+    // Kafelek wybrany: obrys zaznaczenia >= 3:1.
+    await page.locator('label.format:not(.wybrany)').first().locator('input').focus();
+    const w = await pomiarFokusu(wybrany);
+    expect(w.kontrast, `obrys wybranego kafelka: ${w.tekst} na ${w.tlo}`).toBeGreaterThanOrEqual(3);
+  });
 }
+
+test('tryb wysokiego kontrastu (forced-colors): zaznaczenie widać bez własnych teł', async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await page.goto('./#/wlasne/nowy');
+  const wybrany = page.locator('label.format.wybrany');
+  const obrys = await wybrany.evaluate((e) => {
+    const cs = getComputedStyle(e);
+    return { styl: cs.outlineStyle, szer: parseFloat(cs.outlineWidth) };
+  });
+  expect(obrys.styl).toBe('solid');
+  expect(obrys.szer).toBeGreaterThanOrEqual(3);
+  // Przycisk segmentowy zaznaczony: tło systemowe Highlight różni się od niezaznaczonego.
+  const seg = page.locator('.przelacznik-segmentowy').first();
+  const tlo = (l: Locator) => l.evaluate((e) => getComputedStyle(e).backgroundColor);
+  expect(await tlo(seg.locator('button[aria-pressed="true"]'))).not.toBe(
+    await tlo(seg.locator('button[aria-pressed="false"]').first()),
+  );
+});

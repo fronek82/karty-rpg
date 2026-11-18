@@ -14,8 +14,6 @@ const korzen = fileURLToPath(new URL('.', import.meta.url));
  * pól i ramek nowego szablonu, kolor tła obrazu eksportu, podgląd ozdobnika na „pergaminie”.
  */
 const DOZWOLONE: Record<string, string[]> = {
-  'App.css': ['#f7f0dc'], // tło podglądu ozdobnika (papier karty)
-  'edytory.css': ['#f7f0dc'], // tło miniatur ozdobników (papier karty)
   'biblioteka/podgladElementu.ts': ['#7a2e24', '#f7f0dc', '#fff8e6'],
   'eksportObrazow.ts': ['#ffffff'], // tło eksportowanego obrazu
   'szablon/EdytorSzablonu.tsx': ['#ffffff'], // domyślne tło karty
@@ -57,14 +55,44 @@ describe('kolory na sztywno w src/ui', () => {
     }
   });
 
-  it('funkcje rgb/rgba/hsl poza tokeny.css to tylko czerń z przezroczystością (cienie, siatka)', () => {
+  it('funkcje kolorów poza tokeny.css: tylko czerń z przezroczystością w cieniach i siatce', () => {
     const naruszenia: string[] = [];
     for (const plik of pliki(korzen)) {
       const wzgledna = relative(korzen, plik).replaceAll('\\', '/');
       if (wzgledna === 'tokeny.css') continue;
       const tekst = readFileSync(plik, 'utf8');
+      // Inne przestrzenie kolorów nie mają tu zastosowania (kolory idą z tokenów).
+      for (const m of tekst.matchAll(/(?<![\w-])(?:oklch|oklab|lab|lch|hwb|color)\(/g))
+        naruszenia.push(`${wzgledna}: ${m[0]}`);
       for (const m of tekst.matchAll(/\b(?:rgba?|hsla?)\(([^)]*)\)/g)) {
-        if (!/^\s*0[ ,]+0[ ,]+0\s*[/,]/.test(m[1]!)) naruszenia.push(`${wzgledna}: ${m[0]}`);
+        const czern = /^\s*0[ ,]+0[ ,]+0\s*[/,]/.test(m[1]!);
+        // Dozwolone tylko w cieniach (box-shadow, --cien*) i siatce podglądu (linear-gradient).
+        const przed = tekst.slice(Math.max(0, m.index! - 160), m.index!);
+        const wCieniu = /(box-shadow|linear-gradient)[^;{}]*$/.test(przed);
+        if (!(czern && wCieniu) || !wzgledna.endsWith('.css'))
+          naruszenia.push(`${wzgledna}: ${m[0]}`);
+      }
+    }
+    expect(naruszenia).toEqual([]);
+  });
+
+  it('nazwy kolorów CSS (white, black, red…) poza color-mix z czernią są zabronione', () => {
+    const nazwy =
+      /\b(white|black|red|green|blue|gray|grey|yellow|orange|purple|pink|silver|navy|teal|maroon|lime|aqua|fuchsia|olive|cyan|magenta|brown|gold|beige|ivory|tan)\b/i;
+    const naruszenia: string[] = [];
+    for (const plik of pliki(korzen)) {
+      if (!plik.endsWith('.css')) continue;
+      const wzgledna = relative(korzen, plik).replaceAll('\\', '/');
+      if (wzgledna === 'tokeny.css') continue;
+      // Bez komentarzy i bez color-mix(…) – tam czerń jawnie wolno (przyciemnianie tła).
+      const tekst = readFileSync(plik, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/color-mix\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/g, 'color-mix()');
+      for (const m of tekst.matchAll(/([\w-]+)\s*:\s*([^;{}]+)[;}]/g)) {
+        if (m[1]!.startsWith('--') && m[1] !== '--znacznik') continue;
+        const wartosc = m[2]!.replace(/url\([^)]*\)/g, '').replace(/'[^']*'/g, '');
+        if (nazwy.test(wartosc) && !/^(font|content|grid|list|white-space)/.test(m[1]!))
+          naruszenia.push(`${wzgledna}: ${m[1]}: ${m[2]!.trim()}`);
       }
     }
     expect(naruszenia).toEqual([]);
