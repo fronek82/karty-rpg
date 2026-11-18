@@ -53,7 +53,12 @@ test('eksport → import jako kopia → lista z miniaturą → usunięcie', asyn
   expect(eksport.suggestedFilename()).toBe('bron-i-pancerze.kartyrpg');
   await page.waitForTimeout(1800); // miniatura zapisywana po chwili
   await page.getByRole('link', { name: 'Karty RPG' }).click();
-  await page.getByTestId('plik-projektu').setInputFiles(await eksport.path());
+  // Plik z pobrania ma w katalogu tymczasowym losową nazwę bez rozszerzenia – nadajemy tę z pobrania.
+  await page.getByTestId('plik-importu').setInputFiles({
+    name: eksport.suggestedFilename(),
+    mimeType: 'application/zip',
+    buffer: readFileSync(await eksport.path()),
+  });
   await expect(page.getByRole('alertdialog')).toContainText('jest już w tej przeglądarce');
   await page.getByRole('button', { name: 'Zapisz jako kopię' }).click();
   await expect(page.locator('.kafelek-projektu')).toHaveCount(2);
@@ -106,7 +111,7 @@ test('projekt sprzed edytora (ilości, bez przypięć, grupy) otwiera się jako 
   };
   const sztuk = stary.talie.reduce((s, t) => s + t.karty.reduce((a, k) => a + k.ilosc, 0), 0);
   await page.goto('./#/');
-  await page.getByTestId('plik-projektu').setInputFiles({
+  await page.getByTestId('plik-importu').setInputFiles({
     name: 'stary.kartyrpg',
     mimeType: 'application/zip',
     buffer: Buffer.from(eksportujProjekt(stary, zasoby)),

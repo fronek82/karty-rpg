@@ -150,7 +150,8 @@ a:hover {
   background: color-mix(in srgb, black 22%, var(--pasek));
 }
 
-.seg button[aria-pressed='true'] {
+.seg button[aria-pressed='true'],
+.seg button[aria-pressed='true']:hover:not(:disabled) {
   background: var(--pasek-tekst);
   color: var(--pasek);
 }
@@ -185,6 +186,12 @@ a:hover {
   padding: 1.5rem 1rem;
 }
 
+/* Ekran startowy jest szerszy: trzy kolumny. */
+.tresc.tresc-start {
+  max-width: 90rem;
+  padding: 0.5rem 2.5rem 1.5rem;
+}
+
 .uwaga {
   padding: 0.75rem 1rem;
   border: 1px solid var(--obramowanie);
@@ -193,9 +200,23 @@ a:hover {
 }
 
 .stopka {
-  padding: 0.75rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.2rem;
+  padding: 0.85rem 2.5rem;
+  border-top: 1px solid var(--obramowanie);
   font-size: 0.85rem;
-  opacity: 0.7;
+  color: var(--tekst-przygaszony);
+}
+
+.stopka .rozpychacz {
+  flex: 1;
+}
+
+.stopka a {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .status {
@@ -220,26 +241,6 @@ a:hover {
 .podpis {
   font-size: 0.9rem;
   opacity: 0.8;
-}
-
-.lista-projektow {
-  list-style: none;
-  padding: 0;
-}
-
-.lista-projektow li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-  align-items: baseline;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--obramowanie);
-}
-
-.lista-projektow .akcje {
-  margin-left: auto;
-  display: flex;
-  gap: 0.5rem;
 }
 
 .okruszki {
@@ -370,9 +371,215 @@ textarea:focus-visible {
 }
 
 /* --- Start --- */
-.start h1 {
-  font-size: 1.9rem;
-  margin-bottom: 0.25rem;
+/* Czcionka tytułu: Cinzel Decorative Bold (OFL 1.1, public/czcionki). Awaryjnie Georgia. */
+@font-face {
+  font-family: 'Cinzel Decorative';
+  src: url('/czcionki/CinzelDecorative-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.start-naglowek {
+  text-align: center;
+  padding: 1.5rem 0 0.4rem;
+}
+
+.start-naglowek h1 {
+  font-family: 'Cinzel Decorative', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(1.7rem, 3.4vw + 0.6rem, 2.75rem);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--tytul);
+  margin: 0;
+}
+
+.start-naglowek p {
+  margin: 0.5rem 0 0;
+  color: var(--tekst-przygaszony);
+}
+
+.start-kolumny {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  padding-top: 1.6rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .start-kolumny {
+    grid-template-columns: 260px minmax(0, 1fr) 240px;
+  }
+}
+
+.etykieta-sekcji {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tekst-przygaszony);
+}
+
+/* Menu z kolorowych pasków. */
+.start-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.start-menu .etykieta-sekcji {
+  margin-bottom: 0;
+}
+
+a.pasek-menu {
+  display: block;
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+  box-shadow: var(--cien);
+  transition:
+    filter 0.12s,
+    transform 0.12s;
+}
+
+a.pasek-menu b {
+  display: block;
+  font-size: 1rem;
+}
+
+a.pasek-menu span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+}
+
+a.pasek-menu.pasek-bordo {
+  background: var(--bordo);
+  color: var(--bordo-tekst);
+}
+
+a.pasek-menu.pasek-granat {
+  background: var(--kolor-4);
+  color: var(--akcent-tekst);
+}
+
+a.pasek-menu:hover {
+  filter: brightness(0.9);
+}
+
+a.pasek-menu:active {
+  filter: brightness(0.8);
+  transform: translateY(1px);
+}
+
+a.pasek-menu:focus-visible {
+  outline: 3px solid var(--tekst);
+  outline-offset: 3px;
+}
+
+/* Kolumny startu bez ramek ogólnego stylu sekcji. */
+.start-kolumny > section {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* Panel importu. */
+.panel-importu button.duzy {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+button.glowny:hover:not(:disabled) {
+  background: color-mix(in srgb, black 18%, var(--akcent));
+  border-color: color-mix(in srgb, black 18%, var(--akcent));
+}
+
+button.glowny:active:not(:disabled) {
+  background: color-mix(in srgb, black 30%, var(--akcent));
+}
+
+.opis-importu {
+  margin: 0.8rem 0 0;
+  font-size: 0.9rem;
+  color: var(--tekst-przygaszony);
+}
+
+.strefa-upuszczania {
+  display: block;
+  width: 100%;
+  margin-top: 0.9rem;
+  padding: 1.3rem 1rem;
+  border: 2px dashed var(--tekst-przygaszony);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tekst-przygaszony);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.strefa-upuszczania b {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--tekst);
+  font-size: 0.95rem;
+}
+
+.strefa-upuszczania:hover:not(:disabled),
+.strefa-upuszczania.nad {
+  border-color: var(--zaznaczenie);
+  background: var(--zaznaczenie-tlo);
+  color: var(--tekst);
+}
+
+.strefa-upuszczania:active:not(:disabled) {
+  background: color-mix(in srgb, var(--zaznaczenie) 25%, var(--zaznaczenie-tlo));
+}
+
+.wyniki-importu {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bledy-importu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bledy-importu p {
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.wyniki-importu li {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.panel-importu .uwaga {
+  margin: 0.6rem 0 0;
+}
+
+/* Moje projekty. */
+.lista-projektow h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.lista-projektow .naglowek-sekcji {
+  margin-bottom: 0.7rem;
 }
 
 .kafelki-gier {
@@ -438,17 +645,25 @@ textarea:focus-visible {
   list-style: none;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1.1rem;
+  margin: 0;
 }
 
 .kafelek-projektu {
-  border: 1px solid var(--obramowanie);
-  border-radius: 0.8rem;
+  border: 2px solid var(--obramowanie-karty);
+  border-bottom: 5px solid var(--bordo);
+  border-radius: 8px;
   background: var(--tlo-panelu);
+  box-shadow: var(--cien);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.kafelek-projektu:hover,
+.kafelek-projektu:focus-within {
+  border-color: var(--zaznaczenie);
 }
 
 .kafelek-projektu .miniatura {

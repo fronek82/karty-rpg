@@ -20,6 +20,9 @@ const EdytorStrona = lazy(() =>
   import('./EdytorStrona').then((m) => ({ default: m.EdytorStrona })),
 );
 
+const ADRES_REPOZYTORIUM = 'https://github.com/fronek82/karty-rpg';
+const ADRES_LICENCJI = `${ADRES_REPOZYTORIUM}/blob/main/LICENCJE.md`;
+
 const wersja = import.meta.env.VITE_WERSJA ?? '0.1.0';
 
 /** Strona ładowana leniwie, z granicą błędu. */
@@ -59,7 +62,7 @@ export function App() {
   return (
     <div className="aplikacja">
       <NaglowekAplikacji />
-      <main className="tresc">
+      <main className={trasa === '/' || dawna ? 'tresc tresc-start' : 'tresc'}>
         {trasa === '/' || dawna ? (
           <Leniwa>
             <Start />
@@ -83,7 +86,19 @@ export function App() {
           </section>
         )}
       </main>
-      <footer className="stopka">{t('start.wersja', { wersja })}</footer>
+      <footer className="stopka">
+        <span>
+          {t('aplikacja.nazwa')} · {t('start.wersja', { wersja })}
+        </span>
+        <span>{t('start.stopkaPrzegladarka')}</span>
+        <span className="rozpychacz" />
+        <a href={ADRES_LICENCJI} target="_blank" rel="noopener">
+          {t('start.licencje')}
+        </a>
+        <a href={ADRES_REPOZYTORIUM} target="_blank" rel="noopener">
+          {t('start.kodZrodlowy')}
+        </a>
+      </footer>
     </div>
   );
 }

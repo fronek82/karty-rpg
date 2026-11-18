@@ -20,8 +20,8 @@ import { BladDanych, migruj, przygotujProjekt, schematPlikuSzablonu, sprawdz } f
 export const ROZSZERZENIE_PROJEKTU = '.kartyrpg';
 export const ROZSZERZENIE_SZABLONU = '.kartyrpg-szablon';
 
-const PLIK_PROJEKTU = 'projekt.json';
-const PLIK_SZABLONU = 'szablon.json';
+export const PLIK_PROJEKTU = 'projekt.json';
+export const PLIK_SZABLONU = 'szablon.json';
 const KATALOG_ZASOBOW = 'zasoby/';
 const MB = 1024 * 1024;
 /** Limity rozpakowania (ochrona przed „bombą ZIP”): wpis, suma, liczba wpisów. */

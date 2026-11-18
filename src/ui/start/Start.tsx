@@ -1,27 +1,60 @@
+import { useEffect, useState } from 'react';
 import { t } from '../../i18n';
 import { gry } from '../../pakiety/gry';
-import { nazwaGryDo, opisGry } from '../nazwyPakietu';
+import { nazwaGryDo } from '../nazwyPakietu';
 import { ListaProjektow } from './ListaProjektow';
+import { PanelImportu } from './PanelImportu';
 
-/** Ekran startowy: kafelki gier z rejestru, „Stwórz własne karty” i „Moje projekty”. */
+/**
+ * Ekran startowy: tytuł i opis u góry, pod nimi trzy kolumny – menu „Nowy projekt”,
+ * „Moje projekty” i „Import”. Poniżej 900 px kolumny układają się jedna pod drugą w tej kolejności.
+ */
 export function Start() {
+  const [odswiezenie, ustawOdswiezenie] = useState(0);
+
+  // Plik upuszczony poza strefą importu nie może zostać otwarty przez przeglądarkę
+  // (zamiast aplikacji pokazałby się plik): blokujemy domyślną akcję, poza strefą kursor „zakaz”.
+  useEffect(() => {
+    const blokuj = (e: DragEvent) => {
+      if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+      const wStrefie = e.target instanceof Element && e.target.closest('.strefa-upuszczania');
+      if (wStrefie) return;
+      e.preventDefault();
+      if (e.type === 'dragover') e.dataTransfer.dropEffect = 'none';
+    };
+    window.addEventListener('dragover', blokuj);
+    window.addEventListener('drop', blokuj);
+    return () => {
+      window.removeEventListener('dragover', blokuj);
+      window.removeEventListener('drop', blokuj);
+    };
+  }, []);
+
   return (
     <div className="start">
-      <h1>{t('start.tytul')}</h1>
-      <p className="podpis">{t('aplikacja.opis')}</p>
-      <div className="kafelki-gier">
-        {gry.map((g) => (
-          <a key={g.id} href={`#/gra/${g.id}`} className="kafelek-gry glowny">
-            <span className="tytul-kafelka">＋ {t('start.stworzDo', { gra: nazwaGryDo(g) })}</span>
-            <span className="opis-kafelka">{opisGry(g)}</span>
+      <header className="start-naglowek">
+        <h1>{t('start.tytul')}</h1>
+        <p>{t('start.opis')}</p>
+      </header>
+      <div className="start-kolumny">
+        <nav className="start-menu" aria-labelledby="start-nowy">
+          <p id="start-nowy" className="etykieta-sekcji">
+            {t('start.nowyProjekt')}
+          </p>
+          <a href="#/wlasne" className="pasek-menu pasek-bordo">
+            <b>{t('start.stworzWlasne')}</b>
+            <span>{t('start.wlasneOpis')}</span>
           </a>
-        ))}
-        <a href="#/wlasne" className="kafelek-gry">
-          <span className="tytul-kafelka">＋ {t('start.stworzWlasne')}</span>
-          <span className="opis-kafelka">{t('start.wlasneOpis')}</span>
-        </a>
+          {gry.map((g) => (
+            <a key={g.id} href={`#/gra/${g.id}`} className="pasek-menu pasek-granat">
+              <b>{t('start.stworzDo', { gra: nazwaGryDo(g) })}</b>
+              <span>{t('start.gotoweOpis')}</span>
+            </a>
+          ))}
+        </nav>
+        <ListaProjektow odswiezenie={odswiezenie} />
+        <PanelImportu onZmiana={() => ustawOdswiezenie((n) => n + 1)} />
       </div>
-      <ListaProjektow />
     </div>
   );
 }
