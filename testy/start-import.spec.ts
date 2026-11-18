@@ -1,6 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { unzipSync } from 'fflate';
+import { eksportujSzablon } from '../src/dane/archiwum';
+import { projektZPakietu } from '../src/dane/pakiet';
+import { pakietWlasny } from '../src/dane/wlasneKarty';
 import { plikSzablonu } from './kartkaUI';
-import { plikProjektu } from './mieszaneUI';
+import { plikProjektu, SZABLONY } from './mieszaneUI';
 
 /** Ekran startowy (UI-3): układ kolumn, czcionka tytułu, „Importuj pliki…” i strefa upuszczania. */
 
@@ -35,6 +40,24 @@ async function upusc(page: Page, pliki: Plik[]) {
   await expect(strefa).toHaveClass(/nad/);
   await strefa.dispatchEvent('drop', { dataTransfer: dt });
   await expect(strefa).not.toHaveClass(/nad/);
+}
+
+/** Plik szablonu z wbudowanymi zasobami (czcionki z projektu) – jak z eksportu z edytora. */
+async function plikSzablonuZZasobami(): Promise<Plik> {
+  const { projekt, zasoby } = await projektZPakietu(
+    { ...pakietWlasny(SZABLONY), nazwa: 'Źródło', szablony: SZABLONY, talie: [], arkusze: [] },
+    async (f) => new Uint8Array(readFileSync(`public/czcionki/${f}`)),
+    () => Promise.reject(new Error('brak obrazów')),
+    'zrodlo',
+  );
+  const bajty = eksportujSzablon(projekt, zasoby, SZABLONY[0]!.id).bajty;
+  // Kontrola testu: plik naprawdę niesie zasoby.
+  expect(Object.keys(unzipSync(bajty)).some((n) => n.startsWith('zasoby/'))).toBe(true);
+  return {
+    name: 'ze-szablon-zasobami.kartyrpg-szablon',
+    mimeType: 'application/zip',
+    buffer: Buffer.from(bajty),
+  };
 }
 
 const kafelki = (page: Page) => page.locator('.kafelek-projektu');
@@ -103,12 +126,10 @@ test.describe('układ', () => {
 });
 
 test.describe('czcionka tytułu', () => {
-  test('Cinzel Decorative Bold jest załadowana, a preload jest tylko na starcie', async ({
-    page,
-  }) => {
+  test('Cinzel Decorative Bold jest załadowana (bez preloadu – B141)', async ({ page }) => {
     await page.goto('./');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.locator('head link[rel="preload"][as="font"]')).toHaveCount(1);
+    await expect(page.locator('head link[rel="preload"]')).toHaveCount(0);
     await page.evaluate(() => document.fonts.ready);
     await expect
       .poll(() => page.evaluate(() => document.fonts.check('700 40px "Cinzel Decorative"')))
@@ -121,8 +142,6 @@ test.describe('czcionka tytułu', () => {
       () => getComputedStyle(document.querySelector('h1')!).fontFamily,
     );
     expect(rodzina).toContain('Cinzel Decorative');
-    await page.goto('./#/wlasne');
-    await expect(page.locator('head link[rel="preload"][as="font"]')).toHaveCount(0);
   });
 
   test('bez pliku czcionki tytuł pokazuje się czcionką awaryjną (Georgia, serif)', async ({
@@ -210,19 +229,22 @@ test.describe('import plików', () => {
     await page
       .getByTestId('plik-importu')
       .setInputFiles([await plikProjektu(), plikSzablonu(), zepsuty, tekstowy]);
+    // Podsumowanie w stałym regionie status, szczegóły sukcesów w liście bez ról, błędy w jednym alercie.
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Wczytano 2 z 4 plików.' }),
+    ).toBeVisible();
     const wyniki = page.getByRole('list', { name: 'Wyniki importu' });
-    await expect(wyniki.getByRole('status')).toHaveCount(2);
-    await expect(wyniki.getByRole('alert')).toHaveCount(2);
-    await expect(wyniki.getByRole('status').nth(0)).toContainText(
+    await expect(wyniki.getByRole('listitem')).toHaveCount(2);
+    await expect(wyniki.getByRole('listitem').nth(0)).toContainText(
       'Zaimportowano projekt „Mieszane”',
     );
-    await expect(wyniki.getByRole('status').nth(1)).toContainText(
+    await expect(wyniki.getByRole('listitem').nth(1)).toContainText(
       'Utworzono projekt z szablonu „czar.kartyrpg-szablon”',
     );
-    await expect(wyniki.getByRole('alert').nth(0)).toContainText('„zepsuty.kartyrpg”');
-    await expect(wyniki.getByRole('alert').nth(1)).toContainText('„notatki.txt”');
-    await expect(wyniki.getByRole('alert').nth(1)).toContainText('Nie rozpoznano rodzaju pliku');
-    await expect(page.getByText('Wczytano 2 z 4 plików.')).toBeVisible();
+    const alert = page.locator('.panel-importu').getByRole('alert');
+    await expect(alert.locator('p')).toHaveCount(2);
+    await expect(alert).toContainText('„zepsuty.kartyrpg”');
+    await expect(alert).toContainText('„notatki.txt”: Nie rozpoznano rodzaju pliku');
     // Nie przechodzi do edytora; lista odświeżona o oba projekty.
     await expect(page).not.toHaveURL(/#\/projekt\//);
     await expect(kafelki(page)).toHaveCount(2);
@@ -258,11 +280,152 @@ test.describe('import plików', () => {
     await expect(kafelki(page)).toHaveCount(1);
     await page.getByTestId('plik-importu').setInputFiles([await plikProjektu(), plikSzablonu()]);
     await expect(page.getByRole('alertdialog')).toContainText('jest już w tej przeglądarce');
+    // Fokus na bezpiecznej decyzji, nie na „Zastąp”.
+    await expect(page.getByRole('button', { name: 'Anuluj' })).toBeFocused();
     await page.getByRole('button', { name: 'Anuluj' }).click();
     await expect(page.getByText('Pominięto plik „mieszane.kartyrpg”')).toBeVisible();
     await expect(page.getByText('Wczytano 1 z 2 plików.')).toBeVisible();
     await expect(kafelki(page)).toHaveCount(2);
   });
+
+  test('fokus wraca na „Importuj pliki…” po zakończeniu importu', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('plik-importu').setInputFiles(zepsuty);
+    await expect(page.getByRole('alert')).toContainText('„zepsuty.kartyrpg”');
+    await expect(page.getByRole('button', { name: 'Importuj pliki…' })).toBeFocused();
+  });
+
+  test('przyciski nie są wyłączane w trakcie importu (fokus zostaje)', async ({ page }) => {
+    await page.goto('./');
+    const przycisk = page.getByRole('button', { name: 'Importuj pliki…' });
+    await expect(przycisk).toBeEnabled();
+    await expect(page.getByTestId('strefa-importu')).toBeEnabled();
+    await expect(page.getByTestId('strefa-importu')).toHaveAccessibleName(
+      'Wybierz pliki do zaimportowania (można też upuścić je tutaj)',
+    );
+  });
+
+  test('upuszczenie pliku poza strefą: domyślna akcja zablokowana, nic się nie dzieje', async ({
+    page,
+  }) => {
+    await page.goto('./');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    const adres = page.url();
+    const wynik = await page.evaluate(() => {
+      const d = new DataTransfer();
+      d.items.add(new File(['x'], 'x.kartyrpg'));
+      const zdarzenie = (typ: string) =>
+        new DragEvent(typ, { dataTransfer: d, bubbles: true, cancelable: true });
+      const nad = zdarzenie('dragover');
+      document.querySelector('h1')!.dispatchEvent(nad);
+      const upusc = zdarzenie('drop');
+      document.querySelector('h1')!.dispatchEvent(upusc);
+      return { nad: nad.defaultPrevented, efekt: d.dropEffect, upusc: upusc.defaultPrevented };
+    });
+    expect(wynik).toEqual({ nad: true, efekt: 'none', upusc: true });
+    expect(page.url()).toBe(adres);
+    await expect(page.getByRole('alert')).toHaveText('');
+    await expect(
+      page.getByRole('status').filter({ hasText: /Zaimportowano|Wczytano/ }),
+    ).toHaveCount(0);
+    await expect(kafelki(page)).toHaveCount(0);
+  });
+
+  test('nieznane rozszerzenie bez ZIP-a: błąd, a ZIP bez rozszerzenia jest rozpoznany po zawartości', async ({
+    page,
+  }) => {
+    await page.goto('./');
+    const projekt = await plikProjektu();
+    await page.getByTestId('plik-importu').setInputFiles({ ...projekt, name: 'bez-rozszerzenia' });
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Zaimportowano projekt' }),
+    ).toBeVisible();
+    await expect(kafelki(page)).toHaveCount(1);
+    await page.getByTestId('plik-importu').setInputFiles(tekstowy);
+    await expect(page.getByRole('alert')).toContainText('Nie rozpoznano rodzaju pliku');
+  });
+
+  test('szablon zapisany pod nazwą .kartyrpg jest rozpoznany po zawartości', async ({ page }) => {
+    await page.goto('./');
+    await page
+      .getByTestId('plik-importu')
+      .setInputFiles({ ...plikSzablonu(), name: 'to-szablon.kartyrpg' });
+    await expect(page).toHaveURL(/#\/projekt\//);
+  });
+
+  test('plik za duży i „katalog” (błąd odczytu): osobne komunikaty', async ({ page }) => {
+    await page.addInitScript(() => {
+      const rozmiar = Object.getOwnPropertyDescriptor(Blob.prototype, 'size')!;
+      Object.defineProperty(Blob.prototype, 'size', {
+        get() {
+          return (this as File).name === 'ogromny.kartyrpg'
+            ? 600 * 1024 * 1024
+            : rozmiar.get!.call(this);
+        },
+      });
+      const odczyt = Blob.prototype.arrayBuffer;
+      Blob.prototype.arrayBuffer = function () {
+        if ((this as File).name === 'folder.kartyrpg')
+          return Promise.reject(new DOMException('katalog', 'NotFoundError'));
+        return odczyt.call(this);
+      };
+    });
+    await page.goto('./');
+    const maly = { mimeType: 'application/zip', buffer: Buffer.from('x') };
+    await page.getByTestId('plik-importu').setInputFiles([
+      { name: 'ogromny.kartyrpg', ...maly },
+      { name: 'folder.kartyrpg', ...maly },
+    ]);
+    const alert = page.getByRole('alert');
+    await expect(alert).toContainText(
+      '„ogromny.kartyrpg”: Plik jest za duży (600 MB, limit 500 MB).',
+    );
+    await expect(alert).toContainText('„folder.kartyrpg”: Nie można odczytać pliku');
+    await expect(page.getByText('Wczytano 0 z 2 plików.')).toBeVisible();
+  });
+
+  test('szablon z wbudowanymi zasobami (czcionkami) importuje się i otwiera w edytorze', async ({
+    page,
+  }) => {
+    await page.goto('./');
+    await page.getByTestId('plik-importu').setInputFiles(await plikSzablonuZZasobami());
+    await expect(page).toHaveURL(/#\/projekt\//);
+    await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+});
+
+test.describe('przełącznik w pasku', () => {
+  for (const motyw of ['light', 'dark'] as const) {
+    test(`aktywny przycisk pod kursorem zachowuje tło i czytelną ikonę (${motyw})`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: motyw });
+      await page.goto('./');
+      const aktywny = page.getByRole('button', { name: 'PL', exact: true });
+      await expect(aktywny).toHaveAttribute('aria-pressed', 'true');
+      await aktywny.hover();
+      const kolory = await page.evaluate(() => {
+        const korzen = getComputedStyle(document.documentElement);
+        const przycisk = document.querySelector<HTMLElement>(".seg button[aria-pressed='true']")!;
+        const stan = getComputedStyle(przycisk);
+        return {
+          tlo: stan.backgroundColor,
+          tekst: stan.color,
+          oczekiwaneTlo: korzen.getPropertyValue('--pasek-tekst').trim(),
+          oczekiwanyTekst: korzen.getPropertyValue('--pasek').trim(),
+        };
+      });
+      const rgb = (hex: string) => {
+        const pelny =
+          hex.length === 4 ? hex.replace(/[0-9a-f]/gi, (c) => c + c).slice(1) : hex.slice(1);
+        const n = parseInt(pelny, 16);
+        return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})`;
+      };
+      expect(kolory.tlo).toBe(rgb(kolory.oczekiwaneTlo));
+      expect(kolory.tekst).toBe(rgb(kolory.oczekiwanyTekst));
+    });
+  }
 });
 
 test.describe('zrzuty UI-3', () => {

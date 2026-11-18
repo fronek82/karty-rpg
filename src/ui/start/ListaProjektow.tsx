@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
 import type { PodsumowanieProjektu } from '../../dane/baza';
 import { BladDanych } from '../../dane/schemat';
@@ -24,12 +24,17 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   const [trwa, ustawTrwa] = useState(false);
   const [doUsuniecia, ustawDoUsuniecia] = useState<PodsumowanieProjektu>();
 
+  // Numer odczytu: wynik starszego, wolniejszego odczytu nie nadpisuje nowszego.
+  const odczyt = useRef(0);
+
   const odswiez = useCallback(() => {
+    const numer = ++odczyt.current;
     // Zapis zamkniętego właśnie projektu jest asynchroniczny – lista czeka na niego.
     poOstatnimZapisie()
       .then(() => Promise.all([baza().lista(), baza().miniatury()]))
       .then(
         ([l, m]) => {
+          if (numer !== odczyt.current) return;
           ustawListe(l);
           ustawMiniatury(m);
         },

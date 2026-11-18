@@ -150,7 +150,8 @@ a:hover {
   background: color-mix(in srgb, black 22%, var(--pasek));
 }
 
-.seg button[aria-pressed='true'] {
+.seg button[aria-pressed='true'],
+.seg button[aria-pressed='true']:hover:not(:disabled) {
   background: var(--pasek-tekst);
   color: var(--pasek);
 }
@@ -550,8 +551,19 @@ button.glowny:active:not(:disabled) {
   gap: 0.4rem;
 }
 
-.wyniki-importu p {
-  margin: 0;
+.bledy-importu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bledy-importu p {
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.wyniki-importu li {
   font-size: 0.9rem;
   overflow-wrap: anywhere;
 }

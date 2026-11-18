@@ -5,9 +5,6 @@ import { nazwaGryDo } from '../nazwyPakietu';
 import { ListaProjektow } from './ListaProjektow';
 import { PanelImportu } from './PanelImportu';
 
-/** Czcionka tytułu (Cinzel Decorative Bold, `public/czcionki/`) – ładowana wcześniej tylko na starcie. */
-const CZCIONKA_TYTULU = `${import.meta.env.BASE_URL}czcionki/CinzelDecorative-Bold.ttf`;
-
 /**
  * Ekran startowy: tytuł i opis u góry, pod nimi trzy kolumny – menu „Nowy projekt”,
  * „Moje projekty” i „Import”. Poniżej 900 px kolumny układają się jedna pod drugą w tej kolejności.
@@ -15,16 +12,22 @@ const CZCIONKA_TYTULU = `${import.meta.env.BASE_URL}czcionki/CinzelDecorative-Bo
 export function Start() {
   const [odswiezenie, ustawOdswiezenie] = useState(0);
 
-  // Preload czcionki tytułu tylko na tym ekranie (reszta aplikacji jej nie używa).
+  // Plik upuszczony poza strefą importu nie może zostać otwarty przez przeglądarkę
+  // (zamiast aplikacji pokazałby się plik): blokujemy domyślną akcję, poza strefą kursor „zakaz”.
   useEffect(() => {
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'font';
-    link.type = 'font/ttf';
-    link.crossOrigin = 'anonymous';
-    link.href = CZCIONKA_TYTULU;
-    document.head.appendChild(link);
-    return () => link.remove();
+    const blokuj = (e: DragEvent) => {
+      if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+      const wStrefie = e.target instanceof Element && e.target.closest('.strefa-upuszczania');
+      if (wStrefie) return;
+      e.preventDefault();
+      if (e.type === 'dragover') e.dataTransfer.dropEffect = 'none';
+    };
+    window.addEventListener('dragover', blokuj);
+    window.addEventListener('drop', blokuj);
+    return () => {
+      window.removeEventListener('dragover', blokuj);
+      window.removeEventListener('drop', blokuj);
+    };
   }, []);
 
   return (

@@ -2,6 +2,7 @@ import { strToU8, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import {
   ACCEPT_IMPORTU,
+  jestZip,
   rodzajPoNazwie,
   rodzajPoZawartosci,
   rozpoznajRodzaj,
@@ -46,13 +47,40 @@ describe('rodzajPoZawartosci', () => {
   });
 });
 
+describe('jestZip', () => {
+  it('rozpoznaje nagłówek ZIP (PK, 3, 4)', () => {
+    expect(jestZip(zip('a.txt'))).toBe(true);
+    expect(jestZip(strToU8('PK'))).toBe(false);
+    expect(jestZip(strToU8('zwykły tekst'))).toBe(false);
+  });
+});
+
+describe('rodzajPoZawartosci – limit wpisów', () => {
+  it('zbyt wiele wpisów → undefined', () => {
+    const wpisy = Array.from({ length: 5001 }, (_, i) => `zasoby/${i}.png`);
+    expect(rodzajPoZawartosci(zip('szablon.json', ...wpisy))).toBeUndefined();
+  });
+});
+
 describe('rozpoznajRodzaj', () => {
   it('dla .zip decyduje zawartość, dla pozostałych rozszerzenie', () => {
     expect(rozpoznajRodzaj('a.zip', zip('szablon.json'))).toBe('szablon');
     expect(rozpoznajRodzaj('a.zip', zip('projekt.json'))).toBe('projekt');
     expect(rozpoznajRodzaj('a.zip', zip('x.txt'))).toBeUndefined();
     expect(rozpoznajRodzaj('a.kartyrpg', strToU8('cokolwiek'))).toBe('projekt');
-    expect(rozpoznajRodzaj('a.txt', zip('projekt.json'))).toBeUndefined();
+    expect(rozpoznajRodzaj('a.txt', strToU8('tekst'))).toBeUndefined();
+  });
+
+  it('nieznane rozszerzenie, ale ZIP z projektem lub szablonem → po zawartości', () => {
+    expect(rozpoznajRodzaj('a.txt', zip('projekt.json'))).toBe('projekt');
+    expect(rozpoznajRodzaj('bez-rozszerzenia', zip('szablon.json'))).toBe('szablon');
+  });
+
+  it('zawartość ma pierwszeństwo przed rozszerzeniem (szablon pod nazwą .kartyrpg)', () => {
+    expect(rozpoznajRodzaj('a.kartyrpg', zip('szablon.json'))).toBe('szablon');
+    expect(rozpoznajRodzaj('a.kartyrpg-szablon', zip('projekt.json'))).toBe('projekt');
+    // ZIP bez rozpoznanych wpisów: decyduje rozszerzenie (błąd zgłosi importer).
+    expect(rozpoznajRodzaj('a.kartyrpg', zip('x.txt'))).toBe('projekt');
   });
 
   it('accept pola plików zawiera oba rozszerzenia i zip', () => {
