@@ -164,9 +164,15 @@ export function dodajSzablonZKartka(
   const s = w.projekt.szablony.find((x) => x.id === w.szablonId)!;
   const p: Projekt = {
     ...w.projekt,
-    pakiet: w.projekt.pakiet ?? PAKIET_WLASNY,
-    role: { tytul: RODZINA_DOMYSLNA, tresc: RODZINA_DOMYSLNA, ...w.projekt.role },
+    pakiet: pakietProjektu(projekt) ?? PAKIET_WLASNY,
+    role: czyProjektWlasny(projekt)
+      ? { tytul: RODZINA_DOMYSLNA, tresc: RODZINA_DOMYSLNA, ...w.projekt.role }
+      : w.projekt.role,
   };
+  if (!czyProjektWlasny(p)) {
+    const { projekt } = kartkaDlaSzablonu(p, s.id);
+    return { ...w, projekt, nowaKartka: true };
+  }
   const szablony = new Map(p.szablony.map((x) => [x.id, x]));
   const talia = (a: Projekt['arkusze'][number]) => p.talie.find((x) => x.id === a.taliaId);
   if (
@@ -276,9 +282,11 @@ export function zmienRozmiarSzablonu(p: Projekt, szablonId: string, szer: Mm, wy
   const nowy: Szablon = { ...s, rozmiar: { tryb: 'mm', szerokosc: szer, wysokosc: wys } };
   // Karta, która nie zmieści się na żadnej stronie kartki – zmiana odrzucona (wołający pokazuje komunikat).
   const slot = { szerokosc: szer, wysokosc: wys };
+  const wlasnyProjekt = czyProjektWlasny(p);
   if (
     p.arkusze.some(
       (a) =>
+        (wlasnyProjekt || a.wlasnySzablonId === szablonId) &&
         pasujeDoSlotu(
           s,
           slotKartki(
@@ -305,6 +313,7 @@ export function zmienRozmiarSzablonu(p: Projekt, szablonId: string, szer: Mm, wy
     zmieniono: new Date().toISOString(),
     szablony: p.szablony.map((x) => (x.id === szablonId ? nowy : x)),
     arkusze: p.arkusze.map((a) => {
+      if (!wlasnyProjekt && a.wlasnySzablonId !== szablonId) return a;
       const talia = p.talie.find((x) => x.id === a.taliaId);
       const karty = talia?.karty ?? [];
       const tylkoTen = karty.length > 0 && karty.every((k) => k.szablonId === szablonId);
@@ -336,26 +345,39 @@ export function kartkaDlaSzablonu(
 ): { projekt: Projekt; arkuszId: string } {
   const s = p.szablony.find((x) => x.id === szablonId);
   if (!s) throw new Error(`Brak szablonu „${szablonId}”.`);
+  const wlasnyProjekt = czyProjektWlasny(p);
   const szablony = new Map(p.szablony.map((x) => [x.id, x]));
   const jest = p.arkusze.find((a) =>
-    pasujeDoSlotu(
-      s,
-      slotKartki(
-        a,
-        p.talie.find((x) => x.id === a.taliaId),
-        szablony,
-      ),
-      a.ustawienia.dopasowanie,
-    ),
+    wlasnyProjekt
+      ? pasujeDoSlotu(
+          s,
+          slotKartki(
+            a,
+            p.talie.find((x) => x.id === a.taliaId),
+            szablony,
+          ),
+          a.ustawienia.dopasowanie,
+        )
+      : a.wlasnySzablonId === szablonId,
   );
   if (jest) return { projekt: p, arkuszId: jest.id };
   const wzor = p.arkusze[0]?.ustawienia;
-  return dodajKartke(
+  const w = dodajKartke(
     p,
     { nazwa: s.nazwa, ustawienia: ustawieniaKartkiDla(s, wzor?.papier, wzor?.wymiaryPapieru) },
     s.nazwa,
     false,
   );
+  if (wlasnyProjekt) return w;
+  return {
+    ...w,
+    projekt: {
+      ...w.projekt,
+      arkusze: w.projekt.arkusze.map((a) =>
+        a.id === w.arkuszId ? { ...a, wlasnySzablonId: szablonId } : a,
+      ),
+    },
+  };
 }
 
 /** Projekt własnych kart (bez pakietu gry) – szablony edytuje się w edytorze od zera. */

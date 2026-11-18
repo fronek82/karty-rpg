@@ -1,6 +1,7 @@
 /// <reference types="node" />
 import 'fake-indexeddb/auto';
 import { readFileSync } from 'node:fs';
+import Dexie from 'dexie';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { WERSJA_SCHEMATU, type DaneZasobow, type Projekt } from '../model/projekt';
@@ -31,6 +32,66 @@ beforeAll(async () => {
   ({ projekt, zasoby } = await projektZPakietu(pakietMausritter, czcionka, obraz, 'p1'));
 });
 
+it('aktualizuje bazę IndexedDB 3 i zapisuje oddzielnie metadane oraz paczki', async () => {
+  const nazwa = 'm2c-migracja';
+  const stara = new Dexie(nazwa);
+  stara.version(3).stores({
+    projekty: 'id, zmieniono',
+    zasoby: '[projektId+id], projektId',
+    miniatury: 'id',
+    uklady: 'id, nazwa',
+  });
+  await stara.table('projekty').add({
+    id: projekt.id,
+    zmieniono: projekt.zmieniono,
+    projekt: { ...projekt, wersja: 16 },
+  });
+  await stara.table('miniatury').add({ id: projekt.id, svg: '<svg/>' });
+  await stara.table('zasoby').bulkAdd(
+    [...zasoby].map(([id, bajty]) => ({
+      projektId: projekt.id,
+      id,
+      dane: new Blob([bajty as Uint8Array<ArrayBuffer>]),
+    })),
+  );
+  const uklad = {
+    id: 'stary',
+    nazwa: 'Stary układ',
+    papier: 'A4',
+    orientacja: 'pionowa',
+    slot: { szerokosc: 63, wysokosc: 88 },
+    uklad: {
+      kolumny: 3,
+      rzedy: 3,
+      gora: 10,
+      lewo: 10,
+      odstepPoziomy: 2,
+      odstepPionowy: 2,
+      linieCiecia: false,
+    },
+  };
+  await stara.table('uklady').add(uklad);
+  stara.close();
+
+  const nowa = new BazaProjektow(nazwa);
+  expect(await nowa.istnieje(projekt.id)).toBe(true);
+  const odczyt = await nowa.wczytaj(projekt.id);
+  expect(odczyt.projekt).toEqual(projekt);
+  expect(odczyt.zasoby).toEqual(zasoby);
+  expect(await nowa.miniatury()).toEqual(new Map([[projekt.id, '<svg/>']]));
+  expect(await nowa.uklady()).toEqual([uklad]);
+  expect(await nowa.bibliotekaGlobalna('szablon')).toEqual([]);
+  const bajty = eksportujSzablon(projekt, zasoby, projekt.szablony[0]!.id).bajty;
+  await nowa.zapiszWBibliotece('szablon', 'Szablon', bajty);
+  const [wpis] = await nowa.bibliotekaGlobalna('szablon');
+  expect(wpis).toEqual({ id: expect.any(String), rodzaj: 'szablon', nazwa: 'Szablon' });
+  expect(await nowa.bibliotekaGlobalna('ozdobnik')).toEqual([]);
+  expect(await nowa.odczytajZBiblioteki(wpis!.id)).toEqual(bajty);
+  await nowa.usunZBiblioteki(wpis!.id);
+  expect(await nowa.bibliotekaGlobalna('szablon')).toEqual([]);
+  await expect(nowa.odczytajZBiblioteki(wpis!.id)).rejects.toThrow(BladDanych);
+});
+
 const rowne = (a: DaneZasobow, b: DaneZasobow) => {
   expect([...b.keys()].sort()).toEqual([...a.keys()].sort());
   for (const [id, dane] of a) expect(Buffer.from(b.get(id)!).equals(Buffer.from(dane))).toBe(true);
@@ -51,6 +112,14 @@ describe('projekt z pakietu', () => {
 });
 
 describe('eksport i import .kartyrpg', () => {
+  it('migruje projekt 16 do wersji 17 i zachowuje dotychczasowe arkusze pakietu', () => {
+    const stary = { ...projekt, wersja: 16 };
+    const wczytany = importujProjekt(eksportujProjekt(stary, zasoby)).projekt;
+    expect(wczytany).toEqual({ ...projekt, wersja: 17 });
+    expect(wczytany.arkusze).toEqual(stary.arkusze);
+    expect(migruj({ wersja: 16 }, 'szablon', 17)).toEqual({ wersja: 17 });
+  });
+
   it('round-trip: projekt i bajty zasobów identyczne', () => {
     const bajty = eksportujProjekt(projekt, zasoby);
     const wynik = importujProjekt(bajty);

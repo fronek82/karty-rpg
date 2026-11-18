@@ -5,6 +5,7 @@ import { rozpoznajRodzaj } from './importPlikow';
 import { KAFELKI_SZABLONOW } from '../../przyklady';
 import type { OpisPrzykladu } from '../../przyklady/typy';
 import { nowyProjektZPrzykladu } from '../baza';
+import { BibliotekaGlobalna } from '../biblioteka/BibliotekaGlobalna';
 import { adresProjektu, importujPlikSzablonu, opisBleduImportu } from './importSzablonu';
 import {
   ponowPodgladyPrzykladow,
@@ -103,7 +104,7 @@ export function WlasneKarty() {
     zadanie: () => Promise<{ id: string } | { blad: string }>,
     zrodlo: HTMLElement | null,
   ) => {
-    if (wToku.current) return;
+    if (wToku.current) return false;
     wToku.current = true;
     ustawTrwa(true);
     ustawBlad(undefined);
@@ -116,15 +117,16 @@ export function WlasneKarty() {
     } catch (e) {
       komunikat = e instanceof Error ? e.message : String(e);
     }
-    if (!zamontowany.current) return;
+    if (!zamontowany.current) return false;
     if (komunikat === undefined) {
       window.location.hash = adresProjektu(id);
-      return;
+      return true;
     }
     fokusPo.current = zrodlo;
     ustawBlad(komunikat);
     wToku.current = false;
     ustawTrwa(false);
+    return false;
   };
 
   const utworz = (opis: OpisPrzykladu, el: HTMLElement) =>
@@ -194,6 +196,11 @@ export function WlasneKarty() {
               e.target.value = '';
               if (f) importuj(f);
             }}
+          />
+          <BibliotekaGlobalna
+            rodzaj="szablon"
+            zablokowana={trwa}
+            dodaj={(bajty, przycisk) => wykonaj(() => importujPlikSzablonu(bajty), przycisk)}
           />
         </nav>
 

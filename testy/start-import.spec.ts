@@ -177,27 +177,23 @@ test.describe('tytuł po angielsku', () => {
 
 test.describe('import plików', () => {
   test('„Importuj pliki…” otwiera wybór wielu plików z klawiatury', async ({ page }) => {
+    const wybor = page.waitForEvent('filechooser');
     await page.goto('./');
     const przycisk = page.getByRole('button', { name: 'Importuj pliki…' });
     await przycisk.focus();
     await expect(przycisk).toBeFocused();
-    const [wybor] = await Promise.all([
-      page.waitForEvent('filechooser'),
-      page.keyboard.press('Enter'),
-    ]);
-    expect(wybor.isMultiple()).toBe(true);
+    await page.keyboard.press('Enter');
+    expect((await wybor).isMultiple()).toBe(true);
   });
 
   test('strefa upuszczania otwiera wybór wielu plików z klawiatury', async ({ page }) => {
+    const wybor = page.waitForEvent('filechooser');
     await page.goto('./');
     const strefa = page.getByTestId('strefa-importu');
     await strefa.focus();
     await expect(strefa).toBeFocused();
-    const [wybor] = await Promise.all([
-      page.waitForEvent('filechooser'),
-      page.keyboard.press('Enter'),
-    ]);
-    expect(wybor.isMultiple()).toBe(true);
+    await page.keyboard.press('Enter');
+    expect((await wybor).isMultiple()).toBe(true);
   });
 
   test('plik .kartyrpg: komunikat, projekt na liście', async ({ page }) => {

@@ -256,6 +256,8 @@ export interface Arkusz {
   id: string;
   nazwa: string;
   taliaId: string;
+  /** W projekcie pakietowym osobna kartka korzysta z własnego szablonu. */
+  wlasnySzablonId?: string;
   /** Najmniejsza liczba stron (strony mogą być puste – edytor kartki). */
   liczbaStron?: number;
   /** Ręczne nagłówki grup (zamiast automatycznych grup talii). */

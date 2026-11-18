@@ -1,5 +1,11 @@
 import { formatObrazu } from '../dane/czcionki';
-import { macierzOrientacji, orientacjaExif, wymiaryJpeg, wymiaryPoObrocie } from '../dane/obrazy';
+import {
+  MAKS_PIKSELI,
+  macierzOrientacji,
+  orientacjaExif,
+  wymiaryJpeg,
+  wymiaryPoObrocie,
+} from '../dane/obrazy';
 import { BladDanych } from '../dane/schemat';
 import { t } from '../i18n';
 
@@ -9,9 +15,6 @@ export interface PrzygotowanyObraz {
   szerokosc: number;
   wysokosc: number;
 }
-
-/** Bezpieczny limit powierzchni kanwy (Safari na iOS: ~16,7 Mpx). */
-const MAKS_PIKSELI = 16_000_000;
 
 /** Współczynnik zmniejszenia (≤ 1), by obraz mieścił się w limicie powierzchni kanwy. */
 export const wspolczynnikSkali = (szer: number, wys: number, maks = MAKS_PIKSELI): number =>

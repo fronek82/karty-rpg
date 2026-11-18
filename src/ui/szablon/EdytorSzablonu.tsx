@@ -28,7 +28,7 @@ import {
   znajdzWezel,
   type RodzajNowego,
 } from '../../dane/szablon';
-import { kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty';
+import { czyProjektWlasny, kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty';
 import { rozwinOdstepy, wymiaryKarty } from '../../model/szablon';
 import { roleProjektu } from '../../dane/edycja';
 import { ElementyWlasneKontekst } from './elementyWlasne';
@@ -558,7 +558,9 @@ export function EdytorSzablonu({
                   n === 1 ? t('szablon.kopia') : t('szablon.kopiaNumer', { n }),
                 );
                 id = kopia.id;
-                return kopia.projekt;
+                return czyProjektWlasny(p)
+                  ? kopia.projekt
+                  : kartkaDlaSzablonu(kopia.projekt, id).projekt;
               });
               ustawIdKopii(id);
             }}

@@ -1605,7 +1605,19 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 }
 .akcje-szablonu {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.3rem;
+}
+.biblioteka-globalna {
+  margin-block: 0.7rem;
+}
+.biblioteka-globalna > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.biblioteka-globalna > .lista-szablonow {
+  margin-block-start: 0.6rem;
+  overflow-wrap: anywhere;
 }
 .dwa-pola {
   display: grid;

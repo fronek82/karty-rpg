@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { dodajOzdobnikZPaczki, eksportujOzdobnik } from '../../dane/archiwum';
 import { dodajZasoby } from '../../dane/edycja';
 import { MAKS_BAJTOW_OBRAZU, opisObrazu } from '../../dane/obrazy';
 import {
@@ -14,6 +15,8 @@ import {
 } from '../../dane/biblioteka';
 import { formatujLiczbe, t, tn, type KluczTekstu } from '../../i18n';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
+import { zapiszOzdobnikWBibliotece } from '../baza';
+import { opisBleduImportu } from '../start/importSzablonu';
 import {
   ELEMENTY_WBUDOWANE,
   BladImportuSvg,
@@ -31,6 +34,7 @@ import { nazwaElementu } from '../szablon/PanelWygladu';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
 import { przygotujObraz } from '../obrazy';
 import { EdytorRamki9 } from './EdytorRamki9';
+import { BibliotekaGlobalna } from './BibliotekaGlobalna';
 import { KOLOR_PODGLADU, podgladElementu } from './podgladElementu';
 
 /** Rodzaje, w których można użyć własnego elementu z SVG. */
@@ -133,6 +137,32 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
   const idProjektu = encodeURIComponent(projekt.id);
   const czcionki = edycja.zasoby.zasoby.czcionki;
   const element = wlasne.find((e) => e.id === wybrany);
+
+  const zapiszGlobalnie = async (id: string) => {
+    ustawBlad(undefined);
+    ustawStatus('');
+    try {
+      const bajty = eksportujOzdobnik(projekt, edycja.dane, id);
+      const nazwa = await zapiszOzdobnikWBibliotece(bajty);
+      ustawStatus(t('globalna.zapisano', { nazwa }));
+    } catch (e) {
+      ustawBlad(opisBleduImportu(e));
+    }
+  };
+
+  const dodajGlobalnie = async (bajty: Uint8Array) => {
+    let id = '';
+    await edycja.zmienZZasobami((p, d) => {
+      const wynik = dodajOzdobnikZPaczki(p, d, bajty);
+      id = wynik.id;
+      return wynik;
+    });
+    if (id) {
+      ustawWybrany(id);
+      ustawWczytany(undefined);
+      ustawUsuwanie(false);
+    }
+  };
 
   const importuj = async (f: File) => {
     ustawBlad(undefined);
@@ -349,6 +379,7 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
             ))}
           </ul>
           <p className="podpis">{t('biblioteka.objasnienie')}</p>
+          <BibliotekaGlobalna rodzaj="ozdobnik" dodaj={dodajGlobalnie} />
         </aside>
         <section className="panel-importu" aria-live="polite">
           {blad && (
@@ -510,6 +541,13 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
                 </p>
               )}
               <div className="akcje-importu">
+                <button
+                  type="button"
+                  aria-label={t('globalna.zapiszEtykieta', { nazwa: nazwaElementu(element) })}
+                  onClick={() => void zapiszGlobalnie(element.id)}
+                >
+                  {t('globalna.zapisz')}
+                </button>
                 <button
                   type="button"
                   className="niebezpieczny"

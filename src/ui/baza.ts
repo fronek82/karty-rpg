@@ -1,4 +1,6 @@
 import { BazaProjektow } from '../dane/baza';
+import { BladDanych } from '../dane/schemat';
+import { t } from '../i18n';
 import type { Pakiet } from '../pakiety/typy';
 
 let instancja: BazaProjektow | undefined;
@@ -7,6 +9,22 @@ let instancja: BazaProjektow | undefined;
 export function baza(): BazaProjektow {
   instancja ??= new BazaProjektow();
   return instancja;
+}
+
+/** Sprawdza dekodowanie obrazu ramki przed zapisaniem pliku w katalogu globalnym. */
+export async function zapiszOzdobnikWBibliotece(bajty: Uint8Array) {
+  const { importujOzdobnik } = await import('../dane/archiwum');
+  const { element, zasoby, dane } = importujOzdobnik(bajty);
+  const opis = zasoby[0];
+  if (opis?.rodzaj === 'obraz') {
+    const { przygotujObraz } = await import('./obrazy');
+    const wynik = await przygotujObraz(dane.get(opis.id)!);
+    if (wynik.szerokosc !== opis.szerokosc || wynik.wysokosc !== opis.wysokosc)
+      throw new BladDanych(t('globalna.zlyObraz', { id: opis.id }));
+  }
+  const nazwa = element.nazwa ?? element.id;
+  await baza().zapiszWBibliotece('ozdobnik', nazwa, bajty);
+  return nazwa;
 }
 
 async function pobierz(adres: string): Promise<Uint8Array> {

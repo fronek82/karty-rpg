@@ -1,6 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
 import {
+  kartkaDlaSzablonu,
   opisRozmiaruSzablonu,
   PAKIET_WLASNY,
   pakietWlasny,
@@ -221,12 +222,15 @@ export function EdytorKartki({
   // Projekt bez pakietu gry (własne karty): typy kart z szablonów projektu.
   const bezGry = idPakietu === undefined || idPakietu === PAKIET_WLASNY;
   const szablonyProjektu = projekt.szablony;
+  const maWlasneKartki = projekt.arkusze.some((a) => a.wlasnySzablonId);
   const pakietZSzablonow = useMemo(
-    () => (bezGry ? pakietWlasny(szablonyProjektu) : undefined),
+    () => (bezGry || maWlasneKartki ? pakietWlasny(szablonyProjektu) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- opisy rozmiarów zależą od języka
-    [bezGry, szablonyProjektu, jezykUi],
+    [bezGry, maWlasneKartki, szablonyProjektu, jezykUi],
   );
-  const pakiet = pakietGry ?? pakietZSzablonow;
+  const pakiet = bezGry ? pakietZSzablonow : pakietGry;
+  const pakietDlaKartki = (a: Arkusz | undefined) =>
+    a?.wlasnySzablonId ? pakietZSzablonow : pakiet;
   const zasoby = useZSzarymiObrazami(edycja.zasoby.zasoby, projekt);
   const [zazn, ustawZaznSurowe] = useState<Zaznaczenie>();
   const [menu, ustawMenu] = useState<{ arkuszId: string } & Polozenie>();
@@ -359,6 +363,8 @@ export function EdytorKartki({
       for (const a of projekt.arkusze) m.set(a.id, kartyKartki(projekt, a.id, zasoby.szablony));
     return m;
   }, [projekt, zasoby]);
+  // Cofnięcie usuwa kartkę z dokumentu przed odświeżeniem odroczonych scen.
+  const aktualneKartki = kartki.filter((k) => kartyNaKartkach.has(k.arkusz.id));
 
   const zaznaczoneKarty = useMemo(() => {
     if (zazn?.rodzaj !== 'karty') return [];
@@ -959,7 +965,9 @@ export function EdytorKartki({
   const nastepnyRozmiar = (() => {
     const jedna = aktywne?.rodzaj === 'karty' && zaznaczoneKarty.length === 1 && zaznaczoneKarty[0];
     if (!jedna) return undefined;
-    const rozmiary = typDlaSzablonu(pakiet, jedna.karta.szablonId)?.typ.rozmiary ?? [];
+    const arkusz = projekt.arkusze.find((a) => a.id === aktywne.arkuszId);
+    const rozmiary =
+      typDlaSzablonu(pakietDlaKartki(arkusz), jedna.karta.szablonId)?.typ.rozmiary ?? [];
     const ctx = kontekst(aktywne.arkuszId);
     if (rozmiary.length < 2 || !ctx) return undefined;
     const mozliwe = mozliweRozmiary(projekt, aktywne.arkuszId, jedna.karta.id, rozmiary, ctx);
@@ -1103,6 +1111,12 @@ export function EdytorKartki({
   const nowaKartkaDlaSzablonu = (szablonId: string) => {
     const s = projekt.szablony.find((x) => x.id === szablonId);
     if (!s) return;
+    if (!bezGry) {
+      const w = kartkaDlaSzablonu(projekt, szablonId);
+      if (w.projekt !== projekt) zmien((p) => kartkaDlaSzablonu(p, szablonId).projekt);
+      ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
+      return;
+    }
     const papier = arkuszZazn?.ustawienia;
     const wzor = {
       nazwa: s.nazwa,
@@ -1155,12 +1169,13 @@ export function EdytorKartki({
         edycja={edycja}
         arkusz={arkuszZazn}
         karty={zaznaczoneKarty}
-        pakiet={pakiet}
+        pakiet={pakietDlaKartki(arkuszZazn)}
         ctx={ctx}
         duplikuj={duplikuj}
         usun={usunZaznaczone}
         zamknij={() => ustawZazn(undefined)}
-        {...(bezGry && zaznaczoneKarty[0]
+        {...((bezGry || arkuszZazn.wlasnySzablonId === zaznaczoneKarty[0]?.karta.szablonId) &&
+        zaznaczoneKarty[0]
           ? {
               edytujSzablon: `#/projekt/${encodeURIComponent(projekt.id)}/szablon/${encodeURIComponent(zaznaczoneKarty[0].karta.szablonId)}`,
             }
@@ -1262,7 +1277,7 @@ export function EdytorKartki({
         naKartce={naKartce(arkuszZazn)}
         {...(bladUkladu ? { blad: bladUkladu } : {})}
         {...(nowaKartka ? { nowaKartka } : {})}
-        {...(bezGry ? { kartkaDlaSzablonu: nowaKartkaDlaSzablonu } : {})}
+        kartkaDlaSzablonu={nowaKartkaDlaSzablonu}
         zamknij={zamknijUstawienia}
       />
     );
@@ -1465,12 +1480,12 @@ export function EdytorKartki({
               )}
             </p>
           )}
-          {kartki.map((k) => (
+          {aktualneKartki.map((k) => (
             <WidokKartki
               key={k.arkusz.id}
               szablony={zasoby?.szablony}
               k={k}
-              wiele={kartki.length > 1}
+              wiele={aktualneKartki.length > 1}
               karty={kartyNaKartkach.get(k.arkusz.id) ?? []}
               liczbaStron={
                 czyMieszane(k.arkusz)
@@ -1480,7 +1495,13 @@ export function EdytorKartki({
               zazn={aktywne}
               gest={gest}
               menu={menu?.arkuszId === k.arkusz.id ? menu : undefined}
-              typy={pakiet?.typyKart ?? []}
+              typy={
+                k.arkusz.wlasnySzablonId
+                  ? (pakietZSzablonow?.typyKart.filter(
+                      (typ) => typ.id === k.arkusz.wlasnySzablonId,
+                    ) ?? [])
+                  : (pakiet?.typyKart ?? [])
+              }
               uwaga={(typ) => {
                 // Mieszane: typ, który nie zmieści się w klikniętym wolnym miejscu (nadal klikalny).
                 const w = menu?.arkuszId === k.arkusz.id && k.wynik?.mieszane?.wolne[menu.kolumna];
@@ -1499,7 +1520,7 @@ export function EdytorKartki({
                 // Własne karty: jedna kartka = jeden rozmiar karty.
                 const slotK = k.wynik?.slot ?? k.arkusz.ustawienia.slot;
                 if (
-                  bezGry &&
+                  (bezGry || k.arkusz.wlasnySzablonId) &&
                   s &&
                   slotK &&
                   !pasujeDoSlotu(s, slotK, k.arkusz.ustawienia.dopasowanie)
