@@ -61,7 +61,7 @@ describe('podglądy ekranu gry', () => {
 
   it('SVG podglądu układu = scena z zbudujArkusz → scenaDoSvg dla kartki z nowego projektu', async () => {
     const podglady = liczWszystkie();
-    for (const u of pakietMausritter.gotoweUklady) {
+    for (const [indeks, u] of pakietMausritter.gotoweUklady.entries()) {
       // Projekt tak, jak powstaje po kliknięciu (z normalizacją kartki do przypiętych kart).
       const { projekt: nowy } = await nowyProjektGry(
         pakietMausritter,
@@ -81,7 +81,7 @@ describe('podglądy ekranu gry', () => {
           obraz: (id) => wspolne.obrazy.get(id)?.info,
         });
         return scenaDoSvg(w.strony[0]!, {
-          przedrostekId: `pg-${u.id}-${u.arkusze[nowy.arkusze.indexOf(a)]}-`,
+          przedrostekId: `pg${indeks + 1}k${nowy.arkusze.indexOf(a)}-`,
           adresObrazu: (id) => wspolne.obrazy.get(id)?.adres,
           atrybuty: { 'aria-hidden': 'true', focusable: 'false' },
         });
@@ -123,5 +123,55 @@ describe('podglądy ekranu gry', () => {
     const en = liczWszystkie().get('stany')!.strony[0]!.svg;
     expect(en).not.toBe(pl);
     expect(en).not.toContain('NaN');
+  });
+
+  it('pusta kartka = kartka projektu bez układu (SVG ten sam, co po kliknięciu)', async () => {
+    const { projekt: nowy } = await nowyProjektGry(
+      pakietMausritter,
+      (plik) => czytaj(`public/czcionki/${plik}`),
+      czytaj,
+      { id: 'x' },
+    );
+    const wspolne = zasoby.zRolami(nowy.role, nowy.szablony).zasoby;
+    const w = zbudujArkusz(nowy.arkusze[0]!, nowy.talie[0]!, {
+      czcionki: wspolne.czcionki,
+      szablony: wspolne.szablony,
+      obraz: (id) => wspolne.obrazy.get(id)?.info,
+    });
+    const svg = scenaDoSvg(w.strony[0]!, {
+      przedrostekId: 'pg0k0-',
+      adresObrazu: (id) => wspolne.obrazy.get(id)?.adres,
+      atrybuty: { 'aria-hidden': 'true', focusable: 'false' },
+    });
+    expect(liczWszystkie().get(ID_PUSTEJ)!.strony[0]!.svg).toBe(svg);
+  });
+
+  it('układ bez kartek daje błąd kroku, nie pusty podgląd', () => {
+    const pakiet = {
+      ...pakietMausritter,
+      gotoweUklady: [{ id: 'pusty', nazwa: 'Pusty', arkusze: [] }],
+    };
+    const krok = krokiPodgladow(pakiet, lokalizowanyProjekt(projekt, pakiet), zasoby).find(
+      (k) => k.id === 'pusty',
+    )!;
+    expect(() => krok.licz()).toThrow(/nie ma żadnej kartki/);
+  });
+
+  it('identyfikatory SVG są unikalne także przy id układów typu a-b+c i a+b-c', () => {
+    const arkusz = pakietMausritter.gotoweUklady[0]!.arkusze;
+    const pakiet = {
+      ...pakietMausritter,
+      gotoweUklady: ['a-b+c', 'a+b-c', 'a', 'b-c', 'a-b'].map((id) => ({
+        id,
+        nazwa: id,
+        arkusze: arkusz,
+      })),
+    };
+    const kroki = krokiPodgladow(pakiet, lokalizowanyProjekt(projekt, pakiet), zasoby);
+    const id = kroki.flatMap((k) =>
+      k.licz().strony.flatMap((s) => [...s.svg.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]!)),
+    );
+    expect(id.length).toBeGreaterThan(10);
+    expect(new Set(id).size).toBe(id.length);
   });
 });

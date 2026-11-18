@@ -868,6 +868,9 @@ export const pl = {
   'start.kliknijAbyZaczac': 'Kliknij, aby zacząć',
   'start.podgladLiczy': 'Przygotowuję podgląd…',
   'start.podgladBlad': 'Nie udało się przygotować podglądu ({szczegoly}).',
+  'start.podgladyBladLadowania': 'Nie udało się przygotować podglądów ({szczegoly}).',
+  'start.sprobujPonownie': 'Spróbuj ponownie',
+  'start.ostatnioWybrane': 'ostatnio wybrane',
   'start.wlasneZSzablonu': 'Zacznij od pliku szablonu',
   'start.wlasneZSzablonuOpis':
     'Masz plik szablonu (.kartyrpg-szablon), np. wyeksportowany z innego projektu? Zaimportuj go – powstanie projekt z kartką dopasowaną do rozmiaru karty.',

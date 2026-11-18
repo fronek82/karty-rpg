@@ -32,13 +32,12 @@ test('wejście: okruszki, menu, jeden podgląd pustej kartki i cztery układy z 
 
   const menu = page.getByRole('navigation', { name: 'Od czego zacząć' });
   await expect(menu.getByRole('button', { name: /^Pusta kartka/ })).toHaveAttribute(
-    'aria-pressed',
+    'aria-current',
     'true',
   );
-  await expect(menu.getByRole('button', { name: /^Zacznij od gotowego układu/ })).toHaveAttribute(
-    'aria-pressed',
-    'false',
-  );
+  await expect(
+    menu.getByRole('button', { name: /^Zacznij od gotowego układu/ }),
+  ).not.toHaveAttribute('aria-current', 'true');
   await expect(menu).toContainText('Siatka 10×7 slotów, bez kart');
 
   // Pusta kartka: podgląd z siatką 10×7 narysowaną z geometrii układu.
@@ -79,6 +78,32 @@ test('klik w „Broń i pancerze” tworzy projekt z kartami', async ({ page }) 
   expect(await projektMaKarty(page)).toBeGreaterThan(20);
 });
 
+test('dwuklik w kafelek tworzy jeden projekt', async ({ page }) => {
+  await wejdz(page);
+  await page.getByRole('button', { name: 'Stany', exact: true }).dblclick();
+  expect(await projektMaKarty(page)).toBeGreaterThan(10);
+  await page.waitForTimeout(500);
+  await page.getByRole('link', { name: 'Karty RPG' }).click();
+  await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+});
+
+test('błąd wczytania czcionek: jeden komunikat, szkielety w kafelkach, „Spróbuj ponownie”', async ({
+  page,
+}) => {
+  await page.route('**/czcionki/*', (r) => r.abort());
+  await page.goto('./#/gra/mausritter');
+  await expect(page.locator('[data-podglad]')).toHaveCount(5);
+  const alert = page.getByRole('alert');
+  await expect(alert).toHaveCount(1);
+  await expect(alert).toContainText('Nie udało się przygotować podglądów');
+  await expect(page.locator('.szkielet')).toHaveCount(5);
+  await page.unroute('**/czcionki/*');
+  await alert.getByRole('button', { name: 'Spróbuj ponownie' }).click();
+  await expect(page.locator('.szkielet')).toHaveCount(0, { timeout: 15000 });
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.locator('[data-podglad] .papier-svg svg').first()).toBeVisible();
+});
+
 test('klawiatura: Tab do kafelka i Enter / Spacja tworzy projekt', async ({ page }) => {
   await wejdz(page);
   const stany = page.getByRole('button', { name: 'Stany', exact: true });
@@ -106,8 +131,8 @@ test.describe('skróty w lewym menu', () => {
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
 
     await uklady.click();
-    await expect(uklady).toHaveAttribute('aria-pressed', 'true');
-    await expect(pusta).toHaveAttribute('aria-pressed', 'false');
+    await expect(uklady).toHaveAttribute('aria-current', 'true');
+    await expect(pusta).not.toHaveAttribute('aria-current', 'true');
     await expect(sekcjaUkladow).toHaveClass(/wyrozniona/);
     await expect(page.getByRole('heading', { level: 2, name: /Gotowe układy/ })).toBeFocused();
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(200);
@@ -116,7 +141,7 @@ test.describe('skróty w lewym menu', () => {
 
     await pusta.focus();
     await page.keyboard.press('Enter');
-    await expect(pusta).toHaveAttribute('aria-pressed', 'true');
+    await expect(pusta).toHaveAttribute('aria-current', 'true');
     await expect(page.locator('[data-grupa="pusta"]')).toHaveClass(/wyrozniona/);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(nizej - 100);
     await expect(page.getByRole('heading', { level: 2, name: 'Pusta kartka' })).toBeInViewport();

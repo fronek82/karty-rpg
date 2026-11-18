@@ -628,6 +628,11 @@ button.pasek-menu span {
   font-size: 0.82rem;
 }
 
+/* Opis skrótu pojawia się z podglądem – stała wysokość, żeby menu nie skakało. */
+button.pasek-menu .opis-skrotu {
+  min-height: 1.3em;
+}
+
 button.pasek-menu.pasek-bursztyn {
   background: var(--kolor-2);
   color: var(--na-jasnym);
@@ -648,7 +653,7 @@ button.pasek-menu:active:not(:disabled) {
 }
 
 /* Aktywna grupa: ramka w kolorze tła strony i obrys tekstu (jak na makiecie). */
-button.pasek-menu[aria-pressed='true'] {
+button.pasek-menu[aria-current='true'] {
   box-shadow:
     0 0 0 3px var(--tlo),
     0 0 0 5px var(--tekst);
@@ -746,6 +751,12 @@ button.kafelek-podgladu.szeroki {
   flex-direction: row;
 }
 
+/* Kafelki poza ekranem nie budują układu ani malowania (w każdym zawarty jest duży SVG). */
+.siatka-ukladow > button.kafelek-podgladu {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 17rem;
+}
+
 .miniatura-podgladu {
   display: flex;
   align-items: center;
@@ -785,6 +796,7 @@ button.kafelek-podgladu.szeroki {
 }
 
 .opis-podgladu .opis-tekst {
+  min-height: 2.8em;
   font-size: 0.92rem;
   color: var(--tekst-przygaszony);
 }
@@ -898,6 +910,15 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 @media (prefers-reduced-motion: reduce) {
   .szkielet-papier {
     animation: none;
+  }
+
+  button.pasek-menu,
+  button.kafelek-podgladu {
+    transition: none;
+  }
+
+  button.pasek-menu:active:not(:disabled) {
+    transform: none;
   }
 }
 

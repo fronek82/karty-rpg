@@ -1,15 +1,56 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BladDanych } from '../../dane/schemat';
 import { formatujLiczbe, t } from '../../i18n';
 import { gry } from '../../pakiety/gry';
-import type { Pakiet } from '../../pakiety/typy';
+import type { GotowyUklad, Pakiet } from '../../pakiety/typy';
 import { nowyProjektZPakietu } from '../baza';
 import { atrybucjaPakietu, nazwaGryDo, nazwaUkladu } from '../nazwyPakietu';
 import { ID_PUSTEJ } from './idPodgladow';
-import { usePodglady } from './ladujPodglady';
+import {
+  ponowPodglady,
+  useBladLadowania,
+  useUruchomPodglady,
+  useWynikPodgladu,
+} from './ladujPodglady';
 import { PodgladKartki } from './PodgladKartki';
 
 type Grupa = 'pusta' | 'uklady';
+
+/** Kafelek układu: sam subskrybuje swój podgląd, więc gotowy podgląd nie przerysowuje ekranu. */
+function KafelekUkladu({
+  pakietId,
+  uklad,
+  wylaczony,
+  utworz,
+}: {
+  pakietId: string;
+  uklad: GotowyUklad;
+  wylaczony: boolean;
+  utworz: (uklad: string) => void;
+}) {
+  const wynik = useWynikPodgladu(pakietId, uklad.id);
+  return (
+    <button
+      type="button"
+      className="kafelek-podgladu"
+      data-podglad={uklad.id}
+      aria-labelledby={`uklad-${uklad.id}-nazwa`}
+      aria-describedby={`uklad-${uklad.id}-podpowiedz`}
+      disabled={wylaczony}
+      onClick={() => utworz(uklad.id)}
+    >
+      <span className="miniatura-podgladu">
+        <PodgladKartki wynik={wynik} stos={uklad.arkusze.length > 1} />
+      </span>
+      <span className="opis-podgladu">
+        <b id={`uklad-${uklad.id}-nazwa`}>{nazwaUkladu(uklad)}</b>
+        <span id={`uklad-${uklad.id}-podpowiedz`} className="podpowiedz">
+          {t('start.kliknijAbyZaczac')}
+        </span>
+      </span>
+    </button>
+  );
+}
 
 /**
  * Drugi ekran gry: lewe menu to skróty do dwóch grup w środku – „Pusta kartka” (podgląd kartki
@@ -21,8 +62,13 @@ export function WyborGry({ id }: { id: string }) {
   const [pakiet, ustawPakiet] = useState<Pakiet>();
   const [blad, ustawBlad] = useState<string>();
   const [trwa, ustawTrwa] = useState(false);
+  // Ostatnio wybrana grupa (aria-current); położenie przewijania jej nie zmienia (B146).
   const [aktywna, ustawAktywna] = useState<Grupa>('pusta');
-  const podglad = usePodglady(pakiet);
+  // Ref chroni przed podwójnym kliknięciem w tym samym renderze (stan `trwa` bywa spóźniony).
+  const wToku = useRef(false);
+  useUruchomPodglady(pakiet);
+  const pusta = useWynikPodgladu(pakiet?.id, ID_PUSTEJ);
+  const bladPodgladow = useBladLadowania(pakiet?.id);
   useEffect(() => {
     let aktywny = true;
     void gra?.pakiet?.().then(
@@ -48,7 +94,8 @@ export function WyborGry({ id }: { id: string }) {
   }
 
   const utworz = async (uklad?: string) => {
-    if (!pakiet) return;
+    if (!pakiet || wToku.current) return;
+    wToku.current = true;
     ustawTrwa(true);
     ustawBlad(undefined);
     try {
@@ -56,6 +103,7 @@ export function WyborGry({ id }: { id: string }) {
       window.location.hash = `#/projekt/${encodeURIComponent(idProjektu)}`;
     } catch (e) {
       ustawBlad(e instanceof BladDanych ? e.message : String(e instanceof Error ? e.message : e));
+      wToku.current = false;
       ustawTrwa(false);
     }
   };
@@ -63,21 +111,15 @@ export function WyborGry({ id }: { id: string }) {
   // Skrót w menu: podświetla grupę, przewija do niej i przenosi fokus na jej nagłówek.
   const idz = (g: Grupa) => {
     ustawAktywna(g);
-    const naglowek = document.getElementById(`grupa-${g}`);
-    if (!naglowek) return;
+    const sekcja = document.querySelector<HTMLElement>(`[data-grupa="${g}"]`);
+    if (!sekcja) return;
     const spokojnie = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    naglowek.closest('section')?.scrollIntoView?.({
-      behavior: spokojnie ? 'auto' : 'smooth',
-      block: 'start',
-    });
-    naglowek.focus({ preventScroll: true });
+    sekcja.scrollIntoView?.({ behavior: spokojnie ? 'auto' : 'smooth', block: 'start' });
+    sekcja.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
   };
 
-  const pusta = podglad(ID_PUSTEJ);
   const siatkaPustej = pusta && 'podglad' in pusta ? pusta.podglad.strony[0]?.siatka : undefined;
-  const parametrySiatki = siatkaPustej
-    ? { kolumny: siatkaPustej.kolumny, rzedy: siatkaPustej.rzedy }
-    : undefined;
+  const wylaczone = !pakiet || trwa;
 
   return (
     <section className="wybor-gry">
@@ -94,20 +136,43 @@ export function WyborGry({ id }: { id: string }) {
           <button
             type="button"
             className="pasek-menu pasek-bursztyn"
-            aria-pressed={aktywna === 'pusta'}
+            aria-current={aktywna === 'pusta' ? 'true' : undefined}
+            aria-labelledby="skrot-pusta-nazwa"
+            aria-describedby={`skrot-pusta-opis${aktywna === 'pusta' ? ' skrot-pusta-stan' : ''}`}
             onClick={() => idz('pusta')}
           >
-            <b>{t('start.pustaKartka')}</b>
-            <span>{parametrySiatki ? t('start.pustaKartkaOpis', parametrySiatki) : ' '}</span>
+            <b id="skrot-pusta-nazwa">{t('start.pustaKartka')}</b>
+            <span id="skrot-pusta-opis" className="opis-skrotu">
+              {siatkaPustej
+                ? t('start.pustaKartkaOpis', {
+                    kolumny: siatkaPustej.kolumny,
+                    rzedy: siatkaPustej.rzedy,
+                  })
+                : '\u00a0'}
+            </span>
+            {aktywna === 'pusta' && (
+              <span id="skrot-pusta-stan" className="ukryte">
+                {t('start.ostatnioWybrane')}
+              </span>
+            )}
           </button>
           <button
             type="button"
             className="pasek-menu pasek-turkus"
-            aria-pressed={aktywna === 'uklady'}
+            aria-current={aktywna === 'uklady' ? 'true' : undefined}
+            aria-labelledby="skrot-uklady-nazwa"
+            aria-describedby={`skrot-uklady-opis${aktywna === 'uklady' ? ' skrot-uklady-stan' : ''}`}
             onClick={() => idz('uklady')}
           >
-            <b>{t('start.gotowyUklad')}</b>
-            <span>{t('start.gotowyUkladOpis')}</span>
+            <b id="skrot-uklady-nazwa">{t('start.gotowyUklad')}</b>
+            <span id="skrot-uklady-opis" className="opis-skrotu">
+              {t('start.gotowyUkladOpis')}
+            </span>
+            {aktywna === 'uklady' && (
+              <span id="skrot-uklady-stan" className="ukryte">
+                {t('start.ostatnioWybrane')}
+              </span>
+            )}
           </button>
         </nav>
 
@@ -126,7 +191,7 @@ export function WyborGry({ id }: { id: string }) {
               data-podglad={ID_PUSTEJ}
               aria-labelledby="pusta-nazwa"
               aria-describedby="pusta-opis pusta-podpowiedz"
-              disabled={!pakiet || trwa}
+              disabled={wylaczone}
               onClick={() => void utworz()}
             >
               <span className="miniatura-podgladu">
@@ -141,7 +206,7 @@ export function WyborGry({ id }: { id: string }) {
                         rzedy: siatkaPustej.rzedy,
                         slot: formatujLiczbe(siatkaPustej.slot.szerokosc, 2),
                       })
-                    : ' '}
+                    : '\u00a0'}
                 </span>
                 <span id="pusta-podpowiedz" className="podpowiedz">
                   {t('start.kliknijAbyZaczac')}
@@ -160,26 +225,13 @@ export function WyborGry({ id }: { id: string }) {
             </h2>
             <div className="siatka-ukladow">
               {pakiet?.gotoweUklady.map((u) => (
-                <button
+                <KafelekUkladu
                   key={u.id}
-                  type="button"
-                  className="kafelek-podgladu"
-                  data-podglad={u.id}
-                  aria-labelledby={`uklad-${u.id}-nazwa`}
-                  aria-describedby={`uklad-${u.id}-podpowiedz`}
-                  disabled={trwa}
-                  onClick={() => void utworz(u.id)}
-                >
-                  <span className="miniatura-podgladu">
-                    <PodgladKartki wynik={podglad(u.id)} stos={u.arkusze.length > 1} />
-                  </span>
-                  <span className="opis-podgladu">
-                    <b id={`uklad-${u.id}-nazwa`}>{nazwaUkladu(u)}</b>
-                    <span id={`uklad-${u.id}-podpowiedz`} className="podpowiedz">
-                      {t('start.kliknijAbyZaczac')}
-                    </span>
-                  </span>
-                </button>
+                  pakietId={pakiet.id}
+                  uklad={u}
+                  wylaczony={wylaczone}
+                  utworz={(uk) => void utworz(uk)}
+                />
               ))}
             </div>
           </section>
@@ -191,6 +243,14 @@ export function WyborGry({ id }: { id: string }) {
       {blad && (
         <p role="alert" className="uwaga">
           {blad}
+        </p>
+      )}
+      {bladPodgladow && pakiet && (
+        <p role="alert" className="uwaga">
+          {t('start.podgladyBladLadowania', { szczegoly: bladPodgladow })}{' '}
+          <button type="button" onClick={() => void ponowPodglady(pakiet)}>
+            {t('start.sprobujPonownie')}
+          </button>
         </p>
       )}
       {gra.id === 'mausritter' && pakiet && <p className="podpis">{atrybucjaPakietu(pakiet)}</p>}

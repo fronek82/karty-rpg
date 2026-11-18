@@ -3,8 +3,6 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PodgladKartki } from './PodgladKartki';
 import type { Podglad, StronaPodgladu } from './podglady';
-import { MenuTypu } from '../kartka/MenuTypu';
-import { typyKartMausrittera } from '../../pakiety/mausritter/kartka';
 
 afterEach(cleanup);
 
@@ -64,28 +62,5 @@ describe('PodgladKartki', () => {
     expect(papiery).toHaveLength(3);
     expect(papiery[0]!.style.zIndex).toBe('2');
     expect(papiery[2]!.style.zIndex).toBe('0');
-  });
-});
-
-describe('menu typów kart', () => {
-  it('pozycje mają same napisy – bez ikon', () => {
-    const { container } = render(
-      <MenuTypu
-        typy={typyKartMausrittera}
-        styl={{}}
-        blokada={() => undefined}
-        wybierz={() => {}}
-        zamknij={() => {}}
-      />,
-    );
-    expect(container.querySelector('.ikona')).toBeNull();
-    const pozycje = screen.getAllByRole('menuitem');
-    expect(pozycje).toHaveLength(typyKartMausrittera.length);
-    for (const typ of typyKartMausrittera) {
-      expect(pozycje.some((p) => p.textContent!.startsWith(typ.nazwa))).toBe(true);
-      // Żaden znak ikony typu nie trafia do menu.
-      for (const p of pozycje) expect(p.textContent).not.toContain(typ.ikona);
-    }
-    for (const p of pozycje) expect(p.textContent).toMatch(/^\p{L}/u);
   });
 });

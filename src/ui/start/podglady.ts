@@ -62,6 +62,8 @@ export async function wczytajZasobyPakietu(
     let p = wCzasie.get(adres);
     if (!p) {
       p = pobierz(adres);
+      // Pliki startują naraz; błąd zgłosi dopiero odbiór – bez ostrzeżenia o nieobsłużonej obietnicy.
+      p.catch(() => undefined);
       wCzasie.set(adres, p);
     }
     return p;
@@ -126,13 +128,15 @@ export function krokiPodgladow(
 
   // Identyfikatory SVG (glify, przycięcia) są wspólne dla całej strony HTML – każdy podgląd
   // ma własny przedrostek, inaczej `<use>` wskazałby glif z innej kartki.
+  // Przedrostek z indeksów (kafelek, kartka), nie z identyfikatorów – id pakietu mogą zawierać
+  // „-” i „+”, a wtedy `a-b` + `c` kolidowałoby z `a` + `b-c`.
   const strona = (
-    podgladId: string,
-    arkusz: Arkusz,
+    indeksPodgladu: number,
+    indeksKartki: number,
     k: ReturnType<typeof kartka>,
   ): StronaPodgladu => ({
     svg: scenaDoSvg(k.scena, {
-      przedrostekId: `pg-${podgladId}-${arkusz.id}-`,
+      przedrostekId: `pg${indeksPodgladu}k${indeksKartki}-`,
       adresObrazu: (id) => zasoby.obrazy.get(id)?.adres,
       atrybuty: { 'aria-hidden': 'true', focusable: 'false' },
     }),
@@ -148,20 +152,21 @@ export function krokiPodgladow(
       const k = kartka(arkusz, talia, true);
       return {
         id: ID_PUSTEJ,
-        strony: [strona(ID_PUSTEJ, arkusz, k)],
+        strony: [strona(0, 0, k)],
         ostrzezenia: k.ostrzezenia,
       };
     },
   };
-  const uklady = pakiet.gotoweUklady.map((u): KrokPodgladu => ({
+  const uklady = pakiet.gotoweUklady.map((u, indeks): KrokPodgladu => ({
     id: u.id,
     licz: () => {
-      const wyniki = u.arkusze.map((aid) => {
+      if (u.arkusze.length === 0) throw new Error(`Układ „${u.id}” nie ma żadnej kartki.`);
+      const wyniki = u.arkusze.map((aid, j) => {
         const arkusz = projekt.arkusze.find((a) => a.id === aid);
         const talia = arkusz && projekt.talie.find((x) => x.id === arkusz.taliaId);
         if (!arkusz || !talia) throw new Error(`Układ „${u.id}”: brak kartki „${aid}”.`);
         const k = kartka(arkusz, talia, false);
-        return { strona: strona(u.id, arkusz, k), ostrzezenia: k.ostrzezenia };
+        return { strona: strona(indeks + 1, j, k), ostrzezenia: k.ostrzezenia };
       });
       return {
         id: u.id,

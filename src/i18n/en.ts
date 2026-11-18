@@ -876,6 +876,9 @@ export const en: Slownik = {
   'start.kliknijAbyZaczac': 'Click to start',
   'start.podgladLiczy': 'Preparing the preview…',
   'start.podgladBlad': 'Could not prepare the preview ({szczegoly}).',
+  'start.podgladyBladLadowania': 'Could not prepare the previews ({szczegoly}).',
+  'start.sprobujPonownie': 'Try again',
+  'start.ostatnioWybrane': 'last chosen',
   'start.wlasneZSzablonu': 'Start from a template file',
   'start.wlasneZSzablonuOpis':
     'Do you have a template file (.kartyrpg-szablon), e.g. exported from another project? Import it – a project is created with a sheet that fits the card size.',

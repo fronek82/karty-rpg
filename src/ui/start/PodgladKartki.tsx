@@ -1,4 +1,6 @@
+import { memo } from 'react';
 import { t } from '../../i18n';
+import { useJezyk } from '../../i18n/react';
 import type { StronaPodgladu } from './podglady';
 import type { WynikPodgladu } from './ladujPodglady';
 
@@ -44,7 +46,7 @@ export function Papier({ strona, styl }: { strona: StronaPodgladu; styl?: React.
 }
 
 /** Miejsce na podgląd: szkielet na czas liczenia, komunikat przy błędzie, papier lub stos kartek. */
-export function PodgladKartki({
+export const PodgladKartki = memo(function PodgladKartki({
   wynik,
   stos = false,
 }: {
@@ -52,6 +54,8 @@ export function PodgladKartki({
   /** Kilka kartek ułożonych jak stos (pierwsza na wierzchu). */
   stos?: boolean;
 }) {
+  // memo nie przepuszcza zmiany języka z rodzica – napisy szkieletu odświeżamy sami.
+  useJezyk();
   if (!wynik)
     return (
       <span className="szkielet" role="img" aria-label={t('start.podgladLiczy')}>
@@ -93,4 +97,4 @@ export function PodgladKartki({
       })}
     </span>
   );
-}
+});

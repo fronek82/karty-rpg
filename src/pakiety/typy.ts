@@ -34,7 +34,7 @@ export interface RozmiarTypu {
 export interface TypKarty {
   id: string;
   nazwa: string;
-  /** Znak lub emoji typu (dane pakietu; menu typów kart pokazuje już same nazwy). */
+  /** Znak lub emoji typu – dane pakietu, celowo nieużywane przez UI (menu typów kart ma same nazwy). */
   ikona: string;
   warianty: { szablonId: string; nazwa: string; dane?: Record<string, string> }[];
   rozmiary: RozmiarTypu[];
