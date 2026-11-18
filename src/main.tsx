@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import './ui/motyw'; // stosuje motyw przy starcie
 import { App } from './ui/App';
 
 const korzen = document.getElementById('root');

@@ -52,6 +52,7 @@ export function NarzedziaPaska() {
         title={t('pasek.instrukcjaOpis')}
       >
         {t('pasek.instrukcja')}
+        <span className="tylko-czytnik">{t('pasek.noweOkno')}</span>
       </a>
       <div className="seg" role="group" aria-label={t('jezyk.grupa')}>
         <button type="button" aria-pressed="true" title={t('jezyk.plOpis')}>

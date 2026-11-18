@@ -9,12 +9,16 @@ export const KLUCZ_MOTYWU = 'karty.motyw';
 
 const ZAPYTANIE_CIEMNE = '(prefers-color-scheme: dark)';
 
+/** Wybór z tej sesji strony, gdy zapis do localStorage się nie udał (np. tryb prywatny). */
+let pamiecSesji: PreferencjaMotywu | undefined;
+
 export function czyPreferencja(v: unknown): v is PreferencjaMotywu {
   return v === 'light' || v === 'dark' || v === 'system';
 }
 
 /** Zapamiętany wybór; przy braku, błędnej wartości lub zablokowanym localStorage – „system”. */
 export function odczytajPreferencje(): PreferencjaMotywu {
+  if (pamiecSesji) return pamiecSesji;
   try {
     const v = window.localStorage.getItem(KLUCZ_MOTYWU);
     return czyPreferencja(v) ? v : 'system';
@@ -42,8 +46,11 @@ export function zastosujMotyw(motyw: Motyw): void {
   document.documentElement.dataset.theme = motyw;
 }
 
+function migawka(): Motyw {
+  return motywDla(odczytajPreferencje(), systemCiemny());
+}
+
 const sluchacze = new Set<() => void>();
-let obserwujeSystem = false;
 
 function powiadom(): void {
   zastosujMotyw(migawka());
@@ -52,42 +59,40 @@ function powiadom(): void {
 
 /** Zapisuje wybór (best-effort) i od razu stosuje motyw. */
 export function ustawPreferencje(pref: PreferencjaMotywu): void {
+  pamiecSesji = undefined;
   try {
     window.localStorage.setItem(KLUCZ_MOTYWU, pref);
   } catch {
-    // Tryb prywatny lub zablokowana pamięć: motyw działa do końca sesji strony.
     pamiecSesji = pref;
   }
   powiadom();
 }
 
-let pamiecSesji: PreferencjaMotywu | undefined;
+let nasluchuje = false;
 
-function biezacaPreferencja(): PreferencjaMotywu {
+function nasluchujZmian(): void {
+  if (nasluchuje) return;
+  nasluchuje = true;
   try {
-    const v = window.localStorage.getItem(KLUCZ_MOTYWU);
-    if (czyPreferencja(v)) return v;
+    window.matchMedia(ZAPYTANIE_CIEMNE).addEventListener('change', powiadom);
   } catch {
-    return pamiecSesji ?? 'system';
+    // Brak matchMedia – zostaje motyw jasny.
   }
-  return 'system';
+  // Zmiana wyboru w innej karcie przeglądarki.
+  window.addEventListener('storage', (e) => {
+    if (e.key === null || e.key === KLUCZ_MOTYWU) powiadom();
+  });
+}
+
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  // Zawsze przy starcie (skrypt w index.html robi to wcześniej; tu na wypadek jego braku).
+  zastosujMotyw(migawka());
+  nasluchujZmian();
 }
 
 function subskrybuj(cb: () => void): () => void {
   sluchacze.add(cb);
-  if (!obserwujeSystem) {
-    obserwujeSystem = true;
-    try {
-      window.matchMedia(ZAPYTANIE_CIEMNE).addEventListener('change', powiadom);
-    } catch {
-      // Brak matchMedia – zostaje motyw jasny.
-    }
-  }
   return () => sluchacze.delete(cb);
-}
-
-function migawka(): Motyw {
-  return motywDla(biezacaPreferencja(), systemCiemny());
 }
 
 /** Aktualny motyw i funkcja jego zmiany; odświeża się przy zmianie ustawienia systemu. */

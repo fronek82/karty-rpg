@@ -29,6 +29,22 @@ function luminancja(hex: string): number {
   return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 }
 
+/** Barwa (0–360) i nasycenie (0–1) koloru #rrggbb. */
+function barwa(hex: string): { h: number; s: number } {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [
+    number,
+    number,
+    number,
+  ];
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  if (d === 0) return { h: 0, s: 0 };
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  const l = (max + min) / 2;
+  return { h: (h * 60 + 360) % 360, s: d / (1 - Math.abs(2 * l - 1)) };
+}
+
 function kontrast(a: string, b: string): number {
   const [x, y] = [luminancja(a), luminancja(b)].sort((p, q) => q - p);
   return (x! + 0.05) / (y! + 0.05);
@@ -62,8 +78,8 @@ describe('tokeny motywów', () => {
   });
 
   it('jasny: biały na akcencie i na pasku – granica AA (4,5)', () => {
-    expect(kontrast('#ffffff', jasny.akcent!)).toBeGreaterThanOrEqual(4.45);
-    expect(kontrast(jasny['pasek-tekst']!, jasny.pasek!)).toBeGreaterThanOrEqual(4.45);
+    expect(kontrast('#ffffff', jasny.akcent!)).toBeGreaterThanOrEqual(4.5);
+    expect(kontrast(jasny['pasek-tekst']!, jasny.pasek!)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('jasny: wyróżnienie (bordo) na tle – AAA', () => {
@@ -103,5 +119,38 @@ describe('tokeny motywów', () => {
       expect(kontrast(m.zle!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(3);
       expect(kontrast(m.dobrze!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it('jasny: czerwień ostrzeżeń i przygaszony tekst – AA na tle i panelu', () => {
+    for (const tlo of [jasny.tlo!, jasny['tlo-panelu']!]) {
+      expect(kontrast(jasny.zle!, tlo)).toBeGreaterThanOrEqual(4.5);
+      expect(kontrast(jasny['tekst-przygaszony']!, tlo)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('oba motywy: tekst zaznaczonego przycisku segmentowego (akcent) – AA', () => {
+    for (const m of [jasny, ciemny])
+      expect(kontrast(m['akcent-tekst']!, m.akcent!)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('ciemny: czerwień ostrzeżeń czytelna na tle i panelu – AA', () => {
+    for (const tlo of [ciemny.tlo!, ciemny['tlo-panelu']!])
+      expect(kontrast(ciemny.zle!, tlo)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('ciemny: żaden token nie ma odcienia różu (barwa 300–345°), poza jawnymi wyjątkami', () => {
+    // Wyjątki: bordo to wymagany kolor ozdób (#8E2C48); prowadnica leży wyłącznie na białym
+    // papierze karty (świadomy wyjątek, B120).
+    const wyjatki = new Set(['bordo', 'prowadnica']);
+    // Kontrola detektora: wyjątki faktycznie są różowawe.
+    expect(barwa(ciemny.prowadnica!).h).toBeGreaterThan(300);
+    const roz = Object.entries(ciemny)
+      .filter(([k, v]) => /^#[0-9a-f]{6}$/i.test(v) && !wyjatki.has(k))
+      .filter(([, v]) => {
+        const { h, s } = barwa(v);
+        return s > 0.2 && h >= 300 && h <= 345;
+      })
+      .map(([k]) => k);
+    expect(roz).toEqual([]);
   });
 });

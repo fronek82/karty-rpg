@@ -7,6 +7,9 @@ const korzen = fileURLToPath(new URL('.', import.meta.url));
 
 /**
  * Jawna lista literałów #rrggbb dozwolonych poza tokeny.css (ścieżka względem src/ui).
+ * Świadomy wyjątek od testu: funkcje `rgb(...)` (cienie `rgb(0 0 0 / x%)`, pasek z półprzezroczystą bielą,
+ * siatka podglądu na karcie) nie są wyłapywane – to neutralne nakładki, które działają w obu
+ * motywach; nakładki zaznaczenia na papierze karty mają tokeny `--zaznaczenie-karty` i `--papier`.
  * Wszystkie to DANE szablonu lub kolory wyjścia (nie motywu aplikacji): domyślne kolory
  * pól i ramek nowego szablonu, kolor tła obrazu eksportu, podgląd ozdobnika na „pergaminie”.
  */

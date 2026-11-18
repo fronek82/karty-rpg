@@ -8,6 +8,7 @@ export const pl = {
   'pasek.narzedzia': 'Narzędzia aplikacji',
   'pasek.instrukcja': 'Instrukcja',
   'pasek.instrukcjaOpis': 'Instrukcja (otwiera się w nowym oknie)',
+  'pasek.noweOkno': ' (nowe okno)',
   'jezyk.grupa': 'Język',
   'jezyk.pl': 'PL',
   'jezyk.en': 'EN',

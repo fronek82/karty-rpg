@@ -510,6 +510,7 @@ export function EdytorSzablonu({
           </a>
           <input
             className="nazwa-projektu"
+            title={szablon.nazwa}
             aria-label={t('szablon.nazwaSzablonu')}
             value={szablon.nazwa}
             onChange={(e) => zmienSz((s) => ({ ...s, nazwa: e.target.value }), 'nazwa')}

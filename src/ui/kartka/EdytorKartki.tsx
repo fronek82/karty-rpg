@@ -1327,6 +1327,7 @@ export function EdytorKartki({
       </a>
       <input
         className="nazwa-projektu"
+        title={projekt.nazwa}
         aria-label={t('kartka.nazwaProjektu')}
         value={projekt.nazwa}
         onChange={(e) =>

@@ -61,11 +61,29 @@ test('przełączenie motywu zmienia kolory i jest zapamiętane po przeładowaniu
   expect(await motyw(page)).toBe('light');
 });
 
-test('motyw ustawiony przed pierwszym malowaniem (bez migotania)', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('karty.motyw', 'dark'));
+test('motyw ustawiony przed pierwszym malowaniem i bez migotania', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('karty.motyw', 'dark');
+    // Zapis każdej wartości data-theme, jaka kiedykolwiek pojawi się na <html>.
+    const w = ((window as unknown as { __motywy: string[] }).__motywy = [] as string[]);
+    new MutationObserver(() =>
+      w.push(document.documentElement.getAttribute('data-theme') ?? ''),
+    ).observe(document, { attributes: true, subtree: true, attributeFilter: ['data-theme'] });
+  });
+  // Opóźniony pakiet skryptów: motyw musi być ustawiony, zanim aplikacja się uruchomi.
+  await page.route('**/assets/*.js', async (route) => {
+    await new Promise((r) => setTimeout(r, 1200));
+    await route.continue();
+  });
   await page.goto('./', { waitUntil: 'commit' });
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
-  expect(await motyw(page)).toBe('dark');
+  expect(await page.locator('#root').evaluate((el) => el.childElementCount)).toBe(0);
+  await expect(page.getByRole('link', { name: /Instrukcja/ })).toBeVisible();
+  const zapisane = await page.evaluate(
+    () => (window as unknown as { __motywy: string[] }).__motywy,
+  );
+  expect(zapisane.length).toBeGreaterThan(0);
+  expect(zapisane.every((m) => m === 'dark')).toBe(true);
 });
 
 test('pasek górny: trzy elementy na starcie, Instrukcja w nowym oknie, język PL aktywny', async ({
@@ -109,6 +127,56 @@ test('pasek w edytorze szablonu', async ({ page }) => {
   await pasek(page);
 });
 
+/** Kontrast WCAG dwóch kolorów „rgb(r, g, b)”. */
+function kontrast(a: string, b: string): number {
+  const lum = (c: string) => {
+    const [r, g, bl] = (c.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map((x) => {
+      const v = Number(x) / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * bl!;
+  };
+  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+  return (x! + 0.05) / (y! + 0.05);
+}
+
+async function otworzMenuPobierz(page: Page) {
+  await page.getByRole('button', { name: /^Pobierz/ }).click();
+  const poz = page.getByRole('menuitem').first();
+  await expect(poz).toBeVisible();
+  return poz;
+}
+
+for (const kolorSystemu of ['light', 'dark'] as const) {
+  test(`menu Pobierz na pasku (${kolorSystemu}): czytelne pozycje i widoczny fokus`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: kolorSystemu });
+    await nowaPustaKartka(page);
+    const poz = await otworzMenuPobierz(page);
+    const kolory = await poz.evaluate((el) => ({
+      tekst: getComputedStyle(el).color,
+      tlo: getComputedStyle(el.closest('.menu-typu')!).backgroundColor,
+    }));
+    expect(kontrast(kolory.tekst, kolory.tlo)).toBeGreaterThanOrEqual(4.5);
+    await page.keyboard.press('ArrowDown');
+    const fokus = page.locator('.menu-typu :focus');
+    await expect(fokus).toHaveCount(1);
+    const obrys = await fokus.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return {
+        styl: cs.outlineStyle,
+        szer: parseFloat(cs.outlineWidth),
+        kolor: cs.outlineColor,
+        tlo: getComputedStyle(el.closest('.menu-typu')!).backgroundColor,
+      };
+    });
+    expect(obrys.styl).toBe('solid');
+    expect(obrys.szer).toBeGreaterThanOrEqual(2);
+    expect(kontrast(obrys.kolor, obrys.tlo)).toBeGreaterThanOrEqual(3);
+  });
+}
+
 test.describe('zrzuty UI-1', () => {
   test.skip(!process.env.ZRZUTY, 'tylko przy ZRZUTY=1');
   test.use({ viewport: { width: 1440, height: 900 } });
@@ -122,5 +190,9 @@ test.describe('zrzuty UI-1', () => {
     await page.screenshot({ path: 'docs/obrazy/ui-1-start-ciemny.png' });
     await nowaPustaKartka(page);
     await page.screenshot({ path: 'docs/obrazy/ui-1-edytor-ciemny.png' });
+    await otworzMenuPobierz(page);
+    await page.screenshot({ path: 'docs/obrazy/ui-1-menu-pobierz-ciemny.png' });
+    await page.getByRole('button', { name: 'Motyw jasny' }).click();
+    await page.screenshot({ path: 'docs/obrazy/ui-1-menu-pobierz-jasny.png' });
   });
 });

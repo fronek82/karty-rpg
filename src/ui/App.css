@@ -74,6 +74,10 @@ a:hover {
   margin-left: 0.4rem;
 }
 
+.przycisk-kontur {
+  position: relative;
+}
+
 .przycisk-kontur,
 .pasek-gorny > :is(button, a.przycisk),
 .pasek-gorny .menu-pobierz > button {
@@ -93,14 +97,14 @@ a:hover {
 .przycisk-kontur:hover,
 .pasek-gorny > :is(button, a.przycisk):hover:not(:disabled),
 .pasek-gorny .menu-pobierz > button:hover:not(:disabled) {
-  background: rgb(255 255 255 / 18%);
+  background: color-mix(in srgb, black 22%, var(--pasek));
   border-color: var(--pasek-tekst);
   color: var(--pasek-tekst);
 }
 
 .pasek-gorny > :is(button, a.przycisk)[aria-pressed='true'],
 .pasek-gorny .menu-pobierz > button[aria-expanded='true'] {
-  background: rgb(255 255 255 / 22%);
+  background: color-mix(in srgb, black 32%, var(--pasek));
 }
 
 /* Przycisk główny na pasku: pełne białe tło, tekst w kolorze paska. */
@@ -143,7 +147,7 @@ a:hover {
 }
 
 .seg button:hover:not(:disabled) {
-  background: rgb(255 255 255 / 18%);
+  background: color-mix(in srgb, black 22%, var(--pasek));
 }
 
 .seg button[aria-pressed='true'] {
@@ -163,7 +167,8 @@ a:hover {
 
 /* Fokus na pasku: biały obrys, widoczny w obu motywach. */
 .naglowek :is(a, button):focus-visible,
-.pasek-gorny :is(a, button, input):focus-visible {
+.pasek-gorny > :is(a, button, input):focus-visible,
+.pasek-gorny .menu-pobierz > button:focus-visible {
   outline: 3px solid var(--pasek-tekst);
   outline-offset: 2px;
 }
@@ -505,8 +510,8 @@ textarea:focus-visible {
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 1rem;
-  /* Wysokość jak przed UI-1 (55,78 px): wzorce zrzutów kart zależą od pozycji kartki na stronie. */
-  min-height: 55.78125px;
+  /* Wysokość jak przed UI-1 (55,78 px = 3,486 rem przy 16 px): wzorce zrzutów kart zależą od pozycji kartki na stronie. */
+  min-height: 3.486328125rem;
   background: var(--pasek);
   color: var(--pasek-tekst);
   box-shadow: var(--cien-paska);
@@ -540,6 +545,7 @@ textarea:focus-visible {
   /* Węższe pole, żeby pasek z grupą narzędzi mieścił się w jednym rzędzie przy 1440 px. */
   width: 11rem;
   min-width: 0;
+  text-overflow: ellipsis;
   background: rgb(255 255 255 / 12%);
   border-color: rgb(255 255 255 / 35%);
   color: var(--pasek-tekst);
@@ -754,7 +760,7 @@ textarea:focus-visible {
 }
 
 .karta-na-kartce.podnoszona {
-  background: color-mix(in srgb, var(--pole) 70%, transparent);
+  background: color-mix(in srgb, var(--papier) 70%, transparent);
   outline: 2px dashed var(--tekst-przygaszony);
   outline-offset: -3px;
 }
@@ -824,6 +830,7 @@ textarea:focus-visible {
   z-index: 10;
   width: 18rem;
   background: var(--tlo-panelu);
+  color: var(--tekst);
   border: 1px solid var(--obramowanie);
   border-radius: 0.6rem;
   box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
@@ -987,7 +994,7 @@ textarea:focus-visible {
 }
 
 .przelacznik-segmentowy button[aria-pressed='true'] {
-  background: var(--zaznaczenie);
+  background: var(--akcent);
   color: var(--akcent-tekst);
 }
 
@@ -1316,7 +1323,7 @@ textarea:focus-visible {
 }
 .uklad-miniatura i {
   display: block;
-  background: color-mix(in srgb, var(--pole) 85%, transparent);
+  background: color-mix(in srgb, var(--papier) 85%, transparent);
   border: 1px solid var(--obramowanie);
   border-radius: 2px;
 }
@@ -1725,11 +1732,12 @@ button.maly {
   background: var(--pole);
 }
 .siatka-kotwic button {
-  color: var(--akcent-tekst);
+  color: var(--tekst);
   font-size: 0.8rem;
   line-height: 1;
 }
 .siatka-kotwic button[aria-checked='true'] {
+  color: var(--akcent-tekst);
   background: var(--akcent);
   border-color: var(--akcent);
 }

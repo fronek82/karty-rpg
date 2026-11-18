@@ -15,7 +15,6 @@
   --obramowanie: #d3c6ba;
   --obramowanie-karty: #b4a0c8;
   --pasek: #1b7fa8;
-  --pasek-gorny: var(--pasek);
   --pasek-tekst: #ffffff;
   --akcent: #1b7fa8;
   --akcent-tekst: #ffffff;
@@ -38,7 +37,7 @@
   --dobrze: #2f8f4e;
   --dobrze-tlo: #e3f1e5;
   --dobrze-tekst: #285a28;
-  --zle: #c0392b;
+  --zle: #b03226;
   --tlo-podpowiedzi: #1f2430;
   --tekst-podpowiedzi: #ffffff;
   --przezroczyste-tlo: #e6e0d8;
@@ -62,7 +61,6 @@
   --obramowanie: #4a4248;
   --obramowanie-karty: #b4a0c8;
   --pasek: #154b63;
-  --pasek-gorny: var(--pasek);
   --pasek-tekst: #ffffff;
   --akcent: #1f6e94;
   --akcent-tekst: #ffffff;
@@ -92,7 +90,7 @@
   --szachownica-1: #3a3438;
   --szachownica-2: #4a4248;
   --papier: #ffffff;
-  --zle-jasny: #ff9a9a;
+  --zle-jasny: #ee7a6c;
   --link-na-ciemnym: #8fb8ff;
   --prowadnica: #d6247f;
   --cien: 0 2px 10px rgb(0 0 0 / 45%);
