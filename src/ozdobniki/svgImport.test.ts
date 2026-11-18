@@ -376,9 +376,9 @@ describe('bomby i limity', () => {
   });
   it('zbyt wiele elementów i zbyt głębokie zagnieżdżenie', () => {
     const wiele = svg('<g/>'.repeat(20001));
-    expect(() => importujSvg(wiele)).toThrow(/elementów/);
+    expect(() => importujSvg(wiele)).toThrow(/^za-duzo-elementow:/);
     const gleboko = svg('<g>'.repeat(100) + '<rect width="1" height="1"/>' + '</g>'.repeat(100));
-    expect(() => importujSvg(gleboko)).toThrow(/zagnieżdżenie/);
+    expect(() => importujSvg(gleboko)).toThrow(/^za-gleboko:/);
   });
   it('wykładnicza bomba <use> kończy się błędem, nie zawieszeniem', () => {
     let defs = '<path id="u0" d="M0 0H1V1Z"/>';

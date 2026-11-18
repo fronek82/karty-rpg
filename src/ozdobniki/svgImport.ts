@@ -1,7 +1,7 @@
 import svgpath from 'svgpath';
 import type { KomendaKonturu, Kontur, KonturSymbolu, Macierz } from '../silnik/scena';
 import { kolorSceny } from '../silnik/scena';
-import { BladXml, parsujXml, type WezelXml } from './svgXml';
+import { BladXml, parsujXml, type OpisBledu, type WezelXml } from './svgXml';
 import type { ElementOzdobny, RodzajElementu } from './typy';
 
 /**
@@ -80,6 +80,8 @@ export class BladImportuSvg extends Error {
   constructor(
     readonly kod: KodBleduSvg,
     komunikat: string,
+    /** Szczegół błędu XML jako klucz i parametry (tłumaczy interfejs). */
+    readonly szczegol?: OpisBledu,
   ) {
     super(komunikat);
     this.name = 'BladImportuSvg';
@@ -456,7 +458,7 @@ export function importujSvg(
   try {
     korzen = parsujXml(bajtyNaTekst(zrodlo));
   } catch (e) {
-    if (e instanceof BladXml) throw new BladImportuSvg(e.kod, e.message);
+    if (e instanceof BladXml) throw new BladImportuSvg(e.kod, e.message, e.szczegol);
     throw e;
   }
   if (korzen.nazwa !== 'svg' || (korzen.przestrzen !== '' && korzen.przestrzen !== 'svg'))

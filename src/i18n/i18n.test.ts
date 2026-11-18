@@ -104,6 +104,7 @@ describe('parytet słowników pl ↔ en', () => {
       'karta.przesuniecieY',
       'ostrzezenie.karta',
       'rozmiar.mm',
+      'pakiet.param.pojemnosc',
       'czcionki.zrodlo.google',
       'papier.A4',
       'papier.Letter',
@@ -162,8 +163,8 @@ describe('tn() – liczba mnoga', () => {
   it('angielski: one / other', () => {
     ustawJezyk('en');
     const k = (n: number) => tn('mieszane.zajete', n, { numer: 1, liczba: 2, procent: 50 });
-    expect(k(1)).toBe('Page 1 of 2 · 1 card · 50 % of the card area used');
-    expect(k(2)).toBe('Page 1 of 2 · 2 cards · 50 % of the card area used');
+    expect(k(1)).toBe('Page 1 of 2 · 1 card · 50% of the card area used');
+    expect(k(2)).toBe('Page 1 of 2 · 2 cards · 50% of the card area used');
     expect(tn('biblioteka.limit', 1)).toContain('1 custom element.');
     expect(tn('biblioteka.limit', 2)).toContain('2 custom elements.');
   });
@@ -189,6 +190,15 @@ describe('liczby i daty', () => {
   it('zaokrągla do podanej liczby miejsc i nie grupuje tysięcy', () => {
     expect(formatujLiczbe(1234.567, 1)).toBe('1234,6');
     expect(formatujLiczbe(0.04, 1)).toBe('0');
+  });
+
+  it('małe liczby ujemne nie dają „-0”', () => {
+    expect(formatujLiczbe(-0.04)).toBe('0');
+    expect(formatujLiczbeZUlamkiem(-0.001, 2)).toBe('0,0');
+    ustawJezyk('en');
+    expect(formatujLiczbe(-0.04)).toBe('0');
+    expect(formatujLiczbeZUlamkiem(-0.001, 2)).toBe('0.0');
+    expect(formatujLiczbe(-1.5)).toBe('-1.5');
   });
 
   it('data według języka', () => {

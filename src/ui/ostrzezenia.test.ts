@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { ustawJezyk } from '../i18n';
-import { KODY, tekstOstrzezenia, tekstOstrzezeniaArkusza } from './ostrzezenia';
+import {
+  KODY,
+  komunikatyBrakujacychWariantow,
+  tekstOstrzezenia,
+  tekstOstrzezeniaArkusza,
+} from './ostrzezenia';
 
 afterEach(() => ustawJezyk('pl'));
 
@@ -31,5 +36,15 @@ describe('ostrzeżenia silnika i arkusza w obu językach', () => {
   it('nieznany kod pokazany surowo w obu językach', () => {
     ustawJezyk('en');
     expect(tekstOstrzezeniaArkusza({ komunikat: 'nowy-kod:x' })).toBe('nowy-kod:x');
+  });
+
+  it('brakujące warianty czcionek: komunikat zmienia język po przełączeniu', () => {
+    const lista = [{ nazwa: 'tytul', wariant: 'pogrubiony' as const }];
+    expect(komunikatyBrakujacychWariantow(lista)[0]).toContain('Tytuł');
+    expect(komunikatyBrakujacychWariantow(lista)[0]).toContain('„pogrubiony”');
+    ustawJezyk('en');
+    expect(komunikatyBrakujacychWariantow(lista)[0]).toBe(
+      'The font Title has no “bold” variant (e.g. bold from **…**) – the closest one was used.',
+    );
   });
 });

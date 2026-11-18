@@ -193,6 +193,24 @@ export const pl = {
   'pakiet.arkusz.mausritter-arkusz-bron': 'Karty broni i pancerzy',
   'pakiet.arkusz.mausritter-arkusz-wyposazenie': 'Karty niezbędnego wyposażenia',
   'pakiet.arkusz.mausritter-arkusz-stany': 'Karty stanów',
+  'pakiet.grupa.wyczerpana.naglowek': 'Wyczerpana',
+  'pakiet.grupa.wyczerpana.opis':
+    'Najczęściej przyznawany stan. Pojawia się, gdy mysz pominie długi odpoczynek albo przegra próbę sił lub zręczności.',
+  'pakiet.grupa.przerazona.naglowek': 'Przerażona',
+  'pakiet.grupa.przerazona.opis': 'Skutek spotkania z grozą: potworem lub czarem.',
+  'pakiet.grupa.glodna.naglowek': 'Głodna',
+  'pakiet.grupa.glodna.opis': 'Cały dzień bez racji prowiantu.',
+  'pakiet.grupa.ranna.naglowek': 'Ranna',
+  'pakiet.grupa.ranna.opis':
+    'Ciężki stan. Pojawia się po krytycznym trafieniu, gdy rzut obronny na SF się nie powiedzie.',
+  'pakiet.grupa.niepoczytalna.naglowek': 'Niepoczytalna',
+  'pakiet.grupa.niepoczytalna.opis': 'Ciężki stan. Cena nieudanego rzucenia zaklęcia.',
+  'pakiet.grupa.wlasne.naglowek': 'Własne stany',
+  'pakiet.grupa.wlasne.opis':
+    'Puste karty na stany wymyślone przy stole: krótka nazwa, skutek i sposób pozbycia się kłopotu.',
+  'pakiet.param.etykietaUsuniecia': 'Usunięcie:',
+  'pakiet.param.obrona': '-1 obr',
+  'pakiet.param.pojemnosc': '/ 250p',
   'gra.mausritter.nazwaDo': 'Mausrittera',
   'gra.mausritter.opis':
     'Karty ekwipunku i stanów w siatce slotów – broń, zbroje, przedmioty, zaklęcia, stany.',

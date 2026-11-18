@@ -607,6 +607,11 @@ function komunikat(issue: z.core.$ZodIssue): string {
       return t('dane.zod.format');
     case 'invalid_union':
       return t('dane.zod.wariant');
+    case 'custom':
+      // Własne reguły (`refine`) niosą gotowy komunikat; bez niego – ogólny.
+      return issue.message && issue.message !== 'Invalid input'
+        ? issue.message
+        : t('dane.zod.inne');
     default:
       return t('dane.zod.inne');
   }

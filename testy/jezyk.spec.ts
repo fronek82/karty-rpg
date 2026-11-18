@@ -178,7 +178,7 @@ test.describe('edytor kartki po angielsku', () => {
         exact: true,
       })
       .click();
-    for (const typ of ['Weapon', 'Armor', 'Gear', 'Spell', 'Condition', 'Blank card'])
+    for (const typ of ['Weapon', 'Armor', 'Equipment', 'Spell', 'Condition', 'Blank card'])
       await expect(
         page.getByRole('menuitem', { name: new RegExp(`^${typ}`) }).first(),
       ).toBeVisible();

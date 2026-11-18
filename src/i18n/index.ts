@@ -134,31 +134,57 @@ export function tn(
   parametry?: Record<string, string | number>,
 ): string {
   const formy = slownikiMnogie[aktywnyJezyk][klucz];
-  const kategoria = new Intl.PluralRules(aktywnyJezyk).select(n);
+  const kategoria = pluralRules().select(n);
   const tekst = formy[kategoria] ?? formy.other;
-  return podstaw(tekst, { n: new Intl.NumberFormat(aktywnyJezyk).format(n), ...parametry });
+  return podstaw(tekst, { n: liczbaFmt('tn').format(n), ...parametry });
+}
+
+const bufor = new Map<string, Intl.PluralRules | Intl.NumberFormat | Intl.DateTimeFormat>();
+
+/** Formatery Intl są drogie w tworzeniu – jeden na język i zestaw opcji. */
+function zBufora<T extends Intl.PluralRules | Intl.NumberFormat | Intl.DateTimeFormat>(
+  klucz: string,
+  utworz: () => T,
+): T {
+  const k = `${aktywnyJezyk}|${klucz}`;
+  let f = bufor.get(k) as T | undefined;
+  if (!f) {
+    f = utworz();
+    bufor.set(k, f);
+  }
+  return f;
+}
+
+const pluralRules = () => zBufora('plural', () => new Intl.PluralRules(aktywnyJezyk));
+
+function liczbaFmt(rodzaj: string, min = 0, max = 3): Intl.NumberFormat {
+  return zBufora(
+    `liczba|${rodzaj}|${min}|${max}`,
+    () =>
+      new Intl.NumberFormat(aktywnyJezyk, {
+        minimumFractionDigits: min,
+        maximumFractionDigits: max,
+        useGrouping: rodzaj !== 'bez',
+        // Bez „-0” po zaokrągleniu małych liczb ujemnych.
+        signDisplay: rodzaj === 'bez' ? 'negative' : 'auto',
+      }),
+  );
 }
 
 /** Liczba w bieżącym języku (PL: przecinek, EN: kropka), co najwyżej `miejsca` cyfr po przecinku. */
 export function formatujLiczbe(x: number, miejsca = 1): string {
-  return new Intl.NumberFormat(aktywnyJezyk, {
-    maximumFractionDigits: miejsca,
-    useGrouping: false,
-  }).format(x);
+  return liczbaFmt('bez', 0, miejsca).format(x);
 }
 
 /** Liczba z co najmniej jedną cyfrą po przecinku (np. „2,0”). */
 export function formatujLiczbeZUlamkiem(x: number, miejsca = 1): string {
-  return new Intl.NumberFormat(aktywnyJezyk, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: miejsca,
-    useGrouping: false,
-  }).format(x);
+  return liczbaFmt('bez', 1, miejsca).format(x);
 }
 
 /** Data i godzina w bieżącym języku. */
 export function formatujDate(wartosc: Date | number | string): string {
-  return new Intl.DateTimeFormat(aktywnyJezyk, { dateStyle: 'medium', timeStyle: 'short' }).format(
-    new Date(wartosc),
-  );
+  return zBufora(
+    'data',
+    () => new Intl.DateTimeFormat(aktywnyJezyk, { dateStyle: 'medium', timeStyle: 'short' }),
+  ).format(new Date(wartosc));
 }

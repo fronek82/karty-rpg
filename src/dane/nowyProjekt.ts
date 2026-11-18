@@ -30,10 +30,35 @@ function lokalizujNazwy(projekt: Projekt, nazwaProjektu: string): Projekt {
     ...projekt,
     nazwa: nazwaProjektu,
     arkusze,
-    talie: projekt.talie.map((x) => ({ ...x, nazwa: nazwaArkusza.get(x.id) ?? x.nazwa })),
+    talie: projekt.talie.map((x) => ({
+      ...x,
+      nazwa: nazwaArkusza.get(x.id) ?? x.nazwa,
+      // Nagłówki i opisy grup są drukowane na kartce – też w języku z chwili utworzenia.
+      ...(x.grupy
+        ? {
+            grupy: x.grupy.map((g) => {
+              const opis = tJesliJest(`pakiet.grupa.${g.id}.opis`) ?? g.opis;
+              return {
+                ...g,
+                naglowek: tJesliJest(`pakiet.grupa.${g.id}.naglowek`) ?? g.naglowek,
+                ...(opis !== undefined ? { opis } : {}),
+              };
+            }),
+          }
+        : {}),
+    })),
     szablony: projekt.szablony.map((s) => ({
       ...s,
       nazwa: tJesliJest(`pakiet.wariant.${s.id}`) ?? s.nazwa,
+      // Domyślne teksty parametrów (np. etykieta „Usunięcie:”) są drukowane na kartach.
+      ...(s.parametry
+        ? {
+            parametry: s.parametry.map((p) => ({
+              ...p,
+              domyslnie: tJesliJest(`pakiet.param.${p.klucz}`) ?? p.domyslnie,
+            })),
+          }
+        : {}),
     })),
   };
 }

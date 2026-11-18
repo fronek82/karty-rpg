@@ -57,4 +57,34 @@ describe('nowy projekt gry', () => {
     expect(pusta.projekt.arkusze[0]!.ustawienia.tytul!.tekst).toBe('My cards');
     expect(() => przygotujProjekt(pusta.projekt)).not.toThrow();
   });
+
+  it('nagłówki grup i etykieta „Usunięcie:” drukowane na kartce – w języku z chwili utworzenia', async () => {
+    const pol = await nowyProjektGry(pakietMausritter, ...pobierz, { uklad: 'stany' });
+    const naglPl = pol.projekt.arkusze[0]!.naglowki!.map((n) => n.naglowek);
+    expect(naglPl).toContain('Przerażona');
+    expect(naglPl).toContain('Własne stany');
+    const stan = (p: typeof pol.projekt) => p.szablony.find((x) => x.id === 'mausritter-stan')!;
+    expect(stan(pol.projekt).parametry![0]!.domyslnie).toBe('Usunięcie:');
+
+    ustawJezyk('en');
+    const ang = await nowyProjektGry(pakietMausritter, ...pobierz, { uklad: 'stany' });
+    const nagl = ang.projekt.arkusze[0]!.naglowki!;
+    expect(nagl.map((n) => n.naglowek)).toContain('Frightened');
+    expect(nagl.map((n) => n.naglowek)).toContain('Custom conditions');
+    expect(nagl.every((n) => !n.opis || !/[ąćęłńóśźż]/i.test(n.opis))).toBe(true);
+    expect(stan(ang.projekt).parametry![0]!.domyslnie).toBe('Removal:');
+    expect(() => przygotujProjekt(ang.projekt)).not.toThrow();
+  });
+
+  it('komunikat schematu o wymiarach własnego papieru powstaje w języku z chwili błędu', async () => {
+    const { projekt } = await nowyProjektGry(pakietMausritter, ...pobierz, { id: 'n' });
+    const zly = structuredClone(projekt);
+    zly.arkusze[0]!.ustawienia.papier = 'wlasny';
+    delete zly.arkusze[0]!.ustawienia.wymiaryPapieru;
+    expect(() => przygotujProjekt(zly)).toThrow('własny papier wymaga wymiarów');
+    ustawJezyk('en');
+    expect(() => przygotujProjekt(zly)).toThrow('custom paper needs dimensions');
+    ustawJezyk('pl');
+    expect(() => przygotujProjekt(zly)).toThrow('własny papier wymaga wymiarów');
+  });
 });

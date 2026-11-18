@@ -176,7 +176,7 @@ export const en: Slownik = {
   'pakiet.nowaKartka': 'My cards',
   'pakiet.typ.bron': 'Weapon',
   'pakiet.typ.zbroja': 'Armor',
-  'pakiet.typ.ekwipunek': 'Gear',
+  'pakiet.typ.ekwipunek': 'Equipment',
   'pakiet.typ.zaklecie': 'Spell',
   'pakiet.typ.stan': 'Condition',
   'pakiet.typ.pusta': 'Blank card',
@@ -196,6 +196,24 @@ export const en: Slownik = {
   'pakiet.arkusz.mausritter-arkusz-bron': 'Weapon and armor cards',
   'pakiet.arkusz.mausritter-arkusz-wyposazenie': 'Essential gear cards',
   'pakiet.arkusz.mausritter-arkusz-stany': 'Condition cards',
+  'pakiet.grupa.wyczerpana.naglowek': 'Exhausted',
+  'pakiet.grupa.wyczerpana.opis':
+    'The most common condition. It appears when a mouse skips a long rest or fails a strength or dexterity save.',
+  'pakiet.grupa.przerazona.naglowek': 'Frightened',
+  'pakiet.grupa.przerazona.opis': 'The result of facing something dreadful: a monster or a spell.',
+  'pakiet.grupa.glodna.naglowek': 'Hungry',
+  'pakiet.grupa.glodna.opis': 'A whole day without a ration.',
+  'pakiet.grupa.ranna.naglowek': 'Wounded',
+  'pakiet.grupa.ranna.opis':
+    'A severe condition. It appears after a critical hit when the strength save fails.',
+  'pakiet.grupa.niepoczytalna.naglowek': 'Deprived of reason',
+  'pakiet.grupa.niepoczytalna.opis': 'A severe condition. The price of a failed spell cast.',
+  'pakiet.grupa.wlasne.naglowek': 'Custom conditions',
+  'pakiet.grupa.wlasne.opis':
+    'Blank cards for conditions made up at the table: a short name, the effect and a way to get rid of the trouble.',
+  'pakiet.param.etykietaUsuniecia': 'Removal:',
+  'pakiet.param.obrona': '-1 def',
+  'pakiet.param.pojemnosc': '/ 250p',
   'gra.mausritter.nazwaDo': 'Mausritter',
   'gra.mausritter.opis':
     'Gear and condition cards in a grid of slots – weapons, armor, items, spells, conditions.',
@@ -832,7 +850,7 @@ export const en: Slownik = {
     'Do you have a template file (.kartyrpg-szablon), e.g. exported from another project? Import it – a project is created with a sheet that fits the card size.',
   'projekt.bladTytul': 'Could not open the project',
   'projekt.wrocDoListy': 'Back to home',
-  'projekt.nawigacja': 'Path',
+  'projekt.nawigacja': 'Breadcrumb',
   'projekt.ostrzezenia': 'Project warnings ({liczba})',
   'arkusze.pobierzPdf': 'Download PDF',
   'pobierz.menu': 'Download',
@@ -963,7 +981,7 @@ export const en: Slownik = {
   'svg.pominieto.filtr': 'filter (e.g. blur – the PDF does not support it)',
   'svg.pominieto.maska': 'mask',
   'svg.pominieto.przyciecie': 'clipping (clip-path)',
-  'svg.pominieto.wzor': 'pattern (pattern)',
+  'svg.pominieto.wzor': 'pattern fills (<pattern>)',
   'svg.pominieto.znacznik': 'markers (marker)',
   'svg.pominieto.animacja': 'animations',
   'svg.pominieto.przezroczystosc': 'transparency – the drawing is opaque',
@@ -994,8 +1012,8 @@ export const en: Slownik = {
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
 export const enMnoga: SlownikMnogi = {
   'mieszane.zajete': {
-    one: 'Page {numer} of {liczba} · {n} card · {procent} % of the card area used',
-    other: 'Page {numer} of {liczba} · {n} cards · {procent} % of the card area used',
+    one: 'Page {numer} of {liczba} · {n} card · {procent}% of the card area used',
+    other: 'Page {numer} of {liczba} · {n} cards · {procent}% of the card area used',
   },
   'mieszane.odlozono': {
     one: '{n} card set aside – it does not fit in a grid of this slot size. “Undo” restores the mixed sizes.',

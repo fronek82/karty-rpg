@@ -64,7 +64,7 @@ import type { Ostrzezenie } from '../../silnik/karta';
 import type { Scena } from '../../silnik/scena';
 import { scenaDoSvg } from '../../silnik/svg';
 import { baza } from '../baza';
-import { tekstOstrzezeniaArkusza } from '../ostrzezenia';
+import { komunikatyBrakujacychWariantow, tekstOstrzezeniaArkusza } from '../ostrzezenia';
 import { pdfWWatku } from '../pdfWWatku';
 import { odczytajKalibracje } from '../kalibracja';
 import { obrazyScen, scenyKart, scenyStron, spakuj, type FormatObrazu } from '../eksportObrazow';
@@ -201,7 +201,8 @@ export function EdytorKartki({
   pokazKartke?: string;
 }) {
   const { projekt, zmien } = edycja;
-  // Zmiana języka przerysowuje edytor; teksty zapamiętane w useMemo odświeżamy przez `jezykUi`.
+  // Zmiana języka przerysowuje edytor, ale wynik useMemo się nie przelicza sam: KAŻDY nowy
+  // useMemo, który woła t() / tn() / tJesliJest() (także pośrednio), musi mieć `jezykUi` w zależnościach.
   const jezykUi = useJezyk();
   // Po wejściu z edytora szablonu – przewiń do kartki dla jego rozmiaru.
   useEffect(() => {
@@ -1313,12 +1314,7 @@ export function EdytorKartki({
   const brakujaceWarianty = useMemo(
     () =>
       kartki.length && zasoby
-        ? [...zasoby.czcionki.brakujaceWarianty.values()].map((b) =>
-            t('czcionki.brakWariantu', {
-              nazwa: tJesliJest(`rola.${b.nazwa}`) ?? b.nazwa,
-              wariant: t(`wariant.${b.wariant}`),
-            }),
-          )
+        ? komunikatyBrakujacychWariantow([...zasoby.czcionki.brakujaceWarianty.values()])
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- teksty zależą od języka
     [kartki, zasoby, jezykUi],
