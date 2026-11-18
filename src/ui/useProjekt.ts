@@ -231,6 +231,7 @@ export function useProjekt(id: string): StanProjektu {
       const b = biezacy.current;
       if (!b) return;
       const wynik = f(b.projekt, b.dane); // błąd z `f` – stan bez zmian
+      if (wynik.projekt === b.projekt && wynik.dane === b.dane) return;
       // Historia zostaje: bajty usuniętych zasobów zostają w pamięci (zapis bierze tylko opisane),
       // więc „Cofnij” może przywrócić zasób razem z jego bajtami.
       historia.current = zapamietaj(historia.current, b.projekt);

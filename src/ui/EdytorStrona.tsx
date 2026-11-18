@@ -27,8 +27,10 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
   const sciezka = `#/projekt/${encodeURIComponent(id)}`;
   const zGry = !czyProjektWlasny(stan.projekt);
   if (podtrasa === 'biblioteka') return <BibliotekaOzdobnikow edycja={stan} />;
-  const szablon = /^szablon\/(.+)$/.exec(podtrasa)?.[1];
-  if ((szablon || podtrasa === 'nowy-szablon') && zGry)
+  const identyfikator = /^szablon\/(.+)$/.exec(podtrasa)?.[1];
+  const szablon = identyfikator && decodeURIComponent(identyfikator);
+  const szablonWlasny = szablon && stan.projekt.arkusze.some((a) => a.wlasnySzablonId === szablon);
+  if (zGry && (podtrasa === 'nowy-szablon' || (szablon && !szablonWlasny)))
     // Projekt gry (np. Mausritter): szablony z pakietu nie są edytowane w edytorze od zera.
     return (
       <section className="tresc">
@@ -38,8 +40,7 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
         <a href={sciezka}>{t('szablon.wrocDoKartek')}</a>
       </section>
     );
-  if (szablon)
-    return <EdytorSzablonu key={szablon} edycja={stan} szablonId={decodeURIComponent(szablon)} />;
+  if (szablon) return <EdytorSzablonu key={szablon} edycja={stan} szablonId={szablon} />;
   if (podtrasa === 'nowy-szablon')
     return (
       <div className="tresc">

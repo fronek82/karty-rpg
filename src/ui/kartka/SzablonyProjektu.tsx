@@ -2,8 +2,15 @@ import { useRef, useState } from 'react';
 import { eksportujSzablon, importujSzablon, ROZSZERZENIE_SZABLONU } from '../../dane/archiwum';
 import { duplikujSzablonWProjekcie } from '../../dane/szablon';
 import { BladDanych } from '../../dane/schemat';
-import { dodajSzablonZKartka, opisRozmiaruSzablonu } from '../../dane/wlasneKarty';
+import {
+  czyProjektWlasny,
+  dodajSzablonZKartka,
+  kartkaDlaSzablonu as znajdzKartkeSzablonu,
+  opisRozmiaruSzablonu,
+} from '../../dane/wlasneKarty';
 import { t } from '../../i18n';
+import { baza } from '../baza';
+import { BibliotekaGlobalna } from '../biblioteka/BibliotekaGlobalna';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import type { ProjektWEdycji } from '../useProjekt';
 
@@ -25,12 +32,16 @@ export function SzablonyProjektu({
   const plik = useRef<HTMLInputElement>(null);
   const [status, ustawStatus] = useState('');
   const [blad, ustawBlad] = useState<string>();
+  const wlasnyProjekt = czyProjektWlasny(projekt);
+  const szablony = wlasnyProjekt
+    ? projekt.szablony
+    : projekt.szablony.filter((s) => projekt.arkusze.some((a) => a.wlasnySzablonId === s.id));
 
-  const importuj = async (f: File) => {
+  const importuj = async (odczytaj: () => Promise<Uint8Array>) => {
     ustawBlad(undefined);
     ustawStatus('');
     try {
-      const paczka = importujSzablon(new Uint8Array(await f.arrayBuffer()));
+      const paczka = importujSzablon(await odczytaj());
       let ostrzezenia: string[] = [];
       let nazwa = '';
       let nowaKartka = false;
@@ -48,8 +59,22 @@ export function SzablonyProjektu({
           ...ostrzezenia,
         ].join(' '),
       );
+      return true;
     } catch (e) {
       ustawBlad(t('szablony.bladImportu', { szczegoly: komunikat(e) }));
+      return false;
+    }
+  };
+
+  const zapiszGlobalnie = async (id: string, nazwa: string) => {
+    ustawBlad(undefined);
+    ustawStatus('');
+    try {
+      const { bajty, ostrzezenia } = eksportujSzablon(projekt, edycja.dane, id);
+      await baza().zapiszWBibliotece('szablon', nazwa, bajty);
+      ustawStatus([t('globalna.zapisano', { nazwa }), ...ostrzezenia].join(' '));
+    } catch (e) {
+      ustawBlad(komunikat(e));
     }
   };
 
@@ -67,9 +92,9 @@ export function SzablonyProjektu({
   return (
     <fieldset className="sekcja-szablonow">
       <legend>{t('szablony.tytul')}</legend>
-      {projekt.szablony.length === 0 && <p className="podpis">{t('szablony.brak')}</p>}
+      {szablony.length === 0 && <p className="podpis">{t('szablony.brak')}</p>}
       <ul className="lista-szablonow">
-        {projekt.szablony.map((s) => (
+        {szablony.map((s) => (
           <li key={s.id}>
             <span>
               <strong>{s.nazwa}</strong> <span className="podpis">{opisRozmiaruSzablonu(s)}</span>
@@ -86,12 +111,14 @@ export function SzablonyProjektu({
                 type="button"
                 aria-label={t('szablony.duplikujEtykieta', { nazwa: s.nazwa })}
                 onClick={() =>
-                  edycja.zmien(
-                    (p) =>
-                      duplikujSzablonWProjekcie(p, s.id, (n) =>
-                        n === 1 ? t('szablon.kopia') : t('szablon.kopiaNumer', { n }),
-                      ).projekt,
-                  )
+                  edycja.zmien((p) => {
+                    const kopia = duplikujSzablonWProjekcie(p, s.id, (n) =>
+                      n === 1 ? t('szablon.kopia') : t('szablon.kopiaNumer', { n }),
+                    );
+                    return wlasnyProjekt
+                      ? kopia.projekt
+                      : znajdzKartkeSzablonu(kopia.projekt, kopia.id).projekt;
+                  })
                 }
               >
                 {t('szablony.duplikuj')}
@@ -105,6 +132,13 @@ export function SzablonyProjektu({
               </button>
               <button
                 type="button"
+                aria-label={t('globalna.zapiszEtykieta', { nazwa: s.nazwa })}
+                onClick={() => void zapiszGlobalnie(s.id, s.nazwa)}
+              >
+                {t('globalna.zapisz')}
+              </button>
+              <button
+                type="button"
                 aria-label={t('szablony.kartkaEtykieta', { nazwa: s.nazwa })}
                 onClick={() => kartkaDlaSzablonu(s.id)}
               >
@@ -114,9 +148,11 @@ export function SzablonyProjektu({
           </li>
         ))}
       </ul>
-      <a className="przycisk" href={`#/projekt/${encodeURIComponent(projekt.id)}/nowy-szablon`}>
-        {t('szablony.nowy')}
-      </a>{' '}
+      {wlasnyProjekt && (
+        <a className="przycisk" href={`#/projekt/${encodeURIComponent(projekt.id)}/nowy-szablon`}>
+          {t('szablony.nowy')}
+        </a>
+      )}{' '}
       <button type="button" onClick={() => plik.current?.click()}>
         {t('szablony.importuj')}
       </button>{' '}
@@ -132,7 +168,7 @@ export function SzablonyProjektu({
         onChange={(e) => {
           const f = e.target.files?.[0];
           e.target.value = '';
-          if (f) void importuj(f);
+          if (f) void importuj(async () => new Uint8Array(await f.arrayBuffer()));
         }}
       />
       <p role="status" aria-live="polite" className="podpis">
@@ -143,6 +179,7 @@ export function SzablonyProjektu({
           {blad}
         </p>
       )}
+      <BibliotekaGlobalna rodzaj="szablon" dodaj={(bajty) => importuj(async () => bajty)} />
     </fieldset>
   );
 }
