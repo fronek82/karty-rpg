@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { t } from '../i18n';
 import { GranicaBledu } from './GranicaBledu';
 import { useTrasa } from './useTrasa';
+import { NaglowekAplikacji } from './NaglowekAplikacji';
+import './tokeny.css';
 import './App.css';
 
 // Strony ładowane leniwie: silnik (fontkit) i pakiet dopiero przy kartce; PDF – przy pobraniu.
@@ -53,11 +55,7 @@ export function App() {
 
   return (
     <div className="aplikacja">
-      <header className="naglowek">
-        <a href="#/" className="logo">
-          {t('aplikacja.nazwa')}
-        </a>
-      </header>
+      <NaglowekAplikacji />
       <main className="tresc">
         {trasa === '/' || dawna ? (
           <Leniwa>

@@ -32,6 +32,7 @@ import { rozwinOdstepy, wymiaryKarty } from '../../model/szablon';
 import { roleProjektu } from '../../dane/edycja';
 import { ElementyWlasneKontekst } from './elementyWlasne';
 import { t, tJesliJest } from '../../i18n';
+import { NarzedziaPaska } from '../NaglowekAplikacji';
 import {
   czyKontener,
   type Kontener,
@@ -542,6 +543,7 @@ export function EdytorSzablonu({
           <button type="button" className="glowny" onClick={robKarty}>
             {t('szablon.robKarty')}
           </button>
+          <NarzedziaPaska />
         </header>
         <div className="uklad-szablonu">
           <aside className="panel-drzewa" aria-label={t('szablon.struktura')}>

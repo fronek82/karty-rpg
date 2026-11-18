@@ -44,6 +44,7 @@ import {
 } from '../../druk/arkusz';
 import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
 import { t, tJesliJest } from '../../i18n';
+import { NarzedziaPaska } from '../NaglowekAplikacji';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
 import {
@@ -1406,6 +1407,7 @@ export function EdytorKartki({
       <span role="status" aria-live="polite" className="status-pdf">
         {statusPdf}
       </span>
+      <NarzedziaPaska />
     </header>
   );
 
