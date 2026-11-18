@@ -62,7 +62,7 @@ export const SZABLONY: Szablon[] = [
   szablonProstokata('zeton', 'Żeton', 40, 40, '#c9a227'),
 ];
 
-export const ILOSCI = { arkana: 2, czar: 3, przedmiot: 5 };
+const ILOSCI = { arkana: 2, czar: 3, przedmiot: 5 };
 export const TALIA: Talia = {
   id: 'talia',
   nazwa: 'Mieszane',

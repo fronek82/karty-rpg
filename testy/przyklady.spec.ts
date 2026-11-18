@@ -16,6 +16,7 @@ import {
   wTolerancji,
 } from './swobodnyUI';
 import { zbudujArkusz, stronaTestowa } from '../src/druk/arkusz';
+import { odcinkiCieciaProstokatow } from '../src/druk/pasy';
 import { importujProjekt } from '../src/dane/archiwum';
 import { renderujKarte } from '../src/silnik/karta';
 import type { Scena } from '../src/silnik/scena';
@@ -436,6 +437,35 @@ async function porownajOzdobna(page: Page) {
     ...a.map((x, i) => Math.max(Math.abs(x.e - b[i]!.e), Math.abs(x.f - b[i]!.f))),
   );
   expect(odchylenie).toBeLessThan(0.2);
+
+  // Pozostałe rysunki (tło, panel z podwójną linią, kształt z własnego SVG): ten sam typ, ta sama
+  // liczba i położenie wszystkich liczb (kontury, prostokąty) z tolerancją 0,2 mm.
+  const rysunki = (sc: Scena) => sc.elementy.filter((e) => e.typ !== 'tekst' && e.typ !== 'symbol');
+  const liczby = (v: unknown): (number | string)[] =>
+    typeof v === 'number' || typeof v === 'string'
+      ? [v]
+      : v && typeof v === 'object'
+        ? Object.values(v).flatMap(liczby)
+        : [];
+  const ru = rysunki(zUI.scena);
+  const rw = rysunki(wzor.scena);
+  expect(ru.map((e) => e.typ)).toEqual(rw.map((e) => e.typ));
+  ru.forEach((e, i) => {
+    const l1 = liczby(e);
+    const l2 = liczby(rw[i]);
+    expect(l1.length).toBe(l2.length);
+    l1.forEach((v, j) =>
+      typeof v === 'number'
+        ? expect(Math.abs(v - (l2[j] as number))).toBeLessThan(0.2)
+        : expect(v).toBe(l2[j]),
+    );
+  });
+  // Panel z podwójną linią: dwa obrysy w kolorze ozdoby; kształt z własnego SVG: ścieżka z tłem.
+  const obrysyPanelu = ru.filter(
+    (e) => e.typ === 'prostokat' && e.obrys?.kolor === '#5b3a1e' && e.wypelnienie !== '#f3e6c8',
+  );
+  expect(obrysyPanelu.length).toBeGreaterThanOrEqual(2);
+  expect(ru.some((e) => e.typ === 'sciezka' && e.wypelnienie === '#fff8e6')).toBe(true);
 }
 
 test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia, własny kształt, ramka 9-slice z PNG, PDF', async ({
@@ -639,6 +669,17 @@ test('E(1): A4 z 2× 70×120, 3× 63×88, 5× 44×68 na jednej stronie – pasy,
   expect(wynik.mieszane!.karty).toHaveLength(10);
   for (const u of wynik.mieszane!.karty) bliskie(p[u.kartaId]!, [u.x, u.y, u.szer, u.wys]);
 
+  // Wspólne linie cięcia rysowane raz: odcinki sceny są unikalne i jest ich tyle, ile po scaleniu
+  // krawędzi wszystkich kart (`odcinkiCieciaProstokatow`).
+  const liniePrzerywane = wynik.strony[0]!.elementy.filter((e) => e.typ === 'linia');
+  const klucze = liniePrzerywane.map((e) =>
+    e.typ === 'linia' ? [e.x1, e.y1, e.x2, e.y2].map((v) => Math.round(v * 100)).join(',') : '',
+  );
+  expect(new Set(klucze).size).toBe(klucze.length);
+  const oczekiwane = odcinkiCieciaProstokatow(wynik.mieszane!.karty);
+  expect(oczekiwane.length).toBeGreaterThan(10);
+  expect(liniePrzerywane).toHaveLength(oczekiwane.length);
+
   // Wzorzec wizualny strony (z wolnymi miejscami jak w edytorze).
   await page.mouse.move(5, 5);
   await expect(page.locator('.strona-kartki').first()).toHaveScreenshot(
@@ -670,10 +711,7 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
   await page.locator('[data-karta]').first().click();
   const dane = page.getByRole('complementary', { name: 'Zaznaczone karty' });
   await dane.getByLabel('Liczba kopii').fill('8');
-  await dane
-    .getByRole('button', { name: /^Duplikuj/ })
-    .last()
-    .click();
+  await dane.getByRole('button', { name: 'Duplikuj ×8' }).click();
   await expect(page.locator('[data-karta]')).toHaveCount(9);
   await page.getByRole('button', { name: /Ustawienia/ }).click();
   const ust = page.getByRole('complementary', { name: 'Ustawienia' });
@@ -697,7 +735,8 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
     { maxDiffPixelRatio: 0.002 },
   );
 
-  // Zgodność z silnikiem: sloty 63,5×89, karty na środku (+0,25 / +0,5 mm), tło do krawędzi slotu.
+  // Zgodność z silnikiem (Node): slot 63,5×89, 9 teł do krawędzi slotu, a karta 63×88 leży na
+  // środku slotu – tło slotu i karta mają wspólny środek (przesunięcie 0,25 / 0,5 mm).
   const { projekt } = await eksportZInterfejsu(page);
   const arkusz = projekt.arkusze[0]!;
   const talia = projekt.talie[0]!;
@@ -713,13 +752,27 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
     (e) => e.typ === 'prostokat' && e.szer === 63.5 && e.wys === 89,
   );
   expect(tla).toHaveLength(9);
+  // Każda karta (grupa sceny) leży w swoim slocie przesunięta o pół luzu: +0,25 mm w poziomie
+  // i +0,5 mm w pionie (slot 63,5×89 minus karta 63×88, na środek).
+  const grupy = w.strony[0]!.elementy.filter((e) => e.typ === 'grupa');
+  expect(grupy).toHaveLength(9);
+  for (const t of tla) {
+    if (t.typ !== 'prostokat') continue;
+    const g = grupy.filter(
+      (e) =>
+        e.typ === 'grupa' &&
+        Math.abs(e.x - (t.x + 0.25)) < 0.01 &&
+        Math.abs(e.y - (t.y + 0.5)) < 0.01,
+    );
+    expect(g, `karta w slocie (${t.x}, ${t.y})`).toHaveLength(1);
+  }
 
-  // Wydruk testowy: PDF z jedną stroną z obrysami slotów 63,5×89 – to samo wylicza silnik.
-  const test = stronaTestowa(arkusz, talia, {
+  // Wydruk testowy: silnik daje 9 obrysów slotów 63,5×89, a pobrany PDF ma jedną stronę.
+  const wydrukTestowy = stronaTestowa(arkusz, talia, {
     czcionki: rejestrTestowy(),
     szablony: new Map(projekt.szablony.map((x) => [x.id, x])),
   });
-  const obrysy = test.elementy.filter(
+  const obrysy = wydrukTestowy.elementy.filter(
     (e) => e.typ === 'prostokat' && e.szer === 63.5 && e.wys === 89,
   );
   expect(obrysy).toHaveLength(9);

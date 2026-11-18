@@ -38,7 +38,7 @@ projekty zostają na Twoim komputerze (IndexedDB).
 
 ### Druk poza zwykłym A4
 
-- **Własny układ arkusza** (Ustawienia kartki → „Układ arkusza”): stała siatka kolumny × rzędy,
+- **Własny układ arkusza** (Ustawienia → „Układ arkusza”): stała siatka kolumny × rzędy,
   margines górny i lewy, rozmiar karty i odstępy między kartami – np. gotowe arkusze z perforacją.
   Kartka obok to podgląd na żywo; „Zapisz jako mój układ” – lista „Moje układy” w tej przeglądarce.
 - **Kalibracja drukarki**: przesunięcie X/Y w mm (zapamiętane w przeglądarce, tylko PDF)
@@ -82,7 +82,7 @@ tak samo (powtarzane kafelki trafiają do PDF tylko raz).
 
 ## Karty różnych rozmiarów
 
-1. **Ustawienia kartki** → „Rozmiary kart na kartce” → **mieszane**. Karty o różnych rozmiarach
+1. **Ustawienia** → „Rozmiary kart na kartce” → **mieszane**. Karty o różnych rozmiarach
    (np. 70×120, 63×88 i 44×68 mm) układają się na jednej stronie w pasach, a wspólne krawędzie mają
    jedną linię cięcia – wygodne cięcie na trymerze. Własny układ siatki jest wtedy wyłączony.
 2. Opcje: kolejność **od największych** albo **własna** (przeciągnij kartę – zmienia się jej miejsce
