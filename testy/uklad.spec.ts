@@ -1,50 +1,13 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { unzipSync } from 'fflate';
-import { eksportujSzablon } from '../src/dane/archiwum';
-import { WERSJA_SCHEMATU, type Projekt } from '../src/model/projekt';
-import { szablonCzaru } from '../src/silnik/__testy__/przyklady';
+import { kartkaCzaru } from './kartkaUI';
 import { slot } from './pomoc';
 
 /** M2-6: własny układ arkusza, „Moje układy”, kalibracja, wydruk testowy, eksport obrazów. */
 
 test.use({ viewport: { width: 1440, height: 1100 } });
 test.setTimeout(120_000);
-
-function plikSzablonu() {
-  const projekt: Projekt = {
-    wersja: WERSJA_SCHEMATU,
-    id: 'zrodlo',
-    nazwa: 'źródło',
-    utworzono: '2026-01-01T00:00:00.000Z',
-    zmieniono: '2026-01-01T00:00:00.000Z',
-    role: {},
-    zasoby: [],
-    szablony: [szablonCzaru],
-    talie: [],
-    arkusze: [],
-  };
-  return {
-    name: 'czar.kartyrpg-szablon',
-    mimeType: 'application/zip',
-    buffer: Buffer.from(eksportujSzablon(projekt, new Map(), szablonCzaru.id).bajty),
-  };
-}
-
-async function kartkaCzaru(page: Page) {
-  await page.goto('./#/');
-  await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
-  await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu());
-  await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
-  await slot(page, 1, 1, 1).click();
-  await page.getByRole('menuitem', { name: /Czar \(test\)/ }).click();
-  await page
-    .getByRole('complementary', { name: 'Zaznaczone karty' })
-    .getByLabel('Nazwa', { exact: true })
-    .fill('Ognista kula');
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  return page.getByRole('complementary', { name: 'Ustawienia' });
-}
 
 /** Wymiary obrazu PNG z nagłówka IHDR. */
 const wymiaryPng = (b: Uint8Array) => {

@@ -1,18 +1,22 @@
-import { readFileSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
-import { PDFDocument } from 'pdf-lib';
-import { eksportujProjekt, eksportujSzablon } from '../src/dane/archiwum';
-import { projektZPakietu } from '../src/dane/pakiet';
-import { PAKIET_WLASNY, pakietWlasny, ustawieniaKartkiDla } from '../src/dane/wlasneKarty';
+import { expect, test } from '@playwright/test';
+import { eksportujSzablon } from '../src/dane/archiwum';
 import { zbudujArkusz } from '../src/druk/arkusz';
 import { scenyDoPdf } from '../src/druk/pdf';
-import type { Arkusz } from '../src/model/arkusz';
 import { WERSJA_SCHEMATU, type Projekt } from '../src/model/projekt';
 import type { Szablon, Talia } from '../src/model/szablon';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
 import { przeciagnij, slot, srodek, zapisano } from './pomoc';
+import {
+  SZABLONY,
+  TALIA,
+  arkuszMieszany,
+  bliskie,
+  otworzProjekt,
+  polozenia,
+  szablonProstokata,
+} from './mieszaneUI';
 
 /**
  * M2b-2: mieszane rozmiary kart na jednej kartce – przykład E(1): A4 z 2× 70×120, 3× 63×88
@@ -22,164 +26,6 @@ import { przeciagnij, slot, srodek, zapisano } from './pomoc';
 test.use({ viewport: { width: 1440, height: 1100 } });
 test.setTimeout(120_000);
 
-/** Prosty szablon karty w mm: kolorowe tło, tytuł i biały panel z wymiarem. */
-const szablonProstokata = (id: string, nazwa: string, szer: number, wys: number, kolor: string) =>
-  ({
-    id,
-    nazwa,
-    rozmiar: { tryb: 'mm', szerokosc: szer, wysokosc: wys },
-    promienRogow: 2,
-    tlo: kolor,
-    korzen: {
-      id: 'korzen',
-      typ: 'kolumna',
-      padding: 3,
-      odstep: 2,
-      dzieci: [
-        {
-          id: 'tytul',
-          typ: 'tekst',
-          tekst: nazwa,
-          wieleWierszy: false,
-          styl: {
-            czcionka: 'tresc',
-            wariant: 'pogrubiony',
-            rozmiar: 5,
-            kolor: '#ffffff',
-            wyrownanie: 'srodek',
-          },
-        },
-        {
-          id: 'panel',
-          typ: 'tekst',
-          tekst: `${szer}×${wys}`,
-          wysokosc: { wypelnij: 1 },
-          tlo: '#ffffff',
-          promien: 1.5,
-          padding: 2,
-          styl: { czcionka: 'tresc', rozmiar: 3, kolor: '#888888', wyrownanie: 'srodek' },
-        },
-      ],
-    },
-  }) satisfies Szablon;
-
-const SZABLONY: Szablon[] = [
-  szablonProstokata('arkana', 'Arkana', 70, 120, '#6b3d8f'),
-  szablonProstokata('czar', 'Czar', 63, 88, '#b0302a'),
-  szablonProstokata('przedmiot', 'Przedmiot', 44, 68, '#2a7b72'),
-  szablonProstokata('zeton', 'Żeton', 40, 40, '#c9a227'),
-];
-
-const ILOSCI = { arkana: 2, czar: 3, przedmiot: 5 };
-const TALIA: Talia = {
-  id: 'talia',
-  nazwa: 'Mieszane',
-  karty: Object.entries(ILOSCI).flatMap(([szablonId, n]) =>
-    Array.from({ length: n }, (_, i) => ({
-      id: `${szablonId}-${i + 1}`,
-      szablonId,
-      dane: {},
-      ilosc: 1,
-    })),
-  ),
-};
-const arkuszMieszany = (zmiana: Partial<Arkusz['ustawienia']> = {}): Arkusz => ({
-  id: 'kartka-1',
-  nazwa: 'Kartka 1',
-  taliaId: 'talia',
-  ustawienia: {
-    ...ustawieniaKartkiDla(SZABLONY[0]!),
-    rozmiary: 'mieszane',
-    ...zmiana,
-  },
-});
-
-/** Plik projektu (.kartyrpg) z kartkami w trybie mieszanym, z wbudowanymi czcionkami. */
-async function plikProjektu() {
-  const pakiet = {
-    ...pakietWlasny(SZABLONY),
-    nazwa: 'Mieszane',
-    szablony: SZABLONY,
-    talie: [TALIA],
-    arkusze: [arkuszMieszany()],
-  };
-  const { projekt, zasoby } = await projektZPakietu(
-    pakiet,
-    async (f) => new Uint8Array(readFileSync(`public/czcionki/${f}`)),
-    () => Promise.reject(new Error('brak obrazów')),
-    'mieszane',
-  );
-  return {
-    name: 'mieszane.kartyrpg',
-    mimeType: 'application/zip',
-    buffer: Buffer.from(eksportujProjekt({ ...projekt, pakiet: PAKIET_WLASNY }, zasoby)),
-  };
-}
-
-async function otworzProjekt(page: Page) {
-  await page.goto('./#/');
-  await page.getByTestId('plik-projektu').setInputFiles(await plikProjektu());
-  await page.getByRole('link', { name: 'Mieszane' }).first().click();
-  await expect(page.locator('[data-karta]')).toHaveCount(10, { timeout: 15000 });
-}
-
-/** Lewy górny róg i wymiar każdej karty na pierwszej stronie w mm od rogu strony. */
-async function polozenia(page: Page) {
-  const strona = (await page.locator('.strona-kartki').first().boundingBox())!;
-  const mm = (v: number, os: 'x' | 'y') =>
-    (v / (os === 'x' ? strona.width : strona.height)) * (os === 'x' ? 210 : 297);
-  const wynik: Record<string, number[]> = {};
-  for (const el of await page.locator('.strona-kartki').first().locator('[data-karta]').all()) {
-    const b = (await el.boundingBox())!;
-    wynik[(await el.getAttribute('data-karta'))!] = [
-      mm(b.x - strona.x, 'x'),
-      mm(b.y - strona.y, 'y'),
-      mm(b.width, 'x'),
-      mm(b.height, 'y'),
-    ];
-  }
-  return wynik;
-}
-const bliskie = (a: number[], b: number[]) => a.forEach((v, i) => expect(v).toBeCloseTo(b[i]!, 0));
-
-test('E(1): A4 z 2× 70×120, 3× 63×88, 5× 44×68 na jednej stronie – pasy, wzorzec strony i PDF', async ({
-  page,
-}) => {
-  // Cała strona w widoku (bez przewijania pod pasek górny) – stabilny wzorzec.
-  await page.setViewportSize({ width: 1440, height: 1800 });
-  await otworzProjekt(page);
-  await expect(page.locator('.strona-kartki')).toHaveCount(1);
-  await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
-  await expect(page.locator('.etykieta-strony')).toContainText('Strona 1 z 1 · 10 kart');
-
-  // Położenia zgodne z algorytmem pasów (marginesy 10 mm, pasy 120 / 88 / 68 mm).
-  const p = await polozenia(page);
-  bliskie(p['arkana-1']!, [10, 10, 70, 120]);
-  bliskie(p['arkana-2']!, [80, 10, 70, 120]);
-  bliskie(p['przedmiot-1']!, [150, 10, 44, 68]);
-  bliskie(p['czar-1']!, [10, 130, 63, 88]);
-  bliskie(p['czar-3']!, [136, 130, 63, 88]);
-  bliskie(p['przedmiot-2']!, [10, 218, 44, 68]);
-  bliskie(p['przedmiot-5']!, [142, 218, 44, 68]);
-
-  // Wzorzec wizualny strony (z wolnymi miejscami jak w edytorze).
-  await page.mouse.move(5, 5);
-  await expect(page.locator('.strona-kartki').first()).toHaveScreenshot('mieszane-e1-strona.png', {
-    maxDiffPixelRatio: 0.002,
-  });
-  await zapisano(page);
-
-  // PDF: jedna strona A4.
-  const [pobranie] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
-  const pdf = await PDFDocument.load(readFileSync(await pobranie.path()));
-  expect(pdf.getPageCount()).toBe(1);
-  const { width, height } = pdf.getPage(0).getSize();
-  expect(width).toBeCloseTo(595.28, 0);
-  expect(height).toBeCloseTo(841.89, 0);
-});
 
 test('PDF wygląda jak SVG: mieszane rozmiary, także z obróconą kartą', async ({ page }) => {
   await przygotujStrone(page);
