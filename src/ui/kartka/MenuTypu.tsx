@@ -111,9 +111,6 @@ export function MenuTypu({
               }
             >
               <span>
-                <span className="ikona" aria-hidden="true">
-                  {typ.ikona}
-                </span>{' '}
                 {nazwaTypu(typ)}
                 {warianty && ' ▸'}
               </span>

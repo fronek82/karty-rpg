@@ -53,9 +53,13 @@ test('tabela: kolumny, wiersze, nagłówki, linie; komórki to pola karty', asyn
 
   // Na kartce: komórki 2 wierszy × 3 kolumn jako osobne pola.
   await page.getByRole('button', { name: 'Rób karty ►' }).click();
+  // Kartka musi być gotowa (slot widoczny), zanim klikniemy; karta dodana i zaznaczona (panel
+  // widoczny) – dopiero potem sprawdzamy pola. Dłuższe limity: wolne CI (rzadka niestabilność).
+  await expect(slot(page, 1, 1, 1)).toBeVisible({ timeout: 15000 });
   await slot(page, 1, 1, 1).click();
   await page.getByRole('menuitem', { name: /Moja karta/ }).click();
   const karta = page.getByRole('complementary', { name: 'Zaznaczone karty' });
+  await expect(karta).toBeVisible({ timeout: 15000 });
   for (const n of [
     'Siła (1)',
     'Wola (1)',
@@ -64,7 +68,9 @@ test('tabela: kolumny, wiersze, nagłówki, linie; komórki to pola karty', asyn
     'Wola (2)',
     'Zręczność (2)',
   ])
-    await expect(karta.getByLabel(`Cechy – ${n}`, { exact: true })).toBeVisible();
+    await expect(karta.getByLabel(`Cechy – ${n}`, { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
 });
 
 test('kształt z listy, styl tekstu, stały tekst, ramka pola i karty; kopiuj/wklej styl, wiele naraz', async ({

@@ -5,7 +5,7 @@ import { expect, type Page } from '@playwright/test';
 export async function nowaPustaKartka(page: Page) {
   await page.goto('./#/');
   await page.getByRole('link', { name: /Stwórz karty do Mausrittera/ }).click();
-  await page.getByRole('button', { name: /Pusta kartka/ }).click();
+  await page.getByRole('button', { name: /Pusta kartka A4/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 }
 

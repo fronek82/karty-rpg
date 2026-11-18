@@ -582,6 +582,350 @@ button.glowny:active:not(:disabled) {
   margin-bottom: 0.7rem;
 }
 
+.wybor-kolumny {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .wybor-kolumny {
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  /* Menu zostaje na widoku przy przewijaniu grup. */
+  .wybor-kolumny > .start-menu {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+/* Skróty w lewym menu to przyciski (nie linki) – ten sam wygląd co paski startu. */
+button.pasek-menu {
+  display: block;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  text-align: left;
+  box-shadow: var(--cien);
+  cursor: pointer;
+  transition:
+    filter 0.12s,
+    transform 0.12s;
+}
+
+button.pasek-menu b {
+  display: block;
+  font-size: 1rem;
+}
+
+button.pasek-menu span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+}
+
+/* Opis skrótu pojawia się z podglądem – stała wysokość, żeby menu nie skakało. */
+button.pasek-menu .opis-skrotu {
+  min-height: 1.3em;
+}
+
+button.pasek-menu.pasek-bursztyn {
+  background: var(--kolor-2);
+  color: var(--na-jasnym);
+}
+
+button.pasek-menu.pasek-turkus {
+  background: var(--kolor-3);
+  color: var(--na-jasnym);
+}
+
+button.pasek-menu:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+button.pasek-menu:active:not(:disabled) {
+  filter: brightness(0.82);
+  transform: translateY(1px);
+}
+
+/* Aktywna grupa: ramka w kolorze tła strony i obrys tekstu (jak na makiecie). */
+button.pasek-menu[aria-current='true'] {
+  box-shadow:
+    0 0 0 3px var(--tlo),
+    0 0 0 5px var(--tekst);
+}
+
+button.pasek-menu:focus-visible {
+  outline: 3px solid var(--zaznaczenie);
+  outline-offset: 6px;
+}
+
+.grupy-podgladow {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+  min-width: 0;
+}
+
+.grupa-podgladow {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 8px;
+  scroll-margin-top: 1rem;
+}
+
+.grupa-podgladow h2 {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.8rem;
+  margin: 0 0 0.8rem;
+  font-size: 1.35rem;
+}
+
+.grupa-podgladow h2:focus {
+  outline: none;
+}
+
+.grupa-podgladow h2:focus-visible {
+  outline: 3px solid var(--zaznaczenie);
+  outline-offset: 3px;
+}
+
+.grupa-podgladow h2 small {
+  font-size: 0.88rem;
+  font-weight: 400;
+  color: var(--tekst-przygaszony);
+}
+
+/* Podświetlenie grupy wskazanej skrótem w menu. */
+.grupa-podgladow.wyrozniona h2 {
+  text-decoration: underline;
+  text-decoration-color: var(--wyroznienie);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 6px;
+}
+
+.siatka-ukladow {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 1.1rem;
+}
+
+/* Kafelek podglądu – jeden przycisk: kartka z silnika, nazwa i podpowiedź. */
+button.kafelek-podgladu {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  text-align: left;
+  border: 2px solid var(--obramowanie-karty);
+  border-bottom: 5px solid var(--bordo);
+  border-radius: 8px;
+  background: var(--tlo-panelu);
+  box-shadow: var(--cien);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+button.kafelek-podgladu:hover:not(:disabled),
+button.kafelek-podgladu:focus-visible {
+  border-color: var(--zaznaczenie);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--zaznaczenie) 35%, transparent),
+    var(--cien);
+}
+
+button.kafelek-podgladu:focus-visible {
+  outline: 3px solid var(--zaznaczenie);
+  outline-offset: 3px;
+}
+
+button.kafelek-podgladu.szeroki {
+  flex-direction: row;
+}
+
+/* Kafelki poza ekranem nie budują układu ani malowania (w każdym zawarty jest duży SVG). */
+.siatka-ukladow > button.kafelek-podgladu {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 17rem;
+}
+
+.miniatura-podgladu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--tlo) 70%, black 6%);
+}
+
+.kafelek-podgladu.szeroki .miniatura-podgladu {
+  flex: 0 0 min(24rem, 50%);
+  padding: 1rem;
+}
+
+.opis-podgladu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.65rem 0.9rem 0.8rem;
+  border-top: 1px solid var(--obramowanie);
+}
+
+.opis-podgladu b {
+  font-size: 1rem;
+}
+
+.kafelek-podgladu.szeroki .opis-podgladu {
+  flex: 1;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.1rem 1.4rem;
+  border-top: 0;
+  border-left: 1px solid var(--obramowanie);
+}
+
+.kafelek-podgladu.szeroki .opis-podgladu b {
+  font-size: 1.15rem;
+}
+
+.opis-podgladu .opis-tekst {
+  min-height: 2.8em;
+  font-size: 0.92rem;
+  color: var(--tekst-przygaszony);
+}
+
+.opis-podgladu .podpowiedz {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+button.kafelek-podgladu:hover:not(:disabled) .podpowiedz,
+button.kafelek-podgladu:focus-visible .podpowiedz {
+  padding: 0.1rem 0.55rem;
+  border-radius: 4px;
+  background: var(--akcent);
+  color: var(--akcent-tekst);
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  button.kafelek-podgladu.szeroki {
+    flex-direction: column;
+  }
+
+  .kafelek-podgladu.szeroki .miniatura-podgladu {
+    flex-basis: auto;
+  }
+
+  .kafelek-podgladu.szeroki .opis-podgladu {
+    border-left: 0;
+    border-top: 1px solid var(--obramowanie);
+  }
+}
+
+/* Kartka papieru z SVG silnika; siatka slotów jako nakładka. */
+.papier {
+  position: relative;
+  display: block;
+  width: 100%;
+  background: var(--papier);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+}
+
+.papier-svg,
+.papier-svg > svg,
+.siatka-slotow {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.siatka-slotow {
+  position: absolute;
+  inset: 0;
+}
+
+.siatka-slotow rect {
+  fill: none;
+  stroke: var(--zaznaczenie);
+  stroke-opacity: 0.55;
+  stroke-width: 0.28;
+  stroke-dasharray: 1.6 1.2;
+}
+
+.stos {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+/* Szkielet na czas liczenia podglądu. */
+.szkielet {
+  display: block;
+  width: 100%;
+}
+
+.szkielet-papier {
+  display: block;
+  width: 100%;
+  aspect-ratio: 297 / 210;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tekst) 8%, var(--papier)) 30%,
+    color-mix(in srgb, var(--tekst) 2%, var(--papier)) 50%,
+    color-mix(in srgb, var(--tekst) 8%, var(--papier)) 70%
+  );
+  background-size: 300% 100%;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+  animation: szkielet-przesuw 1.4s linear infinite;
+}
+
+.blad-podgladu .szkielet-papier {
+  animation: none;
+  outline: 2px dashed var(--zle);
+  outline-offset: -4px;
+}
+
+@keyframes szkielet-przesuw {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .szkielet-papier {
+    animation: none;
+  }
+
+  button.pasek-menu,
+  button.kafelek-podgladu {
+    transition: none;
+  }
+
+  button.pasek-menu:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+.naglowek-sekcji {
+  margin-bottom: 0.7rem;
+}
+
 .kafelki-gier {
   display: flex;
   flex-wrap: wrap;
