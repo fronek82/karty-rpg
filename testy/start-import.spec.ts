@@ -180,13 +180,17 @@ test.describe('import plików', () => {
     await page.goto('./');
     const przycisk = page.getByRole('button', { name: 'Importuj pliki…' });
     await przycisk.focus();
+    await expect(przycisk).toBeFocused();
     const [wybor] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.keyboard.press('Enter'),
     ]);
     expect(wybor.isMultiple()).toBe(true);
+    // Zamknij pierwsze okno wyboru (bez plików), inaczej drugie może się nie otworzyć.
+    await wybor.setFiles([]);
     const strefa = page.getByTestId('strefa-importu');
     await strefa.focus();
+    await expect(strefa).toBeFocused();
     const [wybor2] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.keyboard.press('Enter'),
