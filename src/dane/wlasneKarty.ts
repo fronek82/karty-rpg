@@ -18,7 +18,7 @@ import { wymiaryKarty, type Szablon } from '../model/szablon';
 import type { Pakiet, TypKarty } from '../pakiety/typy';
 import { projektZPakietu } from './pakiet';
 import { dodajSzablon, type PaczkaSzablonu } from './archiwum';
-import { dodajKartke } from './kartka';
+import { dodajKarteWSlocie, dodajKartke } from './kartka';
 
 /**
  * Projekty „własnych kart” (bez pakietu gry): typy kart w menu kartki pochodzą z szablonów
@@ -207,6 +207,34 @@ export async function nowyProjektWlasny(
     paczka,
   );
   return { projekt: w.projekt, zasoby: w.zasoby, ostrzezenia: w.ostrzezenia };
+}
+
+/**
+ * Nowy projekt własnych kart z przykładowego szablonu: szablon, kartka dopasowana do rozmiaru
+ * karty (jak przy imporcie szablonu) i jedna karta z danymi przykładowymi w pierwszym slocie.
+ */
+export async function nowyProjektZPrzykladu(
+  przyklad: { szablon: Szablon; dane: Record<string, string> },
+  pobierzCzcionke: (plik: string) => Promise<Uint8Array>,
+  id: string = crypto.randomUUID(),
+): Promise<{ projekt: Projekt; zasoby: DaneZasobow }> {
+  const { projekt, zasoby } = await nowyProjektWlasny(
+    { szablon: przyklad.szablon, role: {}, zasoby: [], dane: new Map() },
+    pobierzCzcionke,
+    id,
+  );
+  const szablon = projekt.szablony[0]!;
+  const arkusz = projekt.arkusze[0]!;
+  const { kolumny, rzedy } = slotyNaStronie(arkusz.ustawienia, slotSzablonu(szablon));
+  const w = dodajKarteWSlocie(
+    projekt,
+    arkusz.id,
+    { strona: 0, kolumna: 0, rzad: 0 },
+    { szablonId: szablon.id, rozmiary: [{ kolumny: 1, rzedy: 1 }], dane: przyklad.dane },
+    { szablony: new Map([[szablon.id, szablon]]), siatka: { kolumny, rzedy } },
+  );
+  if ('blad' in w) throw new Error(`Karta przykładowa nie mieści się na kartce (${w.blad}).`);
+  return { projekt: w.projekt, zasoby };
 }
 
 /**

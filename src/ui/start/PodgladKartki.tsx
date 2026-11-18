@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { t } from '../../i18n';
 import { useJezyk } from '../../i18n/react';
 import type { StronaPodgladu } from './podglady';
-import type { WynikPodgladu } from './ladujPodglady';
+import type { WynikPodgladu } from './pamiecPodgladow';
 
 /** Przerywana siatka slotów nad pustą kartką – geometria z wyniku układu (silnik jej nie rysuje). */
 export function SiatkaSlotow({ strona }: { strona: StronaPodgladu }) {
@@ -49,17 +49,23 @@ export function Papier({ strona, styl }: { strona: StronaPodgladu; styl?: React.
 export const PodgladKartki = memo(function PodgladKartki({
   wynik,
   stos = false,
+  proporcje,
 }: {
   wynik: WynikPodgladu | undefined;
+  /** Proporcje szkieletu (np. karta 63×88); bez nich szkielet ma proporcje kartki A4 poziomo. */
+  proporcje?: { szerokosc: number; wysokosc: number };
   /** Kilka kartek ułożonych jak stos (pierwsza na wierzchu). */
   stos?: boolean;
 }) {
   // memo nie przepuszcza zmiany języka z rodzica – napisy szkieletu odświeżamy sami.
   useJezyk();
+  const stylSzkieletu = proporcje
+    ? { aspectRatio: `${proporcje.szerokosc} / ${proporcje.wysokosc}` }
+    : undefined;
   if (!wynik)
     return (
       <span className="szkielet" role="img" aria-label={t('start.podgladLiczy')}>
-        <span className="szkielet-papier" aria-hidden="true" />
+        <span className="szkielet-papier" style={stylSzkieletu} aria-hidden="true" />
       </span>
     );
   if ('blad' in wynik)
@@ -69,7 +75,7 @@ export const PodgladKartki = memo(function PodgladKartki({
         role="img"
         aria-label={t('start.podgladBlad', { szczegoly: wynik.blad })}
       >
-        <span className="szkielet-papier" aria-hidden="true" />
+        <span className="szkielet-papier" style={stylSzkieletu} aria-hidden="true" />
       </span>
     );
   const strony = wynik.podglad.strony;

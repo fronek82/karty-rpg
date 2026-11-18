@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { importujProjekt, jakoKopia, LIMITY_ARCHIWUM } from '../../dane/archiwum';
-import { BladDanych } from '../../dane/schemat';
 import { formatujLiczbe, t } from '../../i18n';
 import type { Projekt } from '../../model/projekt';
-import { baza, nowyProjektZSzablonu } from '../baza';
+import { baza } from '../baza';
 import { ACCEPT_IMPORTU, jestZip, rodzajPoNazwie, rozpoznajRodzaj } from './importPlikow';
+import { adresProjektu, importujPlikSzablonu, opisBleduImportu } from './importSzablonu';
 
 interface Wynik {
   nazwa: string;
@@ -22,11 +22,6 @@ interface Kolizja {
 }
 
 const MB = 1024 * 1024;
-
-const opisBledu = (e: unknown) =>
-  e instanceof BladDanych
-    ? e.message
-    : t('projekty.bladNieoczekiwany', { szczegoly: e instanceof Error ? e.message : String(e) });
 
 const blad = (nazwa: string, szczegoly: string): Wynik => ({
   nazwa,
@@ -105,15 +100,11 @@ export function PanelImportu({ onZmiana }: { onZmiana: () => void }) {
     if (!rodzaj) return blad(f.name, t('import.nieznanyRodzaj'));
 
     if (rodzaj === 'szablon') {
-      let id: string;
-      try {
-        id = await nowyProjektZSzablonu(bajty);
-      } catch (e) {
-        return blad(f.name, t('szablony.bladImportu', { szczegoly: opisBledu(e) }));
-      }
+      const wynikSzablonu = await importujPlikSzablonu(bajty);
+      if ('blad' in wynikSzablonu) return blad(f.name, wynikSzablonu.blad);
       if (razem === 1) {
         // Pojedynczy szablon: od razu do edytora kartki nowego projektu.
-        window.location.hash = `#/projekt/${encodeURIComponent(id)}`;
+        window.location.hash = adresProjektu(wynikSzablonu.id);
         return undefined;
       }
       return { nazwa: f.name, ok: true, tekst: t('import.szablon', { plik: f.name }) };
@@ -159,7 +150,7 @@ export function PanelImportu({ onZmiana }: { onZmiana: () => void }) {
           if (!wynik) return; // przejście do edytora
           wyniki.push(wynik);
         } catch (e) {
-          wyniki.push(blad(f.name, opisBledu(e)));
+          wyniki.push(blad(f.name, opisBleduImportu(e)));
         }
       }
     } finally {
