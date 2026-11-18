@@ -20,7 +20,15 @@ test('tytuł, położenie tytułu, czarno-biały, czcionki; zmiana papieru odrzu
   page,
 }) => {
   await gotowyUklad(page, 'Broń i pancerze');
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  const otworz = page.getByRole('button', { name: /Ustawienia/ });
+  await otworz.press('Enter');
+  await expect(ustawienia(page).getByRole('heading', { name: 'Ustawienia' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(otworz).toBeFocused();
+  await otworz.press('Enter');
+  await ustawienia(page).getByRole('button', { name: 'Zamknij ustawienia' }).press('Enter');
+  await expect(otworz).toBeFocused();
+  await otworz.press('Enter');
   await ustawienia(page).getByLabel('Tytuł kartki').fill('Moja broń');
   await zapisano(page);
   await ustawienia(page).getByRole('button', { name: 'bez tytułu' }).click();
@@ -68,7 +76,10 @@ test('nagłówek grupy nad zaznaczonymi kolumnami na pustej kartce', async ({ pa
   await panel.getByLabel('Nagłówek', { exact: true }).fill('Zmęczona');
   await expect(page.getByRole('button', { name: 'Nagłówek grupy: Zmęczona' })).toBeVisible();
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Nagłówek grupy: Zmęczona' }).click();
+  const naglowek = page.getByRole('button', { name: 'Nagłówek grupy: Zmęczona' });
+  await naglowek.press('Enter');
+  await expect(naglowek).toHaveAttribute('aria-pressed', 'true');
+  await expect(panel.getByLabel('Nagłówek', { exact: true })).toHaveValue('Zmęczona');
   await page.keyboard.press('Delete');
   await expect(page.locator('[data-naglowek]')).toHaveCount(0);
   await page.locator('.toast').getByRole('button', { name: 'Cofnij' }).click();

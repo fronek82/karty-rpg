@@ -27,6 +27,7 @@ export function NakladkaSwobodna({
   uchwytDown: (u: Uchwyt, e: PointerEvent) => void;
   uchwytKlawisz: (u: Uchwyt, e: KeyboardEvent) => void;
 }) {
+  const upuszczenie = stan?.upuszczenie;
   const px = stan?.skala ?? 0;
   const szerokoscPx = px * szer;
   // Siatka rysowana rzadziej, gdy kreski byłyby gęstsze niż co 6 px.
@@ -43,7 +44,7 @@ export function NakladkaSwobodna({
             })
           : ''}
       </div>
-      {stan && siatka > 0 && px > 0 && (
+      {stan && !upuszczenie && siatka > 0 && px > 0 && (
         <div
           className="siatka-podgladu"
           aria-hidden="true"
@@ -53,6 +54,34 @@ export function NakladkaSwobodna({
             backgroundPosition: `${stan.poczatekSiatki.x * px}px ${stan.poczatekSiatki.y * px}px`,
           }}
         />
+      )}
+      {upuszczenie && (
+        <div
+          aria-hidden="true"
+          className="cel-upuszczenia"
+          data-testid="cel-upuszczenia"
+          style={{
+            left: `${(upuszczenie.ramka.x / szer) * 100}%`,
+            top: `${(upuszczenie.ramka.y / wys) * 100}%`,
+            width: `${(upuszczenie.ramka.szer / szer) * 100}%`,
+            height: `${(upuszczenie.ramka.wys / wys) * 100}%`,
+          }}
+        >
+          {upuszczenie.wskaznik && (
+            <div
+              className={`prowadnica prowadnica-${upuszczenie.wskaznik.os}`}
+              style={
+                upuszczenie.wskaznik.os === 'x'
+                  ? {
+                      left: `${((upuszczenie.wskaznik.polozenie - upuszczenie.ramka.x) / upuszczenie.ramka.szer) * 100}%`,
+                    }
+                  : {
+                      top: `${((upuszczenie.wskaznik.polozenie - upuszczenie.ramka.y) / upuszczenie.ramka.wys) * 100}%`,
+                    }
+              }
+            />
+          )}
+        </div>
       )}
       {stan?.prowadnice.map((p) => (
         <div

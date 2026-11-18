@@ -245,7 +245,6 @@ export const pl = {
   'kartka.dodajKarteTutaj': 'Dodaj kartę w tym slocie',
   'kartka.nieMiesci': 'Nie mieści się w tym miejscu',
   'kartka.duplikuj': 'Duplikuj',
-  'kartka.duplikujN': 'Duplikuj ×{n}',
   'kartka.ileKopii': 'Liczba kopii',
   'kartka.usun': 'Usuń',
   'kartka.cofnij': 'Cofnij',
@@ -457,6 +456,10 @@ export const pl = {
   'szablon.wyjmij': '← Wyjmij z kontenera',
   'szablon.opakujWiersz': '⇆ Opakuj w wiersz',
   'szablon.opakujKolumne': '⇅ Opakuj w kolumnę',
+  'szablony.duplikuj': 'Duplikuj szablon',
+  'szablony.otworzKopie': 'Otwórz kopię „{nazwa}”',
+  'szablony.duplikujEtykieta': 'Duplikuj szablon {nazwa}',
+  'szablon.kopiaNumer': '(kopia {n})',
   'szablon.kopia': '(kopia)',
   'szablon.pomocDrzewa':
     'Wiersz układa elementy obok siebie, kolumna – jeden pod drugim, warstwy – jeden na drugim, swobodny – w dowolnych miejscach (X·Y w mm). Zaznacz kontener i dodaj do niego element; Shift+klik zaznacza kilka. Alt+↑/↓ przesuwa, Delete usuwa, Ctrl+D duplikuje, Ctrl+Z cofa.',
@@ -510,6 +513,9 @@ export const pl = {
   'nakladka.strona.sw': 'lewy dolny róg',
   'nakladka.strona.w': 'lewa krawędź',
   'nakladka.strona.nw': 'lewy górny róg',
+  'nakladka.rozmiarZaznaczenia': 'Rozmiar zaznaczenia',
+  'nakladka.zaznaczenie.szer': 'Szerokość zaznaczenia (mm)',
+  'nakladka.zaznaczenie.wys': 'Wysokość zaznaczenia (mm)',
   'nakladka.rozmiarKomunikat': 'Rozmiar {szer} × {wys} mm',
   'nakladka.uchwytyNiedostepne':
     'Uchwyty rozmiaru są niedostępne dla pól w obróconym kontenerze – ustaw rozmiar w panelu.',

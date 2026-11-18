@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { eksportujSzablon, importujSzablon, ROZSZERZENIE_SZABLONU } from '../../dane/archiwum';
+import { duplikujSzablonWProjekcie } from '../../dane/szablon';
 import { BladDanych } from '../../dane/schemat';
 import { dodajSzablonZKartka, opisRozmiaruSzablonu } from '../../dane/wlasneKarty';
 import { t } from '../../i18n';
@@ -81,6 +82,20 @@ export function SzablonyProjektu({
               >
                 {t('szablony.edytuj')}
               </a>
+              <button
+                type="button"
+                aria-label={t('szablony.duplikujEtykieta', { nazwa: s.nazwa })}
+                onClick={() =>
+                  edycja.zmien(
+                    (p) =>
+                      duplikujSzablonWProjekcie(p, s.id, (n) =>
+                        n === 1 ? t('szablon.kopia') : t('szablon.kopiaNumer', { n }),
+                      ).projekt,
+                  )
+                }
+              >
+                {t('szablony.duplikuj')}
+              </button>
               <button
                 type="button"
                 aria-label={t('szablony.eksportujEtykieta', { nazwa: s.nazwa })}

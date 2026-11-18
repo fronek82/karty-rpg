@@ -524,6 +524,8 @@ export interface Karta {
   dane: Record<string, string>;
   /** Liczba sztuk do druku. */
   ilosc: number;
+  /** Oryginał egzemplarza utworzonego w edytorze kartki. */
+  kopiaKarty?: { oryginal: string; numer: number };
   /** Rozmiar w slotach (tylko szablony w trybie slotów). */
   rozmiar?: { kolumny: number; rzedy: number };
   /** Ustawienia obrazów tej karty według identyfikatora pola obrazu. */

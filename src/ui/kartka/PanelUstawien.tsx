@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentProps } from 'react';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import { wgrajCzcionke } from '../../dane/czcionki';
 import {
   dodajZasoby,
@@ -92,6 +92,8 @@ export function PanelUstawien({
   const [bladCzcionki, ustawBladCzcionki] = useState<string>();
   const [status, ustawStatus] = useState('');
   const plik = useRef<HTMLInputElement>(null);
+  const naglowek = useRef<HTMLHeadingElement>(null);
+  useEffect(() => naglowek.current?.focus(), []);
   const rodziny = [
     ...new Set(projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : []))),
   ];
@@ -126,7 +128,9 @@ export function PanelUstawien({
   return (
     <aside className="panel-edytora" aria-label={t('kartka.ustawienia')}>
       <div className="naglowek-panelu">
-        <h2>{t('kartka.ustawienia')}</h2>
+        <h2 ref={naglowek} tabIndex={-1}>
+          {t('kartka.ustawienia')}
+        </h2>
         <button
           type="button"
           className="zamknij"

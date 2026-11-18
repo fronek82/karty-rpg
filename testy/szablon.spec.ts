@@ -31,6 +31,7 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
   await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Karta testowa');
   await expect(element(page, /^Tytuł – Tekst/)).toBeVisible();
+  await expect(element(page, /^Karta – /)).toHaveAttribute('aria-expanded', 'true');
   await expect(element(page, /^Opis – Tekst/)).toBeVisible();
 
   // Klik w podglądzie zaznacza element w drzewie.
@@ -149,5 +150,30 @@ test('edytor szablonu nie otwiera się dla projektu gry ani nieznanego szablonu'
   await page.goto(`${wlasny}/szablon/nie-ma-takiego`);
   await expect(
     page.getByRole('heading', { name: 'Nie ma takiego szablonu w projekcie' }),
+  ).toBeVisible();
+});
+
+test('duplikuje szablon z paska i ustawień, a Cofnij pozostawia oryginał w edytorze', async ({
+  page,
+}) => {
+  await page.goto('./#/wlasne/nowy');
+  await page.getByLabel('Nazwa szablonu').fill('Oryginał');
+  await page.getByText('Tytuł i opis').click();
+  await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
+  const duplikuj = page.getByRole('button', { name: 'Duplikuj szablon', exact: true });
+  await duplikuj.click();
+  const otworz = page.getByRole('link', { name: 'Otwórz kopię „Oryginał (kopia)”' });
+  await expect(otworz).toBeVisible();
+  await page.getByRole('button', { name: 'Cofnij', exact: true }).click();
+  await expect(otworz).toHaveCount(0);
+  await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Oryginał');
+  await page.getByRole('button', { name: 'Ponów', exact: true }).click();
+  await expect(otworz).toBeVisible();
+  await page.getByRole('button', { name: /Rób karty/ }).click();
+  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  const lista = page.getByRole('group', { name: 'Szablony projektu' });
+  await lista.getByRole('button', { name: 'Duplikuj szablon Oryginał', exact: true }).click();
+  await expect(
+    lista.getByRole('link', { name: 'Edytuj szablon Oryginał (kopia 2)' }),
   ).toBeVisible();
 });

@@ -37,21 +37,18 @@ test('dodanie karty z menu, pola, znaczniki, rozmiar; zapis po przeładowaniu', 
   await expect(panel(page).locator('.licznik output')).toHaveText('4');
 });
 
-test('duplikuj ×N, usuń z „Cofnij”, skróty klawiszowe', async ({ page }) => {
+test('łączna liczba kopii, Cofnij i skróty klawiszowe', async ({ page }) => {
   await nowaPustaKartka(page);
   await dodajKarte(page, 1, 1, 1, 'Broń');
   await panel(page).getByLabel('Nazwa', { exact: true }).fill('Kula ognia');
-  await panel(page).getByLabel('Liczba kopii').fill('3');
-  await panel(page).getByRole('button', { name: 'Duplikuj ×3' }).click();
+  const liczba = panel(page).getByLabel('Liczba kopii');
+  await expect(liczba).toHaveValue('1');
+  await liczba.fill('4');
+  await liczba.press('Enter');
   await expect(karta(page, 'Kula ognia')).toHaveCount(4);
-  await expect(page.locator('.toast')).toContainText('Dodano kopie: 3.');
-  await expect(panel(page).getByRole('heading')).toHaveText('Zaznaczone karty: 3');
-
-  // Delete usuwa zaznaczone (3 kopie); „Cofnij” w komunikacie je przywraca.
-  await page.keyboard.press('Delete');
-  await expect(karta(page, 'Kula ognia')).toHaveCount(1);
-  await expect(page.locator('.toast')).toContainText('Usunięto karty: 3.');
-  await page.locator('.toast').getByRole('button', { name: 'Cofnij' }).click();
+  await liczba.press('ArrowDown');
+  await expect(karta(page, 'Kula ognia')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Cofnij', exact: true }).first().click();
   await expect(karta(page, 'Kula ognia')).toHaveCount(4);
 
   // Ctrl+D, Ctrl+Z, Ctrl+Shift+Z, strzałka.

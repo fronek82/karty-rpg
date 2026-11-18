@@ -300,3 +300,53 @@ test('zaznaczone pole przeciąga się za potomka, klik bez ruchu zaznacza potomk
     'true',
   );
 });
+
+test('upuszczenie w kolumnie pokazuje cel, Escape anuluje, Cofnij przywraca rodzica', async ({
+  page,
+}) => {
+  await swobodny(page, 'Zmiana kontenera');
+  await dodaj(page, 'Kolumna', 'Cel');
+  await polozenie(page).getByLabel('Y (mm)').fill('40');
+  await karta(page);
+  await dodaj(page, 'Tekst', 'Pole');
+  const z = await srodek(page, obszar(page, 'Pole'));
+  const doCelu = await srodek(page, obszar(page, 'Cel'));
+  const pole = drzewo(page)
+    .getByRole('treeitem', { name: /^Cel – / })
+    .getByRole('treeitem', { name: /^Pole – / });
+  await page.mouse.move(z.x, z.y);
+  await page.mouse.down();
+  await page.mouse.move(doCelu.x, doCelu.y, { steps: 8 });
+  await expect(page.getByTestId('cel-upuszczenia')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(pole).toHaveCount(0);
+  await przeciagnij(page, z, doCelu);
+  await expect(pole).toBeVisible();
+  await cofnij(page);
+  await expect(pole).toHaveCount(0);
+});
+
+test('uchwyt i pole szerokości skalują obwiednię zaznaczonych elementów', async ({ page }) => {
+  await swobodny(page, 'Skalowanie');
+  await dodaj(page, 'Tekst', 'A');
+  await dodaj(page, 'Tekst', 'B');
+  await polozenie(page).getByLabel('X (mm)').fill('23');
+  await polozenie(page).getByLabel('Y (mm)').fill('32');
+  const a = await srodek(page, obszar(page, 'A'));
+  await page.keyboard.down('Shift');
+  await page.mouse.click(a.x, a.y);
+  await page.keyboard.up('Shift');
+  const szer = panel(page).getByLabel('Szerokość zaznaczenia (mm)');
+  await expect(szer).toHaveValue('50');
+  await page.keyboard.down('Alt');
+  await uchwyt(page, 'e', -10, 0);
+  await page.keyboard.up('Alt');
+  wTolerancji((await prostokatMm(page, 'A')).szer, 24, 0.15);
+  wTolerancji((await prostokatMm(page, 'B')).x, 19, 0.15);
+  await cofnij(page);
+  await expect(szer).toHaveValue('50');
+  await szer.fill('25');
+  wTolerancji((await prostokatMm(page, 'A')).szer, 15);
+  wTolerancji((await prostokatMm(page, 'B')).x, 13);
+});

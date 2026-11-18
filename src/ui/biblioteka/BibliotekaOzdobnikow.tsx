@@ -253,8 +253,7 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
 
   return (
     <div className="biblioteka-ozdobnikow">
-      <h1 className="tylko-czytnik">{t('biblioteka.tytul')}</h1>
-      <header className="pasek-gorny">
+      <header className="pasek-gorny" role="banner">
         <a href="#/" className="logo">
           {t('aplikacja.nazwa')}
         </a>
@@ -299,6 +298,7 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
         </a>
         <NarzedziaPaska />
       </header>
+      <h1 className="tylko-czytnik">{t('biblioteka.tytul')}</h1>
       <div className="uklad-biblioteki">
         <aside className="panel-biblioteki" aria-label={t('biblioteka.tytul')}>
           <h2>{t('biblioteka.tytul')}</h2>

@@ -82,6 +82,7 @@ export const WZORZEC = {
         id: 't',
         nazwa: 'Tytuł',
         typ: 'tekst',
+        styl: { czcionka: 'tresc', rozmiar: 4.2333333333333325, wyrownaniePionowe: 'srodek' },
         pozycja: { x: 6, y: 34 },
         szerokosc: { mm: 51 },
         wysokosc: { mm: 12 },

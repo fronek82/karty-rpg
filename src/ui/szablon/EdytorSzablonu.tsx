@@ -5,6 +5,7 @@ import {
   danePodgladu,
   doPoprzedniegoKontenera,
   dostosujDoSwobodnego,
+  duplikujSzablonWProjekcie,
   duplikujWezel,
   kluczeDanychKart,
   nowyWezel,
@@ -55,18 +56,54 @@ import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWyrownania } from './PanelWyrownania';
 import { przygotujObraz } from '../obrazy';
 import {
-  budujCel,
   budujCele,
+  celSkalowania,
+  skalujZaznaczenie,
   SIATKA_DOMYSLNA,
   zastosujZmiany,
   type Cel,
   type ZmianaPola,
 } from './swobodnyMysz';
 import { useGestSwobodny } from './useGestSwobodny';
+import { upuscWezel } from './upuszczanie';
 
 const wPolu = (e: Element | null) =>
   !!e &&
   (e.matches('input, textarea, select, [contenteditable="true"]') || !!e.closest('[role="menu"]'));
+
+function usePodgladSzablonu(kluczRysunku: string, zasoby: ProjektWEdycji['zasoby']['zasoby']) {
+  return useMemo(() => {
+    if (!kluczRysunku) return undefined;
+    const sz = JSON.parse(kluczRysunku) as Szablon;
+    try {
+      const w = renderujKarte(
+        sz,
+        { dane: danePodgladu(sz) },
+        {
+          czcionki: zasoby.czcionki,
+          obraz: (id) => zasoby.obrazy.get(id)?.info,
+          ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
+        },
+      );
+      return {
+        ...w,
+        svg: scenaDoSvg(w.scena, {
+          adresObrazu: (id) => zasoby.obrazy.get(id)?.adres,
+          przedrostekId: 'sz-',
+        }),
+      };
+    } catch (e) {
+      return { blad: e instanceof Error ? e.message : String(e) };
+    }
+  }, [kluczRysunku, zasoby.czcionki, zasoby.obrazy, zasoby.elementy]);
+}
+
+function useIndeksWezlow(szablon: Szablon | undefined) {
+  return useMemo(
+    () => new Map(szablon ? wszystkieWezly(szablon).map((w) => [w.id, w] as const) : []),
+    [szablon],
+  );
+}
 
 /**
  * Edytor szablonu karty od zera: drzewo wierszy, kolumn i pól (lewa kolumna), podgląd karty
@@ -90,6 +127,8 @@ export function EdytorSzablonu({
   // Stan tymczasowy gestu myszy (zapis dopiero na pointerup – jeden krok „Cofnij”).
   const [tmp, ustawTmp] = useState<Map<string, ZmianaPola> | undefined>();
   const [przyciaganie, ustawPrzyciaganie] = useState({ siatka: SIATKA_DOMYSLNA, obiekty: true });
+  const [idKopii, ustawIdKopii] = useState('');
+  const kopia = projekt.szablony.find((s) => s.id === idKopii);
   const [bladPodkladu, ustawBladPodkladu] = useState('');
   const idProjektu = encodeURIComponent(projekt.id);
 
@@ -117,34 +156,8 @@ export function EdytorSzablonu({
   const widoczny = szablon && tmp ? zastosujZmiany(szablon, tmp) : szablon;
   const doRysunku = widoczny && { ...widoczny, nazwa: '', podklad: undefined };
   const kluczRysunku = doRysunku ? JSON.stringify(doRysunku) : '';
-  const podglad = useMemo(() => {
-    if (!kluczRysunku) return undefined;
-    const sz = JSON.parse(kluczRysunku) as Szablon;
-    try {
-      const w = renderujKarte(
-        sz,
-        { dane: danePodgladu(sz) },
-        {
-          czcionki: zasoby.czcionki,
-          obraz: (id) => zasoby.obrazy.get(id)?.info,
-          ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
-        },
-      );
-      return {
-        ...w,
-        svg: scenaDoSvg(w.scena, {
-          adresObrazu: (id) => zasoby.obrazy.get(id)?.adres,
-          przedrostekId: 'sz-',
-        }),
-      };
-    } catch (e) {
-      return { blad: e instanceof Error ? e.message : String(e) };
-    }
-  }, [kluczRysunku, zasoby.czcionki, zasoby.obrazy, zasoby.elementy]);
-  const wezlyPoId = useMemo(
-    () => new Map(szablon ? wszystkieWezly(szablon).map((w) => [w.id, w] as const) : []),
-    [szablon],
-  );
+  const podglad = usePodgladSzablonu(kluczRysunku, zasoby);
+  const wezlyPoId = useIndeksWezlow(szablon);
 
   // Układ do konwersji kontenerów (swobodny ↔ kolumna / wiersz): ramki z bieżącego podglądu.
   const uklad = useMemo(
@@ -162,6 +175,7 @@ export function EdytorSzablonu({
     szerMm: szablon ? wymiaryKarty(szablon).szer : 1,
     przyciaganie,
     ustawTmp,
+    upusc: (cel) => zmienSz((s) => upuscWezel(s, cel)),
     zatwierdz: (zmiany, klucz) => zmienSz((s) => zastosujZmiany(s, zmiany), klucz),
   });
 
@@ -390,16 +404,34 @@ export function EdytorSzablonu({
       );
     }
   };
-  // Uchwyty rozmiaru: jedno zaznaczone pole swobodne (bez obróconych przodków – uchwyty są wtedy
-  // w układzie karty); w trakcie przeciągania pola ukryte.
-  const celUchwytow =
-    aktywne.length === 1 && wezlyKarty ? budujCel(szablon, wezlyKarty, aktywne[0]!) : undefined;
-  const prostokatUchwytow =
-    celUchwytow && celUchwytow.obrotPrzodkow === 0 && gest.stan?.rodzaj !== 'przesun'
-      ? celUchwytow.rect
-      : undefined;
-  // Wyrównanie: wszystkie zaznaczone elementy leżą w jednym kontenerze swobodnym.
   const celeZazn: Cel[] = wezlyKarty ? budujCele(szablon, wezlyKarty, aktywne) : [];
+  const celUchwytow = celeZazn.length === aktywne.length ? celSkalowania(celeZazn) : undefined;
+  const prostokatUchwytow = gest.stan?.rodzaj !== 'przesun' ? celUchwytow?.rect : undefined;
+  const rozmiarZaznaczenia =
+    celUchwytow && celeZazn.length > 1 ? (
+      <Sekcja tytul={t('nakladka.rozmiarZaznaczenia')} otwarta>
+        {(['szer', 'wys'] as const).map((os) => (
+          <Liczba
+            key={os}
+            etykieta={t(`nakladka.zaznaczenie.${os}`)}
+            wartosc={Math.round(celUchwytow.rect[os] * 1000) / 1000}
+            min={1}
+            zmien={(wartosc) => {
+              const rect = celUchwytow.rect;
+              if (Math.abs(rect[os] - wartosc) < 0.0005) return;
+              zmienSz(
+                (s) =>
+                  zastosujZmiany(
+                    s,
+                    skalujZaznaczenie(s, celeZazn, rect, { ...rect, [os]: wartosc }),
+                  ),
+                `rozmiar-zaznaczenia:${aktywne.join(',')}:${os}`,
+              );
+            }}
+          />
+        ))}
+      </Sekcja>
+    ) : undefined;
   const wyrownanie =
     celeZazn.length > 0 &&
     celeZazn.length === aktywne.length &&
@@ -480,8 +512,7 @@ export function EdytorSzablonu({
       }}
     >
       <div className="edytor-szablonu">
-        <h1 className="tylko-czytnik">{t('szablon.tytulEdytora')}</h1>
-        <header className="pasek-gorny">
+        <header className="pasek-gorny" role="banner">
           <a href="#/" className="logo">
             {t('aplikacja.nazwa')}
           </a>
@@ -518,11 +549,35 @@ export function EdytorSzablonu({
           >
             ↷
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              let id = '';
+              zmien((p) => {
+                const kopia = duplikujSzablonWProjekcie(p, szablonId, (n) =>
+                  n === 1 ? t('szablon.kopia') : t('szablon.kopiaNumer', { n }),
+                );
+                id = kopia.id;
+                return kopia.projekt;
+              });
+              ustawIdKopii(id);
+            }}
+          >
+            {t('szablony.duplikuj')}
+          </button>
           <button type="button" className="glowny" onClick={robKarty}>
             {t('szablon.robKarty')}
           </button>
           <NarzedziaPaska />
         </header>
+        <h1 className="tylko-czytnik">{t('szablon.tytulEdytora')}</h1>
+        <div role="status">
+          {kopia && (
+            <a href={`#/projekt/${idProjektu}/szablon/${encodeURIComponent(kopia.id)}`}>
+              {t('szablony.otworzKopie', { nazwa: kopia.nazwa })}
+            </a>
+          )}
+        </div>
         <div className="uklad-szablonu">
           <aside className="panel-drzewa" aria-label={t('szablon.struktura')}>
             <h2>{t('szablon.struktura')}</h2>
@@ -683,11 +738,12 @@ export function EdytorSzablonu({
                       }}
                     />
                   </div>
-                  {celUchwytow && celUchwytow.obrotPrzodkow !== 0 && (
-                    <p className="podpis" role="status">
-                      {t('nakladka.uchwytyNiedostepne')}
-                    </p>
-                  )}
+                  {celeZazn.length === aktywne.length &&
+                    celeZazn.some((c) => c.obrotPrzodkow !== 0) && (
+                      <p className="podpis" role="status">
+                        {t('nakladka.uchwytyNiedostepne')}
+                      </p>
+                    )}
                   <NarzedziaPodgladu
                     przyciaganie={przyciaganie}
                     ustawPrzyciaganie={ustawPrzyciaganie}
@@ -721,6 +777,7 @@ export function EdytorSzablonu({
           </section>
 
           <aside className="panel-edytora" aria-label={t('szablon.wlasciwosci')}>
+            {rozmiarZaznaczenia}
             {edytowany ? (
               <>
                 <h2>

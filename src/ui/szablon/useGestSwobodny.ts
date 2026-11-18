@@ -8,9 +8,10 @@ import {
 import { rodzicWezla } from '../../dane/szablon';
 import type { Mm } from '../../model/jednostki';
 import type { Szablon } from '../../model/szablon';
+import { przygotujUpuszczenie, type CelUpuszczenia } from './upuszczanie';
 import {
-  budujCel,
   budujCele,
+  celSkalowania,
   ograniczDoRodzica,
   KROK_STRZALKI,
   KROK_STRZALKI_DUZY,
@@ -18,6 +19,7 @@ import {
   PROG_PRZYCIAGANIA_PX,
   trafionyWezel,
   zmienRozmiar,
+  zmienRozmiarGrupy,
   type Cel,
   type Prowadnica,
   type Uchwyt,
@@ -36,6 +38,7 @@ export interface UstawieniaPrzyciagania {
 export interface StanGestu {
   rodzaj: 'przesun' | 'rozmiar';
   prowadnice: Prowadnica[];
+  upuszczenie?: CelUpuszczenia;
   podpowiedz?: { x: Mm; y: Mm; szer?: Mm; wys?: Mm };
   /** Skala podglądu (px na mm) w chwili rozpoczęcia gestu. */
   skala: number;
@@ -52,6 +55,8 @@ type Aktywny =
       start: { x: number; y: number };
       skala: number;
       cele: Cel[];
+      celPodKursorem?: (kursor: { x: Mm; y: Mm }) => CelUpuszczenia | undefined;
+      upuszczenie?: CelUpuszczenia;
       ruszono: boolean;
       /** Klik bez ruchu w jeden z kilku zaznaczonych zawęża zaznaczenie do niego. */
       zwezDo?: string;
@@ -65,6 +70,8 @@ type Aktywny =
       start: { x: number; y: number };
       skala: number;
       cel: Cel;
+      cele: Cel[];
+      szablon: Szablon;
       uchwyt: Uchwyt;
       ruszono: boolean;
       ostatnie?: Map<string, ZmianaPola>;
@@ -94,6 +101,7 @@ export function useGestSwobodny({
   przyciaganie,
   ustawTmp,
   zatwierdz,
+  upusc,
 }: {
   szablon: Szablon | undefined;
   wezly: WezlyKarty | undefined;
@@ -104,6 +112,7 @@ export function useGestSwobodny({
   przyciaganie: UstawieniaPrzyciagania;
   ustawTmp: (z: Map<string, ZmianaPola> | undefined) => void;
   /** Zapis zmian w projekcie; `klucz` scala serię (np. wciśnięty klawisz strzałki) w jeden krok „Cofnij”. */
+  upusc?: (cel: CelUpuszczenia) => void;
   zatwierdz: (zmiany: Map<string, ZmianaPola>, klucz?: string) => void;
 }) {
   const aktywny = useRef<Aktywny | undefined>(undefined);
@@ -144,15 +153,47 @@ export function useGestSwobodny({
     if (!a || a.pointerId !== z.pointerId) return;
     const dpx = { x: z.clientX - a.start.x, y: z.clientY - a.start.y };
     if (!a.ruszono && Math.hypot(dpx.x, dpx.y) < PROG_RUCHU_PX) return;
-    if (a.rodzaj === 'przesun' && a.cele.length === 0) return;
+    if (a.rodzaj === 'przesun' && a.cele.length === 0 && !a.celPodKursorem) return;
     a.ruszono = true;
     const dx = dpx.x / a.skala;
     const dy = dpx.y / a.skala;
     const kursor = pomiar(z);
+    if (a.rodzaj === 'przesun' && a.celPodKursorem) {
+      a.upuszczenie = a.celPodKursorem(kursor);
+      if (a.upuszczenie || !a.cele.length) {
+        a.ostatnie = undefined;
+        if (ostatniaMapa.current) ustawTmp(undefined);
+        ostatniaMapa.current = undefined;
+        ustawStan(
+          a.upuszczenie
+            ? {
+                rodzaj: 'przesun',
+                skala: a.skala,
+                prowadnice: [],
+                kursor,
+                poczatekSiatki: a.upuszczenie.ramka,
+                upuszczenie: a.upuszczenie,
+              }
+            : undefined,
+        );
+        return;
+      }
+    }
     const w =
       a.rodzaj === 'przesun'
         ? przesunCele(a.cele, dx, dy, przyc(z.altKey, a.skala))
-        : zmienRozmiar(a.cel, a.uchwyt, dx, dy, przyc(z.altKey, a.skala), z.shiftKey);
+        : a.cele.length > 1
+          ? zmienRozmiarGrupy(
+              a.szablon,
+              a.cele,
+              a.cel,
+              a.uchwyt,
+              dx,
+              dy,
+              przyc(z.altKey, a.skala),
+              z.shiftKey,
+            )
+          : zmienRozmiar(a.cel, a.uchwyt, dx, dy, przyc(z.altKey, a.skala), z.shiftKey);
     a.ostatnie = w.zmiany;
     // Ta sama mapa zmian (np. ruch w obrębie kroku siatki) – bez ponownego rysowania karty.
     if (!rowne(ostatniaMapa.current, w.zmiany)) {
@@ -187,12 +228,14 @@ export function useGestSwobodny({
   const zakoncz = (e: PointerReact, zapisz: boolean) => {
     const a = aktywny.current;
     if (!a || a.pointerId !== e.pointerId) return;
-    // Ruch czekający na klatkę liczymy przed zapisem (ostatnie położenie myszy).
-    if (zapisz && oczekujacy.current) ruch(oczekujacy.current);
+    // Przy zmianie kontenera o celu decyduje miejsce puszczenia wskaźnika.
+    if (zapisz && a.rodzaj === 'przesun' && a.celPodKursorem) ruch(e);
+    else if (zapisz && oczekujacy.current) ruch(oczekujacy.current);
     const ostatnie = a.ostatnie;
     const ruszono = a.ruszono;
     sprzatnij();
-    if (zapisz && ruszono && ostatnie) zatwierdz(ostatnie);
+    if (zapisz && a.rodzaj === 'przesun' && a.upuszczenie) upusc?.(a.upuszczenie);
+    else if (zapisz && ruszono && ostatnie) zatwierdz(ostatnie);
     else if (zapisz && !ruszono && a.rodzaj === 'przesun') {
       if (a.zwezDo) ustawZazn([a.zwezDo]);
       else if (a.tlo && !e.shiftKey) ustawZazn([]);
@@ -237,14 +280,18 @@ export function useGestSwobodny({
       }
       const cele =
         id && wybrane.includes(id) ? ograniczDoRodzica(budujCele(szablon, wezly, wybrane), id) : [];
-      // Bez celów i bez tła nie ma czego śledzić (brak przechwytu wskaźnika, brak stanu gestu).
-      if (cele.length === 0 && id) return;
+      const celPodKursorem =
+        upusc && id && wybrane.length === 1 && wybrane[0] === id && !e.shiftKey
+          ? przygotujUpuszczenie(szablon, wezly, id, m)
+          : undefined;
+      if (cele.length === 0 && id && !celPodKursorem) return;
       aktywny.current = {
         rodzaj: 'przesun',
         pointerId: e.pointerId,
         start: { x: e.clientX, y: e.clientY },
         skala: m.skala,
         cele,
+        celPodKursorem,
         ruszono: false,
         // Klik bez ruchu: zawęża zaznaczenie do klikniętego elementu (też gdy przeciągaliśmy
         // zaznaczone pole za jego wnętrze).
@@ -261,8 +308,8 @@ export function useGestSwobodny({
     onUchwytDown: (uchwyt: Uchwyt, e: PointerReact) => {
       e.stopPropagation();
       if (e.button !== 0 || !e.isPrimary || aktywny.current || !szablon || !wezly) return;
-      if (zaznaczone.length !== 1) return;
-      const cel = budujCel(szablon, wezly, zaznaczone[0]!);
+      const cele = budujCele(szablon, wezly, zaznaczone);
+      const cel = cele.length === zaznaczone.length ? celSkalowania(cele) : undefined;
       if (!cel) return;
       karta.current?.focus({ preventScroll: true });
       aktywny.current = {
@@ -271,6 +318,8 @@ export function useGestSwobodny({
         start: { x: e.clientX, y: e.clientY },
         skala: pomiar(e).skala,
         cel,
+        cele,
+        szablon,
         uchwyt,
         ruszono: false,
       };
@@ -327,17 +376,18 @@ export function useGestSwobodny({
     /** Strzałki na uchwycie: ruchoma krawędź (róg) przesuwa się o 0,5 mm (Shift – 5 mm). */
     strzalkiUchwytu: (uchwyt: Uchwyt, e: { key: string; shiftKey: boolean }): boolean => {
       const kierunek = KIERUNKI[e.key];
-      if (!kierunek || !szablon || !wezly || zaznaczone.length !== 1) return false;
-      const cel = budujCel(szablon, wezly, zaznaczone[0]!);
+      if (!kierunek || !szablon || !wezly) return false;
+      const cele = budujCele(szablon, wezly, zaznaczone);
+      const cel = cele.length === zaznaczone.length ? celSkalowania(cele) : undefined;
       if (!cel) return false;
       const krok = e.shiftKey ? KROK_STRZALKI_DUZY : KROK_STRZALKI;
-      const w = zmienRozmiar(cel, uchwyt, kierunek[0] * krok, kierunek[1] * krok, {
-        siatka: 0,
-        obiekty: false,
-        prog: 0,
-        wylacz: true,
-      });
-      zatwierdz(w.zmiany, `rozmiar-klawisz:${cel.id}:${uchwyt}`);
+      const [dx, dy] = kierunek.map((v) => v * krok) as [number, number];
+      const p = { siatka: 0, obiekty: false, prog: 0, wylacz: true };
+      const w =
+        cele.length > 1
+          ? zmienRozmiarGrupy(szablon, cele, cel, uchwyt, dx, dy, p)
+          : zmienRozmiar(cel, uchwyt, dx, dy, p);
+      zatwierdz(w.zmiany, `rozmiar-klawisz:${zaznaczone.join(',')}:${uchwyt}`);
       return true;
     },
   };

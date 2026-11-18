@@ -248,7 +248,6 @@ export const en: Slownik = {
   'kartka.dodajKarteTutaj': 'Add a card in this slot',
   'kartka.nieMiesci': 'Does not fit here',
   'kartka.duplikuj': 'Duplicate',
-  'kartka.duplikujN': 'Duplicate ×{n}',
   'kartka.ileKopii': 'Number of copies',
   'kartka.usun': 'Delete',
   'kartka.cofnij': 'Undo',
@@ -462,6 +461,10 @@ export const en: Slownik = {
   'szablon.wyjmij': '← Take out of the container',
   'szablon.opakujWiersz': '⇆ Wrap in a row',
   'szablon.opakujKolumne': '⇅ Wrap in a column',
+  'szablony.duplikuj': 'Duplicate template',
+  'szablony.otworzKopie': 'Open copy “{nazwa}”',
+  'szablony.duplikujEtykieta': 'Duplicate template {nazwa}',
+  'szablon.kopiaNumer': '(copy {n})',
   'szablon.kopia': '(copy)',
   'szablon.pomocDrzewa':
     'A row places elements side by side, a column one below another, layers one on top of another, free-form anywhere (X·Y in mm). Select a container and add an element to it; Shift+click selects several. Alt+↑/↓ moves, Delete removes, Ctrl+D duplicates, Ctrl+Z undoes.',
@@ -516,6 +519,9 @@ export const en: Slownik = {
   'nakladka.strona.sw': 'bottom left corner',
   'nakladka.strona.w': 'left edge',
   'nakladka.strona.nw': 'top left corner',
+  'nakladka.rozmiarZaznaczenia': 'Selection size',
+  'nakladka.zaznaczenie.szer': 'Selection width (mm)',
+  'nakladka.zaznaczenie.wys': 'Selection height (mm)',
   'nakladka.rozmiarKomunikat': 'Size {szer} × {wys} mm',
   'nakladka.uchwytyNiedostepne':
     'Resize handles are not available for fields in a rotated container – set the size in the panel.',
