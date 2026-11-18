@@ -6,6 +6,10 @@ Specyfikacja: [`SPEC.md`](SPEC.md), plany: [`docs/plan-M2.md`](docs/plan-M2.md),
 **Aplikacja online:** <https://fronek82.github.io/karty-rpg/>. Działa w całości w przeglądarce;
 projekty zostają na Twoim komputerze (IndexedDB).
 
+**Instrukcja** (PL i EN, zrzuty ekranu): przycisk „Instrukcja” na pasku górnym albo bezpośrednio
+<https://fronek82.github.io/karty-rpg/instrukcja/> (`?lang=pl` / `?lang=en`). To osobna, statyczna
+strona (bez Reacta), z tym samym przełącznikiem języka i motywu co aplikacja.
+
 ## Jak zacząć (Mausritter)
 
 1. Na starcie wybierz **„Stwórz karty do Mausrittera”**, potem **„Pusta kartka”** albo
@@ -151,6 +155,11 @@ Aplikacja działa pod adresem `http://localhost:5173/karty-rpg/`.
 | `npm run lint`          | ESLint                                               |
 | `npm run format:check`  | sprawdzenie formatowania (Prettier)                  |
 
+Zrzuty ekranu w instrukcji (`public/instrukcja-zrzuty/<pl|en>/`) odświeżasz po zmianie wyglądu
+ekranów poleceniem `ZRZUTY_INSTRUKCJI=1 npx playwright test testy/zrzuty-instrukcji.spec.ts`.
+Treść instrukcji jest w `instrukcja/index.html`; test `src/instrukcja/tresc.test.ts` pilnuje, żeby
+nazwy przycisków w cudzysłowach zgadzały się z interfejsem, oraz stylu tekstu.
+
 Wzorce wizualne (`*-snapshots/*-chromium-linux.png`) są dla Chromium na Linuksie (jak w CI); na innym
 systemie porównania zrzutów nie przejdą – uruchamiaj e2e w kontenerze Linuksa albo zaktualizuj wzorce
 lokalnie `npx playwright test --update-snapshots` (bez commitowania).
@@ -164,6 +173,7 @@ src/druk     arkusze, linie cięcia, PDF
 src/dane     IndexedDB, eksport/import
 src/ui       interfejs React
 src/i18n     teksty interfejsu
+instrukcja/  strona instrukcji (osobne wejście Vite; skrypt i style w src/instrukcja)
 testy/       testy Playwright
 docs/        plany i notatki
 ```

@@ -84,8 +84,8 @@ jobs:
           ADRES: ${{ steps.deploy.outputs.page_url }}
           WERSJA: ${{ github.sha }}
         run: |
-          # Strona z TEGO commita (meta „wersja”), jej skrypt główny i czcionka pakietu muszą
-          # odpowiadać. CDN Pages bywa opóźniony – kilka prób.
+          # Strona z TEGO commita (meta „wersja”), jej skrypt główny, czcionka pakietu i strona
+          # instrukcji muszą odpowiadać. CDN Pages bywa opóźniony – kilka prób.
           host=$(echo "$ADRES" | grep -oE '^https?://[^/]+')
           for proba in $(seq 1 9); do
             sleep 20
@@ -99,6 +99,10 @@ jobs:
             esac
             curl -fsS -o /dev/null "$skrypt" || continue
             curl -fsS -o /dev/null "${ADRES%/}/czcionki/EBGaramond-Regular.ttf" || continue
+            # Strona instrukcji (druga strona wejściowa) pod bazą i jej zrzut ekranu.
+            curl -fsS -H 'Cache-Control: no-cache' "${ADRES%/}/instrukcja/" -o instrukcja.html || continue
+            grep -q "name=\"wersja\" content=\"$WERSJA\"" instrukcja.html || continue
+            curl -fsS -o /dev/null "${ADRES%/}/instrukcja-zrzuty/pl/start.png" || continue
             echo "OK: $ADRES ($WERSJA)"
             exit 0
           done

@@ -1,9 +1,15 @@
-import { JEZYKI, t, ustawJezyk } from '../i18n';
+import { JEZYKI, t, ustawJezyk, type Jezyk } from '../i18n';
 import { useJezyk } from '../i18n/react';
 import { useMotyw } from './motyw';
 
-/** Adres instrukcji względem strony aplikacji (strona powstanie w etapie UI-6). */
+/**
+ * Adres strony instrukcji względem strony aplikacji (druga strona wejściowa Vite, `instrukcja/index.html`;
+ * względny adres działa pod ścieżką bazową Pages, w dev i w podglądzie).
+ */
 export const ADRES_INSTRUKCJI = 'instrukcja/';
+
+/** Adres instrukcji w języku aplikacji (`?lang=` ma pierwszeństwo przed zapamiętanym wyborem). */
+export const adresInstrukcji = (jezyk: Jezyk): string => `${ADRES_INSTRUKCJI}?lang=${jezyk}`;
 
 function IkonaSlonca() {
   return (
@@ -48,7 +54,7 @@ export function NarzedziaPaska() {
     <div className="narzedzia-paska" role="group" aria-label={t('pasek.narzedzia')}>
       <a
         className="przycisk-kontur"
-        href={ADRES_INSTRUKCJI}
+        href={adresInstrukcji(aktywny)}
         target="_blank"
         rel="noopener"
         title={t('pasek.instrukcjaOpis')}
