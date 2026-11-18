@@ -31,7 +31,7 @@ export function PodgladWymiarowUkladu({
   const skala = Math.min(186 / papier.szer, 180 / papier.wys);
   const szer = papier.szer * skala;
   const wys = papier.wys * skala;
-  const szerRysunku = 340;
+  const szerRysunku = 368;
   const lewo = (szerRysunku - szer) / 2;
   const gora = 42;
   const prawo = lewo + szer;

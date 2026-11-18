@@ -90,6 +90,13 @@ test('diagram wymiarów pokazuje całą siatkę i prowadzi do edycji pola', asyn
   await expect(ust.locator('#papier-wys')).toBeFocused();
   await podglad.locator('svg text[data-pole="papier-szer"]').click();
   await expect(ust.locator('#papier-szer')).toBeFocused();
+  await ust.locator('#papier-szer').fill('333.33');
+  await ust.locator('#papier-wys').fill('500');
+  const wysokoscPapieru = podglad.locator('svg text[data-pole="papier-szer"]');
+  await expect(wysokoscPapieru).toHaveText('333,33');
+  const etykieta = (await wysokoscPapieru.boundingBox())!;
+  const rysunek = (await podglad.locator('svg').boundingBox())!;
+  expect(etykieta.x + etykieta.width).toBeLessThanOrEqual(rysunek.x + rysunek.width);
 });
 
 test('diagram małego slotu rozdziela etykiety rozmiaru i zerowego odstępu', async ({ page }) => {
