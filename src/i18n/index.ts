@@ -7,6 +7,7 @@ import {
   type SlownikMnogi,
 } from './pl';
 import { en, enMnoga } from './en';
+import { jezykDomyslny, KLUCZ_JEZYKA } from '../wspolne/ustawienia';
 
 export type { KluczMnogi, KluczTekstu, Slownik, SlownikMnogi };
 
@@ -14,19 +15,13 @@ export type Jezyk = 'pl' | 'en';
 
 export const JEZYKI: readonly Jezyk[] = ['pl', 'en'];
 
-/** Klucz w localStorage (ten sam odczytuje skrypt w index.html i, później, instrukcja). */
-export const KLUCZ_JEZYKA = 'karty.jezyk';
+export { jezykDomyslny, KLUCZ_JEZYKA };
 
 const slowniki: Record<Jezyk, Slownik> = { pl, en };
 const slownikiMnogie: Record<Jezyk, SlownikMnogi> = { pl: plMnoga, en: enMnoga };
 
 export function czyJezyk(v: unknown): v is Jezyk {
   return v === 'pl' || v === 'en';
-}
-
-/** Język domyślny z ustawień przeglądarki: polski dla „pl”, „pl-PL”…, w pozostałych przypadkach angielski. */
-export function jezykDomyslny(jezykPrzegladarki: string | undefined): Jezyk {
-  return /^pl(?:[-_]|$)/i.test(jezykPrzegladarki ?? '') ? 'pl' : 'en';
 }
 
 /** Wybór z tej sesji strony, gdy zapis do localStorage się nie udał (np. tryb prywatny). */

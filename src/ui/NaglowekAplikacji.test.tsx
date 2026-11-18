@@ -54,12 +54,16 @@ describe('NarzedziaPaska', () => {
     expect(document.documentElement.lang).toBe('en');
     expect(screen.getByRole('button', { name: 'EN' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', { name: 'PL' }).getAttribute('aria-pressed')).toBe('false');
-    expect(screen.getByRole('link', { name: /Guide/ }).getAttribute('href')).toBe('instrukcja/');
+    expect(screen.getByRole('link', { name: /Guide/ }).getAttribute('href')).toBe(
+      'instrukcja/?lang=en',
+    );
     expect(screen.getByRole('button', { name: 'Light theme' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'PL' }));
     expect(document.documentElement.lang).toBe('pl');
     expect(localStorage.getItem('karty.jezyk')).toBe('pl');
-    expect(screen.getByRole('link', { name: /Instrukcja/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Instrukcja/ }).getAttribute('href')).toBe(
+      'instrukcja/?lang=pl',
+    );
   });
 
   it('zmiana wyboru w innej karcie (zdarzenie storage) przełącza język', () => {

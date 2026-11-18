@@ -1,11 +1,11 @@
 import { useSyncExternalStore } from 'react';
+import { KLUCZ_MOTYWU } from '../wspolne/ustawienia';
+
+export { KLUCZ_MOTYWU };
 
 /** Wybór użytkownika: jawnie jasny lub ciemny albo zgodnie z ustawieniem systemu. */
 export type PreferencjaMotywu = 'light' | 'dark' | 'system';
 export type Motyw = 'light' | 'dark';
-
-/** Klucz w localStorage (ten sam odczytuje skrypt w index.html i, później, instrukcja). */
-export const KLUCZ_MOTYWU = 'karty.motyw';
 
 const ZAPYTANIE_CIEMNE = '(prefers-color-scheme: dark)';
 

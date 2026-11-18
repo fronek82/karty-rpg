@@ -84,21 +84,35 @@ jobs:
           ADRES: ${{ steps.deploy.outputs.page_url }}
           WERSJA: ${{ github.sha }}
         run: |
-          # Strona z TEGO commita (meta „wersja”), jej skrypt główny i czcionka pakietu muszą
-          # odpowiadać. CDN Pages bywa opóźniony – kilka prób.
+          # Strona z TEGO commita (meta „wersja”), jej skrypt główny, czcionka pakietu i strona
+          # instrukcji muszą odpowiadać. CDN Pages bywa opóźniony – kilka prób.
           host=$(echo "$ADRES" | grep -oE '^https?://[^/]+')
+          # Sprawdza stronę HTML (plik, adres strony): jej skrypt główny (<script type="module">)
+          # i arkusze stylów muszą się pobierać. Brak skryptu albo stylów to błąd.
+          sprawdz_zasoby() {
+            local plik="$1" baza="$2" skrypty style adres
+            skrypty=$(grep -oE '<script type="module"[^>]*src="[^"]+"' "$plik" | sed -E 's/.*src="([^"]+)"/\1/')
+            style=$(grep -oE '<link rel="stylesheet"[^>]*href="[^"]+"' "$plik" | sed -E 's/.*href="([^"]+)"/\1/')
+            [ -n "$skrypty" ] && [ -n "$style" ] || return 1
+            for adres in $skrypty $style; do
+              case "$adres" in
+                /*) adres="$host$adres" ;;
+                *) adres="${baza%/}/${adres#./}" ;;
+              esac
+              curl -fsS -o /dev/null "$adres" || return 1
+            done
+          }
           for proba in $(seq 1 9); do
             sleep 20
             curl -fsS -H 'Cache-Control: no-cache' "$ADRES" -o strona.html || continue
             grep -q "name=\"wersja\" content=\"$WERSJA\"" strona.html || continue
-            skrypt=$(grep -oE '<script type="module"[^>]*src="[^"]+"' strona.html | head -1 | sed -E 's/.*src="([^"]+)"/\1/')
-            [ -n "$skrypt" ] || continue
-            case "$skrypt" in
-              /*) skrypt="$host$skrypt" ;;
-              *) skrypt="${ADRES%/}/${skrypt#./}" ;;
-            esac
-            curl -fsS -o /dev/null "$skrypt" || continue
+            sprawdz_zasoby strona.html "$ADRES" || continue
             curl -fsS -o /dev/null "${ADRES%/}/czcionki/EBGaramond-Regular.ttf" || continue
+            # Strona instrukcji (druga strona wejściowa) pod bazą i jej zrzut ekranu.
+            curl -fsS -H 'Cache-Control: no-cache' "${ADRES%/}/instrukcja/" -o instrukcja.html || continue
+            grep -q "name=\"wersja\" content=\"$WERSJA\"" instrukcja.html || continue
+            sprawdz_zasoby instrukcja.html "${ADRES%/}/instrukcja/" || continue
+            curl -fsS -o /dev/null "${ADRES%/}/instrukcja-zrzuty/pl/start.png" || continue
             echo "OK: $ADRES ($WERSJA)"
             exit 0
           done

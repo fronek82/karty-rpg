@@ -1,0 +1,1455 @@
+<!doctype html>
+<html lang="pl" data-tytul-pl="Instrukcja – Karty RPG" data-tytul-en="Guide – RPG Cards">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      name="description"
+      content="Instrukcja programu Karty RPG: karty do Mausrittera, własne szablony, druk, kalibracja drukarki, eksport i import."
+      data-pl="Instrukcja programu Karty RPG: karty do Mausrittera, własne szablony, druk, kalibracja drukarki, eksport i import."
+      data-en="Guide to RPG Cards: Mausritter cards, your own templates, printing, printer calibration, export and import."
+    />
+    <meta name="wersja" content="%VITE_WERSJA%" />
+    <title>Instrukcja – Karty RPG</title>
+    <script>
+      // Motyw i język przed pierwszym malowaniem (bez migotania); logika jak w index.html aplikacji
+      // i w src/instrukcja/wybor.ts. Język: ?lang=pl|en, potem zapamiętany wybór, potem przeglądarka.
+      (function () {
+        var d = document.documentElement;
+        var ciemny = false;
+        var motyw = null;
+        var jezyk = null;
+        var z = null;
+        try {
+          ciemny = matchMedia('(prefers-color-scheme: dark)').matches;
+        } catch (e) {}
+        try {
+          motyw = localStorage.getItem('karty.motyw');
+          jezyk = localStorage.getItem('karty.jezyk');
+        } catch (e) {}
+        try {
+          z = new URLSearchParams(location.search).get('lang');
+        } catch (e) {}
+        d.setAttribute(
+          'data-theme',
+          motyw === 'dark' || (motyw !== 'light' && ciemny) ? 'dark' : 'light',
+        );
+        if (z === 'pl' || z === 'en') jezyk = z;
+        else if (jezyk !== 'pl' && jezyk !== 'en')
+          jezyk = /^pl(?:[-_]|$)/i.test(navigator.language || '') ? 'pl' : 'en';
+        d.setAttribute('lang', jezyk);
+        document.title = d.getAttribute('data-tytul-' + jezyk) || document.title;
+        var opis = document.querySelector('meta[name="description"]');
+        if (opis) opis.setAttribute('content', opis.getAttribute('data-' + jezyk) || '');
+      })();
+    </script>
+    <link rel="stylesheet" href="/src/ui/tokeny.css" />
+    <link rel="stylesheet" href="/src/ui/pasek.css" />
+    <link rel="stylesheet" href="/src/instrukcja/instrukcja.css" />
+  </head>
+  <body>
+    <noscript>
+      <style>
+        /* Bez JavaScriptu przełączniki nie działają, więc pokazujemy obie wersje językowe. */
+        [data-jezyk] {
+          display: revert !important;
+        }
+      </style>
+      <p class="bez-js" lang="pl">
+        Bez JavaScriptu przełączniki języka i motywu nie działają. Strona pokazuje obie wersje,
+        polską i angielską. <a href="#en-mausritter">English version</a>
+      </p>
+      <p class="bez-js" lang="en">
+        Without JavaScript the language and theme switches do not work. The page shows both
+        versions, Polish and English. <a href="#pl-mausritter">Wersja polska</a>
+      </p>
+    </noscript>
+    <a class="pomin" href="#tresc"
+      ><span data-jezyk="pl" lang="pl">Przejdź do treści</span
+      ><span data-jezyk="en" lang="en">Skip to content</span></a
+    >
+    <header class="naglowek">
+      <a class="logo" href="../"
+        ><span data-jezyk="pl" lang="pl">Karty RPG</span
+        ><span data-jezyk="en" lang="en">RPG Cards</span></a
+      >
+      <a class="powrot" href="../"
+        ><span data-jezyk="pl" lang="pl">Wróć do aplikacji</span
+        ><span data-jezyk="en" lang="en">Back to the app</span></a
+      >
+      <span class="odstep"></span>
+      <div
+        class="narzedzia-paska"
+        role="group"
+        aria-label="Narzędzia aplikacji"
+        data-etykieta-pl="Narzędzia aplikacji"
+        data-etykieta-en="Application tools"
+      >
+        <span class="przycisk-kontur" aria-current="page"
+          ><span data-jezyk="pl" lang="pl">Instrukcja</span
+          ><span data-jezyk="en" lang="en">Guide</span></span
+        >
+        <div
+          class="seg"
+          role="group"
+          aria-label="Język"
+          data-etykieta-pl="Język"
+          data-etykieta-en="Language"
+        >
+          <button
+            type="button"
+            lang="pl"
+            data-jezyk-przycisk="pl"
+            aria-pressed="true"
+            title="Polski"
+          >
+            PL
+          </button>
+          <button
+            type="button"
+            lang="en"
+            data-jezyk-przycisk="en"
+            aria-pressed="false"
+            title="English"
+          >
+            EN
+          </button>
+        </div>
+        <div
+          class="seg"
+          role="group"
+          aria-label="Motyw"
+          data-etykieta-pl="Motyw"
+          data-etykieta-en="Theme"
+        >
+          <button
+            type="button"
+            data-motyw="light"
+            aria-pressed="true"
+            aria-label="Motyw jasny"
+            title="Motyw jasny"
+            data-etykieta-pl="Motyw jasny"
+            data-etykieta-en="Light theme"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            data-motyw="dark"
+            aria-pressed="false"
+            aria-label="Motyw ciemny"
+            title="Motyw ciemny"
+            data-etykieta-pl="Motyw ciemny"
+            data-etykieta-en="Dark theme"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+    <div class="uklad">
+      <nav
+        class="spis"
+        aria-label="Spis treści"
+        data-etykieta-pl="Spis treści"
+        data-etykieta-en="Contents"
+      >
+        <div class="spis-wew">
+          <div class="etykieta-sekcji" aria-hidden="true">
+            <span data-jezyk="pl" lang="pl">Spis treści</span
+            ><span data-jezyk="en" lang="en">Contents</span>
+          </div>
+          <ol data-jezyk="pl" lang="pl">
+            <li><a href="#pl-mausritter">Karty do Mausrittera</a></li>
+            <li><a href="#pl-wlasne-szablony">Własne szablony</a></li>
+            <li><a href="#pl-edycja-kart">Edycja kart na kartce</a></li>
+            <li><a href="#pl-druk">Druk w skali 100%</a></li>
+            <li><a href="#pl-kalibracja">Kalibracja drukarki</a></li>
+            <li><a href="#pl-eksport-import">Eksport i import</a></li>
+            <li><a href="#pl-jezyk-motyw">Język i motyw</a></li>
+            <li><a href="#pl-problemy">Najczęstsze problemy</a></li>
+          </ol>
+          <ol data-jezyk="en" lang="en">
+            <li><a href="#en-mausritter">Cards for Mausritter</a></li>
+            <li><a href="#en-wlasne-szablony">Your own templates</a></li>
+            <li><a href="#en-edycja-kart">Editing cards on the sheet</a></li>
+            <li><a href="#en-druk">Printing at 100% scale</a></li>
+            <li><a href="#en-kalibracja">Printer calibration</a></li>
+            <li><a href="#en-eksport-import">Export and import</a></li>
+            <li><a href="#en-jezyk-motyw">Language and theme</a></li>
+            <li><a href="#en-problemy">Common problems</a></li>
+          </ol>
+        </div>
+      </nav>
+      <main id="tresc" tabindex="-1">
+        <!--
+          LISTA KONTROLNA STYLU (wymagania autora; pilnuje jej część testów w src/instrukcja/tresc.test.ts):
+          1. Zwykły, rzeczowy język, jak pisze człowiek. Krótkie zdania.
+          2. Nazwy przycisków i pól dokładnie jak w interfejsie, w cudzysłowach: „…” (PL), “…” (EN).
+             Test sprawdza, że każda nazwa istnieje w src/i18n/pl.ts lub en.ts. Nie ujmuj w cudzysłów
+             niczego, co nie jest tekstem interfejsu (wyjątki: lista w tresc.test.ts).
+          3. Bez schematycznych zwrotów („oto przewodnik”, „zanurz się”, „wspaniale”, „kompleksowy”,
+             „bezproblemowo”; EN: „dive into”, „seamless”, „comprehensive”) i bez zwrotów marketingowych.
+          4. Bez ikon, emoji i dekoracyjnych symboli (strzałki, ►, ✎); bez wykrzykników.
+          5. Struktura: nagłówek, potem akapit albo lista. Bez pustych akapitów, bez <br><br>,
+             bez spacerów między wierszami.
+          6. Wersja angielska pisana naturalnie, nie jako kalka z polskiej; te same identyfikatory
+             nagłówków h2/h3 (z przedrostkiem pl- / en-), ta sama kolejność sekcji.
+          7. Opisujemy tylko to, co aplikacja dziś robi. Nowa lub zmieniona funkcja wymaga zmiany tekstu.
+        -->
+        <article class="kolumna" data-jezyk="pl" lang="pl">
+          <h1>Instrukcja</h1>
+          <h2 id="pl-mausritter">Karty do Mausrittera</h2>
+          <p>
+            Karty ekwipunku i stanów układają się na kartce A4 w siatce slotów. Wydrukowane w skali
+            100% mają rozmiar slotów z karty postaci. Układ kart jest według gry Mausritter (Isaac
+            Williams, Losing Games).
+          </p>
+          <p>
+            Pakiet zawiera układy kart, nazwy, krótkie zasady i napisy w rodzaju „-1 obr”, „/ 250p”
+            i „Usunięcie:”. Nie ma w nim ilustracji ani opisów z wydania gry. Ilustracje dodajesz
+            sam.
+          </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/pl/start.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Ekran startowy aplikacji w jasnym motywie, z trzema kolumnami"
+            />
+            <figcaption>
+              Ekran startowy: przyciski po lewej, „Moje projekty” pośrodku i „Importuj pliki…” po
+              prawej.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>Na ekranie startowym kliknij „Stwórz karty do Mausrittera”.</li>
+            <li>
+              Wybierz „Pusta kartka A4” albo gotowy układ: „Broń i pancerze”, „Wyposażenie”, „Stany”
+              lub „Wszystkie trzy”. Kliknięcie podglądu tworzy projekt i otwiera edytor. Skróty
+              „Pusta kartka” i „Zacznij od gotowego układu” po lewej przewijają do właściwej grupy.
+            </li>
+          </ol>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/pl/mausritter.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Ekran wyboru: podgląd pustej kartki A4 i podglądy gotowych układów"
+            />
+            <figcaption>
+              Ekran po kliknięciu „Stwórz karty do Mausrittera”: podgląd pustej kartki i gotowych
+              układów.
+            </figcaption>
+          </figure>
+          <ol start="3">
+            <li>
+              Kliknij pusty slot i wybierz typ karty: „Broń”, „Zbroja”, „Ekwipunek”, „Zaklęcie”,
+              „Stan” albo „Pusta karta”. Typ z kilkoma wariantami rozwija drugą listę. Nowa karta ma
+              od razu domyślny rozmiar swojego typu.
+            </li>
+            <li>
+              Kliknij kartę. W panelu po prawej zmienisz jej pola, rozmiar i ilustrację. Kilka kart
+              zaznaczysz z klawiszem <kbd>Shift</kbd> albo prostokątem, wtedy wspólne pola zmieniasz
+              naraz.
+            </li>
+            <li>
+              W „Ustawienia” wybierzesz tytuł kartki, tryb „czarno-biały”, papier i czcionki, także
+              własne.
+            </li>
+            <li>
+              Kliknij „Pobierz PDF” i drukuj w skali 100%. Szczegóły są w sekcji
+              <a href="#pl-druk">Druk w skali 100%</a>.
+            </li>
+            <li>
+              „Eksportuj” zapisuje projekt do pliku <code>.kartyrpg</code>. To kopia zapasowa i
+              sposób na przeniesienie projektu na inny komputer.
+            </li>
+          </ol>
+          <h2 id="pl-wlasne-szablony">Własne szablony</h2>
+          <p>
+            Szablon opisuje wygląd jednej karty: z jakich pól się składa i gdzie leżą. Karty robisz
+            potem z szablonu, wpisując tylko dane. Edytor szablonów nie ma kart z żadnej konkretnej
+            gry. Przykładowe szablony służą do wypróbowania.
+          </p>
+          <h3 id="pl-kreator">Nowy szablon</h3>
+          <ol>
+            <li>Na ekranie startowym kliknij „Stwórz własne karty”.</li>
+            <li>
+              Kliknij kafelek z przykładowym szablonem albo „Nowy szablon od zera”. Kafelek tworzy
+              projekt z tym szablonem i jedną kartą z danymi przykładowymi. „Importuj szablon”
+              wczytuje plik z innego komputera.
+            </li>
+            <li>
+              W kreatorze wpisz „Nazwa szablonu” i wybierz „Format karty”: „Standard / Poker”,
+              „Bridge”, „Mini Euro”, „Mini American”, „Tarot”, „Kwadrat” albo „Własny rozmiar” w
+              milimetrach.
+            </li>
+            <li>Ustaw orientację, „Zaokrąglenie rogów (mm)” i „Kolor karty”.</li>
+            <li>
+              W „Zacznij od układu” wybierz „Pusta karta”, „Tytuł i opis”, „Swobodny: pola w
+              dowolnych miejscach” albo „Tytuł, siatka 2×2, opis i stopka”.
+            </li>
+            <li>Kliknij „Dalej: układ pól”. Otworzy się edytor szablonu.</li>
+          </ol>
+          <h3 id="pl-edytor-szablonu">Edytor szablonu</h3>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/pl/edytor-szablonu.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Edytor szablonu: drzewo elementów, podgląd karty i panel właściwości"
+            />
+            <figcaption>
+              Edytor szablonu: drzewo „Struktura karty”, „Podgląd karty” i panel „Właściwości”.
+            </figcaption>
+          </figure>
+          <p>
+            Po lewej jest drzewo „Struktura karty”, pośrodku „Podgląd karty”, po prawej panel
+            „Właściwości”. Podgląd pokazuje wartości przykładowe.
+          </p>
+          <ul>
+            <li>
+              Wiersz układa elementy obok siebie, kolumna jeden pod drugim, warstwy jeden na drugim,
+              a kontener swobodny w dowolnych miejscach.
+            </li>
+            <li>
+              Zaznacz kontener i kliknij „Dodaj”, żeby dodać do niego element. Do wyboru są między
+              innymi „Tekst”, „Etykieta + wartość”, „Wartość w kształcie”, „Obraz”, „Znaczniki”,
+              „Pole do wpisania”, „Ikona”, „Separator” i „Tabela”.
+            </li>
+            <li>
+              Element zaznaczasz w drzewie albo na podglądzie. <kbd>Shift</kbd> i klik zaznacza
+              kilka elementów.
+            </li>
+            <li>
+              „Wyżej” i „Niżej” zmieniają kolejność. „Do kontenera powyżej” i „Wyjmij z kontenera”
+              przenoszą element. „Opakuj w wiersz” i „Opakuj w kolumnę” zamykają go w nowym
+              kontenerze. „Duplikuj” i „Usuń” działają na zaznaczonym elemencie.
+            </li>
+            <li>
+              Skróty: <kbd>Alt</kbd> ze strzałką w górę lub w dół przesuwa element zaznaczony w
+              drzewie. <kbd>Delete</kbd> usuwa, <kbd>Ctrl</kbd> + <kbd>D</kbd> duplikuje,
+              <kbd>Ctrl</kbd> + <kbd>Z</kbd> cofa. Na macOS zamiast <kbd>Ctrl</kbd> działa
+              <kbd>Cmd</kbd>.
+            </li>
+            <li>Skróty nie działają, gdy kursor jest w polu tekstowym.</li>
+            <li>
+              Panel „Właściwości” ma ustawienia treści („z danych karty” albo „stała (na każdej
+              karcie)”), etykiety, szerokości i wysokości, stylu tekstu, tła, ramki, odstępów,
+              kształtu wartości i tabeli. „Kopiuj styl” i „Wklej styl” przenoszą styl między
+              elementami.
+            </li>
+            <li>
+              Szerokość i wysokość podajesz w milimetrach, w procentach miejsca w rodzicu, „wg
+              treści” albo „wypełnij”.
+            </li>
+            <li>
+              W treści pól działa formatowanie: <code>**pogrubienie**</code>,
+              <code>*kursywa*</code>, <code>***oba***</code>. Zwykłą gwiazdkę zapiszesz jako
+              <code>\*</code>.
+            </li>
+          </ul>
+          <p>
+            Kliknij „Rób karty”, żeby przejść do kartki dla rozmiaru szablonu. Kliknięcie slotu
+            dodaje kartę, a panel pokazuje pola z nazwami z szablonu. Do edytora wrócisz linkiem na
+            dole panelu zaznaczonej karty.
+          </p>
+          <h3 id="pl-ozdobniki">Ramki, narożniki i separatory</h3>
+          <p>
+            Ozdobniki pochodzą z wbudowanej biblioteki albo z własnych plików SVG. W podglądzie i w
+            PDF wyglądają tak samo.
+          </p>
+          <ol>
+            <li>
+              Zaznacz „Karta” w drzewie i otwórz sekcję „Ramka karty”. Rodzaje ramki to „brak”,
+              „linia”, „motyw” i „z obrazu (9-slice)”.
+            </li>
+            <li>
+              Linia bywa „ciągła”, „przerywana”, „kropkowana” albo „podwójna”. Motywy to „pnącze”,
+              „przeplot”, „łuski”, „runy”, „łańcuch” i „gwiazdki”.
+            </li>
+            <li>Tę samą ramkę ustawisz też w sekcji „Wygląd (tło, ramka, rogi)” każdego pola.</li>
+            <li>
+              Narożniki wybierasz w sekcji „Narożniki”: „kątownik”, „liść”, „okucie”, „gwiazda”,
+              „węzeł” albo „zawijas”. „Rozmiar narożnika (mm)” ustawia ich wielkość. Zaokrąglenie
+              rogów dotyczy tylko ramki z linii, a motyw biegnie po prostych bokach.
+            </li>
+            <li>
+              Ozdobny separator dodasz przyciskiem „Dodaj”: „Separator z zakończeniami” albo
+              „Separator z motywem”. Zwykły „Separator” też ma ustawienia rysunku. Działa poziomo w
+              kolumnie i pionowo w wierszu.
+            </li>
+          </ol>
+          <h3 id="pl-wlasne-svg">Własne SVG i biblioteka ozdobników</h3>
+          <ol>
+            <li>Na pasku edytora szablonu kliknij link „Biblioteka ozdobników”.</li>
+            <li>
+              Kliknij „Importuj SVG…” i wybierz plik. Aplikacja sprawdza plik: usuwa skrypty, obrazy
+              i odwołania do zewnętrznych plików. Tekst trzeba zamienić na krzywe, a plik może mieć
+              do 512 KB.
+            </li>
+            <li>
+              W „Użyj jako” wskaż, do czego element służy: „motyw”, „narożnik”, „zakończenie”,
+              „środek separatora”, „kształt wartości” albo „ramka 9-slice”.
+            </li>
+            <li>
+              W „Kolor” wybierz „jednolity (kolorowalny)” albo „zachowaj kolory” i kliknij „Dodaj do
+              biblioteki”.
+            </li>
+          </ol>
+          <p>
+            Elementy z biblioteki są częścią projektu. Są zapisane w eksporcie projektu i w pliku
+            szablonu.
+          </p>
+          <h3 id="pl-ramka-9slice">Ramka 9-slice</h3>
+          <p>
+            Ramka 9-slice rozciąga obraz tak, że rogi zostają bez zniekształceń, a boki dopasowują
+            się do rozmiaru karty.
+          </p>
+          <ol>
+            <li>
+              W bibliotece kliknij „Dodaj ramkę z PNG…” albo zaimportuj ramkę jako SVG i wybierz
+              „ramka 9-slice”.
+            </li>
+            <li>
+              Ustaw cztery wcięcia: „Góra”, „Prawo”, „Dół” i „Lewo”. Możesz też przeciągać
+              niebieskie linie w podglądzie.
+            </li>
+            <li>
+              W polu „Boki” wybierz „rozciągnij” albo „powtarzaj równo”. W polu „Środek” wybierz
+              „wypełnij” albo „pomiń”.
+            </li>
+            <li>
+              W edytorze szablonu wybierz w sekcji „Ramka karty” rodzaj „z obrazu (9-slice)” i ustaw
+              „Grubość ramki (mm)”.
+            </li>
+          </ol>
+          <p>
+            Gdy rogi ramki po przeskalowaniu mają mniej niż 300 dpi, aplikacja ostrzega, że wydruk
+            może być rozmyty.
+          </p>
+          <h3 id="pl-tryb-swobodny">Tryb swobodny</h3>
+          <p>
+            W trybie swobodnym pola układasz tam, gdzie chcesz, jak w programie graficznym. Kolumny
+            i wiersze nadal działają, a kontener swobodny może leżeć w zwykłej kolumnie.
+          </p>
+          <ol>
+            <li>
+              W kreatorze wybierz „Swobodny: pola w dowolnych miejscach”. W gotowym szablonie
+              zaznacz kontener i w sekcji „Położenie” kliknij „Zamień na swobodny”. Pola zostają na
+              swoich miejscach.
+            </li>
+            <li>
+              Dodaj pole przyciskiem „Dodaj” i przeciągnij je na podglądzie. Uchwyty w rogach i na
+              bokach zmieniają rozmiar, <kbd>Shift</kbd> zachowuje proporcje. Jedno przeciągnięcie
+              to jeden krok „Cofnij”.
+            </li>
+            <li>
+              Gdy kursor jest w podglądzie karty, strzałki przesuwają zaznaczone pola o 0,5 mm, a
+              strzałki z <kbd>Shift</kbd> o 5 mm.
+            </li>
+            <li>
+              Pole przyciąga się do siatki oraz do krawędzi i środków innych pól. <kbd>Alt</kbd>
+              wyłącza przyciąganie. Siatkę ustawiasz w sekcji „Przyciąganie”. Prowadnice widać tylko
+              w edytorze.
+            </li>
+            <li>
+              Sekcja „Położenie” robi to samo z klawiatury: „X (mm)”, „Y (mm)”, punkt „Liczone od” i
+              „Obrót” o 0, 90, 180 albo 270 stopni. „Kolejność rysowania” ma przyciski „Na wierzch”,
+              „Wyżej”, „Niżej” i „Na spód”.
+            </li>
+            <li>
+              Kilka zaznaczonych pól wyrównasz przyciskami z sekcji „Wyrównaj”, na przykład „Do
+              lewej”. „Rozłóż równo w poziomie” i „Rozłóż równo w pionie” wymagają co najmniej
+              trzech pól.
+            </li>
+          </ol>
+          <h3 id="pl-podklad">Podkład ze wzoru</h3>
+          <p>
+            Podkład to zdjęcie albo skan istniejącej karty, który leży pod podglądem. Pomaga ułożyć
+            pola w tych samych miejscach co we wzorze.
+          </p>
+          <ol>
+            <li>Kliknij „Podkład…” i wybierz plik JPG albo PNG.</li>
+            <li>
+              Ustaw „Przezroczystość podkładu (%)” albo ukryj podkład, odznaczając „Pokaż podkład”.
+            </li>
+            <li>Przeciągnij pola na miejsca ze wzoru.</li>
+          </ol>
+          <p>
+            Podkład nie łapie kliknięć i nie jest drukowany. Jest zapisany w eksporcie projektu, ale
+            nie w pliku szablonu. „Usuń podkład” usuwa go z projektu.
+          </p>
+          <h2 id="pl-edycja-kart">Edycja kart na kartce</h2>
+          <p>
+            Kartka to arkusz do druku z siatką slotów. Karty układasz na niej w edytorze kartki,
+            zarówno dla Mausrittera, jak i dla własnych szablonów.
+          </p>
+          <h3 id="pl-dodawanie">Dodawanie i zaznaczanie</h3>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/pl/edytor-kartki.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Edytor kartki A4 z otwartym menu typów kart w pustym slocie"
+            />
+            <figcaption>Edytor kartki z otwartym menu typów kart w pustym slocie.</figcaption>
+          </figure>
+          <ul>
+            <li>
+              Kliknij pusty slot, żeby dodać kartę. Menu „Dodaj kartę w tym slocie” pokazuje typy
+              kart razem z ich rozmiarami.
+            </li>
+            <li>
+              Kliknięcie karty zaznacza ją. <kbd>Shift</kbd> i klik dodaje kolejne karty do
+              zaznaczenia.
+            </li>
+            <li>
+              Przeciągnięcie po pustym miejscu zaznacza kilka kart prostokątem. <kbd>Escape</kbd>
+              odznacza wszystko.
+            </li>
+            <li>
+              Karty tego samego typu edytujesz naraz. Przy kartach różnych typów wspólnych pól nie
+              ma.
+            </li>
+          </ul>
+          <h3 id="pl-panel-kart">Panel zaznaczonych kart</h3>
+          <ul>
+            <li>
+              „Wgraj obraz…” wczytuje ilustrację, także zdjęcie z telefonu. Kółko myszy nad
+              zaznaczoną kartą zmienia skalę ilustracji, <kbd>Alt</kbd> i przeciąganie ją przesuwa.
+            </li>
+            <li>
+              „Duplikuj” dodaje jedną kopię karty. Pole „Liczba kopii” i przycisk obok niego, na
+              przykład „Duplikuj ×3”, dodają kilka kopii naraz. Kopie, które nie mieszczą się na
+              stronie, trafiają na nowe strony.
+            </li>
+            <li>
+              „Usuń” usuwa kartę. Dwa przyciski ze strzałkami na górnym pasku cofają i ponawiają
+              zmiany. Ich podpowiedzi to „Cofnij” i „Ponów”.
+            </li>
+          </ul>
+          <h3 id="pl-przeciaganie">Przeciąganie i skróty</h3>
+          <p>
+            Kartę przeciągasz myszą do innego slotu, także na inną stronę. Karty nie mogą na siebie
+            nachodzić.
+          </p>
+          <ul>
+            <li><kbd>Delete</kbd> usuwa zaznaczone karty.</li>
+            <li><kbd>Ctrl</kbd> + <kbd>D</kbd> duplikuje je.</li>
+            <li>
+              <kbd>Ctrl</kbd> + <kbd>Z</kbd> cofa, <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +
+              <kbd>Z</kbd> ponawia.
+            </li>
+            <li>Strzałki przesuwają zaznaczone karty o jeden slot.</li>
+            <li>Skróty nie działają, gdy kursor jest w polu tekstowym.</li>
+          </ul>
+          <h3 id="pl-strony">Strony</h3>
+          <p>
+            Przycisk „Dodaj stronę” jest pod ostatnią stroną. Pusta strona, gdy jest więcej niż
+            jedna, ma w nagłówku przycisk „Usuń pustą stronę”. Gdy karta nie mieści się w slocie,
+            menu typów podaje powód.
+          </p>
+          <h3 id="pl-naglowki-grup">Nagłówki grup</h3>
+          <p>Na kartce ze stanami możesz dodać nagłówek nad kolumnami kart.</p>
+          <ol>
+            <li>
+              Zaznacz karty w kolumnach, które mają mieć wspólny nagłówek, i kliknij „Nagłówek grupy
+              nad zaznaczonymi kolumnami”. Pojawi się nagłówek „Nowa grupa”.
+            </li>
+            <li>
+              W panelu „Nagłówek grupy” wpisz „Nagłówek” i „Opis (mniejszą czcionką)”. Pole
+              „Szerokość” i „Odstęp przed grupą” ustawiają rozmiar i miejsce.
+            </li>
+            <li>
+              „Usuń nagłówek” usuwa nagłówek. Karty pod nim układasz jak zawsze, bo nagłówek należy
+              do kolumn, a nie do kart.
+            </li>
+          </ol>
+          <h3 id="pl-mieszane-rozmiary">Karty różnych rozmiarów</h3>
+          <p>
+            Karty o różnych rozmiarach, na przykład 70×120, 63×88 i 44×68 mm, mogą leżeć na jednej
+            stronie. Układają się w pasach, a wspólne krawędzie mają jedną linię cięcia. To wygodne
+            przy cięciu na trymerze.
+          </p>
+          <ol>
+            <li>
+              Otwórz „Ustawienia”, w sekcji „Rozmiary kart na kartce” wybierz „mieszane”. Własny
+              układ arkusza jest wtedy wyłączony.
+            </li>
+            <li>
+              „Kolejność rozmieszczania” ma opcje „od największych” i „własna (przeciąganie)”. Przy
+              własnej kolejności przeciągnięcie karty zmienia jej miejsce na liście, a karty nigdy
+              się nie nakładają.
+            </li>
+            <li>
+              „Obracaj karty o 90°, gdy oszczędza to papier”, „Karty tego samego rozmiaru obok
+              siebie (mniej cięć)” i „Odstęp między kartami (mm)” dopracowują układ.
+            </li>
+            <li>
+              Wolne miejsce na kartce otwiera menu „Dodaj kartę w to miejsce”. Szablon, który się
+              tam nie zmieści, jest oznaczony, ale trafi w pierwsze pasujące miejsce.
+            </li>
+          </ol>
+          <h3 id="pl-uklad-arkusza">Układ arkusza</h3>
+          <p>
+            Tryb „własny układ arkusza” to stała siatka, na przykład dla gotowych arkuszy z
+            perforowanymi kartami. Tryb „automatyczny” układa karty obok siebie, a siatkę liczy z
+            papieru i marginesów.
+          </p>
+          <ul>
+            <li>
+              Ustaw „Kolumny”, „Rzędy”, „Margines lewy (mm)”, „Margines górny (mm)”, „Szerokość
+              karty (mm)”, „Wysokość karty (mm)”, „Odstęp poziomy (mm)” i „Odstęp pionowy (mm)”.
+              Kartka obok jest podglądem na żywo.
+            </li>
+            <li>
+              Wpisz „Nazwa układu” i kliknij „Zapisz jako mój układ”. Układ trafia na listę „Moje
+              układy” w tej przeglądarce. Przyciski „Użyj”, „Zmień nazwę” i „Usuń” działają przy
+              każdym układzie.
+            </li>
+            <li>
+              W trybie własnego układu tytuł kartki, nagłówki grup i nożyczki nie są drukowane.
+            </li>
+          </ul>
+          <h3 id="pl-luz-w-slocie">Luz w slocie</h3>
+          <p>
+            Luz przydaje się przy arkuszach z perforacją, gdzie slot jest większy niż karta. Sekcja
+            „Karta w slocie” jest w „Ustawienia”, w „Układ arkusza”. Nie ma jej w trybie „mieszane”.
+          </p>
+          <ol>
+            <li>W „Ustawienia” otwórz „Układ arkusza” i znajdź sekcję „Karta w slocie”.</li>
+            <li>
+              „Luz (mm)” mówi, o ile karta może być mniejsza od slotu. Zakres to 0 do 5 mm. Nowe
+              własne karty mają 1 mm, starsze kartki, między innymi z Mausrittera, 0,5 mm.
+            </li>
+            <li>
+              Na przykład karta 63×88 mm pasuje do slotu 63,5×89 mm. „Położenie karty w slocie” ma
+              opcje „Środek” i „Lewy górny róg”.
+            </li>
+            <li>
+              „Tło do krawędzi slotu” sprawia, że przy przesunięciu druku nie widać białego paska. W
+              „Linie cięcia i obrysy” wybierz „Wokół slotu” albo „Wokół karty”.
+            </li>
+          </ol>
+          <p>
+            Luz zapisuje się razem z układem w „Moje układy”. Dobrany luz sprawdzisz wydrukiem
+            testowym.
+          </p>
+          <h2 id="pl-druk">Druk w skali 100%</h2>
+          <p>Karty mają prawdziwy rozmiar tylko wtedy, gdy PDF drukujesz w skali 100%.</p>
+          <ol>
+            <li>Wybierz papier w „Ustawienia”, w polu „Papier”.</li>
+            <li>
+              Do wyboru są „A4 (210 × 297 mm)”, „Letter (216 × 279 mm)”, „A5 (148 × 210 mm)”,
+              „Zdjęcie 10 × 15 cm”, „Zdjęcie 13 × 18 cm”, „Zdjęcie 15 × 21 cm” i „Własny rozmiar…”.
+            </li>
+            <li>
+              Kliknij „Pobierz PDF” na górnym pasku. PDF powstaje w przeglądarce, plik trafia do
+              pobranych.
+            </li>
+            <li>Otwórz PDF i wybierz drukowanie. Włóż papier zgodny z ustawionym.</li>
+            <li>Ustaw skalę 100% albo „Rzeczywisty rozmiar”.</li>
+            <li>
+              Wyłącz „Dopasuj do strony” i podobne opcje, które zmniejszają wydruk do obszaru
+              drukowania.
+            </li>
+            <li>Zmierz linijką jedną kartę. Rozmiar musi zgadzać się z szablonem.</li>
+          </ol>
+          <p>Przy czarno-białej drukarce przełącz w „Druk” opcję „czarno-biały”.</p>
+          <p>
+            Menu „Pobierz” ma też „PDF (do druku)” i obrazy. Obrazy stron to „Obrazy stron – JPG,
+            300 dpi” i „Obrazy stron – PNG, 300 dpi”. Karty osobno to „Karty osobno – ZIP z JPG, 300
+            dpi” i „Karty osobno – ZIP z PNG, 300 dpi”. Przydadzą się w punkcie fotograficznym.
+          </p>
+          <p>
+            Strefa bezpieczeństwa to pas przy krawędzi kartki, w który karty nie powinny wchodzić.
+          </p>
+          <p>
+            Punkt fotograficzny może przyciąć brzegi odbitki o 1 do 3 mm. Dlatego dla „Zdjęcie 10 ×
+            15 cm”, „Zdjęcie 13 × 18 cm” i „Zdjęcie 15 × 21 cm” pole „Margines bezpieczeństwa (mm)”
+            ma domyślnie 3 mm.
+          </p>
+          <p>
+            Karta w strefie daje ostrzeżenie, a sama strefa jest zaznaczona na kartce. Wartość 0
+            wyłącza strefę.
+          </p>
+          <h2 id="pl-kalibracja">Kalibracja drukarki i wydruk testowy</h2>
+          <p>
+            Drukarki przesuwają obraz o ułamki milimetra. Przy arkuszach z perforacją to widać.
+            Kalibracja koryguje to przesunięcie w pliku PDF.
+          </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/pl/ustawienia.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Panel ustawień kartki przewinięty do sekcji kalibracji drukarki"
+            />
+            <figcaption>Panel „Ustawienia” przewinięty do sekcji „Kalibracja drukarki”.</figcaption>
+          </figure>
+          <ol>
+            <li>Otwórz „Ustawienia” i znajdź sekcję „Kalibracja drukarki”.</li>
+            <li>
+              Kliknij „Wydruk testowy (PDF)”. Dostaniesz arkusz z samymi obrysami kart, numerami i
+              krzyżykami na środkach.
+            </li>
+            <li>
+              Wydrukuj go w skali 100% na arkuszu z perforacją albo na zwykłym papierze, który
+              przyłożysz pod światło do arkusza.
+            </li>
+            <li>
+              Sprawdź, o ile obrysy odbiegają od perforacji. Wpisz różnicę w „Przesunięcie X (mm)” i
+              „Przesunięcie Y (mm)”. Wartość dodatnia przesuwa wydruk w prawo albo w dół.
+            </li>
+            <li>Drukuj wydruk testowy ponownie, aż krzyżyki trafią w środki kart.</li>
+          </ol>
+          <p>
+            Przesunięcie zapamiętuje przeglądarka, bo to cecha drukarki, a nie projektu. Dotyczy
+            tylko PDF, nie podglądu na ekranie. Wydruk testowy uwzględnia ustawioną kalibrację.
+          </p>
+          <h2 id="pl-eksport-import">Eksport i import projektu i szablonu</h2>
+          <h3 id="pl-projekt">Projekt</h3>
+          <ul>
+            <li>
+              „Eksportuj” na górnym pasku edytora albo przy projekcie na liście „Moje projekty”
+              zapisuje plik <code>.kartyrpg</code>. Są w nim karty, szablony, biblioteka ozdobników,
+              czcionki i obrazy projektu.
+            </li>
+            <li>
+              Na ekranie startowym kliknij „Importuj pliki…” albo przeciągnij pliki na pole
+              „Przeciągnij pliki tutaj”. Możesz wskazać wiele plików naraz. Aplikacja rozpoznaje
+              projekty i szablony po rozszerzeniu.
+            </li>
+            <li>
+              Jeśli taki projekt już jest w przeglądarce, aplikacja pyta, co zrobić: „Zastąp”,
+              „Zapisz jako kopię” albo „Anuluj”.
+            </li>
+          </ul>
+          <h3 id="pl-szablon">Szablon</h3>
+          <ul>
+            <li>
+              W „Ustawienia”, w sekcji „Szablony projektu”, kliknij „Eksportuj” przy szablonie.
+              Powstaje plik <code>.kartyrpg-szablon</code> z elementami biblioteki ozdobników,
+              których szablon używa. Podkład ze wzoru do niego nie trafia.
+            </li>
+            <li>
+              „Importuj szablon…” w tej samej sekcji albo „Importuj szablon” na ekranie „Stwórz
+              własne karty” wczytuje taki plik. „Importuj pliki…” na starcie też go przyjmie i
+              utworzy z niego nowy projekt.
+            </li>
+          </ul>
+          <p>
+            Projekty zapisują się w pamięci tej przeglądarki. Wyczyszczenie danych strony usuwa je
+            razem z resztą. Ważne projekty eksportuj regularnie.
+          </p>
+          <h2 id="pl-jezyk-motyw">Język i motyw</h2>
+          <p>
+            Po prawej stronie górnego paska jest link „Instrukcja”, przełącznik „PL” i „EN” oraz
+            przełącznik motywu: „Motyw jasny” i „Motyw ciemny”. Ta strona ma ten sam pasek.
+          </p>
+          <ul>
+            <li>
+              Przy pierwszym wejściu język wybiera się według ustawień przeglądarki: polski dla
+              polskiej, w pozostałych przypadkach angielski. Twój wybór zapamiętuje przeglądarka.
+            </li>
+            <li>
+              Zmiana języka nie przeładowuje strony. Nazwy zapisane w projekcie, na przykład
+              domyślny tytuł kartki, zostają w języku, w którym je utworzono. Dane przykładowe kart
+              Mausrittera są po polsku.
+            </li>
+            <li>
+              Motyw domyślnie idzie za ustawieniem systemu. Po kliknięciu jednego z przycisków wybór
+              zostaje zapamiętany.
+            </li>
+            <li>
+              Motyw nie zmienia kart na podglądzie ani w PDF. Papier karty jest zawsze biały, a
+              kolory pochodzą z szablonu.
+            </li>
+            <li>Link „Instrukcja” otwiera tę stronę w nowym oknie, w języku aplikacji.</li>
+          </ul>
+          <h2 id="pl-problemy">Najczęstsze problemy</h2>
+          <ul>
+            <li>
+              <strong>Karta na papierze ma zły rozmiar.</strong> Drukujesz w innej skali niż 100%.
+              Wyłącz „Dopasuj do strony” w oknie drukowania.
+            </li>
+            <li>
+              <strong>Wydruk jest przesunięty względem perforacji.</strong> Ustaw „Przesunięcie X
+              (mm)” i „Przesunięcie Y (mm)” w sekcji „Kalibracja drukarki”.
+            </li>
+            <li>
+              <strong>Aplikacja ostrzega o karcie w strefie przycięcia.</strong> Przesuń kartę od
+              krawędzi albo zmniejsz „Margines bezpieczeństwa (mm)”, jeśli twój punkt foto nie
+              przycina brzegów.
+            </li>
+            <li>
+              <strong>Tekst nie mieści się na karcie.</strong> Aplikacja zmniejsza tekst do
+              ustawionego minimum, potem ostrzega. Skróć treść albo zwiększ pole w szablonie.
+            </li>
+            <li>
+              <strong>Plik SVG nie dodaje się do biblioteki.</strong> Zamień tekst na krzywe i
+              sprawdź, czy plik ma mniej niż 512 KB. Komunikat po imporcie wymienia, co aplikacja
+              pominęła.
+            </li>
+            <li>
+              <strong>Nie widzę projektów na innym komputerze.</strong> Projekty są tylko w
+              przeglądarce, w której je zapisano. Przenieś je plikiem z „Eksportuj” i „Importuj
+              pliki…”.
+            </li>
+            <li>
+              <strong>Karta ma brakujące znaki albo inną czcionkę.</strong> Sprawdź czcionki w
+              „Ustawienia”. Własną czcionkę dodasz przyciskiem „Wgraj własną czcionkę…”.
+            </li>
+          </ul>
+        </article>
+        <article class="kolumna" data-jezyk="en" lang="en">
+          <h1>Guide</h1>
+          <h2 id="en-mausritter">Cards for Mausritter</h2>
+          <p>
+            Equipment and condition cards are laid out on an A4 sheet in a grid of slots. Printed at
+            100% scale, they match the slots on the character sheet. The card layout follows the
+            game Mausritter (Isaac Williams, Losing Games).
+          </p>
+          <p>
+            The pack contains the card layouts, names, short rules and captions such as “-1 def”, “/
+            250p” and “Removal:”. It has no illustrations or descriptions from the published game.
+            You add the illustrations yourself.
+          </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/en/start.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The start screen in the light theme, with three columns"
+            />
+            <figcaption>
+              The start screen: buttons on the left, “My projects” in the middle and “Import files…”
+              on the right.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>On the start screen, click “Create cards for Mausritter”.</li>
+            <li>
+              Pick “Blank A4 sheet” or a ready-made layout: “Weapons and armor”, “Gear”,
+              “Conditions” or “All three”. Clicking a preview creates the project and opens the
+              editor. The shortcuts “Blank sheet” and “Start from a ready-made layout” on the left
+              scroll to the matching group.
+            </li>
+          </ol>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/en/mausritter.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The selection screen: a blank A4 sheet preview and previews of the ready-made layouts"
+            />
+            <figcaption>
+              The screen after clicking “Create cards for Mausritter”: a blank sheet and the
+              ready-made layouts.
+            </figcaption>
+          </figure>
+          <ol start="3">
+            <li>
+              Click an empty slot and choose a card type: “Weapon”, “Armor”, “Equipment”, “Spell”,
+              “Condition” or “Blank card”. A type with several variants opens a second list. A new
+              card starts at the default size for its type.
+            </li>
+            <li>
+              Click the card. The panel on the right lets you change its fields, size and
+              illustration. Select several cards with <kbd>Shift</kbd> or by dragging a rectangle.
+              Then edit their shared fields together.
+            </li>
+            <li>
+              In “Settings” you set the sheet title, the “black and white” mode, the paper and the
+              fonts, including your own.
+            </li>
+            <li>
+              Click “Download PDF” and print at 100% scale. The details are in
+              <a href="#en-druk">Printing at 100% scale</a>.
+            </li>
+            <li>
+              “Export” saves the project to a <code>.kartyrpg</code> file. It works as a backup and
+              as a way to move the project to another computer.
+            </li>
+          </ol>
+          <h2 id="en-wlasne-szablony">Your own templates</h2>
+          <p>
+            A template describes one card: which fields it has and where they sit. You then make
+            cards from the template by typing only the data. The template editor has no cards from
+            any particular game. The sample templates are there to try out.
+          </p>
+          <h3 id="en-kreator">A new template</h3>
+          <ol>
+            <li>On the start screen, click “Create your own cards”.</li>
+            <li>
+              Click a tile with a sample template or “New template from scratch”. A tile creates a
+              project with that template and one card filled with sample data. “Import a template”
+              loads a file from another computer.
+            </li>
+            <li>
+              In the wizard, type a “Template name” and choose the “Card format”: “Standard /
+              Poker”, “Bridge”, “Mini Euro”, “Mini American”, “Tarot”, “Square” or “Custom size” in
+              millimeters.
+            </li>
+            <li>Set the orientation, “Corner radius (mm)” and “Card color”.</li>
+            <li>
+              Under “Start from a layout” pick “Blank card”, “Title and description”, “Free-form:
+              fields anywhere” or “Title, 2×2 grid, description and footer”.
+            </li>
+            <li>Click “Next: field layout”. The template editor opens.</li>
+          </ol>
+          <h3 id="en-edytor-szablonu">The template editor</h3>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/en/edytor-szablonu.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The template editor: element tree, card preview and properties panel"
+            />
+            <figcaption>
+              The template editor: the “Card structure” tree, the “Card preview” and the
+              “Properties” panel.
+            </figcaption>
+          </figure>
+          <p>
+            The “Card structure” tree is on the left, the “Card preview” in the middle and the
+            “Properties” panel on the right. The preview shows sample values.
+          </p>
+          <ul>
+            <li>
+              A row places elements side by side, a column puts them one below another, layers stack
+              them, and a free-form container lets you put them anywhere.
+            </li>
+            <li>
+              Select a container and click “Add” to put an element into it. The choices include
+              “Text”, “Label + value”, “Value in a shape”, “Image”, “Markers”, “Write-in field”,
+              “Icon”, “Divider” and “Table”.
+            </li>
+            <li>
+              Select an element in the tree or on the preview. <kbd>Shift</kbd> and click selects
+              several elements.
+            </li>
+            <li>
+              “Up” and “Down” change the order. “Into the container above” and “Take out of the
+              container” move an element. “Wrap in a row” and “Wrap in a column” put it in a new
+              container. “Duplicate” and “Delete” act on the selected element.
+            </li>
+            <li>
+              Shortcuts: <kbd>Alt</kbd> with the up or down arrow moves the element selected in the
+              tree. <kbd>Delete</kbd> removes it, <kbd>Ctrl</kbd> + <kbd>D</kbd> duplicates it and
+              <kbd>Ctrl</kbd> + <kbd>Z</kbd> undoes. On macOS use <kbd>Cmd</kbd> instead of
+              <kbd>Ctrl</kbd>.
+            </li>
+            <li>Shortcuts do not work when the cursor is in a text field.</li>
+            <li>
+              The “Properties” panel covers content (“from card data” or “fixed (on every card)”),
+              label, width and height, text style, background, frame, spacing, value shape and
+              table. “Copy style” and “Paste style” carry a style from one element to another.
+            </li>
+            <li>
+              Width and height can be set in millimeters, as a percentage of the parent, “by
+              content” or “fill”.
+            </li>
+            <li>
+              Text fields support formatting: <code>**bold**</code>, <code>*italic*</code>,
+              <code>***both***</code>. Write <code>\*</code> for a plain asterisk.
+            </li>
+          </ul>
+          <p>
+            Click “Make cards” to go to a sheet sized for the template. Clicking a slot adds a card,
+            and the panel shows the fields named as in the template. A link at the bottom of the
+            selected card’s panel takes you back to the editor.
+          </p>
+          <h3 id="en-ozdobniki">Frames, corners and dividers</h3>
+          <p>
+            Ornaments come from the built-in library or from your own SVG files. They look the same
+            in the preview and in the PDF.
+          </p>
+          <ol>
+            <li>
+              Select “Card” in the tree and open the “Card frame” section. The frame types are
+              “none”, “line”, “pattern” and “from an image (9-slice)”.
+            </li>
+            <li>
+              A line can be “solid”, “dashed”, “dotted” or “double”. The patterns are “vine”,
+              “interlace”, “scales”, “runes”, “chain” and “stars”.
+            </li>
+            <li>
+              You can set the same frame in the “Appearance (background, frame, corners)” section of
+              any field.
+            </li>
+            <li>
+              Pick corners in the “Corners” section: “angle bracket”, “leaf”, “metal corner”,
+              “star”, “knot” or “flourish”. “Corner size (mm)” sets their size. Corner rounding
+              applies only to the line frame, while a pattern runs along the straight sides.
+            </li>
+            <li>
+              Add a decorative divider with “Add”: “Divider with end caps” or “Divider with a
+              pattern”. A plain “Divider” has drawing options too. It works horizontally in a column
+              and vertically in a row.
+            </li>
+          </ol>
+          <h3 id="en-wlasne-svg">Your own SVG and the ornament library</h3>
+          <ol>
+            <li>In the template editor bar, click the “Ornament library” link.</li>
+            <li>
+              Click “Import SVG…” and choose a file. The app checks the file and removes scripts,
+              images and references to external files. Text has to be converted to outlines, and the
+              file can be up to 512 KB.
+            </li>
+            <li>
+              Under “Use as”, say what the element is for: “pattern”, “corner”, “end cap”, “divider
+              center”, “value shape” or “9-slice frame”.
+            </li>
+            <li>
+              Under “Color”, choose “solid (recolorable)” or “keep the colors”, then click “Add to
+              the library”.
+            </li>
+          </ol>
+          <p>
+            Library elements belong to the project. They are included in the project export and in
+            the template file.
+          </p>
+          <h3 id="en-ramka-9slice">The 9-slice frame</h3>
+          <p>
+            A 9-slice frame stretches an image so that the corners stay undistorted and the sides
+            adapt to the card size.
+          </p>
+          <ol>
+            <li>
+              In the library, click “Add a frame from PNG…”, or import a frame as SVG and choose
+              “9-slice frame”.
+            </li>
+            <li>
+              Set the four insets: “Top”, “Right”, “Bottom” and “Left”. You can also drag the blue
+              lines in the preview.
+            </li>
+            <li>
+              In “Sides” choose “stretch” or “repeat evenly”. In “Center” choose “fill” or “skip”.
+            </li>
+            <li>
+              In the template editor, set the “Card frame” type to “from an image (9-slice)” and
+              adjust “Frame thickness (mm)”.
+            </li>
+          </ol>
+          <p>
+            If the frame corners end up below 300 dpi after scaling, the app warns that the print
+            may look blurry.
+          </p>
+          <h3 id="en-tryb-swobodny">Free-form mode</h3>
+          <p>
+            In free-form mode you place fields wherever you like, as in a graphics program. Columns
+            and rows still work, and a free-form container can sit inside an ordinary column.
+          </p>
+          <ol>
+            <li>
+              In the wizard, choose “Free-form: fields anywhere”. In an existing template, select a
+              container and click “Convert to free-form” in the “Position” section. The fields stay
+              where they are.
+            </li>
+            <li>
+              Add a field with “Add” and drag it on the preview. Handles at the corners and sides
+              resize it, and <kbd>Shift</kbd> keeps the proportions. One drag is one “Undo” step.
+            </li>
+            <li>
+              When the cursor is in the card preview, the arrow keys move the selected fields by 0.5
+              mm, and arrows with <kbd>Shift</kbd> by 5 mm.
+            </li>
+            <li>
+              A field snaps to the grid and to the edges and centers of other fields.
+              <kbd>Alt</kbd> turns snapping off. You set the grid in the “Snapping” section. Guides
+              show only in the editor.
+            </li>
+            <li>
+              The “Position” section does the same from the keyboard: “X (mm)”, “Y (mm)”, the
+              “Measured from” point and “Rotation” by 0, 90, 180 or 270 degrees. “Drawing order” has
+              the buttons “To front”, “Forward”, “Backward” and “To back”.
+            </li>
+            <li>
+              Align several selected fields with the buttons in the “Align” section, for example
+              “Align left”. “Distribute horizontally” and “Distribute vertically” need at least
+              three fields.
+            </li>
+          </ol>
+          <h3 id="en-podklad">Reference image</h3>
+          <p>
+            A reference image is a photo or scan of an existing card that sits under the preview. It
+            helps you put the fields in the same places as on the original.
+          </p>
+          <ol>
+            <li>Click “Reference…” and choose a JPG or PNG file.</li>
+            <li>
+              Adjust “Reference transparency (%)” or hide the image by clearing the “Show the
+              reference” checkbox.
+            </li>
+            <li>Drag the fields to their places on the original.</li>
+          </ol>
+          <p>
+            The reference ignores clicks and is not printed. It is included in the project export
+            but not in the template file. “Remove the reference” takes it out of the project.
+          </p>
+          <h2 id="en-edycja-kart">Editing cards on the sheet</h2>
+          <p>
+            The sheet is the page you print, with a grid of slots. You arrange cards on it in the
+            sheet editor, both for Mausritter and for your own templates.
+          </p>
+          <h3 id="en-dodawanie">Adding and selecting</h3>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/en/edytor-kartki.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The A4 sheet editor with the card type menu open in an empty slot"
+            />
+            <figcaption>The sheet editor with the card type menu open in an empty slot.</figcaption>
+          </figure>
+          <ul>
+            <li>
+              Click an empty slot to add a card. The “Add a card in this slot” menu lists the card
+              types with their sizes.
+            </li>
+            <li>
+              Clicking a card selects it. <kbd>Shift</kbd> and click adds more cards to the
+              selection.
+            </li>
+            <li>
+              Dragging across empty space selects several cards with a rectangle.
+              <kbd>Escape</kbd> clears the selection.
+            </li>
+            <li>
+              You edit cards of the same type together. With cards of different types there are no
+              shared fields.
+            </li>
+          </ul>
+          <h3 id="en-panel-kart">The selected cards panel</h3>
+          <ul>
+            <li>
+              “Upload an image…” loads an illustration, including a photo from a phone. The mouse
+              wheel over a selected card changes the illustration scale, and <kbd>Alt</kbd> with
+              dragging moves it.
+            </li>
+            <li>
+              “Duplicate” adds one copy of the card. The “Number of copies” field and the button
+              next to it, for example “Duplicate ×3”, add several copies at once. Copies that do not
+              fit on the page go to new pages.
+            </li>
+            <li>
+              “Delete” removes the card. Two arrow buttons in the top bar undo and redo changes.
+              Their tooltips read “Undo” and “Redo”.
+            </li>
+          </ul>
+          <h3 id="en-przeciaganie">Dragging and shortcuts</h3>
+          <p>
+            Drag a card with the mouse to another slot, including onto another page. Cards cannot
+            overlap.
+          </p>
+          <ul>
+            <li><kbd>Delete</kbd> removes the selected cards.</li>
+            <li><kbd>Ctrl</kbd> + <kbd>D</kbd> duplicates them.</li>
+            <li>
+              <kbd>Ctrl</kbd> + <kbd>Z</kbd> undoes, <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +
+              <kbd>Z</kbd> redoes.
+            </li>
+            <li>The arrow keys move the selected cards by one slot.</li>
+            <li>Shortcuts do not work when the cursor is in a text field.</li>
+          </ul>
+          <h3 id="en-strony">Pages</h3>
+          <p>
+            The “Add a page” button sits below the last page. When there is more than one page, an
+            empty page has a “Delete the empty page” button in its header. When a card does not fit
+            in a slot, the type menu gives the reason.
+          </p>
+          <h3 id="en-naglowki-grup">Group headings</h3>
+          <p>On a conditions sheet you can add a heading above columns of cards.</p>
+          <ol>
+            <li>
+              Select cards in the columns that should share a heading and click “Group heading above
+              the selected columns”. A heading called “New group” appears.
+            </li>
+            <li>
+              In the “Group heading” panel fill in “Heading” and “Description (smaller type)”.
+              “Width” and “Space before the group” set the size and the spacing.
+            </li>
+            <li>
+              “Delete the heading” removes it. You arrange the cards below as usual, because the
+              heading belongs to the columns, not to the cards.
+            </li>
+          </ol>
+          <h3 id="en-mieszane-rozmiary">Cards of different sizes</h3>
+          <p>
+            Cards of different sizes, for example 70×120, 63×88 and 44×68 mm, can share one page.
+            They are laid out in strips, and shared edges get a single cut line. That makes cutting
+            on a trimmer easier.
+          </p>
+          <ol>
+            <li>
+              Open “Settings” and in “Card sizes on the sheet” choose “mixed”. A custom sheet layout
+              is switched off then.
+            </li>
+            <li>
+              “Placement order” offers “largest first” and “custom (drag)”. With the custom order,
+              dragging a card changes its place in the list, and cards never overlap.
+            </li>
+            <li>
+              “Rotate cards by 90° when it saves paper”, “Cards of the same size side by side (fewer
+              cuts)” and “Gap between cards (mm)” fine-tune the result.
+            </li>
+            <li>
+              A free space on the sheet opens the “Add a card here” menu. A template that will not
+              fit there is marked, but it goes to the first place where it fits.
+            </li>
+          </ol>
+          <h3 id="en-uklad-arkusza">Sheet layout</h3>
+          <p>
+            The “custom sheet layout” mode is a fixed grid, for example for ready-made sheets with
+            perforated cards. The “automatic” mode puts cards edge to edge and works out the grid
+            from the paper and margins.
+          </p>
+          <ul>
+            <li>
+              Set “Columns”, “Rows”, “Left margin (mm)”, “Top margin (mm)”, “Card width (mm)”, “Card
+              height (mm)”, “Horizontal gap (mm)” and “Vertical gap (mm)”. The sheet next to the
+              panel is a live preview.
+            </li>
+            <li>
+              Type a “Layout name” and click “Save as my layout”. The layout goes to the “My
+              layouts” list in this browser. The buttons “Use”, “Rename” and “Delete” work on each
+              layout.
+            </li>
+            <li>
+              In the custom layout mode the sheet title, group headings and scissors are not
+              printed.
+            </li>
+          </ul>
+          <h3 id="en-luz-w-slocie">Tolerance in the slot</h3>
+          <p>
+            Tolerance helps with perforated sheets, where the slot is larger than the card. The
+            “Card in the slot” section is in “Settings”, under “Sheet layout”. It is not there in
+            the “mixed” mode.
+          </p>
+          <ol>
+            <li>In “Settings” open “Sheet layout” and find the “Card in the slot” section.</li>
+            <li>
+              “Tolerance (mm)” says how much smaller than the slot a card can be. The range is 0 to
+              5 mm. New custom cards start at 1 mm, older sheets, including the Mausritter ones, at
+              0.5 mm.
+            </li>
+            <li>
+              For example, a 63×88 mm card fits a 63.5×89 mm slot. “Card position in the slot”
+              offers “Center” and “Top left corner”.
+            </li>
+            <li>
+              “Background to the slot edge” keeps a white strip from showing when the print shifts.
+              Under “Cut lines and outlines” choose “Around the slot” or “Around the card”.
+            </li>
+          </ol>
+          <p>
+            The tolerance is saved with the layout in “My layouts”. You check it with a test print.
+          </p>
+          <h2 id="en-druk">Printing at 100% scale</h2>
+          <p>Cards come out at their real size only when you print the PDF at 100% scale.</p>
+          <ol>
+            <li>Choose the paper in “Settings”, in the “Paper” field.</li>
+            <li>
+              The options are “A4 (210 × 297 mm)”, “Letter (216 × 279 mm)”, “A5 (148 × 210 mm)”,
+              “Photo 10 × 15 cm”, “Photo 13 × 18 cm”, “Photo 15 × 21 cm” and “Custom size…”.
+            </li>
+            <li>
+              Click “Download PDF” in the top bar. The PDF is made in the browser, and the file goes
+              to your downloads.
+            </li>
+            <li>Open the PDF and start printing. Load the paper you chose.</li>
+            <li>Set the scale to 100% or “Actual size”.</li>
+            <li>
+              Turn off “Fit to page” and similar options that shrink the print to the printable
+              area.
+            </li>
+            <li>Measure one card with a ruler. It has to match the template size.</li>
+          </ol>
+          <p>For a black-and-white printer, switch “Print” to “black and white”.</p>
+          <p>
+            The “Download” menu also has “PDF (for printing)” and images. The page images are “Page
+            images – JPG, 300 dpi” and “Page images – PNG, 300 dpi”. The single cards are “Cards
+            separately – ZIP of JPGs, 300 dpi” and “Cards separately – ZIP of PNGs, 300 dpi”. They
+            come in handy at a photo lab.
+          </p>
+          <p>The safe margin is a strip along the sheet edge that cards should stay out of.</p>
+          <p>
+            A photo lab may trim 1 to 3 mm off the edges of a print. So for “Photo 10 × 15 cm”,
+            “Photo 13 × 18 cm” and “Photo 15 × 21 cm” the “Safe margin (mm)” field defaults to 3 mm.
+          </p>
+          <p>
+            A card in the strip triggers a warning, and the strip itself is marked on the sheet. A
+            value of 0 turns it off.
+          </p>
+          <h2 id="en-kalibracja">Printer calibration and the test print</h2>
+          <p>
+            Printers shift the image by fractions of a millimeter. On perforated sheets you can see
+            it. Calibration corrects that shift in the PDF file.
+          </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/en/ustawienia.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The sheet settings panel scrolled to the printer calibration section"
+            />
+            <figcaption>
+              The “Settings” panel scrolled to the “Printer calibration” section.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>Open “Settings” and find the “Printer calibration” section.</li>
+            <li>
+              Click “Test print (PDF)”. You get a sheet with only card outlines, numbers and crosses
+              at the centers.
+            </li>
+            <li>
+              Print it at 100% scale on a perforated sheet, or on plain paper that you hold against
+              the sheet in front of a light.
+            </li>
+            <li>
+              Check how far the outlines are from the perforation. Enter the difference in “Offset X
+              (mm)” and “Offset Y (mm)”. A positive value moves the print right or down.
+            </li>
+            <li>Print the test sheet again until the crosses hit the card centers.</li>
+          </ol>
+          <p>
+            The browser remembers the offset, because it belongs to the printer, not to the project.
+            It applies only to the PDF, not to the preview on screen. The test print uses the
+            calibration you have set.
+          </p>
+          <h2 id="en-eksport-import">Exporting and importing projects and templates</h2>
+          <h3 id="en-projekt">Projects</h3>
+          <ul>
+            <li>
+              “Export” in the editor’s top bar, or next to a project in “My projects”, saves a
+              <code>.kartyrpg</code> file. It holds the cards, templates, ornament library, fonts
+              and images of the project.
+            </li>
+            <li>
+              On the start screen click “Import files…” or drop files on the “Drag files here” area.
+              You can pick several files at once. The app tells projects from templates by the file
+              extension.
+            </li>
+            <li>
+              If the project is already in the browser, the app asks what to do: “Replace”, “Save as
+              a copy” or “Cancel”.
+            </li>
+          </ul>
+          <h3 id="en-szablon">Templates</h3>
+          <ul>
+            <li>
+              In “Settings”, in the “Project templates” section, click “Export” next to a template.
+              You get a <code>.kartyrpg-szablon</code> file with the ornament library elements the
+              template uses. The reference image does not go into it.
+            </li>
+            <li>
+              “Import a template…” in the same section, or “Import a template” on the “Create your
+              own cards” screen, loads such a file. “Import files…” on the start screen accepts it
+              too and builds a new project from it.
+            </li>
+          </ul>
+          <p>
+            Projects are stored in this browser. Clearing the site data removes them along with
+            everything else. Export important projects regularly.
+          </p>
+          <h2 id="en-jezyk-motyw">Language and theme</h2>
+          <p>
+            On the right side of the top bar there is the “Guide” link, the “PL” and “EN” switch and
+            the theme switch: “Light theme” and “Dark theme”. This page has the same bar.
+          </p>
+          <ul>
+            <li>
+              On the first visit the language follows the browser settings: Polish for a Polish
+              browser, English otherwise. The browser remembers your choice.
+            </li>
+            <li>
+              Changing the language does not reload the page. Names saved in a project, such as the
+              default sheet title, stay in the language they were created in. The sample card data
+              for Mausritter is in Polish.
+            </li>
+            <li>
+              The theme follows the system setting by default. After you click one of the buttons,
+              your choice is remembered.
+            </li>
+            <li>
+              The theme does not change the cards in the preview or in the PDF. Card paper is always
+              white, and the colors come from the template.
+            </li>
+            <li>The “Guide” link opens this page in a new window, in the language of the app.</li>
+          </ul>
+          <h2 id="en-problemy">Common problems</h2>
+          <ul>
+            <li>
+              <strong>The card has the wrong size on paper.</strong> You are printing at a scale
+              other than 100%. Turn off “Fit to page” in the print dialog.
+            </li>
+            <li>
+              <strong>The print is shifted against the perforation.</strong> Set “Offset X (mm)” and
+              “Offset Y (mm)” in the “Printer calibration” section.
+            </li>
+            <li>
+              <strong>The app warns about a card in the trim zone.</strong> Move the card away from
+              the edge, or reduce the “Safe margin (mm)” if your photo lab does not trim the edges.
+            </li>
+            <li>
+              <strong>Text does not fit on the card.</strong> The app shrinks the text down to the
+              set minimum, then warns. Shorten the text or enlarge the field in the template.
+            </li>
+            <li>
+              <strong>An SVG file will not go into the library.</strong> Convert the text to
+              outlines and check that the file is under 512 KB. The message after the import lists
+              what the app left out.
+            </li>
+            <li>
+              <strong>My projects are missing on another computer.</strong> Projects live only in
+              the browser where you saved them. Move them with a file from “Export” and “Import
+              files…”.
+            </li>
+            <li>
+              <strong>A card has missing characters or the wrong font.</strong> Check the fonts in
+              “Settings”. You add your own font with “Upload your own font…”.
+            </li>
+          </ul>
+        </article>
+      </main>
+    </div>
+    <script type="module" src="/src/instrukcja/strona.ts"></script>
+  </body>
+</html>

@@ -28,7 +28,7 @@ test.describe('język domyślny według przeglądarki (D8)', () => {
       await expect(page.getByText('You have no projects yet.')).toBeVisible();
       await expect(page.getByRole('link', { name: /^Guide/ })).toHaveAttribute(
         'href',
-        'instrukcja/',
+        'instrukcja/?lang=en',
       );
       const grupa = page.getByRole('group', { name: 'Language' });
       await expect(grupa.getByRole('button', { name: 'EN' })).toHaveAttribute(
