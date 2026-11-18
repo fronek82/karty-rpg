@@ -1,213 +1,28 @@
-import { expect, test, type Page } from '@playwright/test';
-import type { Szablon } from '../src/model/szablon';
-import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
-import { renderujKarte } from '../src/silnik/karta';
+import { expect, test } from '@playwright/test';
 import { przeciagnij, srodek } from './pomoc';
-import { dodaj, drzewo, karta, kreator, panel, styl, sekcja, wyglad, zaznacz } from './szablonUI';
+import {
+  PODKLAD,
+  cofnij,
+  obszar,
+  oczekuj,
+  podglad,
+  polozenie,
+  prostokatMm,
+  przesun,
+  pxNaMm,
+  swobodny,
+  uchwyt,
+  wTolerancji,
+} from './swobodnyUI';
+import { dodaj, drzewo, karta, panel, zaznacz } from './szablonUI';
 
 /**
  * M2b-9: tryb swobodny – praca myszą (przeciąganie, uchwyty, przyciąganie, prowadnice), klawiaturą
- * (strzałki), wyrównanie, jeden krok „Cofnij” na gest i podkład ze wzoru. Przykład F budowany
- * wyłącznie przez interfejs i porównany z szablonem wzorcowym liczonym silnikiem.
+ * (strzałki), wyrównanie, jeden krok „Cofnij” na gest i podkład ze wzoru. Przykład F –
+ * w `przyklady.spec.ts`.
  */
 
 test.use({ viewport: { width: 1440, height: 1000 } });
-
-const SZER = 63;
-const WYS = 88;
-const PODKLAD = 'testy/zasoby/podklad-testowy.png';
-const podglad = (page: Page) => page.locator('.karta-podgladu');
-const polozenie = (page: Page) => panel(page).getByRole('group', { name: 'Położenie' });
-const obszar = (page: Page, nazwa: string) =>
-  podglad(page).getByRole('button', { name: nazwa, exact: true });
-const wTolerancji = (v: number, oczekiwane: number, tol = 0.05) =>
-  expect(Math.abs(v - oczekiwane), `${v} ≈ ${oczekiwane}`).toBeLessThanOrEqual(tol);
-
-/** Prostokąt elementu w mm (z położenia nakładki nad podglądem karty). */
-async function prostokatMm(page: Page, nazwa: string) {
-  const k = (await podglad(page).boundingBox())!;
-  const r = (await obszar(page, nazwa).boundingBox())!;
-  const s = SZER / k.width;
-  return { x: (r.x - k.x) * s, y: (r.y - k.y) * s, szer: r.width * s, wys: r.height * s };
-}
-async function oczekuj(
-  page: Page,
-  nazwa: string,
-  [x, y, szer, wys]: [number, number, number, number],
-) {
-  const r = await prostokatMm(page, nazwa);
-  wTolerancji(r.x, x);
-  wTolerancji(r.y, y);
-  wTolerancji(r.szer, szer);
-  wTolerancji(r.wys, wys);
-}
-/** Piksele ekranu na mm w bieżącym podglądzie. */
-const pxNaMm = async (page: Page) => (await podglad(page).boundingBox())!.width / SZER;
-
-/** Przeciągnięcie elementu za jego środek o (dx, dy) mm. */
-async function przesun(page: Page, nazwa: string, dx: number, dy: number) {
-  const s = await srodek(page, obszar(page, nazwa));
-  const k = await pxNaMm(page);
-  await przeciagnij(page, s, { x: s.x + dx * k, y: s.y + dy * k });
-}
-/** Przeciągnięcie uchwytu rozmiaru zaznaczonego pola o (dx, dy) mm. */
-async function uchwyt(page: Page, u: string, dx: number, dy: number) {
-  const s = await srodek(page, podglad(page).locator(`[data-uchwyt="${u}"]`));
-  const k = await pxNaMm(page);
-  await przeciagnij(page, s, { x: s.x + dx * k, y: s.y + dy * k });
-}
-const cofnij = (page: Page) => page.getByRole('button', { name: 'Cofnij', exact: true }).click();
-
-async function swobodny(page: Page, nazwa: string) {
-  await kreator(page, {
-    nazwa,
-    format: 'Standard / Poker',
-    rogi: 3,
-    kolor: '#f4ecd8',
-    uklad: 'Swobodny: pola w dowolnych miejscach',
-  });
-}
-
-/** Szablon wzorcowy przykładu F: te same położenia i rozmiary, liczone silnikiem. */
-const WZORZEC = {
-  id: 'wzorzec',
-  nazwa: 'Wzorzec F',
-  rozmiar: { tryb: 'mm', szerokosc: SZER, wysokosc: WYS },
-  korzen: {
-    id: 'karta',
-    typ: 'swobodny',
-    dzieci: [
-      {
-        id: 'i',
-        nazwa: 'Ilustracja',
-        typ: 'obraz',
-        pozycja: { x: 0, y: 0 },
-        szerokosc: { mm: 63 },
-        wysokosc: { mm: 46 },
-      },
-      {
-        id: 't',
-        nazwa: 'Tytuł',
-        typ: 'tekst',
-        pozycja: { x: 6, y: 34 },
-        szerokosc: { mm: 51 },
-        wysokosc: { mm: 12 },
-      },
-      {
-        id: 'k',
-        nazwa: 'Koszt',
-        typ: 'wartosc',
-        ksztalt: 'kolo',
-        pozycja: { x: 3, y: 3 },
-        szerokosc: { mm: 12 },
-        wysokosc: { mm: 12 },
-      },
-      {
-        id: 'n',
-        nazwa: 'Typ',
-        typ: 'tekst',
-        pozycja: { x: 57, y: 8, obrot: 90 },
-        szerokosc: { mm: 40 },
-        wysokosc: { mm: 3 },
-      },
-      {
-        id: 'o',
-        nazwa: 'Opis',
-        typ: 'kolumna',
-        pozycja: { x: 4, y: 50 },
-        szerokosc: { mm: 55 },
-        wysokosc: { mm: 30 },
-        dzieci: [],
-      },
-    ],
-  },
-} as unknown as Szablon;
-
-test('przykład F: karta swobodna zbudowana myszą i klawiaturą, z podkładem ze wzoru', async ({
-  page,
-}) => {
-  await swobodny(page, 'Karta swobodna F');
-  // Podkład ze wzoru (obraz testowy generowany deterministycznie): pół na pół, nie łapie kliknięć.
-  await page.getByTestId('plik-podkladu').setInputFiles(PODKLAD);
-  const podklad = page.getByTestId('podklad-podgladu');
-  await expect(podklad).toBeVisible();
-  await expect(podklad).toHaveCSS('opacity', '0.5');
-  await expect(podklad).toHaveCSS('pointer-events', 'none');
-
-  // Ilustracja w tle: przeciągnięta do rogu karty (przyciąganie do krawędzi), uchwyt – na całą szerokość.
-  await dodaj(page, 'Obraz', 'Ilustracja');
-  await przesun(page, 'Ilustracja', -3, -3);
-  await oczekuj(page, 'Ilustracja', [0, 0, 30, 30]);
-  await uchwyt(page, 'se', 33, 16);
-  await oczekuj(page, 'Ilustracja', [0, 0, 63, 46]);
-
-  // Tytuł na pasku nałożonym na ilustrację: przeciągnięcie, strzałki w podglądzie, uchwyty.
-  await dodaj(page, 'Tekst', 'Tytuł');
-  await wyglad(page, { tlo: '#2c3e50' });
-  await styl(await sekcja(page, 'Styl tekstu'), {
-    rozmiar: 12,
-    kolor: '#ffffff',
-    pogrubienie: true,
-  });
-  await przesun(page, 'Tytuł', 3, 30);
-  let t = await prostokatMm(page, 'Tytuł');
-  wTolerancji(t.x, 6);
-  wTolerancji(t.y, 33);
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('ArrowDown');
-  t = await prostokatMm(page, 'Tytuł');
-  wTolerancji(t.y, 34);
-  await uchwyt(page, 'e', 21, 0);
-  const h0 = (await prostokatMm(page, 'Tytuł')).wys;
-  await uchwyt(page, 's', 0, 12 - h0);
-  await oczekuj(page, 'Tytuł', [6, 34, 51, 12]);
-
-  // Wartość w kole w rogu: uchwyt rogu zmniejsza pole do 12 × 12 mm.
-  await dodaj(page, 'Wartość w kształcie', 'Koszt');
-  await panel(page).getByLabel('Kształt').selectOption('kolo');
-  await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 8 });
-  // Wysokość nowej wartości jest wg treści (zależy od czcionki) – cel (15, 15) liczymy z pomiaru.
-  const k0 = await prostokatMm(page, 'Koszt');
-  await uchwyt(page, 'se', -18, 15 - (k0.y + k0.wys));
-  await oczekuj(page, 'Koszt', [3, 3, 12, 12]);
-
-  // Napis obrócony o 90° przy prawej krawędzi: obrót z panelu, położenie i rozmiar myszą.
-  await dodaj(page, 'Tekst', 'Typ');
-  await polozenie(page).getByRole('button', { name: '90°', exact: true }).click();
-  await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 6 });
-  await przesun(page, 'Typ', 54, 5);
-  await uchwyt(page, 's', 0, 10);
-  const w0 = await prostokatMm(page, 'Typ');
-  await uchwyt(page, 'e', 3 - w0.szer, 0);
-  await oczekuj(page, 'Typ', [57, 8, 3, 40]);
-  await expect(page.locator('.karta-podgladu svg g[transform*="rotate(90)"]')).toHaveCount(1);
-
-  // Kolumna z opisem w środku: przeciągnięcie i uchwyt, potem pole w kolumnie.
-  // Przyciąganie do krawędzi wyłączone (prawy brzeg 59 leży blisko środka napisu) – zostaje siatka 0,5 mm.
-  await page.getByLabel('Do krawędzi i środków innych pól i karty').uncheck();
-  await karta(page);
-  await dodaj(page, 'Kolumna', 'Opis');
-  await przesun(page, 'Opis', 1, 47);
-  await uchwyt(page, 'se', 25, 0);
-  await oczekuj(page, 'Opis', [4, 50, 55, 30]);
-  await dodaj(page, 'Tekst', 'Zdolność');
-
-  // Porównanie ze wzorcem liczonym przez silnik (tolerancja 0,05 mm).
-  const wzorzec = renderujKarte(WZORZEC, { dane: {} }, { czcionki: rejestrTestowy() }).wezly;
-  for (const nazwa of ['Ilustracja', 'Tytuł', 'Koszt', 'Typ', 'Opis']) {
-    const id = (WZORZEC.korzen.dzieci as { id: string; nazwa: string }[]).find(
-      (d) => d.nazwa === nazwa,
-    )!.id;
-    const w = wzorzec.find((x) => x.id === id)!;
-    await oczekuj(page, nazwa, [w.x, w.y, w.szer, w.wys]);
-  }
-  await expect(page.locator('.ostrzezenia-karty')).toHaveCount(0);
-
-  if (process.env.ZRZUTY) {
-    await zaznacz(page, 'Koszt');
-    await page.screenshot({ path: 'docs/obrazy/m2b-9-podklad.png' });
-  }
-});
 
 test('przeciąganie: prowadnice i podpowiedź tylko w edytorze, siatka, Alt, jeden krok Cofnij na gest', async ({
   page,

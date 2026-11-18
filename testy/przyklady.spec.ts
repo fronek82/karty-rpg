@@ -2,6 +2,21 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
 import { zapisano } from './pomoc';
+import { kartkaCzaru } from './kartkaUI';
+import { SZABLONY, TALIA, arkuszMieszany, bliskie, otworzProjekt, polozenia } from './mieszaneUI';
+import {
+  PODKLAD,
+  WZORZEC,
+  oczekuj,
+  polozenie,
+  prostokatMm,
+  przesun,
+  swobodny,
+  uchwyt,
+  wTolerancji,
+} from './swobodnyUI';
+import { zbudujArkusz, stronaTestowa } from '../src/druk/arkusz';
+import { odcinkiCieciaProstokatow } from '../src/druk/pasy';
 import { importujProjekt } from '../src/dane/archiwum';
 import { renderujKarte } from '../src/silnik/karta';
 import type { Scena } from '../src/silnik/scena';
@@ -11,6 +26,7 @@ import {
   daneStatystyk,
   daneWroga,
   szablonCzaru,
+  szablonOzdobny,
   szablonStatystyk,
   szablonWroga,
 } from '../src/silnik/__testy__/przyklady';
@@ -33,10 +49,13 @@ import {
 } from './szablonUI';
 
 /**
- * Kryterium M2: trzy przykłady (karta czaru, blok statystyk, karta wroga) zbudowane od zera
- * WYŁĄCZNIE przez interfejs, z ogólnych klocków edytora. Dla każdego: karta na kartce, wzorzec
- * wizualny karty i porównanie z szablonem wzorcowym (`src/silnik/__testy__/przyklady.ts`) –
- * ten sam tekst (glify, czcionki, rozmiary, kolory i położenie) i żadnych ostrzeżeń.
+ * Kryteria M2 i M2b: sześć przykładów zbudowanych od zera WYŁĄCZNIE przez interfejs, z ogólnych
+ * klocków edytora (A – karta czaru, B – blok statystyk, C – karta wroga; D – ozdobna karta,
+ * E – kartka z mieszanymi rozmiarami i własny układ z luzem w slocie, F – karta swobodna myszą).
+ * Dla każdego: karta (strona) na kartce, wzorzec wizualny PNG i porównanie z wynikiem silnika
+ * w Node (`src/silnik/__testy__/przyklady.ts`, `testy/swobodnyUI.ts`, algorytm pasów i arkusza):
+ * bez ostrzeżeń, ten sam rozmiar, tekst (glify, czcionki, rozmiary, kolory) i położenia –
+ * z tolerancją 0,2 mm, a dla F (siatka 0,5 mm) 0,05 mm.
  */
 
 test.use({ viewport: { width: 1440, height: 1100 } });
@@ -57,6 +76,15 @@ const tekstSceny = (s: Scena) =>
 const poziomo = (s: Scena) =>
   s.elementy.flatMap((e) => (e.typ === 'tekst' ? e.glify.map((g) => g.x) : []));
 
+/** Eksport projektu z interfejsu → projekt odczytany w Node. */
+async function eksportZInterfejsu(page: Page) {
+  const [plik] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /^⤓ Eksportuj$/ }).click(),
+  ]);
+  return importujProjekt(new Uint8Array(readFileSync(await plik.path())));
+}
+
 /** Eksport projektu z interfejsu → karta i szablon odczytane w Node → render silnikiem. */
 async function porownajZWzorcem(
   page: Page,
@@ -65,11 +93,7 @@ async function porownajZWzorcem(
   /** Pola zwijane (nazwa w edytorze → klucz we wzorcu): puste znikają razem z etykietą. */
   zwijane: Record<string, string> = {},
 ) {
-  const [plik] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Eksportuj/ }).click(),
-  ]);
-  const { projekt } = importujProjekt(new Uint8Array(readFileSync(await plik.path())));
+  const { projekt } = await eksportZInterfejsu(page);
   const k = projekt.talie.flatMap((t) => t.karty)[0]!;
   const s = projekt.szablony.find((x) => x.id === k.szablonId)!;
   const czcionki = rejestrTestowy().przypiszRole('tytul', 'EB Garamond');
@@ -373,6 +397,77 @@ test('C. karta wroga: zagnieżdżony nagłówek, wartości w rombach z etykietą
   });
 });
 
+/**
+ * D: karta z interfejsu kontra szablon wzorcowy silnika (`szablonOzdobny`): bez ostrzeżeń, ten
+ * sam rozmiar i te same rysunki ozdobne – ten sam zestaw symboli (ramka z pnącza, narożniki,
+ * zakończenia i środek separatora, kształt z własnego SVG) w tych samych miejscach (0,2 mm).
+ */
+async function porownajOzdobna(page: Page) {
+  const { projekt } = await eksportZInterfejsu(page);
+  const k = projekt.talie.flatMap((t) => t.karty)[0]!;
+  const s = projekt.szablony.find((x) => x.id === k.szablonId)!;
+  const ctx = {
+    czcionki: rejestrTestowy().przypiszRole('tytul', 'EB Garamond'),
+    elementy: projekt.biblioteka?.ozdobniki,
+  };
+  const zUI = renderujKarte(s, k, ctx);
+  const wzor = renderujKarte(
+    szablonOzdobny,
+    {
+      dane: { tytul: k.dane.tytul!, opis: k.dane.opis!, sila: k.dane.wartosc_w_ksztalcie! },
+    },
+    ctx,
+  );
+  expect(zUI.ostrzezenia).toEqual([]);
+  expect(wzor.ostrzezenia).toEqual([]);
+  expect([zUI.scena.szer, zUI.scena.wys]).toEqual([wzor.scena.szer, wzor.scena.wys]);
+  expect(tekstSceny(zUI.scena)).toEqual(tekstSceny(wzor.scena));
+  const symbole = (sc: Scena) =>
+    sc.elementy
+      .flatMap((e) =>
+        e.typ === 'symbol' ? [{ klucz: e.klucz, e: e.macierz[4], f: e.macierz[5] }] : [],
+      )
+      .sort((a, b) => a.klucz.localeCompare(b.klucz) || a.e - b.e || a.f - b.f);
+  const a = symbole(zUI.scena);
+  const b = symbole(wzor.scena);
+  expect(a.map((x) => x.klucz)).toEqual(b.map((x) => x.klucz));
+  // Pnącze, liść (narożniki), grot i romb (separator) – jak w XObjectach PDF poniżej.
+  expect(new Set(a.map((x) => x.klucz)).size).toBe(4);
+  const odchylenie = Math.max(
+    ...a.map((x, i) => Math.max(Math.abs(x.e - b[i]!.e), Math.abs(x.f - b[i]!.f))),
+  );
+  expect(odchylenie).toBeLessThan(0.2);
+
+  // Pozostałe rysunki (tło, panel z podwójną linią, kształt z własnego SVG): ten sam typ, ta sama
+  // liczba i położenie wszystkich liczb (kontury, prostokąty) z tolerancją 0,2 mm.
+  const rysunki = (sc: Scena) => sc.elementy.filter((e) => e.typ !== 'tekst' && e.typ !== 'symbol');
+  const liczby = (v: unknown): (number | string)[] =>
+    typeof v === 'number' || typeof v === 'string'
+      ? [v]
+      : v && typeof v === 'object'
+        ? Object.values(v).flatMap(liczby)
+        : [];
+  const ru = rysunki(zUI.scena);
+  const rw = rysunki(wzor.scena);
+  expect(ru.map((e) => e.typ)).toEqual(rw.map((e) => e.typ));
+  ru.forEach((e, i) => {
+    const l1 = liczby(e);
+    const l2 = liczby(rw[i]);
+    expect(l1.length).toBe(l2.length);
+    l1.forEach((v, j) =>
+      typeof v === 'number'
+        ? expect(Math.abs(v - (l2[j] as number))).toBeLessThan(0.2)
+        : expect(v).toBe(l2[j]),
+    );
+  });
+  // Panel z podwójną linią: dwa obrysy w kolorze ozdoby; kształt z własnego SVG: ścieżka z tłem.
+  const obrysyPanelu = ru.filter(
+    (e) => e.typ === 'prostokat' && e.obrys?.kolor === '#5b3a1e' && e.wypelnienie !== '#f3e6c8',
+  );
+  expect(obrysyPanelu.length).toBeGreaterThanOrEqual(2);
+  expect(ru.some((e) => e.typ === 'sciezka' && e.wypelnienie === '#fff8e6')).toBe(true);
+}
+
 test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia, własny kształt, ramka 9-slice z PNG, PDF', async ({
   page,
 }) => {
@@ -462,6 +557,9 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   await kartaNaKartce(page, 'Ozdobna', { Tytuł: 'Smocza łuska', Opis: 'Ozdobna karta', Siła: '7' });
   await zapisano(page);
 
+  await wzorzecKarty(page, 'przyklad-ozdobna.png');
+  await porownajOzdobna(page);
+
   // Druga karta: szablon w tym samym projekcie z ramką 9-slice z PNG.
   const idProjektu = /#\/projekt\/([^/]+)/.exec(page.url())![1]!;
   await kreator(page, {
@@ -540,4 +638,244 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   expect(symbole.size).toBe(4);
   expect(obrazy.size).toBe(1);
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
+});
+
+test('E(1): A4 z 2× 70×120, 3× 63×88, 5× 44×68 na jednej stronie – pasy, wzorzec strony i PDF', async ({
+  page,
+}) => {
+  // Cała strona w widoku (bez przewijania pod pasek górny) – stabilny wzorzec.
+  await page.setViewportSize({ width: 1440, height: 1800 });
+  await otworzProjekt(page);
+  await expect(page.locator('.strona-kartki')).toHaveCount(1);
+  await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
+  await expect(page.locator('.etykieta-strony')).toContainText('Strona 1 z 1 · 10 kart');
+
+  // Położenia zgodne z algorytmem pasów (marginesy 10 mm, pasy 120 / 88 / 68 mm).
+  const p = await polozenia(page);
+  bliskie(p['arkana-1']!, [10, 10, 70, 120]);
+  bliskie(p['arkana-2']!, [80, 10, 70, 120]);
+  bliskie(p['przedmiot-1']!, [150, 10, 44, 68]);
+  bliskie(p['czar-1']!, [10, 130, 63, 88]);
+  bliskie(p['czar-3']!, [136, 130, 63, 88]);
+  bliskie(p['przedmiot-2']!, [10, 218, 44, 68]);
+  bliskie(p['przedmiot-5']!, [142, 218, 44, 68]);
+
+  // Zgodność z silnikiem: te same położenia i rozmiary, które liczy algorytm pasów w Node.
+  const wynik = zbudujArkusz(arkuszMieszany(), TALIA, {
+    czcionki: rejestrTestowy(),
+    szablony: new Map(SZABLONY.map((x) => [x.id, x])),
+  });
+  expect(wynik.ostrzezenia).toEqual([]);
+  expect(wynik.mieszane!.karty).toHaveLength(10);
+  for (const u of wynik.mieszane!.karty) bliskie(p[u.kartaId]!, [u.x, u.y, u.szer, u.wys]);
+
+  // Wspólne linie cięcia rysowane raz: odcinki sceny są unikalne i jest ich tyle, ile po scaleniu
+  // krawędzi wszystkich kart (`odcinkiCieciaProstokatow`).
+  const liniePrzerywane = wynik.strony[0]!.elementy.filter((e) => e.typ === 'linia');
+  const klucze = liniePrzerywane.map((e) =>
+    e.typ === 'linia' ? [e.x1, e.y1, e.x2, e.y2].map((v) => Math.round(v * 100)).join(',') : '',
+  );
+  expect(new Set(klucze).size).toBe(klucze.length);
+  const oczekiwane = odcinkiCieciaProstokatow(wynik.mieszane!.karty);
+  expect(oczekiwane.length).toBeGreaterThan(10);
+  expect(liniePrzerywane).toHaveLength(oczekiwane.length);
+
+  // Wzorzec wizualny strony (z wolnymi miejscami jak w edytorze).
+  await page.mouse.move(5, 5);
+  await expect(page.locator('.strona-kartki').first()).toHaveScreenshot(
+    'przyklad-e1-mieszane-strona.png',
+    {
+      maxDiffPixelRatio: 0.002,
+    },
+  );
+  await zapisano(page);
+
+  // PDF: jedna strona A4.
+  const [pobranie] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
+  ]);
+  const pdf = await PDFDocument.load(readFileSync(await pobranie.path()));
+  expect(pdf.getPageCount()).toBe(1);
+  const { width, height } = pdf.getPage(0).getSize();
+  expect(width).toBeCloseTo(595.28, 0);
+  expect(height).toBeCloseTo(841.89, 0);
+});
+
+test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło do slotu, wydruk testowy', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1800 });
+  await kartkaCzaru(page);
+  // Cała siatka 3×3: karta i osiem kopii.
+  await page.locator('[data-karta]').first().click();
+  const dane = page.getByRole('complementary', { name: 'Zaznaczone karty' });
+  await dane.getByLabel('Liczba kopii').fill('8');
+  await dane.getByRole('button', { name: 'Duplikuj ×8' }).click();
+  await expect(page.locator('[data-karta]')).toHaveCount(9);
+  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+
+  await ust
+    .getByRole('group', { name: 'Układ kart na kartce' })
+    .getByRole('button', { name: 'własny układ arkusza' })
+    .click();
+  await ust.getByLabel('Szerokość karty (mm)').fill('63.5');
+  await ust.getByLabel('Wysokość karty (mm)').fill('89');
+  const luz = ust.getByRole('group', { name: 'Karta w slocie' });
+  await luz.getByLabel('Luz (mm)').fill('1.5');
+  await luz.getByLabel('Tło do krawędzi slotu').check();
+  await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
+  await expect(page.locator('.strona-kartki')).toHaveCount(1);
+  await expect(page.locator('[data-karta]')).toHaveCount(9);
+  await page.locator(':focus').blur();
+  await page.mouse.move(5, 5);
+  await expect(page.locator('.strona-kartki').first()).toHaveScreenshot(
+    'przyklad-e2-luz-strona.png',
+    { maxDiffPixelRatio: 0.002 },
+  );
+
+  // Zgodność z silnikiem (Node): slot 63,5×89, 9 teł do krawędzi slotu, a karta 63×88 leży na
+  // środku slotu – tło slotu i karta mają wspólny środek (przesunięcie 0,25 / 0,5 mm).
+  const { projekt } = await eksportZInterfejsu(page);
+  const arkusz = projekt.arkusze[0]!;
+  const talia = projekt.talie[0]!;
+  const w = zbudujArkusz(arkusz, talia, {
+    czcionki: rejestrTestowy().przypiszRole('tytul', 'EB Garamond'),
+    szablony: new Map(projekt.szablony.map((x) => [x.id, x])),
+  });
+  expect(w.ostrzezenia).toEqual([]);
+  expect(w.slot).toEqual({ szerokosc: 63.5, wysokosc: 89 });
+  expect(w.strony).toHaveLength(1);
+  expect(arkusz.ustawienia.dopasowanie).toMatchObject({ luz: 1.5, tloDoSlotu: true });
+  const tla = w.strony[0]!.elementy.filter(
+    (e) => e.typ === 'prostokat' && e.szer === 63.5 && e.wys === 89,
+  );
+  expect(tla).toHaveLength(9);
+  // Każda karta (grupa sceny) leży w swoim slocie przesunięta o pół luzu: +0,25 mm w poziomie
+  // i +0,5 mm w pionie (slot 63,5×89 minus karta 63×88, na środek).
+  const grupy = w.strony[0]!.elementy.filter((e) => e.typ === 'grupa');
+  expect(grupy).toHaveLength(9);
+  for (const t of tla) {
+    if (t.typ !== 'prostokat') continue;
+    const g = grupy.filter(
+      (e) =>
+        e.typ === 'grupa' &&
+        Math.abs(e.x - (t.x + 0.25)) < 0.01 &&
+        Math.abs(e.y - (t.y + 0.5)) < 0.01,
+    );
+    expect(g, `karta w slocie (${t.x}, ${t.y})`).toHaveLength(1);
+  }
+
+  // Wydruk testowy: silnik daje 9 obrysów slotów 63,5×89, a pobrany PDF ma jedną stronę.
+  const wydrukTestowy = stronaTestowa(arkusz, talia, {
+    czcionki: rejestrTestowy(),
+    szablony: new Map(projekt.szablony.map((x) => [x.id, x])),
+  });
+  const obrysy = wydrukTestowy.elementy.filter(
+    (e) => e.typ === 'prostokat' && e.szer === 63.5 && e.wys === 89,
+  );
+  expect(obrysy).toHaveLength(9);
+  const [pobranie] = await Promise.all([
+    page.waitForEvent('download'),
+    ust.getByRole('button', { name: 'Wydruk testowy (PDF)' }).click(),
+  ]);
+  expect(pobranie.suggestedFilename()).toMatch(/wydruk-testowy.*\.pdf$/);
+  const pdf = await PDFDocument.load(readFileSync(await pobranie.path()));
+  expect(pdf.getPageCount()).toBe(1);
+});
+
+test('F. karta swobodna: ilustracja, tytuł na pasku, koło w rogu, napis obrócony, kolumna – myszą, klawiaturą i z podkładem', async ({
+  page,
+}) => {
+  await swobodny(page, 'Karta swobodna F');
+  // Podkład ze wzoru (obraz testowy generowany deterministycznie): pół na pół, nie łapie kliknięć.
+  await page.getByTestId('plik-podkladu').setInputFiles(PODKLAD);
+  const podklad = page.getByTestId('podklad-podgladu');
+  await expect(podklad).toBeVisible();
+  await expect(podklad).toHaveCSS('opacity', '0.5');
+  await expect(podklad).toHaveCSS('pointer-events', 'none');
+
+  // Ilustracja w tle: przeciągnięta do rogu karty (przyciąganie do krawędzi), uchwyt – na całą szerokość.
+  await dodaj(page, 'Obraz', 'Ilustracja');
+  await przesun(page, 'Ilustracja', -3, -3);
+  await oczekuj(page, 'Ilustracja', [0, 0, 30, 30]);
+  await uchwyt(page, 'se', 33, 16);
+  await oczekuj(page, 'Ilustracja', [0, 0, 63, 46]);
+
+  // Tytuł na pasku nałożonym na ilustrację: przeciągnięcie, strzałki w podglądzie, uchwyty.
+  await dodaj(page, 'Tekst', 'Tytuł');
+  await wyglad(page, { tlo: '#2c3e50' });
+  await styl(await sekcja(page, 'Styl tekstu'), {
+    rozmiar: 12,
+    kolor: '#ffffff',
+    pogrubienie: true,
+  });
+  await przesun(page, 'Tytuł', 3, 30);
+  let t = await prostokatMm(page, 'Tytuł');
+  wTolerancji(t.x, 6);
+  wTolerancji(t.y, 33);
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  t = await prostokatMm(page, 'Tytuł');
+  wTolerancji(t.y, 34);
+  await uchwyt(page, 'e', 21, 0);
+  const h0 = (await prostokatMm(page, 'Tytuł')).wys;
+  await uchwyt(page, 's', 0, 12 - h0);
+  await oczekuj(page, 'Tytuł', [6, 34, 51, 12]);
+
+  // Wartość w kole w rogu: uchwyt rogu zmniejsza pole do 12 × 12 mm.
+  await dodaj(page, 'Wartość w kształcie', 'Koszt');
+  await panel(page).getByLabel('Kształt').selectOption('kolo');
+  await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 8 });
+  // Wysokość nowej wartości jest wg treści (zależy od czcionki) – cel (15, 15) liczymy z pomiaru.
+  const k0 = await prostokatMm(page, 'Koszt');
+  await uchwyt(page, 'se', -18, 15 - (k0.y + k0.wys));
+  await oczekuj(page, 'Koszt', [3, 3, 12, 12]);
+
+  // Napis obrócony o 90° przy prawej krawędzi: obrót z panelu, położenie i rozmiar myszą.
+  await dodaj(page, 'Tekst', 'Typ');
+  await polozenie(page).getByRole('button', { name: '90°', exact: true }).click();
+  await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 6 });
+  await przesun(page, 'Typ', 54, 5);
+  await uchwyt(page, 's', 0, 10);
+  const w0 = await prostokatMm(page, 'Typ');
+  await uchwyt(page, 'e', 3 - w0.szer, 0);
+  await oczekuj(page, 'Typ', [57, 8, 3, 40]);
+  await expect(page.locator('.karta-podgladu svg g[transform*="rotate(90)"]')).toHaveCount(1);
+
+  // Kolumna z opisem w środku: przeciągnięcie i uchwyt, potem pole w kolumnie.
+  // Przyciąganie do krawędzi wyłączone (prawy brzeg 59 leży blisko środka napisu) – zostaje siatka 0,5 mm.
+  await page.getByLabel('Do krawędzi i środków innych pól i karty').uncheck();
+  await karta(page);
+  await dodaj(page, 'Kolumna', 'Opis');
+  await przesun(page, 'Opis', 1, 47);
+  await uchwyt(page, 'se', 25, 0);
+  await oczekuj(page, 'Opis', [4, 50, 55, 30]);
+  await dodaj(page, 'Tekst', 'Zdolność');
+
+  // Porównanie ze wzorcem liczonym przez silnik (tolerancja 0,05 mm).
+  const wzorzec = renderujKarte(WZORZEC, { dane: {} }, { czcionki: rejestrTestowy() }).wezly;
+  for (const nazwa of ['Ilustracja', 'Tytuł', 'Koszt', 'Typ', 'Opis']) {
+    const id = (WZORZEC.korzen.dzieci as { id: string; nazwa: string }[]).find(
+      (d) => d.nazwa === nazwa,
+    )!.id;
+    const w = wzorzec.find((x) => x.id === id)!;
+    await oczekuj(page, nazwa, [w.x, w.y, w.szer, w.wys]);
+  }
+  await expect(page.locator('.ostrzezenia-karty')).toHaveCount(0);
+
+  if (process.env.ZRZUTY) {
+    await zaznacz(page, 'Koszt');
+    await page.screenshot({ path: 'docs/obrazy/m2b-9-podklad.png' });
+  }
+
+  // Karta na kartce (bez podkładu i uchwytów) – wzorzec wizualny.
+  await kartaNaKartce(page, 'Karta swobodna F', {
+    Tytuł: 'Ognisty smok',
+    Koszt: '3',
+    Typ: 'Stwór',
+    Zdolność: 'Zionie ogniem na wszystko przed sobą.',
+  });
+  await wzorzecKarty(page, 'przyklad-swobodna.png');
 });
