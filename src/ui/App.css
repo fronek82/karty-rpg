@@ -36,22 +36,140 @@ a:hover {
 
 .naglowek {
   display: flex;
-  gap: 1.5rem;
-  align-items: baseline;
+  gap: 1rem;
+  align-items: center;
   flex-wrap: wrap;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--obramowanie);
-  background: var(--tlo-panelu);
+  min-height: 3.25rem;
+  padding: 0.5rem 1.25rem;
+  background: var(--pasek);
+  color: var(--pasek-tekst);
+  box-shadow: var(--cien-paska);
 }
 
-.naglowek nav {
-  display: flex;
-  gap: 1rem;
+.naglowek .odstep {
+  flex: 1;
 }
 
 .logo {
   font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.01em;
   text-decoration: none;
+}
+
+.naglowek a.logo,
+.pasek-gorny a.logo {
+  color: var(--pasek-tekst);
+}
+
+/* Grupa narzędzi na końcu paska: Instrukcja, język, motyw (biały kontur na tle paska). */
+.narzedzia-paska {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+.pasek-gorny > .narzedzia-paska {
+  margin-left: 0.4rem;
+}
+
+.przycisk-kontur,
+.pasek-gorny > :is(button, a.przycisk),
+.pasek-gorny .menu-pobierz > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.1rem;
+  padding: 0 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--pasek-tekst);
+  background: transparent;
+  border: 1.5px solid var(--pasek-tekst);
+  border-radius: 0.4rem;
+}
+
+.przycisk-kontur:hover,
+.pasek-gorny > :is(button, a.przycisk):hover:not(:disabled),
+.pasek-gorny .menu-pobierz > button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 18%);
+  border-color: var(--pasek-tekst);
+  color: var(--pasek-tekst);
+}
+
+.pasek-gorny > :is(button, a.przycisk)[aria-pressed='true'],
+.pasek-gorny .menu-pobierz > button[aria-expanded='true'] {
+  background: rgb(255 255 255 / 22%);
+}
+
+/* Przycisk główny na pasku: pełne białe tło, tekst w kolorze paska. */
+.pasek-gorny > :is(button, a.przycisk).glowny {
+  background: var(--pasek-tekst);
+  border-color: var(--pasek-tekst);
+  color: var(--pasek);
+  font-weight: 600;
+}
+
+.pasek-gorny > :is(button, a.przycisk).glowny:hover:not(:disabled) {
+  background: var(--pasek-tekst);
+  color: var(--pasek);
+  filter: brightness(0.93);
+}
+
+.seg {
+  display: inline-flex;
+  height: 2.1rem;
+  overflow: hidden;
+  border: 1.5px solid var(--pasek-tekst);
+  border-radius: 0.4rem;
+}
+
+.seg button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 0 0.7rem;
+  font-weight: 600;
+  color: var(--pasek-tekst);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.seg button + button {
+  border-left: 1.5px solid var(--pasek-tekst);
+}
+
+.seg button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 18%);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--pasek-tekst);
+  color: var(--pasek);
+}
+
+.seg button:disabled {
+  opacity: 0.6;
+}
+
+.seg svg {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* Fokus na pasku: biały obrys, widoczny w obu motywach. */
+.naglowek :is(a, button):focus-visible,
+.pasek-gorny :is(a, button, input):focus-visible {
+  outline: 3px solid var(--pasek-tekst);
+  outline-offset: 2px;
+}
+
+.seg button:focus-visible {
+  outline-offset: -4px;
 }
 
 .tresc {
@@ -386,14 +504,24 @@ textarea:focus-visible {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.55rem 1rem;
-  background: var(--tlo-panelu);
-  border-bottom: 1px solid var(--obramowanie);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+  padding: 0.5rem 1rem;
+  /* Wysokość jak przed UI-1 (55,78 px): wzorce zrzutów kart zależą od pozycji kartki na stronie. */
+  min-height: 55.78125px;
+  background: var(--pasek);
+  color: var(--pasek-tekst);
+  box-shadow: var(--cien-paska);
 }
 
 .pasek-gorny .odstep {
   flex: 1;
+}
+
+.pasek-gorny .nazwa-projektu-tekst {
+  font-weight: 600;
+}
+
+.pasek-gorny .okruszek {
+  opacity: 0.9;
 }
 
 .nazwa-projektu {
@@ -408,19 +536,37 @@ textarea:focus-visible {
   min-width: 14rem;
 }
 
+.pasek-gorny .nazwa-projektu {
+  /* Węższe pole, żeby pasek z grupą narzędzi mieścił się w jednym rzędzie przy 1440 px. */
+  width: 11rem;
+  min-width: 0;
+  background: rgb(255 255 255 / 12%);
+  border-color: rgb(255 255 255 / 35%);
+  color: var(--pasek-tekst);
+}
+
 .nazwa-projektu:hover {
   border-color: var(--obramowanie);
+}
+
+.pasek-gorny .nazwa-projektu:hover {
+  border-color: var(--pasek-tekst);
 }
 
 .pasek-gorny .status-zapisu,
 .pasek-gorny .status-pdf {
   font-size: 0.85rem;
-  opacity: 0.75;
+  opacity: 0.92;
 }
 
-.pasek-gorny button.ikonowy {
+.pasek-gorny .status-zapisu.blad {
+  color: var(--pasek-tekst);
+  text-decoration: underline;
+}
+
+.pasek-gorny > button.ikonowy {
   font-size: 1.15rem;
-  padding: 0.15rem 0.55rem;
+  padding: 0 0.6rem;
 }
 
 .ostrzezenia-projektu {
@@ -1057,7 +1203,8 @@ textarea:focus-visible {
 }
 .karta-podgladu {
   position: relative;
-  background: repeating-conic-gradient(var(--szachownica-1) 0 25%, var(--szachownica-2) 0 50%) 0 0 / 16px 16px;
+  background: repeating-conic-gradient(var(--szachownica-1) 0 25%, var(--szachownica-2) 0 50%) 0 0 /
+    16px 16px;
   box-shadow: 0 2px 10px rgb(0 0 0 / 15%);
 }
 .karta-podgladu .svg-opakowanie,
