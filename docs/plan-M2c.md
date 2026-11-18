@@ -1,6 +1,6 @@
 # Plan M2c – biblioteka globalna, wymiary arkusza i eksport obrazów
 
-**Status.** Plan zaakceptowany zgodnie z dyspozycją właściciela z 18.11.2026. M2c-1 ukończony 18.11.2026. Następny etap to M2c-2. Punktem wyjścia jest `main` po UI-9. Zakres pochodzi z [planu M2b, sekcji 6 i decyzji R2](plan-M2b.md) oraz [decyzji B31](plan-M2.md).
+**Status.** Plan zaakceptowany zgodnie z dyspozycją właściciela z 18.11.2026. M2c-1 i M2c-2 ukończone 18.11.2026. Następny etap to M2c-3. Punktem wyjścia jest `main` po UI-9. Zakres pochodzi z [planu M2b, sekcji 6 i decyzji R2](plan-M2b.md) oraz [decyzji B31](plan-M2.md).
 
 ## 1. Cel i kryterium ukończenia
 
@@ -42,12 +42,12 @@ Każdy etap kończy się zielonymi kontrolami typów, lintem, formatowaniem, Vit
 
 ## 4. Etapy
 
-Jeden etap to jedna gałąź od aktualnego `main` i jeden PR. Status ✓ z datą oznacza zakończony etap. Po pozytywnym przeglądzie i sprawdzeniach scal PR, zaczekaj na weryfikację wdrożenia i rozpocznij kolejny etap od nowego `main`.
+Jeden etap to jedna gałąź od aktualnego `main` i jeden PR. Status ✓ z datą oznacza zakończony etap. Po pozytywnym przeglądzie i sprawdzeniach scal PR. Potwierdź wdrożenie na Pages i rozpocznij kolejny etap od nowego `main`.
 
 | Etap  | Status       | Wielkość | Zakres z testami                                                                                                                                                                                                                                                                                                                                            | Agenci                                                |
 | ----- | ------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | M2c-1 | ✓ 18.11.2026 | L        | Biblioteka szablonów i ozdobników, import i eksport, użycie w projektach własnych i pakietowych. Test migracji bazy, paczek i kolizji zasobów. E2e obejmuje dodawanie kart własnych obok kart pakietu o tych samych wymiarach, otwarcie ponowne i import projektu, cofanie i usuwanie oraz eksport obu rodzajów wpisów i ich import w czystej przeglądarce. | dane-import, biblioteka-ozdobnikow, edytor-ui, tester |
-| M2c-2 | ✗            | M        | Diagram wymiarów w panelu ustawień. Test obu orientacji, zerowych odstępów, presetu, aktualizacji wymiaru i przeniesienia fokusu do formularza klawiaturą i myszą. Sprawdzenie, że oznaczenia nie trafiają do wydruku.                                                                                                                                      | druk-pdf, edytor-ui, tester                           |
+| M2c-2 | ✓ 18.11.2026 | M        | Diagram wymiarów w panelu ustawień. Test obu orientacji, zerowych odstępów, presetu, aktualizacji wymiaru i przeniesienia fokusu do formularza klawiaturą i myszą. Sprawdzenie, że oznaczenia nie trafiają do wydruku.                                                                                                                                      | druk-pdf, edytor-ui, tester                           |
 | M2c-3 | ✗            | M        | Diagnoza i zgodność PNG/JPG w Firefox i WebKit. Testy właściwych plików i zawartości w obu przeglądarkach, pełna regresja Chromium.                                                                                                                                                                                                                         | druk-pdf, edytor-ui, tester                           |
 | M2c-4 | ✗            | S        | Domknięcie. README i opis nowych czynności, zrzuty i sprawdzenia PL/EN w obu motywach, końcowa kontrola wzorców oraz statusów planu i `CLAUDE.md`.                                                                                                                                                                                                          | tester, edytor-ui, recenzent                          |
 
@@ -80,11 +80,13 @@ M3 zgodnie z [planem M2b](plan-M2b.md), w tym zestawy stylów i dalsze rozszerze
 
 ## 9. Decyzje podjęte bez konsultacji
 
-| #    | Etap  | Sprawa                              | Decyzja                                                                                                                                            |
-| ---- | ----- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B218 | Plan  | Dane globalne                       | Katalog i paczki są przechowywane w osobnych, transakcyjnie aktualizowanych tabelach IndexedDB.                                                    |
-| B219 | Plan  | Kartki projektów pakietowych        | Własny szablon trafia na osobną kartkę w tym samym projekcie. Arkusze pakietu zostają przypisane do dotychczasowych typów.                         |
-| B220 | Plan  | Zasięg testów między przeglądarkami | Pełne e2e zachowuje projekt Chromium. Firefox i WebKit uruchamiają scenariusze pobierania obrazów.                                                 |
-| B221 | M2c-1 | Powiązanie kartki z szablonem       | Schemat 17 dodaje opcjonalne `Arkusz.wlasnySzablonId`. Migracja zachowuje stare kartki i ich pakiety.                                              |
-| B222 | M2c-1 | Plik ozdobnika                      | `.kartyrpg-ozdobnik` to ZIP z `ozdobnik.json` w wersji 1 i obrazem ramki 9-slice, jeśli jest wymagany.                                             |
-| B223 | M2c-1 | Obrazy ramek i cofanie              | Zapis globalnej ramki sprawdza format, wymiary i dekodowanie obrazu. Import zachowuje identyfikatory i bajty zasobów używane przez historię zmian. |
+| #    | Etap  | Sprawa                              | Decyzja                                                                                                                                                                |
+| ---- | ----- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B218 | Plan  | Dane globalne                       | Katalog i paczki są przechowywane w osobnych, transakcyjnie aktualizowanych tabelach IndexedDB.                                                                        |
+| B219 | Plan  | Kartki projektów pakietowych        | Własny szablon trafia na osobną kartkę w tym samym projekcie. Arkusze pakietu zostają przypisane do dotychczasowych typów.                                             |
+| B220 | Plan  | Zasięg testów między przeglądarkami | Pełne e2e zachowuje projekt Chromium. Firefox i WebKit uruchamiają scenariusze pobierania obrazów.                                                                     |
+| B221 | M2c-1 | Powiązanie kartki z szablonem       | Schemat 17 dodaje opcjonalne `Arkusz.wlasnySzablonId`. Migracja zachowuje stare kartki i ich pakiety.                                                                  |
+| B222 | M2c-1 | Plik ozdobnika                      | `.kartyrpg-ozdobnik` to ZIP z `ozdobnik.json` w wersji 1 i obrazem ramki 9-slice, jeśli jest wymagany.                                                                 |
+| B223 | M2c-1 | Obrazy ramek i cofanie              | Zapis globalnej ramki sprawdza format, wymiary i dekodowanie obrazu. Import zachowuje identyfikatory i bajty zasobów używane przez historię zmian.                     |
+| B224 | M2c-2 | Dostęp do wymiarów                  | Podgląd rozwija się w panelu układu. Rysunek i lista korzystają z tych samych wartości. Etykiety edytowalne prowadzą do pól, a odstępy bez sąsiedniego slotu pomijamy. |
+| B225 | M2c-2 | Etykiety i precyzja                 | Rozmiar slotu i odstępy mają osobne położenia etykiet, wartości zachowują do dwóch miejsc po przecinku, a etykiety własnego papieru uwzględniają obrót osi.            |

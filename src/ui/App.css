@@ -1628,6 +1628,79 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   width: 100%;
 }
 
+.podglad-wymiarow {
+  margin-block: 0.8rem;
+  padding: 0.6rem;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  background: var(--tlo-panelu);
+}
+.podglad-wymiarow > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.podglad-wymiarow > svg {
+  display: block;
+  width: 100%;
+  margin-block-start: 0.35rem;
+}
+.podglad-wymiarow .wymiary-papier {
+  fill: var(--pole);
+  stroke: var(--obramowanie-pola);
+}
+.podglad-wymiarow .wymiary-slot {
+  fill: var(--zaznaczenie-tlo);
+  stroke: var(--link);
+  stroke-width: 0.7;
+}
+.podglad-wymiarow .wymiary-strzalka {
+  color: var(--tekst);
+}
+.podglad-wymiarow .poza {
+  color: var(--zle);
+}
+.podglad-wymiarow .wymiary-siatka.poza {
+  stroke: var(--zle);
+  stroke-width: 2;
+}
+.podglad-wymiarow .wymiary-strzalka path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+.podglad-wymiarow .wymiary-strzalka text {
+  fill: currentColor;
+  font-size: 11px;
+  paint-order: stroke;
+  stroke: var(--tlo-panelu);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+.podglad-wymiarow .wymiary-strzalka .wymiary-do-pola {
+  fill: var(--link);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.wymiary-lista {
+  margin: 0;
+}
+.wymiary-lista > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.4rem;
+  border-top: 1px solid var(--obramowanie);
+  padding-block: 0.2rem;
+}
+.wymiary-lista dd {
+  margin: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.wymiary-lista button {
+  padding: 0.15rem 0.35rem;
+}
+
 /* --- Edytor szablonu --- */
 .edytor-szablonu {
   min-height: 100vh;
