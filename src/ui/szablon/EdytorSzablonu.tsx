@@ -31,7 +31,7 @@ import { kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty'
 import { rozwinOdstepy, wymiaryKarty } from '../../model/szablon';
 import { roleProjektu } from '../../dane/edycja';
 import { ElementyWlasneKontekst } from './elementyWlasne';
-import { t, tJesliJest } from '../../i18n';
+import { formatujLiczbe, t, tJesliJest } from '../../i18n';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import {
   czyKontener,
@@ -401,7 +401,9 @@ export function EdytorSzablonu({
     ustawBladPodkladu('');
     try {
       if (f.size > MAKS_BAJTOW_OBRAZU)
-        throw new Error(t('dane.zaDuzy', { plik: f.name, mb: (f.size / 1024 / 1024).toFixed(1) }));
+        throw new Error(
+          t('dane.zaDuzy', { plik: f.name, mb: formatujLiczbe(f.size / 1024 / 1024, 1) }),
+        );
       const { dane, ...wymiary } = await przygotujObraz(new Uint8Array(await f.arrayBuffer()));
       await edycja.zmienZZasobami((p, d) => {
         const opis = opisObrazu(f.name, dane, wymiary, new Set(p.zasoby.map((z) => z.id)));

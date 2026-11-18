@@ -4,6 +4,7 @@ import { t } from '../../i18n';
 import { gry } from '../../pakiety/gry';
 import type { Pakiet } from '../../pakiety/typy';
 import { nowyProjektZPakietu } from '../baza';
+import { atrybucjaPakietu, nazwaGryDo, nazwaUkladu } from '../nazwyPakietu';
 
 /** Drugi ekran gry: pusta kartka albo gotowy układ z pakietu → nowy projekt → kartka. */
 export function WyborGry({ id }: { id: string }) {
@@ -53,7 +54,7 @@ export function WyborGry({ id }: { id: string }) {
       <nav aria-label={t('projekt.nawigacja')} className="okruszki">
         <a href="#/">{t('nawigacja.start')}</a> › {gra.nazwa}
       </nav>
-      <h1>{t('start.kartyDo', { gra: gra.nazwaDo })}</h1>
+      <h1>{t('start.kartyDo', { gra: nazwaGryDo(gra) })}</h1>
       <div className="kafelki-gier">
         <button
           type="button"
@@ -70,7 +71,7 @@ export function WyborGry({ id }: { id: string }) {
           <span className="przyciski-ukladow">
             {pakiet?.gotoweUklady.map((u) => (
               <button key={u.id} type="button" disabled={trwa} onClick={() => void utworz(u.id)}>
-                {u.nazwa}
+                {nazwaUkladu(u)}
               </button>
             ))}
           </span>
@@ -84,7 +85,7 @@ export function WyborGry({ id }: { id: string }) {
           {blad}
         </p>
       )}
-      {gra.id === 'mausritter' && pakiet && <p className="podpis">{pakiet.atrybucja}</p>}
+      {gra.id === 'mausritter' && pakiet && <p className="podpis">{atrybucjaPakietu(pakiet)}</p>}
     </section>
   );
 }

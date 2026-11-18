@@ -6,7 +6,7 @@ import type { Ostrzezenie } from '../silnik/karta';
  * Teksty ostrzeżeń silnika i arkusza. Silnik zwraca kody (`kod:szczegół:…`), żeby nie zależeć
  * od języka; tu zamieniamy je na zdania. Nieznany kod pokazujemy surowo – lepiej niż nic.
  */
-const KODY: Record<string, KluczTekstu> = {
+export const KODY: Record<string, KluczTekstu> = {
   'tekst-nie-miesci-sie': 'ostrzezenie.tekstNieMiesciSie',
   'brak-obrazu': 'ostrzezenie.brakObrazu',
   'brak-znakow': 'ostrzezenie.brakZnakow',

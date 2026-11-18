@@ -1,4 +1,4 @@
-import { t } from '../../i18n';
+import { formatujLiczbeZUlamkiem, t } from '../../i18n';
 import type { Arkusz, NaglowekGrupy } from '../../model/arkusz';
 
 /** Panel nagłówka grupy: tekst, opis, szerokość w kolumnach, odstęp przed grupą, usunięcie. */
@@ -93,7 +93,7 @@ export function PanelNaglowka({
               aria-pressed={!!naglowek.odstepPrzed}
               onClick={() => zmien({ odstepPrzed: odstep })}
             >
-              {t('kartka.odstepMm', { mm: odstep.toFixed(1).replace('.', ',') })}
+              {t('kartka.odstepMm', { mm: formatujLiczbeZUlamkiem(odstep, 1) })}
             </button>
           </div>
         </div>

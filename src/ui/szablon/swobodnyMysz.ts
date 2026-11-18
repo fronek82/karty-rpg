@@ -8,6 +8,7 @@
  * Wynik gestu to mapa zmian `pozycja` / rozmiaru, którą `zastosujZmiany` nakłada na szablon:
  * w trakcie gestu jako stan tymczasowy, na `pointerup` – jako jeden krok „Cofnij”.
  */
+import { formatujLiczbeZUlamkiem } from '../../i18n';
 import { rodzicWezla, zmienWezel } from '../../dane/szablon';
 import {
   rozwinOdstepy,
@@ -510,6 +511,5 @@ export function zastosujZmiany(s: Szablon, zmiany: ReadonlyMap<string, ZmianaPol
 
 /** Tekst podpowiedzi X·Y w mm (przecinek dziesiętny, co najmniej jedna cyfra po przecinku). */
 export function liczbaMm(v: number): string {
-  const s = (Math.round(v * 100) / 100).toString();
-  return (s.includes('.') ? s : `${s}.0`).replace('.', ',');
+  return formatujLiczbeZUlamkiem(v, 2);
 }

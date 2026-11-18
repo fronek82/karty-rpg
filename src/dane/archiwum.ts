@@ -1,5 +1,5 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { t } from '../i18n';
+import { formatujLiczbe, t } from '../i18n';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
 import { stylePola, type Szablon, type Wezel } from '../model/szablon';
 import type { ElementOzdobny } from '../ozdobniki/typy';
@@ -45,7 +45,7 @@ function spakuj(json: unknown, plikJson: string, zasoby: [OpisZasobu, Uint8Array
 function rozpakuj(bajty: Uint8Array, plikJson: string): Record<string, Uint8Array> {
   let suma = 0;
   let wpisy = 0;
-  const mb = (n: number) => (n / MB).toFixed(0);
+  const mb = (n: number) => formatujLiczbe(n / MB, 0);
   try {
     return unzipSync(bajty, {
       filter: (plik) => {
@@ -88,7 +88,9 @@ export function sprawdzZasob(opis: OpisZasobu, dane: Uint8Array): void {
     return;
   }
   if (dane.length > MAKS_BAJTOW_CZCIONKI) {
-    throw new BladDanych(t('dane.zaDuzy', { plik: opis.nazwa, mb: (dane.length / MB).toFixed(1) }));
+    throw new BladDanych(
+      t('dane.zaDuzy', { plik: opis.nazwa, mb: formatujLiczbe(dane.length / MB, 1) }),
+    );
   }
   try {
     wczytajCzcionke(opis.id, dane);

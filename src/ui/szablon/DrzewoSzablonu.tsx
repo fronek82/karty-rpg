@@ -1,4 +1,4 @@
-import { t } from '../../i18n';
+import { formatujLiczbe, t } from '../../i18n';
 import { czyKontener, type Kontener, type Wezel } from '../../model/szablon';
 
 const opisPolozenia = (p: NonNullable<Wezel['pozycja']>) =>
@@ -8,7 +8,7 @@ const opisPolozenia = (p: NonNullable<Wezel['pozycja']>) =>
     kotwica: t(`polozenie.kotwica.${p.kotwica ?? 'lewy-gorny'}`),
   }) + (p.obrot ? `, ${t('polozenie.znacznikObrot', { kat: p.obrot })}` : '');
 
-const liczba = (v: number) => String(Math.round(v * 10) / 10).replace('.', ',');
+const liczba = (v: number) => formatujLiczbe(v, 1);
 
 export const IKONY_WEZLOW: Record<Wezel['typ'], string> = {
   wiersz: '⇆',

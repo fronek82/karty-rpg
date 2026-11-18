@@ -7,7 +7,7 @@ import {
 } from '../../dane/archiwum';
 import type { PodsumowanieProjektu } from '../../dane/baza';
 import { BladDanych } from '../../dane/schemat';
-import { jezyk, t } from '../../i18n';
+import { formatujDate, t } from '../../i18n';
 import type { DaneZasobow, Projekt } from '../../model/projekt';
 import { baza } from '../baza';
 import { nazwaPliku, zapiszPlik } from '../pliki';
@@ -17,8 +17,6 @@ const komunikat = (e: unknown) =>
   e instanceof BladDanych
     ? e.message
     : t('projekty.bladNieoczekiwany', { szczegoly: String(e instanceof Error ? e.message : e) });
-
-const formatDaty = new Intl.DateTimeFormat(jezyk(), { dateStyle: 'medium', timeStyle: 'short' });
 
 /** „Moje projekty”: kafelki z miniaturą pierwszej strony; import, eksport, usuwanie. */
 export function ListaProjektow() {
@@ -207,7 +205,7 @@ export function ListaProjektow() {
                 </a>
                 <span className="podpis">
                   {t('start.podsumowanie', { strony: p.liczbaStron, karty: p.liczbaKart })} ·{' '}
-                  {t('projekty.zmieniono', { data: formatDaty.format(new Date(p.zmieniono)) })}
+                  {t('projekty.zmieniono', { data: formatujDate(p.zmieniono) })}
                 </span>
                 <span className="akcje">
                   <a className="przycisk glowny" href={`#/projekt/${encodeURIComponent(p.id)}`}>

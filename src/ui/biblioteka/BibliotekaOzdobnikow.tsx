@@ -12,7 +12,7 @@ import {
   usunElementZBiblioteki,
   zmienElementBiblioteki,
 } from '../../dane/biblioteka';
-import { t, tn } from '../../i18n';
+import { formatujLiczbe, t, tn } from '../../i18n';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import {
   ELEMENTY_WBUDOWANE,
@@ -172,7 +172,9 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
       if (wlasne.length >= MAKS_ELEMENTOW_BIBLIOTEKI)
         throw new Error(tn('biblioteka.limit', MAKS_ELEMENTOW_BIBLIOTEKI));
       if (f.size > MAKS_BAJTOW_OBRAZU)
-        throw new Error(t('dane.zaDuzy', { plik: f.name, mb: (f.size / 1024 / 1024).toFixed(1) }));
+        throw new Error(
+          t('dane.zaDuzy', { plik: f.name, mb: formatujLiczbe(f.size / 1024 / 1024, 1) }),
+        );
       const { dane, ...wymiary } = await przygotujObraz(new Uint8Array(await f.arrayBuffer()));
       const nazwa = bezRozszerzenia(f.name);
       let nowyId = '';

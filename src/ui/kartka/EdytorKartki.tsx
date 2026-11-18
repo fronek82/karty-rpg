@@ -43,7 +43,8 @@ import {
   type WynikArkusza,
 } from '../../druk/arkusz';
 import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
-import { liczba, t, tJesliJest, tn } from '../../i18n';
+import { t, tJesliJest, tn } from '../../i18n';
+import { useJezyk } from '../../i18n/react';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
@@ -200,6 +201,8 @@ export function EdytorKartki({
   pokazKartke?: string;
 }) {
   const { projekt, zmien } = edycja;
+  // Zmiana języka przerysowuje edytor; teksty zapamiętane w useMemo odświeżamy przez `jezykUi`.
+  const jezykUi = useJezyk();
   // Po wejściu z edytora szablonu – przewiń do kartki dla jego rozmiaru.
   useEffect(() => {
     if (!pokazKartke) return;
@@ -219,7 +222,8 @@ export function EdytorKartki({
   const szablonyProjektu = projekt.szablony;
   const pakietZSzablonow = useMemo(
     () => (bezGry ? pakietWlasny(szablonyProjektu) : undefined),
-    [bezGry, szablonyProjektu],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- opisy rozmiarów zależą od języka
+    [bezGry, szablonyProjektu, jezykUi],
   );
   const pakiet = pakietGry ?? pakietZSzablonow;
   const zasoby = useZSzarymiObrazami(edycja.zasoby.zasoby, projekt);
@@ -1316,7 +1320,8 @@ export function EdytorKartki({
             }),
           )
         : [],
-    [kartki, zasoby],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- teksty zależą od języka
+    [kartki, zasoby, jezykUi],
   );
 
   // --- Widok.

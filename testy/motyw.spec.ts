@@ -96,7 +96,8 @@ test('pasek górny: trzy elementy na starcie, Instrukcja w nowym oknie, język P
   await expect(instrukcja).toHaveAttribute('rel', /noopener/);
   const jezyk = page.getByRole('group', { name: 'Język' });
   await expect(jezyk.getByRole('button', { name: 'PL' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(jezyk.getByRole('button', { name: 'EN' })).toBeDisabled();
+  // Od UI-2 przełącznik działa: EN jest aktywny (zmiana języka – testy/jezyk.spec.ts).
+  await expect(jezyk.getByRole('button', { name: 'EN' })).toBeEnabled();
 });
 
 test('pasek górny w edytorze kartki i szablonu; motyw trzyma się między ekranami', async ({

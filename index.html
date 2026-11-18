@@ -10,7 +10,7 @@
     />
     <meta name="wersja" content="%VITE_WERSJA%" />
     <script>
-      // Motyw przed pierwszym malowaniem (bez migotania); logika jak w src/ui/motyw.ts.
+      // Motyw i język przed pierwszym malowaniem (bez migotania); logika jak w src/ui/motyw.ts.
       (function () {
         var ciemny = false;
         var wybor = null;
@@ -22,6 +22,15 @@
         } catch (e) {}
         var motyw = wybor === 'dark' || (wybor !== 'light' && ciemny) ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', motyw);
+        // Język (jak w src/i18n/index.ts): zapamiętany wybór, inaczej z przeglądarki (pl → PL, reszta EN).
+        var jezyk = null;
+        try {
+          jezyk = localStorage.getItem('karty.jezyk');
+        } catch (e) {}
+        if (jezyk !== 'pl' && jezyk !== 'en') {
+          jezyk = /^pl(?:[-_]|$)/i.test(navigator.language || '') ? 'pl' : 'en';
+        }
+        document.documentElement.setAttribute('lang', jezyk);
       })();
     </script>
     <title>Karty RPG</title>

@@ -9,7 +9,7 @@ export const typyKartMausrittera: TypKarty[] = [
     warianty: [{ szablonId: 'mausritter-bron', nazwa: 'Broń' }],
     rozmiary: [
       { kolumny: 1, rzedy: 1 },
-      { kolumny: 1, rzedy: 2, nazwa: 'ciężka' },
+      { kolumny: 1, rzedy: 2, id: 'ciezka', nazwa: 'ciężka' },
     ],
   },
   {
@@ -18,8 +18,8 @@ export const typyKartMausrittera: TypKarty[] = [
     ikona: '🛡',
     warianty: [{ szablonId: 'mausritter-zbroja', nazwa: 'Zbroja' }],
     rozmiary: [
-      { kolumny: 1, rzedy: 2, nazwa: 'ciężka' },
-      { kolumny: 2, rzedy: 1, nazwa: 'lekka' },
+      { kolumny: 1, rzedy: 2, id: 'ciezka', nazwa: 'ciężka' },
+      { kolumny: 2, rzedy: 1, id: 'lekka', nazwa: 'lekka' },
     ],
   },
   {

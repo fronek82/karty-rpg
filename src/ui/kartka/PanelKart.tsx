@@ -10,6 +10,7 @@ import {
 } from '../../dane/kartka';
 import { t, tJesliJest } from '../../i18n';
 import { MAKS_ZNACZNIKOW } from '../../silnik/karta';
+import { nazwaRozmiaru, nazwaWariantu } from '../nazwyPakietu';
 import type { Arkusz } from '../../model/arkusz';
 import {
   czyKontener,
@@ -46,8 +47,10 @@ export function typDlaSzablonu(pakiet: Pakiet | undefined, szablonId: string) {
 }
 
 const nazwaPola = (klucz: string, domyslna: string) => tJesliJest(`pole.${klucz}`) ?? domyslna;
-const opisRozmiaru = (r: TypKarty['rozmiary'][number]) =>
-  `${r.kolumny}×${r.rzedy}${r.nazwa ? ` ${r.nazwa}` : ''}`;
+const opisRozmiaru = (r: TypKarty['rozmiary'][number]) => {
+  const nazwa = nazwaRozmiaru(r);
+  return `${r.kolumny}×${r.rzedy}${nazwa ? ` ${nazwa}` : ''}`;
+};
 
 /**
  * Panel zaznaczonych kart. Jedna karta – wszystkie pola, rozmiar i ilustracja z kadrem.
@@ -137,7 +140,7 @@ export function PanelKart({
       : '';
   const tytul = jedna
     ? nazwaKarty(jedna.karta.dane, ctx.szablony.get(jedna.karta.szablonId)) ||
-      typ?.wariant.nazwa ||
+      (typ ? nazwaWariantu(typ.wariant) : '') ||
       t('karta.bezNazwy')
     : t('kartka.zaznaczono', { liczba: karty.length });
 
@@ -155,7 +158,7 @@ export function PanelKart({
         </button>
       </div>
       <p className="podpis">
-        {szablon ? (typ?.wariant.nazwa ?? szablon.nazwa) : t('kartka.rozneTypy')}
+        {szablon ? (typ ? nazwaWariantu(typ.wariant) : szablon.nazwa) : t('kartka.rozneTypy')}
         {polozenie && ` · ${polozenie}`}
       </p>
 

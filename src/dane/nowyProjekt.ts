@@ -1,9 +1,42 @@
+import { tJesliJest } from '../i18n';
 import { normalizujKartki } from '../druk/normalizacja';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import type { Pakiet } from '../pakiety/typy';
 import { projektZPakietu, rejestrZProjektu } from './pakiet';
 
 type Pobieranie = (plik: string) => Promise<Uint8Array>;
+
+/**
+ * Nazwy zapisane w nowym projekcie (projekt, kartki, talie, szablony, tytuł kartki) w języku
+ * z chwili utworzenia – tłumaczenia pod kluczami `pakiet.*`; brak klucza zostawia nazwę z danych.
+ * Później nazwy są zwykłą treścią projektu i nie zmieniają się razem z językiem interfejsu.
+ */
+function lokalizujNazwy(projekt: Projekt, nazwaProjektu: string): Projekt {
+  const nazwaArkusza = new Map<string, string>();
+  const arkusze = projekt.arkusze.map((a) => {
+    const nazwa = tJesliJest(`pakiet.arkusz.${a.id}`) ?? a.nazwa;
+    nazwaArkusza.set(a.taliaId, nazwa);
+    const tytul = a.ustawienia.tytul;
+    return {
+      ...a,
+      nazwa,
+      ustawienia:
+        tytul && tytul.tekst === a.nazwa
+          ? { ...a.ustawienia, tytul: { ...tytul, tekst: nazwa } }
+          : a.ustawienia,
+    };
+  });
+  return {
+    ...projekt,
+    nazwa: nazwaProjektu,
+    arkusze,
+    talie: projekt.talie.map((x) => ({ ...x, nazwa: nazwaArkusza.get(x.id) ?? x.nazwa })),
+    szablony: projekt.szablony.map((s) => ({
+      ...s,
+      nazwa: tJesliJest(`pakiet.wariant.${s.id}`) ?? s.nazwa,
+    })),
+  };
+}
 
 /**
  * Nowy projekt gry z pakietu: biblioteka (czcionki, obrazy) i szablony z pakietu, a na kartkach –
@@ -25,28 +58,25 @@ export async function nowyProjektGry(
   if (opcje.uklad && !uklad) throw new Error(`Nieznany układ „${opcje.uklad}”.`);
   if (!uklad) {
     const id = 'kartka-1';
+    const nazwa = tJesliJest('pakiet.nowaKartka') ?? pakiet.nowaKartka.nazwa;
+    const ustawienia = structuredClone(pakiet.nowaKartka.ustawienia);
+    if (ustawienia.tytul?.tekst === pakiet.nowaKartka.nazwa) ustawienia.tytul.tekst = nazwa;
     return {
       projekt: {
-        ...projekt,
-        nazwa: `${pakiet.nowaKartka.nazwa}`,
+        ...lokalizujNazwy(projekt, nazwa),
         pakiet: pakiet.id,
-        talie: [{ id, nazwa: pakiet.nowaKartka.nazwa, karty: [] }],
-        arkusze: [
-          {
-            id,
-            nazwa: pakiet.nowaKartka.nazwa,
-            taliaId: id,
-            liczbaStron: 1,
-            ustawienia: structuredClone(pakiet.nowaKartka.ustawienia),
-          },
-        ],
+        talie: [{ id, nazwa, karty: [] }],
+        arkusze: [{ id, nazwa, taliaId: id, liczbaStron: 1, ustawienia }],
       },
       zasoby,
     };
   }
   const arkusze = projekt.arkusze.filter((a) => uklad.arkusze.includes(a.id));
   const talie = projekt.talie.filter((t) => arkusze.some((a) => a.taliaId === t.id));
-  const wybrany: Projekt = { ...projekt, nazwa: uklad.nazwa, pakiet: pakiet.id, arkusze, talie };
+  const wybrany: Projekt = lokalizujNazwy(
+    { ...projekt, pakiet: pakiet.id, arkusze, talie },
+    tJesliJest(`pakiet.uklad.${uklad.id}`) ?? uklad.nazwa,
+  );
   const { rejestr } = rejestrZProjektu(wybrany, zasoby);
   const obrazy = new Map(pakiet.zasoby.map((z) => [z.id, z]));
   return {

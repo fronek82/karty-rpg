@@ -1,4 +1,11 @@
-import { pl, plMnoga, type KluczMnogi, type KluczTekstu, type Slownik, type SlownikMnogi } from './pl';
+import {
+  pl,
+  plMnoga,
+  type KluczMnogi,
+  type KluczTekstu,
+  type Slownik,
+  type SlownikMnogi,
+} from './pl';
 import { en, enMnoga } from './en';
 
 export type { KluczMnogi, KluczTekstu, Slownik, SlownikMnogi };
@@ -133,7 +140,7 @@ export function tn(
 }
 
 /** Liczba w bieżącym języku (PL: przecinek, EN: kropka), co najwyżej `miejsca` cyfr po przecinku. */
-export function liczba(x: number, miejsca = 1): string {
+export function formatujLiczbe(x: number, miejsca = 1): string {
   return new Intl.NumberFormat(aktywnyJezyk, {
     maximumFractionDigits: miejsca,
     useGrouping: false,
@@ -141,7 +148,7 @@ export function liczba(x: number, miejsca = 1): string {
 }
 
 /** Liczba z co najmniej jedną cyfrą po przecinku (np. „2,0”). */
-export function liczbaZUlamkiem(x: number, miejsca = 1): string {
+export function formatujLiczbeZUlamkiem(x: number, miejsca = 1): string {
   return new Intl.NumberFormat(aktywnyJezyk, {
     minimumFractionDigits: 1,
     maximumFractionDigits: miejsca,

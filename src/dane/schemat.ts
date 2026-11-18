@@ -429,7 +429,8 @@ const arkusz = obj({
       }),
     ),
   }).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined, {
-    message: t('dane.wymiaryPapieru'),
+    // Funkcja – komunikat powstaje przy błędzie, w bieżącym języku (nie przy ładowaniu modułu).
+    error: () => t('dane.wymiaryPapieru'),
     path: ['wymiaryPapieru'],
   }),
   kolejnosc: opc(z.array(identyfikator)),

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ustawUstawieniaArkusza } from '../../dane/edycja';
 import { ustawKolejnosc } from '../../dane/kartka';
 import { kolejnoscWidoczna, type WynikArkusza } from '../../druk/arkusz';
-import { t } from '../../i18n';
+import { formatujLiczbe, t } from '../../i18n';
 import {
   DOPASOWANIE_DOMYSLNE,
   LUZ_MAKS,
@@ -21,7 +21,7 @@ import { baza } from '../baza';
 import { MAKS_PRZESUNIECIA, odczytajKalibracje, zapiszKalibracje } from '../kalibracja';
 import { PoleLiczby } from './PoleLiczby';
 
-const zaokr = (x: number) => String(Math.round(x * 10) / 10).replace('.', ',');
+const zaokr = (x: number) => formatujLiczbe(x, 1);
 const nowyId = () => `uklad-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 /**

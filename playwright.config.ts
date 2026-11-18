@@ -14,6 +14,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${port}/karty-rpg/`,
     trace: 'off',
+    // Domyślny język przeglądarki w testach – polski (interfejs wybiera język z navigator.language).
+    locale: 'pl-PL',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

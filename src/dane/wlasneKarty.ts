@@ -1,6 +1,6 @@
 import { slotKartki } from '../druk/arkusz';
 import { pakietProjektu } from '../druk/normalizacja';
-import { t } from '../i18n';
+import { formatujLiczbe, t } from '../i18n';
 import {
   czyFormatZdjeciowy,
   MARGINES_BEZPIECZENSTWA_FOTO,
@@ -139,7 +139,7 @@ export function pasujeDoSlotu(
 
 /** Opis rozmiaru karty szablonu dla użytkownika, np. „63×88 mm” (domyślny rozmiar karty). */
 export function opisRozmiaruSzablonu(s: Szablon): string {
-  const z = (x: number) => String(Math.round(x * 10) / 10).replace('.', ',');
+  const z = (x: number) => formatujLiczbe(x, 1);
   const { szer, wys } = wymiaryKarty(s);
   return t('rozmiar.mm', { szer: z(szer), wys: z(wys) });
 }

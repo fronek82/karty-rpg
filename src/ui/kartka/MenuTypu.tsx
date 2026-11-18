@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { t } from '../../i18n';
 import type { TypKarty } from '../../pakiety/typy';
+import { nazwaRozmiaru, nazwaTypu, nazwaWariantu } from '../nazwyPakietu';
 
-const rozmiar = (r: { kolumny: number; rzedy: number; nazwa?: string }) =>
-  `${r.nazwa ? `${r.nazwa} ` : ''}${r.kolumny}×${r.rzedy}`;
+const rozmiar = (r: { kolumny: number; rzedy: number; id?: string; nazwa?: string }) => {
+  const nazwa = nazwaRozmiaru(r);
+  return `${nazwa ? `${nazwa} ` : ''}${r.kolumny}×${r.rzedy}`;
+};
 
 /**
  * Menu „Dodaj kartę w tym slocie” – typy kart pakietu; wariant (np. sakiewka) jako podwybór.
@@ -111,7 +114,7 @@ export function MenuTypu({
                 <span className="ikona" aria-hidden="true">
                   {typ.ikona}
                 </span>{' '}
-                {typ.nazwa}
+                {nazwaTypu(typ)}
                 {warianty && ' ▸'}
               </span>
               <small>{typ.opisRozmiaru ?? typ.rozmiary.map(rozmiar).join(' · ')}</small>
@@ -128,7 +131,7 @@ export function MenuTypu({
                     className="menu-pozycja"
                     onClick={() => wybierz(typ, j)}
                   >
-                    {w.nazwa}
+                    {nazwaWariantu(w)}
                   </button>
                 ))}
               </div>

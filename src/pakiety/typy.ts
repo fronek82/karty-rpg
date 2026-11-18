@@ -22,6 +22,8 @@ export interface CzcionkaPakietu {
 export interface RozmiarTypu {
   kolumny: number;
   rzedy: number;
+  /** Identyfikator nazwy (klucz tłumaczenia `pakiet.rozmiar.<id>`). */
+  id?: string;
   nazwa?: string;
 }
 

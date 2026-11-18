@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import { formatujLiczbe, t } from '../i18n';
 import type { OpisObrazu } from '../model/projekt';
 import { formatObrazu, identyfikatorZNazwy, unikalneId } from './czcionki';
 import { BladDanych } from './schemat';
@@ -19,7 +19,7 @@ export function opisObrazu(
   if (!format) throw new BladDanych(t('dane.zlyObraz', { plik: nazwaPliku }));
   if (dane.length > MAKS_BAJTOW_OBRAZU) {
     throw new BladDanych(
-      t('dane.zaDuzy', { plik: nazwaPliku, mb: (dane.length / 1024 / 1024).toFixed(1) }),
+      t('dane.zaDuzy', { plik: nazwaPliku, mb: formatujLiczbe(dane.length / 1024 / 1024, 1) }),
     );
   }
   if (!(wymiary.szerokosc > 0 && wymiary.wysokosc > 0)) {
