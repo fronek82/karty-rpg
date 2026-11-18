@@ -1,7 +1,7 @@
 import { dodajZasoby, ustawDane, ustawObrazKarty } from '../../dane/edycja';
 import { MAKS_BAJTOW_OBRAZU, opisObrazu } from '../../dane/obrazy';
 import { BladDanych } from '../../dane/schemat';
-import { t } from '../../i18n';
+import { formatujLiczbe, t } from '../../i18n';
 import type { Projekt } from '../../model/projekt';
 import type { UstawieniaObrazu } from '../../model/szablon';
 import { normalizujUstawieniaObrazu } from '../../silnik/karta';
@@ -59,7 +59,7 @@ export async function wgrajObrazDoKart(
 ): Promise<void> {
   if (plik.size > MAKS_BAJTOW_OBRAZU) {
     throw new BladDanych(
-      t('dane.zaDuzy', { plik: plik.name, mb: (plik.size / 1024 / 1024).toFixed(1) }),
+      t('dane.zaDuzy', { plik: plik.name, mb: formatujLiczbe(plik.size / 1024 / 1024, 1) }),
     );
   }
   const { dane: bajty, ...wymiary } = await przygotujObraz(

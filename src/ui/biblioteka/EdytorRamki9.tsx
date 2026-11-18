@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { zmienElementBiblioteki } from '../../dane/biblioteka';
-import { t } from '../../i18n';
+import { formatujLiczbe, t } from '../../i18n';
 import {
   MIN_DPI_RAMKI,
   dpiRogow,
@@ -208,7 +208,10 @@ export function EdytorRamki9({
               szer: element.szer,
               wys: element.wys,
             })
-          : t('biblioteka.ramka9.zrodloSvg', { szer: element.szer, wys: element.wys })}
+          : t('biblioteka.ramka9.zrodloSvg', {
+              szer: formatujLiczbe(element.szer, 2),
+              wys: formatujLiczbe(element.wys, 2),
+            })}
       </p>
       <div className="ramka9-glowna">
         <div
@@ -305,7 +308,7 @@ export function EdytorRamki9({
             >
               {t('biblioteka.ramka9.dpi', {
                 wciecie: najgrubsze,
-                grubosc: String(grubosc).replace('.', ','),
+                grubosc: formatujLiczbe(grubosc, 2),
                 dpi: Math.round(dpi),
               })}
               {dpi < MIN_DPI_RAMKI && (
@@ -331,11 +334,14 @@ export function EdytorRamki9({
               />
               <figcaption className="podpis">
                 {p.klucz === 'karta'
-                  ? t('biblioteka.ramka9.podgladKarta', { szer: p.szer, wys: p.wys })
+                  ? t('biblioteka.ramka9.podgladKarta', {
+                      szer: formatujLiczbe(p.szer, 2),
+                      wys: formatujLiczbe(p.wys, 2),
+                    })
                   : t('biblioteka.ramka9.podgladMala', {
                       szer: p.szer,
                       wys: p.wys,
-                      grubosc: String(grubosc).replace('.', ','),
+                      grubosc: formatujLiczbe(grubosc, 2),
                     })}
               </figcaption>
             </figure>

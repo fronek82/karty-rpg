@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import { formatujLiczbe, t } from '../i18n';
 import type { OpisCzcionki, ZrodloCzcionki } from '../model/projekt';
 import type { WariantCzcionki } from '../model/szablon';
 import { BladKolekcjiCzcionek, Czcionka, wczytajCzcionke } from '../silnik/czcionki';
@@ -73,7 +73,7 @@ export function wgrajCzcionke(
   if (!format) throw new BladDanych(t('dane.zlyFormatCzcionki', { plik: nazwaPliku }));
   if (dane.length > MAKS_BAJTOW_CZCIONKI) {
     throw new BladDanych(
-      t('dane.zaDuzy', { plik: nazwaPliku, mb: (dane.length / 1024 / 1024).toFixed(1) }),
+      t('dane.zaDuzy', { plik: nazwaPliku, mb: formatujLiczbe(dane.length / 1024 / 1024, 1) }),
     );
   }
   const bezRozszerzenia = nazwaPliku.replace(/\.[^.]+$/, '');

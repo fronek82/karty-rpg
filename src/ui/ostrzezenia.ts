@@ -1,4 +1,4 @@
-import { t, type KluczTekstu } from '../i18n';
+import { t, tJesliJest, type KluczTekstu } from '../i18n';
 import type { OstrzezenieArkusza } from '../druk/arkusz';
 import type { Ostrzezenie } from '../silnik/karta';
 
@@ -6,7 +6,7 @@ import type { Ostrzezenie } from '../silnik/karta';
  * Teksty ostrzeżeń silnika i arkusza. Silnik zwraca kody (`kod:szczegół:…`), żeby nie zależeć
  * od języka; tu zamieniamy je na zdania. Nieznany kod pokazujemy surowo – lepiej niż nic.
  */
-const KODY: Record<string, KluczTekstu> = {
+export const KODY: Record<string, KluczTekstu> = {
   'tekst-nie-miesci-sie': 'ostrzezenie.tekstNieMiesciSie',
   'brak-obrazu': 'ostrzezenie.brakObrazu',
   'brak-znakow': 'ostrzezenie.brakZnakow',
@@ -63,4 +63,19 @@ export function tekstOstrzezeniaArkusza(o: OstrzezenieArkusza, nazwaKarty?: stri
     ? t('ostrzezenie.wPolu', { pole: reszta[0] ?? '', tekst: zKodu(kod, reszta.slice(1)) })
     : zKodu(kod, reszta);
   return o.kartaId ? t('ostrzezenie.karta', { karta: nazwaKarty || o.kartaId, tekst }) : tekst;
+}
+
+/** Komunikaty o brakujących wariantach czcionek (np. pogrubienie) w bieżącym języku. */
+export function komunikatyBrakujacychWariantow(
+  lista: readonly {
+    nazwa: string;
+    wariant: 'normalny' | 'pogrubiony' | 'kursywa' | 'pogrubiona-kursywa';
+  }[],
+): string[] {
+  return lista.map((b) =>
+    t('czcionki.brakWariantu', {
+      nazwa: tJesliJest(`rola.${b.nazwa}`) ?? b.nazwa,
+      wariant: t(`wariant.${b.wariant}`),
+    }),
+  );
 }

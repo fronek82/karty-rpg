@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { jezyk, ustawJezyk } from '../i18n';
 import { NaglowekAplikacji, NarzedziaPaska } from './NaglowekAplikacji';
 
 beforeEach(() => {
@@ -12,7 +13,10 @@ beforeEach(() => {
     removeEventListener: () => {},
   })) as unknown as typeof window.matchMedia;
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  ustawJezyk('pl');
+});
 
 describe('NarzedziaPaska', () => {
   it('kolejność w DOM (= kolejność Tab): Instrukcja, PL, EN, motyw jasny, motyw ciemny', () => {
@@ -30,10 +34,42 @@ describe('NarzedziaPaska', () => {
     expect(a.getAttribute('rel')).toContain('noopener');
   });
 
-  it('język: PL wciśnięty, EN wyłączony', () => {
+  it('język: oba przyciski aktywne, PL wciśnięty, atrybut lang na przyciskach', () => {
     render(<NarzedziaPaska />);
-    expect(screen.getByRole('button', { name: 'PL' }).getAttribute('aria-pressed')).toBe('true');
-    expect((screen.getByRole('button', { name: 'EN' }) as HTMLButtonElement).disabled).toBe(true);
+    const pl = screen.getByRole('button', { name: 'PL' }) as HTMLButtonElement;
+    const en = screen.getByRole('button', { name: 'EN' }) as HTMLButtonElement;
+    expect(pl.getAttribute('aria-pressed')).toBe('true');
+    expect(en.getAttribute('aria-pressed')).toBe('false');
+    expect(pl.disabled).toBe(false);
+    expect(en.disabled).toBe(false);
+    expect(pl.getAttribute('lang')).toBe('pl');
+    expect(en.getAttribute('lang')).toBe('en');
+  });
+
+  it('przełączenie na EN: napisy, aria-pressed, lang dokumentu i pamięć wyboru', () => {
+    render(<NarzedziaPaska />);
+    fireEvent.click(screen.getByRole('button', { name: 'EN' }));
+    expect(jezyk()).toBe('en');
+    expect(localStorage.getItem('karty.jezyk')).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+    expect(screen.getByRole('button', { name: 'EN' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'PL' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('link', { name: /Guide/ }).getAttribute('href')).toBe('instrukcja/');
+    expect(screen.getByRole('button', { name: 'Light theme' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'PL' }));
+    expect(document.documentElement.lang).toBe('pl');
+    expect(localStorage.getItem('karty.jezyk')).toBe('pl');
+    expect(screen.getByRole('link', { name: /Instrukcja/ })).toBeTruthy();
+  });
+
+  it('zmiana wyboru w innej karcie (zdarzenie storage) przełącza język', () => {
+    render(<NarzedziaPaska />);
+    localStorage.setItem('karty.jezyk', 'en');
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'karty.jezyk', newValue: 'en' }));
+    });
+    expect(jezyk()).toBe('en');
+    expect(screen.getByRole('button', { name: 'EN' }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it('motyw: aria-pressed podąża za wyborem i zapisuje go', () => {

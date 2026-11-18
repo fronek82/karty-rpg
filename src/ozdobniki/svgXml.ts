@@ -17,10 +17,21 @@ export interface WezelXml {
   tekst?: string;
 }
 
+/** Opis błędu bez tekstu: klucz tłumaczenia i parametry – zdanie składa dopiero interfejs. */
+export interface OpisBledu {
+  klucz: string;
+  parametry?: Record<string, string>;
+}
+
+const opis = (klucz: string, parametry?: Record<string, string>): OpisBledu =>
+  parametry ? { klucz, parametry } : { klucz };
+
 export class BladXml extends Error {
   constructor(
     readonly kod: 'xml' | 'za-duzo-elementow' | 'za-gleboko',
+    /** Komunikat techniczny (klucz albo kod z limitem), nie tekst dla użytkownika. */
     komunikat: string,
+    readonly szczegol?: OpisBledu,
   ) {
     super(komunikat);
     this.name = 'BladXml';
@@ -60,12 +71,12 @@ export function parsujXml(zrodlo: string, limity = LIMITY_XML): WezelXml {
   let liczba = 0;
   const stos: WezelXml[] = [];
   let korzen: WezelXml | undefined;
-  const blad = (opis: string): never => {
-    throw new BladXml('xml', opis);
+  const blad = (o: OpisBledu): never => {
+    throw new BladXml('xml', o.klucz, o);
   };
-  const pomin = (koniec: string, opis: string) => {
+  const pomin = (koniec: string, o: OpisBledu) => {
     const j = s.indexOf(koniec, i);
-    if (j < 0) blad(opis);
+    if (j < 0) blad(o);
     i = j + koniec.length;
   };
 
@@ -73,11 +84,11 @@ export function parsujXml(zrodlo: string, limity = LIMITY_XML): WezelXml {
     const lt = s.indexOf('<', i);
     if (lt < 0) {
       // Tekst po ostatnim znaczniku – dozwolone są tylko białe znaki.
-      if (s.slice(i).trim() !== '' && stos.length === 0) blad('tekst poza elementem głównym');
+      if (s.slice(i).trim() !== '' && stos.length === 0) blad(opis('svg.xml.tekstPozaGlownym'));
       break;
     }
     if (lt > i && stos.length === 0 && s.slice(i, lt).trim() !== '')
-      blad('tekst poza elementem głównym');
+      blad(opis('svg.xml.tekstPozaGlownym'));
     // Tekst między znacznikami: zapamiętany tylko dla `style` / `script`.
     if (lt > i && stos.length > 0) {
       const g = stos[stos.length - 1]!;
@@ -86,19 +97,19 @@ export function parsujXml(zrodlo: string, limity = LIMITY_XML): WezelXml {
     i = lt;
     if (s.startsWith('<!--', i)) {
       i += 4;
-      pomin('-->', 'niezamknięty komentarz');
+      pomin('-->', opis('svg.xml.niezamknietyKomentarz'));
     } else if (s.startsWith('<![CDATA[', i)) {
       const od = i + 9;
       i = od;
       const j = s.indexOf(']]>', i);
-      if (j < 0) blad('niezamknięta sekcja CDATA');
+      if (j < 0) blad(opis('svg.xml.niezamknietaCdata'));
       const g = stos[stos.length - 1];
       if (g && (g.nazwa === 'style' || g.nazwa === 'script'))
         g.tekst = (g.tekst ?? '') + s.slice(od, j);
       i = j + 3;
     } else if (s.startsWith('<?', i)) {
       i += 2;
-      pomin('?>', 'niezamknięta instrukcja przetwarzania');
+      pomin('?>', opis('svg.xml.niezamknietaInstrukcja'));
     } else if (s.startsWith('<!', i)) {
       // DOCTYPE (także z podzbiorem wewnętrznym w nawiasach kwadratowych) – pomijany w całości.
       i += 2;
@@ -109,22 +120,22 @@ export function parsujXml(zrodlo: string, limity = LIMITY_XML): WezelXml {
         else if (s[i] === '"' || s[i] === "'") {
           const q = s[i]!;
           const j = s.indexOf(q, i + 1);
-          if (j < 0) blad('niezamknięty DOCTYPE');
+          if (j < 0) blad(opis('svg.xml.niezamknietyDoctype'));
           i = j;
         }
         i++;
       }
-      if (i >= n) blad('niezamknięty DOCTYPE');
+      if (i >= n) blad(opis('svg.xml.niezamknietyDoctype'));
       i++;
     } else if (s.startsWith('</', i)) {
       const j = s.indexOf('>', i);
-      if (j < 0) blad('niezamknięty znacznik zamykający');
+      if (j < 0) blad(opis('svg.xml.niezamknietyZnacznikZamykajacy'));
       const pelna = s.slice(i + 2, j).trim();
       const otwarty = stos.pop();
-      if (!otwarty) return blad('nadmiarowy znacznik zamykający');
+      if (!otwarty) return blad(opis('svg.xml.nadmiarowyZnacznikZamykajacy'));
       const { nazwa, przestrzen } = rozdzielNazwe(pelna);
       if (otwarty.nazwa !== nazwa || otwarty.przestrzen !== przestrzen)
-        blad(`znacznik </${pelna}> nie pasuje do <${otwarty.nazwa}>`);
+        blad(opis('svg.xml.znacznikNiePasuje', { a: pelna, b: otwarty.nazwa }));
       i = j + 1;
     } else {
       // Znacznik otwierający: nazwa, atrybuty, `>` albo `/>`.
@@ -132,19 +143,19 @@ export function parsujXml(zrodlo: string, limity = LIMITY_XML): WezelXml {
       const odNazwy = i;
       while (i < n && !SPACJA.test(s[i]!) && s[i] !== '>' && s[i] !== '/') i++;
       const pelna = s.slice(odNazwy, i);
-      if (pelna === '') blad('pusta nazwa znacznika');
+      if (pelna === '') blad(opis('svg.xml.pustaNazwa'));
       // Bez prototypu: nazwy jak `__proto__` czy `constructor` to zwykłe klucze.
       const atr: Record<string, string> = Object.create(null) as Record<string, string>;
       let samozamykajacy = false;
       for (;;) {
         while (i < n && SPACJA.test(s[i]!)) i++;
-        if (i >= n) blad('niezamknięty znacznik');
+        if (i >= n) blad(opis('svg.xml.niezamknietyZnacznik'));
         if (s[i] === '>') {
           i++;
           break;
         }
         if (s[i] === '/') {
-          if (s[i + 1] !== '>') blad('niepoprawny znacznik');
+          if (s[i + 1] !== '>') blad(opis('svg.xml.niepoprawnyZnacznik'));
           samozamykajacy = true;
           i += 2;
           break;
@@ -153,33 +164,35 @@ export function parsujXml(zrodlo: string, limity = LIMITY_XML): WezelXml {
         while (i < n && !SPACJA.test(s[i]!) && s[i] !== '=' && s[i] !== '>' && s[i] !== '/') i++;
         const nazwaAtr = s.slice(odAtr, i);
         while (i < n && SPACJA.test(s[i]!)) i++;
-        if (s[i] !== '=') blad(`atrybut „${nazwaAtr}” bez wartości`);
+        if (s[i] !== '=') blad(opis('svg.xml.atrybutBezWartosci', { nazwa: nazwaAtr }));
         i++;
         while (i < n && SPACJA.test(s[i]!)) i++;
         const q = s[i];
-        if (q !== '"' && q !== "'") return blad(`atrybut „${nazwaAtr}” bez cudzysłowu`);
+        if (q !== '"' && q !== "'")
+          return blad(opis('svg.xml.atrybutBezCudzyslowu', { nazwa: nazwaAtr }));
         const koniec = s.indexOf(q, i + 1);
-        if (koniec < 0) blad('niezamknięta wartość atrybutu');
+        if (koniec < 0) blad(opis('svg.xml.niezamknietaWartosc'));
         // Pierwszy zapis atrybutu wygrywa (powtórzenie to błąd XML – tu łagodnie).
         if (!Object.hasOwn(atr, nazwaAtr)) atr[nazwaAtr] = rozwinEncje(s.slice(i + 1, koniec));
         i = koniec + 1;
       }
       if (++liczba > limity.elementy)
-        throw new BladXml('za-duzo-elementow', `więcej niż ${limity.elementy} elementów`);
+        throw new BladXml('za-duzo-elementow', `za-duzo-elementow:${limity.elementy}`);
       const { nazwa, przestrzen } = rozdzielNazwe(pelna);
       const wezel: WezelXml = { nazwa, przestrzen, atr, dzieci: [] };
       const rodzic = stos[stos.length - 1];
       if (rodzic) rodzic.dzieci.push(wezel);
-      else if (korzen) blad('więcej niż jeden element główny');
+      else if (korzen) blad(opis('svg.xml.wiecejNizJedenGlowny'));
       else korzen = wezel;
       if (!samozamykajacy) {
         stos.push(wezel);
         if (stos.length > limity.glebokosc)
-          throw new BladXml('za-gleboko', `zagnieżdżenie głębsze niż ${limity.glebokosc}`);
+          throw new BladXml('za-gleboko', `za-gleboko:${limity.glebokosc}`);
       }
     }
   }
-  if (stos.length > 0) blad(`niezamknięty element <${stos[stos.length - 1]!.nazwa}>`);
-  if (!korzen) blad('brak elementu głównego');
+  if (stos.length > 0)
+    blad(opis('svg.xml.niezamknietyElement', { nazwa: stos[stos.length - 1]!.nazwa }));
+  if (!korzen) blad(opis('svg.xml.brakGlownego'));
   return korzen!;
 }

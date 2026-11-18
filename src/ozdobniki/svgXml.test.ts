@@ -78,3 +78,39 @@ describe('parser XML – bezpieczeństwo', () => {
     expect(kod('﻿<?xml version="1.0"?><svg/>')).toBe('ok');
   });
 });
+
+describe('parser XML – błędy bez tekstów interfejsu', () => {
+  const blad = (s: string) => {
+    try {
+      parsujXml(s);
+    } catch (e) {
+      return e as BladXml;
+    }
+    throw new Error('oczekiwano błędu');
+  };
+
+  it('błąd niesie klucz tłumaczenia i parametry, a komunikat to sam klucz', () => {
+    const e = blad('<svg></g>');
+    expect(e.szczegol).toEqual({
+      klucz: 'svg.xml.znacznikNiePasuje',
+      parametry: { a: 'g', b: 'svg' },
+    });
+    expect(e.message).toBe('svg.xml.znacznikNiePasuje');
+    expect(blad('<svg a=1/>').szczegol).toEqual({
+      klucz: 'svg.xml.atrybutBezCudzyslowu',
+      parametry: { nazwa: 'a' },
+    });
+    expect(blad('<svg>').szczegol?.klucz).toBe('svg.xml.niezamknietyElement');
+  });
+
+  it('komunikaty nie zawierają polskich znaków, a każdy klucz istnieje w obu słownikach', async () => {
+    const { pl } = await import('../i18n/pl');
+    const { en } = await import('../i18n/en');
+    for (const zle of ['<svg>', '<svg></g>', '<svg a=1/>', 'tekst', '<svg/><svg/>', '<svg a="x']) {
+      const e = blad(zle);
+      expect(e.message).not.toMatch(/[ąćęłńóśźż]/i);
+      expect(e.szczegol!.klucz in pl).toBe(true);
+      expect(e.szczegol!.klucz in en).toBe(true);
+    }
+  });
+});

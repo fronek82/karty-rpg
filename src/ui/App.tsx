@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { t } from '../i18n';
+import { useJezyk } from '../i18n/react';
 import { GranicaBledu } from './GranicaBledu';
 import { useTrasa } from './useTrasa';
 import { NaglowekAplikacji } from './NaglowekAplikacji';
@@ -31,6 +32,8 @@ function Leniwa({ children }: { children: ReactNode }) {
 }
 
 export function App() {
+  // Zmiana języka przerysowuje całe drzewo (teksty czytane przy renderze) bez utraty stanu.
+  useJezyk();
   const trasa = useTrasa();
   const dopasowanie = /^\/projekt\/([^/]+)(?:\/(.*))?$/.exec(trasa);
   const projekt = dopasowanie?.[1];

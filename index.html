@@ -10,7 +10,7 @@
     />
     <meta name="wersja" content="%VITE_WERSJA%" />
     <script>
-      // Motyw przed pierwszym malowaniem (bez migotania); logika jak w src/ui/motyw.ts.
+      // Motyw i język przed pierwszym malowaniem (bez migotania); logika jak w src/ui/motyw.ts.
       (function () {
         var ciemny = false;
         var wybor = null;
@@ -22,13 +22,26 @@
         } catch (e) {}
         var motyw = wybor === 'dark' || (wybor !== 'light' && ciemny) ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', motyw);
+        // Język (jak w src/i18n/index.ts): zapamiętany wybór, inaczej z przeglądarki (pl → PL, reszta EN).
+        var jezyk = null;
+        try {
+          jezyk = localStorage.getItem('karty.jezyk');
+        } catch (e) {}
+        if (jezyk !== 'pl' && jezyk !== 'en') {
+          jezyk = /^pl(?:[-_]|$)/i.test(navigator.language || '') ? 'pl' : 'en';
+        }
+        document.documentElement.setAttribute('lang', jezyk);
+        if (jezyk === 'en') document.title = 'RPG Cards';
       })();
     </script>
     <title>Karty RPG</title>
   </head>
   <body>
     <div id="root"></div>
-    <noscript>Karty RPG działają w przeglądarce i wymagają włączonego JavaScriptu.</noscript>
+    <noscript
+      >Karty RPG działają w przeglądarce i wymagają włączonego JavaScriptu. / RPG Cards runs in the
+      browser and requires JavaScript to be enabled.</noscript
+    >
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

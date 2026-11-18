@@ -1,4 +1,5 @@
-import { t } from '../i18n';
+import { JEZYKI, t, ustawJezyk } from '../i18n';
+import { useJezyk } from '../i18n/react';
 import { useMotyw } from './motyw';
 
 /** Adres instrukcji względem strony aplikacji (strona powstanie w etapie UI-6). */
@@ -38,10 +39,11 @@ function IkonaKsiezyca() {
 
 /**
  * Grupa narzędzi na końcu paska górnego: Instrukcja, język PL | EN, motyw jasny | ciemny.
- * Język jest na razie atrapą z jednym aktywnym PL (działanie – etap UI-2).
+ * Język przełącza się od razu (bez przeładowania) i jest zapamiętany w localStorage.
  */
 export function NarzedziaPaska() {
   const { motyw, ustaw } = useMotyw();
+  const aktywny = useJezyk();
   return (
     <div className="narzedzia-paska" role="group" aria-label={t('pasek.narzedzia')}>
       <a
@@ -55,12 +57,19 @@ export function NarzedziaPaska() {
         <span className="tylko-czytnik">{t('pasek.noweOkno')}</span>
       </a>
       <div className="seg" role="group" aria-label={t('jezyk.grupa')}>
-        <button type="button" aria-pressed="true" title={t('jezyk.plOpis')}>
-          {t('jezyk.pl')}
-        </button>
-        <button type="button" aria-pressed="false" disabled title={t('jezyk.enOpis')}>
-          {t('jezyk.en')}
-        </button>
+        {/* Nazwy języków są w obu słownikach takie same (każdy język nazwany po swojemu); `lang` na przycisku ustawia wymowę czytnika. */}
+        {JEZYKI.map((j) => (
+          <button
+            key={j}
+            type="button"
+            lang={j}
+            aria-pressed={aktywny === j}
+            title={t(`jezyk.${j}Opis`)}
+            onClick={() => ustawJezyk(j)}
+          >
+            {t(`jezyk.${j}`)}
+          </button>
+        ))}
       </div>
       <div className="seg" role="group" aria-label={t('motyw.grupa')}>
         <button

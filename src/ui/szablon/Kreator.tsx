@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FORMATY_KART, UKLADY_STARTOWE, type UkladStartowy } from '../../dane/szablon';
-import { t } from '../../i18n';
+import { formatujLiczbe, t } from '../../i18n';
 import type { Mm } from '../../model/jednostki';
 
 export interface UstawieniaNowegoSzablonu {
@@ -12,7 +12,7 @@ export interface UstawieniaNowegoSzablonu {
   uklad: UkladStartowy;
 }
 
-const zaokr = (x: number) => String(Math.round(x * 10) / 10).replace('.', ',');
+const zaokr = (x: number) => formatujLiczbe(x, 1);
 
 /**
  * Kreator nowego szablonu – krok 1: nazwa, rozmiar (gotowy format albo własny w mm), orientacja,

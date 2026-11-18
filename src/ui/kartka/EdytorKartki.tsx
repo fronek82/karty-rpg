@@ -43,7 +43,8 @@ import {
   type WynikArkusza,
 } from '../../druk/arkusz';
 import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
-import { t, tJesliJest } from '../../i18n';
+import { t, tJesliJest, tn } from '../../i18n';
+import { useJezyk } from '../../i18n/react';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
@@ -63,7 +64,7 @@ import type { Ostrzezenie } from '../../silnik/karta';
 import type { Scena } from '../../silnik/scena';
 import { scenaDoSvg } from '../../silnik/svg';
 import { baza } from '../baza';
-import { tekstOstrzezeniaArkusza } from '../ostrzezenia';
+import { komunikatyBrakujacychWariantow, tekstOstrzezeniaArkusza } from '../ostrzezenia';
 import { pdfWWatku } from '../pdfWWatku';
 import { odczytajKalibracje } from '../kalibracja';
 import { obrazyScen, scenyKart, scenyStron, spakuj, type FormatObrazu } from '../eksportObrazow';
@@ -200,6 +201,9 @@ export function EdytorKartki({
   pokazKartke?: string;
 }) {
   const { projekt, zmien } = edycja;
+  // Zmiana języka przerysowuje edytor, ale wynik useMemo się nie przelicza sam: KAŻDY nowy
+  // useMemo, który woła t() / tn() / tJesliJest() (także pośrednio), musi mieć `jezykUi` w zależnościach.
+  const jezykUi = useJezyk();
   // Po wejściu z edytora szablonu – przewiń do kartki dla jego rozmiaru.
   useEffect(() => {
     if (!pokazKartke) return;
@@ -219,7 +223,8 @@ export function EdytorKartki({
   const szablonyProjektu = projekt.szablony;
   const pakietZSzablonow = useMemo(
     () => (bezGry ? pakietWlasny(szablonyProjektu) : undefined),
-    [bezGry, szablonyProjektu],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- opisy rozmiarów zależą od języka
+    [bezGry, szablonyProjektu, jezykUi],
   );
   const pakiet = pakietGry ?? pakietZSzablonow;
   const zasoby = useZSzarymiObrazami(edycja.zasoby.zasoby, projekt);
@@ -1245,7 +1250,7 @@ export function EdytorKartki({
             const { odlozone } = wrocDoSiatki(projekt, arkuszZazn.id, ctxSiatki);
             zmien((p) => wrocDoSiatki(p, arkuszZazn.id, ctxSiatki).projekt);
             if (odlozone > 0)
-              ustawToast({ tekst: t('mieszane.odlozono', { liczba: odlozone }), cofnij: true });
+              ustawToast({ tekst: tn('mieszane.odlozono', odlozone), cofnij: true });
           }
         }}
         naKartce={naKartce(arkuszZazn)}
@@ -1309,14 +1314,10 @@ export function EdytorKartki({
   const brakujaceWarianty = useMemo(
     () =>
       kartki.length && zasoby
-        ? [...zasoby.czcionki.brakujaceWarianty.values()].map((b) =>
-            t('czcionki.brakWariantu', {
-              nazwa: tJesliJest(`rola.${b.nazwa}`) ?? b.nazwa,
-              wariant: t(`wariant.${b.wariant}`),
-            }),
-          )
+        ? komunikatyBrakujacychWariantow([...zasoby.czcionki.brakujaceWarianty.values()])
         : [],
-    [kartki, zasoby],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- teksty zależą od języka
+    [kartki, zasoby, jezykUi],
   );
 
   // --- Widok.
@@ -1686,10 +1687,9 @@ function WidokKartki({
           <div key={s} className="strona-opakowanie">
             <div className="etykieta-strony">
               {mieszane
-                ? t('mieszane.zajete', {
+                ? tn('mieszane.zajete', kartyMieszane.length, {
                     numer: s + 1,
                     liczba: liczbaStron,
-                    kart: kartyMieszane.length,
                     procent: polePol > 0 ? Math.round((zajetePole / polePol) * 100) : 0,
                   })
                 : t('kartka.strona', { numer: s + 1, liczba: liczbaStron })}

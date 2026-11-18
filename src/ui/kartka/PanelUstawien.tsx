@@ -8,7 +8,7 @@ import {
   ustawUstawieniaArkusza,
 } from '../../dane/edycja';
 import { BladDanych } from '../../dane/schemat';
-import { t, tJesliJest } from '../../i18n';
+import { formatujLiczbe, t, tJesliJest } from '../../i18n';
 import {
   czyFormatZdjeciowy,
   MARGINES_BEZPIECZENSTWA_FOTO,
@@ -29,7 +29,7 @@ import type { ProjektWEdycji } from '../useProjekt';
 const MIN_PAPIER = 20;
 const MAX_PAPIER = 1000;
 
-const zaokr = (x: number) => String(Math.round(x * 10) / 10).replace('.', ',');
+const zaokr = (x: number) => formatujLiczbe(x, 1);
 
 /**
  * Zmiana papieru. Format zdjęciowy: strefa bezpieczeństwa 3 mm i marginesy równe strefie (mały

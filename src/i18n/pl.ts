@@ -13,7 +13,7 @@ export const pl = {
   'jezyk.pl': 'PL',
   'jezyk.en': 'EN',
   'jezyk.plOpis': 'Polski',
-  'jezyk.enOpis': 'English (wkrótce)',
+  'jezyk.enOpis': 'English',
   'motyw.grupa': 'Motyw',
   'motyw.jasny': 'Motyw jasny',
   'motyw.ciemny': 'Motyw ciemny',
@@ -39,7 +39,6 @@ export const pl = {
   'dane.ramka9Pusta': '„{gdzie}” ma źródło SVG bez rysunku – nic nie zostanie narysowane',
   'dane.ramka9BezObrazu':
     'Plik szablonu: ramka 9-slice „{id}” wskazuje obraz „{zasob}”, którego nie ma w paczce',
-  'dane.zaDuzoElementow': 'Biblioteka ozdobników przekroczyłaby limit {limit} elementów.',
   'dane.elementZProjektu':
     'Szablon odwołuje się do elementu ozdobnego „{id}”, którego nie ma w pliku – użyto elementu o tym id z projektu.',
   'dane.nieznanyElement':
@@ -168,6 +167,55 @@ export const pl = {
   'pole.zawartosc': 'Zawartość',
   'pole.skutek': 'Skutek',
   'pole.usuniecie': 'Usunięcie',
+  'pole.obrona': 'Obrona',
+  'pole.pojemnosc': 'Pojemność',
+  'pole.etykietaUsuniecia': 'Etykieta usunięcia',
+  'pakiet.nowaKartka': 'Moje karty',
+  'pakiet.typ.bron': 'Broń',
+  'pakiet.typ.zbroja': 'Zbroja',
+  'pakiet.typ.ekwipunek': 'Ekwipunek',
+  'pakiet.typ.zaklecie': 'Zaklęcie',
+  'pakiet.typ.stan': 'Stan',
+  'pakiet.typ.pusta': 'Pusta karta',
+  'pakiet.wariant.mausritter-bron': 'Broń',
+  'pakiet.wariant.mausritter-zbroja': 'Zbroja',
+  'pakiet.wariant.mausritter-przedmiot': 'Przedmiot',
+  'pakiet.wariant.mausritter-sakiewka': 'Sakiewka',
+  'pakiet.wariant.mausritter-zaklecie': 'Zaklęcie',
+  'pakiet.wariant.mausritter-stan': 'Stan',
+  'pakiet.wariant.mausritter-pusta': 'Pusta karta',
+  'pakiet.rozmiar.ciezka': 'ciężka',
+  'pakiet.rozmiar.lekka': 'lekka',
+  'pakiet.uklad.bron': 'Broń i pancerze',
+  'pakiet.uklad.wyposazenie': 'Wyposażenie',
+  'pakiet.uklad.stany': 'Stany',
+  'pakiet.uklad.wszystkie': 'Wszystkie trzy',
+  'pakiet.arkusz.mausritter-arkusz-bron': 'Karty broni i pancerzy',
+  'pakiet.arkusz.mausritter-arkusz-wyposazenie': 'Karty niezbędnego wyposażenia',
+  'pakiet.arkusz.mausritter-arkusz-stany': 'Karty stanów',
+  'pakiet.grupa.wyczerpana.naglowek': 'Wyczerpana',
+  'pakiet.grupa.wyczerpana.opis':
+    'Najczęściej przyznawany stan. Pojawia się, gdy mysz pominie długi odpoczynek albo przegra próbę sił lub zręczności.',
+  'pakiet.grupa.przerazona.naglowek': 'Przerażona',
+  'pakiet.grupa.przerazona.opis': 'Skutek spotkania z grozą: potworem lub czarem.',
+  'pakiet.grupa.glodna.naglowek': 'Głodna',
+  'pakiet.grupa.glodna.opis': 'Cały dzień bez racji prowiantu.',
+  'pakiet.grupa.ranna.naglowek': 'Ranna',
+  'pakiet.grupa.ranna.opis':
+    'Ciężki stan. Pojawia się po krytycznym trafieniu, gdy rzut obronny na SF się nie powiedzie.',
+  'pakiet.grupa.niepoczytalna.naglowek': 'Niepoczytalna',
+  'pakiet.grupa.niepoczytalna.opis': 'Ciężki stan. Cena nieudanego rzucenia zaklęcia.',
+  'pakiet.grupa.wlasne.naglowek': 'Własne stany',
+  'pakiet.grupa.wlasne.opis':
+    'Puste karty na stany wymyślone przy stole: krótka nazwa, skutek i sposób pozbycia się kłopotu.',
+  'pakiet.param.etykietaUsuniecia': 'Usunięcie:',
+  'pakiet.param.obrona': '-1 obr',
+  'pakiet.param.pojemnosc': '/ 250p',
+  'gra.mausritter.nazwaDo': 'Mausrittera',
+  'gra.mausritter.opis':
+    'Karty ekwipunku i stanów w siatce slotów – broń, zbroje, przedmioty, zaklęcia, stany.',
+  'gra.mausritter.atrybucja':
+    'Układ kart według gry Mausritter (Isaac Williams, Losing Games). Pakiet nie zawiera grafik ani tekstów z materiałów do gry.',
   'czcionki.tytul': 'Czcionki',
   'czcionki.rolaEtykieta': 'Rodzina dla roli „{rola}”',
   'czcionki.brakRodziny': '(brak – czcionka zapasowa)',
@@ -274,15 +322,12 @@ export const pl = {
   'mieszane.odstep': 'Odstęp między kartami (mm)',
   'mieszane.naKartce': 'Na kartce',
   'mieszane.pozycja': '{nazwa} · {szer}×{wys} · {liczba} szt.',
-  'mieszane.zajete': 'Strona {numer} z {liczba} · {kart} kart · zajęte {procent} % pola kart',
   'mieszane.wlasnyUklad':
     'Własny układ arkusza (perforacja) działa tylko z jednym rozmiarem – przy „mieszane” jest wyłączony. Nagłówki grup: każda grupa zaczyna nowy pas.',
   'mieszane.przypiecia':
     'Przypięcia kart w slotach są w trybie „mieszane” ignorowane; po powrocie do siatki karty układają się od nowa.',
   'mieszane.przelaczono':
     'Kolejność własna: karty układane w kolejności listy. „Cofnij” przywraca poprzedni układ.',
-  'mieszane.odlozono':
-    '{liczba} kart odłożono – nie mieszczą się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
   'mieszane.dodajTutaj': 'Dodaj kartę w to miejsce (wolne {szer}×{wys} mm)',
   'mieszane.nieZmiesciSieTu': 'nie zmieści się tu',
   'mieszane.menuOpis':
@@ -867,7 +912,6 @@ export const pl = {
     'rysunek ma zbyt wiele komend (limit {limitKomend} po spłaszczeniu).',
   'biblioteka.blad.pusty': 'w pliku nie ma kształtów, które da się zaimportować.',
   'biblioteka.blad.wymiary': 'rysunek ma zerowy, zbyt duży lub niepoprawny rozmiar.',
-  'biblioteka.limit': 'Biblioteka może mieć najwyżej {limit} własnych elementów.',
   'biblioteka.uzyjJako': 'Użyj jako',
   'biblioteka.kolor': 'Kolor',
   'biblioteka.kolor.jednolity': 'jednolity (kolorowalny)',
@@ -937,7 +981,62 @@ export const pl = {
   'svg.pominieto.nieznany-kolor': 'nieznany kolor „{szczegoly}” – użyto czarnego',
   'svg.pominieto.bledna-sciezka': 'uszkodzona ścieżka lub lista punktów',
   'svg.pominieto.bledna-transformacja': 'niepoprawny zapis transform – użyto braku przekształcenia',
+  'svg.xml.tekstPozaGlownym': 'tekst poza elementem głównym',
+  'svg.xml.niezamknietyKomentarz': 'niezamknięty komentarz',
+  'svg.xml.niezamknietaCdata': 'niezamknięta sekcja CDATA',
+  'svg.xml.niezamknietaInstrukcja': 'niezamknięta instrukcja przetwarzania',
+  'svg.xml.niezamknietyDoctype': 'niezamknięty DOCTYPE',
+  'svg.xml.niezamknietyZnacznikZamykajacy': 'niezamknięty znacznik zamykający',
+  'svg.xml.nadmiarowyZnacznikZamykajacy': 'nadmiarowy znacznik zamykający',
+  'svg.xml.znacznikNiePasuje': 'znacznik </{a}> nie pasuje do <{b}>',
+  'svg.xml.pustaNazwa': 'pusta nazwa znacznika',
+  'svg.xml.niezamknietyZnacznik': 'niezamknięty znacznik',
+  'svg.xml.niepoprawnyZnacznik': 'niepoprawny znacznik',
+  'svg.xml.atrybutBezWartosci': 'atrybut „{nazwa}” bez wartości',
+  'svg.xml.atrybutBezCudzyslowu': 'atrybut „{nazwa}” bez cudzysłowu',
+  'svg.xml.niezamknietaWartosc': 'niezamknięta wartość atrybutu',
+  'svg.xml.wiecejNizJedenGlowny': 'więcej niż jeden element główny',
+  'svg.xml.niezamknietyElement': 'niezamknięty element <{nazwa}>',
+  'svg.xml.brakGlownego': 'brak elementu głównego',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;
 export type Slownik = Record<KluczTekstu, string>;
+
+/** Formy liczby mnogiej tekstu; `other` jest wymagane (liczby ułamkowe i brak innej formy). */
+export type FormyMnogie = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };
+
+/**
+ * Teksty z liczbą mnogą (`tn`). Polski ma formy one (1), few (2–4, 22–24…), many (0, 5–21…)
+ * i other (liczby ułamkowe); parametr `{n}` to liczba, według której wybrano formę.
+ */
+export const plMnoga = {
+  'mieszane.zajete': {
+    one: 'Strona {numer} z {liczba} · {n} karta · zajęte {procent} % pola kart',
+    few: 'Strona {numer} z {liczba} · {n} karty · zajęte {procent} % pola kart',
+    many: 'Strona {numer} z {liczba} · {n} kart · zajęte {procent} % pola kart',
+    other: 'Strona {numer} z {liczba} · {n} kart · zajęte {procent} % pola kart',
+  },
+  'mieszane.odlozono': {
+    one: '{n} kartę odłożono – nie mieści się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
+    few: '{n} karty odłożono – nie mieszczą się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
+    many: '{n} kart odłożono – nie mieszczą się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
+    other:
+      '{n} kart odłożono – nie mieszczą się w siatce o tym rozmiarze slotu. „Cofnij” przywraca mieszane rozmiary.',
+  },
+  'dane.zaDuzoElementow': {
+    one: 'Biblioteka ozdobników przekroczyłaby limit {n} elementu.',
+    few: 'Biblioteka ozdobników przekroczyłaby limit {n} elementów.',
+    many: 'Biblioteka ozdobników przekroczyłaby limit {n} elementów.',
+    other: 'Biblioteka ozdobników przekroczyłaby limit {n} elementu.',
+  },
+  'biblioteka.limit': {
+    one: 'Biblioteka może mieć najwyżej {n} własny element.',
+    few: 'Biblioteka może mieć najwyżej {n} własne elementy.',
+    many: 'Biblioteka może mieć najwyżej {n} własnych elementów.',
+    other: 'Biblioteka może mieć najwyżej {n} własnego elementu.',
+  },
+} as const satisfies Record<string, FormyMnogie>;
+
+export type KluczMnogi = keyof typeof plMnoga;
+export type SlownikMnogi = Record<KluczMnogi, FormyMnogie>;
