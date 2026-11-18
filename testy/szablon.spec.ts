@@ -31,6 +31,7 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
   await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Karta testowa');
   await expect(element(page, /^Tytuł – Tekst/)).toBeVisible();
+  await expect(element(page, /^Karta – /)).toHaveAttribute('aria-expanded', 'true');
   await expect(element(page, /^Opis – Tekst/)).toBeVisible();
 
   // Klik w podglądzie zaznacza element w drzewie.

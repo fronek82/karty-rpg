@@ -64,9 +64,16 @@ test('eksport → import jako kopia → lista z miniaturą → usunięcie', asyn
   await expect(page.locator('.kafelek-projektu')).toHaveCount(2);
   await expect(page.locator('.kafelek-projektu .miniatura img').first()).toBeVisible();
   await expect(page.locator('.kafelek-projektu').first()).toContainText('stron: 1, kart: 51');
-  await page.getByRole('button', { name: 'Usuń projekt Broń i pancerze (kopia)' }).click();
+  const usun = page.getByRole('button', { name: 'Usuń projekt Broń i pancerze (kopia)' });
+  await usun.press('Enter');
+  const dialog = page.getByRole('alertdialog');
+  await expect(dialog.getByRole('button', { name: 'Anuluj' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(usun).toBeFocused();
+  await usun.press('Enter');
   await page.getByRole('alertdialog').getByRole('button', { name: 'Usuń' }).click();
   await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+  await expect(page.getByRole('heading', { name: 'Moje projekty' })).toBeFocused();
 });
 
 test('projekt sprzed edytora (ilości, bez przypięć, grupy) otwiera się jako zwykłe karty', async ({

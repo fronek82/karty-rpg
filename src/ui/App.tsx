@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { t } from '../i18n';
 import { useJezyk } from '../i18n/react';
 import { GranicaBledu } from './GranicaBledu';
@@ -39,6 +39,56 @@ export function App() {
   // Zmiana języka przerysowuje całe drzewo (teksty czytane przy renderze) bez utraty stanu.
   useJezyk();
   const trasa = useTrasa();
+  const tresc = useRef<HTMLElement>(null);
+  const poprzedniaTrasa = useRef(trasa);
+  useEffect(() => {
+    if (poprzedniaTrasa.current === trasa) return;
+    poprzedniaTrasa.current = trasa;
+    const obszar = tresc.current;
+    if (!obszar) return;
+    const poczatkowyFokus = document.activeElement;
+    const przeniesFokus = () => {
+      // Suspense może ukryć poprzedni widok, nadal trzymając jego nagłówek w DOM.
+      const naglowek = Array.from(obszar.querySelectorAll<HTMLElement>('h1, [role=alert]')).find(
+        (el) => el.getClientRects().length > 0,
+      );
+      if (!naglowek) return false;
+      if (document.activeElement === poczatkowyFokus || document.activeElement === document.body) {
+        naglowek.setAttribute('tabindex', '-1');
+        naglowek.focus({ preventScroll: true });
+        return document.activeElement === naglowek;
+      }
+      return true;
+    };
+    if (przeniesFokus()) return;
+    // Leniwa trasa lub projekt może jeszcze czekać na dane.
+    const obserwator = new MutationObserver(() => {
+      if (przeniesFokus()) obserwator.disconnect();
+    });
+    obserwator.observe(obszar, {
+      childList: true,
+      subtree: true,
+      attributeFilter: ['style', 'hidden'],
+    });
+    return () => obserwator.disconnect();
+  }, [trasa]);
+
+  const pominPasek = (
+    <a
+      className="pomin-pasek"
+      href="#tresc-aplikacji"
+      onClick={(e) => {
+        e.preventDefault();
+        const cel = tresc.current?.querySelector('h1') ?? tresc.current;
+        if (cel) {
+          cel.setAttribute('tabindex', '-1');
+          cel.focus();
+        }
+      }}
+    >
+      {t('instrukcja.doTresci')}
+    </a>
+  );
   const dopasowanie = /^\/projekt\/([^/]+)(?:\/(.*))?$/.exec(trasa);
   const projekt = dopasowanie?.[1];
   const podtrasa = dopasowanie?.[2] ?? '';
@@ -57,17 +107,26 @@ export function App() {
     // Edytor kartki zajmuje cały ekran (własny pasek górny).
     return (
       <div className="aplikacja">
-        <Leniwa>
-          <EdytorStrona key={projekt} id={decodeURIComponent(projekt)} podtrasa={podtrasa} />
-        </Leniwa>
+        {pominPasek}
+        <main ref={tresc} id="tresc-aplikacji" tabIndex={-1}>
+          <Leniwa>
+            <EdytorStrona key={projekt} id={decodeURIComponent(projekt)} podtrasa={podtrasa} />
+          </Leniwa>
+        </main>
       </div>
     );
   }
 
   return (
     <div className="aplikacja">
+      {pominPasek}
       <NaglowekAplikacji />
-      <main className={szerokaTresc ? 'tresc tresc-start' : 'tresc'}>
+      <main
+        ref={tresc}
+        id="tresc-aplikacji"
+        tabIndex={-1}
+        className={szerokaTresc ? 'tresc tresc-start' : 'tresc'}
+      >
         {trasa === '/' || dawna ? (
           <Leniwa>
             <Start />
