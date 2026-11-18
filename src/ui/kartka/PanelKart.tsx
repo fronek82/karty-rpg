@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { kolumnySzablonu } from '../../dane/edycja';
 import { nazwaKarty } from '../../dane/szablon';
 import {
-  egzemplarzeKarty,
+  liczbaEgzemplarzyKarty,
   MAKS_EGZEMPLARZY,
   mozliweRozmiary,
   ustawLiczbeEgzemplarzy,
@@ -94,7 +94,7 @@ export function PanelKart({
   const szablonIds = new Set(karty.map((k) => k.karta.szablonId));
   const szablon = szablonIds.size === 1 ? ctx.szablony.get([...szablonIds][0]!) : undefined;
   const jedna = karty.length === 1 ? karty[0] : undefined;
-  const liczbaKopii = jedna ? egzemplarzeKarty(projekt, arkusz.id, jedna.karta.id).length : 0;
+  const liczbaKopii = jedna ? liczbaEgzemplarzyKarty(projekt, arkusz.id, jedna.karta.id) : 0;
   const zatwierdzKopie = (liczba: number) => {
     ustawWpisaneKopie(undefined);
     if (jedna) zmien((p) => ustawLiczbeEgzemplarzy(p, arkusz.id, jedna.karta.id, liczba, ctx));

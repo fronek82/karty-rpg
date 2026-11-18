@@ -13,6 +13,7 @@ import {
   duplikujKarty,
   duplikujKartyMieszane,
   egzemplarzeKarty,
+  liczbaEgzemplarzyKarty,
   ustawLiczbeEgzemplarzy,
   kartyKartki,
   naMieszane,
@@ -406,3 +407,28 @@ it.each([false, true])(
     expect(egzemplarzeKarty(usunKarty(dwa, A, [kartaId]), A, ids[1]!)).toEqual([ids[1]]);
   },
 );
+
+it('liczy i aktualizuje widoczne sztuki z importowanej talii mieszanej', () => {
+  const { projekt, kartaId } = dodajKarteMieszane(naMieszane(pusty, A), A, BRON);
+  const taliaId = projekt.arkusze.find((a) => a.id === A)!.taliaId;
+  const stary = przygotujProjekt({
+    ...projekt,
+    talie: projekt.talie.map((t) =>
+      t.id === taliaId
+        ? {
+            ...t,
+            karty: t.karty.map((k) => (k.id === kartaId ? { ...k, ilosc: 3 } : k)),
+          }
+        : t,
+    ),
+  });
+  expect(liczbaEgzemplarzyKarty(stary, A, kartaId)).toBe(3);
+  const dwa = ustawLiczbeEgzemplarzy(stary, A, kartaId, 2, ctx);
+  expect(liczbaEgzemplarzyKarty(dwa, A, kartaId)).toBe(2);
+  expect(egzemplarzeKarty(dwa, A, kartaId)).toEqual([kartaId]);
+  const cztery = ustawLiczbeEgzemplarzy(dwa, A, kartaId, 4, ctx);
+  expect(liczbaEgzemplarzyKarty(cztery, A, kartaId)).toBe(4);
+  expect(
+    liczbaEgzemplarzyKarty(ustawLiczbeEgzemplarzy(cztery, A, kartaId, 1, ctx), A, kartaId),
+  ).toBe(1);
+});

@@ -414,6 +414,32 @@ export function egzemplarzeKarty(p: Projekt, arkuszId: string, id: string): stri
   return [oryginal.id, ...kopie.map((k) => k.id)];
 }
 
+function egzemplarzeNaKartce(p: Projekt, arkuszId: string, id: string) {
+  const { arkusz, talia } = arkuszITalia(p, arkuszId);
+  const ids = egzemplarzeKarty(p, arkuszId, id);
+  const mieszane = czyMieszane(arkusz);
+  // Stare talie mieszane mogą przechowywać kilka sztuk w jednym rekordzie. Odłożone karty
+  // pozostają w talii, ale nie należą do egzemplarzy widocznych na kartce.
+  const ilosci = mieszane
+    ? new Map(talia.karty.map((k) => [k.id, k.ilosc]))
+    : new Map(arkusz.przypiete?.map((k) => [k.kartaId, 1]));
+  const widoczne = ids.flatMap((id) => {
+    const ilosc = ilosci.get(id) ?? 0;
+    return ilosc > 0 ? [{ id, ilosc }] : [];
+  });
+  return {
+    arkusz,
+    talia,
+    mieszane,
+    widoczne,
+    lacznie: widoczne.reduce((suma, k) => suma + k.ilosc, 0),
+  };
+}
+
+export function liczbaEgzemplarzyKarty(p: Projekt, arkuszId: string, id: string): number {
+  return egzemplarzeNaKartce(p, arkuszId, id).lacznie;
+}
+
 export const MAKS_EGZEMPLARZY = 100;
 
 export function ustawLiczbeEgzemplarzy(
@@ -424,22 +450,34 @@ export function ustawLiczbeEgzemplarzy(
   ctx: KontekstKartki,
 ): Projekt {
   if (!Number.isInteger(liczba) || liczba < 1) return p;
-  const ids = egzemplarzeKarty(p, arkuszId, id);
-  const oryginal = ids[0];
-  if (!oryginal || liczba === ids.length) return p;
-  if (liczba < ids.length) return usunKarty(p, arkuszId, ids.slice(liczba));
+  const { arkusz, talia, mieszane, widoczne, lacznie } = egzemplarzeNaKartce(p, arkuszId, id);
+  const zrodlo = widoczne[0]?.id;
+  if (!zrodlo || liczba === lacznie) return p;
+  if (liczba < lacznie) {
+    const usuwane: string[] = [];
+    let nadmiar = lacznie - liczba;
+    let projekt = p;
+    for (const k of widoczne.toReversed()) {
+      if (nadmiar === 0) break;
+      if (nadmiar >= k.ilosc) usuwane.push(k.id);
+      else {
+        const ilosc = k.ilosc - nadmiar;
+        projekt = zmienKartke(p, arkuszId, (a, t) => ({
+          arkusz: a,
+          talia: { ...t, karty: t.karty.map((x) => (x.id === k.id ? { ...x, ilosc } : x)) },
+        }));
+      }
+      nadmiar = Math.max(0, nadmiar - k.ilosc);
+    }
+    return usuwane.length ? usunKarty(projekt, arkuszId, usuwane) : projekt;
+  }
   if (liczba > MAKS_EGZEMPLARZY) return p;
-  const { arkusz, talia } = arkuszITalia(p, arkuszId);
-  const ile = liczba - ids.length;
-  if (czyMieszane(arkusz)) {
-    const kolejnosc = kolejnoscKartki(arkusz, talia);
-    const grupa = new Set(ids);
-    const za = kolejnosc.findLast((k) => grupa.has(k));
-    const zrodlo = kolejnosc.includes(oryginal) ? oryginal : id;
+  const ile = liczba - lacznie;
+  if (mieszane) {
+    const grupa = new Set(widoczne.map((k) => k.id));
+    const za = kolejnoscKartki(arkusz, talia).findLast((k) => grupa.has(k));
     return duplikujKartyMieszane(p, arkuszId, [zrodlo], ile, za).projekt;
   }
-  const widoczne = kartyKartki(p, arkuszId, ctx.szablony);
-  const zrodlo = widoczne.some((k) => k.karta.id === oryginal) ? oryginal : id;
   return duplikujKarty(p, arkuszId, [zrodlo], ile, ctx).projekt;
 }
 
