@@ -408,6 +408,87 @@ export function duplikujWezel(
   return { szablon: wstawDo(s, r.rodzic.id, r.indeks + 1, kopiaWPozycji), id: poprawiona.id };
 }
 
+// --- Duplikowanie szablonu.
+
+const escRegExp = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Nazwa kopii szablonu: „Nazwa (kopia)”, przy kolejnych „Nazwa (kopia 2)”, „(kopia 3)”… – pierwsza
+ * wolna wśród `istniejace`. Kopia kopii wychodzi od nazwy bez dopisku („Nazwa (kopia)” → „Nazwa (kopia 2)”).
+ * `sufiks(n)` to dopisek z i18n: `sufiks(1)` = „(kopia)”, `sufiks(n)` = „(kopia n)”.
+ */
+export function nazwaKopiiSzablonu(
+  nazwa: string,
+  istniejace: Iterable<string>,
+  sufiks: (n: number) => string,
+): string {
+  const zajete = new Set(istniejace);
+  // Wzorzec dopisku zbudowany z `sufiks(2)` (liczba → \d+) – działa w każdym języku.
+  const dwa = escRegExp(sufiks(2)).replace('2', '\\d+');
+  const dopisek = new RegExp(`\\s+(?:${escRegExp(sufiks(1))}|${dwa})$`);
+  const baza = nazwa.replace(dopisek, '') || nazwa;
+  for (let n = 1; ; n++) {
+    const kandydat = `${baza} ${sufiks(n)}`;
+    if (!zajete.has(kandydat)) return kandydat;
+  }
+}
+
+/**
+ * Głęboka kopia szablonu pod nowym `id` i nazwą: wszystkie węzły (korzeń i warianty układu) dostają
+ * NOWE identyfikatory (rozłączne z oryginałem), a odwołania wewnątrz szablonu (`omijaj` obrazów)
+ * są przepisane. Rozmiar, ramka, ozdobniki, położenia swobodne, klucze danych i dane przykładowe
+ * zostają. `podklad` wskazuje ten sam zasób biblioteki, elementy biblioteki (ozdobniki, motywy)
+ * – te same identyfikatory. Nic nie jest współdzielone z oryginałem (żaden obiekt).
+ */
+export function duplikujSzablon(s: Szablon, id: string, nazwa: string): Szablon {
+  const kopia = structuredClone(s);
+  const zajete = new Set(wszystkieWezly(s).map((w) => w.id));
+  const nowe = new Map<string, string>();
+  const przepisz = (w: Wezel): Wezel => {
+    const baza = w.id.replace(/-\d+$/, '') || w.id;
+    const nid = unikalneId(baza, zajete);
+    zajete.add(nid);
+    nowe.set(w.id, nid);
+    const x = { ...w, id: nid } as Wezel;
+    return czyKontener(x) ? { ...x, dzieci: x.dzieci.map(przepisz) } : x;
+  };
+  const korzen = przepisz(kopia.korzen) as Kontener;
+  const warianty = kopia.warianty?.map((v) => ({ ...v, korzen: przepisz(v.korzen) as Kontener }));
+  const popraw = (w: Wezel): Wezel => {
+    if (czyKontener(w)) return { ...w, dzieci: w.dzieci.map(popraw) };
+    return w.typ === 'obraz' && w.omijaj
+      ? { ...w, omijaj: w.omijaj.map((o) => nowe.get(o) ?? o) }
+      : w;
+  };
+  return {
+    ...kopia,
+    id,
+    nazwa,
+    korzen: popraw(korzen) as Kontener,
+    ...(warianty ? { warianty: warianty.map((v) => ({ ...v, korzen: popraw(v.korzen) as Kontener })) } : {}),
+  };
+}
+
+/**
+ * Duplikuje szablon w projekcie: kopia trafia tuż za oryginałem. Zwraca nowy projekt i `id` kopii
+ * (pusty, gdy szablonu nie ma). Karty projektu nadal używają oryginału.
+ */
+export function duplikujSzablonWProjekcie(
+  p: Projekt,
+  szablonId: string,
+  sufiks: (n: number) => string,
+): { projekt: Projekt; id: string } {
+  const i = p.szablony.findIndex((x) => x.id === szablonId);
+  const s = p.szablony[i];
+  if (!s) return { projekt: p, id: '' };
+  const id = unikalneId(`${s.id.replace(/-kopia(-\d+)?$/, '')}-kopia`, new Set(p.szablony.map((x) => x.id)));
+  const nazwa = nazwaKopiiSzablonu(s.nazwa, p.szablony.map((x) => x.nazwa), sufiks);
+  const kopia = duplikujSzablon(s, id, nazwa);
+  const szablony = [...p.szablony];
+  szablony.splice(i + 1, 0, kopia);
+  return { projekt: { ...p, zmieniono: new Date().toISOString(), szablony }, id };
+}
+
 // --- Projekt.
 
 /** Zmiana szablonu w projekcie (bez zmiany kart). */
