@@ -95,7 +95,7 @@ export function WlasneKarty() {
       try {
         return { id: await nowyProjektZPrzykladu(await opis.laduj()) };
       } catch (e) {
-        throw new Error(opisBleduImportu(e));
+        throw new Error(opisBleduImportu(e), { cause: e });
       }
     });
 
