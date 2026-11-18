@@ -1,0 +1,3528 @@
+{
+ "mausritter-arkusz-bron": {
+  "strony": 1,
+  "poczatek": {
+   "x": 26.696,
+   "y": 12.822
+  },
+  "slot": {
+   "szerokosc": 25.75,
+   "wysokosc": 25.75
+  },
+  "siatka": {
+   "kolumny": 10,
+   "rzedy": 7,
+   "grupy": false
+  },
+  "ostrzezenia": [],
+  "polozone": {
+   "karty": [
+    {
+     "karta": {
+      "id": "bron-improwizowana",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6",
+       "klasa": "Improwizowana",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-improwizowana",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6",
+       "klasa": "Improwizowana",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-improwizowana",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6",
+       "klasa": "Improwizowana",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-improwizowana",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6",
+       "klasa": "Improwizowana",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "amunicja-kamienie",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Kamienie",
+       "klasa": "Amunicja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "amunicja-kamienie",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Kamienie",
+       "klasa": "Amunicja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "amunicja-kamienie",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Kamienie",
+       "klasa": "Amunicja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zbroja-ciezka",
+      "szablonId": "mausritter-zbroja",
+      "dane": {
+       "nazwa": "Ciężka zbroja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zbroja-ciezka",
+      "szablonId": "mausritter-zbroja",
+      "dane": {
+       "nazwa": "Ciężka zbroja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zbroja-ciezka",
+      "szablonId": "mausritter-zbroja",
+      "dane": {
+       "nazwa": "Ciężka zbroja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zbroja-lekka",
+      "szablonId": "mausritter-zbroja",
+      "dane": {
+       "nazwa": "Lekka zbroja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4,
+      "rozmiar": {
+       "kolumny": 2,
+       "rzedy": 1
+      }
+     },
+     "numer": 0,
+     "kolumny": 2,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zbroja-lekka",
+      "szablonId": "mausritter-zbroja",
+      "dane": {
+       "nazwa": "Lekka zbroja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4,
+      "rozmiar": {
+       "kolumny": 2,
+       "rzedy": 1
+      }
+     },
+     "numer": 1,
+     "kolumny": 2,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zbroja-lekka",
+      "szablonId": "mausritter-zbroja",
+      "dane": {
+       "nazwa": "Lekka zbroja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4,
+      "rozmiar": {
+       "kolumny": 2,
+       "rzedy": 1
+      }
+     },
+     "numer": 2,
+     "kolumny": 2,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zbroja-lekka",
+      "szablonId": "mausritter-zbroja",
+      "dane": {
+       "nazwa": "Lekka zbroja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4,
+      "rozmiar": {
+       "kolumny": 2,
+       "rzedy": 1
+      }
+     },
+     "numer": 3,
+     "kolumny": 2,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-igla",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Igła",
+       "wartosc": "k6",
+       "klasa": "Lekka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-igla",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Igła",
+       "wartosc": "k6",
+       "klasa": "Lekka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-igla",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Igła",
+       "wartosc": "k6",
+       "klasa": "Lekka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-sztylet",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Sztylet",
+       "wartosc": "k6",
+       "klasa": "Lekka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-sztylet",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Sztylet",
+       "wartosc": "k6",
+       "klasa": "Lekka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-sztylet",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Sztylet",
+       "wartosc": "k6",
+       "klasa": "Lekka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-lekka",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6",
+       "klasa": "Lekka"
+      },
+      "ilosc": 2
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-lekka",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6",
+       "klasa": "Lekka"
+      },
+      "ilosc": 2
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "amunicja-strzaly",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Strzały",
+       "klasa": "Amunicja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "amunicja-strzaly",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Strzały",
+       "klasa": "Amunicja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "amunicja-strzaly",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Strzały",
+       "klasa": "Amunicja",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-topor",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Topór",
+       "wartosc": "k6/k8",
+       "klasa": "Średnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-topor",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Topór",
+       "wartosc": "k6/k8",
+       "klasa": "Średnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-miecz",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Miecz",
+       "wartosc": "k6/k8",
+       "klasa": "Średnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-miecz",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Miecz",
+       "wartosc": "k6/k8",
+       "klasa": "Średnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-kiscien",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Kiścień",
+       "wartosc": "k6/k8",
+       "klasa": "Średnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-kiscien",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Kiścień",
+       "wartosc": "k6/k8",
+       "klasa": "Średnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-srednia",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6/k8",
+       "klasa": "Średnia"
+      },
+      "ilosc": 2
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-srednia",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6/k8",
+       "klasa": "Średnia"
+      },
+      "ilosc": 2
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-ciezka",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k10",
+       "klasa": "Ciężka"
+      },
+      "ilosc": 2,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-ciezka",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k10",
+       "klasa": "Ciężka"
+      },
+      "ilosc": 2,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-proca",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Proca",
+       "wartosc": "k6",
+       "klasa": "Lekka dystansowa",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-proca",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Proca",
+       "wartosc": "k6",
+       "klasa": "Lekka dystansowa",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-proca",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Proca",
+       "wartosc": "k6",
+       "klasa": "Lekka dystansowa",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 9,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-lekka-dystansowa",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6",
+       "klasa": "Lekka dystansowa"
+      },
+      "ilosc": 3
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-lekka-dystansowa",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6",
+       "klasa": "Lekka dystansowa"
+      },
+      "ilosc": 3
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-lekka-dystansowa",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k6",
+       "klasa": "Lekka dystansowa"
+      },
+      "ilosc": 3
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 9,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-mlot-bojowy",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Młot bojowy",
+       "wartosc": "k10",
+       "klasa": "Ciężka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-mlot-bojowy",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Młot bojowy",
+       "wartosc": "k10",
+       "klasa": "Ciężka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-wlocznia",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Włócznia",
+       "wartosc": "k10",
+       "klasa": "Ciężka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-wlocznia",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Włócznia",
+       "wartosc": "k10",
+       "klasa": "Ciężka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-hak",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Hak",
+       "wartosc": "k10",
+       "klasa": "Ciężka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-hak",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Hak",
+       "wartosc": "k10",
+       "klasa": "Ciężka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 2,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-pusta-ciezka-dystansowa",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "",
+       "wartosc": "k8",
+       "klasa": "Ciężka dystansowa"
+      },
+      "ilosc": 1,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-luk",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Łuk",
+       "wartosc": "k8",
+       "klasa": "Ciężka dystansowa",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-luk",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Łuk",
+       "wartosc": "k8",
+       "klasa": "Ciężka dystansowa",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "bron-luk",
+      "szablonId": "mausritter-bron",
+      "dane": {
+       "nazwa": "Łuk",
+       "wartosc": "k8",
+       "klasa": "Ciężka dystansowa",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 3,
+      "rozmiar": {
+       "kolumny": 1,
+       "rzedy": 2
+      }
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 2,
+     "strona": 0,
+     "kolumna": 9,
+     "rzad": 5,
+     "xRegionu": 0
+    }
+   ],
+   "regiony": [],
+   "liczbaStron": 1,
+   "ostrzezenia": []
+  }
+ },
+ "mausritter-arkusz-wyposazenie": {
+  "strony": 1,
+  "poczatek": {
+   "x": 26.696,
+   "y": 12.822
+  },
+  "slot": {
+   "szerokosc": 25.75,
+   "wysokosc": 25.75
+  },
+  "siatka": {
+   "kolumny": 10,
+   "rzedy": 7,
+   "grupy": false
+  },
+  "ostrzezenia": [],
+  "polozone": {
+   "karty": [
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 6,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 6,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 7,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 8,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-pochodnie",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Pochodnie",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 10
+     },
+     "numer": 9,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 6,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-latarnia",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Latarnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-latarnia",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Latarnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-latarnia",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Latarnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-latarnia",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Latarnia",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 4
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-latarnia-elektryczna",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Latarnia elektr.",
+       "obraz": "mausritter/zastepczy",
+       "uzycia": "6"
+      },
+      "ilosc": 4
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-latarnia-elektryczna",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Latarnia elektr.",
+       "obraz": "mausritter/zastepczy",
+       "uzycia": "6"
+      },
+      "ilosc": 4
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-latarnia-elektryczna",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Latarnia elektr.",
+       "obraz": "mausritter/zastepczy",
+       "uzycia": "6"
+      },
+      "ilosc": 4
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-latarnia-elektryczna",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Latarnia elektr.",
+       "obraz": "mausritter/zastepczy",
+       "uzycia": "6"
+      },
+      "ilosc": 4
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "sakiewka",
+      "szablonId": "mausritter-sakiewka",
+      "dane": {
+       "nazwa": "Sakiewka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "sakiewka",
+      "szablonId": "mausritter-sakiewka",
+      "dane": {
+       "nazwa": "Sakiewka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "sakiewka",
+      "szablonId": "mausritter-sakiewka",
+      "dane": {
+       "nazwa": "Sakiewka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "sakiewka",
+      "szablonId": "mausritter-sakiewka",
+      "dane": {
+       "nazwa": "Sakiewka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "sakiewka",
+      "szablonId": "mausritter-sakiewka",
+      "dane": {
+       "nazwa": "Sakiewka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "sakiewka",
+      "szablonId": "mausritter-sakiewka",
+      "dane": {
+       "nazwa": "Sakiewka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "sakiewka",
+      "szablonId": "mausritter-sakiewka",
+      "dane": {
+       "nazwa": "Sakiewka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 6,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "sakiewka",
+      "szablonId": "mausritter-sakiewka",
+      "dane": {
+       "nazwa": "Sakiewka",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 7,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-prowiant",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Prowiant",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-prowiant",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Prowiant",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-prowiant",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Prowiant",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-prowiant",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Prowiant",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-prowiant",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Prowiant",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-prowiant",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Prowiant",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-prowiant",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Prowiant",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 6,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "przedmiot-prowiant",
+      "szablonId": "mausritter-przedmiot",
+      "dane": {
+       "nazwa": "Prowiant",
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 8
+     },
+     "numer": 7,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zaklecie",
+      "szablonId": "mausritter-zaklecie",
+      "dane": {
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 9
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zaklecie",
+      "szablonId": "mausritter-zaklecie",
+      "dane": {
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 9
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zaklecie",
+      "szablonId": "mausritter-zaklecie",
+      "dane": {
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 9
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 6,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zaklecie",
+      "szablonId": "mausritter-zaklecie",
+      "dane": {
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 9
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zaklecie",
+      "szablonId": "mausritter-zaklecie",
+      "dane": {
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 9
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zaklecie",
+      "szablonId": "mausritter-zaklecie",
+      "dane": {
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 9
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 3,
+     "rzad": 6,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zaklecie",
+      "szablonId": "mausritter-zaklecie",
+      "dane": {
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 9
+     },
+     "numer": 6,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zaklecie",
+      "szablonId": "mausritter-zaklecie",
+      "dane": {
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 9
+     },
+     "numer": 7,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "zaklecie",
+      "szablonId": "mausritter-zaklecie",
+      "dane": {
+       "obraz": "mausritter/zastepczy"
+      },
+      "ilosc": 9
+     },
+     "numer": 8,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 4,
+     "rzad": 6,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 6,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 9,
+     "rzad": 0,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 7,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 9,
+     "rzad": 1,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 8,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 9,
+     "rzad": 2,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 9,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 10,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 11,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 12,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 5,
+     "rzad": 6,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 13,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 14,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 15,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 6,
+     "rzad": 6,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 16,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 17,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-1x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 19
+     },
+     "numer": 18,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 7,
+     "rzad": 6,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-2x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 4,
+      "rozmiar": {
+       "kolumny": 2,
+       "rzedy": 1
+      }
+     },
+     "numer": 0,
+     "kolumny": 2,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 3,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-2x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 4,
+      "rozmiar": {
+       "kolumny": 2,
+       "rzedy": 1
+      }
+     },
+     "numer": 1,
+     "kolumny": 2,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 4,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-2x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 4,
+      "rozmiar": {
+       "kolumny": 2,
+       "rzedy": 1
+      }
+     },
+     "numer": 2,
+     "kolumny": 2,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 5,
+     "xRegionu": 0
+    },
+    {
+     "karta": {
+      "id": "pusta-2x1",
+      "szablonId": "mausritter-pusta",
+      "dane": {},
+      "ilosc": 4,
+      "rozmiar": {
+       "kolumny": 2,
+       "rzedy": 1
+      }
+     },
+     "numer": 3,
+     "kolumny": 2,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 8,
+     "rzad": 6,
+     "xRegionu": 0
+    }
+   ],
+   "regiony": [],
+   "liczbaStron": 1,
+   "ostrzezenia": []
+  }
+ },
+ "mausritter-arkusz-stany": {
+  "strony": 1,
+  "poczatek": {
+   "x": 12.542,
+   "y": 42.491
+  },
+  "slot": {
+   "szerokosc": 25.75,
+   "wysokosc": 25.75
+  },
+  "siatka": {
+   "kolumny": 10,
+   "rzedy": 6,
+   "grupy": true
+  },
+  "ostrzezenia": [],
+  "polozone": {
+   "karty": [
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 0,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 1,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 2,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 3,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 4,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 5,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 6,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 0,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 7,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 1,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 8,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 2,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 9,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 3,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 10,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 4,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 11,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 5,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 12,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 0,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 13,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 1,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 14,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 2,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 15,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 3,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 16,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 4,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-wyczerpana",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Wyczerpana",
+       "usuniecie": "Długi odpoczynek"
+      },
+      "ilosc": 18
+     },
+     "numer": 17,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 2,
+     "rzad": 5,
+     "xRegionu": 0,
+     "grupaId": "wyczerpana"
+    },
+    {
+     "karta": {
+      "id": "stan-przerazona",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Przerażona",
+       "skutek": "Zdaj test SW, aby\nstawić czoła lękowi",
+       "usuniecie": "Krótki odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 0,
+     "xRegionu": 80.145,
+     "grupaId": "przerazona"
+    },
+    {
+     "karta": {
+      "id": "stan-przerazona",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Przerażona",
+       "skutek": "Zdaj test SW, aby\nstawić czoła lękowi",
+       "usuniecie": "Krótki odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 1,
+     "xRegionu": 80.145,
+     "grupaId": "przerazona"
+    },
+    {
+     "karta": {
+      "id": "stan-przerazona",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Przerażona",
+       "skutek": "Zdaj test SW, aby\nstawić czoła lękowi",
+       "usuniecie": "Krótki odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 2,
+     "xRegionu": 80.145,
+     "grupaId": "przerazona"
+    },
+    {
+     "karta": {
+      "id": "stan-przerazona",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Przerażona",
+       "skutek": "Zdaj test SW, aby\nstawić czoła lękowi",
+       "usuniecie": "Krótki odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 3,
+     "xRegionu": 80.145,
+     "grupaId": "przerazona"
+    },
+    {
+     "karta": {
+      "id": "stan-przerazona",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Przerażona",
+       "skutek": "Zdaj test SW, aby\nstawić czoła lękowi",
+       "usuniecie": "Krótki odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 4,
+     "xRegionu": 80.145,
+     "grupaId": "przerazona"
+    },
+    {
+     "karta": {
+      "id": "stan-przerazona",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Przerażona",
+       "skutek": "Zdaj test SW, aby\nstawić czoła lękowi",
+       "usuniecie": "Krótki odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 5,
+     "xRegionu": 80.145,
+     "grupaId": "przerazona"
+    },
+    {
+     "karta": {
+      "id": "stan-glodna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Głodna",
+       "usuniecie": "Spożycie posiłku"
+      },
+      "ilosc": 6
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 0,
+     "xRegionu": 108.78999999999999,
+     "grupaId": "glodna"
+    },
+    {
+     "karta": {
+      "id": "stan-glodna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Głodna",
+       "usuniecie": "Spożycie posiłku"
+      },
+      "ilosc": 6
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 1,
+     "xRegionu": 108.78999999999999,
+     "grupaId": "glodna"
+    },
+    {
+     "karta": {
+      "id": "stan-glodna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Głodna",
+       "usuniecie": "Spożycie posiłku"
+      },
+      "ilosc": 6
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 2,
+     "xRegionu": 108.78999999999999,
+     "grupaId": "glodna"
+    },
+    {
+     "karta": {
+      "id": "stan-glodna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Głodna",
+       "usuniecie": "Spożycie posiłku"
+      },
+      "ilosc": 6
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 3,
+     "xRegionu": 108.78999999999999,
+     "grupaId": "glodna"
+    },
+    {
+     "karta": {
+      "id": "stan-glodna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Głodna",
+       "usuniecie": "Spożycie posiłku"
+      },
+      "ilosc": 6
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 4,
+     "xRegionu": 108.78999999999999,
+     "grupaId": "glodna"
+    },
+    {
+     "karta": {
+      "id": "stan-glodna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Głodna",
+       "usuniecie": "Spożycie posiłku"
+      },
+      "ilosc": 6
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 5,
+     "xRegionu": 108.78999999999999,
+     "grupaId": "glodna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 0,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 1,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 2,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 3,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 4,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 5,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 6,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 0,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 7,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 1,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 8,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 2,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 9,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 3,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 10,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 4,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-ranna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Ranna",
+       "skutek": "Utrudnienie\nw testach SF i ZR",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 12
+     },
+     "numer": 11,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 5,
+     "xRegionu": 137.435,
+     "grupaId": "ranna"
+    },
+    {
+     "karta": {
+      "id": "stan-niepoczytalna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Niepoczytalna",
+       "skutek": "Utrudnienie\nw testach SW",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 0,
+     "xRegionu": 191.83,
+     "grupaId": "niepoczytalna"
+    },
+    {
+     "karta": {
+      "id": "stan-niepoczytalna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Niepoczytalna",
+       "skutek": "Utrudnienie\nw testach SW",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 1,
+     "xRegionu": 191.83,
+     "grupaId": "niepoczytalna"
+    },
+    {
+     "karta": {
+      "id": "stan-niepoczytalna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Niepoczytalna",
+       "skutek": "Utrudnienie\nw testach SW",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 2,
+     "xRegionu": 191.83,
+     "grupaId": "niepoczytalna"
+    },
+    {
+     "karta": {
+      "id": "stan-niepoczytalna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Niepoczytalna",
+       "skutek": "Utrudnienie\nw testach SW",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 3,
+     "xRegionu": 191.83,
+     "grupaId": "niepoczytalna"
+    },
+    {
+     "karta": {
+      "id": "stan-niepoczytalna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Niepoczytalna",
+       "skutek": "Utrudnienie\nw testach SW",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 4,
+     "xRegionu": 191.83,
+     "grupaId": "niepoczytalna"
+    },
+    {
+     "karta": {
+      "id": "stan-niepoczytalna",
+      "szablonId": "mausritter-stan",
+      "dane": {
+       "nazwa": "Niepoczytalna",
+       "skutek": "Utrudnienie\nw testach SW",
+       "usuniecie": "Pełny odpoczynek"
+      },
+      "ilosc": 6
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 5,
+     "xRegionu": 191.83,
+     "grupaId": "niepoczytalna"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 0,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 0,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 1,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 1,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 2,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 2,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 3,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 3,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 4,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 4,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 5,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 0,
+     "rzad": 5,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 6,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 0,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 7,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 1,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 8,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 2,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 9,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 3,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 10,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 4,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    },
+    {
+     "karta": {
+      "id": "stan-wlasny",
+      "szablonId": "mausritter-stan",
+      "dane": {},
+      "ilosc": 12
+     },
+     "numer": 11,
+     "kolumny": 1,
+     "rzedy": 1,
+     "strona": 0,
+     "kolumna": 1,
+     "rzad": 5,
+     "xRegionu": 220.47500000000002,
+     "grupaId": "wlasne"
+    }
+   ],
+   "regiony": [
+    {
+     "strona": 0,
+     "grupaId": "wyczerpana",
+     "x": 0,
+     "kolumny": 3
+    },
+    {
+     "strona": 0,
+     "grupaId": "przerazona",
+     "x": 80.145,
+     "kolumny": 1
+    },
+    {
+     "strona": 0,
+     "grupaId": "glodna",
+     "x": 108.78999999999999,
+     "kolumny": 1
+    },
+    {
+     "strona": 0,
+     "grupaId": "ranna",
+     "x": 137.435,
+     "kolumny": 2
+    },
+    {
+     "strona": 0,
+     "grupaId": "niepoczytalna",
+     "x": 191.83,
+     "kolumny": 1
+    },
+    {
+     "strona": 0,
+     "grupaId": "wlasne",
+     "x": 220.47500000000002,
+     "kolumny": 2
+    }
+   ],
+   "liczbaStron": 1,
+   "ostrzezenia": []
+  }
+ },
+ "pusty": {
+  "poczatek": {
+   "x": 24.54,
+   "y": 8
+  },
+  "slot": {
+   "szerokosc": 25.75,
+   "wysokosc": 25.75
+  },
+  "siatka": {
+   "kolumny": 10,
+   "rzedy": 7,
+   "grupy": false
+  }
+ },
+ "edycja": {
+  "poczatek": {
+   "x": 24.54,
+   "y": 8
+  },
+  "slot": {
+   "szerokosc": 25.75,
+   "wysokosc": 25.75
+  },
+  "siatka": {
+   "kolumny": 10,
+   "rzedy": 7,
+   "grupy": false
+  },
+  "ostrzezenia": [],
+  "uklad": [
+   [
+    "bron-sztylet",
+    0,
+    0
+   ],
+   [
+    "bron-miecz",
+    1,
+    0
+   ],
+   [
+    "zbroja-ciezka",
+    2,
+    0
+   ],
+   [
+    "przedmiot-pochodnie",
+    3,
+    0
+   ],
+   [
+    "przedmiot-latarnia",
+    4,
+    0
+   ],
+   [
+    "zaklecie",
+    5,
+    0
+   ],
+   [
+    "stan-ranna",
+    6,
+    0
+   ],
+   [
+    "sakiewka",
+    0,
+    1
+   ],
+   [
+    "bron-luk",
+    1,
+    1
+   ],
+   [
+    "przedmiot-prowiant",
+    3,
+    1
+   ],
+   [
+    "stan-glodna",
+    4,
+    1
+   ],
+   [
+    "bron-topor",
+    5,
+    1
+   ]
+  ]
+ }
+}

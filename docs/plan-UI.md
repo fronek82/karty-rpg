@@ -1,0 +1,202 @@
+# Plan UI – przebudowa interfejsu
+
+Kamień milowy po M2b (`docs/plan-M2b.md`). Zmienia **tylko warstwę interfejsu**: ekrany startowe, motyw kolorystyczny, język, instrukcję i kilka poprawek edytorów. **Silnik układu, PDF i format zapisu zostają bez zmian** (żadnej zmiany schematu `WERSJA_SCHEMATU`; wybór języka i motywu trafia do `localStorage`, nie do projektu).
+
+**Status:** projekt do akceptacji. Kod jeszcze nie powstał. Po akceptacji makiet i punktów z sekcji 6 realizacja etapami UI-1…UI-9 jednym ciągiem (sekcja 4).
+
+Makiety (`docs/obrazy/`, źródła HTML i skrypt generujący w `docs/makiety-ui/`; podglądy kart i arkuszy są **wyrenderowane prawdziwym silnikiem**):
+
+| Plik                                                | Co pokazuje                                                               |
+| --------------------------------------------------- | ------------------------------------------------------------------------- |
+| `makieta-ui-czcionka-1-cinzel-decorative.png`       | Wariant tytułu 1: Cinzel Decorative Bold                                  |
+| `makieta-ui-czcionka-2-uncial-antiqua.png`          | Wariant tytułu 2: Uncial Antiqua                                          |
+| `makieta-ui-czcionka-3-metamorphous.png`            | Wariant tytułu 3: Metamorphous                                            |
+| `makieta-ui-1-start-jasny.png` / `-ciemny.png`      | Ekran startowy: tytuł, menu po lewej, „Moje projekty”, „Importuj pliki…”  |
+| `makieta-ui-2-mausritter-jasny.png` / `-ciemny.png` | „Stwórz karty do Mausrittera”: menu i podglądy pustej kartki oraz układów |
+| `makieta-ui-3-wlasne-jasny.png` / `-ciemny.png`     | „Stwórz własne karty”: menu i podglądy przykładowych szablonów            |
+| `makieta-ui-4-edycja-jasny.png` / `-ciemny.png`     | Edytor kartki z nową paletą, paskiem górnym i menu typów kart bez ikon    |
+| `makieta-ui-5-instrukcja-jasny.png` / `-ciemny.png` | Osobna strona instrukcji ze spisem treści                                 |
+
+## 1. Cel i kryterium ukończenia
+
+Po przebudowie:
+
+- start to jeden czytelny ekran: tytuł, dwa przyciski po lewej, **Moje projekty** z miniaturami pośrodku, **Importuj pliki…** po prawej;
+- oba ekrany tworzenia (Mausritter, własne karty) pokazują **podglądy** tego, co się dostanie, zamiast opisów; kliknięcie podglądu zaczyna projekt;
+- cały interfejs działa po **polsku i angielsku**, język przełącza się u góry po prawej i jest zapamiętany;
+- **Instrukcja** (PL i EN) otwiera się z paska górnego w nowym oknie;
+- aplikacja ma **jasny i ciemny motyw** w jednej palecie, przełączany u góry po prawej i zapamiętany;
+- w edytorach działają poprawki z sekcji 3.9: duplikowanie szablonu, liczba kopii od razu, przeciąganie pól między kontenerami, wspólna zmiana rozmiaru wielu pól, drobne poprawki wyglądu przykładów.
+
+**Kryterium ukończenia:** wszystkie testy dotychczasowe zielone (wzorce PNG kart, arkuszy i przykładów A–F **nie zmieniają się**, bo generuje je silnik), nowe testy z sekcji 4, a ekrany wyglądają jak makiety w obu motywach i obu językach.
+
+Poza zakresem: nowe funkcje silnika, zmiany PDF i formatu plików, kolejne gry, urządzenia dotykowe (układ zaczyna się od szerokości ok. 900 px, na węższych kolumny układają się jedna pod drugą).
+
+## 2. Stan dziś
+
+| Potrzeba                        | Stan | Uwagi                                                                                                                                             |
+| ------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ekran startowy                  | ◐    | `src/ui/start/Start.tsx`: kafelki gier i „Stwórz własne karty” nad listą projektów; tytuł zwykłym krojem, import pliku wewnątrz listy projektów.  |
+| Ekrany Mausrittera i własnych   | ◐    | `WyborGry.tsx`, `WlasneKarty.tsx`: opisy i przyciski, bez podglądów. Przykładowe szablony leżą w `docs/przyklady/` i nie są w aplikacji.          |
+| Motyw jasny/ciemny              | ◐    | `App.css`: pięć zmiennych i `prefers-color-scheme`; bez przełącznika. W CSS jest ok. 84 kolorów na sztywno, część także w `src/ui/szablon/*.tsx`. |
+| Język                           | ✗    | `src/i18n/index.ts`: `Jezyk = 'pl'`, ok. 850 kluczy w `pl.ts`, brak liczby mnogiej, daty formatowane przez `Intl` według `jezyk()`.               |
+| Instrukcja                      | ✗    | Tylko `README.md` w repozytorium.                                                                                                                 |
+| Pasek górny                     | ◐    | Dwa osobne: nagłówek stron startowych (`App.tsx`) i `pasek-gorny` w edytorach kartki i szablonu; bez wspólnych przycisków.                        |
+| Menu typów kart                 | ◐    | `MenuTypu.tsx` pokazuje `typ.ikona` (emoji) przy każdym typie.                                                                                    |
+| Duplikuj szablon                | ✗    | Brak operacji w `src/dane`.                                                                                                                       |
+| „Liczba kopii”                  | ◐    | Pole `ile` w `PanelKart.tsx` plus osobny przycisk „Duplikuj ×N”.                                                                                  |
+| Przeciąganie między kontenerami | ✗    | M2b-9 przeciąga pola tylko w obrębie jednego kontenera swobodnego; przenoszenie przez drzewo i przyciski.                                         |
+| Wspólna zmiana rozmiaru         | ◐    | Wiele zaznaczonych pól: wspólne pola w panelu, ale uchwyty rozmiaru działają dla jednego pola.                                                    |
+
+## 3. Projekt rozwiązania
+
+### 3.1 Motyw i paleta
+
+Paleta wzorowana na załączonym zrzucie Obsidiana: morski pasek tytułu i wstążka, ciepły beż, kolorowe paski w panelu bocznym, karty z fioletowo-bordowym obramowaniem, niebieskie linki. Wszystkie kolory jako zmienne CSS w jednym pliku (`src/ui/tokeny.css`), motyw na `<html data-theme="light|dark">`.
+
+| Token                 | Jasny                                      | Ciemny    | Zastosowanie                                          |
+| --------------------- | ------------------------------------------ | --------- | ----------------------------------------------------- |
+| `--tlo`               | `#EDE4DC`                                  | `#1E1A1D` | tło strony                                            |
+| `--tlo-panelu`        | `#F6F0EA`                                  | `#2A2528` | panele, karty, menu                                   |
+| `--tekst`             | `#2B2A2E`                                  | `#ECE4DC` | tekst (ciemny grafit w jasnym)                        |
+| `--tekst-przygaszony` | `#5C5560`                                  | `#B9AEA8` | podpisy, opisy                                        |
+| `--akcent`            | `#1B7FA8`                                  | `#1F6E94` | pasek górny, przycisk główny (biały tekst)            |
+| `--pasek-gorny`       | `#1B7FA8`                                  | `#154B63` | tło paska górnego                                     |
+| `--link`              | `#2A7FA8`                                  | `#6FB8DA` | linki (zawsze podkreślone)                            |
+| `--bordo`             | `#7D2240`                                  | `#B8536F` | akcent drugorzędny, ostrzeżenia nieblokujące, aktywne |
+| `--kolor-1…4`         | `#E0876A`, `#E9A645`, `#5F9EA8`, `#356D8A` | te same   | kolorowe paski menu i sekcji panelu                   |
+| `--obramowanie-karty` | `#B4A0C8`                                  | `#B4A0C8` | obramowanie kart i kafelków (drugie: bordo)           |
+| `--obramowanie`       | `#D3C6BA`                                  | `#4A4248` | cienkie linie podziału                                |
+
+`--zaznaczenie` (dziś niebieski `#2a6fd6`) zmieniamy na morski `--akcent`; `--zle` i `--dobrze` zostają czerwony i zielony (czytelność ostrzeżeń), tylko w dwóch wariantach.
+
+**Zmierzone kontrasty (WCAG):**
+
+| Para                           | Kontrast  | Ocena                                    |
+| ------------------------------ | --------- | ---------------------------------------- |
+| tekst grafit na beżu           | 11,4:1    | AAA                                      |
+| biały na morskim `#1B7FA8`     | 4,5:1     | AA (granica)                             |
+| bordo `#7D2240` na beżu        | 7,7:1     | AAA                                      |
+| **link `#2A7FA8` na beżu**     | **3,6:1** | **poniżej AA (4,5) dla zwykłego tekstu** |
+| link `#1F6C92` na beżu         | 4,6:1     | AA                                       |
+| ciemny: tekst na tle           | 13,7:1    | AAA                                      |
+| ciemny: link `#6FB8DA` na tle  | 7,8:1     | AAA                                      |
+| ciemny: bordo `#B8536F` na tle | 3,7:1     | tylko elementy graficzne (≥3:1)          |
+| ciemny: biały na `#1F6E94`     | 5,7:1     | AA                                       |
+
+Punkt do decyzji (sekcja 6, D2): link w jasnym motywie w wybranym kolorze nie spełnia AA dla zwykłego tekstu. Zawsze będzie podkreślony (spełnia wymóg „nie tylko kolorem”), a proponuję dla linków w tekście ciągłym `#1F6C92` (ten sam odcień, ciemniejszy), a `#2A7FA8` zostawić dla większych elementów i najechania.
+
+**Przełącznik:** stan w `localStorage` (`karty.motyw` = `light|dark|system`), przy pierwszym wejściu z `prefers-color-scheme`. Krótki skrypt w `index.html` ustawia `data-theme` przed pierwszym malowaniem (bez migotania). Edytory kart: sama karta na podglądzie jest zawsze w kolorach szablonu (nie zależy od motywu aplikacji).
+
+**Przegląd kolorów na sztywno:** ok. 84 w `App.css` i kilka w `src/ui/szablon/*.tsx` (m.in. `Kontrolki.tsx`, `PanelStylu.tsx`) zamieniamy na tokeny. Kolory, które są **danymi szablonu** (np. domyślny kolor tekstu karty), zostają.
+
+### 3.2 Pasek górny
+
+Jeden komponent `NaglowekAplikacji` dla ekranów startowych i dla instrukcji; w edytorach (`pasek-gorny`) dochodzi ta sama grupa narzędzi na końcu paska. Grupa **po prawej, od lewej**: **Instrukcja** / **Guide** (otwiera `instrukcja/` w nowym oknie, `rel="noopener"`), przełącznik **PL | EN**, przełącznik motywu (słońce/księżyc jako SVG, `aria-pressed`, tytuł z i18n). Tło paska `--pasek-gorny`, biały tekst, przyciski z białym konturem. Wszystko dostępne z klawiatury; widoczny fokus.
+
+### 3.3 Ekran startowy
+
+- Układ (od 900 px): tytuł wyśrodkowany na górze; pod nim trzy kolumny: lewa 260 px (menu), środkowa elastyczna, prawa 240 px.
+- **Lewa:** dwa przyciski pionowo, w stylu kolorowych pasków z Obsidiana: „Stwórz własne karty”, pod spodem „Stwórz karty do Mausrittera” (kolejność jak w opisie; kolory z `--kolor-*`).
+- **Środek:** „Moje projekty” – siatka kafelków z miniaturą pierwszej strony, nazwą, liczbą stron i kart, datą, akcjami Otwórz / Eksportuj / Usuń (obecna logika `ListaProjektow.tsx`, bez zmian zachowania). Pusta lista: krótka podpowiedź.
+- **Prawa:** „Importuj pliki…” (przycisk i strefa przeciągnij-i-upuść; przyjmuje `.kartyrpg` i `.kartyrpg-szablon`, rozpoznaje rodzaj po rozszerzeniu; wiele plików naraz). Dziś import projektu jest w obrębie listy projektów, import szablonu w „Stwórz własne karty”; po zmianie oba są dostępne też z ekranów własnych kart (D6).
+- **Tytuł:** „Karty do gier – zaprojektuj i wydrukuj” (EN: „Game Cards – Design and Print”), większą czcionką ozdobną. Trzy propozycje (wszystkie OFL, wszystkie z kompletem polskich znaków – sprawdzone w pliku czcionki; Almendra Display odpadła, bo nie ma ą, ę, ś, ź, ż):
+
+| #   | Czcionka               | Charakter                                        | Licencja | Waga pliku |
+| --- | ---------------------- | ------------------------------------------------ | -------- | ---------- |
+| 1   | Cinzel Decorative Bold | eleganckie rzymskie kapitaliki z zawijasami      | OFL 1.1  | ok. 60 KB  |
+| 2   | Uncial Antiqua         | uncjała, baśniowy, „księgowy” klimat             | OFL 1.1  | ok. 61 KB  |
+| 3   | Metamorphous           | fantasy z szeryfem, najbardziej czytelna w małym | OFL 1.1  | ok. 130 KB |
+
+Wybrana czcionka trafia do `public/czcionki/` (obok EB Garamond i Grenze Gotisch), z plikiem licencji `OFL-<nazwa>.txt` i wpisem w `LICENCJE.md`; ładowana `@font-face` z `font-display: swap` i `preload` tylko na ekranie startowym. Awaryjnie: `Georgia, serif`.
+
+### 3.4 „Stwórz karty do Mausrittera”
+
+- **Lewa kolumna:** „Pusta kartka” i pod spodem „Zacznij od gotowego układu”. W makiecie przyjmuję, że to **skróty do grup** w środku (przewijają i podświetlają grupę); środek zawsze pokazuje oba rodzaje podglądów (D3).
+- **Środek:** grupa „Pusta kartka” – podgląd kartki A4 z przerywaną siatką slotów, grupa „Gotowe układy” – podgląd każdego układu z pakietu (Broń i pancerze, Wyposażenie, Stany, Wszystkie trzy) z nazwą pod spodem. Klik w podgląd = utworzenie projektu (obecne `nowyProjektZPakietu`), przycisk i Enter też.
+- **Podglądy z silnika:** `zbudujArkusz` na danych pakietu, sceny przez `scenaDoSvg` (te same, które trafiają do PDF). Pakiet i silnik ładują się leniwie (już dziś osobny fragment); podglądy powstają po załadowaniu, ze szkieletem na czas liczenia, zapamiętane w pamięci karty (`pamiecKart`). Cel wydajności: wszystkie podglądy poniżej ok. 1,5 s na typowym komputerze; jeśli pomiar wyjdzie gorzej, podglądy zostaną wyrenderowane na etapie budowania i dołączone jako SVG (zmiana ukryta za tym samym komponentem).
+- **Menu typów kart w pustym slocie:** same napisy, bez ikon (`MenuTypu.tsx` przestaje pokazywać `typ.ikona`; pole zostaje w modelu pakietu, bo używa go reszta kodu i testy).
+
+### 3.5 „Stwórz własne karty”
+
+- **Lewa kolumna:** „Nowy szablon od zera” (kreator `#/wlasne/nowy`) i pod spodem „Importuj szablon”.
+- **Środek:** podglądy przykładowych szablonów, każdy wyrenderowany silnikiem na danych przykładowych; klik = nowy projekt z tym szablonem i kartką o jego rozmiarze (`nowyProjektZSzablonu`). Kafelek „Pusta karta” na początku.
+- **Skąd przykłady:** nowy katalog `src/przyklady/` z ogólnymi szablonami: karta z opisem, blok statystyk, karta potwora, karta ozdobna (przykład D), karta swobodna (przykład F). Powstają z istniejących plików `docs/przyklady/*.kartyrpg-szablon` i szablonów wzorcowych z testów (przykłady D–F), z **neutralnymi nazwami i danymi** – to ma być zestaw „ogólnych klocków”, nie karty konkretnej gry (CLAUDE.md: „Bez gotowców pod konkretne gry”; plan M2 B-numery o przykładach jako przypadkach testowych – patrz D5). Każdy szablon ładowany leniwie dopiero po kliknięciu.
+
+### 3.6 Język angielski
+
+- **Infrastruktura:** `Jezyk = 'pl' | 'en'`; nowy `src/i18n/en.ts` typowany tym samym `Slownik` (kompilator wymusza komplet kluczy); `ustawJezyk` zapisuje w `localStorage` (`karty.jezyk`), ustawia `document.documentElement.lang`; domyślnie z `navigator.language` (pl → PL, inaczej EN). Zmiana języka przerysowuje aplikację bez przeładowania (kontekst/subskrypcja zamiast zmiennej globalnej odczytywanej raz; dziś `formatDaty` w `ListaProjektow.tsx` liczy się raz przy ładowaniu modułu – do poprawy).
+- **Liczba mnoga i liczby:** dochodzi pomocnik `tn(klucz, n, parametry)` z `Intl.PluralRules` (PL: one/few/many, EN: one/other); klucze z liczbami (`{n}` ok. 30 miejsc, „kart”, „stron”) dostają formy. Liczby w mm z przecinkiem (PL) lub kropką (EN) przez `Intl.NumberFormat`; pola liczbowe przyjmują oba zapisy.
+- **Co się tłumaczy:** cały interfejs, komunikaty błędów i ostrzeżeń (przechodzą przez `t`), nazwy typów kart i gotowych układów pakietu Mausritter (nazwa gry zostaje), nazwy przykładowych szablonów, role czcionek, formaty papieru. **Co zostaje:** treść kart wpisana przez użytkownika oraz dane przykładowe kart w pakiecie (to zawartość, nie interfejs; D4), nazwy własne.
+- **Teksty zapisane w projekcie** (np. domyślna nazwa nowej kartki) powstają w języku z chwili utworzenia – świadomie, bez późniejszego przetwarzania.
+- **Testy:** zgodność kluczy `pl` ↔ `en` i zgodność parametrów `{…}` (test jednostkowy), brak pustych tłumaczeń, e2e: przełączenie na EN, napisy na starcie i w edytorze, język zapamiętany po przeładowaniu. Wzorce PNG kart bez zmian (karty z silnika nie zależą od języka UI).
+
+### 3.7 Instrukcja
+
+- **Gdzie:** osobna strona statyczna, druga pozycja wejściowa Vite (`instrukcja/index.html`), otwierana w nowym oknie z paska górnego; bez Reacta i bez silnika (szybka, działa offline z tym samym cache). Dwie wersje treści (`pl`, `en`) w jednym pliku, wybór z `?lang=` albo z zapamiętanego języka; ten sam przełącznik języka i motywu co w aplikacji (współdzielone tokeny i klucze `localStorage`). Spis treści po lewej, treść w kolumnie ok. 42 em.
+- **Zawartość (obie wersje):** karty do Mausrittera, własne szablony (edytor, ozdobniki, tryb swobodny w skrócie), edycja kart na kartce, druk w skali 100%, kalibracja drukarki i wydruk testowy, eksport i import projektu oraz szablonu.
+- **Styl (wymagania autora):** zwykły, rzeczowy język; krótkie zdania; konkretne nazwy przycisków dokładnie jak w interfejsie; bez schematycznych zwrotów („oto przewodnik”, „zanurz się”, „wspaniale”), bez ikon i emoji, bez pustych linii między wierszami list (struktura nagłówek + lista numerowana). Przed zamknięciem etapu przegląd tekstu pod kątem powyższych zasad (lista kontrolna w planie etapu UI-6).
+- **Spójność z aplikacją:** test jednostkowy wyciąga z instrukcji nazwy w cudzysłowach („…”, “…”) i sprawdza, że istnieją jako teksty interfejsu w odpowiednim języku – zmiana nazwy przycisku bez poprawki instrukcji psuje test.
+- **Zrzuty ekranu** w instrukcji: bez (mniej do utrzymania; instrukcja opisuje kroki słowami).
+
+### 3.8 Edytory (kartka i szablon)
+
+Przejście na tokeny i nową paletę: pasek górny, panele boczne z kolorowymi znacznikami sekcji (paski `--kolor-*` jak w panelu Obsidiana, stonowane), zaznaczenie morskie, menu bez ikon. Układ i funkcje bez zmian. Wzorce PNG kart i arkuszy (silnik) bez zmian; ewentualne wzorce zrzutów ekranu stron (jeśli jakieś są) odnawiane świadomie w etapie UI-7 i opisane w decyzjach.
+
+### 3.9 Poprawki w edytorach
+
+1. **Duplikuj szablon:** funkcja `duplikujSzablon` w `src/dane/szablon.ts` (nowy `id`, nazwa „… (kopia)” z numeracją przy kolejnych, głęboka kopia węzłów z nowymi identyfikatorami, `podklad` kopiowany jako odwołanie do tego samego zasobu); przycisk w pasku edytora szablonu i w „Szablonach projektu” (ustawienia kartki). Bez zmiany schematu.
+2. **Liczba kopii od razu:** pole „Liczba kopii” w `PanelKart.tsx` przestaje wymagać przycisku „Duplikuj ×N”. Rekomendacja (D7): pole oznacza **łączną liczbę egzemplarzy** karty; zmiana wartości (strzałki, Enter, wyjście z pola) od razu dodaje lub usuwa kopie za oryginałem, jeden krok „Cofnij” na zatwierdzoną zmianę. Przycisk „Duplikuj” (jedna kopia) zostaje. Zwiększanie ponad wolne miejsce dokłada strony (jak dziś „Duplikuj ×N”), zmniejszanie usuwa najpóźniej dodane kopie.
+3. **Przeciąganie pól między kontenerami:** przeciągnięcie pola z podglądu poza jego rodzica na inny kontener (pod kursorem wybierany najmniejszy kontener z prostokątów `wezly`, podświetlany ramką); w kolumnie i wierszu wskaźnik wstawienia i indeks z położenia kursora względem środków dzieci, w kontenerze swobodnym pole zostaje tam, gdzie je puszczono (współrzędne przez `dostosujDoSwobodnego`); nie można upuścić na własnego potomka; cele za obróconym przodkiem są wyłączone (jak uchwyty w M2b-9). Jeden krok „Cofnij” na gest, Escape przerywa, ta sama operacja dostępna z klawiatury (istniejące „do kontenera”).
+4. **Wspólna zmiana rozmiaru wielu zaznaczonych pól:** w kontenerze swobodnym dla zaznaczenia z jednego rodzica uchwyty na obwiedni całego zaznaczenia; skalowanie obwiedni skaluje położenia i rozmiary w mm proporcjonalnie (rozmiary w % i „wg treści” bez zmian, minimum 1 mm), Shift zachowuje proporcje; w panelu pola szerokości i wysokości zaznaczenia (wartości względem obwiedni). Jeden krok „Cofnij” na gest.
+5. **Drobne:** (a) cyfra wartości w kształcie (gwiazda, koło, romb…) wyśrodkowana – nowe pole wartości z kształtem dostaje wyrównanie tekstu „środek” w obu osiach, jeśli użytkownik go jeszcze nie ustawił (zmiana domyślnych danych szablonu, nie silnika); (b) w przykładzie F tytuł na pasku stoi przy górnej krawędzi pola – w budowie przykładu pole tytułu dostaje wyrównanie pionowe „środek” (zmiana w teście i szablonie wzorcowym, nie w silniku).
+
+## 4. Etapy
+
+Każdy etap: jeden ciąg pracy i jeden PR od aktualnego `main`: kod + testy (typecheck, lint, format, Vitest, e2e), przegląd agentem `recenzent`, poprawki, scalenie przy zielonym CI, sprawdzenie wdrożenia na Pages, krótka notka „co sprawdzić” ze zrzutami. Decyzje bez konsultacji – sekcja 7.
+
+| Etap     | Wielkość | Zakres                                                                                                                                                                                                                                                                                                                                                   | Agenci                            |
+| -------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **UI-1** | M        | **Motyw i pasek górny.** `tokeny.css`, przegląd kolorów na sztywno, przełącznik jasny/ciemny z zapamiętaniem i skryptem bez migotania, wspólny `NaglowekAplikacji` i grupa narzędzi w paskach edytorów (przyciski Instrukcja i język jako atrapy do UI-2/UI-6). Testy: tokeny w obu motywach (kontrasty z tabeli w teście), przełączanie i pamięć w e2e. | edytor-ui, tester                 |
+| **UI-2** | L        | **Język angielski.** Infrastruktura (`en.ts`, `tn`, formatowanie liczb i dat, `lang`), pełne tłumaczenie ok. 850 kluczy, przełącznik PL/EN z pamięcią, przerysowanie bez przeładowania, nazwy typów i układów pakietu. Testy parytetu kluczy i parametrów, e2e w EN.                                                                                     | edytor-ui, tester                 |
+| **UI-3** | M        | **Ekran startowy.** Układ trzech kolumn, tytuł wybraną czcionką (plik, licencja, `LICENCJE.md`), menu pasków, „Moje projekty” z miniaturami, „Importuj pliki…” z przeciąganiem i obsługą dwóch rozszerzeń, układ responsywny. Testy e2e importu obu rodzajów plików.                                                                                     | edytor-ui, tester                 |
+| **UI-4** | M        | **Ekran Mausrittera.** Menu po lewej, podglądy pustej kartki i układów z silnika (leniwie, ze szkieletem, pomiar czasu), klik tworzy projekt; menu typów kart bez ikon. Testy: podglądy zgodne z arkuszami pakietu (SVG sceny), e2e utworzenia projektu z podglądu.                                                                                      | edytor-ui, silnik-layoutu, tester |
+| **UI-5** | M        | **Ekran własnych kart.** Katalog `src/przyklady/` z ogólnymi szablonami (nazwy i dane neutralne), podglądy z silnika, klik = nowy projekt, „Nowy szablon od zera” i „Importuj szablon”. Testy: każdy przykład ładuje się bez ostrzeżeń, e2e z kliknięcia kafelka.                                                                                        | edytor-ui, silnik-layoutu, tester |
+| **UI-6** | M        | **Instrukcja.** Druga strona Vite, treść PL i EN (lista kontrolna stylu z sekcji 3.7), spis treści, przełącznik języka i motywu, przycisk „Instrukcja” otwiera ją w nowym oknie. Testy: strona buduje się i działa pod ścieżką Pages, test spójności nazw przycisków z interfejsem, e2e otwarcia w nowym oknie.                                          | edytor-ui, tester                 |
+| **UI-7** | M        | **Edytory w nowej palecie.** Edytor kartki i szablonu na tokenach, kolorowe znaczniki sekcji paneli, przejrzenie wszystkich ekranów w obu motywach (kontrast, fokus, zaznaczenie), odnowienie wzorców zrzutów stron, jeśli występują. Zrzuty do `docs/obrazy/`.                                                                                          | edytor-ui, tester                 |
+| **UI-8** | L        | **Poprawki edytorów (sekcja 3.9).** Duplikuj szablon, liczba kopii od razu, przeciąganie między kontenerami, wspólna zmiana rozmiaru, wyśrodkowanie cyfry w kształcie, tytuł w F. Testy jednostkowe operacji, e2e przeciągania między kontenerami i wspólnego skalowania, poprawione przykłady D i F.                                                    | edytor-ui, silnik-layoutu, tester |
+| **UI-9** | S        | **Domknięcie.** README (nowy start, język, motyw, instrukcja), zrzuty ekranów wszystkich nowych widoków w obu motywach i językach, aktualizacja tego planu i `CLAUDE.md`, końcowy przegląd dostępności (klawiatura, fokus, czytnik) i wydajności startu (pomiar). Plan następnego kamienia (M2c) bez zmian.                                              | tester, edytor-ui, recenzent      |
+
+Kolejność: najpierw fundament (UI-1 motyw i pasek, UI-2 język), bo dotyka każdego ekranu; potem ekrany (UI-3…UI-6) od najważniejszego; edytory i poprawki na końcu, kiedy tokeny i język są stabilne. UI-3…UI-6 są od siebie niezależne i mogą zamienić się miejscami.
+
+## 5. Ryzyka
+
+- **Tłumaczenie 850 kluczy** – spójność terminologii (np. „slot”, „karta”, „kartka” vs sheet/page). Ograniczenie: słownik terminów na początku UI-2, test parytetu, przegląd recenzenta.
+- **Liczba mnoga w PL** – trzy formy (1, 2–4, 5+) wymagają przeglądu miejsc z `{n}`. Ograniczenie: `tn` z `Intl.PluralRules`, test dla granicznych liczb.
+- **Podglądy z silnika na ekranach startowych** – czas ładowania i zużycie pamięci przy kilku pełnych arkuszach. Ograniczenie: leniwie, szkielet, ponowne użycie `pamiecKart`, pomiar z progiem; zapas: podglądy przygotowane przy budowaniu.
+- **Kontrast palety** – wymagany kolor linków nie spełnia AA (sekcja 3.1). Ograniczenie: decyzja D2, test kontrastów w tokenach.
+- **Przegląd kolorów na sztywno** – łatwo pominąć miejsca z `style={{…}}` w TSX. Ograniczenie: grep i test, który wyszukuje literały `#rrggbb` w `src/ui` poza listą dozwolonych (dane szablonu).
+- **Instrukcja przestaje pasować do interfejsu** – Ograniczenie: test nazw z cudzysłowów (sekcja 3.7).
+- **Zmiana języka w trakcie edycji** – komponenty trzymają przetłumaczone teksty w stanie. Ograniczenie: przerysowanie z kontekstu, test e2e zmiany języka w edytorze.
+- **Przeciąganie między kontenerami** – trafianie w zagnieżdżone i obrócone elementy, jeden krok „Cofnij”. Ograniczenie: te same prostokąty co scena, wyłączenie celów za obróconym przodkiem, ta sama operacja z klawiatury.
+
+## 6. Punkty do Twojej decyzji
+
+| #   | Sprawa                           | Propozycja                                                                                                                                                                                               |
+| --- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Czcionka tytułu                  | Wybierz jedną z trzech z makiet `makieta-ui-czcionka-*`. Moja rekomendacja: **Uncial Antiqua** (baśniowy klimat Mausrittera) albo **Cinzel Decorative** (uniwersalna).                                   |
+| D2  | Kolor linków w jasnym motywie    | `#2A7FA8` ma 3,6:1 na beżu (AA wymaga 4,5:1). Rekomendacja: `#1F6C92` w tekście ciągłym, `#2A7FA8` dla większych elementów i najechania; linki zawsze podkreślone. Makiety pokazują dokładnie `#2A7FA8`. |
+| D3  | Lewe menu ekranu Mausrittera     | „Pusta kartka” i „Zacznij od gotowego układu” jako **skróty do grup** w środku, gdzie widać oba rodzaje podglądów naraz (zgodnie z opisem „na środku podglądy: pusta kartka i każdy gotowy układ”).      |
+| D4  | Zawartość kart po angielsku      | Tłumaczymy interfejs i nazwy typów/układów pakietu; **dane przykładowe kart i treść wpisana przez użytkownika zostają bez zmian**.                                                                       |
+| D5  | Przykładowe szablony w aplikacji | Zestaw **neutralnych** szablonów (opis, statystyki, potwór, ozdobna, swobodna) z nowego `src/przyklady/`. CLAUDE.md zakazuje gotowców pod konkretne gry – przykłady nie zawierają zasad ani nazw gier.   |
+| D6  | Import na starcie                | „Importuj pliki…” przyjmuje oba rozszerzenia i sam rozpoznaje rodzaj; „Importuj szablon” na ekranie własnych kart zostaje jako skrót.                                                                    |
+| D7  | Znaczenie „Liczba kopii”         | Pole = **łączna liczba egzemplarzy** karty (zmiana od razu dodaje/usuwa kopie). Alternatywa: pole „dodaj N kopii” z zatwierdzeniem Enter – mniej intuicyjne przy zmniejszaniu.                           |
+| D8  | Język domyślny                   | Z ustawień przeglądarki (pl → PL, reszta EN), potem zapamiętany wybór.                                                                                                                                   |
+| D9  | Zrzuty w instrukcji              | Bez zrzutów (opis słowami); do rozważenia po pierwszej wersji.                                                                                                                                           |
+
+## 7. Decyzje podjęte bez konsultacji
+
+Rozstrzygnięcia przyjęte w trakcie UI, których plan nie przesądza. Numeracja kontynuuje `plan-M2b.md` (od B112). Każde da się łatwo zmienić.
+
+| #   | Etap | Sprawa | Decyzja |
+| --- | ---- | ------ | ------- |
