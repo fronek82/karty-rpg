@@ -1,6 +1,6 @@
 import { kolumnySzablonu } from '../../dane/edycja';
 import { t } from '../../i18n';
-import type { KolorZDanych as Regula, Szablon } from '../../model/szablon';
+import { DOMYSLNE_TLO_KARTY, type KolorZDanych as Regula, type Szablon } from '../../model/szablon';
 import { Lista, PoleKoloru, Sekcja } from './Kontrolki';
 
 export function KolorZDanych({
@@ -14,7 +14,7 @@ export function KolorZDanych({
   kolor?: string;
   zmien: (v: Regula | undefined, klucz?: string) => void;
 }) {
-  const domyslny = kolor && /^#[0-9a-f]{6}$/i.test(kolor) ? kolor : '#ffffff';
+  const domyslny = kolor && /^#[0-9a-f]{6}$/i.test(kolor) ? kolor : DOMYSLNE_TLO_KARTY;
   const pola = kolumnySzablonu(szablon)
     .filter((p) => p.typPola !== 'obraz')
     .map((p) => ({ wartosc: p.klucz, tekst: p.nazwa }));

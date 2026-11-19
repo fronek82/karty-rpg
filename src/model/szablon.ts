@@ -3,6 +3,10 @@ import type { Mm } from './jednostki';
 /** Kolor w zapisie `#rrggbb`. */
 export type Kolor = string;
 
+/** Domyślne kolory dokumentu, wspólne dla obu motywów interfejsu. */
+export const DOMYSLNE_TLO_KARTY: Kolor = '#ffffff';
+export const DOMYSLNY_KOLOR_TEKSTU: Kolor = '#000000';
+
 export interface KolorZDanych {
   klucz: string;
   domyslny: Kolor;

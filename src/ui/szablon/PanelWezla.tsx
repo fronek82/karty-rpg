@@ -3,6 +3,8 @@ import { kluczZNazwy, kluczeSzablonu, TYPY_POL, type ZmianaKolejnosci } from '..
 import { t } from '../../i18n';
 import {
   czyKontener,
+  DOMYSLNE_TLO_KARTY,
+  DOMYSLNY_KOLOR_TEKSTU,
   maStylTekstu,
   stylPola,
   kluczeTabeli,
@@ -305,7 +307,11 @@ export function PanelWezla({
                 <KolorZDanych
                   szablon={szablon}
                   {...(etykieta.kolorZDanych ? { regula: etykieta.kolorZDanych } : {})}
-                  kolor={etykieta.styl?.kolor ?? stylPola(szablon, zEtykieta).kolor ?? '#000000'}
+                  kolor={
+                    etykieta.styl?.kolor ??
+                    stylPola(szablon, zEtykieta).kolor ??
+                    DOMYSLNY_KOLOR_TEKSTU
+                  }
                   zmien={(v, klucz) =>
                     zmienWezel(
                       (w) => {
@@ -463,7 +469,7 @@ export function PanelWezla({
         <KolorZDanych
           szablon={szablon}
           {...(wezel.tloZDanych ? { regula: wezel.tloZDanych } : {})}
-          kolor={wezel.tlo ?? '#ffffff'}
+          kolor={wezel.tlo ?? DOMYSLNE_TLO_KARTY}
           zmien={(v, klucz) =>
             zmienWezel(
               (w) => {
