@@ -11,8 +11,9 @@ import type { Karta } from '../model/szablon';
 
 export interface Egzemplarz {
   karta: Karta;
-  /** Numer egzemplarza (0 … ilosc−1). */
+  /** Numer wydruku wśród egzemplarzy i ich dalszych części (od 0). */
   numer: number;
+  czesc?: number;
   /** Rozmiar w slotach. */
   kolumny: number;
   rzedy: number;
@@ -64,12 +65,18 @@ export interface WynikRozmieszczenia {
 export function egzemplarze(
   karty: Karta[],
   rozmiar: (k: Karta) => { kolumny: number; rzedy: number },
+  liczbaCzesci: (k: Karta) => number = () => 1,
 ): Egzemplarz[] {
   const wynik: Egzemplarz[] = [];
   for (const k of karty) {
     const r = rozmiar(k);
-    for (let n = 0; n < Math.max(0, Math.floor(k.ilosc)); n++)
-      wynik.push({ karta: k, numer: n, ...r });
+    const liczba = Math.max(0, Math.floor(k.ilosc));
+    if (!liczba) continue;
+    const czesci = liczbaCzesci(k);
+    for (let n = 0; n < liczba * czesci; n++) {
+      const czesc = n % czesci;
+      wynik.push({ karta: k, numer: n, ...r, ...(czesc ? { czesc } : {}) });
+    }
   }
   return wynik;
 }
@@ -93,11 +100,11 @@ class Zajetosc {
       for (let x = k; x < k + w; x++) this.komorki[y * this.kolumny + x] = true;
   }
   /** Pierwsze wolne miejsce: wiersz po wierszu albo kolumna po kolumnie. */
-  znajdz(w: number, h: number, kolumnami: boolean): { k: number; r: number } | undefined {
+  znajdz(w: number, h: number, kolumnami: boolean, od = 0): { k: number; r: number } | undefined {
     const zew = kolumnami ? this.kolumny : this.rzedy;
     const wew = kolumnami ? this.rzedy : this.kolumny;
     for (let a = 0; a < zew; a++) {
-      for (let b = 0; b < wew; b++) {
+      for (let b = Math.max(0, od - a * wew); b < wew; b++) {
         const k = kolumnami ? a : b;
         const r = kolumnami ? b : a;
         if (this.wolne(k, r, w, h)) return { k, r };
@@ -149,9 +156,16 @@ function rozmiescBezGrup(
   };
   const wynik: UmieszczonaKarta[] = [];
   const pozostale = [...lista];
+  const ulozone = new Map<Karta, Map<number, UmieszczonaKarta>>();
+  const zapisz = (u: UmieszczonaKarta) => {
+    wynik.push(u);
+    const mapa = ulozone.get(u.karta) ?? new Map<number, UmieszczonaKarta>();
+    mapa.set(u.numer, u);
+    ulozone.set(u.karta, mapa);
+  };
 
   for (const p of przypiete) {
-    const i = pozostale.findIndex((e) => e.karta.id === p.kartaId);
+    const i = pozostale.findIndex((e) => e.karta.id === p.kartaId && !e.czesc);
     if (i < 0) {
       ostrzezenia.push(`przypiecie-bez-karty:${p.kartaId}`);
       continue;
@@ -176,17 +190,19 @@ function rozmiescBezGrup(
       continue;
     }
     z.zajmij(p.kolumna, p.rzad, e.kolumny, e.rzedy);
-    wynik.push({ ...e, strona: p.strona ?? 0, kolumna: p.kolumna, rzad: p.rzad, xRegionu: 0 });
+    zapisz({ ...e, strona: p.strona ?? 0, kolumna: p.kolumna, rzad: p.rzad, xRegionu: 0 });
     pozostale.splice(i, 1);
   }
 
   for (const e of [...pozostale].sort(odNajwiekszych)) {
-    for (let n = 0; ; n++) {
+    const poprzednia = e.czesc ? ulozone.get(e.karta)?.get(e.numer - 1) : undefined;
+    for (let n = poprzednia?.strona ?? 0; ; n++) {
       const z = strona(n);
-      const m = z.znajdz(e.kolumny, e.rzedy, false);
+      const od = poprzednia?.strona === n ? poprzednia.rzad * kolumny + poprzednia.kolumna + 1 : 0;
+      const m = z.znajdz(e.kolumny, e.rzedy, false, od);
       if (m) {
         z.zajmij(m.k, m.r, e.kolumny, e.rzedy);
-        wynik.push({ ...e, strona: n, kolumna: m.k, rzad: m.r, xRegionu: 0 });
+        zapisz({ ...e, strona: n, kolumna: m.k, rzad: m.r, xRegionu: 0 });
         break;
       }
     }

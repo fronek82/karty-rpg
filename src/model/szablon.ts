@@ -290,6 +290,7 @@ export interface PoleTekst extends PoleBazowe {
   formatowanie?: boolean;
   listyNumerowane?: boolean;
   ikonyWTekscie?: boolean;
+  kontynuuj?: boolean;
 }
 
 /** Krótka wartość (np. `k6`, `-1 obr`) w ramce o zadanym kształcie. */

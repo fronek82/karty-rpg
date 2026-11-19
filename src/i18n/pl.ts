@@ -667,6 +667,10 @@ export const pl = {
   'wlasciwosci.gdyPuste.ukryj': 'ukryj i zwiń',
   'wlasciwosci.styl': 'Styl tekstu',
   'wlasciwosci.wieleWierszy': 'Łam tekst na wiele wierszy',
+  'wlasciwosci.kontynuuj': 'Kontynuuj na następnej karcie',
+  'wlasciwosci.kontynuujPomoc':
+    'Przy przepełnieniu kontynuowany jest pierwszy tekst z tą opcją w kolejności układu.',
+  'kartka.ciagDalszy': 'Ciąg dalszy',
   'wlasciwosci.listyNumerowane': 'Listy numerowane',
   'wlasciwosci.ikonyWTekscie': 'Ikony w tekście',
   'wlasciwosci.notacjaPomoc':

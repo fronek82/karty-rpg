@@ -70,7 +70,14 @@ export interface InformacjaOObrazie {
   wysokosc: number;
 }
 
+export interface KontynuowanyTekst {
+  poleId: string;
+  fragmenty: Fragment[];
+  dopisek?: string;
+}
+
 export interface KontekstRenderowania {
+  kontynuacja?: KontynuowanyTekst;
   czcionki: RejestrCzcionek;
   /** Wymiary obrazu z biblioteki; undefined = brak zasobu. */
   obraz?: (zasob: string) => InformacjaOObrazie | undefined;
@@ -168,18 +175,25 @@ export function czyPuste(pole: Pole, dane: Record<string, string>): boolean {
   return v === '';
 }
 
+export function trescPolaTekstowego(pole: PoleTekst, wartosc: string): Fragment[] {
+  if (!wartosc) return [];
+  const formatowane =
+    pole.formatowanie === false
+      ? [{ tekst: wartosc, styl: pole.styl }]
+      : parsujFormatowanie(wartosc, pole.styl);
+  return dodajNotacjeTekstu(formatowane, pole.listyNumerowane, pole.ikonyWTekscie);
+}
+
 function fragmentyTekstu(
   pole: PoleTekst,
   wartosc: string,
   dane: Record<string, string>,
+  ctx: KontekstRenderowania,
 ): Fragment[] {
-  const formatowane: Fragment[] =
-    wartosc === ''
-      ? []
-      : pole.formatowanie === false
-        ? [{ tekst: wartosc, styl: pole.styl }]
-        : parsujFormatowanie(wartosc, pole.styl);
-  const tresc = dodajNotacjeTekstu(formatowane, pole.listyNumerowane, pole.ikonyWTekscie);
+  const tresc =
+    ctx.kontynuacja?.poleId === pole.id
+      ? ctx.kontynuacja.fragmenty
+      : trescPolaTekstowego(pole, wartosc);
   const etykieta = pole.etykieta ? napis(pole.etykieta.tekst, dane) : '';
   if (!pole.etykieta || etykieta === '') return tresc;
   const styl = { ...pole.styl, ...pole.etykieta.styl };
@@ -403,12 +417,21 @@ export function renderujKarte(
       'ramka-karty',
     );
   }
+  const stylDopisku: StylTekstu = { czcionka: 'tresc', rozmiar: 2.5 };
+  const dopisek = ctx.kontynuacja?.dopisek
+    ? ulozTekst(
+        [{ tekst: ctx.kontynuacja.dopisek, styl: stylDopisku }],
+        Math.max(0, szer - 4),
+        ctx.czcionki,
+      )
+    : undefined;
+  const pasDopisku = dopisek ? dopisek.wysokosc + 3 : 0;
   const korzen = rozmiesc(
     styleZDanych(szablon, korzenKarty(szablon, karta), dane),
     0,
-    0,
+    pasDopisku,
     szer,
-    wys,
+    Math.max(0, wys - pasDopisku),
     kontekst,
   );
   // Położenia wszystkich widocznych węzłów – obraz może omijać pola rysowane nad nim.
@@ -618,6 +641,16 @@ export function renderujKarte(
     }
   };
   rysuj(korzen);
+  if (dopisek)
+    elementy.push(
+      ...tekstNaScene(
+        dopisek,
+        { x: 2, y: 1.5, szer: Math.max(0, szer - 4), wys: dopisek.wysokosc },
+        'srodek',
+        'poczatek',
+        glify,
+      ),
+    );
   if (szablon.ramka) {
     const r = szablon.ramka;
     if (r.ozdoba) {
@@ -864,7 +897,7 @@ function zmierzPole(
   const wartosc = wartoscPola(pole, dane);
   switch (pole.typ) {
     case 'tekst': {
-      const fr = fragmentyTekstu(pole, wartosc, dane);
+      const fr = fragmentyTekstu(pole, wartosc, dane, ctx);
       if (fr.length === 0) return { szer: 0, wys: 0 };
       const naturalny = ulozTekst(fr, undefined, ctx.czcionki);
       if (
@@ -944,7 +977,7 @@ function rysujTekst(
   glify: Record<string, DefinicjaGlifu>,
   ostrzezenia: Ostrzezenie[],
 ): ElementSceny[] {
-  const fr = fragmentyTekstu(pole, wartosc, dane);
+  const fr = fragmentyTekstu(pole, wartosc, dane, ctx);
   if (fr.length === 0) return [];
   const wieleWierszy = pole.wieleWierszy !== false;
   const minSkala = minimalnaSkala(pole.styl);

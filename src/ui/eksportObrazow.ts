@@ -3,7 +3,7 @@ import { nazwaKarty } from '../dane/szablon';
 import { wSkaliSzarosci, zSzarymiObrazami, type WynikArkusza } from '../druk/arkusz';
 import type { Arkusz } from '../model/arkusz';
 import type { Karta, Talia } from '../model/szablon';
-import { renderujKarte } from '../silnik/karta';
+import { kartyZKontynuacja } from '../silnik/kontynuacja';
 import type { Scena } from '../silnik/scena';
 import { scenaDoSvg } from '../silnik/svg';
 import { t } from '../i18n';
@@ -137,21 +137,31 @@ export function scenyKart(
         widziane.add(karta.id);
         karty.push({ karta, czarnoBialy: !!k.arkusz.ustawienia.czarnoBialy });
       }
-  return unikalneNazwy(
-    karty.map(({ karta, czarnoBialy }, i) => {
-      const s = zasoby.szablony.get(karta.szablonId)!;
-      const { scena } = renderujKarte(s, karta, {
+  const czesci = karty.flatMap(({ karta, czarnoBialy }) => {
+    const s = zasoby.szablony.get(karta.szablonId)!;
+    const karty = kartyZKontynuacja(
+      s,
+      karta,
+      {
         czcionki: zasoby.czcionki,
         obraz: (id) => zasoby.obrazy.get(id)?.info,
         ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
-      });
-      const opis = nazwaKarty(karta.dane, s) || s.nazwa;
-      return {
-        nazwa: nazwaPliku(`${nr(i, karty.length)}-${opis}`, `.${format}`),
-        scena: czarnoBialy ? { ...scena, elementy: wSkaliSzarosci(scena.elementy) } : scena,
-        czarnoBialy,
-      };
-    }),
+      },
+      t('kartka.ciagDalszy'),
+    );
+    const opis = nazwaKarty(karta.dane, s) || s.nazwa;
+    return karty.map(({ scena }, nr) => ({
+      opis: nr ? `${opis}-${t('kartka.ciagDalszy')}-${nr + 1}` : opis,
+      scena,
+      czarnoBialy,
+    }));
+  });
+  return unikalneNazwy(
+    czesci.map(({ opis, scena, czarnoBialy }, i) => ({
+      nazwa: nazwaPliku(`${nr(i, czesci.length)}-${opis}`, `.${format}`),
+      scena: czarnoBialy ? { ...scena, elementy: wSkaliSzarosci(scena.elementy) } : scena,
+      czarnoBialy,
+    })),
   );
 }
 

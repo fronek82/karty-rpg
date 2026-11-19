@@ -18,6 +18,7 @@ export interface KartaDoPasow {
   klucz: string;
   kartaId: string;
   numer: number;
+  czesc?: number;
   szer: Mm;
   wys: Mm;
   grupaId?: string;
@@ -46,6 +47,7 @@ export interface UmieszczonaWPasie {
   klucz: string;
   kartaId: string;
   numer: number;
+  czesc?: number;
   strona: number;
   /** Lewy górny róg i wymiar po ewentualnym obrocie. */
   x: Mm;
@@ -172,6 +174,7 @@ export function ulozPasy(wejscie: KartaDoPasow[], o: OpcjePasow): WynikPasow {
         klucz: k.klucz,
         kartaId: k.kartaId,
         numer: k.numer,
+        ...(k.czesc ? { czesc: k.czesc } : {}),
         strona: p.strona,
         x,
         y,
