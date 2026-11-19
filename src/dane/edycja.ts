@@ -155,6 +155,7 @@ export function roleProjektu(p: Projekt): string[] {
     for (const g of s.grupyStylow ?? [])
       if (!rodziny.has(g.styl.czcionka)) role.add(g.styl.czcionka);
   }
+  for (const r of p.rewersy ?? []) style(r.korzen);
   for (const a of p.arkusze) {
     const u = a.ustawienia;
     for (const n of [u.tytul?.styl.czcionka, u.grupy?.styl.czcionka, u.grupy?.stylOpisu.czcionka]) {

@@ -2,7 +2,13 @@ import { z } from 'zod';
 import { t } from '../i18n';
 import { PAPIERY } from '../model/arkusz';
 import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
-import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
+import {
+  czyKontener,
+  type Kontener,
+  type Rewers,
+  type Szablon,
+  type Wezel,
+} from '../model/szablon';
 import { znajdzElement } from '../ozdobniki/katalog';
 import { LIMITY_SVG } from '../ozdobniki/svgImport';
 import { MAKS_ELEMENTOW_BIBLIOTEKI, odwolaniaDoElementow } from './biblioteka';
@@ -315,8 +321,11 @@ const rozmiarKarty = z.discriminatedUnion('tryb', [
   obj({ tryb: z.literal('mm'), szerokosc: dodatnia, wysokosc: dodatnia }),
 ]);
 
+const przypisanieRewersu = opc(z.union([identyfikator, z.null()]));
+
 const szablon = obj({
   id: identyfikator,
+  rewersId: przypisanieRewersu,
   nazwa: z.string(),
   rozmiar: rozmiarKarty,
   promienRogow: opc(nieujemna),
@@ -355,6 +364,12 @@ const szablon = obj({
   warianty: opc(z.array(obj({ ...rozmiarSlotow, korzen: kontener }))),
 });
 
+export const schematRewersu = z.strictObject({
+  ...szablon.pick({ id: true, nazwa: true, tlo: true, teksturaTla: true, ramka: true }).shape,
+  rozmiar: obj({ tryb: z.literal('mm'), szerokosc: dodatnia, wysokosc: dodatnia }),
+  korzen: kontener.and(obj({ typ: z.literal('swobodny') })),
+});
+
 const ustawieniaObrazu = obj({
   skala: opc(dodatnia),
   przesuniecie: opc(xy),
@@ -364,6 +379,7 @@ const ustawieniaObrazu = obj({
 
 const karta = obj({
   id: identyfikator,
+  rewersId: przypisanieRewersu,
   szablonId: identyfikator,
   dane: z.record(z.string(), z.string()),
   ilosc: calkowita.min(0),
@@ -374,6 +390,7 @@ const karta = obj({
 
 const talia = obj({
   id: identyfikator,
+  rewersId: przypisanieRewersu,
   nazwa: z.string(),
   karty: z.array(karta),
   grupy: opc(
@@ -613,6 +630,7 @@ export const schematProjektu = obj({
   role: z.record(z.string(), z.string()),
   zasoby: z.array(opisZasobu),
   szablony: z.array(szablon),
+  rewersy: opc(z.array(schematRewersu)),
   talie: z.array(talia),
   arkusze: z.array(arkusz),
   pakiet: opc(z.string()),
@@ -628,6 +646,7 @@ export const schematPaczkiOzdobnika = obj({
 export const schematPlikuSzablonu = obj({
   wersja: calkowita,
   szablon,
+  rewers: opc(schematRewersu),
   role: z.record(z.string(), z.string()),
   zasoby: z.array(opisZasobu),
   /** Własne elementy biblioteki ozdobników użyte przez szablon. */
@@ -641,8 +660,9 @@ export const schematPlikuSzablonu = obj({
 type _Zgodnosc = [
   z.infer<typeof schematProjektu> extends Projekt ? true : never,
   z.infer<typeof szablon> extends Szablon ? true : never,
+  z.infer<typeof schematRewersu> extends Rewers ? true : never,
 ];
-export const _zgodnosc: _Zgodnosc = [true, true];
+export const _zgodnosc: _Zgodnosc = [true, true, true];
 
 function sciezka(p: PropertyKey[]): string {
   return p.length ? p.map(String).join('.') : '(korzeń)';
@@ -763,6 +783,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     19: (d) => d,
     20: (d) => d,
     21: (d) => d,
+    // 22→23: brak przypisania pozostawia dotychczasowy projekt z samymi przodami.
+    22: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -786,6 +808,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     19: (d) => d,
     20: (d) => d,
     21: (d) => d,
+    // 22→23: brak przypisania pozostawia dotychczasowy projekt z samymi przodami.
+    22: (d) => d,
   },
 };
 
@@ -878,6 +902,24 @@ export function sprawdzSpojnosc(p: Projekt): void {
     p.arkusze.map((a) => a.id),
     t('dane.gdzie.arkusze'),
   );
+  const rewersy = new Set((p.rewersy ?? []).map((r) => r.id));
+  powtorzony(
+    (p.rewersy ?? []).map((r) => r.id),
+    t('dane.gdzie.rewersy'),
+  );
+  const sprawdzRewers = (id: Szablon['rewersId']) => {
+    if (typeof id === 'string' && !rewersy.has(id)) blad(t('dane.nieznanyRewers', { id }));
+  };
+  for (const s of p.szablony) sprawdzRewers(s.rewersId);
+  for (const talia of p.talie) {
+    sprawdzRewers(talia.rewersId);
+    for (const karta of talia.karty) sprawdzRewers(karta.rewersId);
+  }
+  for (const r of p.rewersy ?? [])
+    powtorzony(
+      [...wezly(r.korzen)].map((w) => w.id),
+      t('dane.gdzie.rewers', { id: r.id }),
+    );
   for (const s of p.szablony) {
     for (const k of drzewa(s)) {
       powtorzony(
@@ -969,6 +1011,16 @@ export function ostrzezeniaProjektu(p: Projekt): string[] {
       if (!znajdzElement(id, wlasne)) {
         wynik.push(t('dane.nieznanyElement', { gdzie: t('dane.gdzie.szablon', { id: s.id }), id }));
       }
+    }
+  }
+  for (const rewers of p.rewersy ?? []) {
+    const gdzie = t('dane.gdzie.rewers', { id: rewers.id });
+    for (const id of new Set(zasobySzablonu(rewers))) {
+      if (!p.zasoby.some((o) => o.id === id && o.rodzaj === 'obraz'))
+        wynik.push(t('dane.nieznanyZasob', { gdzie, id }));
+    }
+    for (const id of new Set(odwolaniaDoElementow(rewers))) {
+      if (!znajdzElement(id, wlasne)) wynik.push(t('dane.nieznanyElement', { gdzie, id }));
     }
   }
   // Ramki 9-slice: obraz, którego nie ma w zasobach (silnik narysuje cienką linię), wymiary

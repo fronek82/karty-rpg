@@ -1,7 +1,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { formatujLiczbe, t } from '../i18n';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
-import { czyKontener, stylePola, type Szablon, type Wezel } from '../model/szablon';
+import { czyKontener, stylePola, type Rewers, type Szablon, type Wezel } from '../model/szablon';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { BladKolekcjiCzcionek, wczytajCzcionke } from '../silnik/czcionki';
 import { MAKS_BAJTOW_CZCIONKI, formatObrazu, unikalneId } from './czcionki';
@@ -12,7 +12,7 @@ import {
   wymiaryJpeg,
   wymiaryPoObrocie,
 } from './obrazy';
-import { czyWbudowany } from '../ozdobniki/katalog';
+import { czyWbudowany, znajdzElement } from '../ozdobniki/katalog';
 import {
   dolaczElementy,
   elementyProjektu,
@@ -30,6 +30,7 @@ import {
   schematPaczkiOzdobnika,
   schematPlikuSzablonu,
   teksturySzablonu,
+  zasobySzablonu,
   sprawdz,
 } from './schemat';
 
@@ -202,6 +203,7 @@ function czcionkiSzablonu(s: Szablon): string[] {
 
 export interface PaczkaSzablonu {
   szablon: Szablon;
+  rewers?: Rewers;
   role: Record<string, string>;
   zasoby: OpisZasobu[];
   dane: DaneZasobow;
@@ -221,6 +223,31 @@ function sprawdzTeksturyPaczki(szablon: Szablon, opisy: OpisZasobu[]) {
     if (!obrazy.has(id)) throw new BladDanych(t('dane.teksturaBezObrazu', { id }));
 }
 
+function sprawdzRewersPaczki(
+  p: Pick<PaczkaSzablonu, 'szablon' | 'rewers' | 'zasoby' | 'biblioteka'>,
+) {
+  const id = p.szablon.rewersId;
+  if (p.rewers?.id !== (typeof id === 'string' ? id : undefined))
+    throw new BladDanych(t('dane.nieznanyRewers', { id: id ?? p.rewers?.id ?? '' }));
+  if (!p.rewers) return;
+  const gdzie = t('dane.gdzie.rewers', { id: p.rewers.id });
+  const widziane = new Set<string>();
+  for (const w of wszystkieWezly(p.rewers)) {
+    if (widziane.has(w.id)) throw new BladDanych(t('dane.powtorzonyId', { id: w.id, gdzie }));
+    widziane.add(w.id);
+  }
+  const obraz = new Set(p.zasoby.filter((o) => o.rodzaj === 'obraz').map((o) => o.id));
+  for (const id of zasobySzablonu(p.rewers))
+    if (!obraz.has(id)) throw new BladDanych(t('dane.nieznanyZasob', { gdzie, id }));
+  for (const id of odwolaniaDoElementow(p.rewers)) {
+    const element = znajdzElement(id, p.biblioteka);
+    if (!element) throw new BladDanych(t('dane.nieznanyElement', { gdzie, id }));
+    const z = element.ramka9?.zrodlo;
+    if (z?.typ === 'obraz' && !obraz.has(z.zasob))
+      throw new BladDanych(t('dane.ramka9BezObrazu', { id, zasob: z.zasob }));
+  }
+}
+
 /** Eksport szablonu z użytymi czcionkami i obrazami; ostrzega o czcionkach z własnych plików. */
 export function eksportujSzablon(
   projekt: Projekt,
@@ -229,14 +256,18 @@ export function eksportujSzablon(
 ): WynikEksportuSzablonu {
   const szablon = projekt.szablony.find((s) => s.id === szablonId);
   if (!szablon) throw new BladDanych(t('dane.brakSzablonu', { id: szablonId }));
+  const rewers = projekt.rewersy?.find((r) => r.id === szablon.rewersId);
+  const strony = rewers ? [szablon, rewers] : [szablon];
   const role: Record<string, string> = {};
   const rodziny = new Set<string>();
-  for (const nazwa of czcionkiSzablonu(szablon)) {
+  for (const nazwa of new Set(strony.flatMap(czcionkiSzablonu))) {
     const rodzina = projekt.role[nazwa];
     if (rodzina !== undefined) role[nazwa] = rodzina;
     rodziny.add(rodzina ?? nazwa);
   }
-  const obrazy = new Set(zasobyObrazowSzablonu(szablon, elementyProjektu(projekt)));
+  const obrazy = new Set(
+    strony.flatMap((s) => zasobyObrazowSzablonu(s, elementyProjektu(projekt))),
+  );
   const uzyte = projekt.zasoby.filter((o) =>
     o.rodzaj === 'czcionka' ? rodziny.has(o.rodzina) : obrazy.has(o.id),
   );
@@ -250,13 +281,19 @@ export function eksportujSzablon(
     ),
   ];
   sprawdzTeksturyPaczki(szablon, uzyte);
-  const biblioteka = elementyUzyteWSzablonie(projekt, szablon);
+  const biblioteka = [
+    ...new Map(
+      strony.flatMap((s) => elementyUzyteWSzablonie(projekt, s)).map((o) => [o.id, o]),
+    ).values(),
+  ];
+  sprawdzRewersPaczki({ szablon, zasoby: uzyte, biblioteka, ...(rewers ? { rewers } : {}) });
   // Podkład ze wzoru zostaje w projekcie: bywa duży i dotyczy pracy nad wzorem, nie samego szablonu.
   const { podklad: _podklad, ...szablonBezPodkladu } = szablon;
   void _podklad;
   const plik = {
     wersja: projekt.wersja,
     szablon: szablonBezPodkladu,
+    ...(rewers ? { rewers } : {}),
     role,
     zasoby: uzyte,
     ...(biblioteka.length > 0 ? { biblioteka } : {}),
@@ -288,6 +325,7 @@ export function importujSzablon(bajty: Uint8Array): PaczkaSzablonu {
       t('dane.powtorzonyId', { id: powtorzony, gdzie: t('dane.gdzie.biblioteka') }),
     );
   sprawdzTeksturyPaczki(plik.szablon, plik.zasoby);
+  sprawdzRewersPaczki(plik);
   // Ramka 9-slice z PNG musi mieć obraz w paczce (inaczej szablon wskazywałby cudzy zasób).
   for (const e of plik.biblioteka ?? []) {
     const z = e.ramka9?.zrodlo;
@@ -443,21 +481,25 @@ export function dodajSzablon(
   zasoby: DaneZasobow,
   paczka: PaczkaSzablonu,
 ): { projekt: Projekt; zasoby: DaneZasobow; szablonId: string; ostrzezenia: string[] } {
+  sprawdzRewersPaczki(paczka);
   const { ostrzezenia, noweZasoby, opisy, przemianowane } = dolaczZasobyPaczki(
     projekt,
     zasoby,
     paczka,
   );
-  const szablon: Szablon = structuredClone(paczka.szablon);
-  if (szablon.teksturaTla)
-    szablon.teksturaTla = przemianowane.get(szablon.teksturaTla) ?? szablon.teksturaTla;
-  for (const w of wszystkieWezly(szablon)) {
-    if (czyKontener(w) && w.teksturaTla)
-      w.teksturaTla = przemianowane.get(w.teksturaTla) ?? w.teksturaTla;
-    if (w.typ === 'obraz' && w.zasob) w.zasob = przemianowane.get(w.zasob) ?? w.zasob;
+  const szablon = structuredClone(paczka.szablon);
+  const rewers = paczka.rewers && structuredClone(paczka.rewers);
+  const strony = rewers ? [szablon, rewers] : [szablon];
+  for (const s of strony) {
+    if (s.teksturaTla) s.teksturaTla = przemianowane.get(s.teksturaTla) ?? s.teksturaTla;
+    for (const w of wszystkieWezly(s)) {
+      if (czyKontener(w) && w.teksturaTla)
+        w.teksturaTla = przemianowane.get(w.teksturaTla) ?? w.teksturaTla;
+      if (w.typ === 'obraz' && w.zasob) w.zasob = przemianowane.get(w.zasob) ?? w.zasob;
+    }
   }
   // Własne elementy ozdobne szablonu: identyczne współdzielone, inne o zajętym id – nowe id.
-  const uzyte = new Set(odwolaniaDoElementow(szablon).filter((id) => !czyWbudowany(id)));
+  const uzyte = new Set(strony.flatMap(odwolaniaDoElementow).filter((id) => !czyWbudowany(id)));
   const wPaczce = new Set((paczka.biblioteka ?? []).map((e) => e.id));
   for (const id of uzyte)
     if (!wPaczce.has(id) && elementyProjektu(projekt).some((e) => e.id === id))
@@ -467,7 +509,7 @@ export function dodajSzablon(
     przepiszObrazRamki(e, przemianowane),
   );
   const elementy = dolaczElementy(projekt, bibliotekaPaczki, uzyte);
-  przepiszOdwolania(szablon, elementy.mapa);
+  for (const s of strony) przepiszOdwolania(s, elementy.mapa);
   const role = { ...projekt.role };
   for (const [rola, rodzina] of Object.entries(paczka.role)) {
     const obecna = role[rola];
@@ -476,8 +518,13 @@ export function dodajSzablon(
       ostrzezenia.push(t('dane.konfliktRoli', { rola, projekt: obecna, szablon: rodzina }));
   }
   szablon.id = unikalneId(szablon.id, new Set(projekt.szablony.map((s) => s.id)));
+  if (rewers) {
+    rewers.id = unikalneId(rewers.id, new Set((projekt.rewersy ?? []).map((r) => r.id)));
+    szablon.rewersId = rewers.id;
+  }
   const wynik: Projekt = {
     ...projekt,
+    ...(rewers ? { rewersy: [...(projekt.rewersy ?? []), rewers] } : {}),
     role,
     zasoby: opisy,
     ...(elementy.lista.length > 0 ? { biblioteka: { ozdobniki: elementy.lista } } : {}),

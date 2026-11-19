@@ -5,10 +5,13 @@ import Dexie from 'dexie';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { WERSJA_SCHEMATU, type DaneZasobow, type Projekt } from '../model/projekt';
-import { korzenKarty, type WariantCzcionki, type Wezel } from '../model/szablon';
+import { korzenKarty, type Rewers, type WariantCzcionki, type Wezel } from '../model/szablon';
 import { pakietMausritter } from '../pakiety/mausritter';
 import { ZESTAWY_STYLOW } from '../ozdobniki/zestawyStylow';
+import { dodajRewers, przypiszRewers, rewersKarty, usunRewers } from './rewers';
 import { BazaProjektow } from './baza';
+import { cofnij, pustaHistoria, zapamietaj } from './historia';
+import { szablonyUzywajace } from './biblioteka';
 import {
   dodajSzablon,
   eksportujProjekt,
@@ -1014,5 +1017,149 @@ describe('eksport i import szablonu', () => {
     const paczka = importujSzablon(eksportujSzablon(projekt, zasoby, 'mausritter-bron').bajty);
     const wynik = dodajSzablon(projekt, zasoby, paczka);
     expect(wynik.szablonId).toBe('mausritter-bron-2');
+  });
+});
+
+describe('M4-1: rewersy', () => {
+  const rewers: Rewers = {
+    id: 'rewers',
+    nazwa: 'Mapa',
+    rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+    korzen: { id: 'korzen', typ: 'swobodny', dzieci: [] },
+  };
+
+  it('migruje projekt i paczkę v22 bez przypisywania rewersu', () => {
+    expect(przygotujProjekt({ ...projekt, wersja: 22 })).toEqual(projekt);
+    const s = projekt.szablony[0]!;
+    const paczka = importujSzablon(
+      eksportujSzablon({ ...projekt, wersja: 22 }, zasoby, s.id).bajty,
+    );
+    expect(paczka.szablon).toEqual(s);
+    expect(paczka.rewers).toBeUndefined();
+  });
+
+  it('rozróżnia kolejność przypisań, dziedziczenie i jawny brak rewersu', () => {
+    const drugi = { ...rewers, id: 'drugi' };
+    const mapa = new Map([
+      [rewers.id, rewers],
+      [drugi.id, drugi],
+    ]);
+    expect(rewersKarty(mapa, {}, {}, { rewersId: 'rewers' })).toBe(rewers);
+    expect(rewersKarty(mapa, {}, { rewersId: 'drugi' }, { rewersId: 'rewers' })).toBe(drugi);
+    expect(rewersKarty(mapa, { rewersId: 'rewers' }, { rewersId: 'drugi' }, {})).toBe(rewers);
+    expect(rewersKarty(mapa, { rewersId: null }, { rewersId: 'drugi' }, {})).toBeUndefined();
+    expect(rewersKarty(mapa, {}, { rewersId: null }, { rewersId: 'rewers' })).toBeUndefined();
+  });
+
+  it('zapisuje i odtwarza przypisania oraz usuwa rewers i referencje w jednej zmianie', async () => {
+    const { projekt: bazaRewersow, id } = dodajRewers(projekt, rewers);
+    const s = projekt.szablony[0]!;
+    const talia = projekt.talie[0]!;
+    const karta = talia.karty[0]!;
+    const projektZPrzypisaniem = przypiszRewers(
+      przypiszRewers(
+        przypiszRewers(bazaRewersow, { rodzaj: 'talia', id: talia.id }, id),
+        { rodzaj: 'szablon', id: s.id },
+        id,
+      ),
+      { rodzaj: 'karta', taliaId: talia.id, id: karta.id },
+      null,
+    );
+    const nazwa = 'm4-1-rewers-zapis';
+    const baza = new BazaProjektow(nazwa);
+    try {
+      await baza.zapisz(projektZPrzypisaniem, zasoby);
+      const wynik = await baza.wczytaj(projekt.id);
+      expect(wynik.projekt).toEqual(projektZPrzypisaniem);
+      expect(importujProjekt(eksportujProjekt(wynik.projekt, wynik.zasoby)).projekt).toEqual(
+        wynik.projekt,
+      );
+      const bez = usunRewers(wynik.projekt, id);
+      expect(bez.rewersy).toEqual([]);
+      expect(bez.talie[0]!.rewersId).toBeNull();
+      expect(bez.szablony[0]!.rewersId).toBeNull();
+      expect(wynik.projekt.szablony[0]!.rewersId).toBe(id);
+      expect(przygotujProjekt(bez)).toEqual(bez);
+      expect(cofnij(zapamietaj(pustaHistoria(), wynik.projekt), bez)?.stan).toBe(wynik.projekt);
+      const dziedziczy = przypiszRewers(bez, { rodzaj: 'szablon', id: s.id }, undefined);
+      expect('rewersId' in dziedziczy.szablony[0]!).toBe(false);
+    } finally {
+      baza.zamknij();
+      await Dexie.delete(nazwa);
+    }
+  });
+
+  it('odrzuca obcy identyfikator lub duplikat w archiwum projektu', () => {
+    const s = { ...projekt.szablony[0]!, rewersId: rewers.id };
+    expect(() => przygotujProjekt({ ...projekt, szablony: [s], talie: [], arkusze: [] })).toThrow(
+      /nieznany rewers/,
+    );
+    expect(() => przygotujProjekt({ ...projekt, rewersy: [rewers, rewers] })).toThrow(/rewersy/);
+  });
+
+  it('przenosi obraz, ozdobnik i font rewersu oraz przepisuje kolidujące identyfikatory', () => {
+    const obraz = projekt.zasoby.find((o) => o.rodzaj === 'obraz')!;
+    const font = projekt.zasoby.find((o) => o.rodzaj === 'czcionka')!;
+    const nazwaFontu = 'Własny krój rewersu';
+    const r: Rewers = {
+      ...rewers,
+      teksturaTla: obraz.id,
+      korzen: {
+        ...rewers.korzen,
+        dzieci: [
+          { id: 'tytul', typ: 'tekst', tekst: 'Mapa', styl: { czcionka: nazwaFontu, rozmiar: 4 } },
+          { id: 'logo', typ: 'obraz', zasob: obraz.id, dopasowanie: 'dopasuj' },
+        ],
+      },
+      ramka: { kolor: '#111111', grubosc: 1, narozniki: { element: 'wl:naroznik', rozmiar: 4 } },
+    };
+    const s = { ...szablonCzaru, rewersId: r.id };
+    const p: Projekt = {
+      ...projekt,
+      szablony: [s],
+      talie: [],
+      arkusze: [],
+      rewersy: [r],
+      zasoby: [obraz, { ...font, rodzina: nazwaFontu, zrodlo: 'wlasna' }],
+      biblioteka: {
+        ozdobniki: [
+          {
+            id: 'wl:naroznik',
+            nazwa: 'Narożnik rewersu',
+            rodzaj: 'naroznik',
+            szer: 3,
+            wys: 3,
+            kontury: [
+              { kontur: [['M', 0, 0], ['L', 3, 0], ['L', 0, 3], ['Z']], wypelnienie: 'kolor' },
+            ],
+          },
+        ],
+      },
+    };
+    expect(szablonyUzywajace(p, 'wl:naroznik').map((s) => s.id)).toEqual([r.id]);
+    const wynik = eksportujSzablon(p, zasoby, s.id);
+    expect(wynik.ostrzezenia).toEqual([expect.stringContaining(nazwaFontu)]);
+    const paczka = importujSzablon(wynik.bajty);
+    expect(paczka.rewers).toEqual(r);
+    const pliki = unzipSync(wynik.bajty);
+    const j = JSON.parse(strFromU8(pliki['szablon.json']!));
+    j.rewers.korzen.dzieci.push(j.rewers.korzen.dzieci[0]);
+    pliki['szablon.json'] = strToU8(JSON.stringify(j));
+    expect(() => importujSzablon(zipSync(pliki))).toThrow(/powtórzon/);
+
+    expect(paczka.biblioteka).toEqual(p.biblioteka!.ozdobniki);
+    const inneBajty = new Map(zasoby).set(obraz.id, Uint8Array.of(1));
+    const cel: Projekt = {
+      ...p,
+      biblioteka: { ozdobniki: p.biblioteka!.ozdobniki.map((e) => ({ ...e, nazwa: 'Inny' })) },
+    };
+    const dodany = dodajSzablon(cel, inneBajty, paczka);
+    const kopia = dodany.projekt.rewersy![1]!;
+    expect(kopia.id).not.toBe(r.id);
+    expect(kopia.teksturaTla).not.toBe(obraz.id);
+    expect(dodany.zasoby.get(kopia.teksturaTla!)).toEqual(zasoby.get(obraz.id));
+    expect(kopia.ramka!.narozniki!.element).toBe('wl:naroznik-2');
+    expect(dodany.projekt.szablony.find((s) => s.id === dodany.szablonId)!.rewersId).toBe(kopia.id);
+    expect(() => dodajSzablon(cel, zasoby, { ...paczka, zasoby: [] })).toThrow(/nieznany zasób/);
   });
 });

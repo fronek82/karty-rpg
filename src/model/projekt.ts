@@ -1,6 +1,6 @@
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import type { Arkusz } from './arkusz';
-import type { Szablon, Talia, WariantCzcionki } from './szablon';
+import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
 
 /**
  * Numer wersji schematu zapisu projektu (plik `.kartyrpg` i IndexedDB). Zwiększać z migracją.
@@ -24,8 +24,9 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  * 16 – M2b-9: `Szablon.podklad` (podkład ze wzoru pod podglądem edytora: zasób obrazu projektu,
  *      przezroczystość, widoczność); poza plikiem szablonu, nigdy w scenie, PDF ani eksporcie obrazów.
  * 17 – M2c-1: `Arkusz.wlasnySzablonId` dla własnej kartki w projekcie pakietowym.
+ * 23 – M4-1: rewersy projektu i opcjonalne przypisania na talii, szablonie i karcie.
  */
-export const WERSJA_SCHEMATU = 22;
+export const WERSJA_SCHEMATU = 23;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 
@@ -65,6 +66,7 @@ export interface Projekt {
   role: Record<string, string>;
   zasoby: OpisZasobu[];
   szablony: Szablon[];
+  rewersy?: Rewers[];
   talie: Talia[];
   arkusze: Arkusz[];
   /** Pakiet gry, z którego pochodzą szablony i typy kart (np. `mausritter`). */
