@@ -147,7 +147,11 @@ export function roleProjektu(p: Projekt): string[] {
       for (const n of nazwy) if (n && !rodziny.has(n)) role.add(n);
     }
   };
-  for (const s of p.szablony) [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)].forEach(style);
+  for (const s of p.szablony) {
+    [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)].forEach(style);
+    for (const g of s.grupyStylow ?? [])
+      if (!rodziny.has(g.styl.czcionka)) role.add(g.styl.czcionka);
+  }
   for (const a of p.arkusze) {
     const u = a.ustawienia;
     for (const n of [u.tytul?.styl.czcionka, u.grupy?.styl.czcionka, u.grupy?.stylOpisu.czcionka]) {

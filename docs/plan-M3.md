@@ -1,6 +1,6 @@
 # Plan M3 – style i skład kart z danych
 
-**Status.** M3 rozpoczęty 19.11.2026. M3-1 ukończono 19.11.2026. Następny jest M3-2. Punktem wyjścia jest ukończenie wdrożenia M2c. [Ręczny odbiór M2c](plan-M2c.md#4-etapy) jest otwarty. Zakres wynika ze [SPEC, sekcje 4, 5, 9 i 12](../SPEC.md), [planu M2](plan-M2.md#6-później) i [planu M2b](plan-M2b.md#6-później).
+**Status.** M3 rozpoczęty 19.11.2026. M3-1 ukończono 19.11.2026. M3-2 ukończono 19.11.2026. Następny jest M3-3. Punktem wyjścia jest ukończenie wdrożenia M2c. [Ręczny odbiór M2c](plan-M2c.md#4-etapy) jest otwarty. Zakres wynika ze [SPEC, sekcje 4, 5, 9 i 12](../SPEC.md), [planu M2](plan-M2.md#6-później) i [planu M2b](plan-M2b.md#6-później).
 
 ## 1. Cel i kryterium ukończenia
 
@@ -37,7 +37,7 @@ Jeden etap oznacza osobną gałąź z aktualnego `main` i osobny PR. Każdy PR p
 | Etap | Status       | Wielkość | Zakres z testami                                                                                                                                                                                                                     | Agenci                                                  |
 | ---- | ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
 | M3-1 | ✓ 19.11.2026 | M        | Zestawy stylów. Vitest sprawdza zakres zmian i poprawność katalogu. Testy obejmują kartę bez separatora, warianty, zastąpienie 9-slice, eksport i import szablonu. E2e sprawdza zastosowanie, cofnięcie, ponowne otwarcie i podgląd. | biblioteka-ozdobnikow, edytor-ui, tester                |
-| M3-2 | ✗            | L        | Nazwane grupy stylów i kolory z danych. Test migracji, importu szablonu, konfliktów, odłączania grupy, aktualizacji pól i koloru domyślnego.                                                                                         | silnik-layoutu, dane-import, edytor-ui, tester          |
+| M3-2 | ✓ 19.11.2026 | L        | Nazwane grupy stylów i kolory z danych. Test migracji, importu szablonu, konfliktów, odłączania grupy, aktualizacji pól i koloru domyślnego.                                                                                         | silnik-layoutu, dane-import, edytor-ui, tester          |
 | M3-3 | ✗            | M        | Listy numerowane i ikony w tekście. Testy łamania linii, indeksów, nieznanych kodów oraz PNG i PDF.                                                                                                                                  | silnik-layoutu, biblioteka-ozdobnikow, druk-pdf, tester |
 | M3-4 | ✗            | L        | Kontynuacja długiego tekstu na kolejnej karcie. Test podziału, nagłówka, ilości, kolejności, braku postępu i wspólnego wyniku dla podglądu, obrazów i druku.                                                                         | silnik-layoutu, druk-pdf, edytor-ui, tester             |
 | M3-5 | ✗            | L        | Styl szkicowy, postrzępione krawędzie, tekstura karty i panelu, motyw po łuku. Testy determinizmu, spadu, wycinków i zgodności SVG z PDF.                                                                                            | biblioteka-ozdobnikow, silnik-layoutu, druk-pdf, tester |
@@ -46,6 +46,14 @@ Jeden etap oznacza osobną gałąź z aktualnego `main` i osobny PR. Każdy PR p
 | M3-8 | ✗            | S        | Domknięcie. README, zrzuty, kontrola regresji M2c oraz odbiór neutralnych scenariuszy w obu językach i motywach.                                                                                                                     | edytor-ui, tester, recenzent                            |
 
 [Zrzuty M3-1](obrazy/m3-1/README.md) pokazują zestawy Leśny i Runiczny w PL i EN, w obu motywach.
+
+Zrzuty M3-2 pokazują [grupę stylów](obrazy/m3-2-grupa-stylu.png) i [regułę koloru karty](obrazy/m3-2-kolor-z-danych.png).
+
+### Ręczne sprawdzenia M3
+
+- [ ] M3-1. W PL i EN oraz w obu motywach przełączyć zestawy na karcie z separatorem, cofnąć zmianę i ponownie otworzyć szablon. Na pustej karcie sprawdzić wygląd ramki i puste drzewo pól.
+- [ ] M3-2. W PL i EN oraz w obu motywach przypisać dwa pola do jednej grupy, zmienić jej czcionkę i kolor, odłączyć jedno pole, a następnie usunąć grupę. Oba pola powinny zachować ostatni widoczny styl po odłączeniu lub usunięciu. Wyeksportować i zaimportować szablon z grupą, porównać niezależność obu kopii.
+- [ ] M3-2. Ustawić osobne reguły tła całej karty, panelu i koloru etykiety. Porównać dopasowanie wartości i kolor domyślny dla pustej lub innej wartości w podglądzie oraz w PDF/PNG.
 
 ## 5. Zakres pierwszej wersji
 
@@ -85,3 +93,6 @@ M4 obejmuje między innymi rewersy i druk dwustronny zgodnie ze specyfikacją. U
 | B232 | Plan | Import danych     | Mapowanie i walidację pokazujemy przed zapisem. Błąd mapowanego wiersza blokuje zapis całej partii.                                                                                                                                     |
 | B233 | M3-1 | Wbudowane zestawy | Leśny łączy pnącze, liść i gwiazdę, a Runiczny runy, okucie, łańcuch i romb. Obydwa używają istniejących elementów katalogu.                                                                                                            |
 | B234 | M3-1 | Zakres i historia | Jedna operacja zmienia ramkę karty i istniejące separatory we wszystkich wariantach. Zachowujemy długość i kierunek separatorów, geometrię ramki i jej ustawienia linii. Ponowne użycie identycznego zestawu nie dodaje kroku historii. |
+| B235 | M3-2 | Wspólny styl      | Grupa współdzieli główny styl typograficzny pola w obrębie szablonu. Etykieta, wygląd i geometria pozostają indywidualne. Odłączenie, usunięcie grupy i wklejenie stylu zapisują styl lokalny.                                          |
+| B236 | M3-2 | Reguły kolorów    | Klucz pochodzi z tekstowych danych lub parametru. Wartości porównujemy z rozróżnieniem wielkości liter po obcięciu białych znaków. Pierwszy pasujący wiersz wygrywa, a pustą albo nieznaną wartość obsługuje jawny kolor domyślny.      |
+| B237 | M3-2 | Schemat 18        | Migracje projektu i paczki v17 zachowują ich pola. Grupy mają lokalne ID i przenoszą użyte czcionki. Brakująca grupa używa stylu pola i rezerwuje swój identyfikator, żeby późniejsza edycja nie dołączyła pola przez przypadek.        |

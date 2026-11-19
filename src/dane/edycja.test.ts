@@ -110,3 +110,12 @@ describe('biblioteka czcionek i role', () => {
     expect(ostrzezeniaProjektu(y.projekt).join()).toMatch(/rola „tytul”/);
   });
 });
+
+it('uwzględnia rolę czcionki używaną wyłącznie przez grupę stylu', () => {
+  const s = p.szablony[0]!;
+  const szablon = {
+    ...s,
+    grupyStylow: [{ id: 'g', nazwa: 'Wspólny', styl: { czcionka: 'naglowki2', rozmiar: 3 } }],
+  };
+  expect(roleProjektu({ ...p, szablony: [szablon] })).toContain('naglowki2');
+});

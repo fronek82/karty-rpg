@@ -38,6 +38,53 @@ const ile = (s: Scena, typ: ElementSceny['typ']) =>
   wszystkie(s).filter((e) => e.typ === typ).length;
 
 describe('renderujKarte', () => {
+  it('stosuje reguły tła karty, panelu i etykiety oraz styl grupy w jednej scenie', () => {
+    const z = (domyslny: string, kolor: string) => ({
+      klucz: 'klasa',
+      domyslny,
+      mapa: [
+        { wartosc: 'Noc', kolor },
+        { wartosc: ' Noc ', kolor: '#123456' },
+      ],
+    });
+    const s: Szablon = {
+      id: 'k',
+      nazwa: 'Karta',
+      rozmiar: { tryb: 'mm', szerokosc: 64, wysokosc: 88 },
+      tloZDanych: z('#eeeeee', '#340077'),
+      grupyStylow: [
+        { id: 'g', nazwa: 'Wspólny', styl: { czcionka: 'tresc', rozmiar: 5, kolor: '#00aa00' } },
+      ],
+      korzen: {
+        id: 'panel',
+        typ: 'kolumna',
+        tloZDanych: z('#ffccdd', '#886600'),
+        margines: 2,
+        dzieci: [
+          {
+            id: 'tekst',
+            typ: 'tekst',
+            tekst: 'Opis',
+            grupaStyluId: 'g',
+            styl: { czcionka: 'tresc', rozmiar: 2, kolor: '#111111' },
+            etykieta: { tekst: 'Tytuł', pozycja: 'nad', kolorZDanych: z('#883344', '#667788') },
+          },
+        ],
+      },
+    };
+    const oryginal = structuredClone(s);
+    const wynik = (dane: Record<string, string>) =>
+      scenaDoSvg(renderujKarte(s, { dane }, ctx).scena);
+    const noc = wynik({ klasa: ' Noc ' });
+    for (const kolor of ['#340077', '#886600', '#667788', '#00aa00']) expect(noc).toContain(kolor);
+    expect(noc).not.toContain('#123456');
+    const dzien = wynik({ klasa: 'noc' });
+    for (const kolor of ['#eeeeee', '#ffccdd', '#883344', '#00aa00'])
+      expect(dzien).toContain(kolor);
+    expect(wynik({})).toBe(dzien);
+    expect(s).toEqual(oryginal);
+  });
+
   it('karta broni 1×1 – wzorzec SVG', async () => {
     const { scena, ostrzezenia } = renderujKarte(szablonBroni, { dane: daneBroni }, ctx);
     expect(ostrzezenia).toEqual([]);

@@ -27,6 +27,7 @@ import {
   type Wezel,
 } from '../model/szablon';
 import type { RejestrCzcionek } from './czcionki';
+import { kolorZDanych, styleZDanych } from './styleZDanych';
 import { konturIkony } from './ikony';
 import { znajdzElement } from '../ozdobniki/katalog';
 import { konturWlasnegoKsztaltu, wnetrzeWlasnegoKsztaltu } from '../ozdobniki/ksztalt';
@@ -380,7 +381,8 @@ export function renderujKarte(
     zmierzPole: (pole, ogr) => zmierzPole(pole, ogr, dane, ctx),
   };
 
-  if (szablon.tlo) {
+  const tlo = szablon.tloZDanych ? kolorZDanych(szablon.tloZDanych, dane) : szablon.tlo;
+  if (tlo) {
     elementy.push({
       typ: 'prostokat',
       x: 0,
@@ -388,7 +390,7 @@ export function renderujKarte(
       szer,
       wys,
       promien: szablon.promienRogow,
-      wypelnienie: szablon.tlo,
+      wypelnienie: tlo,
     });
   }
   if (szablon.ramka?.ozdoba?.rodzaj === 'ramka9') {
@@ -399,7 +401,14 @@ export function renderujKarte(
       'ramka-karty',
     );
   }
-  const korzen = rozmiesc(korzenKarty(szablon, karta), 0, 0, szer, wys, kontekst);
+  const korzen = rozmiesc(
+    styleZDanych(szablon, korzenKarty(szablon, karta), dane),
+    0,
+    0,
+    szer,
+    wys,
+    kontekst,
+  );
   // Położenia wszystkich widocznych węzłów – obraz może omijać pola rysowane nad nim.
   const ulozone = new Map<string, UlozonyWezel>();
   const wezly = new Map<string, WyrenderowanaKarta['wezly'][number]>();

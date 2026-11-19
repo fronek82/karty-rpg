@@ -145,6 +145,13 @@ const stylCzesciowy = obj({
   rozmiar: opc(dodatnia),
   ...polaStylu,
 });
+const kolorReguly = z.string().regex(/^#[0-9a-f]{6}$/i);
+const kolorZDanych = obj({
+  klucz: identyfikator,
+  domyslny: kolorReguly,
+  mapa: z.array(obj({ wartosc: z.string(), kolor: kolorReguly })),
+});
+
 const napis = z.union([z.string(), obj({ parametr: z.string() })]);
 const dopasowanie = z.enum(['dopasuj', 'wypelnij', 'rozciagnij']);
 
@@ -153,10 +160,16 @@ const pole = z.discriminatedUnion('typ', [
     ...bazaPola,
     typ: z.literal('tekst'),
     styl: stylTekstu,
+    grupaStyluId: opc(identyfikator),
     tekst: opc(napis),
     wieleWierszy: opc(z.boolean()),
     etykieta: opc(
-      obj({ tekst: napis, pozycja: z.enum(['nad', 'przed', 'pod']), styl: opc(stylCzesciowy) }),
+      obj({
+        tekst: napis,
+        pozycja: z.enum(['nad', 'przed', 'pod']),
+        styl: opc(stylCzesciowy),
+        kolorZDanych: opc(kolorZDanych),
+      }),
     ),
     formatowanie: opc(z.boolean()),
   }),
@@ -164,6 +177,7 @@ const pole = z.discriminatedUnion('typ', [
     ...bazaPola,
     typ: z.literal('wartosc'),
     styl: stylTekstu,
+    grupaStyluId: opc(identyfikator),
     tekst: opc(napis),
     ksztalt: z.enum([
       'prostokat',
@@ -182,6 +196,7 @@ const pole = z.discriminatedUnion('typ', [
         pozycja: z.enum(['nad', 'pod']),
         styl: opc(stylCzesciowy),
         odstep: opc(nieujemna),
+        kolorZDanych: opc(kolorZDanych),
       }),
     ),
   }),
@@ -205,7 +220,13 @@ const pole = z.discriminatedUnion('typ', [
     grubosc: nieujemna,
     kolor: opc(z.string()),
   }),
-  obj({ ...bazaPola, typ: z.literal('wpis'), styl: stylTekstu, sufiks: opc(napis) }),
+  obj({
+    ...bazaPola,
+    typ: z.literal('wpis'),
+    styl: stylTekstu,
+    grupaStyluId: opc(identyfikator),
+    sufiks: opc(napis),
+  }),
   obj({
     ...bazaPola,
     typ: z.literal('ikona'),
@@ -245,6 +266,7 @@ const pole = z.discriminatedUnion('typ', [
     wiersze: opc(calkowita.min(1).max(50)),
     naglowki: opc(z.boolean()),
     styl: stylTekstu,
+    grupaStyluId: opc(identyfikator),
     stylNaglowka: opc(stylCzesciowy),
     tloNaglowka: opc(z.string()),
     linie: opc(
@@ -266,6 +288,7 @@ const kontener: z.ZodType<Kontener> = z.lazy(() =>
     ...baza,
     typ: z.enum(['wiersz', 'kolumna', 'warstwy', 'swobodny']),
     dzieci: z.array(wezel),
+    tloZDanych: opc(kolorZDanych),
     odstep: opc(nieujemna),
     rozklad: opc(z.enum(['poczatek', 'srodek', 'koniec', 'miedzy'])),
   }),
@@ -288,6 +311,12 @@ const szablon = obj({
   rozmiar: rozmiarKarty,
   promienRogow: opc(nieujemna),
   tlo: opc(z.string()),
+  tloZDanych: opc(kolorZDanych),
+  grupyStylow: opc(
+    z
+      .array(obj({ id: identyfikator, nazwa: z.string().trim().min(1), styl: stylTekstu }))
+      .refine((grupy) => new Set(grupy.map((g) => g.id)).size === grupy.length),
+  ),
   przyklad: opc(z.record(z.string(), z.string())),
   ramka: opc(
     obj({
@@ -693,6 +722,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 14→15: tryb swobodny (kontener `swobodny`, `pozycja` węzła) – bez zmian danych.
   // 15→16: `Szablon.podklad` (podkład ze wzoru w edytorze) – bez zmian danych.
   // 16→17: opcjonalny `Arkusz.wlasnySzablonId` – stare arkusze zachowują typy pakietu.
+  // 17→18: grupy stylów i reguły kolorów są opcjonalne. Dotychczasowe style i kolory zostają lokalne.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -710,6 +740,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     14: (d) => d,
     15: (d) => d,
     16: (d) => d,
+    17: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -728,6 +759,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     14: (d) => d,
     15: (d) => d,
     16: (d) => d,
+    17: (d) => d,
   },
 };
 

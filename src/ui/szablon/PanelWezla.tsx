@@ -3,6 +3,8 @@ import { kluczZNazwy, kluczeSzablonu, TYPY_POL, type ZmianaKolejnosci } from '..
 import { t } from '../../i18n';
 import {
   czyKontener,
+  maStylTekstu,
+  stylPola,
   kluczeTabeli,
   type Kontener,
   type Pole,
@@ -20,6 +22,8 @@ import { PanelStylu } from './PanelStylu';
 import { PanelTypu } from './PanelTypu';
 import { PanelWygladu } from './PanelWygladu';
 import { PoleRozmiaru } from './PoleRozmiaru';
+import { GrupyStylow } from './GrupyStylow';
+import { KolorZDanych } from './KolorZDanych';
 
 type Opcje = readonly { wartosc: string; tekst: string }[];
 
@@ -36,6 +40,7 @@ export function PanelWezla({
   wezel,
   wymiary,
   zmienWezel,
+  zmienSzablon,
   zmienPrzyklad,
   zmienTyp,
   czcionki,
@@ -52,6 +57,7 @@ export function PanelWezla({
   wezel: Wezel;
   /** Obecny rozmiar elementu w podglądzie (mm) – start przy przełączeniu na mm. */
   wymiary: { szer: number; wys: number } | undefined;
+  zmienSzablon: (f: (s: Szablon) => Szablon, klucz?: string) => void;
   zmienWezel: (f: (w: Wezel) => Wezel, klucz?: string) => void;
   zmienPrzyklad: (klucz: string, wartosc: string) => void;
   zmienTyp: (typ: Wezel['typ']) => void;
@@ -280,7 +286,7 @@ export function PanelWezla({
               <Sekcja tytul={t('wlasciwosci.stylEtykiety')}>
                 <PanelStylu
                   styl={etykieta.styl ?? {}}
-                  bazowy={zEtykieta.styl}
+                  bazowy={stylPola(szablon, zEtykieta)}
                   czcionki={czcionki}
                   akapity={false}
                   // Etykieta tekstu leży w akapicie pola – wyrównanie ma ze stylu pola.
@@ -295,6 +301,25 @@ export function PanelWezla({
                   }
                 />
               </Sekcja>
+              {!wiele && (
+                <KolorZDanych
+                  szablon={szablon}
+                  {...(etykieta.kolorZDanych ? { regula: etykieta.kolorZDanych } : {})}
+                  kolor={etykieta.styl?.kolor ?? stylPola(szablon, zEtykieta).kolor ?? '#000000'}
+                  zmien={(v, klucz) =>
+                    zmienWezel(
+                      (w) => {
+                        if ((w.typ !== 'tekst' && w.typ !== 'wartosc') || !w.etykieta) return w;
+                        const e = { ...w.etykieta };
+                        if (v) e.kolorZDanych = v;
+                        else delete e.kolorZDanych;
+                        return { ...w, etykieta: e } as Wezel;
+                      },
+                      klucz && `kolor-etykiety:${id}:${klucz}`,
+                    )
+                  }
+                />
+              )}
             </>
           )}
         </Sekcja>
@@ -399,6 +424,9 @@ export function PanelWezla({
         </>
       )}
 
+      {!wiele && maStylTekstu(wezel) && (
+        <GrupyStylow szablon={szablon} czcionki={czcionki} zmien={zmienSzablon} pole={wezel} />
+      )}
       {pole && (
         <PanelTypu
           szablon={szablon}
@@ -431,6 +459,25 @@ export function PanelWezla({
       )}
 
       <PanelWygladu wezel={wezel} zmien={zmienWezel} />
+      {!wiele && czyKontener(wezel) && (
+        <KolorZDanych
+          szablon={szablon}
+          {...(wezel.tloZDanych ? { regula: wezel.tloZDanych } : {})}
+          kolor={wezel.tlo ?? '#ffffff'}
+          zmien={(v, klucz) =>
+            zmienWezel(
+              (w) => {
+                if (!czyKontener(w)) return w;
+                const x = { ...w };
+                if (v) x.tloZDanych = v;
+                else delete x.tloZDanych;
+                return x;
+              },
+              klucz && `kolor-panelu:${id}:${klucz}`,
+            )
+          }
+        />
+      )}
 
       {!wiele && pole?.klucz && pole.typ !== 'obraz' && (
         <div className="pole-panelu">
