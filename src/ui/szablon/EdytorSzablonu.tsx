@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { opisObrazu, MAKS_BAJTOW_OBRAZU } from '../../dane/obrazy';
+import { opisObrazu } from '../../dane/obrazy';
 import { ustawPodklad, usunPodklad } from '../../dane/podklad';
 import {
   danePodgladu,
@@ -31,9 +31,9 @@ import {
 } from '../../dane/szablon';
 import { czyProjektWlasny, kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty';
 import { rozwinOdstepy, wymiaryKarty } from '../../model/szablon';
-import { roleProjektu } from '../../dane/edycja';
+import { roleProjektu, ustawStalyObraz } from '../../dane/edycja';
 import { ElementyWlasneKontekst } from './elementyWlasne';
-import { formatujLiczbe, t, tJesliJest } from '../../i18n';
+import { t, tJesliJest } from '../../i18n';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import {
   czyKontener,
@@ -59,7 +59,7 @@ import { TloDekoracyjne } from './PolaDekoracji';
 import { PoleRamki } from './PanelWygladu';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWyrownania } from './PanelWyrownania';
-import { przygotujObraz } from '../obrazy';
+import { przygotujPlikObrazu } from '../obrazy';
 import {
   budujCele,
   celSkalowania,
@@ -394,11 +394,7 @@ export function EdytorSzablonu({
   const wczytajPodklad = async (f: File) => {
     ustawBladPodkladu('');
     try {
-      if (f.size > MAKS_BAJTOW_OBRAZU)
-        throw new Error(
-          t('dane.zaDuzy', { plik: f.name, mb: formatujLiczbe(f.size / 1024 / 1024, 1) }),
-        );
-      const { dane, ...wymiary } = await przygotujObraz(new Uint8Array(await f.arrayBuffer()));
+      const { dane, ...wymiary } = await przygotujPlikObrazu(f);
       await edycja.zmienZZasobami((p, d) => {
         const opis = opisObrazu(f.name, dane, wymiary, new Set(p.zasoby.map((z) => z.id)));
         return ustawPodklad(p, d, szablonId, { opis, dane });
@@ -408,6 +404,18 @@ export function EdytorSzablonu({
         t('podklad.blad', { plik: f.name, powod: e instanceof Error ? e.message : String(e) }),
       );
     }
+  };
+  const wgrajStalyObraz = async (poleId: string, plik: File, sygnal: AbortSignal) => {
+    const pole = szablon && znajdzWezel(szablon, poleId);
+    if (!pole) return;
+    const obraz = await przygotujPlikObrazu(plik);
+    if (sygnal.aborted) return;
+    await edycja.zmienZZasobami((p, d) => {
+      const s = p.szablony.find((s) => s.id === szablonId);
+      return p.id === projekt.id && s && znajdzWezel(s, poleId) === pole
+        ? ustawStalyObraz(p, d, szablonId, poleId, plik.name, obraz)
+        : { projekt: p, dane: d };
+    });
   };
   const celeZazn: Cel[] = wezlyKarty ? budujCele(szablon, wezlyKarty, aktywne) : [];
   const celUchwytow = celeZazn.length === aktywne.length ? celSkalowania(celeZazn) : undefined;
@@ -824,6 +832,12 @@ export function EdytorSzablonu({
                   wymiary={wymiary(edytowany.id)}
                   czcionki={czcionki}
                   obrazy={obrazy}
+                  {...(aktywne.length === 1
+                    ? {
+                        wgrajStalyObraz: (plik: File, sygnal: AbortSignal) =>
+                          wgrajStalyObraz(edytowany.id, plik, sygnal),
+                      }
+                    : {})}
                   zajeteKlucze={zajeteKlucze}
                   {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
                   rozmiaryKotwicy={rozmiaryKotwicy}

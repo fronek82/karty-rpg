@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { kluczZNazwy, kluczeSzablonu } from '../../dane/szablon';
 import { t } from '../../i18n';
 import { MAKS_ZNACZNIKOW } from '../../silnik/karta';
@@ -46,6 +47,7 @@ export function PanelTypu({
   zmien,
   czcionki,
   obrazy,
+  wgrajStalyObraz,
   wiele,
   zajeteKlucze,
 }: {
@@ -55,6 +57,7 @@ export function PanelTypu({
   czcionki: Opcje;
   /** Obrazy z biblioteki projektu (stały obraz). */
   obrazy: Opcje;
+  wgrajStalyObraz?: (plik: File, sygnal: AbortSignal) => Promise<void>;
   /** Edycja kilku pól naraz – bez ustawień unikalnych (kolumny tabeli). */
   wiele: boolean;
   /** Klucze zajęte poza szablonem (dane kart) – dla nowych kolumn tabeli. */
@@ -304,11 +307,11 @@ export function PanelTypu({
             />
           </div>
           {!pole.klucz && (
-            <Lista
-              etykieta={t('wlasciwosci.obrazStaly')}
-              opcje={[{ wartosc: '', tekst: t('wlasciwosci.brak') }, ...obrazy]}
+            <StalyObraz
               wartosc={pole.zasob ?? ''}
-              zmien={(v) => ustaw({ zasob: v || undefined })}
+              obrazy={obrazy}
+              wybierz={(v) => ustaw({ zasob: v || undefined })}
+              wgraj={wgrajStalyObraz}
             />
           )}
         </Sekcja>
@@ -646,6 +649,82 @@ function PanelTabeli({
             zmien={(f) => zmienStyl('stylNaglowka', f, `stylnagl:${id}`)}
           />
         </Sekcja>
+      )}
+    </>
+  );
+}
+
+function StalyObraz({
+  wartosc,
+  obrazy,
+  wybierz,
+  wgraj,
+}: {
+  wartosc: string;
+  obrazy: Opcje;
+  wybierz: (id: string) => void;
+  wgraj: ((plik: File, sygnal: AbortSignal) => Promise<void>) | undefined;
+}) {
+  const plik = useRef<HTMLInputElement>(null);
+  const operacja = useRef<AbortController | undefined>(undefined);
+  const [trwa, ustawTrwa] = useState(false);
+  const [blad, ustawBlad] = useState('');
+  useEffect(() => () => operacja.current?.abort(), []);
+  const wczytaj = async (f: File) => {
+    if (!wgraj || operacja.current) return;
+    const o = new AbortController();
+    operacja.current = o;
+    ustawBlad('');
+    ustawTrwa(true);
+    try {
+      await wgraj(f, o.signal);
+    } catch (e) {
+      if (!o.signal.aborted) ustawBlad(e instanceof Error ? e.message : String(e));
+    } finally {
+      operacja.current = undefined;
+      if (!o.signal.aborted) ustawTrwa(false);
+    }
+  };
+  return (
+    <>
+      <div className="wiersz-przyciskow">
+        <Lista
+          etykieta={t('wlasciwosci.obrazStaly')}
+          opcje={[{ wartosc: '', tekst: t('wlasciwosci.brak') }, ...obrazy]}
+          wartosc={wartosc}
+          zmien={wybierz}
+        />
+        {wgraj && (
+          <>
+            <button
+              type="button"
+              aria-disabled={trwa}
+              onClick={() => {
+                if (!operacja.current) plik.current?.click();
+              }}
+            >
+              {t('karta.wgrajObraz')}
+            </button>
+            <input
+              ref={plik}
+              type="file"
+              accept="image/png,image/jpeg"
+              hidden
+              data-testid="plik-stalego-obrazu"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (f) void wczytaj(f);
+              }}
+            />
+          </>
+        )}
+      </div>
+      {trwa && <p role="status">{t('projekty.trwa')}</p>}
+      {blad && (
+        <p className="uwaga" role="alert">
+          {blad}
+        </p>
       )}
     </>
   );

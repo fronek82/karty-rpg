@@ -1,19 +1,29 @@
 import { formatObrazu } from '../dane/czcionki';
 import {
   MAKS_PIKSELI,
+  MAKS_BAJTOW_OBRAZU,
   macierzOrientacji,
   orientacjaExif,
   wymiaryJpeg,
   wymiaryPoObrocie,
 } from '../dane/obrazy';
 import { BladDanych } from '../dane/schemat';
-import { t } from '../i18n';
+import { formatujLiczbe, t } from '../i18n';
 
 export interface PrzygotowanyObraz {
   dane: Uint8Array;
   /** Wymiary w pikselach (0, gdy przeglądarka nie odczyta pliku – opis obrazu go odrzuci). */
   szerokosc: number;
   wysokosc: number;
+}
+
+/** Odrzuca zbyt duży plik przed odczytem jego bajtów. */
+export async function przygotujPlikObrazu(plik: File): Promise<PrzygotowanyObraz> {
+  if (plik.size > MAKS_BAJTOW_OBRAZU)
+    throw new BladDanych(
+      t('dane.zaDuzy', { plik: plik.name, mb: formatujLiczbe(plik.size / 1024 / 1024, 1) }),
+    );
+  return przygotujObraz(new Uint8Array(await plik.arrayBuffer()));
 }
 
 /** Współczynnik zmniejszenia (≤ 1), by obraz mieścił się w limicie powierzchni kanwy. */
