@@ -1,6 +1,6 @@
 # Plan M2c – biblioteka globalna, wymiary arkusza i eksport obrazów
 
-**Status.** M2c ukończony 19.11.2026. Plan przyjęto 18.11.2026 zgodnie z dyspozycją właściciela. Punktem wyjścia jest `main` po UI-9. Zakres pochodzi z [planu M2b, sekcji 6 i decyzji R2](plan-M2b.md) oraz [decyzji B31](plan-M2.md).
+**Status.** Etapy wdrożeniowe M2c ukończono 19.11.2026. [Ręczny odbiór M2c](#4-etapy): oczekuje. Plan przyjęto 18.11.2026 zgodnie z dyspozycją właściciela. Punktem wyjścia jest `main` po UI-9. Zakres pochodzi z [planu M2b, sekcji 6 i decyzji R2](plan-M2b.md) oraz [decyzji B31](plan-M2.md).
 
 ## 1. Cel i kryterium ukończenia
 
@@ -53,7 +53,9 @@ Jeden etap to jedna gałąź od aktualnego `main` i jeden PR. Status ✓ z datą
 | M2c-3 | ✓ 19.11.2026 | M        | Diagnoza i zgodność PNG/JPG w Firefox i WebKit. Testy właściwych plików i zawartości w obu przeglądarkach, pełna regresja Chromium.                                                                                                                                                                                                                         | druk-pdf, edytor-ui, tester                           |
 | M2c-4 | ✓ 19.11.2026 | S        | Domknięcie. README i opis nowych czynności, zrzuty i sprawdzenia PL/EN w obu motywach, końcowa kontrola wzorców oraz statusów planu i `CLAUDE.md`.                                                                                                                                                                                                          | tester, edytor-ui, recenzent                          |
 
-Końcowa weryfikacja objęła biblioteki, diagram wymiarów i pobieranie plików w PL i EN, w obu motywach. Zrzuty dokumentacyjne są w [galerii M2c](obrazy/m2c-4/README.md). Wzorce PNG kart, arkuszy i przykładów są identyczne z wersją sprzed M2c. Ręczne sprawdzenie pobrania i otwarcia pliku w natywnym Safari na macOS pozostaje do wykonania.
+Końcowa weryfikacja objęła biblioteki, diagram wymiarów i pobieranie plików w PL i EN, w obu motywach. Zrzuty dokumentacyjne są w [galerii M2c](obrazy/m2c-4/README.md). Wzorce PNG kart, arkuszy i przykładów są identyczne z wersją sprzed M2c.
+
+- [ ] **Ręczny odbiór M2c: oczekuje**. W PL i EN oraz w obu motywach sprawdzić zapis, pobranie, import i użycie szablonu oraz ozdobnika w drugim projekcie. Sprawdzić zmianę marginesu po przejściu klawiaturą z etykiety wymiaru do pola. W Safari na macOS pobrać i otworzyć PNG i JPG oraz archiwa ZIP dla kart i arkuszy zawierających ilustrację.
 
 ## 5. Zakres pierwszej wersji
 
@@ -97,3 +99,4 @@ M3 zgodnie z [planem M2b](plan-M2b.md), w tym zestawy stylów i dalsze rozszerze
 | B226 | M2c-3 | Bajty w IndexedDB                   | Nowe zasoby i paczki zapisujemy jako `Uint8Array`. Migracja przy odczycie przyjmuje również wcześniejszy `Blob`. Wersje projektu i indeksów IndexedDB pozostają takie same. Kartę otwartą przed wdrożeniem trzeba odświeżyć przed ponownym otwarciem projektu lub paczki zapisanej przez nową wersję. |
 | B227 | M2c-3 | Diagnoza eksportu                   | W Playwright Firefox i WebKit sprawdzamy podpis pliku, wymiary, nazwy i piksele ilustracji w bezpośrednich pobraniach i ZIP. Rasteryzacja korzysta z dotychczasowego SVG.                                                                                                                             |
 | B228 | M2c-4 | Końcowa dokumentacja                | Galeria pokazuje oba katalogi, diagram i menu pobierania we wszystkich czterech kombinacjach języka i motywu. Wynik automatyczny WebKit zapisujemy osobno od ręcznego sprawdzenia Safari na macOS.                                                                                                    |
+| B229 | M2c-4 | Przejście do M3                     | Odbiór właścicielski pozostaje otwartym punktem w planie M2c. Prace nad M3 mogą rozpocząć się przed jego wykonaniem.                                                                                                                                                                                  |
