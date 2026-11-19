@@ -14,6 +14,7 @@ import {
 } from '../model/szablon';
 import { unikalneId } from './czcionki';
 import { prostokatPoObrocie } from '../silnik/uklad';
+import type { WbudowanyZestawStylu } from '../ozdobniki/zestawyStylow';
 
 /**
  * Edycja szablonu od zera: operacje na drzewie wierszy, kolumn i pól (czyste funkcje – projekt
@@ -202,6 +203,65 @@ export function nowyWezel(
 function mapuj(w: Wezel, f: (w: Wezel) => Wezel): Wezel {
   const x = f(w);
   return czyKontener(x) ? { ...x, dzieci: x.dzieci.map((d) => mapuj(d, f)) } : x;
+}
+
+/** Ustawienia pojedynczego ozdobnika zawierają wyłącznie wartości proste. */
+function teSameUstawienia<T extends object>(obecne: T | undefined, nowe: T): boolean {
+  if (!obecne) return false;
+  const klucze = Object.keys(nowe) as (keyof T)[];
+  return (
+    Object.keys(obecne).length === klucze.length &&
+    klucze.every((klucz) => Object.hasOwn(obecne, klucz) && obecne[klucz] === nowe[klucz])
+  );
+}
+
+/** Zestaw kopiuje zwykłe style ramki i istniejących separatorów we wszystkich układach karty. */
+export function zastosujZestawStylu(s: Szablon, zestaw: WbudowanyZestawStylu): Szablon {
+  let zmieniono = false;
+  const ramka = {
+    ...(s.ramka ?? { grubosc: 0.3, kolor: zestaw.ozdoba.kolor }),
+    ozdoba: { ...zestaw.ozdoba },
+    narozniki: { ...zestaw.narozniki },
+  };
+  const ustawSeparator = (w: Wezel): Wezel => {
+    if (w.typ !== 'separator') return w;
+    const { rysunek, zakonczenia, srodek, ...styl } = zestaw.separator;
+    const takiSamRysunek =
+      rysunek === 'linia'
+        ? w.rysunek === rysunek
+        : typeof w.rysunek === 'object' && teSameUstawienia(w.rysunek, rysunek);
+    if (
+      takiSamRysunek &&
+      w.kolor === styl.kolor &&
+      w.grubosc === styl.grubosc &&
+      w.stylLinii === styl.stylLinii &&
+      teSameUstawienia(w.zakonczenia, zakonczenia) &&
+      teSameUstawienia(w.srodek, srodek)
+    )
+      return w;
+    zmieniono = true;
+    return {
+      ...w,
+      ...styl,
+      rysunek: rysunek === 'linia' ? rysunek : { ...rysunek },
+      zakonczenia: { ...zakonczenia },
+      srodek: { ...srodek },
+    };
+  };
+  const korzen = mapuj(s.korzen, ustawSeparator) as Kontener;
+  const warianty = s.warianty?.map((w) => ({
+    ...w,
+    korzen: mapuj(w.korzen, ustawSeparator) as Kontener,
+  }));
+
+  if (
+    !zmieniono &&
+    s.ramka?.ozdoba?.rodzaj === 'motyw' &&
+    teSameUstawienia(s.ramka.ozdoba, ramka.ozdoba) &&
+    teSameUstawienia(s.ramka.narozniki, ramka.narozniki)
+  )
+    return s;
+  return { ...s, ramka, korzen, ...(warianty ? { warianty } : {}) };
 }
 
 /** Węzeł o identyfikatorze (w korzeniu szablonu). */

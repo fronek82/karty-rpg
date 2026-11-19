@@ -788,6 +788,11 @@ export const en: Slownik = {
   'wlasciwosci.rola': '{rola} (role)',
   'wlasciwosci.kopiujStyl': 'Copy style',
   'wlasciwosci.wklejStyl': 'Paste style',
+  'zestawy.tytul': 'Style sets',
+  'zestawy.opis':
+    'Choose a set to change the frame, corners and existing separators in all layouts of this card.',
+  'zestawy.lesny': 'Woodland',
+  'zestawy.runiczny': 'Runic',
   'wlasciwosci.ramkaKarty': 'Card frame',
   'wlasciwosci.odsuniecie': 'Distance from the edge (mm)',
   'wlasciwosci.promienRamki': 'Frame corner radius (mm)',

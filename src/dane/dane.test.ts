@@ -5,8 +5,9 @@ import Dexie from 'dexie';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { WERSJA_SCHEMATU, type DaneZasobow, type Projekt } from '../model/projekt';
-import type { WariantCzcionki, Wezel } from '../model/szablon';
+import { korzenKarty, type WariantCzcionki, type Wezel } from '../model/szablon';
 import { pakietMausritter } from '../pakiety/mausritter';
+import { ZESTAWY_STYLOW } from '../ozdobniki/zestawyStylow';
 import { BazaProjektow } from './baza';
 import {
   dodajSzablon,
@@ -20,6 +21,7 @@ import { MAKS_BAJTOW_CZCIONKI, wariantCzcionki, wgrajCzcionke } from './czcionki
 import { projektZPakietu, rejestrZProjektu } from './pakiet';
 import { BladDanych, MIGRACJE, migruj, ostrzezeniaProjektu, przygotujProjekt } from './schemat';
 import { szablonCzaru, szablonStatystyk, szablonWroga } from '../silnik/__testy__/przyklady';
+import { nowyWezel, zastosujZestawStylu } from './szablon';
 
 const czcionka = async (plik: string) => new Uint8Array(readFileSync(`public/czcionki/${plik}`));
 const obraz = async () =>
@@ -596,6 +598,35 @@ describe('wgrywanie czcionek', () => {
 });
 
 describe('eksport i import szablonu', () => {
+  it('szablon po zastosowaniu zestawu stylu przechodzi eksport i import', () => {
+    const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
+    const wariant = wzor.warianty![0]!;
+    const separator = {
+      ...nowyWezel(wzor, 'separator', 'Separator w wariancie'),
+      id: 'separator-v',
+    };
+    const szablon = zastosujZestawStylu(
+      {
+        ...wzor,
+        warianty: [
+          {
+            ...wariant,
+            korzen: { ...wariant.korzen, dzieci: [...wariant.korzen.dzieci, separator] },
+          },
+        ],
+      },
+      ZESTAWY_STYLOW[1],
+    );
+    const p = { ...projekt, szablony: [szablon] };
+    const { bajty } = eksportujSzablon(p, zasoby, szablon.id);
+    const wynik = importujSzablon(bajty).szablon;
+    expect(wynik).toEqual(szablon);
+    expect(korzenKarty(wynik, { rozmiar: { kolumny: 1, rzedy: 2 } }).dzieci).toContainEqual({
+      ...separator,
+      ...ZESTAWY_STYLOW[1].separator,
+    });
+  });
+
   it('szablon z czcionkami; round-trip przez dodanie do pustego projektu', () => {
     const { bajty, ostrzezenia } = eksportujSzablon(projekt, zasoby, 'mausritter-bron');
     expect(ostrzezenia).toEqual([]);
