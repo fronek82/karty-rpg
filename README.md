@@ -1,7 +1,8 @@
 # Karty RPG
 
 Aplikacja przeglądarkowa do projektowania i drukowania kart do gier RPG i planszowych.
-Specyfikacja: [`SPEC.md`](SPEC.md), plany: [interfejs](docs/plan-UI.md), [M2](docs/plan-M2.md) i [M2b](docs/plan-M2b.md).
+Specyfikację znajdziesz w [`SPEC.md`](SPEC.md). Plany opisują [interfejs](docs/plan-UI.md),
+[M2](docs/plan-M2.md), [M2b](docs/plan-M2b.md) i ukończony [M2c](docs/plan-M2c.md).
 
 **Aplikacja online:** <https://fronek82.github.io/karty-rpg/>. Działa w całości w przeglądarce;
 projekty zostają na Twoim komputerze (IndexedDB).
@@ -59,15 +60,34 @@ używa polskiego w polskiej przeglądarce, angielskiego w pozostałych i motywu 
 4. Papier: A4, Letter, A5, zdjęcia 10×15 / 13×18 / 15×21 cm (strefa bezpieczeństwa 3 mm) albo
    własny. Szablon eksportuje się do pliku `.kartyrpg-szablon` i importuje w innym projekcie.
 
+### Globalna biblioteka szablonów i ozdobników
+
+1. W **Ustawieniach** otwórz **Szablony projektu** i wybierz **„Zapisz w bibliotece globalnej”**
+   przy własnym szablonie. Ozdobnik zapiszesz tym samym przyciskiem w **Bibliotece ozdobników**.
+2. Rozwiń odpowiednią bibliotekę globalną w projekcie docelowym i wybierz **„Użyj”**.
+   Katalog szablonów na ekranie **„Stwórz własne karty”** pozwala też utworzyć nowy projekt.
+   Własny szablon dodany do projektu pakietowego otrzymuje osobną kartkę z własnym menu kart.
+3. Katalog jest wspólny dla projektów w jednej przeglądarce. Użycie wpisu tworzy kopię w projekcie.
+   Zapisz wybrany wpis przyciskiem **„Eksportuj”**, a w innej przeglądarce wczytaj plik przyciskiem
+   **„Importuj do biblioteki…”**. Pliki mają rozszerzenia `.kartyrpg-szablon` i `.kartyrpg-ozdobnik`.
+
+[Zrzuty biblioteki, wymiarów i menu eksportu w PL i EN, w obu motywach](docs/obrazy/m2c-4/README.md).
+
 ### Druk poza zwykłym A4
 
 - **Własny układ arkusza** (Ustawienia → „Układ arkusza”): stała siatka kolumny × rzędy,
   margines górny i lewy, rozmiar karty i odstępy między kartami – np. gotowe arkusze z perforacją.
-  Kartka obok to podgląd na żywo; „Zapisz jako mój układ” – lista „Moje układy” w tej przeglądarce.
+  Rozwiń **„Podgląd wymiarów”**, aby zobaczyć wymiary papieru, slotu, marginesów i odstępów.
+  Kliknij podkreśloną liczbę przy strzałce lub użyj klawiatury na liście wymiarów, aby przejść do pola
+  formularza. Przycisk **„Zapisz jako mój układ”** dodaje układ do wspólnej listy w tej przeglądarce.
 - **Kalibracja drukarki**: przesunięcie X/Y w mm (zapamiętane w przeglądarce, tylko PDF)
   i **„Wydruk testowy (PDF)”** – same obrysy kart z numerami i krzyżykami; drukuj w skali 100%.
-- **Pobierz ▾**: PDF, obrazy stron albo karty osobno (ZIP) jako JPG/PNG 300 dpi – do punktu
-  fotograficznego (formaty 10×15 / 13×18 / 15×21 cm mają strefę przycięcia 3 mm).
+- W menu **„Pobierz”** wybierzesz PDF oraz obrazy stron lub kart w JPG i PNG. Obrazy mają
+  wymiary odpowiadające 300 dpi. Przy pojedynczym obrazie otrzymasz plik, a przy kilku plik ZIP.
+  Formaty fotograficzne 10×15 / 13×18 / 15×21 cm mają strefę przycięcia 3 mm.
+
+Po wdrożeniu M2c odśwież kartę aplikacji otwartą w poprzedniej wersji przed ponownym otwarciem
+projektu lub paczki zapisanej przez nową wersję.
 
 Przykładowe szablony do wypróbowania (do testów, nie gotowe pakiety gier):
 [`docs/przyklady/`](docs/przyklady/).
@@ -170,6 +190,10 @@ Aplikacja działa pod adresem `http://localhost:5173/karty-rpg/`.
 | `npm run test:nakladka` | nakładka arkuszy na oryginał (lokalnie, raport HTML) |
 | `npm run lint`          | ESLint                                               |
 | `npm run format:check`  | sprawdzenie formatowania (Prettier)                  |
+
+Po zainstalowaniu przeglądarek poleceniem `npx playwright install chromium firefox webkit`,
+`EKSPORT_PRZEGLADARKI=1 npm run e2e` uruchamia pełną regresję Chromium i testy eksportu
+w silnikach Firefox oraz WebKit. Wynik dla natywnego Safari wymaga osobnego sprawdzenia na macOS.
 
 Zrzuty ekranu w instrukcji (`public/instrukcja-zrzuty/<pl|en>/`) odświeżasz po zmianie wyglądu
 ekranów poleceniem `ZRZUTY_INSTRUKCJI=1 npx playwright test testy/zrzuty-instrukcji.spec.ts`
