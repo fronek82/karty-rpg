@@ -132,8 +132,8 @@ export const KOTWICE: readonly Kotwica[] = [
   'prawy-dolny',
 ];
 
-/** Obroty dozwolone w trybie swobodnym (R9) – pomiar, przyciąganie i trafienia zostają prostokątne. */
-export type ObrotSwobodny = 0 | 90 | 180 | 270;
+/** Kąt zgodny z ruchem wskazówek zegara, w stopniach od 0 do mniej niż 360. */
+export type ObrotSwobodny = number;
 
 /**
  * Położenie elementu w kontenerze swobodnym (czytane tylko wtedy, gdy rodzic jest swobodny).

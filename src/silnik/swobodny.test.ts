@@ -423,3 +423,12 @@ describe('brak regresji', () => {
     expect(scenaDoSvg(z({ x: 30, y: 30, obrot: 90 }).scena)).toBe(scenaDoSvg(z().scena));
   });
 });
+
+it('ogranicza automatyczny pomiar ukośnego pola do wąskiego kontenera', () => {
+  const k = swobodny([ikona('a', 25, { pozycja: { x: 0, y: 0, obrot: 45 } })]);
+  const a = rozmiesc(k, 0, 0, 42, 18, ctx).dzieci[0]!;
+  const r = prostokatPoObrocie(a);
+  expect(r.wys).toBeCloseTo(18);
+  expect(r.x).toBeCloseTo(0);
+  expect(r.y).toBeCloseTo(0);
+});

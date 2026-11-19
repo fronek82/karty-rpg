@@ -94,7 +94,7 @@ const pozycja = obj({
       'prawy-dolny',
     ]),
   ),
-  obrot: opc(z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)])),
+  obrot: opc(liczba.min(0).lt(360)),
 });
 
 const baza = {
@@ -471,6 +471,7 @@ const arkusz = obj({
     rozmiary: opc(z.enum(['jeden', 'mieszane'])),
     mieszane: opc(
       obj({
+        pakowanie: opc(z.enum(['pasy', 'maxrects'])),
         kolejnosc: z.enum(['najwieksze', 'wlasna']),
         obracaj: z.boolean(),
         grupujRozmiary: z.boolean(),
@@ -739,6 +740,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 18→19: opcjonalne listy i ikony w polach tekstowych. Zapisany tekst bez tych ustawień jest dosłowny.
   // 19→20: kontynuacja jest opcjonalnym ustawieniem pola i nie zmienia starszego tekstu.
   // 20→21: dodatkowe, opcjonalne ustawienia rysowania nie zmieniają starszych scen.
+  // 21→22: dotychczasowe kąty i domyślne pakowanie w pasy zachowują znaczenie.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -760,6 +762,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     18: (d) => d,
     19: (d) => d,
     20: (d) => d,
+    21: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -782,6 +785,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     18: (d) => d,
     19: (d) => d,
     20: (d) => d,
+    21: (d) => d,
   },
 };
 

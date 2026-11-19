@@ -25,7 +25,7 @@ import type { Szablon, Talia, WariantCzcionki } from './szablon';
  *      przezroczystość, widoczność); poza plikiem szablonu, nigdy w scenie, PDF ani eksporcie obrazów.
  * 17 – M2c-1: `Arkusz.wlasnySzablonId` dla własnej kartki w projekcie pakietowym.
  */
-export const WERSJA_SCHEMATU = 21;
+export const WERSJA_SCHEMATU = 22;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

@@ -419,7 +419,8 @@ export function EdytorSzablonu({
   };
   const celeZazn: Cel[] = wezlyKarty ? budujCele(szablon, wezlyKarty, aktywne) : [];
   const celUchwytow = celeZazn.length === aktywne.length ? celSkalowania(celeZazn) : undefined;
-  const prostokatUchwytow = gest.stan?.rodzaj !== 'przesun' ? celUchwytow?.rect : undefined;
+  const prostokatUchwytow =
+    gest.stan?.rodzaj !== 'przesun' ? (celUchwytow?.lokalne ?? celUchwytow?.rect) : undefined;
   const rozmiarZaznaczenia =
     celUchwytow && celeZazn.length > 1 ? (
       <Sekcja tytul={t('nakladka.rozmiarZaznaczenia')} otwarta>
@@ -710,10 +711,20 @@ export function EdytorSzablonu({
                     )}
                     {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
                     {[...podglad.wezly]
-                      .sort((a, b) => b.szer * b.wys - a.szer * a.wys)
+                      .sort(
+                        (a, b) => b.lokalne.szer * b.lokalne.wys - a.lokalne.szer * a.lokalne.wys,
+                      )
                       .map((w) => {
                         const wezel = wezlyPoId.get(w.id);
                         if (!wezel) return null;
+                        const r = w.obrys
+                          ? {
+                              x: w.obrys.x - w.lokalne.szer / 2,
+                              y: w.obrys.y - w.lokalne.wys / 2,
+                              szer: w.lokalne.szer,
+                              wys: w.lokalne.wys,
+                            }
+                          : w;
                         return (
                           <button
                             key={w.id}
@@ -723,10 +734,11 @@ export function EdytorSzablonu({
                             data-obszar={w.id}
                             aria-label={nazwaWezla(wezel)}
                             style={{
-                              left: `${(w.x / szer) * 100}%`,
-                              top: `${(w.y / wys) * 100}%`,
-                              width: `${(w.szer / szer) * 100}%`,
-                              height: `${(w.wys / wys) * 100}%`,
+                              left: `${(r.x / szer) * 100}%`,
+                              top: `${(r.y / wys) * 100}%`,
+                              width: `${(r.szer / szer) * 100}%`,
+                              height: `${(r.wys / wys) * 100}%`,
+                              ...(w.obrys ? { transform: `rotate(${w.obrys.kat}deg)` } : {}),
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -743,6 +755,7 @@ export function EdytorSzablonu({
                       stan={gest.stan}
                       siatka={przyciaganie.siatka}
                       prostokat={prostokatUchwytow}
+                      obrot={celUchwytow?.lokalne ? celUchwytow.obrot : 0}
                       uchwytDown={gest.onUchwytDown}
                       uchwytKlawisz={(u, e) => {
                         if (e.altKey || e.ctrlKey || e.metaKey) return;

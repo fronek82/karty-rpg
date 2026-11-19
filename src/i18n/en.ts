@@ -318,6 +318,11 @@ export const en: Slownik = {
   'mieszane.tytul': 'Card sizes on the sheet',
   'mieszane.jeden': 'one size (grid)',
   'mieszane.mieszane': 'mixed',
+  'mieszane.pakowanie': 'Card packing',
+  'mieszane.pasy': 'Rows',
+  'mieszane.maxrects': 'MaxRects',
+  'mieszane.maxrectsOpis':
+    'MaxRects fills available rectangles. Cutting may require separate cuts.',
   'mieszane.opis':
     'Mixed: each card has its own size from the template and the app arranges them in strips (cutting: first along the strips, then within a strip; a shared edge is a single line). Cards in slots (e.g. 2×1) – as a rectangle of slots.',
   'mieszane.kolejnosc': 'Placement order',
@@ -499,6 +504,7 @@ export const en: Slownik = {
   'polozenie.kotwica.lewy-dolny': 'bottom left corner',
   'polozenie.kotwica.dolny': 'bottom center',
   'polozenie.kotwica.prawy-dolny': 'bottom right corner',
+  'polozenie.kat': 'Rotation angle (°)',
   'polozenie.obrot': 'Rotation',
   'polozenie.obrot.wartosc': '{kat}°',
   'polozenie.obrotOpis':

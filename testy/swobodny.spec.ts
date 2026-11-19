@@ -225,3 +225,34 @@ test('swobodny korzeń przeżywa przeładowanie; kotwicę zmienia się strzałka
     'true',
   );
 });
+
+test('kąt dziesiętny obraca scenę, obszar wyboru i uchwyty oraz przetrwa ponowne otwarcie', async ({
+  page,
+}) => {
+  await kreator(page, {
+    nazwa: 'Karta z obrotem',
+    format: 'Standard / Poker',
+    rogi: 3,
+    kolor: '#f4ecd8',
+    uklad: 'Swobodny: pola w dowolnych miejscach',
+  });
+  await dodaj(page, 'Tekst', 'Kierunek');
+  await ustawXY(polozenie(page), 12, 18);
+  const kat = polozenie(page).getByLabel('Kąt obrotu (°)');
+  await kat.fill('37.5');
+  await kat.press('Tab');
+  await expect(obszar(page, 'Kierunek')).toHaveCSS('transform', /^matrix\(0\.793/);
+  await expect(page.locator('.karta-podgladu svg g[transform*="rotate(37.5)"]')).toHaveCount(1);
+  const uchwyt = page.locator('[data-uchwyt="e"]');
+  await expect(uchwyt).toBeVisible();
+  const przed = await prostokatMm(page, 'Kierunek');
+  await uchwyt.press('ArrowRight');
+  await expect
+    .poll(async () => (await prostokatMm(page, 'Kierunek')).szer)
+    .toBeGreaterThan(przed.szer);
+  if (process.env.ZRZUTY_M3_6) await page.screenshot({ path: 'docs/obrazy/m3-6-obrot.png' });
+  await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+  await page.reload();
+  await zaznacz(page, 'Kierunek');
+  await expect(kat).toHaveValue('37.5');
+});

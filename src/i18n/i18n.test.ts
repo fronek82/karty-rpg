@@ -94,7 +94,7 @@ describe('parytet słowników pl ↔ en', () => {
     const identyczne = Object.keys(pl).filter(
       (k) => pl[k as keyof typeof pl] === en[k as keyof typeof en],
     );
-    // Dozwolone: oznaczenia języków, jednostki, symbole, nazwy formatów kart i papieru.
+    // Dozwolone: oznaczenia języków, jednostki, symbole oraz nazwy własne.
     expect(identyczne).toEqual([
       'jezyk.pl',
       'jezyk.en',
@@ -106,6 +106,7 @@ describe('parytet słowników pl ↔ en', () => {
       'rozmiar.mm',
       'pakiet.param.pojemnosc',
       'czcionki.zrodlo.google',
+      'mieszane.maxrects',
       'uklad.diagram.mm',
       'papier.A4',
       'papier.Letter',

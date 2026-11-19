@@ -80,6 +80,8 @@ export function polozenieKarty(
 export type RozmiaryKart = 'jeden' | 'mieszane';
 
 export interface OpcjeMieszane {
+  /** Brak ustawienia zachowuje pakowanie w pasy. */
+  pakowanie?: 'pasy' | 'maxrects';
   /** `najwieksze` – od najwyższych i najszerszych; `wlasna` – wg `Arkusz.kolejnosc` (potem reszta). */
   kolejnosc: 'najwieksze' | 'wlasna';
   /** Obracanie kart o 90°, gdy to oszczędza papier. */

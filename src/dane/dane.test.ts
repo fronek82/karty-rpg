@@ -598,6 +598,34 @@ describe('wgrywanie czcionek', () => {
 });
 
 describe('eksport i import szablonu', () => {
+  it('M3-6: migruje kąty proste z v21 i zachowuje kąt dziesiętny w paczce', () => {
+    const wzor = projekt.szablony[0]!;
+    const ikona = {
+      id: 'ikona',
+      typ: 'ikona' as const,
+      ikona: 'gwiazdka' as const,
+      rozmiar: 3,
+      pozycja: { x: 1, y: 2, obrot: 270 },
+    };
+    const stary = { ...wzor, korzen: { id: 's', typ: 'swobodny' as const, dzieci: [ikona] } };
+    const p21 = { ...projekt, wersja: 21, szablony: [stary], arkusze: [], talie: [] };
+    expect(przygotujProjekt(p21).szablony[0]).toEqual(stary);
+    expect(importujSzablon(eksportujSzablon(p21, zasoby, stary.id).bajty).szablon).toEqual(stary);
+    const nowy = {
+      ...stary,
+      korzen: {
+        ...stary.korzen,
+        dzieci: [{ ...ikona, pozycja: { ...ikona.pozycja, obrot: 32.5 } }],
+      },
+    };
+    expect(
+      importujSzablon(
+        eksportujSzablon({ ...p21, wersja: WERSJA_SCHEMATU, szablony: [nowy] }, zasoby, nowy.id)
+          .bajty,
+      ).szablon,
+    ).toEqual(nowy);
+  });
+
   it('M3-5: migruje projekt v20 i przenosi tekstury z przemianowaniem zasobu', () => {
     expect(przygotujProjekt({ ...projekt, wersja: 20 })).toEqual(projekt);
     const obraz = projekt.zasoby.find((z) => z.rodzaj === 'obraz')!;

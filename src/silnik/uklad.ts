@@ -43,7 +43,7 @@ export interface UlozonyWezel {
   szer: Mm;
   wys: Mm;
   /** Obrót (stopnie, zgodnie z zegarem) wokół środka ramki – tylko dzieci kontenera swobodnego (R9). */
-  obrot?: 90 | 180 | 270;
+  obrot?: number;
   dzieci: UlozonyWezel[];
 }
 
@@ -54,21 +54,39 @@ export interface Prostokat {
   wys: Mm;
 }
 
-/** Prostokąt obrócony o wielokrotność 90° (zgodnie z zegarem) wokół punktu (cx, cy). */
-export function obrocProstokat(r: Prostokat, cx: Mm, cy: Mm, kat: 0 | 90 | 180 | 270): Prostokat {
-  if (kat === 0) return r;
-  const dx = r.x + r.szer / 2 - cx;
-  const dy = r.y + r.wys / 2 - cy;
-  // Obrót zgodnie z zegarem przy osi Y w dół: (x, y) → (−y, x).
-  const [nx, ny] = kat === 90 ? [-dy, dx] : kat === 180 ? [-dx, -dy] : [dy, -dx];
-  const zamien = kat !== 180;
-  const szer = zamien ? r.wys : r.szer;
-  const wys = zamien ? r.szer : r.wys;
-  return { x: cx + nx - szer / 2, y: cy + ny - wys / 2, szer, wys };
+/** Obrót zgodnie z zegarem w układzie z osią Y skierowaną w dół. */
+export function obrocWektor(x: Mm, y: Mm, kat: number): [Mm, Mm] {
+  const stopnie = ((kat % 360) + 360) % 360;
+  switch (stopnie) {
+    case 0:
+      return [x, y];
+    case 90:
+      return [-y, x];
+    case 180:
+      return [-x, -y];
+    case 270:
+      return [y, -x];
+    default: {
+      const rad = (stopnie * Math.PI) / 180;
+      const c = Math.cos(rad);
+      const s = Math.sin(rad);
+      return [c * x - s * y, s * x + c * y];
+    }
+  }
+}
+
+/** Obwiednia prostokąta po obrocie wokół punktu (cx, cy). */
+export function obrocProstokat(r: Prostokat, cx: Mm, cy: Mm, kat: number): Prostokat {
+  if (!kat) return r;
+  const [x, y] = obrocWektor(r.x + r.szer / 2 - cx, r.y + r.wys / 2 - cy, kat);
+  const [c, s] = obrocWektor(1, 0, kat);
+  const szer = Math.abs(c) * r.szer + Math.abs(s) * r.wys;
+  const wys = Math.abs(s) * r.szer + Math.abs(c) * r.wys;
+  return { x: cx + x - szer / 2, y: cy + y - wys / 2, szer, wys };
 }
 
 /** Prostokąt zajęty przez węzeł (w układzie rodzica) po jego własnym obrocie. */
-export function prostokatPoObrocie(u: Prostokat & { obrot?: 90 | 180 | 270 }): Prostokat {
+export function prostokatPoObrocie(u: Prostokat & { obrot?: number }): Prostokat {
   return obrocProstokat(
     { x: u.x, y: u.y, szer: u.szer, wys: u.wys },
     u.x + u.szer / 2,
@@ -363,7 +381,7 @@ function obwiednia(f: number, x: Mm, d: Mm): Mm {
 
 /**
  * Rozmiar dziecka kontenera swobodnego: `szer` × `wys` to jego własne wymiary (przed obrotem),
- * `prostokatSzer` × `prostokatWys` – prostokąt zajęty na karcie (zamienione boki przy 90° / 270°).
+ * `prostokatSzer` × `prostokatWys` – prostokąt zajęty na karcie (obwiednia po obrocie).
  * mm i % (miejsca wnętrza kontenera w tej samej osi) są stałe; reszta (auto, wypełnij) – wg treści,
  * z ograniczeniem do wnętrza kontenera wzdłuż osi, w którą po obrocie trafia dany bok.
  */
@@ -371,7 +389,7 @@ function rozmiarSwobodny(
   d: Wezel,
   ramka: Ograniczenie,
   ctx: KontekstUkladu,
-): { szer: Mm; wys: Mm; prostokatSzer: Mm; prostokatWys: Mm; obrot?: 90 | 180 | 270 } {
+): { szer: Mm; wys: Mm; prostokatSzer: Mm; prostokatWys: Mm; obrot?: number } {
   const kat = d.pozycja?.obrot ?? 0;
   const bokiZamienione = kat === 90 || kat === 270;
   const sz = staly(d.szerokosc, ramka.szer);
@@ -389,14 +407,33 @@ function rozmiarSwobodny(
     const m = zmierz(d, ogr, ctx, ustalone);
     szer = sz ?? m.szer;
     wys = wy ?? m.wys;
+    if (kat % 90) {
+      const [cos, sin] = obrocWektor(1, 0, kat).map(Math.abs) as [number, number];
+      const luzSzer = (ramka.szer ?? Infinity) - cos * (sz ?? 0) - sin * (wy ?? 0);
+      const luzWys = (ramka.wys ?? Infinity) - sin * (sz ?? 0) - cos * (wy ?? 0);
+      const obwSzer = cos * (sz === undefined ? szer : 0) + sin * (wy === undefined ? wys : 0);
+      const obwWys = sin * (sz === undefined ? szer : 0) + cos * (wy === undefined ? wys : 0);
+      const skala = Math.max(
+        0,
+        Math.min(1, obwSzer ? luzSzer / obwSzer : 1, obwWys ? luzWys / obwWys : 1),
+      );
+      if (skala < 1 && (obwSzer || obwWys)) {
+        const maxSzer = sz ?? Math.max(minimum(d, 'szer'), szer * skala);
+        const maxWys = wy ?? Math.max(minimum(d, 'wys'), wys * skala);
+        const dopasowany = zmierz(d, { szer: maxSzer, wys: maxWys }, ctx, ustalone);
+        szer = sz ?? Math.min(maxSzer, dopasowany.szer);
+        wys = wy ?? Math.min(maxWys, dopasowany.wys);
+      }
+    }
   }
   const s0 = szer ?? 0;
   const w0 = wys ?? 0;
+  const obwiednia = obrocProstokat({ x: 0, y: 0, szer: s0, wys: w0 }, s0 / 2, w0 / 2, kat);
   return {
     szer: s0,
     wys: w0,
-    prostokatSzer: bokiZamienione ? w0 : s0,
-    prostokatWys: bokiZamienione ? s0 : w0,
+    prostokatSzer: obwiednia.szer,
+    prostokatWys: obwiednia.wys,
     ...(kat ? { obrot: kat } : {}),
   };
 }

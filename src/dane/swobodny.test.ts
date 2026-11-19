@@ -339,8 +339,8 @@ describe('kolejność rysowania i kotwica w panelu', () => {
   });
 });
 
-describe('schemat 15 i 16', () => {
-  it('przyjmuje kontener swobodny z pozycją i odrzuca obrót spoza 0/90/180/270 oraz absurdalne X', () => {
+describe('schowek i walidacja trybu swobodnego', () => {
+  it('przyjmuje dowolny kąt z zakresu obrotu i odrzuca wyjście poza zakres oraz absurdalne X', () => {
     let s = startowy('swobodny');
     s = wstawWezel(s, 'karta', {
       ...dostosujDoSwobodnego(nowyWezel(s, 'tekst', 'T')),
@@ -350,12 +350,14 @@ describe('schemat 15 i 16', () => {
       schematPlikuSzablonu.safeParse({ wersja: WERSJA_SCHEMATU, szablon: sz, role: {}, zasoby: [] })
         .success;
     expect(plik(s)).toBe(true);
-    const zly = (pozycja: unknown) =>
+    const poprawny = (pozycja: unknown) =>
       plik(zmienWezel(s, dzieci(s, 'karta')[0]!.id, (w) => ({ ...w, pozycja }) as Wezel));
-    expect(zly({ x: 0, y: 0, obrot: 45 })).toBe(false);
-    expect(zly({ x: 5000, y: 0 })).toBe(false);
-    expect(zly({ x: 0, y: 0, kotwica: 'nigdzie' })).toBe(false);
-    expect(zly({ x: Number.NaN, y: 0 })).toBe(false);
+    expect(poprawny({ x: 0, y: 0, obrot: 45.5 })).toBe(true);
+    expect(poprawny({ x: 0, y: 0, obrot: -1 })).toBe(false);
+    expect(poprawny({ x: 0, y: 0, obrot: 360 })).toBe(false);
+    expect(poprawny({ x: 5000, y: 0 })).toBe(false);
+    expect(poprawny({ x: 0, y: 0, kotwica: 'nigdzie' })).toBe(false);
+    expect(poprawny({ x: Number.NaN, y: 0 })).toBe(false);
     expect(czyKontener(s.korzen)).toBe(true);
   });
 

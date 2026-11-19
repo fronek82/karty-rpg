@@ -313,6 +313,11 @@ export const pl = {
   'mieszane.tytul': 'Rozmiary kart na kartce',
   'mieszane.jeden': 'jeden rozmiar (siatka)',
   'mieszane.mieszane': 'mieszane',
+  'mieszane.pakowanie': 'Pakowanie kart',
+  'mieszane.pasy': 'Pasy',
+  'mieszane.maxrects': 'MaxRects',
+  'mieszane.maxrectsOpis':
+    'MaxRects wypełnia wolne prostokąty. Cięcie może wymagać osobnych odcinków.',
   'mieszane.opis':
     'Mieszane: każda karta ma swój wymiar z szablonu, a aplikacja układa je pasami (cięcie: najpierw wzdłuż pasów, potem w pasie; wspólna krawędź to jedna linia). Karty w slotach (np. 2×1) – jako prostokąt slotów.',
   'mieszane.kolejnosc': 'Kolejność rozmieszczania',
@@ -494,6 +499,7 @@ export const pl = {
   'polozenie.kotwica.lewy-dolny': 'lewy dolny róg',
   'polozenie.kotwica.dolny': 'środek dołu',
   'polozenie.kotwica.prawy-dolny': 'prawy dolny róg',
+  'polozenie.kat': 'Kąt obrotu (°)',
   'polozenie.obrot': 'Obrót',
   'polozenie.obrot.wartosc': '{kat}°',
   'polozenie.obrotOpis': 'Obrót wokół środka elementu; zajmowany prostokąt ma zamienione boki.',
