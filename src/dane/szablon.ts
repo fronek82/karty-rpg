@@ -895,7 +895,7 @@ export interface RamkaUkladu {
   szer: Mm;
   wys: Mm;
   /** Obrót własny węzła (ramka jest przed obrotem). */
-  obrot?: 90 | 180 | 270;
+  obrot?: number;
 }
 
 /** Układ do konwersji: identyfikator węzła → ramka w układzie rodzica (przed obrotem węzła). */
@@ -1113,7 +1113,7 @@ export function wklejStyl(w: Wezel, st: SkopiowanyStyl): Wezel {
 
 /** Układ do konwersji kontenerów z wyniku renderowania (`WyrenderowanaKarta.wezly`). */
 export function ukladZWezlow(
-  wezly: readonly { id: string; lokalne: RamkaUkladu; obrot?: 90 | 180 | 270 }[],
+  wezly: readonly { id: string; lokalne: RamkaUkladu; obrot?: number }[],
 ): UkladWezlow {
   return new Map(
     wezly.map((w) => [w.id, w.obrot ? { ...w.lokalne, obrot: w.obrot } : w.lokalne] as const),

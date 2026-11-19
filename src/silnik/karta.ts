@@ -58,6 +58,7 @@ import {
 } from './tekst';
 import {
   obrocProstokat,
+  obrocWektor,
   prostokatPoObrocie,
   rozmiesc,
   type KontekstUkladu,
@@ -116,7 +117,9 @@ export interface WyrenderowanaKarta {
      */
     lokalne: { x: Mm; y: Mm; szer: Mm; wys: Mm };
     /** Obrót własny węzła (tylko w kontenerze swobodnym). */
-    obrot?: 90 | 180 | 270;
+    obrot?: number;
+    /** Obrócony środek i kąt w układzie karty, gdy obwiednia nie wystarcza do trafienia. */
+    obrys?: { x: Mm; y: Mm; kat: number };
   }[];
 }
 
@@ -484,9 +487,26 @@ export function renderujKarte(
   /** `przodkowie` – obrócone ramki przodków (od najbliższego): prostokąt węzła na karcie obracamy kolejno. */
   const zbierz = (u: UlozonyWezel, przodkowie: UlozonyWezel[]) => {
     ulozone.set(u.wezel.id, u);
-    let r = prostokatPoObrocie(u);
-    for (const p of przodkowie)
-      r = obrocProstokat(r, p.x + p.szer / 2, p.y + p.wys / 2, p.obrot ?? 0);
+    let x = u.x + u.szer / 2;
+    let y = u.y + u.wys / 2;
+    let kat = u.obrot ?? 0;
+    for (const p of przodkowie) {
+      const cx = p.x + p.szer / 2;
+      const cy = p.y + p.wys / 2;
+      const [dx, dy] = obrocWektor(x - cx, y - cy, p.obrot ?? 0);
+      x = cx + dx;
+      y = cy + dy;
+      kat += p.obrot ?? 0;
+    }
+    const r =
+      !kat && !przodkowie.length
+        ? u
+        : obrocProstokat(
+            { x: x - u.szer / 2, y: y - u.wys / 2, szer: u.szer, wys: u.wys },
+            x,
+            y,
+            kat,
+          );
     wezly.set(u.wezel.id, {
       id: u.wezel.id,
       x: r.x,
@@ -495,6 +515,7 @@ export function renderujKarte(
       wys: r.wys,
       lokalne: { x: u.x, y: u.y, szer: u.szer, wys: u.wys },
       ...(u.obrot ? { obrot: u.obrot } : {}),
+      ...(kat % 90 ? { obrys: { x, y, kat } } : {}),
     });
     const dalej = u.obrot ? [u, ...przodkowie] : przodkowie;
     u.dzieci.forEach((d) => zbierz(d, dalej));

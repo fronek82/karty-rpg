@@ -1,10 +1,10 @@
 import { useId, type ReactNode } from 'react';
 import { zmienKotwice, type ZmianaKolejnosci } from '../../dane/szablon';
 import { t } from '../../i18n';
-import { KOTWICE, type Kotwica, type ObrotSwobodny, type Pozycja } from '../../model/szablon';
+import { KOTWICE, type Kotwica, type Pozycja } from '../../model/szablon';
 import { Liczba, Przelacznik } from './Kontrolki';
 
-const OBROTY: readonly ObrotSwobodny[] = [0, 90, 180, 270];
+const OBROTY: readonly number[] = [0, 90, 180, 270];
 const KOLEJNOSC: readonly { jak: ZmianaKolejnosci; klucz: string }[] = [
   { jak: 'na-wierzch', klucz: 'polozenie.naWierzch' },
   { jak: 'wyzej', klucz: 'polozenie.wyzej' },
@@ -20,7 +20,7 @@ export interface RozmiaryKotwicy {
 
 /**
  * Sekcja „Położenie” elementu w kontenerze swobodnym: X i Y w mm, kotwica (9 punktów), obrót
- * (0 / 90 / 180 / 270°) i kolejność rysowania. Wszystko dostępne z klawiatury – przeciąganie
+ * (w stopniach oraz cztery skróty) i kolejność rysowania. Wszystko dostępne z klawiatury – przeciąganie
  * w podglądzie jest dodatkiem, nie jedyną drogą.
  */
 export function PanelPolozenia({
@@ -55,6 +55,13 @@ export function PanelPolozenia({
       void _k;
       return reszta;
     }, 'poz-kotwica');
+  const ustawObrot = (v: number) =>
+    zmien((q) => {
+      const { obrot: _o, ...reszta } = q;
+      void _o;
+      const kat = v % 360;
+      return kat ? { ...reszta, obrot: kat } : reszta;
+    }, 'poz-obrot');
   return (
     <fieldset className="polozenie">
       <legend>
@@ -124,13 +131,15 @@ export function PanelPolozenia({
           tekst: t('polozenie.obrot.wartosc', { kat: o }),
         }))}
         wartosc={String(p.obrot ?? 0)}
-        zmien={(v) =>
-          zmien((q) => {
-            const { obrot: _o, ...reszta } = q;
-            void _o;
-            return v === '0' ? reszta : { ...reszta, obrot: Number(v) as ObrotSwobodny };
-          }, 'poz-obrot')
-        }
+        zmien={(v) => ustawObrot(Number(v))}
+      />
+      <Liczba
+        etykieta={t('polozenie.kat')}
+        wartosc={p.obrot ?? 0}
+        min={0}
+        max={360}
+        krok={0.1}
+        zmien={ustawObrot}
       />
       <p className="podpis">{t('polozenie.obrotOpis')}</p>
       {kolejnosc && (

@@ -215,7 +215,26 @@ export function PanelUkladu({
       )}
       {mieszane && (
         <>
-          <p className="podpis">{t('mieszane.opis')}</p>
+          <div className="pole-panelu">
+            <label>
+              {t('mieszane.pakowanie')}
+              <select
+                value={opcje.pakowanie ?? 'pasy'}
+                onChange={(e) =>
+                  zmienMieszane(
+                    { pakowanie: e.target.value === 'maxrects' ? 'maxrects' : 'pasy' },
+                    'pakowanie',
+                  )
+                }
+              >
+                <option value="pasy">{t('mieszane.pasy')}</option>
+                <option value="maxrects">{t('mieszane.maxrects')}</option>
+              </select>
+            </label>
+            <p className="podpis">
+              {t(opcje.pakowanie === 'maxrects' ? 'mieszane.maxrectsOpis' : 'mieszane.opis')}
+            </p>
+          </div>
           <div className="pole-panelu">
             <span id={`kolejnosc-${A}`}>{t('mieszane.kolejnosc')}</span>
             <div className="przelacznik-segmentowy" role="group" aria-labelledby={`kolejnosc-${A}`}>
@@ -244,7 +263,7 @@ export function PanelUkladu({
             <input
               type="checkbox"
               checked={opcje.grupujRozmiary}
-              disabled={opcje.kolejnosc === 'wlasna'}
+              disabled={opcje.kolejnosc === 'wlasna' || opcje.pakowanie === 'maxrects'}
               onChange={(e) => zmienMieszane({ grupujRozmiary: e.target.checked }, 'grupuj')}
             />
             {t('mieszane.grupuj')}

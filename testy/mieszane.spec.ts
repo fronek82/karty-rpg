@@ -199,3 +199,40 @@ test('przełącznik w ustawieniach: jeden rozmiar ↔ mieszane, własny układ z
   await expect(kartka.locator('.slot')).not.toHaveCount(0);
   await expect(kartka.locator('[data-karta]')).toHaveCount(2);
 });
+
+test('MaxRects jest opcjonalny, zachowuje wszystkie karty i trafia do wydruku', async ({
+  page,
+}) => {
+  await otworzProjekt(page);
+  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  const pakowanie = page.getByLabel('Pakowanie kart');
+  await expect(pakowanie).toHaveValue('pasy');
+  await pakowanie.selectOption('maxrects');
+  await expect(page.locator('.strona-kartki [data-karta]')).toHaveCount(10);
+  await expect(
+    page.getByText('MaxRects wypełnia wolne prostokąty.', { exact: false }),
+  ).toBeVisible();
+  if (process.env.ZRZUTY_M3_6) await page.screenshot({ path: 'docs/obrazy/m3-6-maxrects.png' });
+
+  const a = arkuszMieszany({
+    mieszane: {
+      pakowanie: 'maxrects',
+      kolejnosc: 'najwieksze',
+      obracaj: true,
+      grupujRozmiary: true,
+      odstep: 1,
+    },
+  });
+  const wynik = zbudujArkusz(a, TALIA, {
+    czcionki: rejestrTestowy(),
+    szablony: new Map(SZABLONY.map((s) => [s.id, s])),
+  });
+  expect(wynik.ostrzezenia).toEqual([]);
+  await przygotujStrone(page);
+  for (const scena of wynik.strony) {
+    const { bajty } = await scenyDoPdf([scena]);
+    const w = await porownaj(page, scenaDoSvg(scena), bajty);
+    expect(w.ciemneSvg).toBeGreaterThan(w.wszystkie * 0.005);
+    expect(w.rozne / w.wszystkie).toBeLessThan(0.001);
+  }
+});

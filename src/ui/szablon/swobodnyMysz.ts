@@ -20,7 +20,7 @@ import {
 } from '../../model/szablon';
 import type { Mm } from '../../model/jednostki';
 import type { WyrenderowanaKarta } from '../../silnik/karta';
-import { prostokatPoObrocie, type Prostokat } from '../../silnik/uklad';
+import { obrocWektor, prostokatPoObrocie, type Prostokat } from '../../silnik/uklad';
 
 export type WezlyKarty = WyrenderowanaKarta['wezly'];
 
@@ -53,7 +53,11 @@ export function trafionyWezel(wezly: WezlyKarty, x: Mm, y: Mm): string | undefin
   let pole = Infinity;
   for (const w of wezly) {
     if (x < w.x || x > w.x + w.szer || y < w.y || y > w.y + w.wys) continue;
-    const p = w.szer * w.wys;
+    if (w.obrys) {
+      const [lx, ly] = doLokalnych(x - w.obrys.x, y - w.obrys.y, w.obrys.kat);
+      if (Math.abs(lx) > w.lokalne.szer / 2 || Math.abs(ly) > w.lokalne.wys / 2) continue;
+    }
+    const p = w.lokalne.szer * w.lokalne.wys;
     if (p <= pole) {
       wynik = w.id;
       pole = p;
@@ -64,16 +68,7 @@ export function trafionyWezel(wezly: WezlyKarty, x: Mm, y: Mm): string | undefin
 
 /** Przesunięcie z układu karty w układ rodzica elementu, którego przodkowie są obróceni o `kat` (zgodnie z zegarem). */
 export function doLokalnych(dx: Mm, dy: Mm, kat: ObrotSwobodny): [Mm, Mm] {
-  switch (kat) {
-    case 90:
-      return [dy, -dx];
-    case 180:
-      return [-dx, -dy];
-    case 270:
-      return [-dy, dx];
-    default:
-      return [dx, dy];
-  }
+  return obrocWektor(dx, dy, -kat);
 }
 
 /** Element kontenera swobodnego przygotowany do gestu: prostokąt, ramka rodzica i rodzeństwo (układ lokalny). */
@@ -83,6 +78,7 @@ export interface Cel {
   rodzicId: string;
   /** Prostokąt zajęty na karcie po własnym obrocie, w układzie rodzica. */
   rect: Prostokat;
+  lokalne?: Prostokat;
   /** Wnętrze rodzica (po paddingu) – od niego liczą się `pozycja` i kotwica. */
   ramka: Prostokat;
   /** Cały rodzic (krawędzie i środek do przyciągania). */
@@ -96,7 +92,7 @@ export interface Cel {
   osie: { szer: boolean; wys: boolean };
 }
 
-const katSumy = (k: number): ObrotSwobodny => (((k % 360) + 360) % 360) as ObrotSwobodny;
+const katSumy = (k: number): ObrotSwobodny => ((k % 360) + 360) % 360;
 
 /** Cel gestu dla węzła; undefined, gdy rodzic nie jest swobodny albo węzła nie ma w układzie (ukryty). */
 export function budujCel(szablon: Szablon, wezly: WezlyKarty, id: string): Cel | undefined {
@@ -122,6 +118,7 @@ export function budujCel(szablon: Szablon, wezly: WezlyKarty, id: string): Cel |
     id,
     rodzicId: r.rodzic.id,
     rect: rect(w),
+    ...(w.obrot && w.obrot % 90 ? { lokalne: w.lokalne } : {}),
     ramka: {
       x: rw.lokalne.x + p.lewo,
       y: rw.lokalne.y + p.gora,
@@ -130,7 +127,7 @@ export function budujCel(szablon: Szablon, wezly: WezlyKarty, id: string): Cel |
     },
     kontener: { ...rw.lokalne },
     pozycja: wezel.pozycja,
-    obrot: (w.obrot ?? 0) as ObrotSwobodny,
+    obrot: w.obrot ?? 0,
     obrotPrzodkow: katSumy(suma),
     rodzenstwo: r.rodzic.dzieci
       .filter((d) => d.id !== id)
@@ -378,11 +375,11 @@ function prostokatPoZmianie(
     if (prawo) r = przyciagnij(r, 'x');
     if (gora) t = przyciagnij(t, 'y');
     if (dol) b = przyciagnij(b, 'y');
-    if (r - l < MIN_ROZMIAR) {
+    if ((lewo || prawo) && r - l < MIN_ROZMIAR) {
       if (lewo) l = r - MIN_ROZMIAR;
       else r = l + MIN_ROZMIAR;
     }
-    if (b - t < MIN_ROZMIAR) {
+    if ((gora || dol) && b - t < MIN_ROZMIAR) {
       if (gora) t = b - MIN_ROZMIAR;
       else b = t + MIN_ROZMIAR;
     }
@@ -398,8 +395,42 @@ export function zmienRozmiar(
   p: Przyciaganie,
   proporcje = false,
 ): WynikGestu {
-  const { prostokat: nowy, prowadnice } = prostokatPoZmianie(cel, uchwyt, dx, dy, p, proporcje);
-  const zmiana = zmianaZProstokata(cel, nowy);
+  const lokalne = cel.lokalne;
+  const [lx, ly] = lokalne ? doLokalnych(dx, dy, cel.obrot) : [dx, dy];
+  const { prostokat: nowy, prowadnice } = lokalne
+    ? prostokatPoZmianie(
+        { ...cel, rect: { ...lokalne, x: 0, y: 0 }, ramka: { ...cel.ramka, x: 0, y: 0 } },
+        uchwyt,
+        lx,
+        ly,
+        { ...p, obiekty: false },
+        proporcje,
+      )
+    : prostokatPoZmianie(cel, uchwyt, dx, dy, p, proporcje);
+  let zmiana: ZmianaPola;
+  if (lokalne) {
+    const [cx, cy] = obrocWektor(
+      nowy.x + (nowy.szer - lokalne.szer) / 2,
+      nowy.y + (nowy.wys - lokalne.wys) / 2,
+      cel.obrot,
+    );
+    const x = lokalne.x + lokalne.szer / 2 + cx;
+    const y = lokalne.y + lokalne.wys / 2 + cy;
+    const rect = prostokatPoObrocie({
+      x: x - nowy.szer / 2,
+      y: y - nowy.wys / 2,
+      szer: nowy.szer,
+      wys: nowy.wys,
+      obrot: cel.obrot,
+    });
+    zmiana = zmianaZProstokata({ ...cel, osie: { szer: false, wys: false } }, rect);
+    if (cel.osie.szer && Math.abs(nowy.szer - lokalne.szer) > 1e-9)
+      zmiana.szerokosc = { mm: zaokr(nowy.szer) };
+    if (cel.osie.wys && Math.abs(nowy.wys - lokalne.wys) > 1e-9)
+      zmiana.wysokosc = { mm: zaokr(nowy.wys) };
+  } else {
+    zmiana = zmianaZProstokata(cel, nowy);
+  }
   return {
     zmiany: new Map([[cel.id, zmiana]]),
     prowadnice,
@@ -414,7 +445,11 @@ export function zmienRozmiar(
 
 export function celSkalowania(cele: readonly Cel[]): Cel | undefined {
   const pierwszy = cele[0];
-  if (!pierwszy || pierwszy.obrotPrzodkow || cele.some((c) => c.rodzicId !== pierwszy.rodzicId))
+  if (
+    !pierwszy ||
+    pierwszy.obrotPrzodkow ||
+    cele.some((c) => c.rodzicId !== pierwszy.rodzicId || (cele.length > 1 && c.obrot % 90 !== 0))
+  )
     return undefined;
   if (cele.length === 1) return pierwszy;
   const ids = new Set(cele.map((c) => c.id));

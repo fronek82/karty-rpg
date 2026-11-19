@@ -439,3 +439,47 @@ it('upuszcza z zachowaniem chwytu i paddingu, pomija własne poddrzewo i obróco
     dzieci: [{ id: 'a', pozycja: { x: 5, y: 5 } }],
   });
 });
+
+it('przy kącie 45° sprawdza właściwy kształt, kotwicę, dociągnięcie i rozmiar w osi pola', () => {
+  const s = szablon([
+    ik('a', { szerokosc: { mm: 20 }, wysokosc: { mm: 4 }, pozycja: { x: 10, y: 12, obrot: 45 } }),
+  ]);
+  const w = wezlyDla(s);
+  const cel = budujCel(s, w, 'a')!;
+  const bok = 24 / Math.sqrt(2);
+  expect(cel.rect.x).toBeCloseTo(10);
+  expect(cel.rect.y).toBeCloseTo(12);
+  expect(cel.rect.szer).toBeCloseTo(bok);
+  expect(trafionyWezel(w, 10.1, 12 + bok - 0.1)).toBe('k');
+  expect(trafionyWezel(w, 10 + bok / 2, 12 + bok / 2)).toBe('a');
+  const przyciagniecie = przesunCele([cel], -9.7, 0, { ...BEZ, obiekty: true });
+  expect(poz(przyciagniecie, 'a')[0]).toBe(0);
+  const ruch = 5 / Math.sqrt(2);
+  const { zmiany } = zmienRozmiar(cel, 'e', ruch, ruch, BEZ);
+  expect(zmiany.get('a')?.szerokosc).toEqual({ mm: 25 });
+  expect(zmiany.get('a')?.wysokosc).toBeUndefined();
+  expect(zmiany.get('a')?.pozycja.x).toBeCloseTo(10);
+  expect(zmiany.get('a')?.pozycja.y).toBeCloseTo(12);
+});
+
+it('wydłuża cienki obrócony separator bez zmiany przeciwległej krawędzi', () => {
+  const s = szablon([
+    {
+      id: 'linia',
+      typ: 'separator',
+      kierunek: 'poziomy',
+      kolor: '#000000',
+      grubosc: 0.3,
+      szerokosc: { mm: 20 },
+      wysokosc: { mm: 0.3 },
+      pozycja: { x: 10, y: 12, obrot: 45 },
+    },
+  ]);
+  const cel = budujCel(s, wezlyDla(s), 'linia')!;
+  expect(cel.lokalne?.wys).toBeCloseTo(0.3);
+  const d = 5 / Math.sqrt(2);
+  const zmiana = zmienRozmiar(cel, 'e', d, d, BEZ).zmiany.get('linia')!;
+  expect(zmiana.szerokosc).toEqual({ mm: 25 });
+  expect(zmiana.wysokosc).toBeUndefined();
+  expect(zmiana.pozycja).toMatchObject({ x: 10, y: 12, obrot: 45 });
+});

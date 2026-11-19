@@ -48,6 +48,7 @@ import {
   type UmieszczonaWPasie,
   type WolneMiejsce,
 } from './pasy';
+import { ulozMaxRects } from './maxrects';
 import { egzemplarze, rozmiescKarty, type WynikRozmieszczenia } from './rozmieszczanie';
 
 /**
@@ -816,7 +817,8 @@ function zbudujMieszane(w: {
       ...(grupaId ? { grupaId } : {}),
     };
   });
-  const uklad = ulozPasy(wejscie, {
+  const pakuj = opcje.pakowanie === 'maxrects' ? ulozMaxRects : ulozPasy;
+  const uklad = pakuj(wejscie, {
     obszar,
     odstep: opcje.odstep,
     obracaj: opcje.obracaj,

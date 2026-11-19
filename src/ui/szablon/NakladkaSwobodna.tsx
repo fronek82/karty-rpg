@@ -1,6 +1,7 @@
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { t } from '../../i18n';
 import type { Mm } from '../../model/jednostki';
+import { obrocWektor } from '../../silnik/uklad';
 import { liczbaMm, UCHWYTY, punktUchwytu, type Uchwyt } from './swobodnyMysz';
 import type { StanGestu } from './useGestSwobodny';
 
@@ -15,6 +16,7 @@ export function NakladkaSwobodna({
   stan,
   siatka,
   prostokat,
+  obrot,
   uchwytDown,
   uchwytKlawisz,
 }: {
@@ -24,6 +26,7 @@ export function NakladkaSwobodna({
   siatka: Mm;
   /** Prostokąt zaznaczonego pola (mm od rogu karty) – uchwyty tylko dla jednego pola; undefined = bez uchwytów. */
   prostokat: { x: Mm; y: Mm; szer: Mm; wys: Mm } | undefined;
+  obrot: number;
   uchwytDown: (u: Uchwyt, e: PointerEvent) => void;
   uchwytKlawisz: (u: Uchwyt, e: KeyboardEvent) => void;
 }) {
@@ -101,6 +104,9 @@ export function NakladkaSwobodna({
         stan?.rodzaj !== 'przesun' &&
         UCHWYTY.map((u) => {
           const p = punktUchwytu(prostokat, u);
+          const cx = prostokat.x + prostokat.szer / 2;
+          const cy = prostokat.y + prostokat.wys / 2;
+          const [dx, dy] = obrocWektor(p.x - cx, p.y - cy, obrot);
           const strona = t(`nakladka.strona.${u}`);
           return (
             <button
@@ -110,7 +116,7 @@ export function NakladkaSwobodna({
               data-uchwyt={u}
               aria-label={t('nakladka.uchwyt', { strona })}
               title={t('nakladka.uchwyt.opis')}
-              style={{ left: `${(p.x / szer) * 100}%`, top: `${(p.y / wys) * 100}%` }}
+              style={{ left: `${((cx + dx) / szer) * 100}%`, top: `${((cy + dy) / wys) * 100}%` }}
               onPointerDown={(e) => uchwytDown(u, e)}
               onKeyDown={(e) => uchwytKlawisz(u, e)}
             />
