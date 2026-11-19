@@ -598,6 +598,35 @@ describe('wgrywanie czcionek', () => {
 });
 
 describe('eksport i import szablonu', () => {
+  it('M3-5: migruje projekt v20 i przenosi tekstury z przemianowaniem zasobu', () => {
+    expect(przygotujProjekt({ ...projekt, wersja: 20 })).toEqual(projekt);
+    const obraz = projekt.zasoby.find((z) => z.rodzaj === 'obraz')!;
+    const wzor = projekt.szablony[0]!;
+    const tekstura = {
+      ...wzor,
+      teksturaTla: obraz.id,
+      postrzepienie: { sila: 1, ziarno: 1, ziarnistosc: 2 },
+      korzen: { ...wzor.korzen, teksturaTla: obraz.id },
+    };
+    const p = { ...projekt, szablony: [tekstura], talie: [], arkusze: [] };
+    const paczka = importujSzablon(eksportujSzablon(p, zasoby, tekstura.id).bajty);
+    expect(paczka.szablon).toEqual(tekstura);
+    expect(paczka.dane.get(obraz.id)).toEqual(zasoby.get(obraz.id));
+    const archiwum = unzipSync(eksportujSzablon(p, zasoby, tekstura.id).bajty);
+    const json = JSON.parse(strFromU8(archiwum['szablon.json']!));
+    json.zasoby = [];
+    archiwum['szablon.json'] = strToU8(JSON.stringify(json));
+    expect(() => importujSzablon(zipSync(archiwum))).toThrow(/brakuje obrazu tekstury/);
+
+    const zKolizja = new Map(zasoby);
+    zKolizja.set(obraz.id, Uint8Array.of(1, 2, 3));
+    const wynik = dodajSzablon(p, zKolizja, paczka);
+    const kopia = wynik.projekt.szablony.find((s) => s.id === wynik.szablonId)!;
+    expect(kopia.teksturaTla).not.toBe(obraz.id);
+    expect(kopia.korzen.teksturaTla).toBe(kopia.teksturaTla);
+    expect(wynik.zasoby.get(kopia.teksturaTla!)).toEqual(zasoby.get(obraz.id));
+  });
+
   it('M3-4: migruje v19 i przenosi opcjonalną kontynuację w paczce szablonu', () => {
     const wzor = projekt.szablony[0]!;
     const pole = {

@@ -45,6 +45,7 @@ export const en: Slownik = {
   'dane.ramka9Wymiary':
     '“{gdzie}” is {a}×{b} px, while image “{id}” is {c}×{d} px; the insets may not fit',
   'dane.ramka9Pusta': '“{gdzie}” has an SVG source with no drawing – nothing will be drawn',
+  'dane.teksturaBezObrazu': 'The package is missing texture image “{id}”.',
   'dane.ramka9BezObrazu':
     'Template file: 9-slice frame “{id}” points to image “{zasob}”, which is not in the bundle',
   'dane.elementZProjektu':
@@ -816,6 +817,19 @@ export const en: Slownik = {
   'koloryZDanych.konflikt': 'Several rows have the same value. The first matching color is used.',
   'koloryZDanych.usun': 'Remove value',
   'koloryZDanych.dodaj': 'Add value',
+  'dekoracje.szkic': 'Sketch style',
+  'dekoracje.sila': 'Strength (mm)',
+  'dekoracje.ziarno': 'Seed',
+  'dekoracje.tlo': 'Texture and edge',
+  'dekoracje.tekstura': 'Texture image',
+  'dekoracje.brakTekstury': 'No texture',
+  'dekoracje.brakZasobu': 'Missing image: {id}',
+  'dekoracje.obrazy': 'Add an image to the project library to use a texture.',
+  'dekoracje.postrzepienie': 'Torn edge',
+  'dekoracje.ziarnistosc': 'Grain size (mm)',
+  'dekoracje.poLuku': 'Follow rounded corners',
+  'dekoracje.poLukuPomoc':
+    'The corner radius must exceed half the band width. Separate corners remain saved.',
   'zestawy.tytul': 'Style sets',
   'zestawy.opis':
     'Choose a set to change the frame, corners and existing separators in all layouts of this card.',

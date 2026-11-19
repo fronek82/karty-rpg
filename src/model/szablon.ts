@@ -57,6 +57,7 @@ export interface OzdobaMotyw {
   element: string;
   /** Szerokość pasa motywu (mm). */
   szerokosc: Mm;
+  poLuku?: boolean;
   kolor: Kolor;
   /** Grubość „szyn” – cienkich linii po obu stronach pasa (mm); brak = bez szyn. */
   szyny?: Mm;
@@ -83,8 +84,18 @@ export interface OzdobaRamka9 {
 /** Ozdoba ramki: motyw powtarzalny albo ramka 9-slice. */
 export type Ozdoba = OzdobaMotyw | OzdobaRamka9;
 
+export interface Szkic {
+  sila: Mm;
+  ziarno: number;
+}
+
+export interface Postrzepienie extends Szkic {
+  ziarnistosc: Mm;
+}
+
 export interface Obramowanie {
   grubosc: Mm;
+  szkic?: Szkic;
   kolor: Kolor;
   styl?: StylLinii;
   /** Przerwa między liniami stylu `podwojna` (mm, domyślnie 2× grubość); `grubosc` to grubość każdej linii. */
@@ -208,6 +219,8 @@ export interface Kontener extends WezelBazowy {
   typ: 'wiersz' | 'kolumna' | 'warstwy' | 'swobodny';
   dzieci: Wezel[];
   tloZDanych?: KolorZDanych;
+  teksturaTla?: string;
+  postrzepienie?: Postrzepienie;
   /** Odstęp między dziećmi (mm). */
   odstep?: Mm;
   /** Rozłożenie dzieci w osi głównej, gdy zostaje wolne miejsce. */
@@ -393,6 +406,7 @@ export interface PoleSeparator extends PoleBazowe {
   typ: 'separator';
   kierunek: 'poziomy' | 'pionowy';
   grubosc: Mm;
+  szkic?: Szkic;
   kolor?: Kolor;
   stylLinii?: StylLinii;
   /** Przerwa między liniami stylu `podwojna` (mm, domyślnie 2× grubość). */
@@ -465,6 +479,7 @@ export type RozmiarKarty =
 
 export interface RamkaKarty {
   grubosc: Mm;
+  szkic?: Szkic;
   kolor: Kolor;
   styl?: StylLinii;
   /** Przerwa między liniami stylu `podwojna` (mm, domyślnie 2× grubość). */
@@ -514,6 +529,8 @@ export interface Szablon {
   promienRogow?: Mm;
   tlo?: Kolor;
   tloZDanych?: KolorZDanych;
+  teksturaTla?: string;
+  postrzepienie?: Postrzepienie;
   grupyStylow?: GrupaStylu[];
   /** Dane przykładowe do podglądu w edytorze szablonu (klucz pola → wartość). */
   przyklad?: Record<string, string>;

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { t } from '../i18n';
 import { PAPIERY } from '../model/arkusz';
 import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
-import type { Kontener, Szablon, Wezel } from '../model/szablon';
+import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
 import { znajdzElement } from '../ozdobniki/katalog';
 import { LIMITY_SVG } from '../ozdobniki/svgImport';
 import { MAKS_ELEMENTOW_BIBLIOTEKI, odwolaniaDoElementow } from './biblioteka';
@@ -23,6 +23,8 @@ const liczba = z.number().finite();
 const nieujemna = liczba.min(0);
 const dodatnia = liczba.positive();
 const calkowita = liczba.int();
+const szkic = z.looseObject({ sila: nieujemna.max(3), ziarno: calkowita.min(0).max(4294967295) });
+const postrzepienie = szkic.extend({ ziarnistosc: liczba.min(0.5).max(30) });
 const identyfikator = z.string().min(1);
 /** Id zasobu: litery, cyfry, `_`, `-`, `.`, `/` (w nazwie pliku w archiwum kodowany). */
 export const MAKS_DLUGOSC_ID_ZASOBU = 100;
@@ -53,6 +55,7 @@ const narozniki = obj({ element: identyfikator, rozmiar: dodatnia, kolor: opc(z.
 const ozdoba = z.discriminatedUnion('rodzaj', [
   obj({
     rodzaj: z.literal('motyw'),
+    poLuku: opc(z.boolean()),
     element: identyfikator,
     szerokosc: dodatnia,
     kolor: z.string(),
@@ -106,6 +109,7 @@ const baza = {
   obramowanie: opc(
     obj({
       grubosc: nieujemna,
+      szkic: opc(szkic),
       kolor: z.string(),
       styl: opc(stylLinii),
       przerwa: opc(nieujemna),
@@ -242,6 +246,7 @@ const pole = z.discriminatedUnion('typ', [
     typ: z.literal('separator'),
     kierunek: z.enum(['poziomy', 'pionowy']),
     grubosc: nieujemna,
+    szkic: opc(szkic),
     kolor: opc(z.string()),
     stylLinii: opc(stylLinii),
     przerwa: opc(nieujemna),
@@ -292,6 +297,8 @@ const kontener: z.ZodType<Kontener> = z.lazy(() =>
     typ: z.enum(['wiersz', 'kolumna', 'warstwy', 'swobodny']),
     dzieci: z.array(wezel),
     tloZDanych: opc(kolorZDanych),
+    teksturaTla: opc(identyfikator),
+    postrzepienie: opc(postrzepienie),
     odstep: opc(nieujemna),
     rozklad: opc(z.enum(['poczatek', 'srodek', 'koniec', 'miedzy'])),
   }),
@@ -315,6 +322,8 @@ const szablon = obj({
   promienRogow: opc(nieujemna),
   tlo: opc(z.string()),
   tloZDanych: opc(kolorZDanych),
+  teksturaTla: opc(identyfikator),
+  postrzepienie: opc(postrzepienie),
   grupyStylow: opc(
     z
       .array(obj({ id: identyfikator, nazwa: z.string().trim().min(1), styl: stylTekstu }))
@@ -324,6 +333,7 @@ const szablon = obj({
   ramka: opc(
     obj({
       grubosc: nieujemna,
+      szkic: opc(szkic),
       kolor: z.string(),
       styl: opc(stylLinii),
       przerwa: opc(nieujemna),
@@ -728,6 +738,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 17→18: grupy stylów i reguły kolorów są opcjonalne. Dotychczasowe style i kolory zostają lokalne.
   // 18→19: opcjonalne listy i ikony w polach tekstowych. Zapisany tekst bez tych ustawień jest dosłowny.
   // 19→20: kontynuacja jest opcjonalnym ustawieniem pola i nie zmienia starszego tekstu.
+  // 20→21: dodatkowe, opcjonalne ustawienia rysowania nie zmieniają starszych scen.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -748,6 +759,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     17: (d) => d,
     18: (d) => d,
     19: (d) => d,
+    20: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -769,6 +781,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     17: (d) => d,
     18: (d) => d,
     19: (d) => d,
+    20: (d) => d,
   },
 };
 
@@ -812,11 +825,21 @@ function drzewa(s: Szablon): Kontener[] {
   return [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)];
 }
 
+export function teksturySzablonu(s: Szablon): string[] {
+  const wynik: string[] = s.teksturaTla ? [s.teksturaTla] : [];
+  for (const k of drzewa(s))
+    for (const w of wezly(k)) if (czyKontener(w) && w.teksturaTla) wynik.push(w.teksturaTla);
+  return wynik;
+}
+
 /** Identyfikatory zasobów obrazów wskazanych stałymi w szablonie. */
 export function zasobySzablonu(s: Szablon): string[] {
-  return drzewa(s).flatMap((k) =>
-    [...wezly(k)].flatMap((w) => (w.typ === 'obraz' && w.zasob ? [w.zasob] : [])),
-  );
+  return [
+    ...teksturySzablonu(s),
+    ...drzewa(s).flatMap((k) =>
+      [...wezly(k)].flatMap((w) => (w.typ === 'obraz' && w.zasob ? [w.zasob] : [])),
+    ),
+  ];
 }
 
 /**

@@ -26,6 +26,7 @@ import { PanelWygladu } from './PanelWygladu';
 import { PoleRozmiaru } from './PoleRozmiaru';
 import { GrupyStylow } from './GrupyStylow';
 import { KolorZDanych } from './KolorZDanych';
+import { TloDekoracyjne } from './PolaDekoracji';
 
 type Opcje = readonly { wartosc: string; tekst: string }[];
 
@@ -465,6 +466,31 @@ export function PanelWezla({
       )}
 
       <PanelWygladu wezel={wezel} zmien={zmienWezel} />
+      {!wiele && czyKontener(wezel) && (
+        <TloDekoracyjne
+          obrazy={obrazy}
+          {...(wezel.teksturaTla ? { tekstura: wezel.teksturaTla } : {})}
+          {...(wezel.postrzepienie ? { postrzepienie: wezel.postrzepienie } : {})}
+          zmienTeksture={(v) =>
+            zmienWezel((w) => {
+              if (!czyKontener(w)) return w;
+              const x = { ...w };
+              if (v) x.teksturaTla = v;
+              else delete x.teksturaTla;
+              return x;
+            })
+          }
+          zmienPostrzepienie={(v) =>
+            zmienWezel((w) => {
+              if (!czyKontener(w)) return w;
+              const x = { ...w };
+              if (v) x.postrzepienie = v;
+              else delete x.postrzepienie;
+              return x;
+            }, `postrzepienie:${id}`)
+          }
+        />
+      )}
       {!wiele && czyKontener(wezel) && (
         <KolorZDanych
           szablon={szablon}

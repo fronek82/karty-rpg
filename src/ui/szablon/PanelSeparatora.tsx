@@ -1,3 +1,4 @@
+import { PoleSzkicu } from './PolaDekoracji';
 import { useId } from 'react';
 import { t } from '../../i18n';
 import type { Pole, PoleSeparator } from '../../model/szablon';
@@ -91,6 +92,10 @@ export function PanelSeparatora({
   const ozdoby = !!pole.zakonczenia || !!pole.srodek || !!rysunek;
   return (
     <Sekcja tytul={t('wezel.separator')} otwarta>
+      <PoleSzkicu
+        {...(pole.szkic ? { wartosc: pole.szkic } : {})}
+        zmien={(v) => ustaw({ szkic: v })}
+      />
       <Przelacznik
         etykieta={t('wlasciwosci.kierunek')}
         opcje={(['poziomy', 'pionowy'] as const).map((k) => ({

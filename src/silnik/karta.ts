@@ -33,6 +33,8 @@ import { znajdzElement } from '../ozdobniki/katalog';
 import { konturWlasnegoKsztaltu, wnetrzeWlasnegoKsztaltu } from '../ozdobniki/ksztalt';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { ramkaZMotywu } from '../ozdobniki/motyw';
+import { konturPostrzepiony, szkicujElementy } from '../ozdobniki/dekoracje';
+import { konturProstokata } from './konturyFigur';
 import { MIN_DPI_RAMKI, ramka9ZElementu, type WynikRamki9 } from '../ozdobniki/ramka9';
 import { rysujSeparatorOzdobny, wysokoscOzdobySeparatora } from '../ozdobniki/separator';
 import { narozniki as rysujNarozniki, type WynikNarozniki } from '../ozdobniki/narozniki';
@@ -304,6 +306,30 @@ export function renderujKarte(
   const symbole: Record<string, DefinicjaSymbolu> = {};
   let elementy: ElementSceny[] = [];
   const ostrzezenia: Ostrzezenie[] = [];
+  const ramkaKarty = { x: 0, y: 0, szer, wys };
+  const poszarpanaKarta = szablon.postrzepienie?.sila
+    ? konturPostrzepiony(ramkaKarty, szablon.postrzepienie)
+    : undefined;
+  const teksturaTla = (zasob: string, r: Ramka, promien: Mm | undefined, pole: string) => {
+    const info = ctx.obraz?.(zasob);
+    if (!info || info.szerokosc <= 0 || info.wysokosc <= 0) {
+      ostrzezenia.push({ pole, komunikat: 'brak-obrazu', szczegoly: zasob });
+      return;
+    }
+    if (!(r.szer > 0 && r.wys > 0)) return;
+    const obraz = rysujObraz(zasob, info, r, r, 'wypelnij', { x: 0.5, y: 0.5 });
+    if (!promien) {
+      elementy.push(obraz);
+      return;
+    }
+    elementy.push({
+      typ: 'grupa',
+      x: 0,
+      y: 0,
+      przyciecieKonturem: konturProstokata(r.x, r.y, r.szer, r.wys, promien),
+      elementy: [obraz],
+    });
+  };
   /** Narożniki z biblioteki: elementy na scenę, rysunek do słownika symboli, ostrzeżenie o nieznanym. */
   const wypiszNarozniki = (w: WynikNarozniki, id: string) => {
     elementy.push(...w.elementy);
@@ -320,14 +346,25 @@ export function renderujKarte(
    * (nieznany element albo rozmiar 0 zostawia kostki – róg nie zostaje pusty).
    * Narożniki leżą na tym samym prostokącie co pas (po odsunięciu), kolor domyślny = kolor motywu.
    */
-  const dodajOzdobe = (o: Ozdoba, obszar: Ramka, id: string, n: Narozniki | undefined) => {
+  const dodajOzdobe = (
+    o: Ozdoba,
+    obszar: Ramka,
+    id: string,
+    n: Narozniki | undefined,
+    promien = 0,
+  ) => {
     if (o.rodzaj === 'ramka9') {
       dodajRamke9(o, obszar, id, n);
       return;
     }
-    const rogi = n ? rysujNarozniki(n, obszar, o.kolor, ctx.elementy) : undefined;
+    const pas = Math.min(o.szerokosc, obszar.szer / 2, obszar.wys / 2);
+    const rogi =
+      n && !(o.poLuku && promien > pas / 2)
+        ? rysujNarozniki(n, obszar, o.kolor, ctx.elementy)
+        : undefined;
     const w = ramkaZMotywu(o, obszar, {
       bezKostek: !!rogi && rogi.elementy.length > 0,
+      promien,
       ...(ctx.elementy ? { wlasne: ctx.elementy } : {}),
     });
     elementy.push(...w.elementy);
@@ -405,10 +442,17 @@ export function renderujKarte(
       y: 0,
       szer,
       wys,
-      promien: szablon.promienRogow,
+      promien: poszarpanaKarta ? undefined : szablon.promienRogow,
       wypelnienie: tlo,
     });
   }
+  if (szablon.teksturaTla)
+    teksturaTla(
+      szablon.teksturaTla,
+      ramkaKarty,
+      poszarpanaKarta ? 0 : szablon.promienRogow,
+      'tlo-karty',
+    );
   if (szablon.ramka?.ozdoba?.rodzaj === 'ramka9') {
     const o = szablon.ramka.odsuniecie ?? 0;
     przygotujRamke9(
@@ -469,12 +513,27 @@ export function renderujKarte(
    * środka ramki; współrzędne wewnątrz zostają bezwzględne (macierz przesuwa środek do początku).
    */
   const rysuj = (u: UlozonyWezel) => {
-    if (!u.obrot) return rysujWezel(u);
+    const postrzepienie = czyKontener(u.wezel) ? u.wezel.postrzepienie : undefined;
+    if (!u.obrot && !postrzepienie?.sila) return rysujWezel(u);
     const zewnetrzne = elementy;
     elementy = [];
     rysujWezel(u);
-    const wewnetrzne = elementy;
+    const wewnetrzne: ElementSceny[] = postrzepienie?.sila
+      ? [
+          {
+            typ: 'grupa',
+            x: 0,
+            y: 0,
+            przyciecieKonturem: konturPostrzepiony(u, postrzepienie),
+            elementy,
+          },
+        ]
+      : elementy;
     elementy = zewnetrzne;
+    if (!u.obrot) {
+      elementy.push(...wewnetrzne);
+      return;
+    }
     const cx = u.x + u.szer / 2;
     const cy = u.y + u.wys / 2;
     elementy.push({
@@ -506,7 +565,8 @@ export function renderujKarte(
         wys: bok,
       };
     }
-    const promien = promienWezla(w, obszar);
+    const postrzepienie = czyKontener(w) ? w.postrzepienie : undefined;
+    const promien = postrzepienie?.sila ? 0 : promienWezla(w, obszar);
     const pole = !czyKontener(w) && w.typ === 'wartosc' ? w : undefined;
     // Własny kształt z biblioteki: brak elementu (albo inny rodzaj) = ostrzeżenie i zwykły prostokąt.
     const wlasny = pole?.ksztalt === 'wlasny' ? ksztaltWlasny(pole, ctx) : undefined;
@@ -546,6 +606,8 @@ export function renderujKarte(
                 },
       );
     }
+    if (czyKontener(w) && w.teksturaTla)
+      teksturaTla(w.teksturaTla, obszar, w.postrzepienie?.sila ? 0 : promien, w.id);
     if (w.ozdoba?.rodzaj === 'ramka9' && !ksztalt) {
       const od = w.ozdoba.odsuniecie ?? 0;
       przygotujRamke9(
@@ -633,10 +695,31 @@ export function renderujKarte(
         },
         w.id,
         w.narozniki,
+        Math.max(0, (promien ?? 0) - od),
       );
     } else {
-      if (w.obramowanie)
-        elementy.push(...rysujObramowanie(w.obramowanie, obszar, promien, ksztalt, wlasny));
+      if (w.obramowanie) {
+        const linia = obrys(w.obramowanie);
+        if (
+          linia &&
+          postrzepienie?.sila &&
+          !w.obramowanie.krawedzie &&
+          w.obramowanie.styl !== 'podwojna'
+        )
+          elementy.push(
+            ...szkicujElementy(
+              [
+                {
+                  typ: 'sciezka',
+                  kontur: konturPostrzepiony(obszar, postrzepienie),
+                  obrys: linia,
+                },
+              ],
+              w.obramowanie.szkic,
+            ),
+          );
+        else elementy.push(...rysujObramowanie(w.obramowanie, obszar, promien, ksztalt, wlasny));
+      }
       if (w.narozniki) dodajNarozniki(w.narozniki, obszar, w.obramowanie?.kolor ?? CZARNY, w.id);
     }
   };
@@ -660,8 +743,16 @@ export function renderujKarte(
         { x: o, y: o, szer: szer - 2 * o, wys: wys - 2 * o },
         'ramka-karty',
         r.narozniki,
+        r.promien ?? Math.max(0, (szablon.promienRogow ?? 0) - o),
       );
-    } else elementy.push(...rysujRamkeKarty(r, szer, wys, szablon.promienRogow));
+    } else {
+      const linia = obrys(r);
+      if (linia && poszarpanaKarta && !r.odsuniecie && r.styl !== 'podwojna')
+        elementy.push(
+          ...szkicujElementy([{ typ: 'sciezka', kontur: poszarpanaKarta, obrys: linia }], r.szkic),
+        );
+      else elementy.push(...rysujRamkeKarty(r, szer, wys, szablon.promienRogow));
+    }
     if (r.narozniki && !r.ozdoba) {
       // Narożniki na zewnętrznej krawędzi ramki (po odsunięciu), nad linią.
       const o = r.odsuniecie ?? 0;
@@ -675,7 +766,15 @@ export function renderujKarte(
   }
 
   return {
-    scena: { szer, wys, elementy, glify, ...symboleSceny(symbole) },
+    scena: {
+      szer,
+      wys,
+      elementy: poszarpanaKarta
+        ? [{ typ: 'grupa', x: 0, y: 0, przyciecieKonturem: poszarpanaKarta, elementy }]
+        : elementy,
+      glify,
+      ...symboleSceny(symbole),
+    },
     ostrzezenia,
     wezly: [...wezly.values()],
   };
@@ -708,7 +807,7 @@ function rysujRamkeKarty(
       obrys: s,
     });
   }
-  return wynik;
+  return szkicujElementy(wynik, r.szkic);
 }
 
 /**
@@ -809,7 +908,10 @@ function rysujObramowanie(
 ): ElementSceny[] {
   const s = obrys(o);
   if (!s) return [];
-  return osieLinii(o).flatMap((d) => jednaLiniaObramowania(o, s, d, u, promien, ksztalt, wlasny));
+  return szkicujElementy(
+    osieLinii(o).flatMap((d) => jednaLiniaObramowania(o, s, d, u, promien, ksztalt, wlasny)),
+    o.szkic,
+  );
 }
 
 /** Jedna linia obramowania, której oś leży `d` mm od krawędzi węzła. */
@@ -1135,7 +1237,7 @@ function rysujPole(
       Object.assign(symbole, w.symbole);
       for (const id of w.nieznane)
         ostrzezenia.push({ pole: pole.id, komunikat: 'nieznany-element-ozdobny', szczegoly: id });
-      return w.elementy;
+      return szkicujElementy(w.elementy, pole.szkic);
     }
     case 'tabela':
       return rysujTabele(pole, ramka, dane, ctx, glify, ostrzezenia);
