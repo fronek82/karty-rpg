@@ -662,6 +662,13 @@ export function sprawdz<T>(schemat: z.ZodType<T>, dane: unknown): T {
 
 type Migracja = (dane: Record<string, unknown>) => Record<string, unknown>;
 
+export type BajtyWBazie = Blob | Uint8Array;
+
+/** Migracja przy odczycie IndexedDB. Tablice bajtów działają też w WebKit z blokadą zapisu Blob. */
+export async function migrujBajtyBazy(dane: BajtyWBazie): Promise<Uint8Array> {
+  return dane instanceof Blob ? new Uint8Array(await dane.arrayBuffer()) : dane;
+}
+
 /**
  * Migracje: klucz `n` zamienia dane ze schematu `n` na `n + 1`. Projekt i plik szablonu mają
  * osobne kroki (inny kształt), ale wspólny numer wersji.

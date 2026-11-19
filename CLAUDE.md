@@ -4,7 +4,7 @@ Aplikacja przeglądarkowa (Vite + TypeScript + React) do projektowania i drukowa
 
 ## Gdzie co jest
 
-- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b ukończony 18.11.2026), `docs/plan-UI.md` (przebudowa interfejsu – UI-1…UI-9 ukończone 18.11.2026). Aktualny plan: `docs/plan-M2c.md`. Następny etap: M2c-3.
+- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b ukończony 18.11.2026), `docs/plan-UI.md` (przebudowa interfejsu – UI-1…UI-9 ukończone 18.11.2026). Aktualny plan: `docs/plan-M2c.md`. Następny etap: M2c-4.
 - Decyzje podjęte bez konsultacji: sekcja 9 planu (B1…); nowe dopisuj tam.
 - Przykłady szablonów: `docs/przyklady/`; zrzuty ekranu: `docs/obrazy/`.
 - Agenci: `.claude/agents/` (np. `recenzent` – przegląd, tylko odczyt).
@@ -20,7 +20,7 @@ Aplikacja przeglądarkowa (Vite + TypeScript + React) do projektowania i drukowa
 ## Testy (wyjście skrócone: Vitest „dot”, Playwright „line”)
 
 - `npm run typecheck`, `npm run lint`, `npm run format:check`
-- `npm test` (Vitest), `npm run e2e` (Playwright, Chromium)
+- `npm test` (Vitest), `npm run e2e` (Playwright, Chromium). `EKSPORT_PRZEGLADARKI=1 npm run e2e` dodaje scenariusze eksportu w Firefox i WebKit, tak jak w CI.
 - Wzorce zrzutów `*-chromium-linux.png` – tylko Linux (jak CI).
 - Pliki przykładów: `AKTUALIZUJ_PRZYKLADY=1 npx vitest run src/dane/przyklady.test.ts`.
 
