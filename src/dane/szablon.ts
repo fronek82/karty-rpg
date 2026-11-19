@@ -704,10 +704,10 @@ export const FORMATY_KART = [
 
 /** Neutralne układy startowe kreatora (P9) – ogólne punkty wyjścia, nie szablony gier. */
 export const UKLADY_STARTOWE = [
-  'pusty',
+  'swobodny',
   'tytul-opis',
   'tytul-siatka-opis-stopka',
-  'swobodny',
+  'pusty',
 ] as const;
 export type UkladStartowy = (typeof UKLADY_STARTOWE)[number];
 
