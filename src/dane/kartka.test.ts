@@ -432,3 +432,25 @@ it('liczy i aktualizuje widoczne sztuki z importowanej talii mieszanej', () => {
     liczbaEgzemplarzyKarty(ustawLiczbeEgzemplarzy(cztery, A, kartaId, 1, ctx), A, kartaId),
   ).toBe(1);
 });
+
+it('ponownie dopuszcza 2×1 po odsunięciu lub usunięciu sąsiedniej karty', () => {
+  const typ = {
+    szablonId: 'mausritter-przedmiot',
+    rozmiary: [
+      { kolumny: 1, rzedy: 1 },
+      { kolumny: 2, rzedy: 1 },
+      { kolumny: 1, rzedy: 2 },
+    ],
+  };
+  const cel = ok(dodajKarteWSlocie(pusty, A, { strona: 0, kolumna: 2, rzad: 1 }, typ, ctx));
+  const sasiad = ok(
+    dodajKarteWSlocie(cel.projekt, A, { strona: 0, kolumna: 3, rzad: 1 }, typ, ctx),
+  );
+  const mozliwe = (p: Projekt) => mozliweRozmiary(p, A, cel.kartaId, typ.rozmiary, ctx);
+  expect(mozliwe(sasiad.projekt)).toEqual([true, false, true]);
+  const przesuniety = ok(
+    przesunKarty(sasiad.projekt, A, [sasiad.kartaId], { strona: 0, kolumna: 2, rzad: 0 }, ctx),
+  ).projekt;
+  expect(mozliwe(przesuniety)).toEqual([true, true, true]);
+  expect(mozliwe(usunKarty(sasiad.projekt, A, [sasiad.kartaId]))).toEqual([true, true, true]);
+});

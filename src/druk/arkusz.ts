@@ -8,6 +8,7 @@ import {
   wymiaryStrony,
   type Arkusz,
   type LinieCiecia,
+  type Nozyczki,
   type TytulArkusza,
   wymiaryUkladu,
 } from '../model/arkusz';
@@ -38,6 +39,7 @@ import {
   type Scena,
 } from '../silnik/scena';
 import { tekstNaScene, ulozTekst } from '../silnik/tekst';
+import type { Prostokat } from '../silnik/uklad';
 import {
   odcinkiCieciaProstokatow,
   ulozPasy,
@@ -582,6 +584,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   const liczbaStron = Math.max(rozmieszczenie.liczbaStron, arkusz.liczbaStron ?? 0);
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
+    const polaNapisow: Prostokat[] = [];
     const glify: Record<string, DefinicjaGlifu>[] = [];
     const symbole: (Record<string, DefinicjaSymbolu> | undefined)[] = [];
     const naStronie = rozmieszczenie.karty.filter((c) => c.strona === n);
@@ -653,22 +656,17 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     const dolSiatki = poczatek.y + rzedySiatki * slot.wysokosc + odstepRzedu(rzedySiatki - 1);
     if (u.tytul && tytul) {
       glify.push(tytul.glify);
-      elementy.push(
-        u.tytul.polozenie === 'lewo'
-          ? {
-              typ: 'grupa',
-              x: poczatek.x - u.tytul.odstep - tytul.wys,
-              y: dolSiatki,
-              obrot: -90,
-              elementy: tytul.elementy,
-            }
-          : {
-              typ: 'grupa',
-              x: poczatek.x,
-              y: poczatek.y - pas - u.tytul.odstep - tytul.wys,
-              elementy: tytul.elementy,
-            },
-      );
+      const pion = u.tytul.polozenie === 'lewo';
+      const x = pion ? poczatek.x - u.tytul.odstep - tytul.wys : poczatek.x;
+      const y = pion ? dolSiatki : poczatek.y - pas - u.tytul.odstep - tytul.wys;
+      elementy.push({
+        typ: 'grupa',
+        x,
+        y,
+        ...(pion ? { obrot: -90 } : {}),
+        elementy: tytul.elementy,
+      });
+      polaNapisow.push(poleNapisu(tytul, x, y, pion));
     }
     if (grupy && u.grupy) {
       for (const r of rozmieszczenie.regiony.filter((r) => r.strona === n)) {
@@ -685,6 +683,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         const y = poczatek.y - pas;
         elementy.push({ typ: 'grupa', x, y, elementy: naglowek.elementy });
         elementy.push({ typ: 'grupa', x, y: y + naglowek.wys, elementy: opis.elementy });
+        polaNapisow.push(poleNapisu(naglowek, x, y), poleNapisu(opis, x, y + naglowek.wys));
       }
     }
     if (naglowki && stylGrup) {
@@ -698,6 +697,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
           glify.push(naglowek.glify, opis.glify);
           elementy.push({ typ: 'grupa', x, y, elementy: naglowek.elementy });
           elementy.push({ typ: 'grupa', x, y: y + naglowek.wys, elementy: opis.elementy });
+          polaNapisow.push(poleNapisu(naglowek, x, y), poleNapisu(opis, x, y + naglowek.wys));
         }
         geometriaNaglowkow.push({
           id: h.id,
@@ -710,12 +710,21 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       }
     }
     if (!uklad && u.nozyczki && odcinki.length > 0) {
-      const n = nozyczkiNaScenie(u.nozyczki, odcinki, pas, u.linie);
-      if (n) elementy.push(...n);
-      else
+      const zajete = prostokaty.flatMap((p) => (dop?.tloDoSlotu ? [p.karta, p.obszar] : [p.karta]));
+      // Wzorce z jawną siatką zachowują znacznik konkretnej linii, o ile nie przecina karty.
+      const n = u.poczatekSiatki ? nozyczkiNaScenie(u.nozyczki, odcinki, pas, u.linie, zajete) : [];
+      if (!n) {
         ostrzezenia.push({
           komunikat: `nozyczki-poza-siatka:${u.nozyczki.linia}:${u.nozyczki.indeks}`,
         });
+      } else if (n.length) {
+        elementy.push(...n);
+      } else {
+        const ciecie = prostokaty.map((p) => (dop?.linie === 'karta' ? p.karta : p.obszar));
+        elementy.push(
+          ...nozyczkiPrzyKartach(u.nozyczki, ciecie, [...zajete, ...polaNapisow], strona, u.linie),
+        );
+      }
     }
     strony.push({
       szer: strona.szer,
@@ -843,6 +852,7 @@ function zbudujMieszane(w: {
   const strony: Scena[] = [];
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
+    const polaNapisow: Prostokat[] = [];
     const glify: Record<string, DefinicjaGlifu>[] = [];
     const symbole: (Record<string, DefinicjaSymbolu> | undefined)[] = [];
     const naStronie = karty.filter((c) => c.strona === n);
@@ -875,22 +885,17 @@ function zbudujMieszane(w: {
 
     if (u.tytul && tytul) {
       glify.push(tytul.glify);
-      elementy.push(
-        u.tytul.polozenie === 'lewo'
-          ? {
-              typ: 'grupa',
-              x: obszar.x - u.tytul.odstep - tytul.wys,
-              y: obszar.y + obszar.wys,
-              obrot: -90,
-              elementy: tytul.elementy,
-            }
-          : {
-              typ: 'grupa',
-              x: obszar.x,
-              y: obszar.y - u.tytul.odstep - tytul.wys,
-              elementy: tytul.elementy,
-            },
-      );
+      const pion = u.tytul.polozenie === 'lewo';
+      const x = pion ? obszar.x - u.tytul.odstep - tytul.wys : obszar.x;
+      const y = pion ? obszar.y + obszar.wys : obszar.y - u.tytul.odstep - tytul.wys;
+      elementy.push({
+        typ: 'grupa',
+        x,
+        y,
+        ...(pion ? { obrot: -90 } : {}),
+        elementy: tytul.elementy,
+      });
+      polaNapisow.push(poleNapisu(tytul, x, y, pion));
     }
     if (stylGrup) {
       for (const p of pasy.filter((x) => x.strona === n && x.naglowek)) {
@@ -912,16 +917,22 @@ function zbudujMieszane(w: {
           y: p.naglowek!.y + nag.naglowek.wys,
           elementy: nag.opis.elementy,
         });
+        polaNapisow.push(
+          poleNapisu(nag.naglowek, obszar.x, p.naglowek!.y),
+          poleNapisu(nag.opis, obszar.x, p.naglowek!.y + nag.naglowek.wys),
+        );
       }
     }
-    if (u.nozyczki && odcinki.length > 0) {
-      const nz = nozyczkiNaScenie(u.nozyczki, odcinki, 0, u.linie);
-      if (nz) elementy.push(...nz);
-      else
-        ostrzezenia.push({
-          komunikat: `nozyczki-poza-siatka:${u.nozyczki.linia}:${u.nozyczki.indeks}`,
-        });
-    }
+    if (u.nozyczki)
+      elementy.push(
+        ...nozyczkiPrzyKartach(
+          u.nozyczki,
+          naStronie,
+          [...naStronie, ...polaNapisow],
+          strona,
+          u.linie,
+        ),
+      );
     strony.push({
       szer: strona.szer,
       wys: strona.wys,
@@ -953,16 +964,33 @@ function ostrzezenieKarty(k: Karta, o: Ostrzezenie): OstrzezenieArkusza {
   };
 }
 
+function poleNapisu(n: { szer: Mm; wys: Mm }, x: Mm, y: Mm, pion = false): Prostokat {
+  return pion ? { x, y: y - n.szer, szer: n.wys, wys: n.szer } : { x, y, szer: n.szer, wys: n.wys };
+}
+
+const EPS = 1e-6;
+const przecinajaSie = (a: Prostokat, b: Prostokat) =>
+  a.szer > EPS &&
+  a.wys > EPS &&
+  b.szer > EPS &&
+  b.wys > EPS &&
+  a.x + a.szer > b.x + EPS &&
+  b.x + b.szer > a.x + EPS &&
+  a.y + a.wys > b.y + EPS &&
+  b.y + b.wys > a.y + EPS;
+
 /**
  * Nożyczki na przedłużeniu `indeks`-tej linii cięcia (licząc rzeczywiste linie na stronie –
  * przy grupach z odstępami), poza obszarem kart, skierowane do środka. Od nożyczek do krawędzi
  * siatki biegnie przerywana linia prowadząca – jak w oryginale.
+ * Zwraca pustą listę przy kolizji z kartą, undefined przy braku skonfigurowanej linii.
  */
 function nozyczkiNaScenie(
   n: NonNullable<Arkusz['ustawienia']['nozyczki']>,
   odcinki: { x1: Mm; y1: Mm; x2: Mm; y2: Mm }[],
   pasNaglowkow: Mm,
   linie: LinieCiecia,
+  zajeteKarty: Prostokat[],
 ): ElementSceny[] | undefined {
   const r = n.rozmiar;
   const odstep = n.odstep + r / 2;
@@ -1004,10 +1032,24 @@ function nozyczkiNaScenie(
           { x1: x, y1: y + r / 2, x2: x, y2: gora - pasNaglowkow }
         : { x1: x, y1: dol, x2: x, y2: y - r / 2 };
   }
+  const lewo = Math.min(x - r / 2, prowadzaca.x1, prowadzaca.x2);
+  const gora = Math.min(y - r / 2, prowadzaca.y1, prowadzaca.y2);
+  const pole = {
+    x: lewo,
+    y: gora,
+    szer: Math.max(x + r / 2, prowadzaca.x1, prowadzaca.x2) - lewo,
+    wys: Math.max(y + r / 2, prowadzaca.y1, prowadzaca.y2) - gora,
+  };
+  if (zajeteKarty.some((k) => przecinajaSie(k, pole))) return [];
   const wynik: ElementSceny[] = [];
   if (Math.hypot(prowadzaca.x2 - prowadzaca.x1, prowadzaca.y2 - prowadzaca.y1) > linie.kreska)
     wynik.push(liniaCiecia(prowadzaca, linie));
-  wynik.push({
+  wynik.push(symbolNozyczek(x, y, obrot, r, linie));
+  return wynik;
+}
+
+function symbolNozyczek(x: Mm, y: Mm, obrot: number, r: Mm, linie: LinieCiecia): ElementSceny {
+  return {
     typ: 'grupa',
     x,
     y,
@@ -1019,7 +1061,71 @@ function nozyczkiNaScenie(
         wypelnienie: linie.kolor,
       },
     ],
-  });
+  };
+}
+
+/** Na automatycznej kartce każda ikona leży na przedłużeniu krawędzi własnej karty. */
+function nozyczkiPrzyKartach(
+  n: Nozyczki,
+  karty: Prostokat[],
+  zajeteKarty: Prostokat[],
+  papier: { szer: Mm; wys: Mm },
+  linie: LinieCiecia,
+): ElementSceny[] {
+  const wynik: ElementSceny[] = [];
+  const zajete = [...zajeteKarty];
+  const polowa = n.rozmiar / 2;
+  const poczatek = n.strona === 'poczatek';
+  const blizsza = n.indeks === 0;
+  const ustawienia = [n.linia === 'pionowa', n.linia !== 'pionowa'].flatMap((pion) =>
+    [poczatek, !poczatek].flatMap((odPoczatku) =>
+      [blizsza, !blizsza].map((blisko) => ({ pion, odPoczatku, blisko })),
+    ),
+  );
+  for (const karta of karty) {
+    // Najpierw pełny ustawiony odstęp. Przy ciasnym układzie druga próba z samą ikoną.
+    [n.odstep, 0].some((odstep) => {
+      for (const { pion, odPoczatku, blisko } of ustawienia) {
+        const x = karta.x + ((pion ? blisko : odPoczatku) ? 0 : karta.szer);
+        const y = karta.y + ((pion ? odPoczatku : blisko) ? 0 : karta.wys);
+        const kierunek = odPoczatku ? -1 : 1;
+        const dx = pion ? 0 : kierunek;
+        const dy = pion ? kierunek : 0;
+        const cx = x + dx * (odstep + polowa);
+        const cy = y + dy * (odstep + polowa);
+        const pole = {
+          x: Math.min(cx - polowa, pion ? cx - polowa : x),
+          y: Math.min(cy - polowa, pion ? y : cy - polowa),
+          szer: n.rozmiar + (pion ? 0 : odstep),
+          wys: n.rozmiar + (pion ? odstep : 0),
+        };
+        if (
+          pole.x < -EPS ||
+          pole.y < -EPS ||
+          pole.x + pole.szer > papier.szer + EPS ||
+          pole.y + pole.wys > papier.wys + EPS ||
+          zajete.some((z) => przecinajaSie(z, pole))
+        )
+          continue;
+        zajete.push(pole);
+        if (odstep > linie.kreska)
+          wynik.push(
+            liniaCiecia({ x1: x, y1: y, x2: x + dx * odstep, y2: y + dy * odstep }, linie),
+          );
+        wynik.push(
+          symbolNozyczek(
+            cx,
+            cy,
+            pion ? (odPoczatku ? 90 : -90) : odPoczatku ? 0 : 180,
+            n.rozmiar,
+            linie,
+          ),
+        );
+        return true;
+      }
+      return false;
+    });
+  }
   return wynik;
 }
 
