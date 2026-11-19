@@ -6,11 +6,11 @@
 
 - Użytkownik zapisuje własny szablon lub ozdobnik z zasobami przenoszonymi przez dany format i korzysta z kopii w innym projekcie w tej samej przeglądarce. Może zapisać wpis do pliku i wczytać go w innej przeglądarce.
 - Użytkownik widzi w edytorze układu, gdzie na papierze są marginesy, sloty i odstępy. Zmiana ustawienia od razu aktualizuje opis i strzałki.
-- Firefox i Safari pobierają obrazy stron i kart w PNG i JPG. Automatyczne testy Firefox i WebKit sprawdzają rozmiar odpowiadający 300 dpi, poprawność pliku oraz obecność osadzonej ilustracji.
+- Docelowo użytkownik pobiera obrazy stron i kart w PNG i JPG w Firefoksie i Safari. Kryterium odbioru automatycznego obejmuje testy Firefox i Playwright WebKit, które sprawdzają poprawność pliku, wymiary odpowiadające 300 dpi i osadzoną ilustrację. Wynik ręcznego sprawdzenia natywnego Safari odnotowujemy osobno.
 
 Każdy etap kończy się zielonymi kontrolami typów, lintem, formatowaniem, Vitest i Playwright. Wzorce PNG kart, arkuszy i przykładów mają pozostać identyczne. Końcowy przebieg sprawdza nowe ścieżki po polsku i angielsku, w jasnym i ciemnym motywie.
 
-## 2. Stan dziś
+## 2. Stan przed M2c
 
 | Potrzeba                            | Stan | Uwagi                                                                                                               |
 | ----------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------- |
