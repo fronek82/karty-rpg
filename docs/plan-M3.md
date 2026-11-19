@@ -1,6 +1,6 @@
 # Plan M3 – style i skład kart z danych
 
-**Status.** M3 rozpoczęty 19.11.2026. Następny jest M3-1. Punktem wyjścia jest ukończenie wdrożenia M2c. [Ręczny odbiór M2c](plan-M2c.md#4-etapy) jest otwarty. Zakres wynika ze [SPEC, sekcje 4, 5, 9 i 12](../SPEC.md), [planu M2](plan-M2.md#6-później) i [planu M2b](plan-M2b.md#6-później).
+**Status.** M3 rozpoczęty 19.11.2026. M3-1 ukończono 19.11.2026. Następny jest M3-2. Punktem wyjścia jest ukończenie wdrożenia M2c. [Ręczny odbiór M2c](plan-M2c.md#4-etapy) jest otwarty. Zakres wynika ze [SPEC, sekcje 4, 5, 9 i 12](../SPEC.md), [planu M2](plan-M2.md#6-później) i [planu M2b](plan-M2b.md#6-później).
 
 ## 1. Cel i kryterium ukończenia
 
@@ -34,16 +34,18 @@
 
 Jeden etap oznacza osobną gałąź z aktualnego `main` i osobny PR. Każdy PR przechodzi niezależny przegląd, pełne testy oraz zielone CI. Po scaleniu sprawdzamy wdrożenie na Pages.
 
-| Etap | Status | Wielkość | Zakres z testami                                                                                                                                                                                                                     | Agenci                                                  |
-| ---- | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| M3-1 | ✗      | M        | Zestawy stylów. Vitest sprawdza zakres zmian i poprawność katalogu. Testy obejmują kartę bez separatora, warianty, zastąpienie 9-slice, eksport i import szablonu. E2e sprawdza zastosowanie, cofnięcie, ponowne otwarcie i podgląd. | biblioteka-ozdobnikow, edytor-ui, tester                |
-| M3-2 | ✗      | L        | Nazwane grupy stylów i kolory z danych. Test migracji, importu szablonu, konfliktów, odłączania grupy, aktualizacji pól i koloru domyślnego.                                                                                         | silnik-layoutu, dane-import, edytor-ui, tester          |
-| M3-3 | ✗      | M        | Listy numerowane i ikony w tekście. Testy łamania linii, indeksów, nieznanych kodów oraz PNG i PDF.                                                                                                                                  | silnik-layoutu, biblioteka-ozdobnikow, druk-pdf, tester |
-| M3-4 | ✗      | L        | Kontynuacja długiego tekstu na kolejnej karcie. Test podziału, nagłówka, ilości, kolejności, braku postępu i wspólnego wyniku dla podglądu, obrazów i druku.                                                                         | silnik-layoutu, druk-pdf, edytor-ui, tester             |
-| M3-5 | ✗      | L        | Styl szkicowy, postrzępione krawędzie, tekstura karty i panelu, motyw po łuku. Testy determinizmu, spadu, wycinków i zgodności SVG z PDF.                                                                                            | biblioteka-ozdobnikow, silnik-layoutu, druk-pdf, tester |
-| M3-6 | ✗      | L        | Dowolny obrót swobodny i opcjonalne pakowanie MaxRects. Testy trafiania, przyciągania, wydruku, kolejności i wczytania obrotów ze starszych projektów.                                                                               | silnik-layoutu, druk-pdf, edytor-ui, tester             |
-| M3-7 | ✗      | L        | Import CSV/XLSX z mapowaniem. Testy poprawnych i błędnych plików, mapowania i cofnięcia.                                                                                                                                             | dane-import, edytor-ui, tester                          |
-| M3-8 | ✗      | S        | Domknięcie. README, zrzuty, kontrola regresji M2c oraz odbiór neutralnych scenariuszy w obu językach i motywach.                                                                                                                     | edytor-ui, tester, recenzent                            |
+| Etap | Status       | Wielkość | Zakres z testami                                                                                                                                                                                                                     | Agenci                                                  |
+| ---- | ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| M3-1 | ✓ 19.11.2026 | M        | Zestawy stylów. Vitest sprawdza zakres zmian i poprawność katalogu. Testy obejmują kartę bez separatora, warianty, zastąpienie 9-slice, eksport i import szablonu. E2e sprawdza zastosowanie, cofnięcie, ponowne otwarcie i podgląd. | biblioteka-ozdobnikow, edytor-ui, tester                |
+| M3-2 | ✗            | L        | Nazwane grupy stylów i kolory z danych. Test migracji, importu szablonu, konfliktów, odłączania grupy, aktualizacji pól i koloru domyślnego.                                                                                         | silnik-layoutu, dane-import, edytor-ui, tester          |
+| M3-3 | ✗            | M        | Listy numerowane i ikony w tekście. Testy łamania linii, indeksów, nieznanych kodów oraz PNG i PDF.                                                                                                                                  | silnik-layoutu, biblioteka-ozdobnikow, druk-pdf, tester |
+| M3-4 | ✗            | L        | Kontynuacja długiego tekstu na kolejnej karcie. Test podziału, nagłówka, ilości, kolejności, braku postępu i wspólnego wyniku dla podglądu, obrazów i druku.                                                                         | silnik-layoutu, druk-pdf, edytor-ui, tester             |
+| M3-5 | ✗            | L        | Styl szkicowy, postrzępione krawędzie, tekstura karty i panelu, motyw po łuku. Testy determinizmu, spadu, wycinków i zgodności SVG z PDF.                                                                                            | biblioteka-ozdobnikow, silnik-layoutu, druk-pdf, tester |
+| M3-6 | ✗            | L        | Dowolny obrót swobodny i opcjonalne pakowanie MaxRects. Testy trafiania, przyciągania, wydruku, kolejności i wczytania obrotów ze starszych projektów.                                                                               | silnik-layoutu, druk-pdf, edytor-ui, tester             |
+| M3-7 | ✗            | L        | Import CSV/XLSX z mapowaniem. Testy poprawnych i błędnych plików, mapowania i cofnięcia.                                                                                                                                             | dane-import, edytor-ui, tester                          |
+| M3-8 | ✗            | S        | Domknięcie. README, zrzuty, kontrola regresji M2c oraz odbiór neutralnych scenariuszy w obu językach i motywach.                                                                                                                     | edytor-ui, tester, recenzent                            |
+
+[Zrzuty M3-1](obrazy/m3-1/README.md) pokazują zestawy Leśny i Runiczny w PL i EN, w obu motywach.
 
 ## 5. Zakres pierwszej wersji
 
@@ -76,8 +78,10 @@ M4 obejmuje między innymi rewersy i druk dwustronny zgodnie ze specyfikacją. U
 
 ## 9. Decyzje podjęte bez konsultacji
 
-| #    | Etap | Sprawa        | Decyzja                                                                                                                                               |
-| ---- | ---- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B230 | Plan | Kolejność     | M3 zaczynamy od zestawów stylów przewidzianych w planie M2b. Grupowanie, skład i zmiany geometrii są osobnymi etapami.                                |
-| B231 | Plan | Zapis zestawu | Użycie zestawu kopiuje ustawienia z wbudowanego katalogu bez referencji do zestawu w schemacie projektu. Brak separatora pozostawia drzewo bez zmian. |
-| B232 | Plan | Import danych | Mapowanie i walidację pokazujemy przed zapisem. Błąd mapowanego wiersza blokuje zapis całej partii.                                                   |
+| #    | Etap | Sprawa            | Decyzja                                                                                                                                                                                                                                 |
+| ---- | ---- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B230 | Plan | Kolejność         | M3 zaczynamy od zestawów stylów przewidzianych w planie M2b. Grupowanie, skład i zmiany geometrii są osobnymi etapami.                                                                                                                  |
+| B231 | Plan | Zapis zestawu     | Użycie zestawu kopiuje ustawienia z wbudowanego katalogu bez referencji do zestawu w schemacie projektu. Brak separatora pozostawia drzewo bez zmian.                                                                                   |
+| B232 | Plan | Import danych     | Mapowanie i walidację pokazujemy przed zapisem. Błąd mapowanego wiersza blokuje zapis całej partii.                                                                                                                                     |
+| B233 | M3-1 | Wbudowane zestawy | Leśny łączy pnącze, liść i gwiazdę, a Runiczny runy, okucie, łańcuch i romb. Obydwa używają istniejących elementów katalogu.                                                                                                            |
+| B234 | M3-1 | Zakres i historia | Jedna operacja zmienia ramkę karty i istniejące separatory we wszystkich wariantach. Zachowujemy długość i kierunek separatorów, geometrię ramki i jej ustawienia linii. Ponowne użycie identycznego zestawu nie dodaje kroku historii. |

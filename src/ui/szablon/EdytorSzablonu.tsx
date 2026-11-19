@@ -23,6 +23,7 @@ import {
   wstawWezel,
   wszystkieWezly,
   wyzej,
+  zastosujZestawStylu,
   zmienSzablon,
   zmienWezel,
   znajdzWezel,
@@ -43,6 +44,7 @@ import {
   type Wezel,
 } from '../../model/szablon';
 import { renderujKarte } from '../../silnik/karta';
+import { ZESTAWY_STYLOW } from '../../ozdobniki/zestawyStylow';
 import { scenaDoSvg } from '../../silnik/svg';
 import { PoleLiczby } from '../kartka/PoleLiczby';
 import { tekstOstrzezenia } from '../ostrzezenia';
@@ -977,6 +979,21 @@ function PanelKarty({
           />
         </label>
       </div>
+      <Sekcja tytul={t('zestawy.tytul')}>
+        <p className="podpis">{t('zestawy.opis')}</p>
+        <div className="dwa-pola">
+          {ZESTAWY_STYLOW.map((zestaw) => (
+            <button
+              key={zestaw.id}
+              type="button"
+              className="maly"
+              onClick={() => zmienSz((s) => zastosujZestawStylu(s, zestaw))}
+            >
+              {t(`zestawy.${zestaw.id}`)}
+            </button>
+          ))}
+        </div>
+      </Sekcja>
       <Sekcja tytul={t('wlasciwosci.ramkaKarty')} otwarta={!!szablon.ramka}>
         <PoleRamki
           etykieta={t('wlasciwosci.ramkaKarty')}

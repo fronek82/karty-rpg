@@ -779,6 +779,11 @@ export const pl = {
   'wlasciwosci.rola': '{rola} (rola)',
   'wlasciwosci.kopiujStyl': 'Kopiuj styl',
   'wlasciwosci.wklejStyl': 'Wklej styl',
+  'zestawy.tytul': 'Zestawy stylów',
+  'zestawy.opis':
+    'Wybierz zestaw, aby zmienić ramkę, narożniki i istniejące separatory we wszystkich układach tej karty.',
+  'zestawy.lesny': 'Leśny',
+  'zestawy.runiczny': 'Runiczny',
   'wlasciwosci.ramkaKarty': 'Ramka karty',
   'wlasciwosci.odsuniecie': 'Odsunięcie od krawędzi (mm)',
   'wlasciwosci.promienRamki': 'Zaokrąglenie ramki (mm)',

@@ -3,11 +3,14 @@ import type { Projekt } from '../model/projekt';
 import {
   czyKontener,
   kluczeTabeli,
+  korzenKarty,
   type Kontener,
+  type PoleSeparator,
   type Szablon,
   type Wezel,
 } from '../model/szablon';
 import { znajdzElement } from '../ozdobniki';
+import { ZESTAWY_STYLOW } from '../ozdobniki/zestawyStylow';
 import { kolumnySzablonu } from './edycja';
 import {
   danePodgladu,
@@ -29,6 +32,7 @@ import {
   skopiujStyl,
   wklejStyl,
   wszystkieWezly,
+  zastosujZestawStylu,
   zmienSzablon,
   zmienTypKontenera,
   zmienTypPola,
@@ -54,6 +58,78 @@ const pusty = () =>
     NAZWY,
   );
 const ids = (k: Kontener) => k.dzieci.map((d) => d.id);
+
+describe('zestawy stylów', () => {
+  it('łączy zgodne rodzaje wbudowanych ozdobników', () => {
+    for (const z of ZESTAWY_STYLOW) {
+      expect(znajdzElement(z.ozdoba.element)?.rodzaj).toBe('motyw');
+      expect(znajdzElement(z.narozniki.element)?.rodzaj).toBe('naroznik');
+      expect(znajdzElement(z.separator.zakonczenia.element)?.rodzaj).toBe('zakonczenie');
+      expect(znajdzElement(z.separator.srodek.element)?.rodzaj).toBe('srodek');
+      if (typeof z.separator.rysunek === 'object')
+        expect(znajdzElement(z.separator.rysunek.motyw)?.rodzaj).toBe('motyw');
+    }
+  });
+
+  it('zmienia tylko ramkę i wygląd istniejących separatorów we wszystkich wariantach', () => {
+    const s = pusty();
+    const opis = nowyWezel(s, 'tekst', 'Opis');
+    const separator = {
+      ...nowyWezel(s, 'separator', 'Ozdoba'),
+      dlugosc: { procent: 70 },
+      rysunek: { motyw: 'wb:przeplot', szerokosc: 3 },
+      kolor: '#222222',
+      zakonczenia: { element: 'wb:zak-kropka', rozmiar: 3 },
+    } as PoleSeparator;
+    const pionowy = { ...separator, id: 'pionowy', kierunek: 'pionowy' as const };
+    const przed: Szablon = {
+      ...s,
+      rozmiar: { tryb: 'sloty', slot: { szerokosc: 63, wysokosc: 44 }, kolumny: 1, rzedy: 1 },
+      ramka: {
+        grubosc: 0.6,
+        odsuniecie: 2,
+        promien: 5,
+        kolor: '#123456',
+        ozdoba: { rodzaj: 'ramka9', element: 'wlasna-ramka', grubosc: 3 },
+      },
+      korzen: { ...s.korzen, dzieci: [opis, separator] },
+      warianty: [
+        { kolumny: 1, rzedy: 2, korzen: { ...s.korzen, id: 'wariant', dzieci: [pionowy] } },
+      ],
+    };
+    const kopia = structuredClone(przed);
+    const zestaw = ZESTAWY_STYLOW[1];
+    const nowy = zastosujZestawStylu(przed, zestaw);
+
+    expect(nowy.ramka).toEqual({
+      ...przed.ramka,
+      ozdoba: zestaw.ozdoba,
+      narozniki: zestaw.narozniki,
+    });
+    expect(nowy.korzen.dzieci).toEqual([opis, { ...separator, ...zestaw.separator }]);
+    expect(korzenKarty(nowy, { rozmiar: { kolumny: 1, rzedy: 2 } }).dzieci).toEqual([
+      { ...pionowy, ...zestaw.separator },
+    ]);
+    expect(nowy.rozmiar).toBe(przed.rozmiar);
+    expect(przed).toEqual(kopia);
+    const zInnaKolejnoscia = {
+      ...nowy,
+      ramka: {
+        ...nowy.ramka!,
+        narozniki: { rozmiar: zestaw.narozniki.rozmiar, element: zestaw.narozniki.element },
+      },
+    };
+    expect(zastosujZestawStylu(zInnaKolejnoscia, zestaw)).toBe(zInnaKolejnoscia);
+  });
+
+  it('na pustej karcie dodaje ramkę bez wstawiania separatora', () => {
+    const przed = pusty();
+    const nowy = zastosujZestawStylu(przed, ZESTAWY_STYLOW[0]);
+    expect(nowy.korzen).toEqual(przed.korzen);
+    expect(nowy.ramka?.ozdoba).toEqual(ZESTAWY_STYLOW[0].ozdoba);
+    expect(nowy.warianty).toBeUndefined();
+  });
+});
 
 describe('klucze i nowe pola', () => {
   it('klucz z nazwy: bez diakrytyków, unikalny', () => {
