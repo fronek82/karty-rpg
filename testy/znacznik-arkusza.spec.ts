@@ -79,7 +79,6 @@ for (const pion of [false, true]) {
     const nakladka = await page.addStyleTag({
       content: '.strona-kartki > .warstwa { visibility: hidden }',
     });
-    if (process.env.ZRZUT_ZNACZNIKA_PRZED) await scena.screenshot({ path: info.outputPath(nazwa) });
     await expect(scena).toHaveScreenshot(nazwa, { maxDiffPixels: 25 });
     await nakladka.evaluate((e) => {
       e.parentNode?.removeChild(e);
