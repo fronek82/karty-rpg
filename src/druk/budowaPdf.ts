@@ -25,6 +25,7 @@ export interface ObrazDoPdf {
 /** Wszystko, czego potrzeba do PDF arkuszy – dane klonowalne (postMessage do workera). */
 export interface ZadaniePdf {
   tytul: string;
+  dopisekKontynuacji?: string;
   arkusze: Arkusz[];
   talie: Talia[];
   szablony: Szablon[];
@@ -57,6 +58,7 @@ export async function zbudujPdf(z: ZadaniePdf): Promise<Uint8Array> {
   const ctx = {
     czcionki: rejestr,
     szablony,
+    ...(z.dopisekKontynuacji ? { dopisekKontynuacji: z.dopisekKontynuacji } : {}),
     obraz: (id: string) => obrazy.get(id)?.info,
     ...(z.elementy ? { elementy: z.elementy } : {}),
   };

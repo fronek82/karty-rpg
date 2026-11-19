@@ -45,6 +45,7 @@ import {
 } from '../../druk/arkusz';
 import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
 import { t, tJesliJest, tn } from '../../i18n';
+import type { WyrenderowanaKarta } from '../../silnik/karta';
 import { useJezyk } from '../../i18n/react';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import type { Arkusz } from '../../model/arkusz';
@@ -270,10 +271,25 @@ export function EdytorKartki({
     () => (zasoby ? new WeakMap<Karta, { scena: Scena; ostrzezenia: Ostrzezenie[] }>() : undefined),
     [zasoby],
   );
+  const dopisekKontynuacji = t('kartka.ciagDalszy');
+  const pamiecKontynuacji = useMemo(
+    () =>
+      zasoby
+        ? {
+            dopisek: dopisekKontynuacji,
+            sceny: new WeakMap<Karta, WyrenderowanaKarta[]>(),
+          }
+        : undefined,
+    [zasoby, dopisekKontynuacji],
+  );
   // Pamięć zbudowanych kartek (po id – tylko ostatnia wersja, historia nie trzyma starych SVG);
   // zmiana jednej kartki nie buduje pozostałych.
   const [pamiecKartek] = useState(
-    () => new Map<string, { arkusz: Arkusz; talia: Talia; zasoby: unknown; k: Kartka }>(),
+    () =>
+      new Map<
+        string,
+        { arkusz: Arkusz; talia: Talia; zasoby: unknown; jezyk: string; k: Kartka }
+      >(),
   );
   const arkusze = useDeferredValue(projekt.arkusze);
   const talie = useDeferredValue(projekt.talie);
@@ -282,7 +298,14 @@ export function EdytorKartki({
     return arkusze.map((arkusz) => {
       const talia = talie.find((x) => x.id === arkusz.taliaId)!;
       const z = pamiecKartek.get(arkusz.id);
-      if (z && z.arkusz === arkusz && z.talia === talia && z.zasoby === zasoby) return z.k;
+      if (
+        z &&
+        z.arkusz === arkusz &&
+        z.talia === talia &&
+        z.zasoby === zasoby &&
+        z.jezyk === jezykUi
+      )
+        return z.k;
       let k: Kartka;
       try {
         const wynik = zbudujArkusz(arkusz, talia, {
@@ -291,6 +314,12 @@ export function EdytorKartki({
           obraz: (id) => zasoby.obrazy.get(id)?.info,
           ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
           pamiecKart,
+          ...(pamiecKontynuacji
+            ? {
+                dopisekKontynuacji: pamiecKontynuacji.dopisek,
+                pamiecKontynuacji: pamiecKontynuacji.sceny,
+              }
+            : {}),
         });
         k = {
           arkusz,
@@ -308,10 +337,10 @@ export function EdytorKartki({
       } catch (e) {
         k = { arkusz, talia, svg: [], blad: e instanceof Error ? e.message : String(e) };
       }
-      pamiecKartek.set(arkusz.id, { arkusz, talia, zasoby, k });
+      pamiecKartek.set(arkusz.id, { arkusz, talia, zasoby, jezyk: jezykUi, k });
       return k;
     });
-  }, [arkusze, talie, zasoby, pamiecKart, pamiecKartek]);
+  }, [arkusze, talie, zasoby, pamiecKart, pamiecKartek, pamiecKontynuacji, jezykUi]);
 
   // Menu wolnego miejsca wskazuje je indeksem na liście układu – po zmianie układu (mieszane
   // rozmiary) lista jest inna, więc menu zamykamy.
@@ -419,7 +448,7 @@ export function EdytorKartki({
           const mieszana = czyMieszane(a);
           const przypietych = mieszana ? 0 : (a.przypiete ?? []).length;
           if (
-            w.rozmieszczenie.karty.length < przypietych ||
+            w.rozmieszczenie.karty.filter((c) => !c.czesc).length < przypietych ||
             w.ostrzezenia.some((o) =>
               /^(przypiecie-|siatka-za-mala|karta-wieksza-niz-strona)/.test(o.komunikat),
             ) ||
@@ -790,7 +819,7 @@ export function EdytorKartki({
   const poczatekGestu = (e: React.PointerEvent, k: Kartka, strona: number) => {
     if (e.button !== 0 || !k.geometria || !zasoby) return;
     const cel = e.target as HTMLElement;
-    if (cel.closest('.pasek-karty, .menu-typu, .usun-strone')) return;
+    if (cel.closest('.pasek-karty, .menu-typu, .usun-strone, [data-kontynuacja]')) return;
     ustawMenu(undefined);
     const stronaEl = e.currentTarget.closest<HTMLElement>('.strona-kartki')!;
     const pt = mmNaStronie(stronaEl, k.geometria, e.clientX, e.clientY);
@@ -1001,6 +1030,7 @@ export function EdytorKartki({
     const k = odczytajKalibracje();
     return {
       tytul: projekt.nazwa,
+      dopisekKontynuacji: t('kartka.ciagDalszy'),
       arkusze: projekt.arkusze,
       talie: projekt.talie,
       szablony: [...z.szablony.values()],
@@ -1490,7 +1520,7 @@ export function EdytorKartki({
               liczbaStron={
                 czyMieszane(k.arkusz)
                   ? (k.wynik?.strony.length ?? 1)
-                  : liczbaStronKartki(projekt, k.arkusz.id)
+                  : Math.max(liczbaStronKartki(projekt, k.arkusz.id), k.svg.length)
               }
               zazn={aktywne}
               gest={gest}
@@ -1683,11 +1713,13 @@ function WidokKartki({
       {wiele && <h2 className="tytul-kartki">{k.arkusz.nazwa}</h2>}
       {Array.from({ length: Math.max(liczbaStron, k.svg.length) }, (_, s) => {
         const naStronie = karty.filter((x) => x.strona === s);
+        const kontynuacje =
+          k.wynik?.rozmieszczenie.karty.filter((x) => x.strona === s && x.czesc) ?? [];
         const zajete = new Set<string>();
-        for (const c of naStronie)
+        for (const c of [...naStronie, ...kontynuacje])
           for (let i = 0; i < c.kolumny; i++)
             for (let j = 0; j < c.rzedy; j++) zajete.add(`${c.kolumna + i},${c.rzad + j}`);
-        const pusta = !mieszane && naStronie.length === 0;
+        const pusta = !mieszane && naStronie.length === 0 && kontynuacje.length === 0;
         const kartyMieszane = mieszane?.karty.filter((c) => c.strona === s) ?? [];
         const polePol = mieszane ? mieszane.obszar.szer * mieszane.obszar.wys : 0;
         const zajetePole = kartyMieszane.reduce((suma, c) => suma + c.szer * c.wys, 0);
@@ -1784,6 +1816,9 @@ function WidokKartki({
                       gestTu?.rodzaj === 'kolejnosc' &&
                       gestTu.ruch &&
                       gestTu.ids.includes(c.kartaId);
+                    const nazwa =
+                      nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) ||
+                      t('karta.bezNazwy');
                     return (
                       <button
                         key={c.klucz}
@@ -1794,9 +1829,9 @@ function WidokKartki({
                         aria-pressed={zaznaczone.has(c.kartaId)}
                         onClick={(e) => e.detail === 0 && wybierzKarte(c.kartaId, e.shiftKey)}
                         aria-label={t('mieszane.kartaEtykieta', {
-                          nazwa:
-                            nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) ||
-                            t('karta.bezNazwy'),
+                          nazwa: c.czesc
+                            ? `${nazwa} – ${t('kartka.ciagDalszy')} ${c.czesc + 1}`
+                            : nazwa,
                           strona: s + 1,
                           szer: Math.round(c.szer),
                           wys: Math.round(c.wys),
@@ -1916,6 +1951,18 @@ function WidokKartki({
                         />
                       );
                     })}
+                  {kontynuacje.map((c) => (
+                    <button
+                      key={`ciag-${c.karta.id}#${c.numer}`}
+                      type="button"
+                      className={`karta-na-kartce${zaznaczone.has(c.karta.id) ? ' zaznaczona' : ''}`}
+                      data-kontynuacja={c.karta.id}
+                      style={stylProstokata(g, s, c.kolumna, c.rzad, c.kolumny, c.rzedy)}
+                      aria-pressed={zaznaczone.has(c.karta.id)}
+                      aria-label={`${nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) || t('karta.bezNazwy')} – ${t('kartka.ciagDalszy')} ${(c.czesc ?? 0) + 1}`}
+                      onClick={(e) => wybierzKarte(c.karta.id, e.shiftKey)}
+                    />
+                  ))}
                   {naStronie.map((c) => {
                     const podnoszona =
                       gestTu?.rodzaj === 'karty' && gestTu.ruch && gestTu.ids.includes(c.karta.id);

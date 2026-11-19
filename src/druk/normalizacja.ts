@@ -110,6 +110,7 @@ export function normalizujKartki(
     const w = zbudujArkusz(a, talia, {
       czcionki: ctx.czcionki,
       szablony,
+      pomijajKontynuacje: true,
       ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
     });
 

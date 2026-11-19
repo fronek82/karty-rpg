@@ -598,6 +598,24 @@ describe('wgrywanie czcionek', () => {
 });
 
 describe('eksport i import szablonu', () => {
+  it('M3-4: migruje v19 i przenosi opcjonalną kontynuację w paczce szablonu', () => {
+    const wzor = projekt.szablony[0]!;
+    const pole = {
+      id: 'opis-wyprawy',
+      typ: 'tekst' as const,
+      klucz: 'opis',
+      styl: { czcionka: 'tresc', rozmiar: 3 },
+    };
+    const stary = { ...wzor, korzen: { ...wzor.korzen, dzieci: [pole] } };
+    const p19 = { ...projekt, wersja: 19, szablony: [stary] };
+    expect(importujSzablon(eksportujSzablon(p19, zasoby, stary.id).bajty).szablon).toEqual(stary);
+    const nowy = { ...stary, korzen: { ...stary.korzen, dzieci: [{ ...pole, kontynuuj: true }] } };
+    expect(
+      importujSzablon(eksportujSzablon({ ...projekt, szablony: [nowy] }, zasoby, nowy.id).bajty)
+        .szablon,
+    ).toEqual(nowy);
+  });
+
   it('M3-3: migracja v18 zachowuje dosłowny tekst, a paczka v19 przenosi ustawienia notacji', () => {
     const wzor = projekt.szablony[0]!;
     const pole = {

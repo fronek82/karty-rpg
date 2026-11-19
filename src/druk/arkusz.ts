@@ -20,7 +20,13 @@ import {
 } from '../model/szablon';
 import type { RejestrCzcionek } from '../silnik/czcionki';
 import { konturIkony } from '../silnik/ikony';
-import { renderujKarte, type InformacjaOObrazie, type Ostrzezenie } from '../silnik/karta';
+import { kartyZKontynuacja, poleKontynuacji } from '../silnik/kontynuacja';
+import {
+  renderujKarte,
+  type InformacjaOObrazie,
+  type Ostrzezenie,
+  type WyrenderowanaKarta,
+} from '../silnik/karta';
 import {
   kolorSceny,
   polaczGlify,
@@ -60,6 +66,9 @@ export interface KontekstArkusza {
    * szablonów i obrazów – przy ich zmianie wołający tworzy nową.
    */
   pamiecKart?: WeakMap<Karta, { scena: Scena; ostrzezenia: Ostrzezenie[] }>;
+  dopisekKontynuacji?: string;
+  pomijajKontynuacje?: boolean;
+  pamiecKontynuacji?: WeakMap<Karta, WyrenderowanaKarta[]>;
 }
 
 export interface OstrzezenieArkusza {
@@ -177,31 +186,50 @@ function dopasujTytul(
   return { tytul: wynik, rozmiar, miesci: wynik.szer <= limit + 1e-6 };
 }
 
-/** Karta wyrenderowana raz na kartę (egzemplarze są identyczne); ostrzeżenia karty dopisywane raz. */
+/** Pierwsza scena i generowane dalsze części należą do tej samej karty talii. */
 function fabrykaScenKart(
   ctx: KontekstArkusza,
   szablon: (k: Karta) => Szablon | undefined,
   ostrzezenia: OstrzezenieArkusza[],
 ) {
-  const pamiec = new Map<string, Scena>();
-  return (k: Karta) => {
-    let s = pamiec.get(k.id);
-    if (!s) {
-      let w = ctx.pamiecKart?.get(k);
-      if (!w) {
-        w = renderujKarte(szablon(k)!, k, {
-          czcionki: ctx.czcionki,
-          ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
-          ...(ctx.elementy ? { elementy: ctx.elementy } : {}),
-        });
-        ctx.pamiecKart?.set(k, w);
-      }
-      for (const o of w.ostrzezenia) ostrzezenia.push(ostrzezenieKarty(k, o));
-      s = w.scena;
-      pamiec.set(k.id, s);
-    }
-    return s;
+  const pliki = {
+    czcionki: ctx.czcionki,
+    ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
+    ...(ctx.elementy ? { elementy: ctx.elementy } : {}),
   };
+  const podzial = new Map<Karta, WyrenderowanaKarta[] | undefined>();
+  const czesci = (k: Karta) => {
+    if (!podzial.has(k)) {
+      const s = szablon(k)!;
+      const pole = ctx.pomijajKontynuacje ? undefined : poleKontynuacji(s, k);
+      let wynik: WyrenderowanaKarta[] | undefined;
+      if (pole) {
+        wynik =
+          ctx.pamiecKontynuacji?.get(k) ??
+          kartyZKontynuacja(s, k, pliki, ctx.dopisekKontynuacji ?? 'Ciąg dalszy', pole);
+        ctx.pamiecKontynuacji?.set(k, wynik);
+      }
+      podzial.set(k, wynik);
+    }
+    return podzial.get(k);
+  };
+  const pamiec = new Map<Karta, { scena: Scena; ostrzezenia: Ostrzezenie[] }[]>();
+  const scena = (k: Karta, numer: number) => {
+    let w = pamiec.get(k);
+    if (!w) {
+      w = czesci(k);
+      if (!w) {
+        const karta = ctx.pamiecKart?.get(k) ?? renderujKarte(szablon(k)!, k, pliki);
+        ctx.pamiecKart?.set(k, karta);
+        w = [karta];
+      }
+      const unikalne = new Map(w.flatMap((c) => c.ostrzezenia).map((o) => [JSON.stringify(o), o]));
+      for (const o of unikalne.values()) ostrzezenia.push(ostrzezenieKarty(k, o));
+      pamiec.set(k, w);
+    }
+    return w[numer % w.length]!.scena;
+  };
+  return { scena, liczba: (k: Karta) => czesci(k)?.length ?? 1 };
 }
 
 /** Odcinki cięcia: każdy bok slotu osobno, wspólne boki sąsiednich kart tylko raz. */
@@ -408,22 +436,38 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     }
   }
 
+  const scenyKart = fabrykaScenKart(ctx, szablon, ostrzezenia);
   if (mieszane) {
-    return zbudujMieszane({ arkusz, talia, ctx, karty, szablon, slot, obszar, tytul, ostrzezenia });
+    return zbudujMieszane({
+      arkusz,
+      talia,
+      ctx,
+      karty,
+      szablon,
+      slot,
+      obszar,
+      tytul,
+      ostrzezenia,
+      scenyKart,
+    });
   }
 
   // Grupy: wysokość pasa nagłówków zależy od szerokości grup, a ta od liczby rzędów – dwa przybliżenia.
   const grupy =
     !uklad && u.grupy && talia.grupy && talia.grupy.length > 0 ? talia.grupy : undefined;
-  const lista = egzemplarze(karty, (k) => {
-    if (szablon(k)!.rozmiar.tryb === 'mm') return { kolumny: 1, rzedy: 1 };
-    const { szer, wys } = wymiaryKarty(szablon(k)!, k);
-    // Karta mniejsza niż slot zajmuje cały slot (inaczej rozmiar 0 dałby nakładanie).
-    return {
-      kolumny: Math.max(1, Math.round(szer / slot.szerokosc)),
-      rzedy: Math.max(1, Math.round(wys / slot.wysokosc)),
-    };
-  });
+  const lista = egzemplarze(
+    karty,
+    (k) => {
+      if (szablon(k)!.rozmiar.tryb === 'mm') return { kolumny: 1, rzedy: 1 };
+      const { szer, wys } = wymiaryKarty(szablon(k)!, k);
+      // Karta mniejsza niż slot zajmuje cały slot (inaczej rozmiar 0 dałby nakładanie).
+      return {
+        kolumny: Math.max(1, Math.round(szer / slot.szerokosc)),
+        rzedy: Math.max(1, Math.round(wys / slot.wysokosc)),
+      };
+    },
+    scenyKart.liczba,
+  );
   let pas = 0;
   if (grupy && u.grupy) {
     for (let i = 0; i < 2; i++) {
@@ -533,8 +577,6 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     if (!d.miesci) ostrzezenia.push({ komunikat: 'tytul-nie-miesci-sie' });
   }
 
-  const scenaKarty = fabrykaScenKart(ctx, szablon, ostrzezenia);
-
   const strony: Scena[] = [];
   const geometriaNaglowkow: WynikArkusza['naglowki'] = [];
   const liczbaStron = Math.max(rozmieszczenie.liczbaStron, arkusz.liczbaStron ?? 0);
@@ -582,7 +624,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
           });
       });
     naStronie.forEach((c, i) => {
-      const s = scenaKarty(c.karta);
+      const s = scenyKart.scena(c.karta, c.numer);
       glify.push(s.glify);
       symbole.push(s.symbole);
       const k = prostokaty[i]!.karta;
@@ -717,8 +759,9 @@ function zbudujMieszane(w: {
   obszar: { x: Mm; y: Mm; szer: Mm; wys: Mm };
   tytul: Napis | undefined;
   ostrzezenia: OstrzezenieArkusza[];
+  scenyKart: ReturnType<typeof fabrykaScenKart>;
 }): WynikArkusza {
-  const { arkusz, talia, ctx, szablon, slot, obszar, ostrzezenia } = w;
+  const { arkusz, talia, ctx, szablon, slot, obszar, ostrzezenia, scenyKart } = w;
   let { tytul } = w;
   const u = arkusz.ustawienia;
   const strona = wymiaryStrony(u);
@@ -741,20 +784,23 @@ function zbudujMieszane(w: {
 
   // Egzemplarze w kolejności rozmieszczania (przy „najwięksi” pasy.ts sortuje je sam).
   const uporzadkowane = opcje.kolejnosc === 'wlasna' ? kolejnoscKart(arkusz, w.karty) : w.karty;
-  const wejscie: KartaDoPasow[] = egzemplarze(uporzadkowane, () => ({ kolumny: 1, rzedy: 1 })).map(
-    (e) => {
-      const { szer, wys } = wymiaryKarty(szablon(e.karta)!, e.karta);
-      const grupaId = grupaKarty.get(e.karta.id);
-      return {
-        klucz: `${e.karta.id}#${e.numer}`,
-        kartaId: e.karta.id,
-        numer: e.numer,
-        szer,
-        wys,
-        ...(grupaId ? { grupaId } : {}),
-      };
-    },
-  );
+  const wejscie: KartaDoPasow[] = egzemplarze(
+    uporzadkowane,
+    () => ({ kolumny: 1, rzedy: 1 }),
+    scenyKart.liczba,
+  ).map((e) => {
+    const { szer, wys } = wymiaryKarty(szablon(e.karta)!, e.karta);
+    const grupaId = grupaKarty.get(e.karta.id);
+    return {
+      klucz: `${e.karta.id}#${e.numer}`,
+      kartaId: e.karta.id,
+      numer: e.numer,
+      ...(e.czesc ? { czesc: e.czesc } : {}),
+      szer,
+      wys,
+      ...(grupaId ? { grupaId } : {}),
+    };
+  });
   const uklad = ulozPasy(wejscie, {
     obszar,
     odstep: opcje.odstep,
@@ -794,7 +840,6 @@ function zbudujMieszane(w: {
     if (!d.miesci) ostrzezenia.push({ komunikat: 'tytul-nie-miesci-sie' });
   }
 
-  const scenaKarty = fabrykaScenKart(ctx, szablon, ostrzezenia);
   const strony: Scena[] = [];
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
@@ -802,7 +847,7 @@ function zbudujMieszane(w: {
     const symbole: (Record<string, DefinicjaSymbolu> | undefined)[] = [];
     const naStronie = karty.filter((c) => c.strona === n);
     for (const c of naStronie) {
-      const s = scenaKarty(c.karta);
+      const s = scenyKart.scena(c.karta, c.numer);
       glify.push(s.glify);
       symbole.push(s.symbole);
       // Obrót o 90° zgodnie z ruchem wskazówek: obrócona karta zajmuje (wys × szer) od (x, y).

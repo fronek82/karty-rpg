@@ -129,6 +129,14 @@ export function PanelTypu({
           {(pole.listyNumerowane || pole.ikonyWTekscie) && (
             <p className="podpis">{t('wlasciwosci.notacjaPomoc')}</p>
           )}
+          {!wiele && (
+            <Wybor
+              etykieta={t('wlasciwosci.kontynuuj')}
+              wartosc={pole.kontynuuj === true}
+              zmien={(v) => ustaw({ kontynuuj: v || undefined })}
+            />
+          )}
+          {pole.kontynuuj && <p className="podpis">{t('wlasciwosci.kontynuujPomoc')}</p>}
 
           {styl}
         </>

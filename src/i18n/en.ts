@@ -674,6 +674,10 @@ export const en: Slownik = {
   'wlasciwosci.gdyPuste.ukryj': 'hide and collapse',
   'wlasciwosci.styl': 'Text style',
   'wlasciwosci.wieleWierszy': 'Wrap text onto several lines',
+  'wlasciwosci.kontynuuj': 'Continue on the next card',
+  'wlasciwosci.kontynuujPomoc':
+    'When text overflows, the first field with this option in layout order continues.',
+  'kartka.ciagDalszy': 'Continued',
   'wlasciwosci.listyNumerowane': 'Numbered lists',
   'wlasciwosci.ikonyWTekscie': 'Inline icons',
   'wlasciwosci.notacjaPomoc':
