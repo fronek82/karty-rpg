@@ -12,6 +12,7 @@ import {
   czyMieszane,
   dodajKarteMieszane,
   dodajKarteWSlocie,
+  dodajKartyZImportu,
   dodajKartke,
   dodajNaglowek,
   dodajStrone,
@@ -84,6 +85,7 @@ import {
   type CelKolejnosci,
   type Geometria,
 } from './geometria';
+import { ImportDanych } from './ImportDanych';
 import { MenuPobierz } from './MenuPobierz';
 import { MenuTypu } from './MenuTypu';
 import { skalaZKolka, zaokr, zmienObrazKarty } from './obrazKarty';
@@ -232,11 +234,16 @@ export function EdytorKartki({
   const pakiet = bezGry ? pakietZSzablonow : pakietGry;
   const pakietDlaKartki = (a: Arkusz | undefined) =>
     a?.wlasnySzablonId ? pakietZSzablonow : pakiet;
+  const typyDlaKartki = (a: Arkusz) => {
+    const typy = pakietDlaKartki(a)?.typyKart ?? [];
+    return a.wlasnySzablonId ? typy.filter((typ) => typ.id === a.wlasnySzablonId) : typy;
+  };
   const zasoby = useZSzarymiObrazami(edycja.zasoby.zasoby, projekt);
   const [zazn, ustawZaznSurowe] = useState<Zaznaczenie>();
   const [menu, ustawMenu] = useState<{ arkuszId: string } & Polozenie>();
   const [gest, ustawGest] = useState<Gest>();
   const gestRef = useRef<Gest | undefined>(undefined);
+  const [importTabeli, ustawImportTabeli] = useState<string>();
   const [toast, ustawToastSurowy] = useState<{ tekst: string; cofnij?: boolean; wersja: number }>();
   /** Komunikat o zmianie właśnie wykonanej (`zmian` – ile zmian dokumentu ją tworzy). */
   const ustawToast = useCallback(
@@ -1126,6 +1133,14 @@ export function EdytorKartki({
   };
 
   // --- Panel boczny.
+  const kartkaImportu = projekt.arkusze.find((a) => a.id === importTabeli);
+  const szablonyDoImportu = (a: Arkusz) => {
+    const ids = new Set(typyDlaKartki(a).flatMap((typ) => typ.warianty.map((w) => w.szablonId)));
+    const dostepne = [...(zasoby?.szablony.values() ?? [])].filter((s) => ids.has(s.id));
+    const slot = kartki.find((k) => k.arkusz.id === a.id)?.wynik?.slot ?? a.ustawienia.slot;
+    if (czyMieszane(a)) return dostepne;
+    return dostepne.filter((s) => !slot || pasujeDoSlotu(s, slot, a.ustawienia.dopasowanie));
+  };
   const arkuszZazn = aktywne && projekt.arkusze.find((a) => a.id === aktywne.arkuszId);
   const nowaKartka = pakiet
     ? () => {
@@ -1469,6 +1484,35 @@ export function EdytorKartki({
   return (
     <div className="edytor-kartki">
       {naglowekProjektu}
+      {kartkaImportu && (
+        <ImportDanych
+          key={kartkaImportu.id}
+          nazwaKartki={kartkaImportu.nazwa}
+          szablony={szablonyDoImportu(kartkaImportu)}
+          zasoby={projekt.zasoby}
+          zamknij={() => ustawImportTabeli(undefined)}
+          zapisz={(szablonId, wiersze) => {
+            const id = kartkaImportu.id;
+            const ctx = kontekst(id);
+            if (!ctx || !szablonyDoImportu(kartkaImportu).some((s) => s.id === szablonId))
+              return false;
+            const proba = dodajKartyZImportu(projekt, id, szablonId, wiersze, ctx);
+            if ('blad' in proba) return false;
+            if (
+              !zmienUklad((p) => {
+                const wynik = dodajKartyZImportu(p, id, szablonId, wiersze, ctx);
+                return 'projekt' in wynik ? wynik.projekt : p;
+              })
+            )
+              return false;
+            ustawToast({
+              tekst: t('tabelaImport.zaimportowano', { liczba: wiersze.length }),
+              cofnij: true,
+            });
+            return true;
+          }}
+        />
+      )}
       <h1 className="tylko-czytnik">{projekt.nazwa || t('kartka.nazwaProjektu')}</h1>
       {(edycja.ostrzezenia.length > 0 ||
         brakujaceCzcionki.length > 0 ||
@@ -1515,6 +1559,11 @@ export function EdytorKartki({
             <WidokKartki
               key={k.arkusz.id}
               szablony={zasoby?.szablony}
+              importujDane={
+                k.wynik && szablonyDoImportu(k.arkusz).length
+                  ? () => ustawImportTabeli(k.arkusz.id)
+                  : undefined
+              }
               k={k}
               wiele={aktualneKartki.length > 1}
               karty={kartyNaKartkach.get(k.arkusz.id) ?? []}
@@ -1526,13 +1575,7 @@ export function EdytorKartki({
               zazn={aktywne}
               gest={gest}
               menu={menu?.arkuszId === k.arkusz.id ? menu : undefined}
-              typy={
-                k.arkusz.wlasnySzablonId
-                  ? (pakietZSzablonow?.typyKart.filter(
-                      (typ) => typ.id === k.arkusz.wlasnySzablonId,
-                    ) ?? [])
-                  : (pakiet?.typyKart ?? [])
-              }
+              typy={typyDlaKartki(k.arkusz)}
               uwaga={(typ) => {
                 // Mieszane: typ, który nie zmieści się w klikniętym wolnym miejscu (nadal klikalny).
                 const w = menu?.arkuszId === k.arkusz.id && k.wynik?.mieszane?.wolne[menu.kolumna];
@@ -1640,6 +1683,7 @@ export function EdytorKartki({
 /** Jedna kartka: jej strony (SVG z silnika) z warstwą slotów, kart, nagłówków i podglądów. */
 function WidokKartki({
   szablony,
+  importujDane,
   k,
   wiele,
   karty,
@@ -1664,6 +1708,7 @@ function WidokKartki({
   wybierzNaglowek,
 }: {
   szablony: ReadonlyMap<string, Szablon> | undefined;
+  importujDane: (() => void) | undefined;
   otworzMenu: (p: Polozenie) => void;
   wybierzNaglowek: (id: string) => void;
   wybierzKarte: (id: string, shift: boolean) => void;
@@ -2073,6 +2118,18 @@ function WidokKartki({
       {!mieszane && (
         <button type="button" className="dodaj-strone" onClick={dodajStrone}>
           ＋ {t('kartka.dodajStrone')}
+        </button>
+      )}
+      {importujDane && (
+        <button
+          type="button"
+          className="dodaj-strone"
+          onClick={(e) => {
+            e.currentTarget.focus({ preventScroll: true });
+            importujDane();
+          }}
+        >
+          {t('tabelaImport.akcja')}
         </button>
       )}
     </section>

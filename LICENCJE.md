@@ -31,9 +31,10 @@ Własne rysunki projektu (licencja jak kod, MIT), generowane skryptami z `narzed
 
 ## Zależności w aplikacji (środowisko uruchomieniowe)
 
-| Biblioteka | Użycie                                                                                                  | Źródło                                | Licencja |
-| ---------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- | -------- |
-| `svgpath`  | import własnych SVG (M2b-6): łuki `A` → krzywe Béziera, skróty H/V/S/T, ścieżki względne, transformacje | <https://github.com/fontello/svgpath> | MIT      |
+| Biblioteka          | Użycie                                                                                                  | Źródło                                                | Licencja   |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------- |
+| `svgpath`           | import własnych SVG (M2b-6): łuki `A` → krzywe Béziera, skróty H/V/S/T, ścieżki względne, transformacje | <https://github.com/fontello/svgpath>                 | MIT        |
+| `xlsx` (SheetJS CE) | Odczyt lokalnego pliku XLSX                                                                             | <https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz> | Apache-2.0 |
 
 Pozostałe zależności z `package.json` (React, Dexie, pdf-lib, fontkit, fflate, zod) – licencje wg pakietów.
 

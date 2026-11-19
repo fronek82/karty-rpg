@@ -1,0 +1,92 @@
+import { expect, it } from 'vitest';
+import { utils, write } from 'xlsx';
+import { LIMIT_TABELI, odczytajCsv, otworzTabele, sprawdzImport } from './importTabeli';
+import type { KolumnaDanych } from './edycja';
+import type { OpisObrazu } from '../model/projekt';
+
+const pola: KolumnaDanych[] = [
+  { klucz: 'nazwa', nazwa: 'Nazwa', rodzaj: 'pole', typPola: 'tekst' },
+  { klucz: 'obraz', nazwa: 'Ilustracja', rodzaj: 'pole', typPola: 'obraz' },
+];
+const zasob: OpisObrazu = {
+  id: 'obraz-mapa',
+  rodzaj: 'obraz',
+  format: 'png',
+  nazwa: 'mapa.png',
+  szerokosc: 100,
+  wysokosc: 100,
+};
+
+it('CSV zachowuje zera wiodące, cudzysłowy, separatory i nowe linie oraz numer wiersza', async () => {
+  const plik = new File(
+    ['\ufeff\r\nNazwa;Opis;Ilość\r\n007;"Śnieg; i ""wiatr""\r\nDrugi wiersz";2\r\n;;\r\n008;;'],
+    'karty.csv',
+  );
+  const w = (await otworzTabele(plik)).odczytaj(0);
+  expect(w.naglowki).toEqual(['Nazwa', 'Opis', 'Ilość']);
+  expect(w.wiersze).toEqual([
+    { numer: 3, komorki: ['007', 'Śnieg; i "wiatr"\nDrugi wiersz', '2'] },
+    { numer: 6, komorki: ['008', '', ''] },
+  ]);
+  expect(odczytajCsv('Nazwa,Opis\nLas,"A;B"').wiersze[0]?.komorki).toEqual(['Las', 'A;B']);
+  expect(() => odczytajCsv('Nazwa,Opis\nLas,"zły')).toThrow(/wiersz 2/);
+  expect(() =>
+    odczytajCsv(Array.from({ length: LIMIT_TABELI.kolumny + 1 }, () => 'K').join(',')),
+  ).toThrow(/przekracza/);
+  await expect(otworzTabele(new File([Uint8Array.of(0xff)], 'karty.csv'))).rejects.toThrow(/UTF-8/);
+});
+
+it('XLSX wybiera kartę skoroszytu, pomija puste wiersze, czyta zapisaną wartość formuły i wykazuje błędy', async () => {
+  const workbook = utils.book_new();
+  utils.book_append_sheet(workbook, utils.aoa_to_sheet([['Nieużywana']]), 'Nieużywana');
+  const s = utils.aoa_to_sheet([['Nazwa', 'Ilość']]);
+  s.A3 = { t: 's', v: '007' };
+  s.B3 = { t: 'n', f: '40+2', v: 3 };
+  s.A1000 = { t: 'e', v: 7 };
+  s.B4 = { t: 'n', v: 1.5, z: '0' };
+  s.A6 = { t: 'n', f: '2+2' };
+  s['!ref'] = 'A1:B1000';
+  utils.book_append_sheet(workbook, s, 'Dane');
+  const bajty: ArrayBuffer = write(workbook, { type: 'array', bookType: 'xlsx' });
+  const plik = await otworzTabele(new File([bajty], 'karty.xlsx'));
+  expect(plik.arkusze).toEqual(['Nieużywana', 'Dane']);
+  const tabela = plik.odczytaj(1);
+  expect(tabela.wiersze[0]).toMatchObject({ numer: 3, komorki: ['007', '3'] });
+  expect(tabela.wiersze.find((w) => w.numer === 1000)).toMatchObject({ bledy: new Set([0]) });
+  expect(tabela.wiersze.find((w) => w.numer === 4)).toMatchObject({ liczby: new Map([[1, 1.5]]) });
+  const w = sprawdzImport(tabela, { pola: new Map([['nazwa', 0]]), ilosc: 1 }, pola, []);
+  expect(w.bledy).toEqual([
+    expect.stringMatching(/Wiersz 4/),
+    expect.stringMatching(/Wiersz 6/),
+    expect.stringMatching(/Wiersz 1000/),
+  ]);
+  await expect(otworzTabele(new File(['nie plik xlsx'], 'karty.xlsx'))).rejects.toThrow(
+    /niepoprawny/,
+  );
+});
+
+it('mapowanie akceptuje puste komórki i tylko jednoznaczne nazwy lokalnych obrazów', () => {
+  const mapa = {
+    pola: new Map([
+      ['nazwa', 0],
+      ['obraz', 1],
+    ]),
+    ilosc: 2,
+  };
+  const tabla = odczytajCsv('Nazwa,Ilustracja,Ilość\nA,mapa.png,3\nB,,');
+  expect(sprawdzImport(tabla, mapa, pola, [zasob])).toEqual({
+    wiersze: [
+      { dane: { nazwa: 'A', obraz: zasob.id }, ilosc: 3 },
+      { dane: { nazwa: 'B' }, ilosc: 1 },
+    ],
+    bledy: [],
+    sztuki: 4,
+  });
+  const wadliwa = odczytajCsv('Nazwa,Ilustracja,Ilość\nA,mapa.png,0\nB,nieznany,1.5');
+  expect(sprawdzImport(wadliwa, mapa, pola, [zasob, { ...zasob, id: 'drugi' }]).bledy).toEqual([
+    expect.stringMatching(/Wiersz 2.*liczbą całkowitą/),
+    expect.stringMatching(/Wiersz 2.*kilka lokalnych obrazów/),
+    expect.stringMatching(/Wiersz 3.*liczbą całkowitą/),
+    expect.stringMatching(/Wiersz 3.*brak lokalnego obrazu/),
+  ]);
+});

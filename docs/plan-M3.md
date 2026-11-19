@@ -1,6 +1,6 @@
 # Plan M3 – style i skład kart z danych
 
-**Status.** M3 rozpoczęty 19.11.2026. M3-1 ukończono 19.11.2026. M3-2 ukończono 19.11.2026. M3-3 ukończono 19.11.2026. M3-4 ukończono 19.11.2026. M3-5 ukończono 19.11.2026. M3-6 ukończono 19.11.2026. Następny jest M3-7. Punktem wyjścia jest ukończenie wdrożenia M2c. [Ręczny odbiór M2c](plan-M2c.md#4-etapy) jest otwarty. Zakres wynika ze [SPEC, sekcje 4, 5, 9 i 12](../SPEC.md), [planu M2](plan-M2.md#6-później) i [planu M2b](plan-M2b.md#6-później).
+**Status.** M3 rozpoczęty 19.11.2026. M3-1 ukończono 19.11.2026. M3-2 ukończono 19.11.2026. M3-3 ukończono 19.11.2026. M3-4 ukończono 19.11.2026. M3-5 ukończono 19.11.2026. M3-6 ukończono 19.11.2026. M3-7 ukończono 19.11.2026. Następny jest M3-8. Punktem wyjścia jest ukończenie wdrożenia M2c. [Ręczny odbiór M2c](plan-M2c.md#4-etapy) jest otwarty. Zakres wynika ze [SPEC, sekcje 4, 5, 9 i 12](../SPEC.md), [planu M2](plan-M2.md#6-później) i [planu M2b](plan-M2b.md#6-później).
 
 ## 1. Cel i kryterium ukończenia
 
@@ -42,7 +42,7 @@ Jeden etap oznacza osobną gałąź z aktualnego `main` i osobny PR. Każdy PR p
 | M3-4 | ✓ 19.11.2026 | L        | Kontynuacja długiego tekstu na kolejnej karcie. Test podziału, nagłówka, ilości, kolejności, braku postępu i wspólnego wyniku dla podglądu, obrazów i druku.                                                                         | silnik-layoutu, druk-pdf, edytor-ui, tester             |
 | M3-5 | ✓ 19.11.2026 | L        | Styl szkicowy, postrzępione krawędzie, tekstura karty i panelu, motyw po łuku. Testy determinizmu, spadu, wycinków i zgodności SVG z PDF.                                                                                            | biblioteka-ozdobnikow, silnik-layoutu, druk-pdf, tester |
 | M3-6 | ✓ 19.11.2026 | L        | Dowolny obrót swobodny i opcjonalne pakowanie MaxRects. Testy trafiania, przyciągania, wydruku, kolejności i wczytania obrotów ze starszych projektów.                                                                               | silnik-layoutu, druk-pdf, edytor-ui, tester             |
-| M3-7 | ✗            | L        | Import CSV/XLSX z mapowaniem. Testy poprawnych i błędnych plików, mapowania i cofnięcia.                                                                                                                                             | dane-import, edytor-ui, tester                          |
+| M3-7 | ✓ 19.11.2026 | L        | Import CSV/XLSX z mapowaniem. Testy poprawnych i błędnych plików, mapowania i cofnięcia.                                                                                                                                             | dane-import, edytor-ui, tester                          |
 | M3-8 | ✗            | S        | Domknięcie. README, zrzuty, kontrola regresji M2c oraz odbiór neutralnych scenariuszy w obu językach i motywach.                                                                                                                     | edytor-ui, tester, recenzent                            |
 
 [Zrzuty M3-1](obrazy/m3-1/README.md) pokazują zestawy Leśny i Runiczny w PL i EN, w obu motywach.
@@ -56,6 +56,8 @@ Zrzuty M3-2 pokazują [grupę stylów](obrazy/m3-2-grupa-stylu.png) i [regułę 
 [Zrzut M3-5](obrazy/m3-5-dekoracje.png) pokazuje ustawienia tekstury i postrzępienia karty.
 
 Zrzuty M3-6 pokazują [obrót elementu](obrazy/m3-6-obrot.png) i [pakowanie MaxRects](obrazy/m3-6-maxrects.png).
+
+[Zrzut M3-7](obrazy/m3-7-import.png) pokazuje mapowanie, podgląd danych i nakład z pliku.
 
 ### Ręczne sprawdzenia M3
 
@@ -76,6 +78,8 @@ Zrzuty M3-6 pokazują [obrót elementu](obrazy/m3-6-obrot.png) i [pakowanie MaxR
 - [ ] Znacznik arkusza Mausrittera. W PL i EN, w obu motywach ustawić kartę 1×2 przecinającą drugą poziomą linię i Patyk obok. Powtórzyć pionowo z kartą 2×1. Sprawdzić położenie nożyczek i przerywanej kreski oraz zgodność podglądu z PNG, JPG i PDF.
 
 - [ ] M3-6. W PL i EN oraz w obu motywach obrócić pole o 37,5°, kliknąć jego środek i pusty róg obwiedni, sprawdzić uchwyty, przyciąganie oraz zgodność podglądu z PDF. Włączyć MaxRects dla mieszanych rozmiarów, zmienić kolejność przeciąganiem i sprawdzić wydruk. Po powrocie do siatki sprawdzić przypięcia.
+
+- [ ] M3-7. W PL i EN oraz w obu motywach otworzyć import pod kartką. Wczytać CSV z przecinkiem albo średnikiem i XLSX z dwiema kartami skoroszytu. Przypisać tytuł, ilość i lokalny obraz. Sprawdzić podgląd, blokadę przy błędzie, dodanie na kartce mieszanej i w siatce oraz cofnięcie całej partii.
 
 ## 5. Zakres pierwszej wersji
 
@@ -135,3 +139,6 @@ M4 obejmuje między innymi rewersy i druk dwustronny zgodnie ze specyfikacją. U
 | B252 | M3-6    | Kąt i kotwica            | Schemat 22 zachowuje stare kąty, przyjmuje wartości od 0 do mniej niż 360° i nadal ma skróty do wielokrotności 90°. Kotwice i przyciąganie przy przesuwaniu używają obwiedni. Trafienia i uchwyty uwzględniają dokładny obrys.                                                |
 | B253 | M3-6    | Zmiana rozmiaru          | Uchwyty ukośnego pola działają w jego osiach i korzystają z siatki. Skalowanie wielokrotnego zaznaczenia używa wspólnych osi wyłącznie dla wielokrotności 90°. Auto ogranicza pomiar obwiednią rodzica, respektując rozmiary stałe i minima.                                  |
 | B254 | M3-6    | MaxRects                 | Pakowanie opcjonalne. Domyślnie pasy. Własna kolejność używa punktów od góry i od lewej w granicach grupy. Nagłówki rezerwują pełną szerokość, a części tego samego rekordu na wydruku zachowują kolejność odczytu.                                                           |
+| B255 | M3-7    | Pliki tabeli             | UTF-8 z przecinkiem lub średnikiem w CSV. W XLSX można wskazać kartę skoroszytu, a do ilości używamy zapisanej liczby przed formatowaniem. Biblioteka SheetJS CE działa lokalnie i korzysta z ograniczonego archiwum.                                                         |
+| B256 | M3-7    | Walidacja                | Maksymalnie 8 MB pliku, 500 wierszy danych, 128 kolumn i 2000 sztuk na operację. Pusta ilość oznacza 1, a jawna ilość ma zakres 1–100. Nazwy obrazów porównujemy z uwzględnieniem liter po obcięciu białych znaków. Błąd mapowania wstrzymuje zapis.                          |
+| B257 | M3-7    | Talia i cofnięcie        | Import korzysta z typów dostępnych na wybranej kartce. W siatce dodaje przypięte egzemplarze i w razie potrzeby strony, a w trybie mieszanym dodaje jeden rekord na wiersz z nakładem. Cała partia to jedna zmiana w historii.                                                |
