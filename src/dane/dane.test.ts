@@ -598,6 +598,38 @@ describe('wgrywanie czcionek', () => {
 });
 
 describe('eksport i import szablonu', () => {
+  it('M3-3: migracja v18 zachowuje dosłowny tekst, a paczka v19 przenosi ustawienia notacji', () => {
+    const wzor = projekt.szablony[0]!;
+    const pole = {
+      id: 'tekst',
+      typ: 'tekst' as const,
+      tekst: '1. :star:',
+      styl: { czcionka: 'tresc', rozmiar: 3 },
+    };
+    const szablon = { ...wzor, korzen: { ...wzor.korzen, dzieci: [pole] } };
+    const p = { ...projekt, szablony: [szablon] };
+    expect(
+      importujSzablon(eksportujSzablon({ ...p, wersja: 18 }, zasoby, szablon.id).bajty).szablon,
+    ).toEqual(szablon);
+    const nowy = {
+      ...szablon,
+      korzen: {
+        ...szablon.korzen,
+        dzieci: [
+          {
+            ...pole,
+            listyNumerowane: true,
+            ikonyWTekscie: true,
+          },
+        ],
+      },
+    };
+    expect(
+      importujSzablon(eksportujSzablon({ ...p, szablony: [nowy] }, zasoby, szablon.id).bajty)
+        .szablon,
+    ).toEqual(nowy);
+  });
+
   it('M3-2: migruje stare projekty i szablony bez dopisywania reguł', () => {
     const stary = { ...projekt, wersja: 17 };
     expect(przygotujProjekt(stary)).toEqual(projekt);

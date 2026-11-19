@@ -116,6 +116,20 @@ export function PanelTypu({
             wartosc={pole.formatowanie !== false}
             zmien={(v) => ustaw({ formatowanie: v ? undefined : false })}
           />
+          <Wybor
+            etykieta={t('wlasciwosci.listyNumerowane')}
+            wartosc={pole.listyNumerowane === true}
+            zmien={(v) => ustaw({ listyNumerowane: v || undefined })}
+          />
+          <Wybor
+            etykieta={t('wlasciwosci.ikonyWTekscie')}
+            wartosc={pole.ikonyWTekscie === true}
+            zmien={(v) => ustaw({ ikonyWTekscie: v || undefined })}
+          />
+          {(pole.listyNumerowane || pole.ikonyWTekscie) && (
+            <p className="podpis">{t('wlasciwosci.notacjaPomoc')}</p>
+          )}
+
           {styl}
         </>
       );

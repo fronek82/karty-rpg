@@ -47,6 +47,7 @@ import {
 } from './scena';
 import {
   parsujFormatowanie,
+  dodajNotacjeTekstu,
   tekstNaScene,
   ulozDopasowany,
   ulozTekst,
@@ -172,12 +173,13 @@ function fragmentyTekstu(
   wartosc: string,
   dane: Record<string, string>,
 ): Fragment[] {
-  const tresc: Fragment[] =
+  const formatowane: Fragment[] =
     wartosc === ''
       ? []
       : pole.formatowanie === false
         ? [{ tekst: wartosc, styl: pole.styl }]
         : parsujFormatowanie(wartosc, pole.styl);
+  const tresc = dodajNotacjeTekstu(formatowane, pole.listyNumerowane, pole.ikonyWTekscie);
   const etykieta = pole.etykieta ? napis(pole.etykieta.tekst, dane) : '';
   if (!pole.etykieta || etykieta === '') return tresc;
   const styl = { ...pole.styl, ...pole.etykieta.styl };

@@ -674,6 +674,10 @@ export const en: Slownik = {
   'wlasciwosci.gdyPuste.ukryj': 'hide and collapse',
   'wlasciwosci.styl': 'Text style',
   'wlasciwosci.wieleWierszy': 'Wrap text onto several lines',
+  'wlasciwosci.listyNumerowane': 'Numbered lists',
+  'wlasciwosci.ikonyWTekscie': 'Inline icons',
+  'wlasciwosci.notacjaPomoc':
+    'Example notation: 1. Content, :star: and :scissors:. Start each item on a new line.',
   'wlasciwosci.formatowanie': 'Formatting **bold**, *italic*',
   'wlasciwosci.ksztalt': 'Shape',
   'wlasciwosci.sufiks': 'Fixed suffix (e.g. “/ 10”)',

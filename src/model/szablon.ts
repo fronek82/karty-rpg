@@ -288,6 +288,8 @@ export interface PoleTekst extends PoleBazowe {
    * `***pogrubiona kursywa***`; `\*` to zwykła gwiazdka.
    */
   formatowanie?: boolean;
+  listyNumerowane?: boolean;
+  ikonyWTekscie?: boolean;
 }
 
 /** Krótka wartość (np. `k6`, `-1 obr`) w ramce o zadanym kształcie. */

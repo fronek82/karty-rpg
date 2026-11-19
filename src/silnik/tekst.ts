@@ -1,6 +1,7 @@
 import type { Mm } from '../model/jednostki';
 import type {
   Kolor,
+  NazwaIkony,
   StylTekstu,
   WariantCzcionki,
   WyrownanieOsi,
@@ -8,6 +9,7 @@ import type {
 } from '../model/szablon';
 import type { Czcionka, RejestrCzcionek, UlozonyGlif } from './czcionki';
 import type { DefinicjaGlifu, ElementSceny, GlifNaScenie } from './scena';
+import { konturIkony } from './ikony';
 
 /** Fragment tekstu w jednym stylu. Akapit to ciąg fragmentów; `\n` w tekście kończy akapit. */
 export interface Fragment {
@@ -15,6 +17,8 @@ export interface Fragment {
   styl: StylTekstu;
   /** Fragment jest etykietą pola – akapit z samą etykietą nie dostaje wcięcia ani odstępu po. */
   etykieta?: boolean;
+  lista?: boolean;
+  ikona?: NazwaIkony;
 }
 
 /** Mnożnik rozmiaru syntetycznych kapitalików (czcionka bez cechy `smcp`). */
@@ -98,6 +102,35 @@ export function parsujFormatowanie(tekst: string, styl: StylTekstu): Fragment[] 
   return wynik;
 }
 
+const KODY_IKON = new Map<string, NazwaIkony>([
+  ['star', 'gwiazdka'],
+  ['scissors', 'nozyczki'],
+]);
+
+/** Ikony zachowują styl otaczającego fragmentu. Nieznane kody pozostają tekstem. */
+export function dodajNotacjeTekstu(
+  fragmenty: Fragment[],
+  listy: boolean | undefined,
+  ikony: boolean | undefined,
+): Fragment[] {
+  if (!listy && !ikony) return fragmenty;
+  return fragmenty.flatMap((f) => {
+    const fragment = listy ? { ...f, lista: true } : f;
+    if (!ikony) return [fragment];
+    const wynik: Fragment[] = [];
+    let od = 0;
+    for (const m of f.tekst.matchAll(/(\\)?:(\w+):/g)) {
+      const ikona = KODY_IKON.get(m[2]!);
+      if (!ikona) continue;
+      if (m.index > od) wynik.push({ ...fragment, tekst: f.tekst.slice(od, m.index) });
+      wynik.push(m[1] ? { ...fragment, tekst: m[0].slice(1) } : { ...fragment, tekst: '', ikona });
+      od = m.index + m[0].length;
+    }
+    if (f.tekst.length > od) wynik.push({ ...fragment, tekst: f.tekst.slice(od) });
+    return wynik;
+  });
+}
+
 const KOLOR_DOMYSLNY: Kolor = '#000000';
 const INTERLINIA_DOMYSLNA = 1.2;
 
@@ -110,6 +143,7 @@ interface Kawalek {
   glify: UlozonyGlif[];
   szerokosc: Mm;
   spacja: boolean;
+  ikona?: NazwaIkony;
 }
 
 interface GlifWWierszu {
@@ -123,12 +157,22 @@ interface GlifWWierszu {
   nrSpacji: number;
 }
 
+interface IkonaWWierszu {
+  ikona: NazwaIkony;
+  x: Mm;
+  rozmiar: Mm;
+  kolor: Kolor;
+  nrSpacji: number;
+}
+
 export interface WierszTekstu {
   szerokosc: Mm;
   wysokosc: Mm;
   /** Odległość linii bazowej od góry wiersza. */
   linia: Mm;
   glify: GlifWWierszu[];
+  ikony?: IkonaWWierszu[];
+  szerokoscPozycjiListy?: Mm;
   /** Odstępy między słowami w wierszu. */
   spacje: number;
   /** Ostatni wiersz akapitu (nie jest justowany). */
@@ -174,6 +218,10 @@ function kawalek(
 function naAkapity(fragmenty: Fragment[]): Fragment[][] {
   const akapity: Fragment[][] = [[]];
   for (const f of fragmenty) {
+    if (f.ikona) {
+      akapity[akapity.length - 1]!.push(f);
+      continue;
+    }
     const czesci = f.tekst.split('\n');
     czesci.forEach((czesc, i) => {
       if (i > 0) akapity.push([]);
@@ -207,7 +255,47 @@ function kawalkiSlowa(
     );
 }
 
-function metryki(k: Pick<Kawalek, 'czcionka' | 'rozmiar' | 'interlinia'>) {
+function znacznikListy(akapit: Fragment[]): { numer: string; styl: StylTekstu } | undefined {
+  const f = akapit[0];
+  if (!f?.lista || f.etykieta) return undefined;
+  const tekst = akapit.map((x) => (x.ikona ? '\uFFFC' : x.tekst)).join('');
+  const m = /^(\d{1,9}\.)[ \t]+/.exec(tekst);
+  if (!m || !tekst.slice(m[0].length).trim()) return undefined;
+  let pozostalo = m[0].length;
+  let i = 0;
+  while (pozostalo > 0) {
+    const x = akapit[i]!;
+    if (x.tekst.length > pozostalo) {
+      akapit[i] = { ...x, tekst: x.tekst.slice(pozostalo) };
+      break;
+    }
+    pozostalo -= x.tekst.length;
+    i++;
+  }
+  akapit.splice(0, i);
+  return { numer: m[1]!, styl: f.styl };
+}
+
+function kawalekIkony(
+  ikona: NazwaIkony,
+  styl: StylTekstu,
+  czcionki: RejestrCzcionek,
+  skala: number,
+): Kawalek {
+  const k = kawalek('', styl, czcionki, skala);
+  return { ...k, ikona, odstepLiter: 0, szerokosc: k.rozmiar };
+}
+
+const WZNOS_IKONY = 0.8;
+function metryki(k: Kawalek) {
+  if (k.ikona) {
+    const wznos = k.rozmiar * WZNOS_IKONY;
+    return {
+      wysokosc: k.rozmiar * Math.max(1, k.interlinia),
+      wznos,
+      zejscie: k.rozmiar - wznos,
+    };
+  }
   const naMm = k.rozmiar / k.czcionka.unitsPerEm;
   return {
     wysokosc: k.rozmiar * k.interlinia,
@@ -234,12 +322,19 @@ function zbudujWiersz(
     wznos = Math.max(wznos, m.wznos);
     zejscie = Math.max(zejscie, m.zejscie);
   }
+  if (kawalki.some((k) => k.ikona)) wysokosc = Math.max(wysokosc, wznos + zejscie);
   const glify: GlifWWierszu[] = [];
+  const ikony: IkonaWWierszu[] = [];
   let x = wciecie;
   let spacje = 0;
   for (const k of kawalki) {
     const skala = k.rozmiar / k.czcionka.unitsPerEm;
     if (k.spacja) spacje++;
+    if (k.ikona) {
+      ikony.push({ ikona: k.ikona, x, rozmiar: k.rozmiar, kolor: k.kolor, nrSpacji: spacje });
+      x += k.szerokosc;
+      continue;
+    }
     for (const g of k.glify) {
       if (!k.spacja) {
         glify.push({
@@ -261,6 +356,7 @@ function zbudujWiersz(
     wysokosc,
     linia: (wysokosc - (wznos + zejscie)) / 2 + wznos,
     glify,
+    ...(ikony.length ? { ikony } : {}),
     spacje,
     ostatni,
   };
@@ -281,6 +377,10 @@ export function ulozTekst(
   const pierwszy = fragmenty[0];
   const akapity = naAkapity(fragmenty);
   akapity.forEach((akapit, nrAkapitu) => {
+    const odWiersza = wiersze.length;
+    const pozycjaListy = znacznikListy(akapit);
+    const numer =
+      pozycjaListy && kawalek(`${pozycjaListy.numer} `, pozycjaListy.styl, czcionki, skala);
     const zapasowy = pierwszy
       ? kawalek(' ', akapit[0]?.styl ?? pierwszy.styl, czcionki, skala)
       : undefined;
@@ -299,7 +399,26 @@ export function ulozTekst(
     const slowa: { spacjaPrzed?: Kawalek; kawalki: Kawalek[]; szerokosc: Mm }[] = [];
     let spacja: Kawalek | undefined;
     let biezace: (typeof slowa)[number] | undefined;
+    const dodaj = (ks: Kawalek[]) => {
+      if (!biezace) {
+        biezace = {
+          spacjaPrzed: slowa.length > 0 ? spacja : undefined,
+          kawalki: [],
+          szerokosc: 0,
+        };
+        slowa.push(biezace);
+        spacja = undefined;
+      }
+      for (const k of ks) {
+        biezace.kawalki.push(k);
+        biezace.szerokosc += k.szerokosc;
+      }
+    };
     for (const f of akapit) {
+      if (f.ikona) {
+        dodaj([kawalekIkony(f.ikona, f.styl, czcionki, skala)]);
+        continue;
+      }
       const tekst = f.styl.wielkieLitery ? f.tekst.toLocaleUpperCase('pl') : f.tekst;
       for (const czesc of tekst.split(/(\s+)/)) {
         if (czesc === '') continue;
@@ -308,22 +427,14 @@ export function ulozTekst(
           biezace = undefined;
           continue;
         }
-        const ks = kawalkiSlowa(czesc, f.styl, czcionki, skala);
-        if (!biezace) {
-          biezace = {
-            spacjaPrzed: slowa.length > 0 ? spacja : undefined,
-            kawalki: [],
-            szerokosc: 0,
-          };
-          slowa.push(biezace);
-          spacja = undefined;
-        }
-        for (const k of ks) {
-          biezace.kawalki.push(k);
-          biezace.szerokosc += k.szerokosc;
-        }
+        dodaj(kawalkiSlowa(czesc, f.styl, czcionki, skala));
       }
     }
+    if (numer && slowa[0]) {
+      slowa[0].kawalki.unshift(numer);
+      slowa[0].szerokosc += numer.szerokosc;
+    }
+    const wiszace = numer ? wciecie + numer.szerokosc : 0;
 
     let wiersz: Kawalek[] = [];
     let szerokoscWiersza = wciecie;
@@ -335,9 +446,9 @@ export function ulozTekst(
         wiersz.length > 0 &&
         szerokoscWiersza + zSpacja + slowo.szerokosc > szerokoscMax + 1e-6
       ) {
-        wiersze.push(zbudujWiersz(wiersz, zapasowy, pierwszyWiersz ? wciecie : 0, false));
+        wiersze.push(zbudujWiersz(wiersz, zapasowy, pierwszyWiersz ? wciecie : wiszace, false));
         wiersz = [];
-        szerokoscWiersza = 0;
+        szerokoscWiersza = wiszace;
         pierwszyWiersz = false;
       }
       if (wiersz.length > 0 && slowo.spacjaPrzed) {
@@ -346,11 +457,21 @@ export function ulozTekst(
       }
       wiersz.push(...slowo.kawalki);
       szerokoscWiersza += slowo.szerokosc;
-      if (szerokoscMax !== undefined && slowo.szerokosc > szerokoscMax + 1e-6) zaSzeroki = true;
+      const odsuniecie = pierwszyWiersz ? wciecie : wiszace;
+      if (
+        szerokoscMax !== undefined &&
+        slowo.szerokosc + (numer ? odsuniecie : 0) > szerokoscMax + 1e-6
+      )
+        zaSzeroki = true;
     }
-    const ostatni = zbudujWiersz(wiersz, zapasowy, pierwszyWiersz ? wciecie : 0, true);
+    const ostatni = zbudujWiersz(wiersz, zapasowy, pierwszyWiersz ? wciecie : wiszace, true);
     ostatni.wysokosc += odstepPo;
     wiersze.push(ostatni);
+    if (numer) {
+      const pozycja = wiersze.slice(odWiersza);
+      const szerokosc = Math.max(...pozycja.map((w) => w.szerokosc));
+      for (const w of pozycja) w.szerokoscPozycjiListy = szerokosc;
+    }
   });
   return {
     wiersze,
@@ -398,10 +519,17 @@ export function tekstNaScene(
     (wyrownaniePionowe === 'srodek' ? wolne / 2 : wyrownaniePionowe === 'koniec' ? wolne : 0);
   // Glify grupujemy według koloru – jeden element sceny na kolor.
   const wgKoloru = new Map<Kolor, GlifNaScenie[]>();
+  const ikony: ElementSceny[] = [];
   for (const w of uklad.wiersze) {
     const wolneX = ramka.szer - w.szerokosc;
+    const wolneDlaWyrownania = ramka.szer - (w.szerokoscPozycjiListy ?? w.szerokosc);
     const x0 =
-      ramka.x + (wyrownanie === 'srodek' ? wolneX / 2 : wyrownanie === 'prawo' ? wolneX : 0);
+      ramka.x +
+      (wyrownanie === 'srodek'
+        ? wolneDlaWyrownania / 2
+        : wyrownanie === 'prawo'
+          ? wolneDlaWyrownania
+          : 0);
     // Justowanie: wolne miejsce rozdzielone między odstępy słów (bez ostatniego wiersza akapitu).
     const naSpacje =
       wyrownanie === 'justuj' && !w.ostatni && w.spacje > 0 && wolneX > 0 ? wolneX / w.spacje : 0;
@@ -417,9 +545,21 @@ export function tekstNaScene(
       });
       wgKoloru.set(g.kolor, lista);
     }
+    for (const i of w.ikony ?? [])
+      ikony.push({
+        typ: 'sciezka',
+        kontur: konturIkony(
+          i.ikona,
+          x0 + i.x + i.nrSpacji * naSpacje,
+          y + w.linia - WZNOS_IKONY * i.rozmiar,
+          i.rozmiar,
+        ),
+        wypelnienie: i.kolor,
+        ...(obwodka && obwodka.grubosc > 0 ? { obrys: obwodka } : {}),
+      });
     y += w.wysokosc;
   }
-  return [...wgKoloru].map(([kolor, glify]) =>
+  const tekst = [...wgKoloru].map(([kolor, glify]) =>
     obwodka && obwodka.grubosc > 0
       ? {
           typ: 'tekst' as const,
@@ -429,4 +569,5 @@ export function tekstNaScene(
         }
       : { typ: 'tekst' as const, kolor, glify },
   );
+  return [...tekst, ...ikony];
 }
