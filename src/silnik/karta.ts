@@ -484,6 +484,7 @@ export function renderujKarte(
   // Położenia wszystkich widocznych węzłów – obraz może omijać pola rysowane nad nim.
   const ulozone = new Map<string, UlozonyWezel>();
   const wezly = new Map<string, WyrenderowanaKarta['wezly'][number]>();
+  const przycieciaTekstu = new Map<string, Kontur>();
   /** `przodkowie` – obrócone ramki przodków (od najbliższego): prostokąt węzła na karcie obracamy kolejno. */
   const zbierz = (u: UlozonyWezel, przodkowie: UlozonyWezel[]) => {
     ulozone.set(u.wezel.id, u);
@@ -518,6 +519,31 @@ export function renderujKarte(
       ...(kat % 90 ? { obrys: { x, y, kat } } : {}),
     });
     const dalej = u.obrot ? [u, ...przodkowie] : przodkowie;
+    if (
+      u.wezel.typ === 'tekst' &&
+      dalej.length > 0 &&
+      (r.x < -1e-6 || r.y < -1e-6 || r.x + r.szer > szer + 1e-6 || r.y + r.wys > wys + 1e-6)
+    ) {
+      // Kontur papieru we współrzędnych pola, przed obrotem węzła i przodków.
+      const odwrotne = dalej.slice().reverse();
+      const punkt = (px: Mm, py: Mm): [Mm, Mm] => {
+        for (const p of odwrotne) {
+          const cx = p.x + p.szer / 2;
+          const cy = p.y + p.wys / 2;
+          const [dx, dy] = obrocWektor(px - cx, py - cy, -(p.obrot ?? 0));
+          px = cx + dx;
+          py = cy + dy;
+        }
+        return [px, py];
+      };
+      przycieciaTekstu.set(u.wezel.id, [
+        ['M', ...punkt(0, 0)],
+        ['L', ...punkt(szer, 0)],
+        ['L', ...punkt(szer, wys)],
+        ['L', ...punkt(0, wys)],
+        ['Z'],
+      ]);
+    }
     u.dzieci.forEach((d) => zbierz(d, dalej));
   };
   zbierz(korzen, []);
@@ -533,12 +559,13 @@ export function renderujKarte(
    * Węzeł obrócony (dziecko kontenera swobodnego): jego rysunek trafia do `grupy` z obrotem wokół
    * środka ramki; współrzędne wewnątrz zostają bezwzględne (macierz przesuwa środek do początku).
    */
-  const rysuj = (u: UlozonyWezel) => {
+  const rysuj = (u: UlozonyWezel, wObrocie = false) => {
     const postrzepienie = czyKontener(u.wezel) ? u.wezel.postrzepienie : undefined;
-    if (!u.obrot && !postrzepienie?.sila) return rysujWezel(u);
+    const obrocony = wObrocie || Boolean(u.obrot);
+    if (!u.obrot && !postrzepienie?.sila) return rysujWezel(u, obrocony);
     const zewnetrzne = elementy;
     elementy = [];
-    rysujWezel(u);
+    rysujWezel(u, obrocony);
     const wewnetrzne: ElementSceny[] = postrzepienie?.sila
       ? [
           {
@@ -566,8 +593,26 @@ export function renderujKarte(
       elementy: wewnetrzne,
     });
   };
-  const rysujWezel = (u: UlozonyWezel) => {
+  const rysujWezel = (u: UlozonyWezel, obrocony: boolean) => {
     const w = u.wezel;
+    const tekstWPole = (pole: PoleTekst, tekst: string, ramka: Ramka) => {
+      const kontur = przycieciaTekstu.get(pole.id);
+      const rozmiar = obrocony
+        ? ramka
+        : {
+            ...ramka,
+            szer: Math.max(0, Math.min(ramka.szer, szer - ramka.x)),
+            wys: Math.max(0, Math.min(ramka.wys, wys - ramka.y)),
+          };
+      const tresc = rysujTekst(pole, tekst, dane, rozmiar, ctx, glify, ostrzezenia);
+      if (tresc.length === 0) return tresc;
+      if (kontur)
+        return [{ typ: 'grupa' as const, x: 0, y: 0, przyciecieKonturem: kontur, elementy: tresc }];
+      // Zachowujemy punkt odniesienia tekstu ustawiony poza lewą lub górną krawędzią.
+      if (!obrocony && (ramka.x < -1e-6 || ramka.y < -1e-6))
+        return [{ typ: 'grupa' as const, x: 0, y: 0, przyciecie: ramkaKarty, elementy: tresc }];
+      return tresc;
+    };
     // Wartość z etykietą: tło, ramka i treść – tylko w obszarze kształtu, etykieta osobno.
     const podzial =
       !czyKontener(w) && w.typ === 'wartosc' ? podzialWartosci(w, u, dane, ctx) : undefined;
@@ -689,7 +734,8 @@ export function renderujKarte(
         elementy.push(
           ...rysujPoleObrazu(w, ramka, dane, ctx, ostrzezenia, przeszkody, karta.obrazy?.[w.id]),
         );
-      } else elementy.push(...rysujPole(w, ramka, dane, ctx, glify, ostrzezenia, symbole));
+      } else if (w.typ === 'tekst') elementy.push(...tekstWPole(w, wartoscPola(w, dane), ramka));
+      else elementy.push(...rysujPole(w, ramka, dane, ctx, glify, ostrzezenia, symbole));
     } else if (!czyKontener(w) && w.typ === 'tekst' && w.etykieta) {
       // Pusta wartość z „pokaż pustą ramkę”: etykieta (np. „Usunięcie:”) zostaje.
       const p = rozwinOdstepy(w.padding);
@@ -699,9 +745,9 @@ export function renderujKarte(
         szer: Math.max(0, u.szer - p.lewo - p.prawo),
         wys: Math.max(0, u.wys - p.gora - p.dol),
       };
-      elementy.push(...rysujTekst(w, '', dane, ramka, ctx, glify, ostrzezenia));
+      elementy.push(...tekstWPole(w, '', ramka));
     }
-    u.dzieci.forEach(rysuj);
+    u.dzieci.forEach((d) => rysuj(d, obrocony));
     // Motyw rysuje się na prostokącie; kształty ścieżkowe (romb, tarcza…) go pomijają – zostaje
     // linia obramowania (jeśli jest).
     if (w.ozdoba && !ksztalt) {
@@ -1030,7 +1076,7 @@ function zmierzPole(
       ) {
         return { szer: naturalny.szerokosc, wys: naturalny.wysokosc };
       }
-      const zlamany = ulozTekst(fr, ogr.szer, ctx.czcionki);
+      const zlamany = ulozTekst(fr, ogr.szer, ctx.czcionki, 1, true);
       return { szer: Math.min(ogr.szer, zlamany.szerokosc), wys: zlamany.wysokosc };
     }
     case 'wartosc': {
@@ -1104,10 +1150,18 @@ function rysujTekst(
   if (fr.length === 0) return [];
   const wieleWierszy = pole.wieleWierszy !== false;
   const minSkala = minimalnaSkala(pole.styl);
-  const uklad = ulozDopasowany(fr, ramka.szer, ramka.wys, ctx.czcionki, wieleWierszy, minSkala);
+  const uklad = ulozDopasowany(
+    fr,
+    ramka.szer,
+    ramka.wys,
+    ctx.czcionki,
+    wieleWierszy,
+    minSkala,
+    true,
+  );
   if (uklad.przepelnienie) ostrzezenia.push({ pole: pole.id, komunikat: 'tekst-nie-miesci-sie' });
   dodajOstrzezenieZnakow(pole.id, fr, ctx, ostrzezenia);
-  return tekstNaScene(
+  const elementy = tekstNaScene(
     uklad,
     ramka,
     pole.styl.wyrownanie ?? 'lewo',
@@ -1115,6 +1169,9 @@ function rysujTekst(
     glify,
     pole.styl.obwodka,
   );
+  return uklad.przepelnienie
+    ? [{ typ: 'grupa', x: 0, y: 0, przyciecie: ramka, elementy }]
+    : elementy;
 }
 
 /** Najmniejsza skala auto-dopasowania – nigdy poniżej 25% (tekst nieczytelny = przepełnienie). */
@@ -1140,7 +1197,7 @@ function dodajOstrzezenieZnakow(
 }
 
 function rysujPole(
-  pole: Pole,
+  pole: Exclude<Pole, PoleTekst>,
   ramkaPola: Ramka,
   dane: Record<string, string>,
   ctx: KontekstRenderowania,
@@ -1151,8 +1208,6 @@ function rysujPole(
   const wartosc = wartoscPola(pole, dane);
   let ramka = ramkaPola;
   switch (pole.typ) {
-    case 'tekst':
-      return rysujTekst(pole, wartosc, dane, ramka, ctx, glify, ostrzezenia);
     case 'wartosc': {
       const fr = [{ tekst: wartosc, styl: pole.styl }];
       const minSkala = minimalnaSkala(pole.styl);

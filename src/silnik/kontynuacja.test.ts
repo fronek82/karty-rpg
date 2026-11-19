@@ -70,7 +70,7 @@ describe('kontynuacja tekstu', () => {
   });
 
   it('po braku postępu zachowuje oryginalne ostrzeżenie i nie dodaje pustych kart', () => {
-    const dlugieSlowo = { ...karta, dane: { opis: 'x'.repeat(100) } };
+    const dlugieSlowo = { ...karta, dane: { opis: 'x'.repeat(800) } };
     const w = kartyZKontynuacja(szablon, dlugieSlowo, kontekst, 'Ciąg dalszy');
     expect(w).toHaveLength(1);
     expect(w[0]?.ostrzezenia).toContainEqual({ pole: opis.id, komunikat: 'tekst-nie-miesci-sie' });

@@ -142,6 +142,73 @@ describe('renderujKarte', () => {
     });
   });
 
+  it('zawija długi ciąg w polu i przycina treść po wyczerpaniu wysokości', () => {
+    const pole = {
+      typ: 'tekst' as const,
+      id: 'opis',
+      klucz: 'opis',
+      styl: { czcionka: 'tresc', rozmiar: 4 },
+      szerokosc: { mm: 34 },
+      wysokosc: { mm: 24 },
+    };
+    const szablon: Szablon = {
+      id: 'karta',
+      nazwa: 'Karta',
+      rozmiar: { tryb: 'mm', szerokosc: 62, wysokosc: 86 },
+      korzen: { id: 'k', typ: 'kolumna', padding: 4, dzieci: [pole] },
+    };
+    const krotki = renderujKarte(szablon, { dane: { opis: 'a'.repeat(46) } }, ctx);
+    expect(krotki.ostrzezenia).toEqual([]);
+    const glify = wszystkie(krotki.scena).flatMap((e) => (e.typ === 'tekst' ? e.glify : []));
+    expect(glify).toHaveLength(46);
+    expect(new Set(glify.map((g) => g.y)).size).toBeGreaterThan(1);
+    const zaDlugi = renderujKarte(szablon, { dane: { opis: 'a'.repeat(250) } }, ctx);
+    expect(zaDlugi.ostrzezenia).toContainEqual({ pole: 'opis', komunikat: 'tekst-nie-miesci-sie' });
+    expect(zaDlugi.scena.elementy).toContainEqual(
+      expect.objectContaining({ typ: 'grupa', przyciecie: { x: 4, y: 4, szer: 34, wys: 24 } }),
+    );
+    expect(scenaDoSvg(zaDlugi.scena)).toContain('clip-path=');
+  });
+
+  it('chroni granicę karty przy długim tekście o automatycznej wysokości', () => {
+    const pole = {
+      typ: 'tekst' as const,
+      id: 'opis',
+      klucz: 'opis',
+      styl: { czcionka: 'tresc', rozmiar: 4 },
+      szerokosc: { mm: 34 },
+    };
+    const szablon: Szablon = {
+      id: 'karta',
+      nazwa: 'Karta',
+      rozmiar: { tryb: 'mm', szerokosc: 62, wysokosc: 86 },
+      korzen: { id: 'k', typ: 'kolumna', padding: 4, dzieci: [pole] },
+    };
+    const karta = { dane: { opis: 'a'.repeat(1000) } };
+    const { scena, ostrzezenia } = renderujKarte(szablon, karta, ctx);
+    expect(ostrzezenia).toContainEqual({ pole: 'opis', komunikat: 'tekst-nie-miesci-sie' });
+    expect(scena.elementy).toContainEqual(
+      expect.objectContaining({ typ: 'grupa', przyciecie: { x: 4, y: 4, szer: 34, wys: 82 } }),
+    );
+    const obrocone: Szablon = {
+      ...szablon,
+      korzen: {
+        id: 'k',
+        typ: 'swobodny',
+        dzieci: [
+          {
+            ...pole,
+            pozycja: { x: 15, y: 25, obrot: 90 },
+          },
+        ],
+      },
+    };
+    const wynik = renderujKarte(obrocone, karta, ctx);
+    expect(wszystkie(wynik.scena)).toContainEqual(
+      expect.objectContaining({ typ: 'grupa', przyciecieKonturem: expect.any(Array) }),
+    );
+  });
+
   it('auto-dopasowanie nagłówka i ostrzeżenie o przepełnieniu', () => {
     const krotki = renderujKarte(szablonBroni, { dane: { nazwa: 'Średni tytuł karty' } }, ctx);
     expect(krotki.ostrzezenia).toEqual([]);
