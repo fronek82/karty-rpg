@@ -409,7 +409,7 @@ export const en: Slownik = {
   'uklad.opisPresetu': '{papier}, card {szer}×{wys} mm, {kolumny}×{rzedy}',
   'uklad.kalibracja': 'Printer calibration',
   'uklad.kalibracjaOpis':
-    'Print offset in mm (+ right / down), remembered in this browser – it is a property of the printer, not of the project. Affects the PDF only, not the preview.',
+    'Print offset in mm (+ right / down), remembered in this browser – it is a property of the printer, not of the project. Moves the PDF. The margin for cut lines and scissors accounts for this offset in the preview and sheet images too.',
   'uklad.przesuniecieX': 'Offset X (mm)',
   'uklad.przesuniecieY': 'Offset Y (mm)',
   'uklad.wydrukTestowy': 'Test print (PDF)',

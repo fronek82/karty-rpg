@@ -69,7 +69,7 @@ import { scenaDoSvg } from '../../silnik/svg';
 import { baza } from '../baza';
 import { komunikatyBrakujacychWariantow, tekstOstrzezeniaArkusza } from '../ostrzezenia';
 import { pdfWWatku } from '../pdfWWatku';
-import { odczytajKalibracje } from '../kalibracja';
+import { odczytajKalibracje, zapiszKalibracje, type Kalibracja } from '../kalibracja';
 import { obrazyScen, scenyKart, scenyStron, spakuj, type FormatObrazu } from '../eksportObrazow';
 import type { ZadaniePdf } from '../../druk/budowaPdf';
 import { nazwaPliku, zapiszPlik } from '../pliki';
@@ -295,9 +295,21 @@ export function EdytorKartki({
     () =>
       new Map<
         string,
-        { arkusz: Arkusz; talia: Talia; zasoby: unknown; jezyk: string; k: Kartka }
+        {
+          arkusz: Arkusz;
+          talia: Talia;
+          zasoby: unknown;
+          jezyk: string;
+          kalibracja: Kalibracja;
+          k: Kartka;
+        }
       >(),
   );
+  const [kalibracja, ustawKalibracje] = useState(odczytajKalibracje);
+  const zmienKalibracje = (k: Kalibracja) => {
+    ustawKalibracje(k);
+    zapiszKalibracje(k);
+  };
   const arkusze = useDeferredValue(projekt.arkusze);
   const talie = useDeferredValue(projekt.talie);
   const kartki = useMemo((): Kartka[] => {
@@ -310,7 +322,8 @@ export function EdytorKartki({
         z.arkusz === arkusz &&
         z.talia === talia &&
         z.zasoby === zasoby &&
-        z.jezyk === jezykUi
+        z.jezyk === jezykUi &&
+        z.kalibracja === kalibracja
       )
         return z.k;
       let k: Kartka;
@@ -321,6 +334,7 @@ export function EdytorKartki({
           obraz: (id) => zasoby.obrazy.get(id)?.info,
           ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
           pamiecKart,
+          kalibracja,
           ...(pamiecKontynuacji
             ? {
                 dopisekKontynuacji: pamiecKontynuacji.dopisek,
@@ -344,10 +358,10 @@ export function EdytorKartki({
       } catch (e) {
         k = { arkusz, talia, svg: [], blad: e instanceof Error ? e.message : String(e) };
       }
-      pamiecKartek.set(arkusz.id, { arkusz, talia, zasoby, jezyk: jezykUi, k });
+      pamiecKartek.set(arkusz.id, { arkusz, talia, zasoby, jezyk: jezykUi, kalibracja, k });
       return k;
     });
-  }, [arkusze, talie, zasoby, pamiecKart, pamiecKartek, pamiecKontynuacji, jezykUi]);
+  }, [arkusze, talie, zasoby, pamiecKart, pamiecKartek, pamiecKontynuacji, jezykUi, kalibracja]);
 
   // Menu wolnego miejsca wskazuje je indeksem na liście układu – po zmianie układu (mieszane
   // rozmiary) lista jest inna, więc menu zamykamy.
@@ -1035,7 +1049,6 @@ export function EdytorKartki({
   };
 
   const zadaniePdf = (z: NonNullable<typeof zasoby>, dodatki: Partial<ZadaniePdf> = {}) => {
-    const k = odczytajKalibracje();
     return {
       tytul: projekt.nazwa,
       dopisekKontynuacji: t('kartka.ciagDalszy'),
@@ -1052,8 +1065,8 @@ export function EdytorKartki({
         dane: o.dane,
         format: o.format,
       })),
-      // Kalibracja drukarki (ta przeglądarka) – tylko PDF.
-      ...(k.x || k.y ? { przesuniecie: k } : {}),
+      // Kalibracja przesuwa wydruk PDF. Margines znaczników uwzględnia ją także w podglądzie.
+      ...(kalibracja.x || kalibracja.y ? { przesuniecie: kalibracja } : {}),
       ...dodatki,
     };
   };
@@ -1301,6 +1314,8 @@ export function EdytorKartki({
     const wynikZazn = kartki.find((k) => k.arkusz.id === arkuszZazn.id)?.wynik;
     panel = (
       <PanelUstawien
+        kalibracja={kalibracja}
+        zmienKalibracje={zmienKalibracje}
         key={arkuszZazn.id}
         edycja={edycja}
         arkusz={arkuszZazn}

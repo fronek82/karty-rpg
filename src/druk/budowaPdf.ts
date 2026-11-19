@@ -58,6 +58,7 @@ export async function zbudujPdf(z: ZadaniePdf): Promise<Uint8Array> {
   const ctx = {
     czcionki: rejestr,
     szablony,
+    ...(z.przesuniecie ? { kalibracja: z.przesuniecie } : {}),
     ...(z.dopisekKontynuacji ? { dopisekKontynuacji: z.dopisekKontynuacji } : {}),
     obraz: (id: string) => obrazy.get(id)?.info,
     ...(z.elementy ? { elementy: z.elementy } : {}),

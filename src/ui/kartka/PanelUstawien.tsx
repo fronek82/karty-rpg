@@ -72,9 +72,13 @@ export function PanelUstawien({
   wydrukTestowy,
   przelaczRozmiary,
   naKartce,
+  kalibracja,
+  zmienKalibracje,
 }: {
   przelaczRozmiary?: (tryb: 'jeden' | 'mieszane') => void;
   naKartce?: ComponentProps<typeof PanelUkladu>['naKartce'];
+  kalibracja: ComponentProps<typeof PanelUkladu>['kalibracja'];
+  zmienKalibracje: ComponentProps<typeof PanelUkladu>['zmienKalibracje'];
   /** Ostatnio zbudowana kartka (siatka startowa własnego układu). */
   wynik?: WynikArkusza;
   wydrukTestowy: () => void;
@@ -283,6 +287,8 @@ export function PanelUstawien({
         <p className="podpis">{t('kartka.marginesBezpieczenstwaOpis')}</p>
       </div>
       <PanelUkladu
+        kalibracja={kalibracja}
+        zmienKalibracje={zmienKalibracje}
         arkusz={arkusz}
         {...(wynik ? { wynik } : {})}
         zmienUklad={zmienUklad}

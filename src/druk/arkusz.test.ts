@@ -13,6 +13,7 @@ import {
   talieMausrittera,
   taliaWyposazenia,
 } from '../pakiety/mausritter/talie';
+import { konturIkony } from '../silnik/ikony';
 import type { ElementSceny, Scena } from '../silnik/scena';
 import { rejestrTestowy } from '../silnik/__testy__/pomoc';
 import {
@@ -24,6 +25,7 @@ import {
   zSzarymiObrazami,
 } from './arkusz';
 import { scenyDoPdf } from './pdf';
+import { odcinkiCieciaProstokatow } from './pasy';
 
 const ctx = {
   czcionki: rejestrTestowy(),
@@ -304,7 +306,7 @@ describe('zbudujArkusz – tytuł, nożyczki, linie', () => {
       ustawienia: {
         ...wzor.ustawienia,
         marginesy: { gora: 0, prawo: 0, dol: 0, lewo: 0 },
-        poczatekSiatki: { x: 297 - SLOT - 7, y: 20 },
+        poczatekSiatki: { x: 297 - SLOT - 14, y: 20 },
         nozyczki: { ...wzor.ustawienia.nozyczki!, strona: 'koniec' },
       },
       przypiete: [{ kartaId: 'karta', kolumna: 0, rzad: 0 }],
@@ -319,9 +321,36 @@ describe('zbudujArkusz – tytuł, nożyczki, linie', () => {
       ctx,
     );
     const znacznik = scissors(w.strony[0]!);
-    expect(znacznik.x).toBeCloseTo(297 - 7 + a.ustawienia.nozyczki!.rozmiar / 2);
+    expect(znacznik.x).toBeCloseTo(297 - 5 - a.ustawienia.nozyczki!.rozmiar / 2);
     expect(znacznik.y).toBeCloseTo(20 + SLOT);
     expect(znacznik.obrot).toBe(180);
+  });
+
+  it('pomija ustalony znacznik na linii usuniętej z powodu grubości kreski', () => {
+    const wzor = arkuszeMausrittera[0]!;
+    const a: Arkusz = {
+      ...wzor,
+      ustawienia: {
+        ...wzor.ustawienia,
+        tytul: undefined,
+        poczatekSiatki: { x: 18, y: 7.75 },
+        linie: { ...wzor.ustawienia.linie, grubosc: 8 },
+        nozyczki: { ...wzor.ustawienia.nozyczki!, indeks: 0 },
+      },
+      przypiete: [{ kartaId: 'karta', kolumna: 0, rzad: 0 }],
+    };
+    const { strony } = zbudujArkusz(
+      a,
+      {
+        id: a.taliaId,
+        nazwa: 'Próba',
+        karty: [{ id: 'karta', szablonId: 'mausritter-przedmiot', dane: {}, ilosc: 1 }],
+      },
+      ctx,
+    );
+    const scena = strony[0]!;
+    expect(scissors(scena).y).toBeCloseTo(7.75 + SLOT);
+    expect(linie(scena).every((o) => Math.min(o.y1, o.y2) - o.obrys.grubosc / 2 >= 5)).toBe(true);
   });
 
   it('nożyczki na nieistniejącej linii – ostrzeżenie zamiast rysunku', () => {
@@ -418,18 +447,18 @@ describe('zbudujArkusz – własny układ arkusza', () => {
   };
 
   it('stała siatka od zadanego miejsca, odstępy między kartami, bez tytułu', () => {
-    const w = zbudujArkusz(arkuszW(uklad), taliaW, ctxW);
+    const w = zbudujArkusz(arkuszW({ ...uklad, lewo: 7 }), taliaW, ctxW);
     expect(w.ostrzezenia).toEqual([]);
     expect(w.siatka).toEqual({ kolumny: 3, rzedy: 3, grupy: false });
-    expect(w.poczatekSiatki).toEqual({ x: 8, y: 12 });
+    expect(w.poczatekSiatki).toEqual({ x: 7, y: 12 });
     // 9 egzemplarzy na stronie 1 (3 + 6), położenia z odstępami.
     const karty = w.strony[0]!.elementy.filter((e) => e.typ === 'grupa');
     expect(karty).toHaveLength(9);
     expect(karty.map((e) => [e.x, e.y]).slice(0, 4)).toEqual([
-      [8, 12],
-      [8 + 63 + 4, 12],
-      [8 + 2 * 67, 12],
-      [8, 12 + 88 + 3],
+      [7, 12],
+      [7 + 63 + 4, 12],
+      [7 + 2 * 67, 12],
+      [7, 12 + 88 + 3],
     ]);
     // Każda karta ma osobny obrys (4 boki), bez wspólnych linii.
     expect(linie(w.strony[0]!)).toHaveLength(9 * 4);
@@ -771,6 +800,114 @@ describe('zbudujArkusz – mieszane rozmiary kart (M2b-2)', () => {
     ...reszta,
   });
 
+  const nozyczki = arkuszeMausrittera[0]!.ustawienia.nozyczki!;
+  const wzorZnacznika = konturIkony('nozyczki', -2.75, -2.75, 5.5);
+  const ikony = (scena: Scena) =>
+    scena.elementy.filter(
+      (el): el is Extract<ElementSceny, { typ: 'grupa' }> =>
+        el.typ === 'grupa' &&
+        el.elementy.length === 1 &&
+        el.elementy[0]?.typ === 'sciezka' &&
+        JSON.stringify(el.elementy[0].kontur) === JSON.stringify(wzorZnacznika),
+    );
+  const taliaSlotowa: Talia = {
+    id: 't',
+    nazwa: 'Trzy rozmiary',
+    karty: ['wysoka', 'szeroka', 'mala'].map((id) => ({ id, szablonId: id, ilosc: 1, dane: {} })),
+  };
+  const szablonySlotowe = new Map(
+    [szablonMm('wysoka', 25, 50), szablonMm('szeroka', 50, 25), szablonMm('mala', 25, 25)].map(
+      (s) => [s.id, s],
+    ),
+  );
+  const zbudujSlotowe = (
+    marginesy: Arkusz['ustawienia']['marginesy'],
+    kalibracja = { x: 0, y: 0 },
+    tytul?: Arkusz['ustawienia']['tytul'],
+  ) =>
+    zbudujArkusz(
+      arkuszM({
+        orientacja: 'pozioma',
+        marginesy,
+        tytul,
+        nozyczki,
+        mieszane: { kolejnosc: 'wlasna', obracaj: false, grupujRozmiary: false, odstep: 0 },
+      }),
+      taliaSlotowa,
+      { ...ctxM, szablony: szablonySlotowe, kalibracja },
+    );
+
+  it('daje po jednej ikonie na zewnętrznych początkach ciągłych linii od lewej i od góry', () => {
+    const w = zbudujSlotowe({ lewo: 20, gora: 20, prawo: 20, dol: 20 });
+    const odcinki = odcinkiCieciaProstokatow(w.mieszane!.karty);
+    // Jedna pozioma linia zaczyna się za kartą 1×2 i nie ma dojścia od krawędzi.
+    expect(odcinki).toHaveLength(7);
+    const znaki = ikony(w.strony[0]!);
+    expect(znaki).toHaveLength(odcinki.length - 1);
+    expect(znaki.map(({ x, y, obrot }) => [x, y, obrot])).toEqual([
+      [10.25, 20, 0],
+      [20, 10.25, 90],
+      [45, 10.25, 90],
+      [95, 10.25, 90],
+      [120, 10.25, 90],
+      [10.25, 70, 0],
+    ]);
+  });
+
+  it.each([
+    { x: -7, y: 6 },
+    { x: 7, y: -6 },
+  ])('trzyma całe znaczniki i kreski 5 mm od brzegu przed i po kalibracji %j', (kalibracja) => {
+    const w = zbudujSlotowe({ lewo: 18, gora: 18, prawo: 2, dol: 2 }, kalibracja);
+    const scena = w.strony[0]!;
+    expect(ikony(scena)).not.toHaveLength(0);
+    for (const p of [{ x: 0, y: 0 }, kalibracja]) {
+      const sprawdz = (x: number, y: number, r: number) => {
+        expect(x + p.x - r).toBeGreaterThanOrEqual(5 - 1e-6);
+        expect(y + p.y - r).toBeGreaterThanOrEqual(5 - 1e-6);
+        expect(x + p.x + r).toBeLessThanOrEqual(scena.szer - 5 + 1e-6);
+        expect(y + p.y + r).toBeLessThanOrEqual(scena.wys - 5 + 1e-6);
+      };
+      for (const z of ikony(scena)) sprawdz(z.x, z.y, 2.75);
+      for (const l of linie(scena)) {
+        sprawdz(l.x1, l.y1, l.obrys.grubosc / 2);
+        sprawdz(l.x2, l.y2, l.obrys.grubosc / 2);
+      }
+    }
+  });
+
+  it('przycina końce w prawym i dolnym marginesie przy dodatnim X i Y', () => {
+    const prawy = 297 - 5 - 20;
+    const dolny = 210 - 5 - 20;
+    const a = arkuszM({ orientacja: 'pozioma', nozyczki });
+    const s = szablonMm('duza', 285 - 10, 200 - 10);
+    const t = { ...taliaSlotowa, karty: [{ id: 'duza', szablonId: s.id, ilosc: 1, dane: {} }] };
+    const w = zbudujArkusz(a, t, {
+      ...ctxM,
+      szablony: new Map([[s.id, s]]),
+      kalibracja: { x: 20, y: 20 },
+    });
+    const l = linie(w.strony[0]!);
+    const r = a.ustawienia.linie.grubosc / 2;
+    expect(l.find((o) => o.y1 === 10)!.x2).toBeCloseTo(prawy - r);
+    expect(l.find((o) => o.x1 === 10 && o.x2 === 10)!.y2).toBeCloseTo(dolny - r);
+    expect(l.every((o) => o.x2 <= prawy - r && o.y2 <= dolny - r)).toBe(true);
+  });
+
+  it('nie prowadzi nożyczek z góry przez tytuł', () => {
+    const w = zbudujSlotowe({ lewo: 20, gora: 20, prawo: 20, dol: 20 }, undefined, {
+      tekst: 'Tytuł arkusza wydruku',
+      polozenie: 'gora',
+      odstep: 2,
+      styl: { czcionka: 'tytul', rozmiar: 6, kolor: '#000000' },
+    });
+    const znaki = ikony(w.strony[0]!);
+    expect(znaki.some((z) => z.obrot === 90)).toBe(true);
+    expect(
+      znaki.filter((z) => z.obrot === 90).every((z) => z.x - 2.75 >= 20 + w.tytul!.dlugosc),
+    ).toBe(true);
+  });
+
   it('przykład E(1): 10 kart na jednej stronie A4, położenia z algorytmu pasów', () => {
     const w = zbudujArkusz(arkuszM(), taliaM(), ctxM);
     expect(w.ostrzezenia).toEqual([]);
@@ -963,7 +1100,7 @@ describe('zbudujArkusz – mieszane rozmiary kart (M2b-2)', () => {
     const a = arkuszM({
       papier: 'wlasny',
       wymiaryPapieru: { szer: 100, wys: 200 },
-      marginesy: { gora: 5, prawo: 5, dol: 5, lewo: 5 },
+      marginesy: { gora: 6, prawo: 6, dol: 6, lewo: 6 },
       mieszane: { kolejnosc: 'najwieksze', obracaj: true, grupujRozmiary: true, odstep: 0 },
     });
     const t: Talia = {

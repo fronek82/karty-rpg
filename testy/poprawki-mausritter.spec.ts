@@ -23,7 +23,7 @@ async function przedmiot(page: Page, kolumna: number, rzad: number, nazwa: strin
   await panel(page).getByLabel('Nazwa', { exact: true }).fill(nazwa);
 }
 
-test('nożyczki kart 1×1, 1×2 i 2×1 nie pokrywają żadnej sąsiedniej karty', async ({ page }) => {
+test('zewnętrzne nożyczki na ręcznej kartce 1×1, 1×2 i 2×1 omijają karty', async ({ page }) => {
   test.setTimeout(60_000);
   await nowaPustaKartka(page);
   await przedmiot(page, 2, 1, 'Pionowa');
@@ -36,7 +36,7 @@ test('nożyczki kart 1×1, 1×2 i 2×1 nie pokrywają żadnej sąsiedniej karty'
   const arkusz = page.locator('.strona-kartki').first();
   const d = konturNaD(konturIkony('nozyczki', -2.75, -2.75, 5.5));
   const ikony = arkusz.locator(`svg path[d="${d}"]`);
-  await expect(ikony).toHaveCount(3);
+  await expect(ikony).toHaveCount(2);
   const prostokaty = await Promise.all(
     ['Pionowa', 'Mała', 'Pozioma'].map((n) => karta(page, n).boundingBox()),
   );
@@ -50,6 +50,7 @@ test('nożyczki kart 1×1, 1×2 i 2×1 nie pokrywają żadnej sąsiedniej karty'
       expect(przeciecie).toBe(false);
     }
   }
+  await page.mouse.move(0, 0);
   await expect(arkusz).toHaveScreenshot('mausritter-nozyczki-trzy-rozmiary.png', {
     maxDiffPixelRatio: 0.001,
   });
