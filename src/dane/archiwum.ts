@@ -1,7 +1,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { formatujLiczbe, t } from '../i18n';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
-import { stylePola, type Szablon, type Wezel } from '../model/szablon';
+import { czyKontener, stylePola, type Szablon, type Wezel } from '../model/szablon';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { BladKolekcjiCzcionek, wczytajCzcionke } from '../silnik/czcionki';
 import { MAKS_BAJTOW_CZCIONKI, formatObrazu, unikalneId } from './czcionki';
@@ -29,6 +29,7 @@ import {
   przygotujProjekt,
   schematPaczkiOzdobnika,
   schematPlikuSzablonu,
+  teksturySzablonu,
   sprawdz,
 } from './schemat';
 
@@ -214,6 +215,12 @@ export interface WynikEksportuSzablonu {
   ostrzezenia: string[];
 }
 
+function sprawdzTeksturyPaczki(szablon: Szablon, opisy: OpisZasobu[]) {
+  const obrazy = new Set(opisy.flatMap((o) => (o.rodzaj === 'obraz' ? [o.id] : [])));
+  for (const id of teksturySzablonu(szablon))
+    if (!obrazy.has(id)) throw new BladDanych(t('dane.teksturaBezObrazu', { id }));
+}
+
 /** Eksport szablonu z użytymi czcionkami i obrazami; ostrzega o czcionkach z własnych plików. */
 export function eksportujSzablon(
   projekt: Projekt,
@@ -242,6 +249,7 @@ export function eksportujSzablon(
       ),
     ),
   ];
+  sprawdzTeksturyPaczki(szablon, uzyte);
   const biblioteka = elementyUzyteWSzablonie(projekt, szablon);
   // Podkład ze wzoru zostaje w projekcie: bywa duży i dotyczy pracy nad wzorem, nie samego szablonu.
   const { podklad: _podklad, ...szablonBezPodkladu } = szablon;
@@ -279,6 +287,7 @@ export function importujSzablon(bajty: Uint8Array): PaczkaSzablonu {
     throw new BladDanych(
       t('dane.powtorzonyId', { id: powtorzony, gdzie: t('dane.gdzie.biblioteka') }),
     );
+  sprawdzTeksturyPaczki(plik.szablon, plik.zasoby);
   // Ramka 9-slice z PNG musi mieć obraz w paczce (inaczej szablon wskazywałby cudzy zasób).
   for (const e of plik.biblioteka ?? []) {
     const z = e.ramka9?.zrodlo;
@@ -440,7 +449,11 @@ export function dodajSzablon(
     paczka,
   );
   const szablon: Szablon = structuredClone(paczka.szablon);
+  if (szablon.teksturaTla)
+    szablon.teksturaTla = przemianowane.get(szablon.teksturaTla) ?? szablon.teksturaTla;
   for (const w of wszystkieWezly(szablon)) {
+    if (czyKontener(w) && w.teksturaTla)
+      w.teksturaTla = przemianowane.get(w.teksturaTla) ?? w.teksturaTla;
     if (w.typ === 'obraz' && w.zasob) w.zasob = przemianowane.get(w.zasob) ?? w.zasob;
   }
   // Własne elementy ozdobne szablonu: identyczne współdzielone, inne o zajętym id – nowe id.

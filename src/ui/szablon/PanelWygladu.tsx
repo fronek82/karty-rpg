@@ -17,6 +17,7 @@ import {
   useElementyWlasne,
 } from './elementyWlasne';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
+import { PoleSzkicu } from './PolaDekoracji';
 import { Liczba, PoleKoloru, PoleOdstepow, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 
 type Zmiana = (f: (w: Wezel) => Wezel, klucz?: string) => void;
@@ -179,6 +180,10 @@ export function PoleRamki<R extends Obramowanie>({
               zmien={(v) => zmienRamke((r) => ({ ...r, kolor: v! }))}
             />
           </div>
+          <PoleSzkicu
+            {...(ramka.szkic ? { wartosc: ramka.szkic } : {})}
+            zmien={(v) => zmienRamke((r) => (v ? { ...r, szkic: v } : bez(r, 'szkic')))}
+          />
           <Przelacznik
             etykieta={t('wlasciwosci.stylLinii')}
             opcje={(['ciagla', 'przerywana', 'kropkowana', 'podwojna'] as const).map((s) => ({
@@ -420,7 +425,13 @@ function WyborMotywu({
           />
         )}
       </div>
-      {podpowiedz && (
+      <Wybor
+        etykieta={t('dekoracje.poLuku')}
+        wartosc={ozdoba.poLuku === true}
+        zmien={(v) => zmien(v ? { ...ozdoba, poLuku: true } : bez(ozdoba, 'poLuku'))}
+      />
+      {ozdoba.poLuku && <p className="podpis">{t('dekoracje.poLukuPomoc')}</p>}
+      {podpowiedz && !ozdoba.poLuku && (
         <p className="podpis" role="note">
           {t('motywy.podpowiedzPromien')}
         </p>

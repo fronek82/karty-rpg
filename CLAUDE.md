@@ -4,7 +4,7 @@ Aplikacja przeglądarkowa (Vite + TypeScript + React) do projektowania i drukowa
 
 ## Gdzie co jest
 
-- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b ukończony 18.11.2026), `docs/plan-UI.md` (przebudowa interfejsu – UI-1…UI-9 ukończone 18.11.2026). Aktualny plan: `docs/plan-M3.md`. M3-1 (zestawy stylów) ukończony 19.11.2026. M3-2 (grupy stylów i kolory z danych) ukończony 19.11.2026. M3-3 (listy numerowane i ikony w tekście) ukończony 19.11.2026. M3-4 (kontynuacja tekstu) ukończony 19.11.2026. Następny etap: M3-5 (dekoracje i geometria ramek). Ręczny odbiór M2c oczekuje w `docs/plan-M2c.md`.
+- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b ukończony 18.11.2026), `docs/plan-UI.md` (przebudowa interfejsu – UI-1…UI-9 ukończone 18.11.2026). Aktualny plan: `docs/plan-M3.md`. M3-1 (zestawy stylów) ukończony 19.11.2026. M3-2 (grupy stylów i kolory z danych) ukończony 19.11.2026. M3-3 (listy numerowane i ikony w tekście) ukończony 19.11.2026. M3-4 (kontynuacja tekstu) ukończony 19.11.2026. M3-5 (dekoracje i geometria ramek) ukończony 19.11.2026. Następny etap: M3-6 (obrót i pakowanie). Ręczny odbiór M2c oczekuje w `docs/plan-M2c.md`.
 - Decyzje podjęte bez konsultacji: sekcja 9 planu (B1…); nowe dopisuj tam.
 - Przykłady szablonów: `docs/przyklady/`; zrzuty ekranu: `docs/obrazy/`.
 - Agenci: `.claude/agents/` (np. `recenzent` – przegląd, tylko odczyt).

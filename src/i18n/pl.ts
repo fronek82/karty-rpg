@@ -41,6 +41,7 @@ export const pl = {
   'dane.ramka9Wymiary':
     '„{gdzie}” ma wymiary {a}×{b} px, a obraz „{id}” – {c}×{d} px; wcięcia mogą nie pasować',
   'dane.ramka9Pusta': '„{gdzie}” ma źródło SVG bez rysunku – nic nie zostanie narysowane',
+  'dane.teksturaBezObrazu': 'W paczce brakuje obrazu tekstury „{id}”.',
   'dane.ramka9BezObrazu':
     'Plik szablonu: ramka 9-slice „{id}” wskazuje obraz „{zasob}”, którego nie ma w paczce',
   'dane.elementZProjektu':
@@ -808,6 +809,19 @@ export const pl = {
     'Kilka wierszy ma tę samą wartość. Używany jest pierwszy pasujący kolor.',
   'koloryZDanych.usun': 'Usuń wartość',
   'koloryZDanych.dodaj': 'Dodaj wartość',
+  'dekoracje.szkic': 'Styl szkicowy',
+  'dekoracje.sila': 'Siła (mm)',
+  'dekoracje.ziarno': 'Ziarno',
+  'dekoracje.tlo': 'Tekstura i krawędź',
+  'dekoracje.tekstura': 'Obraz tekstury',
+  'dekoracje.brakTekstury': 'Bez tekstury',
+  'dekoracje.brakZasobu': 'Brak obrazu: {id}',
+  'dekoracje.obrazy': 'Dodaj obraz w bibliotece projektu, aby użyć tekstury.',
+  'dekoracje.postrzepienie': 'Postrzępiona krawędź',
+  'dekoracje.ziarnistosc': 'Ziarnistość (mm)',
+  'dekoracje.poLuku': 'Prowadź motyw po łuku',
+  'dekoracje.poLukuPomoc':
+    'Zaokrąglenie musi przekraczać połowę szerokości pasa. Osobne narożniki pozostają zapisane.',
   'zestawy.tytul': 'Zestawy stylów',
   'zestawy.opis':
     'Wybierz zestaw, aby zmienić ramkę, narożniki i istniejące separatory we wszystkich układach tej karty.',

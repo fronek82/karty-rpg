@@ -1,6 +1,7 @@
 import type { Mm } from '../model/jednostki';
 import type { OzdobaMotyw } from '../model/szablon';
 import type { DefinicjaSymbolu, ElementSceny, Macierz } from '../silnik/scena';
+import { konturProstokata } from '../silnik/konturyFigur';
 import { znajdzElement } from './katalog';
 import { macierzeNarozniki, symbolZElementu, type WynikNarozniki } from './narozniki';
 import type { ElementOzdobny } from './typy';
@@ -65,6 +66,67 @@ export function macierzeBokow(
   return wynik;
 }
 
+/** Kafelki styczne do zamkniętej linii środka zaokrąglonej ramki. */
+export function macierzeLuku(
+  e: Pick<ElementOzdobny, 'szer' | 'wys'>,
+  obszar: Obszar,
+  pas: Mm,
+  promien: Mm,
+): Macierz[] {
+  const x = obszar.x + pas / 2;
+  const y = obszar.y + pas / 2;
+  const szer = obszar.szer - pas;
+  const wys = obszar.wys - pas;
+  const r = Math.max(0, Math.min(promien - pas / 2, szer / 2, wys / 2));
+  if (!r) return macierzeBokow(e, obszar, pas);
+
+  type Punkt = { x: number; y: number; kat: number };
+  const bok = (px: number, py: number, dlugosc: number, kat: number) => ({
+    dlugosc,
+    punkt: (d: number): Punkt => ({ x: px + d * Math.cos(kat), y: py + d * Math.sin(kat), kat }),
+  });
+  const luk = (cx: number, cy: number, od: number) => ({
+    dlugosc: (r * Math.PI) / 2,
+    punkt: (d: number): Punkt => {
+      const a = od + d / r;
+      return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), kat: a + Math.PI / 2 };
+    },
+  });
+  const drogi = [
+    bok(x + r, y, szer - 2 * r, 0),
+    luk(x + szer - r, y + r, -Math.PI / 2),
+    bok(x + szer, y + r, wys - 2 * r, Math.PI / 2),
+    luk(x + szer - r, y + wys - r, 0),
+    bok(x + szer - r, y + wys, szer - 2 * r, Math.PI),
+    luk(x + r, y + wys - r, Math.PI / 2),
+    bok(x, y + wys - r, wys - 2 * r, Math.PI * 1.5),
+    luk(x + r, y + r, Math.PI),
+  ];
+  const L = drogi.reduce((suma, d) => suma + d.dlugosc, 0);
+  const nominalna = Math.min((pas * e.szer) / e.wys, Math.max(pas, r / 2));
+  const n = Math.min(512, Math.max(1, Math.round(L / nominalna)));
+  const krok = L / n;
+  const sx = krok / e.szer;
+  const sy = pas / e.wys;
+  const wynik: Macierz[] = [];
+  for (let i = 0, j = 0, od = 0; i < n; i++) {
+    const d = (i + 0.5) * krok;
+    while (j < drogi.length - 1 && od + drogi[j]!.dlugosc < d) od += drogi[j++]!.dlugosc;
+    const p = drogi[j]!.punkt(d - od);
+    const c = Math.cos(p.kat);
+    const s = Math.sin(p.kat);
+    wynik.push([
+      sx * c,
+      sx * s,
+      -sy * s,
+      sy * c,
+      p.x - (krok / 2) * c + (pas / 2) * s,
+      p.y - (krok / 2) * s - (pas / 2) * c,
+    ]);
+  }
+  return wynik;
+}
+
 export interface WynikOzdoby extends WynikNarozniki {
   /** Pas po ograniczeniu do połowy krótszego boku (mm). */
   pas: Mm;
@@ -79,7 +141,7 @@ export interface WynikOzdoby extends WynikNarozniki {
 export function ramkaZMotywu(
   o: OzdobaMotyw,
   obszar: Obszar,
-  opcje: { bezKostek?: boolean; wlasne?: readonly ElementOzdobny[] } = {},
+  opcje: { bezKostek?: boolean; wlasne?: readonly ElementOzdobny[]; promien?: Mm } = {},
 ): WynikOzdoby {
   const e = znajdzElement(o.element, opcje.wlasne);
   if (!e || e.rodzaj !== 'motyw') return { elementy: [], symbole: {}, nieznany: o.element, pas: 0 };
@@ -89,9 +151,12 @@ export function ramkaZMotywu(
   const symbole: Record<string, DefinicjaSymbolu> = {
     [e.id]: symbolZElementu(e),
   };
-  for (const macierz of macierzeBokow(e, obszar, pas))
+  const promien = opcje.promien ?? 0;
+  const luk = o.poLuku && promien > pas / 2;
+  const macierze = luk ? macierzeLuku(e, obszar, pas, promien) : macierzeBokow(e, obszar, pas);
+  for (const macierz of macierze)
     elementy.push({ typ: 'symbol', klucz: e.id, macierz, kolor: o.kolor });
-  if (!opcje.bezKostek) {
+  if (!opcje.bezKostek && !luk) {
     if (e.kostka) {
       const klucz = kluczKostki(e.id);
       symbole[klucz] = { ...symbolZElementu({ ...e, kontury: e.kostka }), szer: e.wys };
@@ -121,6 +186,7 @@ export function ramkaZMotywu(
       y: y + g / 2,
       szer: Math.max(0, szer - g),
       wys: Math.max(0, wys - g),
+      ...(luk ? { promien: Math.max(0, promien - g / 2) } : {}),
       obrys,
     });
     const w = pas - g / 2;
@@ -131,8 +197,22 @@ export function ramkaZMotywu(
         y: y + w,
         szer: szer - 2 * w,
         wys: wys - 2 * w,
+        ...(luk ? { promien: Math.max(0, promien - w) } : {}),
         obrys,
       });
   }
-  return { elementy, symbole, pas };
+  if (!luk) return { elementy, symbole, pas };
+  return {
+    elementy: [
+      {
+        typ: 'grupa',
+        x: 0,
+        y: 0,
+        przyciecieKonturem: konturProstokata(obszar.x, obszar.y, obszar.szer, obszar.wys, promien),
+        elementy,
+      },
+    ],
+    symbole,
+    pas,
+  };
 }

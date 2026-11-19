@@ -55,6 +55,7 @@ import { Liczba, Sekcja } from './Kontrolki';
 import { PanelWezla } from './PanelWezla';
 import { GrupyStylow } from './GrupyStylow';
 import { KolorZDanych } from './KolorZDanych';
+import { TloDekoracyjne } from './PolaDekoracji';
 import { PoleRamki } from './PanelWygladu';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWyrownania } from './PanelWyrownania';
@@ -878,6 +879,7 @@ export function EdytorSzablonu({
               <>
                 <PanelKarty
                   szablon={szablon}
+                  obrazy={obrazy}
                   zmienSz={zmienSz}
                   zmienRozmiar={(s, w) => {
                     // Karta, która nie zmieści się na stronie kartki – odrzucona (komunikat w panelu).
@@ -924,10 +926,12 @@ export function EdytorSzablonu({
 /** Ustawienia całej karty: rozmiar (mm), zaokrąglenie rogów, kolor tła. */
 function PanelKarty({
   szablon,
+  obrazy,
   zmienSz,
   zmienRozmiar,
 }: {
   szablon: Szablon;
+  obrazy: readonly { wartosc: string; tekst: string }[];
   zmienSz: (f: (s: Szablon) => Szablon, klucz?: string) => void;
   zmienRozmiar: (szer: number, wys: number) => boolean;
 }) {
@@ -987,6 +991,27 @@ function PanelKarty({
           />
         </label>
       </div>
+      <TloDekoracyjne
+        obrazy={obrazy}
+        {...(szablon.teksturaTla ? { tekstura: szablon.teksturaTla } : {})}
+        {...(szablon.postrzepienie ? { postrzepienie: szablon.postrzepienie } : {})}
+        zmienTeksture={(v) =>
+          zmienSz((s) => {
+            const x = { ...s };
+            if (v) x.teksturaTla = v;
+            else delete x.teksturaTla;
+            return x;
+          })
+        }
+        zmienPostrzepienie={(v) =>
+          zmienSz((s) => {
+            const x = { ...s };
+            if (v) x.postrzepienie = v;
+            else delete x.postrzepienie;
+            return x;
+          }, 'postrzepienie-karty')
+        }
+      />
       <KolorZDanych
         szablon={szablon}
         {...(szablon.tloZDanych ? { regula: szablon.tloZDanych } : {})}

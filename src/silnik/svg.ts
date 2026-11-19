@@ -146,15 +146,20 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
       case 'grupa': {
         const obrot = e.obrot ? ` rotate(${liczba(e.obrot)})` : '';
         const macierz = e.macierz ? ` ${macierzSvg(e.macierz)}` : '';
-        const g = `<g transform="translate(${liczba(e.x)} ${liczba(e.y)})${obrot}${macierz}">${e.elementy.map(element).join('')}</g>`;
-        if (!e.przyciecie) return g;
-        // Przycięcie na zewnętrznej grupie – w układzie otaczającym, bez przekształcenia grupy.
-        const id = `${px}p${licznikPrzyciec++}`;
+        let g = `<g transform="translate(${liczba(e.x)} ${liczba(e.y)})${obrot}${macierz}">${e.elementy.map(element).join('')}</g>`;
+        // Przycięcia w układzie otaczającym. Zagnieżdżenie wyznacza część wspólną obu klipów.
+        const przytnij = (d: string) => {
+          const id = `${px}p${licznikPrzyciec++}`;
+          przyciecia.push(`<clipPath id="${id}">${d}</clipPath>`);
+          g = `<g clip-path="url(#${id})">${g}</g>`;
+        };
         const p = e.przyciecie;
-        przyciecia.push(
-          `<clipPath id="${id}"><rect x="${liczba(p.x)}" y="${liczba(p.y)}" width="${liczba(p.szer)}" height="${liczba(p.wys)}"/></clipPath>`,
-        );
-        return `<g clip-path="url(#${id})">${g}</g>`;
+        if (e.przyciecieKonturem) przytnij(`<path d="${konturNaD(e.przyciecieKonturem)}"/>`);
+        if (p)
+          przytnij(
+            `<rect x="${liczba(p.x)}" y="${liczba(p.y)}" width="${liczba(p.szer)}" height="${liczba(p.wys)}"/>`,
+          );
+        return g;
       }
     }
   };

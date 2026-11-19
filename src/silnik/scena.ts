@@ -110,6 +110,7 @@ export type ElementSceny =
       macierz?: Macierz;
       /** Przycięcie (mm) w układzie otaczającym grupę – nie podlega jej przekształceniu. */
       przyciecie?: { x: Mm; y: Mm; szer: Mm; wys: Mm };
+      przyciecieKonturem?: Kontur;
       elementy: ElementSceny[];
     };
 
