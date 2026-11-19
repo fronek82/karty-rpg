@@ -1,6 +1,6 @@
 # Plan M3 – style i skład kart z danych
 
-**Status.** M3 rozpoczęty 19.11.2026. M3-1 ukończono 19.11.2026. M3-2 ukończono 19.11.2026. M3-3 ukończono 19.11.2026. M3-4 ukończono 19.11.2026. M3-5 ukończono 19.11.2026. M3-6 ukończono 19.11.2026. M3-7 ukończono 19.11.2026. Następny jest M3-8. Punktem wyjścia jest ukończenie wdrożenia M2c. [Ręczny odbiór M2c](plan-M2c.md#4-etapy) jest otwarty. Zakres wynika ze [SPEC, sekcje 4, 5, 9 i 12](../SPEC.md), [planu M2](plan-M2.md#6-później) i [planu M2b](plan-M2b.md#6-później).
+**Status.** M3 rozpoczęty i ukończony 19.11.2026. Testy odbiorowe wykonano dla trzech neutralnych scenariuszy w PL i EN, w obu motywach. [Ręczny odbiór M2c](plan-M2c.md#4-etapy) jest otwarty. Zakres wynika ze [SPEC, sekcje 4, 5, 9 i 12](../SPEC.md), [planu M2](plan-M2.md#6-później) i [planu M2b](plan-M2b.md#6-później).
 
 ## 1. Cel i kryterium ukończenia
 
@@ -43,7 +43,7 @@ Jeden etap oznacza osobną gałąź z aktualnego `main` i osobny PR. Każdy PR p
 | M3-5 | ✓ 19.11.2026 | L        | Styl szkicowy, postrzępione krawędzie, tekstura karty i panelu, motyw po łuku. Testy determinizmu, spadu, wycinków i zgodności SVG z PDF.                                                                                            | biblioteka-ozdobnikow, silnik-layoutu, druk-pdf, tester |
 | M3-6 | ✓ 19.11.2026 | L        | Dowolny obrót swobodny i opcjonalne pakowanie MaxRects. Testy trafiania, przyciągania, wydruku, kolejności i wczytania obrotów ze starszych projektów.                                                                               | silnik-layoutu, druk-pdf, edytor-ui, tester             |
 | M3-7 | ✓ 19.11.2026 | L        | Import CSV/XLSX z mapowaniem. Testy poprawnych i błędnych plików, mapowania i cofnięcia.                                                                                                                                             | dane-import, edytor-ui, tester                          |
-| M3-8 | ✗            | S        | Domknięcie. README, zrzuty, kontrola regresji M2c oraz odbiór neutralnych scenariuszy w obu językach i motywach.                                                                                                                     | edytor-ui, tester, recenzent                            |
+| M3-8 | ✓ 19.11.2026 | S        | Domknięcie. README, zrzuty, kontrola regresji M2c oraz odbiór neutralnych scenariuszy w obu językach i motywach.                                                                                                                     | edytor-ui, tester, recenzent                            |
 
 [Zrzuty M3-1](obrazy/m3-1/README.md) pokazują zestawy Leśny i Runiczny w PL i EN, w obu motywach.
 
@@ -59,6 +59,8 @@ Zrzuty M3-6 pokazują [obrót elementu](obrazy/m3-6-obrot.png) i [pakowanie MaxR
 
 [Zrzut M3-7](obrazy/m3-7-import.png) pokazuje mapowanie, podgląd danych i nakład z pliku.
 
+[Galeria M3-8](obrazy/m3-8/README.md) dokumentuje trzy neutralne przykłady odbiorowe w PL i EN, w obu motywach.
+
 ### Ręczne sprawdzenia M3
 
 - [ ] M3-1. W PL i EN oraz w obu motywach przełączyć zestawy na karcie z separatorem, cofnąć zmianę i ponownie otworzyć szablon. Na pustej karcie sprawdzić wygląd ramki i puste drzewo pól.
@@ -71,7 +73,9 @@ Zrzuty M3-6 pokazują [obrót elementu](obrazy/m3-6-obrot.png) i [pakowanie MaxR
 
 - [ ] M3-5. W PL i EN oraz w obu motywach wybrać teksturę karty i panelu, zmienić ziarno przy włączonym postrzępieniu i włączyć szkic dla ramki oraz separatora. Włączyć motyw po łuku na zaokrąglonej karcie. Porównać przycięcie w podglądzie, PNG i PDF. Wyeksportować paczkę i sprawdzić teksturę po imporcie do innego projektu.
 
-- [ ] Kartka Mausrittera. Ustawić obok siebie karty 1×1, 1×2 i 2×1. Sprawdzić nożyczki na wolnych krawędziach w podglądzie, PNG, JPG i PDF. Odsunąć oraz usunąć sąsiada i ponownie przejść cykl rozmiarów.
+- [ ] Kreator. W PL i EN, w obu motywach sprawdzić pierwszy i domyślny układ „Swobodny” oraz ostatnią „Pustą kartę”. Utworzyć szablon każdym z nich i sprawdzić rodzaj kontenera głównego.
+
+- [ ] Kartka Mausrittera. W PL i EN, w obu motywach ustawić obok siebie karty 1×1, 1×2 i 2×1. Sprawdzić nożyczki na wolnych krawędziach w podglądzie, PNG, JPG i PDF. Odsunąć oraz usunąć sąsiada i ponownie przejść cykl rozmiarów.
 
 - [ ] Stały obraz. W PL i EN, w obu motywach wgrać PNG i JPG do stałego pola obrazu w edytorze. Sprawdzić wybrany obraz, podgląd, eksport PNG oraz cofnięcie jednym krokiem.
 
@@ -81,13 +85,17 @@ Zrzuty M3-6 pokazują [obrót elementu](obrazy/m3-6-obrot.png) i [pakowanie MaxR
 
 - [ ] M3-7. W PL i EN oraz w obu motywach otworzyć import pod kartką. Wczytać CSV z przecinkiem albo średnikiem i XLSX z dwiema kartami skoroszytu. Przypisać tytuł, ilość i lokalny obraz. Sprawdzić podgląd, blokadę przy błędzie, dodanie na kartce mieszanej i w siatce oraz cofnięcie całej partii.
 
+- [ ] M3-8. Odtworzyć w edytorze trzy neutralne przykłady z galerii.
+- [ ] M3-8. Na fizycznej drukarce w skali 100% wydrukować neutralne przykłady „Wyprawy terenowej”. Porównać podgląd, PDF i wydruk pod kątem wymiarów, kolejności, krawędzi i czytelności drobnego tekstu.
+- [ ] Ręczny odbiór M2c: oczekuje. Wykonać [listę z planu M2c](plan-M2c.md#4-etapy), w tym eksport w natywnym Safari.
+
 ## 5. Zakres pierwszej wersji
 
 - Zestawy wbudowane z istniejących ozdobników, nazwane grupy w obrębie szablonu i wybór kolorów według wartości danych.
 - Skład zwykłych list i ikon oraz kontynuacja długiego pola z powtórzonym nagłówkiem. Edytowalne style kreski i krawędzi, tekstury, geometria i pakowanie określone w §4.
 - Lokalny import plików tabelarycznych z kontrolą zawartości przed dodaniem kart. Dotychczasowe formaty plików i mechanizmy M2c zachowują działanie.
 
-Scenariusze odbioru tworzymy w edytorze na neutralnych danych: grupa wartości w rombach ze szkicową kreską; panele w układzie 2×2 ze stopką, regułą koloru, listą i kontynuacją; tabelaryczna karta z kapitalikami, teksturą i postrzępioną krawędzią.
+Ręczny odbiór obejmuje utworzenie poniższych scenariuszy od podstaw w edytorze. Testy automatyczne otwierają przygotowany projekt na neutralnych danych: grupa wartości w rombach ze szkicową kreską; panele w układzie 2×2 ze stopką, regułą koloru, listą i kontynuacją; tabelaryczna karta z kapitalikami, teksturą i postrzępioną krawędzią.
 
 ## 6. Później
 
@@ -142,3 +150,4 @@ M4 obejmuje między innymi rewersy i druk dwustronny zgodnie ze specyfikacją. U
 | B255 | M3-7    | Pliki tabeli             | UTF-8 z przecinkiem lub średnikiem w CSV. W XLSX można wskazać kartę skoroszytu, a do ilości używamy zapisanej liczby przed formatowaniem. Biblioteka SheetJS CE działa lokalnie i korzysta z ograniczonego archiwum.                                                         |
 | B256 | M3-7    | Walidacja                | Maksymalnie 8 MB pliku, 500 wierszy danych, 128 kolumn i 2000 sztuk na operację. Pusta ilość oznacza 1, a jawna ilość ma zakres 1–100. Nazwy obrazów porównujemy z uwzględnieniem liter po obcięciu białych znaków. Błąd mapowania wstrzymuje zapis.                          |
 | B257 | M3-7    | Talia i cofnięcie        | Import korzysta z typów dostępnych na wybranej kartce. W siatce dodaje przypięte egzemplarze i w razie potrzeby strony, a w trybie mieszanym dodaje jeden rekord na wiersz z nakładem. Cała partia to jedna zmiana w historii.                                                |
+| B258 | M3-8    | Odbiór                   | Trzy neutralne wzory składają się na jeden arkusz. Test pobiera PDF i sprawdza wygląd podglądu w czterech kombinacjach języka i motywu. Sprawdzenie wydruku fizycznego i ręczny odbiór M2c zostają na liście.                                                                 |
