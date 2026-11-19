@@ -117,6 +117,13 @@ it('odczytuje starszą paczkę zapisaną jako Blob obok nowych paczek z tablicą
   const [wpis] = await baza.bibliotekaGlobalna('szablon');
   expect(await baza.odczytajZBiblioteki('starsza')).toEqual(stare);
   expect(await baza.odczytajZBiblioteki(wpis!.id)).toEqual(nowe);
+  await baza.zapisz(projekt, zasoby);
+  await stara.open();
+  expect((await stara.table('paczkiBiblioteki').get(wpis!.id)).dane).toBeInstanceOf(Uint8Array);
+  expect(
+    (await stara.table('zasoby').get([projekt.id, projekt.zasoby[0]!.id])).dane,
+  ).toBeInstanceOf(Uint8Array);
+  stara.close();
 });
 
 describe('projekt z pakietu', () => {
