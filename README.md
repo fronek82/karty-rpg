@@ -2,7 +2,7 @@
 
 Aplikacja przeglądarkowa do projektowania i drukowania kart do gier RPG i planszowych.
 Specyfikację znajdziesz w [`SPEC.md`](SPEC.md). Plany opisują [interfejs](docs/plan-UI.md),
-[M2](docs/plan-M2.md), [M2b](docs/plan-M2b.md) i ukończony [M2c](docs/plan-M2c.md).
+[M2](docs/plan-M2.md), [M2b](docs/plan-M2b.md), [M2c](docs/plan-M2c.md) i ukończone [M3](docs/plan-M3.md).
 
 **Aplikacja online:** <https://fronek82.github.io/karty-rpg/>. Działa w całości w przeglądarce;
 projekty zostają na Twoim komputerze (IndexedDB).
@@ -86,16 +86,31 @@ używa polskiego w polskiej przeglądarce, angielskiego w pozostałych i motywu 
   wymiary odpowiadające 300 dpi. Przy pojedynczym obrazie otrzymasz plik, a przy kilku plik ZIP.
   Formaty fotograficzne 10×15 / 13×18 / 15×21 cm mają strefę przycięcia 3 mm.
 
-Po wdrożeniu M2c odśwież kartę aplikacji otwartą w poprzedniej wersji przed ponownym otwarciem
+Po aktualizacji odśwież kartę aplikacji otwartą w poprzedniej wersji przed ponownym otwarciem
 projektu lub paczki zapisanej przez nową wersję.
 
 Przykładowe szablony do wypróbowania (do testów, nie gotowe pakiety gier):
 [`docs/przyklady/`](docs/przyklady/).
 
+## Skład kart i import tabel
+
+- W edytorze szablonu możesz przypisać kilka pól do jednej grupy stylu. Kolory karty, panelu i etykiety
+  mogą wynikać z wartości pola danych. Pole tekstowe obsługuje listę numerowaną, ikony `:star:`
+  i `:scissors:` oraz podział długiego opisu na dalsze karty.
+- W kontenerze swobodnym wpisz kąt obrotu w sekcji „Położenie”. Na kartce z mieszanymi rozmiarami
+  „Pakowanie kart” pozwala wybrać pasy lub MaxRects.
+- Pod kartką wybierz **„Importuj CSV lub XLSX”**, wskaż szablon i plik, przypisz kolumny i sprawdź
+  podgląd przed dodaniem kart. CSV zapisuj w UTF-8 z przecinkiem albo średnikiem. Pierwszy niepusty
+  wiersz dostarcza nagłówki. Pusta ilość oznacza jedną sztukę. Ilustracje dopasowują się po
+  jednoznacznej nazwie obrazu w bibliotece projektu. Cofnięcie usuwa całą dodaną partię.
+
+[Neutralne przykłady M3 w PL i EN, w obu motywach](docs/obrazy/m3-8/README.md).
+
 ## Ozdobniki
 
 Ramki, narożniki i separatory z biblioteki albo z własnych plików SVG – w podglądzie i w PDF wyglądają
-tak samo (powtarzane kafelki trafiają do PDF tylko raz).
+tak samo (powtarzane kafelki trafiają do PDF tylko raz). Karta i panel mogą mieć teksturę z biblioteki
+oraz postrzępiony brzeg. Ramki i separatory obsługują kreskę szkicową, a motyw ramki może prowadzić po łuku.
 
 1. **Ramka karty**: w edytorze szablonu zaznacz **Karta** → sekcja „Ramka karty”. Rodzaje: **brak**,
    **linia** (ciągła, przerywana, kropkowana, **podwójna** – przerwę ustawisz osobno), **motyw**
