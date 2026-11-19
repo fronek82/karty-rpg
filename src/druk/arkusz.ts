@@ -711,14 +711,20 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     }
     if (!uklad && u.nozyczki && odcinki.length > 0) {
       const zajete = prostokaty.flatMap((p) => (dop?.tloDoSlotu ? [p.karta, p.obszar] : [p.karta]));
-      // Wzorce z jawną siatką zachowują znacznik konkretnej linii, o ile nie przecina karty.
-      const n = u.poczatekSiatki ? nozyczkiNaScenie(u.nozyczki, odcinki, pas, u.linie, zajete) : [];
-      if (!n) {
-        ostrzezenia.push({
-          komunikat: `nozyczki-poza-siatka:${u.nozyczki.linia}:${u.nozyczki.indeks}`,
-        });
-      } else if (n.length) {
-        elementy.push(...n);
+      if (u.poczatekSiatki) {
+        const znacznik = nozyczkiNaScenie(
+          u.nozyczki,
+          odcinki,
+          pas,
+          u.linie,
+          [...zajete, ...polaNapisow],
+          strona,
+        );
+        if (znacznik) elementy.push(...znacznik);
+        else
+          ostrzezenia.push({
+            komunikat: `nozyczki-poza-siatka:${u.nozyczki.linia}:${u.nozyczki.indeks}`,
+          });
       } else {
         const ciecie = prostokaty.map((p) => (dop?.linie === 'karta' ? p.karta : p.obszar));
         elementy.push(
@@ -980,72 +986,95 @@ const przecinajaSie = (a: Prostokat, b: Prostokat) =>
   b.y + b.wys > a.y + EPS;
 
 /**
- * Nożyczki na przedłużeniu `indeks`-tej linii cięcia (licząc rzeczywiste linie na stronie –
- * przy grupach z odstępami), poza obszarem kart, skierowane do środka. Od nożyczek do krawędzi
- * siatki biegnie przerywana linia prowadząca – jak w oryginale.
- * Zwraca pustą listę przy kolizji z kartą, undefined przy braku skonfigurowanej linii.
+ * Jeden znacznik arkusza. Na wskazanej linii najpierw próbujemy przedłużenie
+ * skrajnego odcinka, potem kolejne wolne przedłużenia i linie dalej. Na koniec próbujemy drugiego końca.
  */
 function nozyczkiNaScenie(
-  n: NonNullable<Arkusz['ustawienia']['nozyczki']>,
+  n: Nozyczki,
   odcinki: { x1: Mm; y1: Mm; x2: Mm; y2: Mm }[],
   pasNaglowkow: Mm,
   linie: LinieCiecia,
-  zajeteKarty: Prostokat[],
+  zajete: Prostokat[],
+  papier: { szer: Mm; wys: Mm },
 ): ElementSceny[] | undefined {
-  const r = n.rozmiar;
-  const odstep = n.odstep + r / 2;
-  const unikalne = (v: number[]) =>
-    [...new Set(v.map((x) => Math.round(x * 1000) / 1000))].sort((a, b) => a - b);
-  const pionowe = odcinki.filter((o) => o.x1 === o.x2);
-  const poziome = odcinki.filter((o) => o.y1 === o.y2);
-  let x: Mm;
-  let y: Mm;
-  let obrot: number;
-  let prowadzaca: { x1: Mm; y1: Mm; x2: Mm; y2: Mm };
-  if (n.linia === 'pozioma') {
-    const yy = unikalne(poziome.map((o) => o.y1))[n.indeks];
-    if (yy === undefined) return undefined;
-    // Krawędź siatki na tej linii: skrajny odcinek leżący na niej.
-    const naLinii = poziome.filter((o) => Math.abs(o.y1 - yy) < 1e-3);
-    const lewa = Math.min(...naLinii.map((o) => Math.min(o.x1, o.x2)));
-    const prawa = Math.max(...naLinii.map((o) => Math.max(o.x1, o.x2)));
-    y = yy;
-    x = n.strona === 'poczatek' ? lewa - odstep : prawa + odstep;
-    obrot = n.strona === 'poczatek' ? 0 : 180;
-    prowadzaca =
-      n.strona === 'poczatek'
-        ? { x1: x + r / 2, y1: y, x2: lewa, y2: y }
-        : { x1: prawa, y1: y, x2: x - r / 2, y2: y };
-  } else {
-    const xx = unikalne(pionowe.map((o) => o.x1))[n.indeks];
-    if (xx === undefined) return undefined;
-    const naLinii = pionowe.filter((o) => Math.abs(o.x1 - xx) < 1e-3);
-    const gora = Math.min(...naLinii.map((o) => Math.min(o.y1, o.y2)));
-    const dol = Math.max(...naLinii.map((o) => Math.max(o.y1, o.y2)));
-    x = xx;
-    // Nad siatką – ponad pasem nagłówków grup.
-    y = n.strona === 'poczatek' ? gora - pasNaglowkow - odstep : dol + odstep;
-    obrot = n.strona === 'poczatek' ? 90 : -90;
-    prowadzaca =
-      n.strona === 'poczatek'
-        ? // Nad siatką linia kończy się nad pasem nagłówków grup – nie przecina napisów.
-          { x1: x, y1: y + r / 2, x2: x, y2: gora - pasNaglowkow }
-        : { x1: x, y1: dol, x2: x, y2: y - r / 2 };
+  const pion = n.linia === 'pionowa';
+  const preferowanyPoczatek = n.strona === 'poczatek';
+  const promien = n.rozmiar / 2;
+  const goraCiec = odcinki.reduce((gora, o) => Math.min(gora, o.y1, o.y2), Infinity);
+
+  const odcinkiPoLinii = new Map<number, { od: Mm; do: Mm }[]>();
+  for (const o of odcinki) {
+    if (pion ? o.x1 !== o.x2 : o.y1 !== o.y2) continue;
+    const stala = Math.round((pion ? o.x1 : o.y1) * 1000) / 1000;
+    const a = pion ? o.y1 : o.x1;
+    const b = pion ? o.y2 : o.x2;
+    const naLinii = odcinkiPoLinii.get(stala) ?? [];
+    naLinii.push({ od: Math.min(a, b), do: Math.max(a, b) });
+    odcinkiPoLinii.set(stala, naLinii);
   }
-  const lewo = Math.min(x - r / 2, prowadzaca.x1, prowadzaca.x2);
-  const gora = Math.min(y - r / 2, prowadzaca.y1, prowadzaca.y2);
-  const pole = {
-    x: lewo,
-    y: gora,
-    szer: Math.max(x + r / 2, prowadzaca.x1, prowadzaca.x2) - lewo,
-    wys: Math.max(y + r / 2, prowadzaca.y1, prowadzaca.y2) - gora,
-  };
-  if (zajeteKarty.some((k) => przecinajaSie(k, pole))) return [];
-  const wynik: ElementSceny[] = [];
-  if (Math.hypot(prowadzaca.x2 - prowadzaca.x1, prowadzaca.y2 - prowadzaca.y1) > linie.kreska)
-    wynik.push(liniaCiecia(prowadzaca, linie));
-  wynik.push(symbolNozyczek(x, y, obrot, r, linie));
-  return wynik;
+  const wspolrzedne = [...odcinkiPoLinii.keys()].sort((a, b) => a - b);
+  if (wspolrzedne[n.indeks] === undefined) return undefined;
+
+  for (const poczatek of [preferowanyPoczatek, !preferowanyPoczatek]) {
+    const kierunek = poczatek ? -1 : 1;
+    const obrot = pion ? (poczatek ? 90 : -90) : poczatek ? 0 : 180;
+    for (const stala of wspolrzedne.slice(n.indeks)) {
+      const spojne: { od: Mm; do: Mm }[] = [];
+      for (const o of odcinkiPoLinii.get(stala)!.sort((a, b) => a.od - b.od)) {
+        const ostatni = spojne.at(-1);
+        if (ostatni && o.od <= ostatni.do + EPS) ostatni.do = Math.max(ostatni.do, o.do);
+        else spojne.push({ ...o });
+      }
+      if (!poczatek) spojne.reverse();
+      for (const o of spojne) {
+        // Na początku pionowej siatki linia prowadząca kończy się nad nagłówkami.
+        const nadSiatka = pion && Math.abs(o.od - goraCiec) < EPS;
+        const koniec = poczatek ? o.od - (nadSiatka ? pasNaglowkow : 0) : o.do;
+        for (const odstep of [n.odstep, 0]) {
+          const srodek = koniec + kierunek * (odstep + promien);
+          const x = pion ? stala : srodek;
+          const y = pion ? srodek : stala;
+          const pole = {
+            x: pion ? x - promien : Math.min(x - promien, koniec),
+            y: pion ? Math.min(y - promien, koniec) : y - promien,
+            szer: n.rozmiar + (pion ? 0 : odstep),
+            wys: n.rozmiar + (pion ? odstep : 0),
+          };
+          if (!wolneNaZnacznik(pole, zajete, papier)) continue;
+          const elementy: ElementSceny[] = [];
+          const drugi = koniec + kierunek * odstep;
+          const a = Math.min(drugi, koniec);
+          const b = Math.max(drugi, koniec);
+          if (odstep > linie.kreska)
+            elementy.push(
+              liniaCiecia(
+                pion
+                  ? { x1: stala, y1: a, x2: stala, y2: b }
+                  : { x1: a, y1: stala, x2: b, y2: stala },
+                linie,
+              ),
+            );
+          elementy.push(symbolNozyczek(x, y, obrot, n.rozmiar, linie));
+          return elementy;
+        }
+      }
+    }
+  }
+  return [];
+}
+
+function wolneNaZnacznik(
+  pole: Prostokat,
+  zajete: Prostokat[],
+  papier: { szer: Mm; wys: Mm },
+): boolean {
+  return (
+    pole.x >= -EPS &&
+    pole.y >= -EPS &&
+    pole.x + pole.szer <= papier.szer + EPS &&
+    pole.y + pole.wys <= papier.wys + EPS &&
+    !zajete.some((z) => przecinajaSie(z, pole))
+  );
 }
 
 function symbolNozyczek(x: Mm, y: Mm, obrot: number, r: Mm, linie: LinieCiecia): ElementSceny {
@@ -1099,14 +1128,7 @@ function nozyczkiPrzyKartach(
           szer: n.rozmiar + (pion ? 0 : odstep),
           wys: n.rozmiar + (pion ? odstep : 0),
         };
-        if (
-          pole.x < -EPS ||
-          pole.y < -EPS ||
-          pole.x + pole.szer > papier.szer + EPS ||
-          pole.y + pole.wys > papier.wys + EPS ||
-          zajete.some((z) => przecinajaSie(z, pole))
-        )
-          continue;
+        if (!wolneNaZnacznik(pole, zajete, papier)) continue;
         zajete.push(pole);
         if (odstep > linie.kreska)
           wynik.push(
