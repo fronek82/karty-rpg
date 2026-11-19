@@ -266,6 +266,64 @@ describe('zbudujArkusz – tytuł, nożyczki, linie', () => {
     expect(w.ostrzezenia).toEqual([]);
   });
 
+  it('przy zasłoniętym początku wybiera dalsze wolne przedłużenie tej samej linii', () => {
+    const wzor = arkuszeMausrittera[0]!;
+    const arkusz = {
+      ...wzor,
+      przypiete: [
+        { kartaId: 'duza', kolumna: 0, rzad: 1 },
+        { kartaId: 'obok', kolumna: 1, rzad: 1 },
+        { kartaId: 'dalej', kolumna: 3, rzad: 1 },
+      ],
+    };
+    const dane: Talia = {
+      id: wzor.taliaId,
+      nazwa: 'Próba',
+      karty: ['duza', 'obok', 'dalej'].map((id) => ({
+        id,
+        szablonId: 'mausritter-przedmiot',
+        dane: {},
+        ilosc: 1,
+        ...(id === 'duza' ? { rozmiar: { kolumny: 1, rzedy: 2 } } : {}),
+      })),
+    };
+    const w = zbudujArkusz(arkusz, dane, ctx);
+    const znacznik = scissors(w.strony[0]!);
+    const poczatek = wzor.ustawienia.poczatekSiatki!;
+    const ustawienia = wzor.ustawienia.nozyczki!;
+    expect(znacznik.x).toBeCloseTo(
+      poczatek.x + 3 * SLOT - ustawienia.odstep - ustawienia.rozmiar / 2,
+    );
+    expect(znacznik.y).toBeCloseTo(poczatek.y + 2 * SLOT);
+  });
+
+  it('na prawym końcu skraca odstęp znacznika, aby nie wyszedł poza papier', () => {
+    const wzor = arkuszeMausrittera[0]!;
+    const a: Arkusz = {
+      ...wzor,
+      ustawienia: {
+        ...wzor.ustawienia,
+        marginesy: { gora: 0, prawo: 0, dol: 0, lewo: 0 },
+        poczatekSiatki: { x: 297 - SLOT - 7, y: 20 },
+        nozyczki: { ...wzor.ustawienia.nozyczki!, strona: 'koniec' },
+      },
+      przypiete: [{ kartaId: 'karta', kolumna: 0, rzad: 0 }],
+    };
+    const w = zbudujArkusz(
+      a,
+      {
+        id: a.taliaId,
+        nazwa: 'Próba',
+        karty: [{ id: 'karta', szablonId: 'mausritter-przedmiot', dane: {}, ilosc: 1 }],
+      },
+      ctx,
+    );
+    const znacznik = scissors(w.strony[0]!);
+    expect(znacznik.x).toBeCloseTo(297 - 7 + a.ustawienia.nozyczki!.rozmiar / 2);
+    expect(znacznik.y).toBeCloseTo(20 + SLOT);
+    expect(znacznik.obrot).toBe(180);
+  });
+
   it('nożyczki na nieistniejącej linii – ostrzeżenie zamiast rysunku', () => {
     const a = arkuszeMausrittera[0]!;
     const w = zbudujArkusz(
