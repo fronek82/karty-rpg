@@ -362,6 +362,42 @@ function zbudujWiersz(
   };
 }
 
+// Granice grafemów zachowują litery ze znakami łączącymi i sekwencje Unicode jako całość.
+const GRAFEMY = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+/** Najdłuższy mieszczący się prefiks od granicy grafemu; każdy prefiks składamy razem. */
+function prefiksSlowa(
+  f: Fragment,
+  granice: number[],
+  od: number,
+  miejsce: Mm,
+  czcionki: RejestrCzcionek,
+  skala: number,
+) {
+  const sprawdz = (do_: number) => {
+    const kawalki = kawalkiSlowa(f.tekst.slice(granice[od], granice[do_]), f.styl, czcionki, skala);
+    return { do_, kawalki, szer: kawalki.reduce((s, k) => s + k.szerokosc, 0) };
+  };
+  let pasuje = sprawdz(od + 1);
+  const ostatni = granice.length - 1;
+  if (pasuje.szer > miejsce + 1e-6 || pasuje.do_ === ostatni) return pasuje;
+
+  // Najpierw szukamy górnej granicy blisko początku, również dla bardzo długich wklejek.
+  let proba = sprawdz(Math.min(ostatni, od + 2));
+  while (proba.szer <= miejsce + 1e-6) {
+    pasuje = proba;
+    if (pasuje.do_ === ostatni) return pasuje;
+    proba = sprawdz(Math.min(ostatni, od + 2 * (pasuje.do_ - od)));
+  }
+  let zaDaleko = proba.do_;
+  while (zaDaleko - pasuje.do_ > 1) {
+    proba = sprawdz(Math.floor((pasuje.do_ + zaDaleko) / 2));
+    if (proba.szer > miejsce + 1e-6) zaDaleko = proba.do_;
+    else pasuje = proba;
+  }
+  return pasuje;
+}
+
 /**
  * Układa tekst w wiersze. `szerokoscMax` = undefined oznacza brak łamania.
  * `skala` mnoży wszystkie rozmiary (do auto-dopasowania).
@@ -371,6 +407,7 @@ export function ulozTekst(
   szerokoscMax: Mm | undefined,
   czcionki: RejestrCzcionek,
   skala = 1,
+  lamDlugieSlowa = false,
 ): UkladTekstu {
   const wiersze: WierszTekstu[] = [];
   let zaSzeroki = false;
@@ -395,20 +432,26 @@ export function ulozTekst(
       tylkoEtykieta || przedEtykieta || nrAkapitu === akapity.length - 1
         ? 0
         : (stylAkapitu?.odstepAkapitow ?? 0) * skala;
-    // Słowa = ciągi kawałków bez spacji; łamać można tylko na spacjach.
-    const slowa: { spacjaPrzed?: Kawalek; kawalki: Kawalek[]; szerokosc: Mm }[] = [];
+    const slowa: {
+      spacjaPrzed?: Kawalek;
+      kawalki: Kawalek[];
+      szerokosc: Mm;
+      fragmenty: Fragment[];
+    }[] = [];
     let spacja: Kawalek | undefined;
     let biezace: (typeof slowa)[number] | undefined;
-    const dodaj = (ks: Kawalek[]) => {
+    const dodaj = (ks: Kawalek[], fragment: Fragment) => {
       if (!biezace) {
         biezace = {
           spacjaPrzed: slowa.length > 0 ? spacja : undefined,
           kawalki: [],
           szerokosc: 0,
+          fragmenty: [],
         };
         slowa.push(biezace);
         spacja = undefined;
       }
+      if (lamDlugieSlowa) biezace.fragmenty.push(fragment);
       for (const k of ks) {
         biezace.kawalki.push(k);
         biezace.szerokosc += k.szerokosc;
@@ -416,7 +459,7 @@ export function ulozTekst(
     };
     for (const f of akapit) {
       if (f.ikona) {
-        dodaj([kawalekIkony(f.ikona, f.styl, czcionki, skala)]);
+        dodaj([kawalekIkony(f.ikona, f.styl, czcionki, skala)], f);
         continue;
       }
       const tekst = f.styl.wielkieLitery ? f.tekst.toLocaleUpperCase('pl') : f.tekst;
@@ -427,7 +470,7 @@ export function ulozTekst(
           biezace = undefined;
           continue;
         }
-        dodaj(kawalkiSlowa(czesc, f.styl, czcionki, skala));
+        dodaj(kawalkiSlowa(czesc, f.styl, czcionki, skala), { ...f, tekst: czesc });
       }
     }
     if (numer && slowa[0]) {
@@ -439,6 +482,12 @@ export function ulozTekst(
     let wiersz: Kawalek[] = [];
     let szerokoscWiersza = wciecie;
     let pierwszyWiersz = true;
+    const nowyWiersz = () => {
+      wiersze.push(zbudujWiersz(wiersz, zapasowy, pierwszyWiersz ? wciecie : wiszace, false));
+      wiersz = [];
+      szerokoscWiersza = wiszace;
+      pierwszyWiersz = false;
+    };
     for (const slowo of slowa) {
       const zSpacja = wiersz.length > 0 && slowo.spacjaPrzed ? slowo.spacjaPrzed.szerokosc : 0;
       if (
@@ -446,16 +495,53 @@ export function ulozTekst(
         wiersz.length > 0 &&
         szerokoscWiersza + zSpacja + slowo.szerokosc > szerokoscMax + 1e-6
       ) {
-        wiersze.push(zbudujWiersz(wiersz, zapasowy, pierwszyWiersz ? wciecie : wiszace, false));
-        wiersz = [];
-        szerokoscWiersza = wiszace;
-        pierwszyWiersz = false;
+        nowyWiersz();
+      }
+      if (
+        lamDlugieSlowa &&
+        szerokoscMax !== undefined &&
+        szerokoscWiersza + slowo.szerokosc > szerokoscMax + 1e-6
+      ) {
+        const pisz = (kawalki: Kawalek[], szer: Mm) => {
+          for (const k of kawalki) wiersz.push(k);
+          szerokoscWiersza += szer;
+          if (szerokoscWiersza > szerokoscMax + 1e-6) zaSzeroki = true;
+        };
+        if (numer && slowo === slowa[0]) pisz([numer], numer.szerokosc);
+        for (const f of slowo.fragmenty) {
+          if (f.ikona) {
+            const k = kawalekIkony(f.ikona, f.styl, czcionki, skala);
+            if (wiersz.length && szerokoscWiersza + k.szerokosc > szerokoscMax + 1e-6) nowyWiersz();
+            pisz([k], k.szerokosc);
+            continue;
+          }
+          const granice = Array.from(GRAFEMY.segment(f.tekst), (g) => g.index);
+          granice.push(f.tekst.length);
+          for (let od = 0; od < granice.length - 1;) {
+            const p = prefiksSlowa(
+              f,
+              granice,
+              od,
+              szerokoscMax - szerokoscWiersza,
+              czcionki,
+              skala,
+            );
+            if (wiersz.length && szerokoscWiersza + p.szer > szerokoscMax + 1e-6) {
+              nowyWiersz();
+              continue;
+            }
+            pisz(p.kawalki, p.szer);
+            od = p.do_;
+            if (od < granice.length - 1) nowyWiersz();
+          }
+        }
+        continue;
       }
       if (wiersz.length > 0 && slowo.spacjaPrzed) {
         wiersz.push(slowo.spacjaPrzed);
         szerokoscWiersza += slowo.spacjaPrzed.szerokosc;
       }
-      wiersz.push(...slowo.kawalki);
+      for (const k of slowo.kawalki) wiersz.push(k);
       szerokoscWiersza += slowo.szerokosc;
       const odsuniecie = pierwszyWiersz ? wciecie : wiszace;
       if (
@@ -469,13 +555,13 @@ export function ulozTekst(
     wiersze.push(ostatni);
     if (numer) {
       const pozycja = wiersze.slice(odWiersza);
-      const szerokosc = Math.max(...pozycja.map((w) => w.szerokosc));
+      const szerokosc = pozycja.reduce((m, w) => Math.max(m, w.szerokosc), 0);
       for (const w of pozycja) w.szerokoscPozycjiListy = szerokosc;
     }
   });
   return {
     wiersze,
-    szerokosc: Math.max(0, ...wiersze.map((w) => w.szerokosc)),
+    szerokosc: wiersze.reduce((m, w) => Math.max(m, w.szerokosc), 0),
     wysokosc: wiersze.reduce((s, w) => s + w.wysokosc, 0),
     zaSzeroki,
   };
@@ -492,14 +578,21 @@ export function ulozDopasowany(
   czcionki: RejestrCzcionek,
   wieleWierszy: boolean,
   minimalnaSkala: number,
+  lamDlugieSlowa = false,
 ): UkladTekstu & { przepelnienie: boolean } {
   const miesciSie = (u: UkladTekstu) =>
     u.wysokosc <= wys + 1e-6 && u.szerokosc <= szer + 1e-6 && !u.zaSzeroki;
   let skala = 1;
-  let uklad = ulozTekst(fragmenty, wieleWierszy ? szer : undefined, czcionki, skala);
+  let uklad = ulozTekst(
+    fragmenty,
+    wieleWierszy ? szer : undefined,
+    czcionki,
+    skala,
+    lamDlugieSlowa,
+  );
   while (!miesciSie(uklad) && skala - 0.02 >= minimalnaSkala - 1e-9) {
     skala -= 0.02;
-    uklad = ulozTekst(fragmenty, wieleWierszy ? szer : undefined, czcionki, skala);
+    uklad = ulozTekst(fragmenty, wieleWierszy ? szer : undefined, czcionki, skala, lamDlugieSlowa);
   }
   return { ...uklad, przepelnienie: !miesciSie(uklad) };
 }

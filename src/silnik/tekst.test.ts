@@ -33,6 +33,42 @@ describe('ulozTekst', () => {
     expect(ulozTekst([{ tekst: 'Najdłuższewyrazisko', styl }], 5, czcionki).zaSzeroki).toBe(true);
   });
 
+  it('awaryjnie dzieli długie słowo na całe grafemy', () => {
+    const grafem = 'a\u0301';
+    const wzorzec = ulozTekst([{ tekst: grafem, styl }], undefined, czcionki);
+    const szer = wzorzec.szerokosc + 0.01;
+    const u = ulozTekst([{ tekst: grafem.repeat(15), styl }], szer, czcionki, 1, true);
+    expect(u.zaSzeroki).toBe(false);
+    expect(u.wiersze).toHaveLength(15);
+    expect(u.wiersze.every((w) => w.szerokosc <= szer)).toBe(true);
+    expect(
+      u.wiersze.every(
+        (w) =>
+          JSON.stringify(w.glify.map((g) => g.id)) ===
+          JSON.stringify(wzorzec.wiersze[0]!.glify.map((g) => g.id)),
+      ),
+    ).toBe(true);
+  });
+
+  it('składa podzielone fragmenty całymi wierszami, zachowując ligaturę', () => {
+    const tekst = 'ffi';
+    const jeden = ulozTekst([{ tekst, styl }], undefined, czcionki);
+    const szer = jeden.szerokosc + 0.01;
+    const u = ulozTekst([{ tekst: tekst.repeat(3), styl }], szer, czcionki, 1, true);
+    expect(jeden.wiersze[0]!.glify).toHaveLength(1);
+    expect(u.wiersze.map((w) => w.glify.map((g) => g.id))).toEqual(
+      Array(3).fill(jeden.wiersze[0]!.glify.map((g) => g.id)),
+    );
+  });
+
+  it('przenosi ikonę w długim ciągu jako całość', () => {
+    const fr = dodajNotacjeTekstu([{ tekst: 'aaaaaa:scissors:bbbbbb', styl }], false, true);
+    const u = ulozTekst(fr, 9, czcionki, 1, true);
+    expect(u.zaSzeroki).toBe(false);
+    expect(u.wiersze.length).toBeGreaterThan(2);
+    expect(u.wiersze.flatMap((w) => w.ikony ?? []).map((i) => i.ikona)).toEqual(['nozyczki']);
+  });
+
   it('nowy wiersz w danych zaczyna akapit', () => {
     expect(ulozTekst([{ tekst: 'raz\ndwa', styl }], undefined, czcionki).wiersze).toHaveLength(2);
   });

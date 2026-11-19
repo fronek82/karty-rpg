@@ -91,6 +91,8 @@ Zrzuty M3-6 pokazują [obrót elementu](obrazy/m3-6-obrot.png) i [pakowanie MaxR
 
 - [ ] Margines cięcia. Ustawić kalibrację X/Y na mieszanej kartce A4 poziomej. Sprawdzić w PNG, JPG i PDF, czy kreski i nożyczki mieszczą się co najmniej 5 mm od papieru. Porównać lewy i górny początek linii oraz brak ikon wewnątrz układu.
 
+- [ ] Pole tekstowe. W „Rób karty” wpisać długi ciąg bez spacji i ciąg z ikoną. Sprawdzić zawijanie w polu oraz brak przewijania poziomego w panelu. Zwiększyć tekst aż do ostrzeżenia i sprawdzić granicę pola w podglądzie i PDF.
+
 ## 5. Zakres pierwszej wersji
 
 - Zestawy wbudowane z istniejących ozdobników, nazwane grupy w obrębie szablonu i wybór kolorów według wartości danych.
@@ -154,3 +156,4 @@ M4 obejmuje między innymi rewersy i druk dwustronny zgodnie ze specyfikacją. U
 | B257 | M3-7    | Talia i cofnięcie        | Import korzysta z typów dostępnych na wybranej kartce. W siatce dodaje przypięte egzemplarze i w razie potrzeby strony, a w trybie mieszanym dodaje jeden rekord na wiersz z nakładem. Cała partia to jedna zmiana w historii.                                                |
 | B258 | M3-8    | Odbiór                   | Trzy neutralne wzory składają się na jeden arkusz. Test pobiera PDF i sprawdza wygląd podglądu w czterech kombinacjach języka i motywu. Sprawdzenie wydruku fizycznego i ręczny odbiór M2c zostają na liście.                                                                 |
 | B259 | Arkusz  | Margines i początki cięć | Kartka mieszana i ręcznie przypinana rysuje nożyczki raz na dostępny zewnętrzny początek ciągłej linii, od lewej lub góry. Wspólna strefa zachowuje 5 mm przed i po kalibracji PDF. Ustalony znacznik gotowego arkusza zachowuje położenie, gdy mieści się w strefie.         |
+| B260 | Tekst   | Zawijanie awaryjne       | Wielowierszowe pole łamie ciąg po grafemach, gdy całe słowo nie mieści się w wierszu. Ikona pozostaje całością, a kontynuacja między kartami nadal dzieli po słowach. Gdy pole nie mieści treści, scena ją przycina i zachowuje ostrzeżenie oraz zapis danych.                |

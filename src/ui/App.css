@@ -1413,6 +1413,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 }
 
 .panel-edytora h2 {
+  overflow-wrap: anywhere;
   margin: 0;
   font-size: 1.1rem;
 }

@@ -1,9 +1,11 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { eksportujSzablon } from '../src/dane/archiwum';
 import { WERSJA_SCHEMATU, type Projekt } from '../src/model/projekt';
 import type { Szablon } from '../src/model/szablon';
 import { szablonCzaru, szablonStatystyk } from '../src/silnik/__testy__/przyklady';
 import { slot, zapisano } from './pomoc';
+import { porownaj, przygotujStrone } from './pdfSvg';
 
 /** Własne karty: import szablonu, karty w mm na kartce, papier, eksport i import szablonów. */
 
@@ -130,4 +132,63 @@ test('własny papier: pola wymiarów, odrzucenie zbyt małego, Cofnij przywraca 
   await expect(szer).toHaveValue('150');
   await page.keyboard.press('Control+z');
   await expect(szer).toHaveValue('210');
+});
+
+test('pole tekstu zawija ciąg bez spacji i zachowuje szerokość panelu na kartce', async ({
+  page,
+}) => {
+  const s: Szablon = {
+    id: 'proba-tekstu',
+    nazwa: 'Próba tekstu',
+    rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+    korzen: {
+      id: 'korzen',
+      typ: 'kolumna',
+      padding: 4,
+      dzieci: [
+        {
+          id: 'tekst',
+          typ: 'tekst',
+          klucz: 'tekst',
+          nazwa: 'Tekst',
+          szerokosc: { mm: 34 },
+          wysokosc: { mm: 24 },
+          styl: { czcionka: 'tresc', rozmiar: 4 },
+        },
+      ],
+    },
+  };
+  await page.goto('./#/');
+  await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
+  await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu(s));
+  await slot(page, 1, 2, 1).click();
+  await page.getByRole('menuitem', { name: /Próba tekstu/ }).click();
+  const panel = page.getByRole('complementary', { name: 'Zaznaczone karty' });
+  const pole = panel.getByLabel('Tekst', { exact: true });
+  const tekst = 'a'.repeat(46);
+  await pole.fill(tekst);
+  await expect(panel.getByRole('heading', { name: tekst })).toBeVisible();
+  const svg = page.locator('.strona-kartki svg.svg-strony');
+  const glify = svg.locator('use[transform^="matrix"]');
+  await expect(glify).toHaveCount(46);
+  const wiersze = await glify.evaluateAll(
+    (els) => new Set(els.map((el) => el.getAttribute('transform')!.split(' ').at(-1))).size,
+  );
+  expect(wiersze).toBeGreaterThan(1);
+
+  await pole.fill(tekst.repeat(8));
+  await expect(svg.locator('g[clip-path]')).toHaveCount(1);
+  await expect(panel).toContainText('tekst nie mieści się');
+  expect(await panel.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1);
+
+  const svgTekst = await svg.evaluate((e) => e.outerHTML);
+  const [pdf] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
+  ]);
+  const bajty = await readFile(await pdf.path());
+  await przygotujStrone(page);
+  const wydruk = await porownaj(page, svgTekst, bajty, { x: 76, y: 12, szer: 55, wys: 40 });
+  expect(wydruk.ciemneSvg).toBeGreaterThan(100);
+  expect(wydruk.rozne / wydruk.wszystkie).toBeLessThan(0.001);
 });
