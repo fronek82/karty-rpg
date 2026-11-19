@@ -451,3 +451,51 @@ fieldset:is(
   pointer-events: none;
   outline: 2px solid var(--zaznaczenie-papier);
 }
+
+.dialog-importu-tabeli {
+  background: var(--tlo-panelu);
+  color: var(--tekst);
+  border: 1px solid var(--obramowanie-pola);
+  border-radius: 12px;
+  box-sizing: border-box;
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1.25rem;
+}
+
+.dialog-importu-tabeli::backdrop {
+  background: var(--tlo-zaslonki);
+  opacity: 0.55;
+}
+
+.dialog-importu-tabeli h2 {
+  margin-top: 0;
+}
+
+.dialog-importu-tabeli :is(select, input) {
+  max-width: 100%;
+}
+
+.tabela-podgladu-importu {
+  margin-top: 1rem;
+  overflow: auto;
+}
+
+.tabela-podgladu-importu table {
+  border-collapse: collapse;
+  min-width: 100%;
+}
+
+.tabela-podgladu-importu caption {
+  text-align: left;
+  margin-bottom: 0.5rem;
+}
+
+.tabela-podgladu-importu :is(td, th) {
+  border: 1px solid var(--obramowanie-pola);
+  text-align: left;
+  padding: 0.35rem;
+  overflow-wrap: anywhere;
+  max-width: 15rem;
+  white-space: pre-wrap;
+}

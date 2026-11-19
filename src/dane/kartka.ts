@@ -338,6 +338,75 @@ function numerujKopie(talia: Talia) {
   };
 }
 
+/** Dodaje całą partię do talii lub zwraca błąd, bez częściowego zapisu. */
+export function dodajKartyZImportu(
+  p: Projekt,
+  arkuszId: string,
+  szablonId: string,
+  dane: readonly Pick<Karta, 'dane' | 'ilosc'>[],
+  ctx: KontekstKartki,
+): { projekt: Projekt } | { blad: BladKartki } {
+  const { arkusz, talia } = arkuszITalia(p, arkuszId);
+  const nowyId = noweId(p);
+  const nowe = dane.map((r, i): Karta => ({
+    id: nowyId(`karta-z-tabeli-${i + 1}`),
+    szablonId,
+    dane: { ...r.dane },
+    ilosc: r.ilosc,
+  }));
+  if (!nowe.length) return { projekt: p };
+  if (arkusz.ustawienia.rozmiary === 'mieszane')
+    return {
+      projekt: zmienKartke(p, arkuszId, (a) => ({
+        arkusz: a,
+        talia: { ...talia, karty: [...talia.karty, ...nowe] },
+      })),
+    };
+  const zajete = kartyKartki(p, arkuszId, ctx.szablony);
+  const dodane: KartaNaKartce[] = [];
+  const r = rozmiarKarty(nowe[0]!, ctx.szablony);
+  let strony = liczbaStronKartki(p, arkuszId);
+  let od: Polozenie = { strona: 0, kolumna: 0, rzad: 0 };
+  for (const oryginal of nowe) {
+    for (let i = 0; i < oryginal.ilosc; i++) {
+      let pol = wolneMiejsce(arkusz, zajete, r, od, ctx.siatka, strony);
+      if (!pol) {
+        pol = wolneMiejsce(
+          arkusz,
+          zajete,
+          r,
+          { strona: strony, kolumna: 0, rzad: 0 },
+          ctx.siatka,
+          strony + 1,
+        );
+        if (!pol) return { blad: 'brak-miejsca' };
+        strony++;
+      }
+      const karta: Karta = {
+        ...oryginal,
+        ilosc: 1,
+        ...(i
+          ? { id: nowyId(`${oryginal.id}-kopia`), kopiaKarty: { oryginal: oryginal.id, numer: i } }
+          : {}),
+      };
+      const wynik = { karta, ...pol, ...r };
+      zajete.push(wynik);
+      dodane.push(wynik);
+      od = pol;
+    }
+  }
+  return {
+    projekt: zmienKartke(p, arkuszId, (a) => ({
+      arkusz: {
+        ...a,
+        przypiete: [...(a.przypiete ?? []), ...dodane.map((k) => przypiecie(k.karta.id, k))],
+        liczbaStron: strony,
+      },
+      talia: { ...talia, karty: [...talia.karty, ...dodane.map((k) => k.karta)] },
+    })),
+  };
+}
+
 /**
  * N kopii każdej karty w kolejne wolne sloty za oryginałem (dalej na następnych stronach;
  * gdy brak miejsca – nowe strony). Zwraca id kopii w kolejności.

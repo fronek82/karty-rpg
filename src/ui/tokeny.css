@@ -18,6 +18,7 @@
   --pole: #fffaf5;
   --tekst: #2b2a2e;
   --tekst-przygaszony: #5c5560;
+  --tlo-zaslonki: #000000;
   --obramowanie: #d3c6ba;
   --obramowanie-karty: #b4a0c8;
   --pasek: #1b7fa8;
@@ -69,6 +70,7 @@
   color-scheme: dark;
   --tlo: #1e1a1d;
   --tlo-panelu: #2a2528;
+  --tlo-zaslonki: #000000;
   --pole: #1f1b1e;
   --tekst: #ece4dc;
   --tekst-przygaszony: #b9aea8;
