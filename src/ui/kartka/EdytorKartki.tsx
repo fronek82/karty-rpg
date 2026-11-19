@@ -998,13 +998,14 @@ export function EdytorKartki({
     const rozmiary =
       typDlaSzablonu(pakietDlaKartki(arkusz), jedna.karta.szablonId)?.typ.rozmiary ?? [];
     const ctx = kontekst(aktywne.arkuszId);
-    if (rozmiary.length < 2 || !ctx) return undefined;
+    if (!rozmiary.length || !ctx) return undefined;
     const mozliwe = mozliweRozmiary(projekt, aktywne.arkuszId, jedna.karta.id, rozmiary, ctx);
     const i = rozmiary.findIndex((r) => r.kolumny === jedna.kolumny && r.rzedy === jedna.rzedy);
-    for (let d = 1; d < rozmiary.length; d++) {
+    // Wczytana karta może mieć rozmiar spoza listy typu. Wtedy sprawdzamy całą listę.
+    for (let d = 1; d <= rozmiary.length; d++) {
       const j = (i + d) % rozmiary.length;
       const r = rozmiary[j]!;
-      if (!mozliwe[j]) continue;
+      if (j === i || !mozliwe[j]) continue;
       return {
         etykieta: t('kartka.rozmiarNastepny', {
           rozmiar: `${r.kolumny}×${r.rzedy}${r.nazwa ? ` ${r.nazwa}` : ''}`,
