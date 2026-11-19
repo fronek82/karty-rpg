@@ -8,6 +8,7 @@ import {
   roleProjektu,
   ustawDane,
   ustawObrazKarty,
+  ustawStalyObraz,
   ustawRole,
   ustawTytulArkusza,
   ustawUstawieniaArkusza,
@@ -18,6 +19,7 @@ import {
 import { szablonStatystyk } from '../silnik/__testy__/przyklady';
 import { projektZPakietu } from './pakiet';
 import { ostrzezeniaProjektu, przygotujProjekt } from './schemat';
+import { znajdzWezel } from './szablon';
 
 let p: Projekt;
 const czytaj = async (plik: string) => new Uint8Array(readFileSync(plik));
@@ -118,4 +120,54 @@ it('uwzględnia rolę czcionki używaną wyłącznie przez grupę stylu', () => 
     grupyStylow: [{ id: 'g', nazwa: 'Wspólny', styl: { czcionka: 'naglowki2', rozmiar: 3 } }],
   };
   expect(roleProjektu({ ...p, szablony: [szablon] })).toContain('naglowki2');
+});
+
+it('dodaje bajty i opis obrazu oraz wybiera zasób stałego pola', () => {
+  const wzor = p.szablony[0]!;
+  const s = {
+    ...wzor,
+    korzen: {
+      ...wzor.korzen,
+      dzieci: [
+        { id: 'staly', typ: 'obraz' as const, dopasowanie: 'dopasuj' as const },
+        {
+          id: 'dynamiczny',
+          typ: 'obraz' as const,
+          klucz: 'ilustracja',
+          dopasowanie: 'dopasuj' as const,
+        },
+      ],
+    },
+  };
+  const projekt = { ...p, szablony: [s], talie: [], arkusze: [] };
+  const bajty = new Uint8Array(readFileSync('testy/zasoby/ramka-testowa.png'));
+  const dane = new Map([['obraz-wzor', Uint8Array.of(1, 2, 3)]]);
+  const we = { dane: bajty, szerokosc: 120, wysokosc: 120 };
+  const wynik = ustawStalyObraz(projekt, dane, s.id, 'staly', 'wzor.png', we);
+  const obraz = wynik.projekt.zasoby.at(-1)!;
+  expect(obraz).toMatchObject({
+    rodzaj: 'obraz',
+    nazwa: 'wzor.png',
+    format: 'png',
+    szerokosc: 120,
+    wysokosc: 120,
+  });
+  expect(obraz.id).not.toBe('obraz-wzor');
+  expect(wynik.dane.get(obraz.id)).toEqual(bajty);
+  expect(wynik.dane.get('obraz-wzor')).toEqual(dane.get('obraz-wzor'));
+  expect(znajdzWezel(przygotujProjekt(wynik.projekt).szablony[0]!, 'staly')).toMatchObject({
+    zasob: obraz.id,
+  });
+  expect(znajdzWezel(s, 'staly')).not.toHaveProperty('zasob');
+  expect(ustawStalyObraz(projekt, dane, s.id, 'dynamiczny', 'wzor.png', we)).toEqual({
+    projekt,
+    dane,
+  });
+  expect(ustawStalyObraz(projekt, dane, s.id, 'usuniety', 'wzor.png', we)).toEqual({
+    projekt,
+    dane,
+  });
+  expect(() =>
+    ustawStalyObraz(projekt, dane, s.id, 'staly', 'zly.png', { ...we, dane: Uint8Array.of(0) }),
+  ).toThrow(/nie jest obrazem PNG ani JPG/);
 });

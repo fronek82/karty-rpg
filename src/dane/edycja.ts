@@ -13,6 +13,9 @@ import {
   type Wezel,
 } from '../model/szablon';
 
+import { opisObrazu } from './obrazy';
+import { zmienSzablon, zmienWezel, znajdzWezel } from './szablon';
+
 /*
  * Edycja projektu jako czyste funkcje: każda zwraca nowy projekt (z nową datą zmiany),
  * nie modyfikując wejścia – stan UI i zapis do bazy dostają niezmienne dane.
@@ -202,6 +205,27 @@ export function dodajZasoby(
     projekt: { ...p, zasoby: [...p.zasoby, ...nowe.map((n) => n.opis)], zmieniono: teraz() },
     dane: noweDane,
   };
+}
+
+/** Dodaje plik i wybiera go w stałym polu obrazu w jednej zmianie dokumentu. */
+export function ustawStalyObraz(
+  p: Projekt,
+  dane: DaneZasobow,
+  szablonId: string,
+  poleId: string,
+  plik: string,
+  obraz: { dane: Uint8Array; szerokosc: number; wysokosc: number },
+): { projekt: Projekt; dane: DaneZasobow } {
+  const s = p.szablony.find((s) => s.id === szablonId);
+  const pole = s && znajdzWezel(s, poleId);
+  if (pole?.typ !== 'obraz' || pole.klucz) return { projekt: p, dane };
+  const zajete = new Set([...p.zasoby.map((z) => z.id), ...dane.keys()]);
+  const opis = opisObrazu(plik, obraz.dane, obraz, zajete);
+  const wynik = dodajZasoby(p, dane, [{ opis, dane: obraz.dane }]);
+  const projekt = zmienSzablon(wynik.projekt, szablonId, (s) =>
+    zmienWezel(s, poleId, () => ({ ...pole, zasob: opis.id })),
+  );
+  return { projekt, dane: wynik.dane };
 }
 
 /** Usuwa zasób z biblioteki (odwołania zostają – projekt pokaże ostrzeżenie, nie błąd). */

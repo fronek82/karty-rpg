@@ -48,6 +48,7 @@ export function PanelWezla({
   zmienTyp,
   czcionki,
   obrazy,
+  wgrajStalyObraz,
   wiele = false,
   zajeteKlucze,
   rodzicSwobodny,
@@ -66,6 +67,7 @@ export function PanelWezla({
   zmienTyp: (typ: Wezel['typ']) => void;
   czcionki: Opcje;
   obrazy: Opcje;
+  wgrajStalyObraz?: (plik: File, sygnal: AbortSignal) => Promise<void>;
   /** Edycja kilku elementów naraz – ustawienia wspólne (bez nazwy, klucza i przykładu). */
   wiele?: boolean;
   /** Klucze zajęte poza szablonem (dane kart) – przy przełączeniu pola na dane karty. */
@@ -441,6 +443,7 @@ export function PanelWezla({
           zmien={zmienWezel}
           czcionki={czcionki}
           obrazy={obrazy}
+          {...(wgrajStalyObraz ? { wgrajStalyObraz } : {})}
           wiele={wiele}
           zajeteKlucze={zajeteKlucze}
         />
