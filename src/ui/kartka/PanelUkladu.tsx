@@ -18,7 +18,7 @@ import {
 } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
 import { baza } from '../baza';
-import { MAKS_PRZESUNIECIA, odczytajKalibracje, zapiszKalibracje } from '../kalibracja';
+import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
 import { PoleLiczby } from './PoleLiczby';
 import { PodgladWymiarowUkladu } from './PodgladWymiarowUkladu';
 
@@ -38,7 +38,11 @@ export function PanelUkladu({
   wydrukTestowy,
   przelaczRozmiary,
   naKartce = [],
+  kalibracja,
+  zmienKalibracje,
 }: {
+  kalibracja: Kalibracja;
+  zmienKalibracje: (k: Kalibracja) => void;
   /** Przełączenie „jeden rozmiar (siatka)” ↔ „mieszane” (z przeniesieniem kart). */
   przelaczRozmiary?: (tryb: 'jeden' | 'mieszane') => void;
   /** Karty na kartce pogrupowane wg szablonu (lista „Na kartce” w trybie mieszanym). */
@@ -67,7 +71,6 @@ export function PanelUkladu({
   const [nazwa, ustawNazwe] = useState('');
   const [status, ustawStatus] = useState('');
   const [bladBazy, ustawBladBazy] = useState(false);
-  const [kalibracja, ustawKalibracje] = useState(odczytajKalibracje);
 
   useEffect(() => {
     let aktywny = true;
@@ -178,12 +181,6 @@ export function PanelUkladu({
         ...(p.dopasowanie ? { dopasowanie: p.dopasowanie } : {}),
       }),
     );
-
-  const zmienKalibracje = (z: Partial<typeof kalibracja>) => {
-    const k = { ...kalibracja, ...z };
-    ustawKalibracje(k);
-    zapiszKalibracje(k);
-  };
 
   const papier = wymiaryStrony(u);
   const wymiary = uklad && wymiaryUkladu(uklad, slot, papier);
@@ -543,7 +540,7 @@ export function PanelUkladu({
             min={-MAKS_PRZESUNIECIA}
             max={MAKS_PRZESUNIECIA}
             krok={0.1}
-            zmien={(v) => zmienKalibracje({ x: v })}
+            zmien={(v) => zmienKalibracje({ ...kalibracja, x: v })}
           />
           <PoleLiczby
             id="kalibracja-y"
@@ -552,7 +549,7 @@ export function PanelUkladu({
             min={-MAKS_PRZESUNIECIA}
             max={MAKS_PRZESUNIECIA}
             krok={0.1}
-            zmien={(v) => zmienKalibracje({ y: v })}
+            zmien={(v) => zmienKalibracje({ ...kalibracja, y: v })}
           />
         </div>
         <button type="button" onClick={wydrukTestowy}>

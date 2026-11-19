@@ -369,6 +369,17 @@ export interface Odcinek {
 export function odcinkiCieciaProstokatow(
   prostokaty: { x: Mm; y: Mm; szer: Mm; wys: Mm }[],
 ): Odcinek[] {
+  return scalOdcinkiCiecia(
+    prostokaty.flatMap(({ x, y, szer, wys }) => [
+      { x1: x, y1: y, x2: x + szer, y2: y },
+      { x1: x, y1: y + wys, x2: x + szer, y2: y + wys },
+      { x1: x, y1: y, x2: x, y2: y + wys },
+      { x1: x + szer, y1: y, x2: x + szer, y2: y + wys },
+    ]),
+  );
+}
+
+export function scalOdcinkiCiecia(odcinki: Odcinek[]): Odcinek[] {
   const klucz = (v: number) => Math.round(v * 1000);
   type Linie = Map<number, { stala: number; przedzialy: [number, number][] }>;
   const poziome: Linie = new Map();
@@ -377,11 +388,9 @@ export function odcinkiCieciaProstokatow(
     const k = klucz(stala);
     (m.get(k) ?? m.set(k, { stala, przedzialy: [] }).get(k)!).przedzialy.push([od, do_]);
   };
-  for (const r of prostokaty) {
-    dodaj(poziome, r.y, r.x, r.x + r.szer);
-    dodaj(poziome, r.y + r.wys, r.x, r.x + r.szer);
-    dodaj(pionowe, r.x, r.y, r.y + r.wys);
-    dodaj(pionowe, r.x + r.szer, r.y, r.y + r.wys);
+  for (const o of odcinki) {
+    if (o.y1 === o.y2) dodaj(poziome, o.y1, o.x1, o.x2);
+    else dodaj(pionowe, o.x1, o.y1, o.y2);
   }
   const scal = (m: Linie, poziomo: boolean): Odcinek[] =>
     [...m.values()].flatMap(({ stala, przedzialy }) => {

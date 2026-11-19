@@ -404,7 +404,7 @@ export const pl = {
   'uklad.opisPresetu': '{papier}, karta {szer}×{wys} mm, {kolumny}×{rzedy}',
   'uklad.kalibracja': 'Kalibracja drukarki',
   'uklad.kalibracjaOpis':
-    'Przesunięcie wydruku w mm (+ w prawo / w dół), zapamiętane w tej przeglądarce – to cecha drukarki, nie projektu. Dotyczy tylko PDF, nie podglądu.',
+    'Przesunięcie wydruku w mm (+ w prawo / w dół), zapamiętane w tej przeglądarce – to cecha drukarki, nie projektu. Przesuwa PDF. Margines linii i nożyczek uwzględnia to przesunięcie także w podglądzie i obrazach arkuszy.',
   'uklad.przesuniecieX': 'Przesunięcie X (mm)',
   'uklad.przesuniecieY': 'Przesunięcie Y (mm)',
   'uklad.wydrukTestowy': 'Wydruk testowy (PDF)',

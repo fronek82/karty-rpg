@@ -89,6 +89,8 @@ Zrzuty M3-6 pokazują [obrót elementu](obrazy/m3-6-obrot.png) i [pakowanie MaxR
 - [ ] M3-8. Na fizycznej drukarce w skali 100% wydrukować neutralne przykłady „Wyprawy terenowej”. Porównać podgląd, PDF i wydruk pod kątem wymiarów, kolejności, krawędzi i czytelności drobnego tekstu.
 - [ ] Ręczny odbiór M2c: oczekuje. Wykonać [listę z planu M2c](plan-M2c.md#4-etapy), w tym eksport w natywnym Safari.
 
+- [ ] Margines cięcia. Ustawić kalibrację X/Y na mieszanej kartce A4 poziomej. Sprawdzić w PNG, JPG i PDF, czy kreski i nożyczki mieszczą się co najmniej 5 mm od papieru. Porównać lewy i górny początek linii oraz brak ikon wewnątrz układu.
+
 ## 5. Zakres pierwszej wersji
 
 - Zestawy wbudowane z istniejących ozdobników, nazwane grupy w obrębie szablonu i wybór kolorów według wartości danych.
@@ -151,3 +153,4 @@ M4 obejmuje między innymi rewersy i druk dwustronny zgodnie ze specyfikacją. U
 | B256 | M3-7    | Walidacja                | Maksymalnie 8 MB pliku, 500 wierszy danych, 128 kolumn i 2000 sztuk na operację. Pusta ilość oznacza 1, a jawna ilość ma zakres 1–100. Nazwy obrazów porównujemy z uwzględnieniem liter po obcięciu białych znaków. Błąd mapowania wstrzymuje zapis.                          |
 | B257 | M3-7    | Talia i cofnięcie        | Import korzysta z typów dostępnych na wybranej kartce. W siatce dodaje przypięte egzemplarze i w razie potrzeby strony, a w trybie mieszanym dodaje jeden rekord na wiersz z nakładem. Cała partia to jedna zmiana w historii.                                                |
 | B258 | M3-8    | Odbiór                   | Trzy neutralne wzory składają się na jeden arkusz. Test pobiera PDF i sprawdza wygląd podglądu w czterech kombinacjach języka i motywu. Sprawdzenie wydruku fizycznego i ręczny odbiór M2c zostają na liście.                                                                 |
+| B259 | Arkusz  | Margines i początki cięć | Kartka mieszana i ręcznie przypinana rysuje nożyczki raz na dostępny zewnętrzny początek ciągłej linii, od lewej lub góry. Wspólna strefa zachowuje 5 mm przed i po kalibracji PDF. Ustalony znacznik gotowego arkusza zachowuje położenie, gdy mieści się w strefie.         |

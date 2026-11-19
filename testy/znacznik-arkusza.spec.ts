@@ -107,7 +107,7 @@ for (const pion of [false, true]) {
         els.map((e) => ['x1', 'y1', 'x2', 'y2'].map((a) => Number(e.getAttribute(a)))),
       );
     const przewodnia = pion
-      ? [stala, krawedz - 7, stala, krawedz]
+      ? [stala, 5 + 5.5, stala, krawedz]
       : [krawedz, stala, krawedz + 7, stala];
     expect(linie.some((l) => l.every((v, i) => Math.abs(v - przewodnia[i]!) < 0.002))).toBe(true);
 
