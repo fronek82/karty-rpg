@@ -67,16 +67,23 @@ async function otworz(page: Page, pion: boolean) {
 for (const pion of [false, true]) {
   test(`arkusz broni: jeden bezpieczny znacznik linii ${pion ? 'pionowej' : 'poziomej'}`, async ({
     page,
-  }, info) => {
+  }) => {
     test.setTimeout(60_000);
     await page.setViewportSize({ width: 1440, height: 1000 });
     await otworz(page, pion);
     const plansza = page.locator('.strona-kartki').first();
-    const svg = plansza.locator('svg.svg-strony');
+    const scena = plansza.locator('.svg-opakowanie');
+    const svg = scena.locator('svg.svg-strony');
     const nazwa = pion ? 'znacznik-pionowy.png' : 'znacznik-poziomy.png';
-    if (process.env.ZRZUT_ZNACZNIKA_PRZED)
-      await plansza.screenshot({ path: info.outputPath(nazwa) });
-    await expect(plansza).toHaveScreenshot(nazwa, { maxDiffPixels: 25 });
+    // Przycisk pustego slotu może pojawić się pod kursorem po otwarciu kartki.
+    const nakladka = await page.addStyleTag({
+      content: '.strona-kartki > .warstwa { visibility: hidden }',
+    });
+    if (process.env.ZRZUT_ZNACZNIKA_PRZED) await scena.screenshot({ path: info.outputPath(nazwa) });
+    await expect(scena).toHaveScreenshot(nazwa, { maxDiffPixels: 25 });
+    await nakladka.evaluate((e) => {
+      e.parentNode?.removeChild(e);
+    });
     const ikona = svg.locator(`path[d="${d}"]`);
     await expect(ikona).toHaveCount(1);
     const punkt = await ikona.evaluate((e: SVGPathElement) => {
