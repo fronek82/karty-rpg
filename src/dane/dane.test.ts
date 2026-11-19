@@ -21,7 +21,7 @@ import { MAKS_BAJTOW_CZCIONKI, wariantCzcionki, wgrajCzcionke } from './czcionki
 import { projektZPakietu, rejestrZProjektu } from './pakiet';
 import { BladDanych, MIGRACJE, migruj, ostrzezeniaProjektu, przygotujProjekt } from './schemat';
 import { szablonCzaru, szablonStatystyk, szablonWroga } from '../silnik/__testy__/przyklady';
-import { nowyWezel, zastosujZestawStylu } from './szablon';
+import { nowyWezel, utworzGrupeStylu, zastosujZestawStylu, zmienGrupeStylu } from './szablon';
 
 const czcionka = async (plik: string) => new Uint8Array(readFileSync(`public/czcionki/${plik}`));
 const obraz = async () =>
@@ -143,10 +143,10 @@ describe('projekt z pakietu', () => {
 });
 
 describe('eksport i import .kartyrpg', () => {
-  it('migruje projekt 16 do wersji 17 i zachowuje dotychczasowe arkusze pakietu', () => {
+  it('migruje projekt 16 do aktualnej wersji i zachowuje dotychczasowe arkusze pakietu', () => {
     const stary = { ...projekt, wersja: 16 };
     const wczytany = importujProjekt(eksportujProjekt(stary, zasoby)).projekt;
-    expect(wczytany).toEqual({ ...projekt, wersja: 17 });
+    expect(wczytany).toEqual(projekt);
     expect(wczytany.arkusze).toEqual(stary.arkusze);
     expect(migruj({ wersja: 16 }, 'szablon', 17)).toEqual({ wersja: 17 });
   });
@@ -598,6 +598,57 @@ describe('wgrywanie czcionek', () => {
 });
 
 describe('eksport i import szablonu', () => {
+  it('M3-2: migruje stare projekty i szablony bez dopisywania reguł', () => {
+    const stary = { ...projekt, wersja: 17 };
+    expect(przygotujProjekt(stary)).toEqual(projekt);
+    const id = projekt.szablony[0]!.id;
+    expect(importujSzablon(eksportujSzablon(stary, zasoby, id).bajty).szablon).toEqual(
+      projekt.szablony[0],
+    );
+  });
+
+  it('M3-2: paczka zachowuje niezależną grupę, regułę koloru i czcionkę grupy', () => {
+    const wzor = projekt.szablony[0]!;
+    const pole = nowyWezel(wzor, 'tekst', 'Nazwa');
+    let szablon = utworzGrupeStylu(
+      {
+        ...wzor,
+        korzen: { ...wzor.korzen, dzieci: [pole] },
+        tloZDanych: {
+          klucz: 'nazwa',
+          domyslny: '#ffffff',
+          mapa: [{ wartosc: 'Noc', kolor: '#443366' }],
+        },
+      },
+      pole.id,
+      'Wspólny',
+    );
+    const grupa = szablon.grupyStylow![0]!;
+    const font = projekt.zasoby.find(
+      (z) => z.rodzaj === 'czcionka' && z.rodzina !== projekt.role.tresc,
+    )!;
+    if (font.rodzaj !== 'czcionka') throw new Error('Brak czcionki testowej');
+    szablon = zmienGrupeStylu(szablon, grupa.id, {
+      styl: (st) => ({ ...st, czcionka: font.rodzina }),
+    });
+    const p = { ...projekt, szablony: [szablon], arkusze: [], talie: [] };
+    const paczka = importujSzablon(eksportujSzablon(p, zasoby, szablon.id).bajty);
+    expect(paczka.szablon).toEqual(szablon);
+    expect(paczka.zasoby.some((z) => z.id === font.id)).toBe(true);
+    const dodany = dodajSzablon(p, zasoby, paczka);
+    expect(dodany.szablonId).not.toBe(szablon.id);
+    expect(dodany.projekt.szablony).toEqual([szablon, { ...szablon, id: dodany.szablonId }]);
+    expect(
+      importujProjekt(
+        eksportujProjekt({ ...projekt, szablony: [szablon, ...projekt.szablony.slice(1)] }, zasoby),
+      ).projekt.szablony[0],
+    ).toEqual(szablon);
+    const konflikt = { ...p, szablony: [{ ...szablon, grupyStylow: [grupa, grupa] }] };
+    expect(() => importujSzablon(eksportujSzablon(konflikt, zasoby, szablon.id).bajty)).toThrow(
+      BladDanych,
+    );
+  });
+
   it('szablon po zastosowaniu zestawu stylu przechodzi eksport i import', () => {
     const wzor = projekt.szablony.find((s) => s.id === 'mausritter-bron')!;
     const wariant = wzor.warianty![0]!;

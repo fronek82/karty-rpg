@@ -2,6 +2,11 @@ import { pt, type Mm } from '../model/jednostki';
 import type { Projekt } from '../model/projekt';
 import {
   czyKontener,
+  type StylTekstu,
+  type PoleZeStylem,
+  stylPola,
+  znajdzGrupeStylu,
+  maStylTekstu,
   kluczeTabeli,
   rozwinOdstepy,
   ulamkiKotwicy,
@@ -262,6 +267,109 @@ export function zastosujZestawStylu(s: Szablon, zestaw: WbudowanyZestawStylu): S
   )
     return s;
   return { ...s, ramka, korzen, ...(warianty ? { warianty } : {}) };
+}
+
+function mapujUklady(s: Szablon, f: (w: Wezel) => Wezel): Szablon {
+  const mapujKorzen = (korzen: Kontener) => mapuj(korzen, f) as Kontener;
+  return {
+    ...s,
+    korzen: mapujKorzen(s.korzen),
+    ...(s.warianty
+      ? { warianty: s.warianty.map((w) => ({ ...w, korzen: mapujKorzen(w.korzen) })) }
+      : {}),
+  };
+}
+
+function odlaczStyl(w: PoleZeStylem, styl: StylTekstu): Wezel {
+  const pole = { ...w, styl };
+  delete pole.grupaStyluId;
+  return pole;
+}
+
+type WymiaryWariantu = Pick<NonNullable<Szablon['warianty']>[number], 'kolumny' | 'rzedy'>;
+
+function indeksWariantu(s: Szablon, rozmiar: WymiaryWariantu): number {
+  return (
+    s.warianty?.findIndex((w) => w.kolumny === rozmiar.kolumny && w.rzedy === rozmiar.rzedy) ?? -1
+  );
+}
+
+export function przypiszGrupeStylu(
+  s: Szablon,
+  id: string,
+  grupaId: string,
+  wariant?: WymiaryWariantu,
+): Szablon {
+  if (grupaId && !znajdzGrupeStylu(s, grupaId)) return s;
+  const indeks = wariant ? indeksWariantu(s, wariant) : -1;
+  const korzen = wariant ? s.warianty?.[indeks]?.korzen : s.korzen;
+  if (!korzen) return s;
+  const w = [...wezly(korzen)].find((x) => x.id === id);
+  if (!w || !maStylTekstu(w) || (w.grupaStyluId ?? '') === grupaId) return s;
+  const pole = grupaId ? { ...w, grupaStyluId: grupaId } : odlaczStyl(w, stylPola(s, w));
+  const nowy = mapuj(korzen, (x) => (x.id === id ? pole : x)) as Kontener;
+  if (!wariant) return { ...s, korzen: nowy };
+  return {
+    ...s,
+    warianty: s.warianty!.map((x, i) => (i === indeks ? { ...x, korzen: nowy } : x)),
+  };
+}
+
+export function utworzGrupeStylu(
+  s: Szablon,
+  idPola: string,
+  nazwa: string,
+  wariant?: WymiaryWariantu,
+): Szablon {
+  const korzen = wariant ? s.warianty?.[indeksWariantu(s, wariant)]?.korzen : s.korzen;
+  const w = korzen && [...wezly(korzen)].find((x) => x.id === idPola);
+  if (!w || !maStylTekstu(w)) return s;
+  const grupy = s.grupyStylow ?? [];
+  const zajete = new Set(grupy.map((g) => g.id));
+  for (const pole of wszystkieWezly(s))
+    if (maStylTekstu(pole) && pole.grupaStyluId) zajete.add(pole.grupaStyluId);
+  const id = unikalneId('styl', zajete);
+  const nowa = {
+    id,
+    nazwa: unikalneId(nazwa, new Set(grupy.map((g) => g.nazwa))),
+    styl: stylPola(s, w),
+  };
+  return przypiszGrupeStylu({ ...s, grupyStylow: [...grupy, nowa] }, idPola, id, wariant);
+}
+
+export function zmienGrupeStylu(
+  s: Szablon,
+  id: string,
+  zmiana: { nazwa: string } | { styl: (styl: StylTekstu) => StylTekstu },
+): Szablon {
+  const grupa = znajdzGrupeStylu(s, id);
+  if (!grupa) return s;
+  const grupy = s.grupyStylow ?? [];
+  const nowa =
+    'nazwa' in zmiana
+      ? {
+          ...grupa,
+          nazwa: unikalneId(
+            zmiana.nazwa.trim() || grupa.nazwa,
+            new Set(grupy.filter((g) => g.id !== id).map((g) => g.nazwa)),
+          ),
+        }
+      : { ...grupa, styl: zmiana.styl(grupa.styl) };
+  if (nowa.nazwa === grupa.nazwa && nowa.styl === grupa.styl) return s;
+  return { ...s, grupyStylow: grupy.map((g) => (g.id === id ? nowa : g)) };
+}
+
+/** Usuwa grupę i zachowuje jej wygląd we wszystkich polach, także w wariantach. */
+export function usunGrupeStylu(s: Szablon, id: string): Szablon {
+  const g = znajdzGrupeStylu(s, id);
+  if (!g) return s;
+  const wynik = mapujUklady(s, (w) =>
+    maStylTekstu(w) && w.grupaStyluId === id ? odlaczStyl(w, g.styl) : w,
+  );
+  const grupy = (s.grupyStylow ?? []).filter((grupa) => grupa.id !== id);
+  if (grupy.length) wynik.grupyStylow = grupy;
+  else delete wynik.grupyStylow;
+  return wynik;
 }
 
 /** Węzeł o identyfikatorze (w korzeniu szablonu). */
@@ -765,8 +873,10 @@ export function zmienTypPola(
       if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.tekst !== undefined) x.tekst = w.tekst;
     }
   }
-  if ('styl' in w && 'styl' in x && typeof w.styl === 'object' && typeof x.styl === 'object')
-    (x as { styl: unknown }).styl = w.styl;
+  if (maStylTekstu(w) && maStylTekstu(x)) {
+    x.styl = w.styl;
+    if (w.grupaStyluId) x.grupaStyluId = w.grupaStyluId;
+  }
   if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta) {
     if (x.typ === 'tekst') x.etykieta = w.etykieta;
     if (x.typ === 'wartosc')
@@ -962,10 +1072,11 @@ const WYGLAD_TYPU = [
   'odstep',
 ] as const;
 
-export function skopiujStyl(w: Wezel): SkopiowanyStyl {
+export function skopiujStyl(w: Wezel, szablon?: Szablon): SkopiowanyStyl {
   const x: SkopiowanyStyl = { typ: w.typ };
   const z = w as unknown as Record<string, unknown>;
   for (const k of [...WYGLAD, ...WYGLAD_TYPU]) if (z[k] !== undefined) x[k] = structuredClone(z[k]);
+  if (szablon && maStylTekstu(w)) x.styl = structuredClone(stylPola(szablon, w));
   if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta?.styl)
     x.stylEtykiety = structuredClone(w.etykieta.styl);
   return x;
@@ -990,6 +1101,7 @@ export function wklejStyl(w: Wezel, st: SkopiowanyStyl): Wezel {
     if (st[k] !== undefined) x[k] = structuredClone(st[k]);
     else if (ten) delete x[k];
   }
+  if (maStylTekstu(w) && st.styl !== undefined) delete x.grupaStyluId;
   if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta) {
     const e = { ...w.etykieta };
     if (st.stylEtykiety !== undefined) e.styl = structuredClone(st.stylEtykiety) as typeof e.styl;

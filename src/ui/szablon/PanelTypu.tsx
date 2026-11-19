@@ -5,6 +5,9 @@ import {
   kluczeTabeli,
   type KolumnaTabeli,
   type NazwaIkony,
+  znajdzGrupeStylu,
+  maStylTekstu,
+  stylPola,
   type Pole,
   type PoleObraz,
   type PoleTabela,
@@ -67,6 +70,7 @@ export function PanelTypu({
     klucz?: string,
   ) =>
     zmien((w) => {
+      if (k === 'styl' && maStylTekstu(w) && znajdzGrupeStylu(szablon, w.grupaStyluId)) return w;
       const x = { ...w } as Record<string, unknown>;
       x[k] = f((x[k] as Partial<StylTekstu> | undefined) ?? {});
       return x as unknown as Wezel;
@@ -78,7 +82,7 @@ export function PanelTypu({
       return n as unknown as Wezel;
     }, klucz);
   const styl =
-    'styl' in pole && typeof pole.styl === 'object' ? (
+    maStylTekstu(pole) && !znajdzGrupeStylu(szablon, pole.grupaStyluId) ? (
       <Sekcja tytul={t('wlasciwosci.styl')} otwarta={pole.typ === 'tekst'}>
         <PanelStylu
           styl={pole.styl}
@@ -595,21 +599,23 @@ function PanelTabeli({
           />
         )}
       </Sekcja>
-      <Sekcja tytul={t('wlasciwosci.styl')}>
-        <PanelStylu
-          styl={tabela.styl}
-          czcionki={czcionki}
-          akapity={false}
-          domyslne={{ wyrownanie: 'srodek' }}
-          wyrownaniePionowe={false}
-          zmien={(f) => zmienStyl('styl', f, `styl:${id}`)}
-        />
-      </Sekcja>
+      {!znajdzGrupeStylu(szablon, tabela.grupaStyluId) && (
+        <Sekcja tytul={t('wlasciwosci.styl')}>
+          <PanelStylu
+            styl={tabela.styl}
+            czcionki={czcionki}
+            akapity={false}
+            domyslne={{ wyrownanie: 'srodek' }}
+            wyrownaniePionowe={false}
+            zmien={(f) => zmienStyl('styl', f, `styl:${id}`)}
+          />
+        </Sekcja>
+      )}
       {tabela.naglowki !== false && (
         <Sekcja tytul={t('tabela.stylNaglowkow')}>
           <PanelStylu
             styl={tabela.stylNaglowka ?? {}}
-            bazowy={{ ...tabela.styl, wariant: 'pogrubiony' }}
+            bazowy={{ ...stylPola(szablon, tabela), wariant: 'pogrubiony' }}
             czcionki={czcionki}
             akapity={false}
             domyslne={{ wyrownanie: 'srodek' }}

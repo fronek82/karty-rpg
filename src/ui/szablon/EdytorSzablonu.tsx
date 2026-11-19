@@ -53,6 +53,8 @@ import { DrzewoSzablonu, nazwaWezla } from './DrzewoSzablonu';
 import { PozycjeMenuDodaj } from './PozycjeMenuDodaj';
 import { Liczba, Sekcja } from './Kontrolki';
 import { PanelWezla } from './PanelWezla';
+import { GrupyStylow } from './GrupyStylow';
+import { KolorZDanych } from './KolorZDanych';
 import { PoleRamki } from './PanelWygladu';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWyrownania } from './PanelWyrownania';
@@ -790,7 +792,10 @@ export function EdytorSzablonu({
                     : nazwaWezla(edytowany)}
                 </h2>
                 <p className="akcje-stylu">
-                  <button type="button" onClick={() => ustawSchowek(skopiujStyl(edytowany))}>
+                  <button
+                    type="button"
+                    onClick={() => ustawSchowek(skopiujStyl(edytowany, szablon))}
+                  >
                     {t('wlasciwosci.kopiujStyl')}
                   </button>
                   <button
@@ -813,6 +818,7 @@ export function EdytorSzablonu({
                   key={aktywne.join(',')}
                   szablon={szablon}
                   wezel={edytowany}
+                  zmienSzablon={zmienSz}
                   wiele={aktywne.length > 1}
                   wymiary={wymiary(edytowany.id)}
                   czcionki={czcionki}
@@ -882,12 +888,14 @@ export function EdytorSzablonu({
                     return true;
                   }}
                 />
+                <GrupyStylow szablon={szablon} czcionki={czcionki} zmien={zmienSz} />
                 {/* Kontener całej karty: odstępy, rozłożenie, wygląd (jak każdy kontener). */}
                 <Sekcja tytul={t('wlasciwosci.ukladKarty')}>
                   <PanelWezla
                     key={szablon.korzen.id}
                     szablon={szablon}
                     wezel={szablon.korzen}
+                    zmienSzablon={zmienSz}
                     wymiary={wymiary(szablon.korzen.id)}
                     mozeNaSwobodny={!!uklad}
                     czcionki={czcionki}
@@ -979,6 +987,22 @@ function PanelKarty({
           />
         </label>
       </div>
+      <KolorZDanych
+        szablon={szablon}
+        {...(szablon.tloZDanych ? { regula: szablon.tloZDanych } : {})}
+        kolor={szablon.tlo ?? '#ffffff'}
+        zmien={(v, klucz) =>
+          zmienSz(
+            (s) => {
+              const x = { ...s };
+              if (v) x.tloZDanych = v;
+              else delete x.tloZDanych;
+              return x;
+            },
+            klucz && `kolor-karty:${klucz}`,
+          )
+        }
+      />
       <Sekcja tytul={t('zestawy.tytul')}>
         <p className="podpis">{t('zestawy.opis')}</p>
         <div className="dwa-pola">

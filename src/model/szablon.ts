@@ -3,6 +3,16 @@ import type { Mm } from './jednostki';
 /** Kolor w zapisie `#rrggbb`. */
 export type Kolor = string;
 
+/** Domyślne kolory dokumentu, wspólne dla obu motywów interfejsu. */
+export const DOMYSLNE_TLO_KARTY: Kolor = '#ffffff';
+export const DOMYSLNY_KOLOR_TEKSTU: Kolor = '#000000';
+
+export interface KolorZDanych {
+  klucz: string;
+  domyslny: Kolor;
+  mapa: { wartosc: string; kolor: Kolor }[];
+}
+
 /**
  * Rozmiar elementu wzdłuż jednej osi:
  * - `{ mm }` – stały,
@@ -197,6 +207,7 @@ interface WezelBazowy {
 export interface Kontener extends WezelBazowy {
   typ: 'wiersz' | 'kolumna' | 'warstwy' | 'swobodny';
   dzieci: Wezel[];
+  tloZDanych?: KolorZDanych;
   /** Odstęp między dziećmi (mm). */
   odstep?: Mm;
   /** Rozłożenie dzieci w osi głównej, gdy zostaje wolne miejsce. */
@@ -260,6 +271,7 @@ export interface PoleTekst extends PoleBazowe {
   /** Tekst stały (gdy brak klucza) albo domyślny (gdy w danych pusto). */
   tekst?: NapisSzablonu;
   styl: StylTekstu;
+  grupaStyluId?: string;
   /** Łamanie na wiele wierszy (domyślnie tak). */
   wieleWierszy?: boolean;
   etykieta?: {
@@ -269,6 +281,7 @@ export interface PoleTekst extends PoleBazowe {
      */
     pozycja: 'nad' | 'przed' | 'pod';
     styl?: Partial<StylTekstu>;
+    kolorZDanych?: KolorZDanych;
   };
   /**
    * Formatowanie w treści (domyślnie włączone): `**pogrubienie**`, `*kursywa*`,
@@ -282,6 +295,7 @@ export interface PoleWartosc extends PoleBazowe {
   typ: 'wartosc';
   tekst?: NapisSzablonu;
   styl: StylTekstu;
+  grupaStyluId?: string;
   /** `sciety` – prostokąt ze ściętymi rogami (wielkość ścięcia w `promien`). */
   ksztalt: KsztaltWartosci;
   /**
@@ -294,6 +308,7 @@ export interface PoleWartosc extends PoleBazowe {
     tekst: NapisSzablonu;
     pozycja: 'nad' | 'pod';
     styl?: Partial<StylTekstu>;
+    kolorZDanych?: KolorZDanych;
     /** Odstęp między etykietą a kształtem (mm, domyślnie 0,5). */
     odstep?: Mm;
   };
@@ -358,6 +373,7 @@ export interface PoleWpis extends PoleBazowe {
   typ: 'wpis';
   sufiks?: NapisSzablonu;
   styl: StylTekstu;
+  grupaStyluId?: string;
 }
 
 export type NazwaIkony = 'gwiazdka' | 'nozyczki';
@@ -414,6 +430,7 @@ export interface PoleTabela extends PoleBazowe {
   naglowki?: boolean;
   /** Styl wartości; nagłówki – ten sam z nadpisaniami `stylNaglowka` (domyślnie pogrubiony). */
   styl: StylTekstu;
+  grupaStyluId?: string;
   stylNaglowka?: Partial<StylTekstu>;
   tloNaglowka?: Kolor;
   /** Linie siatki; `zewnetrzne: false` – bez obwódki tabeli. */
@@ -479,6 +496,12 @@ export interface PodkladSzablonu {
   widoczny: boolean;
 }
 
+export interface GrupaStylu {
+  id: string;
+  nazwa: string;
+  styl: StylTekstu;
+}
+
 export interface Szablon {
   id: string;
   /** Napisy stałe z wartościami domyślnymi (np. „Usunięcie:”, „/ 250p”). */
@@ -487,6 +510,8 @@ export interface Szablon {
   rozmiar: RozmiarKarty;
   promienRogow?: Mm;
   tlo?: Kolor;
+  tloZDanych?: KolorZDanych;
+  grupyStylow?: GrupaStylu[];
   /** Dane przykładowe do podglądu w edytorze szablonu (klucz pola → wartość). */
   przyklad?: Record<string, string>;
   /** Ramka całej karty – linia w odległości `odsuniecie` od krawędzi (0 = po krawędzi). */
@@ -577,6 +602,21 @@ export function rozwinOdstepy(o: Mm | Partial<Odstepy> | undefined): Odstepy {
   if (o === undefined) return { gora: 0, prawo: 0, dol: 0, lewo: 0 };
   if (typeof o === 'number') return { gora: o, prawo: o, dol: o, lewo: o };
   return { gora: o.gora ?? 0, prawo: o.prawo ?? 0, dol: o.dol ?? 0, lewo: o.lewo ?? 0 };
+}
+
+export type PoleZeStylem = PoleTekst | PoleWartosc | PoleWpis | PoleTabela;
+
+export function maStylTekstu(w: Wezel): w is PoleZeStylem {
+  return w.typ === 'tekst' || w.typ === 'wartosc' || w.typ === 'wpis' || w.typ === 'tabela';
+}
+
+export function znajdzGrupeStylu(s: Szablon, id: string | undefined): GrupaStylu | undefined {
+  return s.grupyStylow?.find((g) => g.id === id);
+}
+
+/** Własny styl pola jest też rezerwą po wczytaniu szablonu z brakującą grupą. */
+export function stylPola(s: Szablon, w: PoleZeStylem): StylTekstu {
+  return znajdzGrupeStylu(s, w.grupaStyluId)?.styl ?? w.styl;
 }
 
 /** Wszystkie style tekstu pola (główny, etykiety, nagłówki tabeli) – np. do zebrania czcionek. */

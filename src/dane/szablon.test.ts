@@ -4,6 +4,8 @@ import {
   czyKontener,
   kluczeTabeli,
   korzenKarty,
+  maStylTekstu,
+  stylPola,
   type Kontener,
   type PoleSeparator,
   type Szablon,
@@ -33,6 +35,10 @@ import {
   wklejStyl,
   wszystkieWezly,
   zastosujZestawStylu,
+  przypiszGrupeStylu,
+  utworzGrupeStylu,
+  usunGrupeStylu,
+  zmienGrupeStylu,
   zmienSzablon,
   zmienTypKontenera,
   zmienTypPola,
@@ -541,4 +547,63 @@ it('kopia szablonu ma odrębne węzły, jego obraz omija skopiowany tekst', () =
       n === 1 ? '(kopia)' : `(kopia ${n})`,
     ),
   ).toBe('Moja karta (kopia 2)');
+});
+
+it('M3-2: zmiana grupy działa dla wielu pól, a odłączenie przenosi ostatni styl do pola', () => {
+  const s = pusty();
+  const a = nowyWezel(s, 'tekst', 'Nazwa');
+  const b = nowyWezel(s, 'wartosc', 'Poziom');
+  let szablon = utworzGrupeStylu(
+    { ...s, korzen: { ...s.korzen, dzieci: [a, b] } },
+    a.id,
+    'Wspólny',
+  );
+  const id = szablon.grupyStylow![0]!.id;
+  szablon = przypiszGrupeStylu(szablon, b.id, id);
+  szablon = zmienGrupeStylu(szablon, id, {
+    styl: (st) => ({ ...st, rozmiar: 5, kolor: '#ff0000' }),
+  });
+  const pola = szablon.korzen.dzieci.filter(maStylTekstu);
+  expect(pola.map((w) => stylPola(szablon, w).kolor)).toEqual(['#ff0000', '#ff0000']);
+  szablon = przypiszGrupeStylu(szablon, b.id, '');
+  szablon = zmienGrupeStylu(szablon, id, { styl: (st) => ({ ...st, kolor: '#00ff00' }) });
+  const odlaczone = usunGrupeStylu(szablon, id);
+  expect(odlaczone.grupyStylow).toBeUndefined();
+  expect(
+    odlaczone.korzen.dzieci.filter(maStylTekstu).map((p) => [p.grupaStyluId, p.styl.kolor]),
+  ).toEqual([
+    [undefined, '#00ff00'],
+    [undefined, '#ff0000'],
+  ]);
+});
+
+it('M3-2: przypisanie w wariancie omija pole o tym samym ID w głównym układzie', () => {
+  const s = pusty();
+  const a = nowyWezel(s, 'tekst', 'Nazwa');
+  const w = { ...a, grupaStyluId: 'styl' };
+  const rozmiar = { kolumny: 1, rzedy: 2 };
+  const przed: Szablon = {
+    ...s,
+    rozmiar: { tryb: 'sloty', slot: { szerokosc: 63, wysokosc: 44 }, kolumny: 1, rzedy: 1 },
+    korzen: { ...s.korzen, dzieci: [w] },
+    warianty: [{ ...rozmiar, korzen: { ...s.korzen, dzieci: [a] } }],
+  };
+  const dodano = utworzGrupeStylu(przed, a.id, 'Wariant', rozmiar);
+  const grupa = dodano.grupyStylow![0]!;
+  expect(grupa.id).not.toBe('styl');
+  expect(dodano.korzen).toBe(przed.korzen);
+  expect(korzenKarty(dodano, { rozmiar }).dzieci[0]).toMatchObject({ grupaStyluId: grupa.id });
+
+  const zmieniono = zmienGrupeStylu(dodano, grupa.id, {
+    styl: (st) => ({ ...st, kolor: '#aa0000' }),
+  });
+  for (const wynik of [
+    przypiszGrupeStylu(zmieniono, a.id, '', rozmiar),
+    usunGrupeStylu(zmieniono, grupa.id),
+  ]) {
+    const pole = korzenKarty(wynik, { rozmiar }).dzieci[0]!;
+    expect(pole).not.toHaveProperty('grupaStyluId');
+    expect(pole).toMatchObject({ styl: { kolor: '#aa0000' } });
+    expect(wynik.korzen.dzieci[0]).toBe(w);
+  }
 });
