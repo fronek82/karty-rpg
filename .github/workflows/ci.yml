@@ -32,9 +32,11 @@ jobs:
         run: npm run typecheck
       - name: Testy jednostkowe
         run: npm test
-      - name: Przeglądarka do testów e2e
-        run: npx playwright install --with-deps chromium
+      - name: Przeglądarki do testów e2e
+        run: npx playwright install --with-deps chromium firefox webkit
       - name: Testy e2e
+        env:
+          EKSPORT_PRZEGLADARKI: '1'
         run: npm run e2e
       - name: Raport Playwright przy błędzie
         if: failure()

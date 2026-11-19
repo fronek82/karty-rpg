@@ -17,7 +17,23 @@ export default defineConfig({
     // Domyślny język przeglądarki w testach – polski (interfejs wybiera język z navigator.language).
     locale: 'pl-PL',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    ...(process.env.EKSPORT_PRZEGLADARKI === '1'
+      ? [
+          {
+            name: 'firefox',
+            use: { ...devices['Desktop Firefox'] },
+            testMatch: '**/eksport-przegladarki.spec.ts',
+          },
+          {
+            name: 'webkit',
+            use: { ...devices['Desktop Safari'] },
+            testMatch: '**/eksport-przegladarki.spec.ts',
+          },
+        ]
+      : []),
+  ],
   webServer: {
     command: `npm run build && npm run preview -- --port ${port} --strictPort`,
     url: `http://localhost:${port}/karty-rpg/`,

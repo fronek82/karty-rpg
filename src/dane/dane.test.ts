@@ -97,6 +97,28 @@ const rowne = (a: DaneZasobow, b: DaneZasobow) => {
   for (const [id, dane] of a) expect(Buffer.from(b.get(id)!).equals(Buffer.from(dane))).toBe(true);
 };
 
+it('odczytuje starszą paczkę zapisaną jako Blob obok nowych paczek z tablicą bajtów', async () => {
+  const nazwa = 'test-migracji-paczek';
+  const stara = new Dexie(nazwa);
+  stara.version(4).stores({
+    projekty: 'id, zmieniono',
+    zasoby: '[projektId+id], projektId',
+    miniatury: 'id',
+    uklady: 'id, nazwa',
+    bibliotekaGlobalna: 'id, rodzaj',
+    paczkiBiblioteki: 'id',
+  });
+  const stare = Uint8Array.of(1, 2, 3);
+  await stara.table('paczkiBiblioteki').add({ id: 'starsza', dane: new Blob([stare]) });
+  stara.close();
+  const baza = new BazaProjektow(nazwa);
+  const nowe = Uint8Array.of(4, 5, 6);
+  await baza.zapiszWBibliotece('szablon', 'Nowa', nowe);
+  const [wpis] = await baza.bibliotekaGlobalna('szablon');
+  expect(await baza.odczytajZBiblioteki('starsza')).toEqual(stare);
+  expect(await baza.odczytajZBiblioteki(wpis!.id)).toEqual(nowe);
+});
+
 describe('projekt z pakietu', () => {
   it('ma zasoby z biblioteki, role i unikalne id czcionek w silniku', () => {
     expect(projekt.role).toEqual({ tytul: 'Grenze Gotisch', tresc: 'EB Garamond' });

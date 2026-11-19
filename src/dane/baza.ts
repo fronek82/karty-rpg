@@ -2,18 +2,24 @@ import Dexie, { type EntityTable } from 'dexie';
 import { t } from '../i18n';
 import type { PresetUkladu } from '../model/arkusz';
 import type { DaneZasobow, Projekt } from '../model/projekt';
-import { BladDanych, presetUkladu, przygotujProjekt } from './schemat';
+import {
+  BladDanych,
+  migrujBajtyBazy,
+  presetUkladu,
+  przygotujProjekt,
+  type BajtyWBazie,
+} from './schemat';
 
 interface WpisZasobu {
   projektId: string;
   id: string;
-  dane: Blob;
+  dane: BajtyWBazie;
 }
 
 interface WpisProjektu {
   id: string;
   zmieniono: string;
-  /** Projekt jako obiekt – bez bajtów zasobów (te są w osobnej tabeli jako Blob). */
+  /** Projekt jako obiekt. Bajty zasobów są w osobnej tabeli. */
   projekt: Projekt;
 }
 
@@ -40,7 +46,7 @@ export interface WpisBibliotekiGlobalnej {
 
 class BazaDexie extends Dexie {
   bibliotekaGlobalna!: EntityTable<WpisBibliotekiGlobalnej, 'id'>;
-  paczkiBiblioteki!: EntityTable<{ id: string; dane: Blob }, 'id'>;
+  paczkiBiblioteki!: EntityTable<{ id: string; dane: BajtyWBazie }, 'id'>;
   projekty!: EntityTable<WpisProjektu, 'id'>;
   zasoby!: Dexie.Table<WpisZasobu, [string, string]>;
   miniatury!: EntityTable<WpisMiniatury, 'id'>;
@@ -72,7 +78,7 @@ class BazaDexie extends Dexie {
   }
 }
 
-/** Projekty zapisane lokalnie w IndexedDB. Zasoby binarne trzymane jako Blob. */
+/** Projekty z zasobami i globalne paczki zapisane lokalnie w IndexedDB. */
 export class BazaProjektow {
   private readonly db: BazaDexie;
 
@@ -149,14 +155,14 @@ export class BazaProjektow {
     const { bibliotekaGlobalna, paczkiBiblioteki } = this.db;
     await this.db.transaction('rw', bibliotekaGlobalna, paczkiBiblioteki, async () => {
       await bibliotekaGlobalna.add({ id, rodzaj, nazwa });
-      await paczkiBiblioteki.add({ id, dane: new Blob([bajty as Uint8Array<ArrayBuffer>]) });
+      await paczkiBiblioteki.add({ id, dane: bajty });
     });
   }
 
   async odczytajZBiblioteki(id: string): Promise<Uint8Array> {
     const paczka = await this.db.paczkiBiblioteki.get(id);
     if (!paczka) throw new BladDanych(t('globalna.brakWpisu'));
-    return new Uint8Array(await paczka.dane.arrayBuffer());
+    return migrujBajtyBazy(paczka.dane);
   }
 
   async usunZBiblioteki(id: string): Promise<void> {
@@ -175,7 +181,7 @@ export class BazaProjektow {
    * Zapisuje projekt (po walidacji – do bazy nie trafi projekt, którego nie da się otworzyć).
    * Z `zasoby` – zastępuje wszystkie zasoby projektu (każdy opisany zasób musi mieć bajty);
    * bez – zmienia tylko dokument projektu (np. edycja karty), a każdy opisany zasób musi już
-   * być w bazie. Nieużywane Bloby są usuwane.
+   * być w bazie. Nieużywane zasoby są usuwane.
    */
   async zapisz(projekt: Projekt, zasoby?: DaneZasobow): Promise<void> {
     przygotujProjekt(projekt);
@@ -194,7 +200,7 @@ export class BazaProjektow {
           [...opisane].map((id) => ({
             projektId: projekt.id,
             id,
-            dane: new Blob([zasoby.get(id) as Uint8Array<ArrayBuffer>]),
+            dane: zasoby.get(id)!,
           })),
         );
       } else {
@@ -226,7 +232,7 @@ export class BazaProjektow {
     const projekt = przygotujProjekt(wpis.projekt);
     // Odczyt Blobów poza transakcją (await na nie-IDB zamknąłby transakcję Dexie).
     const zasoby: DaneZasobow = new Map();
-    for (const w of wpisy) zasoby.set(w.id, new Uint8Array(await w.dane.arrayBuffer()));
+    for (const w of wpisy) zasoby.set(w.id, await migrujBajtyBazy(w.dane));
     for (const opis of projekt.zasoby) {
       if (!zasoby.has(opis.id)) throw new BladDanych(t('dane.brakZasobu', { id: opis.id }));
     }
