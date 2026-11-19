@@ -172,6 +172,8 @@ const pole = z.discriminatedUnion('typ', [
       }),
     ),
     formatowanie: opc(z.boolean()),
+    listyNumerowane: opc(z.boolean()),
+    ikonyWTekscie: opc(z.boolean()),
   }),
   obj({
     ...bazaPola,
@@ -723,6 +725,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 15→16: `Szablon.podklad` (podkład ze wzoru w edytorze) – bez zmian danych.
   // 16→17: opcjonalny `Arkusz.wlasnySzablonId` – stare arkusze zachowują typy pakietu.
   // 17→18: grupy stylów i reguły kolorów są opcjonalne. Dotychczasowe style i kolory zostają lokalne.
+  // 18→19: opcjonalne listy i ikony w polach tekstowych. Zapisany tekst bez tych ustawień jest dosłowny.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -741,6 +744,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     15: (d) => d,
     16: (d) => d,
     17: (d) => d,
+    18: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -760,6 +764,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     15: (d) => d,
     16: (d) => d,
     17: (d) => d,
+    18: (d) => d,
   },
 };
 

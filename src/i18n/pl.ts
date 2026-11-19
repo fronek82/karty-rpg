@@ -667,6 +667,10 @@ export const pl = {
   'wlasciwosci.gdyPuste.ukryj': 'ukryj i zwiń',
   'wlasciwosci.styl': 'Styl tekstu',
   'wlasciwosci.wieleWierszy': 'Łam tekst na wiele wierszy',
+  'wlasciwosci.listyNumerowane': 'Listy numerowane',
+  'wlasciwosci.ikonyWTekscie': 'Ikony w tekście',
+  'wlasciwosci.notacjaPomoc':
+    'Przykłady zapisu: 1. Treść, :star: i :scissors:. Numer zacznij w nowym wierszu.',
   'wlasciwosci.formatowanie': 'Formatowanie **pogrubienie**, *kursywa*',
   'wlasciwosci.ksztalt': 'Kształt',
   'wlasciwosci.sufiks': 'Stały dopisek (np. „/ 10”)',

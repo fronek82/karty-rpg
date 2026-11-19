@@ -34,9 +34,15 @@ export interface Porownanie {
   ciemnePdf: number;
 }
 
-export async function porownaj(page: Page, svg: string, pdf: Uint8Array): Promise<Porownanie> {
+/** Opcjonalnie liczy piksele w prostokącie sceny podanym w mm. */
+export async function porownaj(
+  page: Page,
+  svg: string,
+  pdf: Uint8Array,
+  obszar?: { x: number; y: number; szer: number; wys: number },
+): Promise<Porownanie> {
   return page.evaluate(
-    async ({ svg, pdf, pxNaMm }) => {
+    async ({ svg, pdf, pxNaMm, obszar }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const lib = (globalThis as any).pdfjsLib;
       lib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
@@ -65,8 +71,12 @@ export async function porownaj(page: Page, svg: string, pdf: Uint8Array): Promis
       sctx.fillRect(0, 0, szer, wys);
       sctx.drawImage(obraz, 0, 0, szer, wys);
 
-      const a = pctx.getImageData(0, 0, szer, wys).data;
-      const b = sctx.getImageData(0, 0, szer, wys).data;
+      const x = obszar ? Math.floor(obszar.x * pxNaMm) : 0;
+      const y = obszar ? Math.floor(obszar.y * pxNaMm) : 0;
+      const w = obszar ? Math.ceil((obszar.x + obszar.szer) * pxNaMm) - x : szer;
+      const h = obszar ? Math.ceil((obszar.y + obszar.wys) * pxNaMm) - y : wys;
+      const a = pctx.getImageData(x, y, w, h).data;
+      const b = sctx.getImageData(x, y, w, h).data;
       let rozne = 0;
       let ciemneSvg = 0;
       let ciemnePdf = 0;
@@ -79,6 +89,6 @@ export async function porownaj(page: Page, svg: string, pdf: Uint8Array): Promis
       }
       return { rozne, wszystkie: a.length / 4, ciemneSvg, ciemnePdf };
     },
-    { svg, pdf: [...pdf], pxNaMm: PX_NA_MM },
+    { svg, pdf: [...pdf], pxNaMm: PX_NA_MM, obszar },
   );
 }

@@ -3,6 +3,7 @@ import { pt } from '../model/jednostki';
 import type { StylTekstu } from '../model/szablon';
 import {
   parsujFormatowanie,
+  dodajNotacjeTekstu,
   SKALA_KAPITALIKOW,
   tekstNaScene,
   ulozDopasowany,
@@ -242,5 +243,79 @@ describe('akapity, justowanie, kapitaliki', () => {
       ma.mockRestore();
       uloz.mockRestore();
     }
+  });
+});
+
+describe('listy numerowane i ikony w tekście', () => {
+  it('zachowuje indeksy, wiąże numer z pierwszym słowem i wcina kolejne wiersze', () => {
+    const tekst = '10. Pierwszy drugi trzeci czwarty\n42. Koniec';
+    const f = dodajNotacjeTekstu([{ tekst, styl }], true, false);
+    const u = ulozTekst(f, 22, czcionki);
+    const pierwszy = u.wiersze[0]!;
+    expect(pierwszy.glify.slice(0, 3).map((g) => g.id)).toEqual(
+      ulozTekst([{ tekst: '10.', styl }], undefined, czcionki).wiersze[0]!.glify.map((g) => g.id),
+    );
+    expect(pierwszy.glify.length).toBeGreaterThan(4);
+    expect(u.wiersze[1]!.glify[0]!.x).toBeCloseTo(pierwszy.glify[4]!.x, 1);
+    const koniec = u.wiersze.findLast((w) => w.glify[0]?.x === 0)!;
+    expect(koniec.glify.slice(0, 3).map((g) => g.id)).toEqual(
+      ulozTekst([{ tekst: '42.', styl }], undefined, czcionki).wiersze[0]!.glify.map((g) => g.id),
+    );
+  });
+
+  it('nie zmienia układu zwykłego tekstu i zostawia nieznane lub cytowane kody', () => {
+    const tekst = '3.14 m. :missing: \\:star:';
+    const f = dodajNotacjeTekstu([{ tekst, styl }], true, true);
+    expect(f.map((x) => x.tekst).join('')).toBe('3.14 m. :missing: :star:');
+    expect(f.every((x) => !x.ikona)).toBe(true);
+    expect(ulozTekst(dodajNotacjeTekstu([{ tekst, styl }], false, false), 20, czcionki)).toEqual(
+      ulozTekst([{ tekst, styl }], 20, czcionki),
+    );
+  });
+
+  it('wyrównuje pozycję listy jako cały blok także przy pogrubionym numerze', () => {
+    const f = dodajNotacjeTekstu(
+      parsujFormatowanie('**10.** Treść do kilku wierszy', styl),
+      true,
+      false,
+    );
+    const u = ulozTekst(f, 20, czcionki);
+    const [pierwszy, drugi] = u.wiersze;
+    expect(pierwszy?.szerokoscPozycjiListy).toBeDefined();
+    expect(drugi?.szerokoscPozycjiListy).toBe(pierwszy?.szerokoscPozycjiListy);
+    expect(pierwszy?.glify[0]?.czcionka.id).toBe('EBGaramond-Bold.ttf');
+    for (const wyr of ['srodek', 'prawo'] as const) {
+      const e = tekstNaScene(u, { x: 0, y: 0, szer: 25, wys: 20 }, wyr, 'poczatek', {});
+      const glify = e.flatMap((x) => (x.typ === 'tekst' ? x.glify : []));
+      expect(glify[pierwszy!.glify.length]?.x).toBeCloseTo(glify[4]!.x, 1);
+    }
+  });
+
+  it('uwzględnia pełną wysokość ikony mimo małej interlinii i pomija odstęp liter', () => {
+    const s = { ...styl, rozmiar: 4, interlinia: 0.5, odstepLiter: 2 };
+    const f = dodajNotacjeTekstu([{ tekst: ':star:', styl: s }], false, true);
+    const u = ulozDopasowany(f, 4, 3.9, czcionki, true, 1);
+    expect(u.szerokosc).toBe(4);
+    expect(u.zaSzeroki).toBe(false);
+    expect(u.wysokosc).toBeGreaterThanOrEqual(4);
+    expect(u.przepelnienie).toBe(true);
+  });
+
+  it('rezerwuje miejsce na ikony w wierszu i składa je jako wektory w kolorze tekstu', () => {
+    const f = dodajNotacjeTekstu(
+      [{ tekst: 'A :star: :scissors: B', styl: { ...styl, kolor: '#a31b35' } }],
+      true,
+      true,
+    );
+    const u = ulozTekst(f, undefined, czcionki);
+    const wiersz = u.wiersze[0]!;
+    expect(wiersz.ikony?.map((i) => i.ikona)).toEqual(['gwiazdka', 'nozyczki']);
+    expect(wiersz.ikony?.[0]?.x).toBeGreaterThan(wiersz.glify[0]!.x);
+    expect(wiersz.ikony?.[1]?.x).toBeLessThan(wiersz.glify.at(-1)!.x);
+    const e = tekstNaScene(u, { x: 0, y: 0, szer: 50, wys: 10 }, 'lewo', 'poczatek', {});
+    expect(e.filter((x) => x.typ === 'sciezka').map((x) => x.wypelnienie)).toEqual([
+      '#a31b35',
+      '#a31b35',
+    ]);
   });
 });
