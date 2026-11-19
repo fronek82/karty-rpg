@@ -23,6 +23,7 @@ import {
   kluczZNazwy,
   nazwaKarty,
   nowySzablon,
+  UKLADY_STARTOWE,
   nowyWezel,
   opakuj,
   przeniesWezel,
@@ -223,6 +224,21 @@ describe('drzewo', () => {
 });
 
 describe('nowy szablon', () => {
+  it('pokazuje układ swobodny pierwszy i zachowuje korzenie obu skrajnych układów', () => {
+    expect(UKLADY_STARTOWE).toEqual([
+      'swobodny',
+      'tytul-opis',
+      'tytul-siatka-opis-stopka',
+      'pusty',
+    ]);
+    const opcje = { nazwa: 'Karta', szer: 63, wys: 88, promien: 0, tlo: '#ffffff' };
+    expect(nowySzablon('s', { ...opcje, uklad: 'swobodny' }, NAZWY).korzen.typ).toBe('swobodny');
+    expect(nowySzablon('p', { ...opcje, uklad: 'pusty' }, NAZWY).korzen).toMatchObject({
+      typ: 'kolumna',
+      dzieci: [],
+    });
+  });
+
   it('układy startowe: neutralne nazwy, siatka 2×2 etykieta/wartość, stopka', () => {
     const s: Szablon = nowySzablon(
       's',

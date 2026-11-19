@@ -31,7 +31,7 @@ export function Kreator({
   const [pozioma, ustawPozioma] = useState(false);
   const [promien, ustawPromien] = useState(3);
   const [tlo, ustawTlo] = useState('#ffffff');
-  const [uklad, ustawUklad] = useState<UkladStartowy>('tytul-opis');
+  const [uklad, ustawUklad] = useState<UkladStartowy>('swobodny');
   const [tworze, ustawTworze] = useState(false);
   const [blad, ustawBlad] = useState<string>();
 

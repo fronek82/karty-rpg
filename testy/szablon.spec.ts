@@ -15,6 +15,21 @@ async function dodaj(page: Page, rodzaj: string) {
   await page.getByRole('menuitem', { name: rodzaj, exact: true }).click();
 }
 
+test('kreator domyślnie tworzy kartę swobodną, a pusty układ jest ostatni', async ({ page }) => {
+  await page.goto('./#/wlasne/nowy');
+  await page.getByLabel('Nazwa szablonu').fill('Karta w układzie swobodnym');
+  const opcje = page.locator('input[name="uklad"]');
+  expect(await opcje.evaluateAll((pola: HTMLInputElement[]) => pola.map((p) => p.value))).toEqual([
+    'swobodny',
+    'tytul-opis',
+    'tytul-siatka-opis-stopka',
+    'pusty',
+  ]);
+  await expect(opcje.first()).toBeChecked();
+  await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
+  await expect(element(page, /^Karta – Swobodny/)).toBeVisible();
+});
+
 test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i powrót', async ({
   page,
 }) => {
