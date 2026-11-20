@@ -14,6 +14,25 @@ Pakiety szablonów mają dodatkowo własny plik `LICENCJE.md` w swoim katalogu.
 | Cinzel Decorative (Bold) – czcionka tytułu ekranu startowego                                  | `public/czcionki/CinzelDecorative-Bold.ttf` | Google Fonts | Natanael Gama (Copyright © 2012, Reserved Font Name „Cinzel”)    | SIL OFL 1.1 – `public/czcionki/OFL-CinzelDecorative.txt` |
 | Cinzel Decorative Bold (kopia), Uncial Antiqua, Metamorphous (tylko makiety, nie w aplikacji) | `docs/makiety-ui/fonty/*.ttf`               | Google Fonts | Natanael Gama; Brian J. Bonislawsky (Astigmatic); Sorkin Type Co | SIL OFL 1.1 – `docs/makiety-ui/fonty/LICENCJE.md`        |
 
+### Katalog Google Fonts (pobierane na żądanie użytkownika, nie dołączane do repozytorium)
+
+Katalog w `src/dane/googleFonts.ts` udostępnia wybrane rodziny z repozytorium [`google/fonts`](https://github.com/google/fonts) (wyłącznie statyczne pliki TTF z potwierdzonym zestawem `latin-ext` i licencją SIL OFL 1.1). Pliki są pobierane dopiero po wyborze użytkownika i zapisywane lokalnie w projekcie.
+
+| Rodzina           | Katalog w `google/fonts` | Autor                             | Licencja    |
+| ----------------- | ------------------------ | --------------------------------- | ----------- |
+| Almendra          | `ofl/almendra`           | Ana Sanfelippo                    | SIL OFL 1.1 |
+| MedievalSharp     | `ofl/medievalsharp`      | Wojciech Kalinowski               | SIL OFL 1.1 |
+| Metamorphous      | `ofl/metamorphous`       | Sorkin Type Co (James Grieshaber) | SIL OFL 1.1 |
+| Pirata One        | `ofl/pirataone`          | Rodrigo Fuenzalida, Nicolas Massi | SIL OFL 1.1 |
+| Marcellus         | `ofl/marcellus`          | Astigmatic                        | SIL OFL 1.1 |
+| Caudex            | `ofl/caudex`             | Nidud                             | SIL OFL 1.1 |
+| Crimson Text      | `ofl/crimsontext`        | Sebastian Kosch                   | SIL OFL 1.1 |
+| Spectral          | `ofl/spectral`           | Production Type                   | SIL OFL 1.1 |
+| Gentium Book Plus | `ofl/gentiumbookplus`    | SIL International                 | SIL OFL 1.1 |
+| PT Serif          | `ofl/ptserif`            | ParaType                          | SIL OFL 1.1 |
+| Fira Sans         | `ofl/firasans`           | Carrois Apostrophe                | SIL OFL 1.1 |
+| Lato              | `ofl/lato`               | Łukasz Dziedzic                   | SIL OFL 1.1 |
+
 Pakiety szablonów: `src/pakiety/mausritter/LICENCJE.md`.
 
 Własne rysunki projektu (licencja jak kod, MIT), generowane skryptami z `narzedzia/`:

@@ -1317,6 +1317,26 @@ export const en: Slownik = {
     'Each page matches the exact card size plus bleed and (when enabled) crop marks.',
   'drukarnia.ostrzezenieDpi':
     'Warning: {liczba} images on this sheet have an effective resolution below 300 dpi (click a card for details).',
+  'googleFonts.otworz': 'Google Fonts catalog',
+  'googleFonts.opis':
+    'Curated typefaces with Polish diacritics (SIL OFL 1.1). Downloaded files are stored locally in the project and work offline.',
+  'googleFonts.szukaj': 'Search typeface',
+  'googleFonts.kategorie': 'Typeface category',
+  'googleFonts.kategoria.wszystkie': 'All',
+  'googleFonts.kategoria.ozdobna': 'Display',
+  'googleFonts.kategoria.szeryfowa': 'Serif',
+  'googleFonts.kategoria.bezszeryfowa': 'Sans-serif',
+  'googleFonts.pobierz': 'Download',
+  'googleFonts.pobierzEtykieta': 'Download {rodzina} from Google Fonts',
+  'googleFonts.pobieram': 'Downloading…',
+  'googleFonts.dodano': 'Added',
+  'googleFonts.dodanoEtykieta': '{rodzina} – added',
+  'googleFonts.meta': '{kategoria} · {warianty} · Polish glyphs · {licencja} · {autor}',
+  'googleFonts.brakWynikow': 'No matching typefaces in the catalog.',
+  'googleFonts.brakPolaczenia': 'no connection',
+  'googleFonts.przekroczonoCzas': 'request timed out',
+  'googleFonts.bladPobrania':
+    'Could not download “{rodzina}” from Google Fonts ({szczegoly}). Check your connection and try again.',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
@@ -1337,5 +1357,9 @@ export const enMnoga: SlownikMnogi = {
   'biblioteka.limit': {
     one: 'The library can have at most {n} custom element.',
     other: 'The library can have at most {n} custom elements.',
+  },
+  'googleFonts.pobrano': {
+    one: 'Downloaded “{rodzina}” ({n} variant) and saved locally in the project.',
+    other: 'Downloaded “{rodzina}” ({n} variants) and saved locally in the project.',
   },
 };

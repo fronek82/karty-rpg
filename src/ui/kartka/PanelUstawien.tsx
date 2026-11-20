@@ -30,6 +30,7 @@ import { przypiszRewers } from '../../dane/rewers';
 import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
 import { RewersyProjektu } from '../rewers/RewersyProjektu';
+import { KatalogGoogleFonts } from './KatalogGoogleFonts';
 import { PanelUkladu } from './PanelUkladu';
 import { PoleLiczby } from './PoleLiczby';
 import { SzablonyProjektu } from './SzablonyProjektu';
@@ -515,6 +516,7 @@ export function PanelUstawien({
             if (f.length) void wgraj(f);
           }}
         />
+        <KatalogGoogleFonts edycja={edycja} onStatus={ustawStatus} onBlad={ustawBladCzcionki} />
         <p role="status" aria-live="polite" className="podpis">
           {status}
         </p>

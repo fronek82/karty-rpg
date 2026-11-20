@@ -1311,6 +1311,26 @@ export const pl = {
     'Każda strona ma dokładny rozmiar karty powiększony o spad i (gdy włączone) znaczniki cięcia.',
   'drukarnia.ostrzezenieDpi':
     'Ostrzeżenie: {liczba} obrazów na tej kartce ma efektywną rozdzielczość poniżej 300 dpi (kliknij kartę, aby zobaczyć szczegóły).',
+  'googleFonts.otworz': 'Katalog Google Fonts',
+  'googleFonts.opis':
+    'Sprawdzone kroje z polskimi znakami (SIL OFL 1.1). Po pobraniu pliki zapisują się lokalnie w projekcie i działają bez sieci.',
+  'googleFonts.szukaj': 'Szukaj kroju',
+  'googleFonts.kategorie': 'Kategoria krojów',
+  'googleFonts.kategoria.wszystkie': 'Wszystkie',
+  'googleFonts.kategoria.ozdobna': 'Ozdobne',
+  'googleFonts.kategoria.szeryfowa': 'Szeryfowe',
+  'googleFonts.kategoria.bezszeryfowa': 'Bezszeryfowe',
+  'googleFonts.pobierz': 'Pobierz',
+  'googleFonts.pobierzEtykieta': 'Pobierz krój {rodzina} z Google Fonts',
+  'googleFonts.pobieram': 'Pobieram…',
+  'googleFonts.dodano': 'Dodano',
+  'googleFonts.dodanoEtykieta': '{rodzina} – dodano',
+  'googleFonts.meta': '{kategoria} · {warianty} · polskie znaki · {licencja} · {autor}',
+  'googleFonts.brakWynikow': 'Brak pasujących krojów w katalogu.',
+  'googleFonts.brakPolaczenia': 'brak połączenia',
+  'googleFonts.przekroczonoCzas': 'przekroczono limit czasu',
+  'googleFonts.bladPobrania':
+    'Nie udało się pobrać kroju „{rodzina}” z Google Fonts ({szczegoly}). Sprawdź połączenie i spróbuj ponownie.',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;
@@ -1348,6 +1368,12 @@ export const plMnoga = {
     few: 'Biblioteka może mieć najwyżej {n} własne elementy.',
     many: 'Biblioteka może mieć najwyżej {n} własnych elementów.',
     other: 'Biblioteka może mieć najwyżej {n} własnego elementu.',
+  },
+  'googleFonts.pobrano': {
+    one: 'Pobrano krój „{rodzina}” ({n} wariant) i zapisano lokalnie w projekcie.',
+    few: 'Pobrano krój „{rodzina}” ({n} warianty) i zapisano lokalnie w projekcie.',
+    many: 'Pobrano krój „{rodzina}” ({n} wariantów) i zapisano lokalnie w projekcie.',
+    other: 'Pobrano krój „{rodzina}” ({n} wariantu) i zapisano lokalnie w projekcie.',
   },
 } as const satisfies Record<string, FormyMnogie>;
 
