@@ -230,6 +230,8 @@ export interface UstawieniaArkusza {
   mieszane?: OpcjeMieszane;
   /** Druk dwustronny arkusza (przód i tył w parach stron); brak – tylko przody. */
   dwustronny?: UstawieniaDwustronne;
+  /** Tryb drukarni (spad, znaczniki cięcia, układ siatki lub pojedynczej karty); brak – druk domowy. */
+  drukarnia?: UstawieniaDrukarni;
 }
 
 /** Krawędź papieru, wokół której drukarka odwraca arkusz przy druku dwustronnym. */
@@ -246,6 +248,37 @@ export const DWUSTRONNY_DOMYSLNY: UstawieniaDwustronne = {
   wlaczony: false,
   krawedz: 'dluga',
 };
+
+/** Układ stron w trybie drukarni: siatka kart na arkuszu albo jedna karta na stronę. */
+export type UkladDrukarni = 'siatka' | 'pojedyncza';
+
+/** Ustawienia trybu drukarni arkusza (M4-5). */
+export interface UstawieniaDrukarni {
+  wlaczony: boolean;
+  /** Spad z każdej strony karty (mm, domyślnie 3 mm, zakres 0–10 mm). */
+  spad: Mm;
+  /** Znaczniki cięcia wyznaczające format netto poza obszarem spadu. */
+  znacznikiCiecia: boolean;
+  /** Układ stron: siatka na arkuszu albo pojedyncza karta dopasowana ze spadem i znacznikami. */
+  uklad: UkladDrukarni;
+}
+
+/** Domyślny spad w trybie drukarni (mm). */
+export const SPAD_DOMYSLNY: Mm = 3;
+/** Największy dopuszczalny spad (mm). */
+export const SPAD_MAKS: Mm = 10;
+
+/** Domyślne ustawienia trybu drukarni (wyłączony, spad 3 mm, znaczniki cięcia, siatka). */
+export const DRUKARNIA_DOMYSLNA: UstawieniaDrukarni = {
+  wlaczony: false,
+  spad: SPAD_DOMYSLNY,
+  znacznikiCiecia: true,
+  uklad: 'siatka',
+};
+
+/** Czy arkusz ma jawnie włączony tryb drukarni. */
+export const czyDrukarnia = (u: Pick<UstawieniaArkusza, 'drukarnia'>): boolean =>
+  Boolean(u.drukarnia?.wlaczony);
 
 /** Ręczne przypięcie egzemplarza karty do pozycji (w slotach). */
 export interface PrzypietaKarta {

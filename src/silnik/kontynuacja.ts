@@ -99,8 +99,9 @@ export function kartyZKontynuacja(
   ctx: KontekstRenderowania,
   dopisek: string,
   pole = poleKontynuacji(szablon, karta),
+  opcje?: { spad?: number; minDpi?: number },
 ): WyrenderowanaKarta[] {
-  const cala = renderujKarte(szablon, karta, ctx);
+  const cala = renderujKarte(szablon, karta, ctx, opcje);
   if (!pole) return [cala];
   const dane = daneZParametrami(szablon, karta.dane);
   const tresc = wartoscPola(pole, dane);
@@ -139,14 +140,19 @@ export function kartyZKontynuacja(
   let pierwszyBrzeg = 0;
   const wynik: WyrenderowanaKarta[] = [];
   const wyrenderuj = (koniec: number) =>
-    renderujKarte(szablon, karta, {
-      ...ctx,
-      kontynuacja: {
-        poleId: pole.id,
-        fragmenty: wycinek(czesci, od, koniec, nowyAkapit),
-        ...(wynik.length > 0 ? { dopisek: `${dopisek} ${wynik.length + 1}` } : {}),
+    renderujKarte(
+      szablon,
+      karta,
+      {
+        ...ctx,
+        kontynuacja: {
+          poleId: pole.id,
+          fragmenty: wycinek(czesci, od, koniec, nowyAkapit),
+          ...(wynik.length > 0 ? { dopisek: `${dopisek} ${wynik.length + 1}` } : {}),
+        },
       },
-    });
+      opcje,
+    );
 
   while (wynik.length < MAKS_KART) {
     const reszta = wynik.length ? wyrenderuj(dlugosc) : cala;

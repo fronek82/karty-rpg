@@ -10,6 +10,7 @@ import {
   type LinieCiecia,
   type Nozyczki,
   type TytulArkusza,
+  type UstawieniaDrukarni,
   wymiaryUkladu,
 } from '../model/arkusz';
 import {
@@ -23,6 +24,7 @@ import type { RejestrCzcionek } from '../silnik/czcionki';
 import { konturIkony } from '../silnik/ikony';
 import { kartyZKontynuacja, poleKontynuacji } from '../silnik/kontynuacja';
 import {
+  MIN_DPI_DRUKARNI,
   renderujKarte,
   type InformacjaOObrazie,
   type Ostrzezenie,
@@ -40,6 +42,13 @@ import {
 } from '../silnik/scena';
 import { tekstNaScene, ulozTekst } from '../silnik/tekst';
 import type { Prostokat } from '../silnik/uklad';
+import {
+  elementyZnacznikowCiecia,
+  odstepMiedzyKartamiDrukarni,
+  rezerwaZnacznika,
+  rozmiarStronyPojedynczejKarty,
+  zbudujStronePojedynczejKarty,
+} from './drukarnia';
 import {
   odcinkiCieciaProstokatow,
   scalOdcinkiCiecia,
@@ -217,12 +226,14 @@ function fabrykaScenKart(
   ctx: KontekstArkusza,
   szablon: (k: Karta) => Szablon | undefined,
   ostrzezenia: OstrzezenieArkusza[],
+  opcje?: { spad?: Mm; minDpi?: number },
 ) {
   const pliki = {
     czcionki: ctx.czcionki,
     ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
     ...(ctx.elementy ? { elementy: ctx.elementy } : {}),
   };
+  const uzyjPamieci = !opcje?.spad && !opcje?.minDpi;
   const podzial = new Map<Karta, WyrenderowanaKarta[] | undefined>();
   const czesci = (k: Karta) => {
     if (!podzial.has(k)) {
@@ -231,9 +242,9 @@ function fabrykaScenKart(
       let wynik: WyrenderowanaKarta[] | undefined;
       if (pole) {
         wynik =
-          ctx.pamiecKontynuacji?.get(k) ??
-          kartyZKontynuacja(s, k, pliki, ctx.dopisekKontynuacji ?? 'Ciąg dalszy', pole);
-        ctx.pamiecKontynuacji?.set(k, wynik);
+          (uzyjPamieci ? ctx.pamiecKontynuacji?.get(k) : undefined) ??
+          kartyZKontynuacja(s, k, pliki, ctx.dopisekKontynuacji ?? 'Ciąg dalszy', pole, opcje);
+        if (uzyjPamieci) ctx.pamiecKontynuacji?.set(k, wynik);
       }
       podzial.set(k, wynik);
     }
@@ -245,8 +256,10 @@ function fabrykaScenKart(
     if (!w) {
       w = czesci(k);
       if (!w) {
-        const karta = ctx.pamiecKart?.get(k) ?? renderujKarte(szablon(k)!, k, pliki);
-        ctx.pamiecKart?.set(k, karta);
+        const karta =
+          (uzyjPamieci ? ctx.pamiecKart?.get(k) : undefined) ??
+          renderujKarte(szablon(k)!, k, pliki, opcje);
+        if (uzyjPamieci) ctx.pamiecKart?.set(k, karta);
         w = [karta];
       }
       const unikalne = new Map(w.flatMap((c) => c.ostrzezenia).map((o) => [JSON.stringify(o), o]));
@@ -424,12 +437,14 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
 
   const slot = slotKartki(arkusz, talia, ctx.szablony);
   const dop = u.dopasowanie;
-  // Mieszane rozmiary: każda karta ma swój wymiar, własny układ (stała siatka) jest wyłączony.
+  const drukarnia = u.drukarnia?.wlaczony ? u.drukarnia : undefined;
+  const pojedyncza = drukarnia?.uklad === 'pojedyncza';
+  // Mieszane rozmiary i pojedyncza karta drukarni: każda karta ma swój wymiar, własny układ wyłączony.
   const mieszane = u.rozmiary === 'mieszane';
   const karty = talia.karty.filter((k) => {
     const s = szablon(k);
     if (!s) ostrzezenia.push({ kartaId: k.id, komunikat: 'brak-szablonu' });
-    else if (mieszane) return true;
+    else if (mieszane || pojedyncza) return true;
     // Karta w mm zajmuje jeden slot (kartka ma slot = wymiar karty), karta w slotach – całe sloty
     // kartki; inny wymiar karty / slotu – ostrzeżenie.
     else if (!wymiarPasujeDoSlotu(s.rozmiar.tryb === 'mm' ? s.rozmiar : s.rozmiar.slot, slot, dop))
@@ -437,34 +452,56 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     return s !== undefined;
   });
 
+  const opcjeKarty = drukarnia ? { spad: drukarnia.spad, minDpi: MIN_DPI_DRUKARNI } : undefined;
+  const scenyKart = fabrykaScenKart(ctx, szablon, ostrzezenia, opcjeKarty);
+  if (drukarnia && pojedyncza) {
+    return zbudujPojedyncze({
+      arkusz,
+      karty,
+      slot,
+      ostrzezenia,
+      scenyKart,
+      drukarnia,
+    });
+  }
+
   // Tytuł.
   // Pusty tytuł („bez tytułu” w edytorze) – bez paska tytułu.
   // Własny układ: stała siatka od zadanego miejsca – bez tytułu, nagłówków grup i nożyczek.
-  const uklad = mieszane ? undefined : u.uklad;
-  const recznaSiatka = !u.poczatekSiatki && (arkusz.przypiete?.length ?? 0) > 0;
+  // Tryb drukarni: ignoruje własny układ (arkusze perforowane), przypięcia slotów i nożyczki.
+  const uklad = mieszane || drukarnia ? undefined : u.uklad;
+  const recznaSiatka = !drukarnia && !u.poczatekSiatki && (arkusz.przypiete?.length ?? 0) > 0;
   const granice = graniceCiecia(strona, ctx.kalibracja);
+  const rezerwa = drukarnia ? rezerwaZnacznika(drukarnia.spad, drukarnia.znacznikiCiecia) : 0;
+  const odstepDrukarni = drukarnia
+    ? odstepMiedzyKartamiDrukarni(drukarnia.spad, drukarnia.znacznikiCiecia)
+    : 0;
   let tytul =
     !uklad && u.tytul && u.tytul.tekst.trim()
       ? napis(u.tytul.tekst, u.tytul.styl, undefined, ctx.czcionki)
       : undefined;
+  const margLewo = Math.max(u.marginesy.lewo, rezerwa);
+  const margPrawo = Math.max(u.marginesy.prawo, rezerwa);
+  const margGora = Math.max(u.marginesy.gora, rezerwa);
+  const margDol = Math.max(u.marginesy.dol, rezerwa);
+  const odstepTytulu = u.tytul ? Math.max(u.tytul.odstep, rezerwa) : 0;
   const obszar = {
-    x: u.marginesy.lewo,
-    y: u.marginesy.gora,
-    szer: strona.szer - u.marginesy.lewo - u.marginesy.prawo,
-    wys: strona.wys - u.marginesy.gora - u.marginesy.dol,
+    x: margLewo,
+    y: margGora,
+    szer: strona.szer - margLewo - margPrawo,
+    wys: strona.wys - margGora - margDol,
   };
   if (u.tytul && tytul) {
-    const pas = tytul.wys + u.tytul.odstep;
+    const pasTytulu = tytul.wys + odstepTytulu;
     if (u.tytul.polozenie === 'gora') {
-      obszar.y += pas;
-      obszar.wys -= pas;
+      obszar.y = u.marginesy.gora + pasTytulu;
+      obszar.wys = strona.wys - obszar.y - margDol;
     } else {
-      obszar.x += pas;
-      obszar.szer -= pas;
+      obszar.x = u.marginesy.lewo + pasTytulu;
+      obszar.szer = strona.szer - obszar.x - margPrawo;
     }
   }
 
-  const scenyKart = fabrykaScenKart(ctx, szablon, ostrzezenia);
   if (mieszane) {
     return zbudujMieszane({
       arkusz,
@@ -475,8 +512,11 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       slot,
       obszar,
       tytul,
+      odstepTytulu,
       ostrzezenia,
       scenyKart,
+      drukarnia,
+      odstepDrukarni,
     });
   }
 
@@ -496,10 +536,17 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     },
     scenyKart.liczba,
   );
+  const odstep = drukarnia
+    ? { x: odstepDrukarni, y: odstepDrukarni }
+    : { x: uklad?.odstepPoziomy ?? 0, y: uklad?.odstepPionowy ?? 0 };
   let pas = 0;
   if (grupy && u.grupy) {
+    const odstepOdKart = Math.max(u.grupy.odstepOdKart, rezerwa);
     for (let i = 0; i < 2; i++) {
-      const rzedy = Math.max(1, Math.floor((obszar.wys - pas) / slot.wysokosc + 1e-6));
+      const rzedy = Math.max(
+        1,
+        Math.floor((obszar.wys - pas + odstep.y) / (slot.wysokosc + odstep.y) + 1e-6),
+      );
       pas = 0;
       for (const g of grupy) {
         const sloty = lista
@@ -509,7 +556,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         const h =
           napis(g.naglowek, u.grupy.styl, szer, ctx.czcionki).wys +
           napis(g.opis ?? '', u.grupy.stylOpisu, szer, ctx.czcionki).wys;
-        pas = Math.max(pas, h + u.grupy.odstepOdKart);
+        pas = Math.max(pas, h + odstepOdKart);
       }
     }
   }
@@ -521,16 +568,16 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       : undefined;
   const stylGrup = u.grupy;
   if (naglowki && stylGrup) {
+    const odstepOdKart = Math.max(stylGrup.odstepOdKart, rezerwa);
     // Nagłówek bez tekstu i opisu to sam odstęp przed grupą – nie zajmuje pasa nad siatką.
     for (const h of naglowki.filter((x) => x.naglowek.trim() || x.opis?.trim())) {
       const szer = h.kolumny * slot.szerokosc;
       const wys =
         napis(h.naglowek, stylGrup.styl, szer, ctx.czcionki).wys +
         napis(h.opis ?? '', stylGrup.stylOpisu, szer, ctx.czcionki).wys;
-      pas = Math.max(pas, wys + stylGrup.odstepOdKart);
+      pas = Math.max(pas, wys + odstepOdKart);
     }
   }
-  const odstep = { x: uklad?.odstepPoziomy ?? 0, y: uklad?.odstepPionowy ?? 0 };
   const odstepKolumny = (s: number, kolumna: number): Mm =>
     kolumna * odstep.x +
     (naglowki ?? [])
@@ -548,54 +595,83 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
 
   const poczatek = uklad
     ? { x: uklad.lewo, y: uklad.gora }
-    : (u.poczatekSiatki ?? { x: obszar.x, y: obszar.y + pas });
-  // Własny układ – siatka dokładnie kolumny × rzędy (odstępy liczone osobno).
+    : drukarnia
+      ? { x: obszar.x, y: obszar.y + pas }
+      : (u.poczatekSiatki ?? { x: obszar.x, y: obszar.y + pas });
+  // Własny układ – siatka dokładnie kolumny × rzędy; tryb drukarni – uwzględnia odstępy między kartami.
+  const dostepnaSzer = strona.szer - margPrawo - poczatek.x - najwiekszyOdstep;
+  const dostepnaWys = strona.wys - margDol - poczatek.y;
   const siatka = uklad
     ? {
         szer: uklad.kolumny * slot.szerokosc,
         wys: uklad.rzedy * slot.wysokosc,
         slot,
       }
-    : {
-        // Odstępy między grupami zabierają miejsce w poziomie (najwięcej na którejkolwiek stronie).
-        szer: strona.szer - u.marginesy.prawo - poczatek.x - najwiekszyOdstep,
-        wys: strona.wys - u.marginesy.dol - poczatek.y,
-        slot,
-      };
+    : drukarnia
+      ? {
+          szer:
+            Math.max(
+              0,
+              Math.floor((dostepnaSzer + odstep.x) / (slot.szerokosc + odstep.x) + 1e-6),
+            ) * slot.szerokosc,
+          wys:
+            Math.max(0, Math.floor((dostepnaWys + odstep.y) / (slot.wysokosc + odstep.y) + 1e-6)) *
+            slot.wysokosc,
+          slot,
+        }
+      : {
+          // Odstępy między grupami zabierają miejsce w poziomie (najwięcej na którejkolwiek stronie).
+          szer: dostepnaSzer,
+          wys: dostepnaWys,
+          slot,
+        };
   if (uklad) {
     const w = wymiaryUkladu(uklad, slot, strona);
     if (w.prawo < -1e-6 || w.dol < -1e-6) ostrzezenia.push({ komunikat: 'uklad-poza-papierem' });
   }
-  const rozmieszczenie = rozmiescKarty(lista, siatka, {
-    ...(arkusz.przypiete ? { przypiete: arkusz.przypiete } : {}),
+  const siatkaDlaRozmieszczenia =
+    drukarnia && grupy
+      ? {
+          szer: Math.max(0, dostepnaSzer + odstep.x),
+          wys: Math.max(0, dostepnaWys + odstep.y),
+          slot: {
+            szerokosc: slot.szerokosc + odstep.x,
+            wysokosc: slot.wysokosc + odstep.y,
+          },
+        }
+      : siatka;
+  const rozmieszczenie = rozmiescKarty(lista, siatkaDlaRozmieszczenia, {
+    ...(!drukarnia && arkusz.przypiete ? { przypiete: arkusz.przypiete } : {}),
     ...(grupy && u.grupy
       ? {
           grupy: {
             lista: grupy.map((g) => ({ id: g.id, kartyIds: g.karty })),
-            odstep: u.grupy.odstep,
+            odstep: drukarnia ? Math.max(0, u.grupy.odstep - odstep.x) : u.grupy.odstep,
           },
         }
       : {}),
   });
   for (const o of rozmieszczenie.ostrzezenia) ostrzezenia.push({ komunikat: o });
   const rzedySiatki = Math.max(0, Math.floor(siatka.wys / slot.wysokosc + 1e-6));
-  // Strona za mała na choćby jeden slot (np. karta większa niż papier) – ostrzeżenie kartki.
-  if (rzedySiatki < 1 || Math.floor(siatka.szer / slot.szerokosc + 1e-6) < 1)
-    ostrzezenia.push({ komunikat: 'brak-slotow-na-stronie' });
+  const kolumnySiatki = Math.max(0, Math.floor(siatka.szer / slot.szerokosc + 1e-6));
+  // Strona za mała na choćby jeden slot (np. karta ze spadem większa niż papier) – ostrzeżenie kartki.
+  if (rzedySiatki < 1 || kolumnySiatki < 1)
+    ostrzezenia.push({
+      komunikat: drukarnia ? 'papier-za-maly-na-spad' : 'brak-slotow-na-stronie',
+    });
 
   let rozmiarTytulu = u.tytul?.styl.rozmiar ?? 0;
   // Tytuł nie dłuższy niż bok siatki (minus miejsce na nożyczki na tej samej krawędzi).
   if (u.tytul && tytul && tytul.szer > 0) {
-    const kolumnySiatki = Math.floor(siatka.szer / slot.szerokosc + 1e-6);
-    const n = u.nozyczki;
+    const n = drukarnia ? undefined : u.nozyczki;
     const zapas = n ? n.rozmiar / 2 + 1 : 0;
     let limit: Mm;
     if (u.tytul.polozenie === 'lewo') {
-      limit = rzedySiatki * slot.wysokosc;
+      limit = rzedySiatki * slot.wysokosc + Math.max(0, rzedySiatki - 1) * odstep.y;
       if (n?.linia === 'pozioma' && n.strona === 'poczatek' && n.indeks <= rzedySiatki)
         limit = Math.min(limit, (rzedySiatki - n.indeks) * slot.wysokosc - zapas);
     } else {
-      limit = kolumnySiatki * slot.szerokosc;
+      limit = kolumnySiatki * slot.szerokosc + Math.max(0, kolumnySiatki - 1) * odstep.x;
       if (n?.linia === 'pionowa' && n.strona === 'poczatek' && n.indeks <= kolumnySiatki)
         limit = Math.min(limit, n.indeks * slot.szerokosc - zapas);
     }
@@ -608,7 +684,10 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   const strony: Scena[] = [];
   const pozycjeKart: PozycjaKartyNaStronie[] = [];
   const geometriaNaglowkow: WynikArkusza['naglowki'] = [];
-  const liczbaStron = Math.max(rozmieszczenie.liczbaStron, arkusz.liczbaStron ?? 0);
+  const liczbaStron = Math.max(
+    rozmieszczenie.liczbaStron,
+    drukarnia ? 1 : (arkusz.liczbaStron ?? 0),
+  );
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
     const polaNapisow: Prostokat[] = [];
@@ -638,7 +717,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     });
     // Tło do krawędzi slotu: przy przesunięciu druku względem perforacji nie widać papieru.
     // Wszystkie tła przed kartami – tło sąsiedniego slotu nie zakryje wystającej (≤ 0,5 mm) karty.
-    if (dop?.tloDoSlotu)
+    if (!drukarnia && dop?.tloDoSlotu)
       naStronie.forEach((c, i) => {
         const sz = szablon(c.karta)!;
         const ob = prostokaty[i]!.obszar;
@@ -686,19 +765,31 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
           ostrzezenia.push({ kartaId: c.karta.id, komunikat: 'karta-w-strefie-przyciecia' });
       });
     }
-    const odcinki =
-      uklad && !uklad.linieCiecia
+    const odcinki = drukarnia
+      ? []
+      : uklad && !uklad.linieCiecia
         ? []
         : odcinkiCiecia(prostokaty, slot, odstep, dop?.linie === 'karta');
-    for (const o of przytnijLinieCiecia(odcinki, granice, u.linie))
-      elementy.push(liniaCiecia(o, u.linie));
+    if (drukarnia) {
+      if (drukarnia.znacznikiCiecia) {
+        elementy.push(
+          ...elementyZnacznikowCiecia(
+            prostokaty.map((p) => p.karta),
+            drukarnia.spad,
+          ),
+        );
+      }
+    } else {
+      for (const o of przytnijLinieCiecia(odcinki, granice, u.linie))
+        elementy.push(liniaCiecia(o, u.linie));
+    }
 
     const dolSiatki = poczatek.y + rzedySiatki * slot.wysokosc + odstepRzedu(rzedySiatki - 1);
     if (u.tytul && tytul) {
       glify.push(tytul.glify);
       const pion = u.tytul.polozenie === 'lewo';
-      const x = pion ? poczatek.x - u.tytul.odstep - tytul.wys : poczatek.x;
-      const y = pion ? dolSiatki : poczatek.y - pas - u.tytul.odstep - tytul.wys;
+      const x = pion ? poczatek.x - odstepTytulu - tytul.wys : poczatek.x;
+      const y = pion ? dolSiatki : poczatek.y - pas - odstepTytulu - tytul.wys;
       elementy.push({
         typ: 'grupa',
         x,
@@ -749,7 +840,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         });
       }
     }
-    if (!uklad && u.nozyczki && odcinki.length > 0) {
+    if (!uklad && !drukarnia && u.nozyczki && odcinki.length > 0) {
       const zajete = prostokaty.flatMap((p) => (dop?.tloDoSlotu ? [p.karta, p.obszar] : [p.karta]));
       if (u.poczatekSiatki) {
         const znacznik = nozyczkiNaScenie(
@@ -812,6 +903,82 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
 }
 
 /**
+ * Tryb drukarni – jedna karta na stronę. Rozmiar każdej strony wynika dokładnie z formatu netto
+ * karty powiększonego o spad i (gdy włączone) miejsce na znaczniki cięcia.
+ */
+function zbudujPojedyncze(w: {
+  arkusz: Arkusz;
+  karty: Karta[];
+  slot: { szerokosc: Mm; wysokosc: Mm };
+  ostrzezenia: OstrzezenieArkusza[];
+  scenyKart: ReturnType<typeof fabrykaScenKart>;
+  drukarnia: UstawieniaDrukarni;
+}): WynikArkusza {
+  const { arkusz, karty, slot, ostrzezenia, scenyKart, drukarnia } = w;
+  const u = arkusz.ustawienia;
+  const lista = egzemplarze(karty, () => ({ kolumny: 1, rzedy: 1 }), scenyKart.liczba);
+  const strony: Scena[] = [];
+  const pozycjeKart: PozycjaKartyNaStronie[] = [];
+  if (lista.length === 0) {
+    const pusta = rozmiarStronyPojedynczejKarty(
+      { szer: slot.szerokosc, wys: slot.wysokosc },
+      drukarnia.spad,
+      drukarnia.znacznikiCiecia,
+    );
+    strony.push({ szer: pusta.szer, wys: pusta.wys, elementy: [], glify: {} });
+  } else {
+    lista.forEach((e, n) => {
+      const s = scenyKart.scena(e.karta, e.numer);
+      const cel = rozmiarStronyPojedynczejKarty(
+        { szer: s.szer, wys: s.wys },
+        drukarnia.spad,
+        drukarnia.znacznikiCiecia,
+      );
+      const gotowa = zbudujStronePojedynczejKarty(s, {
+        spad: drukarnia.spad,
+        znacznikiCiecia: drukarnia.znacznikiCiecia,
+      });
+      pozycjeKart.push({
+        strona: n,
+        karta: e.karta,
+        numer: e.numer,
+        ...(e.czesc !== undefined ? { czesc: e.czesc } : {}),
+        x: cel.x,
+        y: cel.y,
+        szer: s.szer,
+        wys: s.wys,
+        obrot: 0,
+      });
+      strony.push({
+        szer: gotowa.szer,
+        wys: gotowa.wys,
+        elementy: u.czarnoBialy ? wSkaliSzarosci(gotowa.elementy) : gotowa.elementy,
+        glify: gotowa.glify,
+        ...symboleSceny(u.czarnoBialy ? symboleWSzarosci(gotowa.symbole) : gotowa.symbole),
+      });
+    });
+  }
+  const pierwszy = rozmiarStronyPojedynczejKarty(
+    { szer: slot.szerokosc, wys: slot.wysokosc },
+    drukarnia.spad,
+    drukarnia.znacznikiCiecia,
+  );
+  return {
+    strony,
+    pozycjeKart,
+    rozmieszczenie: { karty: [], regiony: [], liczbaStron: strony.length, ostrzezenia: [] },
+    poczatekSiatki: { x: pierwszy.x, y: pierwszy.y },
+    slot,
+    siatka: { kolumny: 1, rzedy: 1, grupy: false },
+    odstepKolumny: () => 0,
+    odstepRzedu: () => 0,
+    odstep: { x: 0, y: 0 },
+    naglowki: [],
+    ostrzezenia,
+  };
+}
+
+/**
  * Arkusz w trybie mieszanych rozmiarów: karty o własnych wymiarach ułożone w pasach (`pasy.ts`),
  * wspólne linie cięcia scalone. Tło do slotu i luz nie mają tu zastosowania (karta zajmuje
  * dokładnie swój wymiar), przypięcia slotów, nagłówki ręczne i własny układ są ignorowane.
@@ -825,15 +992,31 @@ function zbudujMieszane(w: {
   slot: { szerokosc: Mm; wysokosc: Mm };
   obszar: { x: Mm; y: Mm; szer: Mm; wys: Mm };
   tytul: Napis | undefined;
+  odstepTytulu: Mm;
   ostrzezenia: OstrzezenieArkusza[];
   scenyKart: ReturnType<typeof fabrykaScenKart>;
+  drukarnia?: UstawieniaDrukarni;
+  odstepDrukarni: Mm;
 }): WynikArkusza {
-  const { arkusz, talia, ctx, szablon, slot, obszar, ostrzezenia, scenyKart } = w;
+  const {
+    arkusz,
+    talia,
+    ctx,
+    szablon,
+    slot,
+    obszar,
+    odstepTytulu,
+    ostrzezenia,
+    scenyKart,
+    drukarnia,
+    odstepDrukarni,
+  } = w;
   let { tytul } = w;
   const u = arkusz.ustawienia;
   const strona = wymiaryStrony(u);
   const opcje = u.mieszane ?? MIESZANE_DOMYSLNE;
   const stylGrup = u.grupy;
+  const rezerwa = drukarnia ? rezerwaZnacznika(drukarnia.spad, drukarnia.znacznikiCiecia) : 0;
 
   // Grupy talii: każda zaczyna nowy pas, nagłówek nad nim (styl jak w układzie siatki).
   const grupy = stylGrup && talia.grupy && talia.grupy.length > 0 ? talia.grupy : undefined;
@@ -844,7 +1027,7 @@ function zbudujMieszane(w: {
   const wysNaglowka = new Map<string, number>();
   for (const g of grupy ?? []) {
     const n = naglowekGrupy(g);
-    wysNaglowka.set(g.id, n.naglowek.wys + n.opis.wys + stylGrup!.odstepOdKart);
+    wysNaglowka.set(g.id, n.naglowek.wys + n.opis.wys + Math.max(stylGrup!.odstepOdKart, rezerwa));
   }
   const grupaKarty = new Map<string, string>();
   for (const g of grupy ?? []) for (const id of g.karty) grupaKarty.set(id, g.id);
@@ -871,7 +1054,7 @@ function zbudujMieszane(w: {
   const pakuj = opcje.pakowanie === 'maxrects' ? ulozMaxRects : ulozPasy;
   const uklad = pakuj(wejscie, {
     obszar,
-    odstep: opcje.odstep,
+    odstep: Math.max(opcje.odstep, odstepDrukarni),
     obracaj: opcje.obracaj,
     grupujRozmiary: opcje.grupujRozmiary,
     kolejnosc: opcje.kolejnosc,
@@ -882,7 +1065,10 @@ function zbudujMieszane(w: {
   const kartaPoId = new Map(w.karty.map((k) => [k.id, k]));
   // Jedno ostrzeżenie na kartę (nie na każdy egzemplarz).
   for (const kartaId of new Set(uklad.pominiete.map((k) => k.slice(0, k.lastIndexOf('#')))))
-    ostrzezenia.push({ kartaId, komunikat: 'karta-wieksza-niz-strona' });
+    ostrzezenia.push({
+      kartaId,
+      komunikat: drukarnia ? 'papier-za-maly-na-spad' : 'karta-wieksza-niz-strona',
+    });
   const liczbaStron = Math.max(1, uklad.liczbaStron);
   // Współrzędne na stronie (mm od rogu).
   const karty = uklad.karty.map((k) => ({
@@ -952,15 +1138,21 @@ function zbudujMieszane(w: {
           ostrzezenia.push({ kartaId: c.kartaId, komunikat: 'karta-w-strefie-przyciecia' });
       }
     }
-    const odcinki = odcinkiCieciaProstokatow(naStronie);
-    for (const o of przytnijLinieCiecia(odcinki, granice, u.linie))
-      elementy.push(liniaCiecia(o, u.linie));
+    const odcinki = drukarnia ? [] : odcinkiCieciaProstokatow(naStronie);
+    if (drukarnia) {
+      if (drukarnia.znacznikiCiecia) {
+        elementy.push(...elementyZnacznikowCiecia(naStronie, drukarnia.spad));
+      }
+    } else {
+      for (const o of przytnijLinieCiecia(odcinki, granice, u.linie))
+        elementy.push(liniaCiecia(o, u.linie));
+    }
 
     if (u.tytul && tytul) {
       glify.push(tytul.glify);
       const pion = u.tytul.polozenie === 'lewo';
-      const x = pion ? obszar.x - u.tytul.odstep - tytul.wys : obszar.x;
-      const y = pion ? obszar.y + obszar.wys : obszar.y - u.tytul.odstep - tytul.wys;
+      const x = pion ? obszar.x - odstepTytulu - tytul.wys : obszar.x;
+      const y = pion ? obszar.y + obszar.wys : obszar.y - odstepTytulu - tytul.wys;
       elementy.push({
         typ: 'grupa',
         x,
@@ -996,7 +1188,7 @@ function zbudujMieszane(w: {
         );
       }
     }
-    if (u.nozyczki)
+    if (!drukarnia && u.nozyczki)
       elementy.push(
         ...nozyczkiNaPoczatkach(u.nozyczki, odcinki, naStronie, polaNapisow, granice, u.linie),
       );
@@ -1345,42 +1537,50 @@ export function zSzarymiObrazami(scena: Scena): Scena {
 export function stronaTestowa(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza): Scena {
   // Prawdziwa talia: ten sam slot (z szablonu kart) i ten sam pas nagłówków co na kartce.
   const w = zbudujArkusz({ ...arkusz, liczbaStron: 1 }, talia, ctx);
-  const { szer, wys } = wymiaryStrony(arkusz.ustawienia);
+  const { szer, wys } = w.strony[0]
+    ? { szer: w.strony[0].szer, wys: w.strony[0].wys }
+    : wymiaryStrony(arkusz.ustawienia);
   const elementy: ElementSceny[] = [];
   const glify: Record<string, DefinicjaGlifu>[] = [];
   const obrys = { kolor: '#000000', grubosc: 0.2 };
   const krzyzyk = { kolor: '#000000', grubosc: 0.15 };
   const styl: StylTekstu = { czcionka: 'tytul', rozmiar: 4, kolor: '#000000' };
   const s = w.slot;
+  const pojedyncza =
+    arkusz.ustawienia.drukarnia?.wlaczony && arkusz.ustawienia.drukarnia.uklad === 'pojedyncza';
   // Pola: cała siatka; przy grupach talii (kolumny przesunięte regionami) – miejsca kart strony 1.
-  const pola = w.mieszane
-    ? // Mieszane rozmiary: obrysy kart pierwszej strony (karta zajmuje dokładnie swój wymiar).
-      w.mieszane.karty
+  const pola = pojedyncza
+    ? w.pozycjeKart
         .filter((c) => c.strona === 0)
         .map((c) => ({ x: c.x, y: c.y, szer: c.szer, wys: c.wys }))
-    : w.siatka.grupy
-      ? w.rozmieszczenie.karty
+    : w.mieszane
+      ? // Mieszane rozmiary: obrysy kart pierwszej strony (karta zajmuje dokładnie swój wymiar).
+        w.mieszane.karty
           .filter((c) => c.strona === 0)
-          .map((c) => ({
-            x:
-              w.poczatekSiatki.x +
-              c.xRegionu +
-              w.odstepKolumny(0, c.kolumna) +
-              c.kolumna * s.szerokosc,
-            y: w.poczatekSiatki.y + c.rzad * s.wysokosc + w.odstepRzedu(c.rzad),
-            szer: c.kolumny * s.szerokosc,
-            wys: c.rzedy * s.wysokosc,
-          }))
-      : Array.from({ length: w.siatka.rzedy * w.siatka.kolumny }, (_, i) => {
-          const k = i % w.siatka.kolumny;
-          const r = Math.floor(i / w.siatka.kolumny);
-          return {
-            x: w.poczatekSiatki.x + w.odstepKolumny(0, k) + k * s.szerokosc,
-            y: w.poczatekSiatki.y + r * s.wysokosc + w.odstepRzedu(r),
-            szer: s.szerokosc,
-            wys: s.wysokosc,
-          };
-        });
+          .map((c) => ({ x: c.x, y: c.y, szer: c.szer, wys: c.wys }))
+      : w.siatka.grupy
+        ? w.rozmieszczenie.karty
+            .filter((c) => c.strona === 0)
+            .map((c) => ({
+              x:
+                w.poczatekSiatki.x +
+                c.xRegionu +
+                w.odstepKolumny(0, c.kolumna) +
+                c.kolumna * s.szerokosc,
+              y: w.poczatekSiatki.y + c.rzad * s.wysokosc + w.odstepRzedu(c.rzad),
+              szer: c.kolumny * s.szerokosc,
+              wys: c.rzedy * s.wysokosc,
+            }))
+        : Array.from({ length: w.siatka.rzedy * w.siatka.kolumny }, (_, i) => {
+            const k = i % w.siatka.kolumny;
+            const r = Math.floor(i / w.siatka.kolumny);
+            return {
+              x: w.poczatekSiatki.x + w.odstepKolumny(0, k) + k * s.szerokosc,
+              y: w.poczatekSiatki.y + r * s.wysokosc + w.odstepRzedu(r),
+              szer: s.szerokosc,
+              wys: s.wysokosc,
+            };
+          });
   // Obrysy wokół karty (nie slotu): rozmiar karty z pierwszego szablonu talii w trybie mm.
   const dop = arkusz.ustawienia.dopasowanie;
   const wzor = talia.karty

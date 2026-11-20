@@ -502,6 +502,14 @@ const arkusz = obj({
       }),
     ),
     dwustronny: opc(obj({ wlaczony: z.boolean(), krawedz: z.enum(['dluga', 'krotka']) })),
+    drukarnia: opc(
+      obj({
+        wlaczony: z.boolean(),
+        spad: liczba.min(0).max(10),
+        znacznikiCiecia: z.boolean(),
+        uklad: z.enum(['siatka', 'pojedyncza']),
+      }),
+    ),
   }).refine((u) => u.papier !== 'wlasny' || u.wymiaryPapieru !== undefined, {
     // Funkcja – komunikat powstaje przy błędzie, w bieżącym języku (nie przy ładowaniu modułu).
     error: () => t('dane.wymiaryPapieru'),
@@ -798,6 +806,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     24: (d) => d,
     // 25→26: ustawienia druku dwustronnego arkusza są opcjonalne (domyślnie tylko przody).
     25: (d) => d,
+    // 26→27: ustawienia trybu drukarni arkusza są opcjonalne (domyślnie druk domowy).
+    26: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -829,6 +839,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     24: (d) => d,
     // 25→26: ustawienia druku dwustronnego arkusza są opcjonalne.
     25: (d) => d,
+    // 26→27: ustawienia trybu drukarni arkusza są opcjonalne.
+    26: (d) => d,
   },
 };
 

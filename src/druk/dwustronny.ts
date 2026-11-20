@@ -8,7 +8,7 @@ import {
 import type { Mm } from '../model/jednostki';
 import { wymiaryKarty, type Rewers, type StylTekstu, type Talia } from '../model/szablon';
 import type { RejestrCzcionek } from '../silnik/czcionki';
-import { renderujRewers, type Ostrzezenie } from '../silnik/karta';
+import { MIN_DPI_DRUKARNI, renderujRewers, type Ostrzezenie } from '../silnik/karta';
 import {
   polaczGlify,
   symboleSceny,
@@ -26,6 +26,7 @@ import {
   type OstrzezenieArkusza,
   type WynikArkusza,
 } from './arkusz';
+import { elementyZnacznikowCiecia } from './drukarnia';
 
 /** Oś odbicia stron rewersów w aktualnej orientacji papieru. */
 export type OsOdwracania = 'pionowa' | 'pozioma';
@@ -97,17 +98,19 @@ export function zbudujStronyRewersow(
   ctx: KontekstRewersow,
 ): WynikRewersow {
   const u = arkusz.ustawienia;
-  const strona = wymiaryStrony(u);
+  const domyslnaStrona = wymiaryStrony(u);
   const krawedz = u.dwustronny?.krawedz ?? 'dluga';
-  const os = osOdwracania(strona, krawedz);
-  const dop = u.rozmiary === 'mieszane' ? undefined : u.dopasowanie;
+  const drukarnia = u.drukarnia?.wlaczony ? u.drukarnia : undefined;
+  const spad = drukarnia ? drukarnia.spad : 0;
+  const minDpi = drukarnia ? MIN_DPI_DRUKARNI : undefined;
+  const dop = drukarnia || u.rozmiary === 'mieszane' ? undefined : u.dopasowanie;
   const pliki = {
     czcionki: ctx.czcionki,
     ...(ctx.obraz ? { obraz: ctx.obraz } : {}),
     ...(ctx.elementy ? { elementy: ctx.elementy } : {}),
   };
 
-  // Pamięć wyrenderowanych rewersów (ta sama definicja + wymiary docelowe → jeden render).
+  // Pamięć wyrenderowanych rewersów (ta sama definicja + wymiary docelowe + spad → jeden render).
   const pamiec = new Map<string, { scena: Scena; ostrzezenia: Ostrzezenie[] }>();
   const zgloszoneOstrzezenia = new Set<string>();
   const ostrzezenia: OstrzezenieArkusza[] = [];
@@ -119,13 +122,15 @@ export function zbudujStronyRewersow(
     promienRogow: Mm | undefined,
     kartaId: string,
   ) => {
-    const klucz = `${rewers.id}|${kartaSzer}|${kartaWys}|${promienRogow ?? ''}`;
+    const klucz = `${rewers.id}|${kartaSzer}|${kartaWys}|${promienRogow ?? ''}|${spad}|${minDpi ?? ''}`;
     let w = pamiec.get(klucz);
     if (!w) {
       w = renderujRewers(rewers, pliki, {
         szer: kartaSzer,
         wys: kartaWys,
         ...(promienRogow ? { promienRogow } : {}),
+        ...(spad > 0 ? { spad } : {}),
+        ...(minDpi ? { minDpi } : {}),
       });
       pamiec.set(klucz, w);
     }
@@ -143,6 +148,11 @@ export function zbudujStronyRewersow(
   const puste: boolean[] = [];
 
   for (let n = 0; n < wynikPrzodu.strony.length; n++) {
+    const stronaPrzodu = wynikPrzodu.strony[n];
+    const strona = stronaPrzodu
+      ? { szer: stronaPrzodu.szer, wys: stronaPrzodu.wys }
+      : domyslnaStrona;
+    const os = osOdwracania(strona, krawedz);
     const pozycje = wynikPrzodu.pozycjeKart.filter((p) => p.strona === n);
     const elementy: ElementSceny[] = [];
     const glify: Record<string, DefinicjaGlifu>[] = [];
@@ -175,6 +185,7 @@ export function zbudujStronyRewersow(
       }
     }
 
+    const celeNetto: { x: Mm; y: Mm; szer: Mm; wys: Mm }[] = [];
     for (const { p, szablon, rewers } of doNarysowania) {
       const { szer: kartaSzer, wys: kartaWys } = wymiaryKarty(szablon, p.karta);
       const scenaRewersu = renderujDocelowy(
@@ -187,6 +198,7 @@ export function zbudujStronyRewersow(
       glify.push(scenaRewersu.glify);
       symbole.push(scenaRewersu.symbole);
       const cel = odbijProstokat(p, strona, os);
+      celeNetto.push(cel);
       const phi = katRewersu(p.obrot, os);
       if (phi === 0) {
         elementy.push({ typ: 'grupa', x: cel.x, y: cel.y, elementy: scenaRewersu.elementy });
@@ -200,6 +212,10 @@ export function zbudujStronyRewersow(
           elementy: scenaRewersu.elementy,
         });
       }
+    }
+
+    if (drukarnia?.znacznikiCiecia && celeNetto.length > 0) {
+      elementy.push(...elementyZnacznikowCiecia(celeNetto, spad));
     }
 
     puste.push(doNarysowania.length === 0);
@@ -344,7 +360,7 @@ export function stronyTestoweDwustronne(
 ): [Scena, Scena] {
   const w = zbudujArkusz({ ...arkusz, liczbaStron: 1 }, talia, ctx);
   const u = arkusz.ustawienia;
-  const strona = wymiaryStrony(u);
+  const strona = w.strony[0] ? { szer: w.strony[0].szer, wys: w.strony[0].wys } : wymiaryStrony(u);
   const krawedz = u.dwustronny?.krawedz ?? 'dluga';
   const os = osOdwracania(strona, krawedz);
   const dop = u.rozmiary === 'mieszane' ? undefined : u.dopasowanie;

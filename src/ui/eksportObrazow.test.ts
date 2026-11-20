@@ -65,6 +65,41 @@ describe('eksport obrazów', () => {
     expect([k[0]!.scena.szer, k[0]!.scena.wys]).toEqual([63, 88]);
   });
 
+  it('karty osobno w trybie drukarni zachowują spad i miejsce na znaczniki cięcia', () => {
+    const talia: Talia = {
+      id: 't',
+      nazwa: 't',
+      karty: [{ id: 'a', szablonId: szablonCzaru.id, dane: daneCzaru, ilosc: 1 }],
+    };
+    const zasoby = {
+      czcionki: rejestrTestowy().przypiszRole('tytul', 'EB Garamond'),
+      szablony: new Map([[szablonCzaru.id, szablonCzaru]]),
+      obrazy: new Map(),
+    };
+    const zeZnacznikami: Arkusz = {
+      ...arkusz('D'),
+      ustawienia: {
+        ...arkusz('D').ustawienia,
+        drukarnia: { wlaczony: true, spad: 3, znacznikiCiecia: true, uklad: 'siatka' },
+      },
+    };
+    const bezZnacznikow: Arkusz = {
+      ...arkusz('D2'),
+      ustawienia: {
+        ...arkusz('D2').ustawienia,
+        drukarnia: { wlaczony: true, spad: 3, znacznikiCiecia: false, uklad: 'pojedyncza' },
+      },
+    };
+    const k1 = scenyKart([{ arkusz: zeZnacznikami, talia }], zasoby, 'png');
+    // 63 + 2*(3+1+4+2) = 83, 88 + 20 = 108; 8 kresek znaczników cięcia.
+    expect([k1[0]!.scena.szer, k1[0]!.scena.wys]).toEqual([83, 108]);
+    expect(k1[0]!.scena.elementy.filter((e) => e.typ === 'linia')).toHaveLength(8);
+    const k2 = scenyKart([{ arkusz: bezZnacznikow, talia }], zasoby, 'png');
+    // Bez znaczników: dokładnie brutto 63+6 = 69 × 88+6 = 94.
+    expect([k2[0]!.scena.szer, k2[0]!.scena.wys]).toEqual([69, 94]);
+    expect(k2[0]!.scena.elementy.filter((e) => e.typ === 'linia')).toHaveLength(0);
+  });
+
   it('jeden plik bez archiwum, kilka – ZIP', () => {
     const p = { nazwa: 'a.png', bajty: new Uint8Array([1, 2]) };
     expect(spakuj([p], 'x.zip')).toEqual({ ...p, typ: 'image/png' });

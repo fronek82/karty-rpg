@@ -1,5 +1,5 @@
 import type { ElementOzdobny } from '../ozdobniki/typy';
-import { wymiaryStrony, type Arkusz } from '../model/arkusz';
+import type { Arkusz } from '../model/arkusz';
 import type { Mm } from '../model/jednostki';
 import type { Rewers, Szablon, Talia, WariantCzcionki } from '../model/szablon';
 import { RejestrCzcionek, wczytajCzcionke } from '../silnik/czcionki';
@@ -107,13 +107,12 @@ export function scenyZadaniaPdf(z: ZadaniePdf) {
       a.ustawienia.czarnoBialy ? wynik.strony.map(zSzarymiObrazami) : wynik.strony
     ).map(przesunPrzod);
     if (!jestDwustronny) return przody;
-    const rozmiar = wymiaryStrony(a.ustawienia);
     const tyly = a.ustawienia.dwustronny?.wlaczony
       ? zbudujStronyRewersow(a, talia, wynik, { ...ctx, rewersy }).strony.map((s) =>
           przesunTyl(a.ustawienia.czarnoBialy ? zSzarymiObrazami(s) : s),
         )
-      : przody.map(() => pustaStrona(rozmiar));
-    return przeplecStronyDwustronne(przody, tyly, rozmiar);
+      : przody.map((p) => pustaStrona({ szer: p.szer, wys: p.wys }));
+    return przeplecStronyDwustronne(przody, tyly);
   });
 }
 
