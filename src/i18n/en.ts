@@ -1275,6 +1275,27 @@ export const en: Slownik = {
   'dekoracje.zabarwienie': 'Background color tint',
   'dekoracje.kolorZabarwienia': 'Tint color',
   'dekoracje.silaZabarwienia': 'Tint strength (%)',
+  'dwustronny.tytul': 'Double-sided printing',
+  'dwustronny.wlacz': 'Print both sides (front and back page pairs)',
+  'dwustronny.krawedz': 'Flip edge',
+  'dwustronny.dluga': 'Long edge',
+  'dwustronny.krotka': 'Short edge',
+  'dwustronny.osPionowa': 'Reflection axis: vertical (book flip).',
+  'dwustronny.osPozioma': 'Reflection axis: horizontal (calendar flip).',
+  'dwustronny.korektaOpis': 'Local shift offset for back pages in this browser (+ right / down).',
+  'dwustronny.korektaX': 'Back offset X (mm)',
+  'dwustronny.korektaY': 'Back offset Y (mm)',
+  'dwustronny.wydrukProbny': 'Duplex calibration test (PDF)',
+  'dwustronny.wydrukProbnyOpis':
+    '2 pages (front and mirrored back) with crosshairs and top arrows – print double-sided at 100% scale and check against light.',
+  'dwustronny.plikProbny': 'duplex-test',
+  'dwustronny.probnyGotowy': 'Duplex calibration test PDF downloaded.',
+  'dwustronny.przod': 'Front',
+  'dwustronny.tyl': 'Back',
+  'dwustronny.tylPusty': 'Back (blank – pair alignment)',
+  'dwustronny.podgladTylu': 'Back of page {numer} of {liczba}',
+  'dwustronny.testPrzod': 'FRONT · 100%',
+  'dwustronny.testTyl': 'BACK · 100%',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */

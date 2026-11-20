@@ -27,8 +27,9 @@ import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 23 – M4-1: rewersy projektu i opcjonalne przypisania na talii, szablonie i karcie.
  * 24 – M4-2: tryb tekstury tła rewersu (`teksturaTryb`) i grafika SVG z biblioteki na polu ikony (`element`).
  * 25 – M4-3: tekst po łuku (`PoleTekst.luk`), krycie warstwy (`krycie`) oraz krycie i zabarwienie tekstury tła rewersu.
+ * 26 – M4-4: ustawienia druku dwustronnego arkusza (`UstawieniaArkusza.dwustronny`).
  */
-export const WERSJA_SCHEMATU = 25;
+export const WERSJA_SCHEMATU = 26;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

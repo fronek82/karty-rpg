@@ -44,6 +44,7 @@ import {
   zSzarymiObrazami,
   type WynikArkusza,
 } from '../../druk/arkusz';
+import { zbudujStronyRewersow } from '../../druk/dwustronny';
 import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
 import { t, tJesliJest, tn } from '../../i18n';
 import type { WyrenderowanaKarta } from '../../silnik/karta';
@@ -57,6 +58,7 @@ import {
   wymiaryKarty,
   type Karta,
   type PoleObraz,
+  type Rewers,
   type Szablon,
   type Talia,
   type Wezel,
@@ -69,7 +71,13 @@ import { scenaDoSvg } from '../../silnik/svg';
 import { baza } from '../baza';
 import { komunikatyBrakujacychWariantow, tekstOstrzezeniaArkusza } from '../ostrzezenia';
 import { pdfWWatku } from '../pdfWWatku';
-import { odczytajKalibracje, zapiszKalibracje, type Kalibracja } from '../kalibracja';
+import {
+  odczytajKalibracje,
+  odczytajKalibracjeRewersu,
+  zapiszKalibracje,
+  zapiszKalibracjeRewersu,
+  type Kalibracja,
+} from '../kalibracja';
 import { obrazyScen, scenyKart, scenyStron, spakuj, type FormatObrazu } from '../eksportObrazow';
 import type { ZadaniePdf } from '../../druk/budowaPdf';
 import { nazwaPliku, zapiszPlik } from '../pliki';
@@ -157,6 +165,8 @@ interface Kartka {
   wynik?: WynikArkusza;
   geometria?: Geometria;
   svg: string[];
+  svgRewersow?: string[];
+  pusteRewersy?: boolean[];
   blad?: string;
 }
 
@@ -298,6 +308,7 @@ export function EdytorKartki({
         {
           arkusz: Arkusz;
           talia: Talia;
+          rewersy: readonly Rewers[] | undefined;
           zasoby: unknown;
           jezyk: string;
           kalibracja: Kalibracja;
@@ -310,10 +321,17 @@ export function EdytorKartki({
     ustawKalibracje(k);
     zapiszKalibracje(k);
   };
+  const [kalibracjaRewersu, ustawKalibracjeRewersu] = useState(odczytajKalibracjeRewersu);
+  const zmienKalibracjeRewersu = (k: Kalibracja) => {
+    ustawKalibracjeRewersu(k);
+    zapiszKalibracjeRewersu(k);
+  };
   const arkusze = useDeferredValue(projekt.arkusze);
   const talie = useDeferredValue(projekt.talie);
+  const rewersy = useDeferredValue(projekt.rewersy);
   const kartki = useMemo((): Kartka[] => {
     if (!zasoby || !pamiecKart) return [];
+    const rewersyMapa = new Map((rewersy ?? []).map((r) => [r.id, r] as const));
     return arkusze.map((arkusz) => {
       const talia = talie.find((x) => x.id === arkusz.taliaId)!;
       const z = pamiecKartek.get(arkusz.id);
@@ -321,6 +339,7 @@ export function EdytorKartki({
         z &&
         z.arkusz === arkusz &&
         z.talia === talia &&
+        (!arkusz.ustawienia.dwustronny?.wlaczony || z.rewersy === rewersy) &&
         z.zasoby === zasoby &&
         z.jezyk === jezykUi &&
         z.kalibracja === kalibracja
@@ -328,10 +347,10 @@ export function EdytorKartki({
         return z.k;
       let k: Kartka;
       try {
-        const wynik = zbudujArkusz(arkusz, talia, {
+        const ctxArkusza = {
           czcionki: zasoby.czcionki,
           szablony: zasoby.szablony,
-          obraz: (id) => zasoby.obrazy.get(id)?.info,
+          obraz: (id: string) => zasoby.obrazy.get(id)?.info,
           ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
           pamiecKart,
           kalibracja,
@@ -341,7 +360,25 @@ export function EdytorKartki({
                 pamiecKontynuacji: pamiecKontynuacji.sceny,
               }
             : {}),
-        });
+        };
+        const wynik = zbudujArkusz(arkusz, talia, ctxArkusza);
+        let svgRewersow: string[] | undefined;
+        let pusteRewersy: boolean[] | undefined;
+        if (arkusz.ustawienia.dwustronny?.wlaczony) {
+          const wRev = zbudujStronyRewersow(arkusz, talia, wynik, {
+            ...ctxArkusza,
+            rewersy: rewersyMapa,
+          });
+          if (wRev.ostrzezenia.length > 0) wynik.ostrzezenia.push(...wRev.ostrzezenia);
+          svgRewersow = wRev.strony.map((s, i) =>
+            scenaDoSvg(arkusz.ustawienia.czarnoBialy ? zSzarymiObrazami(s) : s, {
+              adresObrazu: (id) => zasoby.obrazy.get(id)?.adres,
+              przedrostekId: `${arkusz.id}-r${i}-`,
+              atrybuty: { 'aria-hidden': 'true', class: 'svg-strony' },
+            }),
+          );
+          pusteRewersy = wRev.puste;
+        }
         k = {
           arkusz,
           talia,
@@ -354,14 +391,34 @@ export function EdytorKartki({
               atrybuty: { 'aria-hidden': 'true', class: 'svg-strony' },
             }),
           ),
+          ...(svgRewersow ? { svgRewersow } : {}),
+          ...(pusteRewersy ? { pusteRewersy } : {}),
         };
       } catch (e) {
         k = { arkusz, talia, svg: [], blad: e instanceof Error ? e.message : String(e) };
       }
-      pamiecKartek.set(arkusz.id, { arkusz, talia, zasoby, jezyk: jezykUi, kalibracja, k });
+      pamiecKartek.set(arkusz.id, {
+        arkusz,
+        talia,
+        rewersy,
+        zasoby,
+        jezyk: jezykUi,
+        kalibracja,
+        k,
+      });
       return k;
     });
-  }, [arkusze, talie, zasoby, pamiecKart, pamiecKartek, pamiecKontynuacji, jezykUi, kalibracja]);
+  }, [
+    arkusze,
+    talie,
+    rewersy,
+    zasoby,
+    pamiecKart,
+    pamiecKartek,
+    pamiecKontynuacji,
+    jezykUi,
+    kalibracja,
+  ]);
 
   // Menu wolnego miejsca wskazuje je indeksem na liście układu – po zmianie układu (mieszane
   // rozmiary) lista jest inna, więc menu zamykamy.
@@ -659,8 +716,8 @@ export function EdytorKartki({
 
   // --- Gesty myszy (delegacja zdarzeń na warstwach stron).
   const stronaPod = (x: number, y: number) => {
-    const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('.strona-kartki');
-    if (!el) return undefined;
+    const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('.strona-kartki[data-strona]');
+    if (!el || el.dataset.strona === undefined) return undefined;
     return { el, arkuszId: el.dataset.arkusz!, strona: Number(el.dataset.strona) };
   };
   const mmNaStronie = (el: HTMLElement, g: Geometria, x: number, y: number) => {
@@ -1055,6 +1112,7 @@ export function EdytorKartki({
       arkusze: projekt.arkusze,
       talie: projekt.talie,
       szablony: [...z.szablony.values()],
+      ...(projekt.rewersy?.length ? { rewersy: projekt.rewersy } : {}),
       czcionki: z.plikiCzcionek,
       ...(z.elementy ? { elementy: [...z.elementy] } : {}),
       role: z.role,
@@ -1067,6 +1125,9 @@ export function EdytorKartki({
       })),
       // Kalibracja przesuwa wydruk PDF. Margines znaczników uwzględnia ją także w podglądzie.
       ...(kalibracja.x || kalibracja.y ? { przesuniecie: kalibracja } : {}),
+      ...(kalibracjaRewersu.x || kalibracjaRewersu.y
+        ? { przesuniecieRewersu: kalibracjaRewersu }
+        : {}),
       ...dodatki,
     };
   };
@@ -1109,6 +1170,29 @@ export function EdytorKartki({
         nazwaPliku(`${arkusz.nazwa}-${t('pobierz.plikTestowy')}`, '.pdf'),
       );
       ustawStatusPdf(t('pobierz.wydrukTestowyGotowy'));
+    } catch (e) {
+      ustawStatusPdf(
+        t('kartka.bladPdf', { szczegoly: e instanceof Error ? e.message : String(e) }),
+      );
+    }
+  };
+
+  const wydrukTestowyDwustronny = async (arkusz: Arkusz) => {
+    if (!zasoby) return;
+    ustawStatusPdf(t('arkusze.generowanie'));
+    try {
+      const bajty = await pdfWWatku(
+        zadaniePdf(zasoby, {
+          testowyDwustronny: arkusz.id,
+          etykietyTestowe: { przod: t('dwustronny.testPrzod'), tyl: t('dwustronny.testTyl') },
+        }),
+      );
+      zapiszPlik(
+        bajty,
+        'application/pdf',
+        nazwaPliku(`${arkusz.nazwa}-${t('dwustronny.plikProbny')}`, '.pdf'),
+      );
+      ustawStatusPdf(t('dwustronny.probnyGotowy'));
     } catch (e) {
       ustawStatusPdf(
         t('kartka.bladPdf', { szczegoly: e instanceof Error ? e.message : String(e) }),
@@ -1316,12 +1400,15 @@ export function EdytorKartki({
       <PanelUstawien
         kalibracja={kalibracja}
         zmienKalibracje={zmienKalibracje}
+        kalibracjaRewersu={kalibracjaRewersu}
+        zmienKalibracjeRewersu={zmienKalibracjeRewersu}
         key={arkuszZazn.id}
         edycja={edycja}
         arkusz={arkuszZazn}
         zmienUklad={zmienUklad}
         {...(wynikZazn ? { wynik: wynikZazn } : {})}
         wydrukTestowy={() => wTle(() => wydrukTestowy(arkuszZazn))}
+        wydrukTestowyDwustronny={() => wTle(() => wydrukTestowyDwustronny(arkuszZazn))}
         przelaczRozmiary={(tryb) => {
           if (tryb === 'mieszane') zmienUklad((p) => naMieszane(p, arkuszZazn.id));
           else if (zasoby) {
@@ -1811,6 +1898,304 @@ function WidokKartki({
             return;
           }
         };
+        const maRewersy = !!k.svgRewersow;
+        const stronaPrzodu = (
+          <div
+            className="strona-kartki"
+            data-arkusz={id}
+            data-strona={s}
+            style={g ? { aspectRatio: `${g.szer} / ${g.wys}` } : undefined}
+          >
+            <div className="svg-opakowanie" dangerouslySetInnerHTML={{ __html: k.svg[s] ?? '' }} />
+            {g && (k.arkusz.ustawienia.marginesBezpieczenstwa ?? 0) > 0 && (
+              // Strefa przycięcia (np. punkt foto) – tylko w edytorze, nie w druku.
+              <div className="strefa-bezpieczenstwa" aria-hidden="true">
+                <div
+                  style={stylMm(
+                    g,
+                    k.arkusz.ustawienia.marginesBezpieczenstwa!,
+                    k.arkusz.ustawienia.marginesBezpieczenstwa!,
+                    Math.max(0, g.szer - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!),
+                    Math.max(0, g.wys - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!),
+                  )}
+                />
+              </div>
+            )}
+            {g && mieszane && (
+              <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
+                {mieszane.wolne.map((w, i) =>
+                  w.strona !== s ? null : (
+                    <button
+                      key={`wolne-${i}`}
+                      type="button"
+                      className={`wolne-miejsce${menu && menu.strona === s && menu.kolumna === i ? ' aktywny' : ''}`}
+                      data-wolne={i}
+                      style={stylMm(g, w.x, w.y, w.szer, w.wys)}
+                      aria-label={t('mieszane.wolneEtykieta', {
+                        szer: Math.round(w.szer),
+                        wys: Math.round(w.wys),
+                        strona: s + 1,
+                      })}
+                      onClick={() => otworzMenu({ strona: s, kolumna: i, rzad: 0 })}
+                    >
+                      {t('mieszane.wolne', { szer: Math.round(w.szer), wys: Math.round(w.wys) })}
+                    </button>
+                  ),
+                )}
+                {kartyMieszane.map((c) => {
+                  const podnoszona =
+                    gestTu?.rodzaj === 'kolejnosc' && gestTu.ruch && gestTu.ids.includes(c.kartaId);
+                  const nazwa =
+                    nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) ||
+                    t('karta.bezNazwy');
+                  return (
+                    <button
+                      key={c.klucz}
+                      type="button"
+                      className={`karta-na-kartce${zaznaczone.has(c.kartaId) ? ' zaznaczona' : ''}${podnoszona ? ' podnoszona' : ''}`}
+                      data-karta={c.kartaId}
+                      style={stylMm(g, c.x, c.y, c.szer, c.wys)}
+                      aria-pressed={zaznaczone.has(c.kartaId)}
+                      onClick={(e) => e.detail === 0 && wybierzKarte(c.kartaId, e.shiftKey)}
+                      aria-label={t('mieszane.kartaEtykieta', {
+                        nazwa: c.czesc
+                          ? `${nazwa} – ${t('kartka.ciagDalszy')} ${c.czesc + 1}`
+                          : nazwa,
+                        strona: s + 1,
+                        szer: Math.round(c.szer),
+                        wys: Math.round(c.wys),
+                      })}
+                    />
+                  );
+                })}
+                {gestTu?.rodzaj === 'kolejnosc' &&
+                  gestTu.ruch &&
+                  gestTu.cel &&
+                  gestTu.cel.strona === s && (
+                    <div
+                      className="wskaznik-wstawienia"
+                      data-testid="wskaznik-wstawienia"
+                      style={stylMm(g, gestTu.cel.x - 0.75, gestTu.cel.y, 1.5, gestTu.cel.wys)}
+                    />
+                  )}
+                {!gestTu &&
+                  (() => {
+                    const c = kartyMieszane.find((x) => zaznaczone.has(x.kartaId));
+                    if (!c) return null;
+                    const p = stylMm(g, c.x, c.y, c.szer, c.wys);
+                    return (
+                      <div
+                        className="pasek-karty"
+                        style={{ left: p.left, top: p.top, width: 'auto', height: 'auto' }}
+                      >
+                        <button type="button" onClick={() => przesun(-1)}>
+                          ◀ {t('mieszane.wczesniej')}
+                        </button>
+                        <button type="button" onClick={() => przesun(1)}>
+                          {t('mieszane.pozniej')} ▶
+                        </button>
+                        <button type="button" onClick={duplikuj}>
+                          {t('kartka.duplikuj')}
+                        </button>
+                        <button type="button" className="niebezpieczny" onClick={usun}>
+                          {t('kartka.usun')}
+                        </button>
+                      </div>
+                    );
+                  })()}
+                {menu &&
+                  menu.strona === s &&
+                  (() => {
+                    const w = mieszane.wolne[menu.kolumna];
+                    if (!w) return null;
+                    const poPrawej = w.x + w.szer < g.szer * 0.6;
+                    const p = stylMm(g, w.x, w.y, w.szer, w.wys);
+                    return (
+                      <MenuTypu
+                        typy={typy}
+                        tytul={t('mieszane.dodajTutaj', {
+                          szer: Math.round(w.szer),
+                          wys: Math.round(w.wys),
+                        })}
+                        stopka={t('mieszane.menuOpis')}
+                        styl={
+                          poPrawej
+                            ? { left: `${((w.x + w.szer) / g.szer) * 100}%`, top: p.top }
+                            : { right: `${100 - (w.x / g.szer) * 100}%`, top: p.top }
+                        }
+                        blokada={blokada}
+                        uwaga={uwaga}
+                        wybierz={dodaj}
+                        zamknij={zamknijMenu}
+                      />
+                    );
+                  })()}
+              </div>
+            )}
+            {g && !mieszane && (
+              <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
+                {Array.from({ length: g.siatka.rzedy }, (_, r) =>
+                  Array.from({ length: g.siatka.kolumny }, (_, c) =>
+                    zajete.has(`${c},${r}`) ? null : (
+                      <button
+                        key={`${c},${r}`}
+                        type="button"
+                        className={`slot${menu && menu.strona === s && menu.kolumna === c && menu.rzad === r ? ' aktywny' : ''}`}
+                        data-slot={`${c},${r}`}
+                        tabIndex={przystanek === `${c},${r}` ? 0 : -1}
+                        onKeyDown={(e) => ruchSlotu(e, c, r)}
+                        onFocus={() =>
+                          kursor[s] !== `${c},${r}` &&
+                          ustawKursor((k) => ({ ...k, [s]: `${c},${r}` }))
+                        }
+                        style={stylProstokata(g, s, c, r)}
+                        aria-label={t('kartka.pustySlot', {
+                          strona: s + 1,
+                          kolumna: c + 1,
+                          rzad: r + 1,
+                        })}
+                        onClick={(e) =>
+                          e.detail === 0 && otworzMenu({ strona: s, kolumna: c, rzad: r })
+                        }
+                      />
+                    ),
+                  ),
+                )}
+                {(k.wynik?.naglowki ?? [])
+                  .filter((h) => h.strona === s)
+                  .map((h) => {
+                    const n = k.arkusz.naglowki?.find((x) => x.id === h.id);
+                    return (
+                      <button
+                        key={h.id}
+                        type="button"
+                        className={`naglowek-grupy${zazn?.rodzaj === 'naglowek' && zazn.id === h.id ? ' zaznaczony' : ''}`}
+                        data-naglowek={h.id}
+                        aria-pressed={
+                          zazn?.rodzaj === 'naglowek' && zazn.arkuszId === id && zazn.id === h.id
+                        }
+                        onClick={(e) => e.detail === 0 && wybierzNaglowek(h.id)}
+                        style={stylMm(g, h.x, h.y, h.szer, h.wys)}
+                        aria-label={t('kartka.naglowekEtykieta', { tekst: n?.naglowek ?? '' })}
+                      />
+                    );
+                  })}
+                {kontynuacje.map((c) => (
+                  <button
+                    key={`ciag-${c.karta.id}#${c.numer}`}
+                    type="button"
+                    className={`karta-na-kartce${zaznaczone.has(c.karta.id) ? ' zaznaczona' : ''}`}
+                    data-kontynuacja={c.karta.id}
+                    style={stylProstokata(g, s, c.kolumna, c.rzad, c.kolumny, c.rzedy)}
+                    aria-pressed={zaznaczone.has(c.karta.id)}
+                    aria-label={`${nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) || t('karta.bezNazwy')} – ${t('kartka.ciagDalszy')} ${(c.czesc ?? 0) + 1}`}
+                    onClick={(e) => wybierzKarte(c.karta.id, e.shiftKey)}
+                  />
+                ))}
+                {naStronie.map((c) => {
+                  const podnoszona =
+                    gestTu?.rodzaj === 'karty' && gestTu.ruch && gestTu.ids.includes(c.karta.id);
+                  return (
+                    <button
+                      key={c.karta.id}
+                      type="button"
+                      className={`karta-na-kartce${zaznaczone.has(c.karta.id) ? ' zaznaczona' : ''}${podnoszona ? ' podnoszona' : ''}`}
+                      data-karta={c.karta.id}
+                      style={stylProstokata(g, s, c.kolumna, c.rzad, c.kolumny, c.rzedy)}
+                      aria-pressed={zaznaczone.has(c.karta.id)}
+                      onClick={(e) => e.detail === 0 && wybierzKarte(c.karta.id, e.shiftKey)}
+                      aria-label={t('kartka.kartaEtykieta', {
+                        nazwa:
+                          nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) ||
+                          t('karta.bezNazwy'),
+                        strona: s + 1,
+                        kolumna: c.kolumna + 1,
+                        rzad: c.rzad + 1,
+                      })}
+                    />
+                  );
+                })}
+                {gestTu?.rodzaj === 'karty' &&
+                  gestTu.ruch &&
+                  gestTu.o &&
+                  karty
+                    .filter(
+                      (c) => gestTu.ids.includes(c.karta.id) && c.strona + gestTu.o!.strona === s,
+                    )
+                    .map((c) => (
+                      <div
+                        key={`p-${c.karta.id}`}
+                        className={`podglad-celu${gestTu.blad ? ' zly' : ''}`}
+                        style={stylProstokata(
+                          g,
+                          s,
+                          c.kolumna + gestTu.o!.kolumna,
+                          c.rzad + gestTu.o!.rzad,
+                          c.kolumny,
+                          c.rzedy,
+                        )}
+                      />
+                    ))}
+                {gestTu?.rodzaj === 'obszar' &&
+                  gestTu.ruch &&
+                  gestTu.strona === s &&
+                  gestTu.start &&
+                  gestTu.koniec && (
+                    <div
+                      className="obszar-zaznaczenia"
+                      style={stylProstokata(
+                        g,
+                        s,
+                        Math.min(gestTu.start.kolumna, gestTu.koniec.kolumna),
+                        Math.min(gestTu.start.rzad, gestTu.koniec.rzad),
+                        Math.abs(gestTu.start.kolumna - gestTu.koniec.kolumna) + 1,
+                        Math.abs(gestTu.start.rzad - gestTu.koniec.rzad) + 1,
+                      )}
+                    />
+                  )}
+                {pierwsza && pierwsza.strona === s && !gestTu && (
+                  <div
+                    className="pasek-karty"
+                    style={{
+                      ...stylProstokata(g, s, pierwsza.kolumna, pierwsza.rzad),
+                      width: 'auto',
+                      height: 'auto',
+                    }}
+                  >
+                    <button type="button" onClick={duplikuj}>
+                      {t('kartka.duplikuj')}
+                    </button>
+                    {rozmiar && (
+                      <button type="button" onClick={rozmiar.zmien}>
+                        {rozmiar.etykieta}
+                      </button>
+                    )}
+                    <button type="button" className="niebezpieczny" onClick={usun}>
+                      {t('kartka.usun')}
+                    </button>
+                  </div>
+                )}
+                {menu && menu.strona === s && (
+                  <MenuTypu
+                    typy={typy}
+                    styl={(() => {
+                      const p = stylProstokata(g, s, menu.kolumna + 1, menu.rzad);
+                      return menu.kolumna > g.siatka.kolumny - 4
+                        ? {
+                            right: `${100 - parseFloat(stylProstokata(g, s, menu.kolumna, menu.rzad).left)}%`,
+                            top: p.top,
+                          }
+                        : { left: p.left, top: p.top };
+                    })()}
+                    blokada={blokada}
+                    wybierz={dodaj}
+                    zamknij={zamknijMenu}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        );
         return (
           <div key={s} className="strona-opakowanie">
             <div className="etykieta-strony">
@@ -1827,306 +2212,34 @@ function WidokKartki({
                 </button>
               )}
             </div>
-            <div
-              className="strona-kartki"
-              data-arkusz={id}
-              data-strona={s}
-              style={g ? { aspectRatio: `${g.szer} / ${g.wys}` } : undefined}
-            >
-              <div
-                className="svg-opakowanie"
-                dangerouslySetInnerHTML={{ __html: k.svg[s] ?? '' }}
-              />
-              {g && (k.arkusz.ustawienia.marginesBezpieczenstwa ?? 0) > 0 && (
-                // Strefa przycięcia (np. punkt foto) – tylko w edytorze, nie w druku.
-                <div className="strefa-bezpieczenstwa" aria-hidden="true">
+            {maRewersy ? (
+              <div className="para-stron">
+                <div className="strona-pary">
+                  <div className="etykieta-pary">{t('dwustronny.przod')}</div>
+                  {stronaPrzodu}
+                </div>
+                <div className="strona-pary">
+                  <div className="etykieta-pary">
+                    {k.pusteRewersy?.[s] ? t('dwustronny.tylPusty') : t('dwustronny.tyl')}
+                  </div>
                   <div
-                    style={stylMm(
-                      g,
-                      k.arkusz.ustawienia.marginesBezpieczenstwa!,
-                      k.arkusz.ustawienia.marginesBezpieczenstwa!,
-                      Math.max(0, g.szer - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!),
-                      Math.max(0, g.wys - 2 * k.arkusz.ustawienia.marginesBezpieczenstwa!),
-                    )}
-                  />
-                </div>
-              )}
-              {g && mieszane && (
-                <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
-                  {mieszane.wolne.map((w, i) =>
-                    w.strona !== s ? null : (
-                      <button
-                        key={`wolne-${i}`}
-                        type="button"
-                        className={`wolne-miejsce${menu && menu.strona === s && menu.kolumna === i ? ' aktywny' : ''}`}
-                        data-wolne={i}
-                        style={stylMm(g, w.x, w.y, w.szer, w.wys)}
-                        aria-label={t('mieszane.wolneEtykieta', {
-                          szer: Math.round(w.szer),
-                          wys: Math.round(w.wys),
-                          strona: s + 1,
-                        })}
-                        onClick={() => otworzMenu({ strona: s, kolumna: i, rzad: 0 })}
-                      >
-                        {t('mieszane.wolne', { szer: Math.round(w.szer), wys: Math.round(w.wys) })}
-                      </button>
-                    ),
-                  )}
-                  {kartyMieszane.map((c) => {
-                    const podnoszona =
-                      gestTu?.rodzaj === 'kolejnosc' &&
-                      gestTu.ruch &&
-                      gestTu.ids.includes(c.kartaId);
-                    const nazwa =
-                      nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) ||
-                      t('karta.bezNazwy');
-                    return (
-                      <button
-                        key={c.klucz}
-                        type="button"
-                        className={`karta-na-kartce${zaznaczone.has(c.kartaId) ? ' zaznaczona' : ''}${podnoszona ? ' podnoszona' : ''}`}
-                        data-karta={c.kartaId}
-                        style={stylMm(g, c.x, c.y, c.szer, c.wys)}
-                        aria-pressed={zaznaczone.has(c.kartaId)}
-                        onClick={(e) => e.detail === 0 && wybierzKarte(c.kartaId, e.shiftKey)}
-                        aria-label={t('mieszane.kartaEtykieta', {
-                          nazwa: c.czesc
-                            ? `${nazwa} – ${t('kartka.ciagDalszy')} ${c.czesc + 1}`
-                            : nazwa,
-                          strona: s + 1,
-                          szer: Math.round(c.szer),
-                          wys: Math.round(c.wys),
-                        })}
-                      />
-                    );
-                  })}
-                  {gestTu?.rodzaj === 'kolejnosc' &&
-                    gestTu.ruch &&
-                    gestTu.cel &&
-                    gestTu.cel.strona === s && (
-                      <div
-                        className="wskaznik-wstawienia"
-                        data-testid="wskaznik-wstawienia"
-                        style={stylMm(g, gestTu.cel.x - 0.75, gestTu.cel.y, 1.5, gestTu.cel.wys)}
-                      />
-                    )}
-                  {!gestTu &&
-                    (() => {
-                      const c = kartyMieszane.find((x) => zaznaczone.has(x.kartaId));
-                      if (!c) return null;
-                      const p = stylMm(g, c.x, c.y, c.szer, c.wys);
-                      return (
-                        <div
-                          className="pasek-karty"
-                          style={{ left: p.left, top: p.top, width: 'auto', height: 'auto' }}
-                        >
-                          <button type="button" onClick={() => przesun(-1)}>
-                            ◀ {t('mieszane.wczesniej')}
-                          </button>
-                          <button type="button" onClick={() => przesun(1)}>
-                            {t('mieszane.pozniej')} ▶
-                          </button>
-                          <button type="button" onClick={duplikuj}>
-                            {t('kartka.duplikuj')}
-                          </button>
-                          <button type="button" className="niebezpieczny" onClick={usun}>
-                            {t('kartka.usun')}
-                          </button>
-                        </div>
-                      );
-                    })()}
-                  {menu &&
-                    menu.strona === s &&
-                    (() => {
-                      const w = mieszane.wolne[menu.kolumna];
-                      if (!w) return null;
-                      const poPrawej = w.x + w.szer < g.szer * 0.6;
-                      const p = stylMm(g, w.x, w.y, w.szer, w.wys);
-                      return (
-                        <MenuTypu
-                          typy={typy}
-                          tytul={t('mieszane.dodajTutaj', {
-                            szer: Math.round(w.szer),
-                            wys: Math.round(w.wys),
-                          })}
-                          stopka={t('mieszane.menuOpis')}
-                          styl={
-                            poPrawej
-                              ? { left: `${((w.x + w.szer) / g.szer) * 100}%`, top: p.top }
-                              : { right: `${100 - (w.x / g.szer) * 100}%`, top: p.top }
-                          }
-                          blokada={blokada}
-                          uwaga={uwaga}
-                          wybierz={dodaj}
-                          zamknij={zamknijMenu}
-                        />
-                      );
-                    })()}
-                </div>
-              )}
-              {g && !mieszane && (
-                <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
-                  {Array.from({ length: g.siatka.rzedy }, (_, r) =>
-                    Array.from({ length: g.siatka.kolumny }, (_, c) =>
-                      zajete.has(`${c},${r}`) ? null : (
-                        <button
-                          key={`${c},${r}`}
-                          type="button"
-                          className={`slot${menu && menu.strona === s && menu.kolumna === c && menu.rzad === r ? ' aktywny' : ''}`}
-                          data-slot={`${c},${r}`}
-                          tabIndex={przystanek === `${c},${r}` ? 0 : -1}
-                          onKeyDown={(e) => ruchSlotu(e, c, r)}
-                          onFocus={() =>
-                            kursor[s] !== `${c},${r}` &&
-                            ustawKursor((k) => ({ ...k, [s]: `${c},${r}` }))
-                          }
-                          style={stylProstokata(g, s, c, r)}
-                          aria-label={t('kartka.pustySlot', {
-                            strona: s + 1,
-                            kolumna: c + 1,
-                            rzad: r + 1,
-                          })}
-                          onClick={(e) =>
-                            e.detail === 0 && otworzMenu({ strona: s, kolumna: c, rzad: r })
-                          }
-                        />
-                      ),
-                    ),
-                  )}
-                  {(k.wynik?.naglowki ?? [])
-                    .filter((h) => h.strona === s)
-                    .map((h) => {
-                      const n = k.arkusz.naglowki?.find((x) => x.id === h.id);
-                      return (
-                        <button
-                          key={h.id}
-                          type="button"
-                          className={`naglowek-grupy${zazn?.rodzaj === 'naglowek' && zazn.id === h.id ? ' zaznaczony' : ''}`}
-                          data-naglowek={h.id}
-                          aria-pressed={
-                            zazn?.rodzaj === 'naglowek' && zazn.arkuszId === id && zazn.id === h.id
-                          }
-                          onClick={(e) => e.detail === 0 && wybierzNaglowek(h.id)}
-                          style={stylMm(g, h.x, h.y, h.szer, h.wys)}
-                          aria-label={t('kartka.naglowekEtykieta', { tekst: n?.naglowek ?? '' })}
-                        />
-                      );
-                    })}
-                  {kontynuacje.map((c) => (
-                    <button
-                      key={`ciag-${c.karta.id}#${c.numer}`}
-                      type="button"
-                      className={`karta-na-kartce${zaznaczone.has(c.karta.id) ? ' zaznaczona' : ''}`}
-                      data-kontynuacja={c.karta.id}
-                      style={stylProstokata(g, s, c.kolumna, c.rzad, c.kolumny, c.rzedy)}
-                      aria-pressed={zaznaczone.has(c.karta.id)}
-                      aria-label={`${nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) || t('karta.bezNazwy')} – ${t('kartka.ciagDalszy')} ${(c.czesc ?? 0) + 1}`}
-                      onClick={(e) => wybierzKarte(c.karta.id, e.shiftKey)}
-                    />
-                  ))}
-                  {naStronie.map((c) => {
-                    const podnoszona =
-                      gestTu?.rodzaj === 'karty' && gestTu.ruch && gestTu.ids.includes(c.karta.id);
-                    return (
-                      <button
-                        key={c.karta.id}
-                        type="button"
-                        className={`karta-na-kartce${zaznaczone.has(c.karta.id) ? ' zaznaczona' : ''}${podnoszona ? ' podnoszona' : ''}`}
-                        data-karta={c.karta.id}
-                        style={stylProstokata(g, s, c.kolumna, c.rzad, c.kolumny, c.rzedy)}
-                        aria-pressed={zaznaczone.has(c.karta.id)}
-                        onClick={(e) => e.detail === 0 && wybierzKarte(c.karta.id, e.shiftKey)}
-                        aria-label={t('kartka.kartaEtykieta', {
-                          nazwa:
-                            nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) ||
-                            t('karta.bezNazwy'),
-                          strona: s + 1,
-                          kolumna: c.kolumna + 1,
-                          rzad: c.rzad + 1,
-                        })}
-                      />
-                    );
-                  })}
-                  {gestTu?.rodzaj === 'karty' &&
-                    gestTu.ruch &&
-                    gestTu.o &&
-                    karty
-                      .filter(
-                        (c) => gestTu.ids.includes(c.karta.id) && c.strona + gestTu.o!.strona === s,
-                      )
-                      .map((c) => (
-                        <div
-                          key={`p-${c.karta.id}`}
-                          className={`podglad-celu${gestTu.blad ? ' zly' : ''}`}
-                          style={stylProstokata(
-                            g,
-                            s,
-                            c.kolumna + gestTu.o!.kolumna,
-                            c.rzad + gestTu.o!.rzad,
-                            c.kolumny,
-                            c.rzedy,
-                          )}
-                        />
-                      ))}
-                  {gestTu?.rodzaj === 'obszar' &&
-                    gestTu.ruch &&
-                    gestTu.strona === s &&
-                    gestTu.start &&
-                    gestTu.koniec && (
-                      <div
-                        className="obszar-zaznaczenia"
-                        style={stylProstokata(
-                          g,
-                          s,
-                          Math.min(gestTu.start.kolumna, gestTu.koniec.kolumna),
-                          Math.min(gestTu.start.rzad, gestTu.koniec.rzad),
-                          Math.abs(gestTu.start.kolumna - gestTu.koniec.kolumna) + 1,
-                          Math.abs(gestTu.start.rzad - gestTu.koniec.rzad) + 1,
-                        )}
-                      />
-                    )}
-                  {pierwsza && pierwsza.strona === s && !gestTu && (
+                    className="strona-kartki strona-rewersu"
+                    data-arkusz={id}
+                    data-strona-rewersu={s}
+                    role="img"
+                    aria-label={t('dwustronny.podgladTylu', { numer: s + 1, liczba: liczbaStron })}
+                    style={g ? { aspectRatio: `${g.szer} / ${g.wys}` } : undefined}
+                  >
                     <div
-                      className="pasek-karty"
-                      style={{
-                        ...stylProstokata(g, s, pierwsza.kolumna, pierwsza.rzad),
-                        width: 'auto',
-                        height: 'auto',
-                      }}
-                    >
-                      <button type="button" onClick={duplikuj}>
-                        {t('kartka.duplikuj')}
-                      </button>
-                      {rozmiar && (
-                        <button type="button" onClick={rozmiar.zmien}>
-                          {rozmiar.etykieta}
-                        </button>
-                      )}
-                      <button type="button" className="niebezpieczny" onClick={usun}>
-                        {t('kartka.usun')}
-                      </button>
-                    </div>
-                  )}
-                  {menu && menu.strona === s && (
-                    <MenuTypu
-                      typy={typy}
-                      styl={(() => {
-                        const p = stylProstokata(g, s, menu.kolumna + 1, menu.rzad);
-                        return menu.kolumna > g.siatka.kolumny - 4
-                          ? {
-                              right: `${100 - parseFloat(stylProstokata(g, s, menu.kolumna, menu.rzad).left)}%`,
-                              top: p.top,
-                            }
-                          : { left: p.left, top: p.top };
-                      })()}
-                      blokada={blokada}
-                      wybierz={dodaj}
-                      zamknij={zamknijMenu}
+                      className="svg-opakowanie"
+                      dangerouslySetInnerHTML={{ __html: k.svgRewersow?.[s] ?? '' }}
                     />
-                  )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              stronaPrzodu
+            )}
           </div>
         );
       })}

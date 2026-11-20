@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { odczytajKalibracje, zapiszKalibracje } from './kalibracja';
+import {
+  odczytajKalibracje,
+  odczytajKalibracjeRewersu,
+  zapiszKalibracje,
+  zapiszKalibracjeRewersu,
+} from './kalibracja';
 
 describe('kalibracja drukarki (localStorage)', () => {
   afterEach(() => {
@@ -26,5 +31,15 @@ describe('kalibracja drukarki (localStorage)', () => {
       throw new Error('QuotaExceeded');
     });
     expect(() => zapiszKalibracje({ x: 1, y: 1 })).not.toThrow();
+  });
+
+  it('korekta rewersu zapisuje się niezależnie od kalibracji przodu i waliduje granice ±20 mm', () => {
+    expect(odczytajKalibracjeRewersu()).toEqual({ x: 0, y: 0 });
+    zapiszKalibracje({ x: 1, y: 2 });
+    zapiszKalibracjeRewersu({ x: -1.5, y: 0.7 });
+    expect(odczytajKalibracje()).toEqual({ x: 1, y: 2 });
+    expect(odczytajKalibracjeRewersu()).toEqual({ x: -1.5, y: 0.7 });
+    localStorage.setItem('karty-rpg:kalibracja-rewers', JSON.stringify({ x: -30, y: null }));
+    expect(odczytajKalibracjeRewersu()).toEqual({ x: 0, y: 0 });
   });
 });

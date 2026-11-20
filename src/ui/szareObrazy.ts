@@ -1,22 +1,37 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { zasobyObrazowSzablonu } from '../dane/biblioteka';
+import { rewersJakoSzablon, rewersKarty } from '../dane/rewers';
 import { SUFIKS_SZARY } from '../druk/arkusz';
 import type { Arkusz } from '../model/arkusz';
-import type { Talia } from '../model/szablon';
+import type { Rewers, Talia } from '../model/szablon';
 import { obrazNaSzarosc } from './szarosc';
 import type { ObrazWPamieci, ZasobyPakietu } from './zasoby';
 
-type ZrodloArkuszy = { arkusze: Arkusz[]; talie: Talia[] };
+type ZrodloArkuszy = { arkusze: Arkusz[]; talie: Talia[]; rewersy?: Rewers[] };
 
-/** Obrazy użyte na arkuszach czarno-białych: wartości danych kart i stałe obrazy szablonów. */
+/** Obrazy użyte na arkuszach czarno-białych: dane kart, szablony oraz przypisane rewersy. */
 export function obrazyCzarnoBialych(zrodlo: ZrodloArkuszy, z: ZasobyPakietu): Set<string> {
   const ids = new Set<string>();
+  const rewersyMapa = new Map((zrodlo.rewersy ?? []).map((r) => [r.id, r] as const));
+  const przetworzoneRewersy = new Set<string>();
   for (const a of zrodlo.arkusze) {
     if (!a.ustawienia.czarnoBialy) continue;
-    for (const k of zrodlo.talie.find((x) => x.id === a.taliaId)?.karty ?? []) {
+    const talia = zrodlo.talie.find((x) => x.id === a.taliaId);
+    const dwustronny = !!a.ustawienia.dwustronny?.wlaczony && rewersyMapa.size > 0;
+    for (const k of talia?.karty ?? []) {
       for (const v of Object.values(k.dane)) if (z.obrazy.has(v)) ids.add(v);
       const s = z.szablony.get(k.szablonId);
-      if (s) for (const id of zasobyObrazowSzablonu(s, z.elementy ?? [])) ids.add(id);
+      if (s) {
+        for (const id of zasobyObrazowSzablonu(s, z.elementy ?? [])) ids.add(id);
+        if (dwustronny && talia) {
+          const rev = rewersKarty(rewersyMapa, k, s, talia);
+          if (rev && !przetworzoneRewersy.has(rev.id)) {
+            przetworzoneRewersy.add(rev.id);
+            for (const id of zasobyObrazowSzablonu(rewersJakoSzablon(rev), z.elementy ?? []))
+              ids.add(id);
+          }
+        }
+      }
     }
   }
   return ids;

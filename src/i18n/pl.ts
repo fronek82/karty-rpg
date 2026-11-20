@@ -1268,6 +1268,28 @@ export const pl = {
   'dekoracje.zabarwienie': 'Zabarwienie tła',
   'dekoracje.kolorZabarwienia': 'Kolor zabarwienia',
   'dekoracje.silaZabarwienia': 'Siła zabarwienia (%)',
+  'dwustronny.tytul': 'Druk dwustronny',
+  'dwustronny.wlacz': 'Drukuj rewersy (przód i tył w parach stron)',
+  'dwustronny.krawedz': 'Krawędź odwracania',
+  'dwustronny.dluga': 'Długa krawędź',
+  'dwustronny.krotka': 'Krótka krawędź',
+  'dwustronny.osPionowa': 'Oś odbicia: pionowa (jak strony książki).',
+  'dwustronny.osPozioma': 'Oś odbicia: pozioma (jak kalendarz).',
+  'dwustronny.korektaOpis':
+    'Lokalna korekta przesunięcia stron tyłu w tej przeglądarce (+ w prawo / w dół).',
+  'dwustronny.korektaX': 'Korekta rewersu X (mm)',
+  'dwustronny.korektaY': 'Korekta rewersu Y (mm)',
+  'dwustronny.wydrukProbny': 'Wydruk próbny dwustronny (PDF)',
+  'dwustronny.wydrukProbnyOpis':
+    '2 strony (przód i lustrzany tył) z krzyżykami i strzałkami orientacji – wydrukuj dwustronnie w skali 100% i sprawdź pod światło.',
+  'dwustronny.plikProbny': 'dwustronny-probny',
+  'dwustronny.probnyGotowy': 'Pobrano dwustronny wydruk próbny PDF.',
+  'dwustronny.przod': 'Przód',
+  'dwustronny.tyl': 'Tył',
+  'dwustronny.tylPusty': 'Tył (pusty – wyrównanie pary)',
+  'dwustronny.podgladTylu': 'Tył strony {numer} z {liczba}',
+  'dwustronny.testPrzod': 'PRZÓD · 100%',
+  'dwustronny.testTyl': 'TYŁ · 100%',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;

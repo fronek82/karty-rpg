@@ -83,8 +83,27 @@ export interface OstrzezenieArkusza {
   komunikat: string;
 }
 
+/** Położenie pojedynczego egzemplarza karty na stronie przodu (mm od rogu strony). */
+export interface PozycjaKartyNaStronie {
+  strona: number;
+  karta: Karta;
+  numer: number;
+  czesc?: number;
+  /** Prostokąt karty na stronie przodu (dla 90° szer i wys są zamienione). */
+  x: Mm;
+  y: Mm;
+  szer: Mm;
+  wys: Mm;
+  /** Obszar slotu (do tła do slotu przy arkuszach perforowanych). */
+  obszar?: { x: Mm; y: Mm; szer: Mm; wys: Mm };
+  /** Kąt przodu w stopniach (0 lub 90, liczony od góry zgodnie z ruchem wskazówek zegara). */
+  obrot: number;
+}
+
 export interface WynikArkusza {
   strony: Scena[];
+  /** Dokładne położenia wszystkich egzemplarzy kart na stronach przodu (jedno źródło także dla rewersów). */
+  pozycjeKart: PozycjaKartyNaStronie[];
   rozmieszczenie: WynikRozmieszczenia;
   /** Lewy górny róg siatki (mm od rogu strony). */
   poczatekSiatki: { x: Mm; y: Mm };
@@ -587,6 +606,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   }
 
   const strony: Scena[] = [];
+  const pozycjeKart: PozycjaKartyNaStronie[] = [];
   const geometriaNaglowkow: WynikArkusza['naglowki'] = [];
   const liczbaStron = Math.max(rozmieszczenie.liczbaStron, arkusz.liczbaStron ?? 0);
   for (let n = 0; n < liczbaStron; n++) {
@@ -638,6 +658,18 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
       glify.push(s.glify);
       symbole.push(s.symbole);
       const k = prostokaty[i]!.karta;
+      pozycjeKart.push({
+        strona: n,
+        karta: c.karta,
+        numer: c.numer,
+        ...(c.czesc !== undefined ? { czesc: c.czesc } : {}),
+        x: k.x,
+        y: k.y,
+        szer: k.szer,
+        wys: k.wys,
+        obszar: prostokaty[i]!.obszar,
+        obrot: 0,
+      });
       elementy.push({ typ: 'grupa', x: k.x, y: k.y, elementy: s.elementy });
     });
     // Strefa bezpieczeństwa (np. przycięcie w punkcie foto): karta nie powinna w nią wchodzić.
@@ -761,6 +793,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
   }
   return {
     strony,
+    pozycjeKart,
     rozmieszczenie,
     poczatekSiatki: poczatek,
     slot,
@@ -876,6 +909,7 @@ function zbudujMieszane(w: {
   }
 
   const strony: Scena[] = [];
+  const pozycjeKart: PozycjaKartyNaStronie[] = [];
   const granice = graniceCiecia(strona, ctx.kalibracja);
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
@@ -887,6 +921,17 @@ function zbudujMieszane(w: {
       const s = scenyKart.scena(c.karta, c.numer);
       glify.push(s.glify);
       symbole.push(s.symbole);
+      pozycjeKart.push({
+        strona: n,
+        karta: c.karta,
+        numer: c.numer,
+        ...(c.czesc !== undefined ? { czesc: c.czesc } : {}),
+        x: c.x,
+        y: c.y,
+        szer: c.szer,
+        wys: c.wys,
+        obrot: c.obrocona ? 90 : 0,
+      });
       // Obrót o 90° zgodnie z ruchem wskazówek: obrócona karta zajmuje (wys × szer) od (x, y).
       elementy.push(
         c.obrocona
@@ -965,6 +1010,7 @@ function zbudujMieszane(w: {
   }
   return {
     strony,
+    pozycjeKart,
     rozmieszczenie: { karty: [], regiony: [], liczbaStron, ostrzezenia: [] },
     poczatekSiatki: { x: obszar.x, y: obszar.y },
     slot,

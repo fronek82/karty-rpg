@@ -11,15 +11,19 @@ import { BladDanych } from '../../dane/schemat';
 import { formatujLiczbe, t, tJesliJest } from '../../i18n';
 import {
   czyFormatZdjeciowy,
+  DWUSTRONNY_DOMYSLNY,
   MARGINES_BEZPIECZENSTWA_FOTO,
   PAPIERY,
   wymiaryStrony,
   type Arkusz,
+  type KrawedzOdwracania,
   type Papier,
   type UstawieniaArkusza,
 } from '../../model/arkusz';
 import type { WynikArkusza } from '../../druk/arkusz';
+import { osOdwracania } from '../../druk/dwustronny';
 import { przypiszRewers } from '../../dane/rewers';
+import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
 import { RewersyProjektu } from '../rewers/RewersyProjektu';
 import { PanelUkladu } from './PanelUkladu';
@@ -73,18 +77,24 @@ export function PanelUstawien({
   blad,
   wynik,
   wydrukTestowy,
+  wydrukTestowyDwustronny,
   przelaczRozmiary,
   naKartce,
   kalibracja,
   zmienKalibracje,
+  kalibracjaRewersu,
+  zmienKalibracjeRewersu,
 }: {
   przelaczRozmiary?: (tryb: 'jeden' | 'mieszane') => void;
   naKartce?: ComponentProps<typeof PanelUkladu>['naKartce'];
   kalibracja: ComponentProps<typeof PanelUkladu>['kalibracja'];
   zmienKalibracje: ComponentProps<typeof PanelUkladu>['zmienKalibracje'];
+  kalibracjaRewersu: Kalibracja;
+  zmienKalibracjeRewersu: (k: Kalibracja) => void;
   /** Ostatnio zbudowana kartka (siatka startowa własnego układu). */
   wynik?: WynikArkusza;
   wydrukTestowy: () => void;
+  wydrukTestowyDwustronny: () => void;
   /** Własne karty: nowa kartka dopasowana do rozmiaru szablonu. */
   kartkaDlaSzablonu?: (szablonId: string) => void;
   edycja: ProjektWEdycji;
@@ -304,6 +314,79 @@ export function PanelUstawien({
         {...(przelaczRozmiary ? { przelaczRozmiary } : {})}
         {...(naKartce ? { naKartce } : {})}
       />
+      {(() => {
+        const dwu = u.dwustronny ?? DWUSTRONNY_DOMYSLNY;
+        const os = osOdwracania(wymiaryStrony(u), dwu.krawedz);
+        const zmienDwu = (z: Partial<typeof dwu>, klucz?: string) =>
+          zmien(
+            (p) => ustawUstawieniaArkusza(p, A, { dwustronny: { ...dwu, ...z } }),
+            klucz ? { klucz: `dwustronny:${A}:${klucz}` } : {},
+          );
+        return (
+          <fieldset className="sekcja-dwustronny">
+            <legend>{t('dwustronny.tytul')}</legend>
+            <label className="wybor">
+              <input
+                type="checkbox"
+                checked={dwu.wlaczony}
+                onChange={(e) => zmienDwu({ wlaczony: e.target.checked })}
+              />
+              <span>{t('dwustronny.wlacz')}</span>
+            </label>
+            {dwu.wlaczony && (
+              <>
+                <div className="pole-panelu">
+                  <span id={`krawedz-${A}`}>{t('dwustronny.krawedz')}</span>
+                  <div
+                    className="przelacznik-segmentowy"
+                    role="group"
+                    aria-labelledby={`krawedz-${A}`}
+                  >
+                    {(['dluga', 'krotka'] as const).map((k: KrawedzOdwracania) => (
+                      <button
+                        key={k}
+                        type="button"
+                        aria-pressed={dwu.krawedz === k}
+                        onClick={() => zmienDwu({ krawedz: k }, 'krawedz')}
+                      >
+                        {t(`dwustronny.${k}`)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="podpis">
+                    {os === 'pionowa' ? t('dwustronny.osPionowa') : t('dwustronny.osPozioma')}
+                  </p>
+                </div>
+                <p className="podpis">{t('dwustronny.korektaOpis')}</p>
+                <div className="pole-panelu dwa-pola">
+                  <PoleLiczby
+                    id="kalibracja-rewers-x"
+                    etykieta={t('dwustronny.korektaX')}
+                    wartosc={kalibracjaRewersu.x}
+                    min={-MAKS_PRZESUNIECIA}
+                    max={MAKS_PRZESUNIECIA}
+                    krok={0.1}
+                    zmien={(v) => zmienKalibracjeRewersu({ ...kalibracjaRewersu, x: v })}
+                  />
+                  <PoleLiczby
+                    id="kalibracja-rewers-y"
+                    etykieta={t('dwustronny.korektaY')}
+                    wartosc={kalibracjaRewersu.y}
+                    min={-MAKS_PRZESUNIECIA}
+                    max={MAKS_PRZESUNIECIA}
+                    krok={0.1}
+                    zmien={(v) => zmienKalibracjeRewersu({ ...kalibracjaRewersu, y: v })}
+                  />
+                </div>
+                <button type="button" onClick={wydrukTestowyDwustronny}>
+                  {t('dwustronny.wydrukProbny')}
+                </button>
+                <p className="podpis">{t('dwustronny.wydrukProbnyOpis')}</p>
+              </>
+            )}
+          </fieldset>
+        );
+      })()}
       <fieldset className="sekcja-czcionek">
         <legend>{t('czcionki.tytul')}</legend>
         {roleProjektu(projekt).map((rola) => (
