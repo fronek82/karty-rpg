@@ -17,6 +17,9 @@ const WlasneKarty = lazy(() =>
 const KreatorStrona = lazy(() =>
   import('./start/KreatorStrona').then((m) => ({ default: m.KreatorStrona })),
 );
+const KreatorAiStrona = lazy(() =>
+  import('./start/KreatorAiStrona').then((m) => ({ default: m.KreatorAiStrona })),
+);
 const EdytorStrona = lazy(() =>
   import('./EdytorStrona').then((m) => ({ default: m.EdytorStrona })),
 );
@@ -138,6 +141,10 @@ export function App() {
         ) : trasa === '/wlasne/nowy' ? (
           <Leniwa>
             <KreatorStrona />
+          </Leniwa>
+        ) : trasa === '/wlasne/ai' ? (
+          <Leniwa>
+            <KreatorAiStrona />
           </Leniwa>
         ) : wlasne ? (
           <Leniwa>

@@ -175,6 +175,10 @@ export function WlasneKarty() {
             <b>{t('wlasne.nowyNazwa')}</b>
             <span>{t('wlasne.nowyOpis')}</span>
           </a>
+          <a href="#/wlasne/ai" className="pasek-menu pasek-granat">
+            <b>{t('wlasne.aiNazwa')}</b>
+            <span>{t('wlasne.aiOpis')}</span>
+          </a>
           <button
             type="button"
             ref={przyciskImportu}

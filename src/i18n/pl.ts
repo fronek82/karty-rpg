@@ -1331,6 +1331,39 @@ export const pl = {
   'googleFonts.przekroczonoCzas': 'przekroczono limit czasu',
   'googleFonts.bladPobrania':
     'Nie udało się pobrać kroju „{rodzina}” z Google Fonts ({szczegoly}). Sprawdź połączenie i spróbuj ponownie.',
+  'wlasne.aiNazwa': 'Układ ze zdjęcia (AI)',
+  'wlasne.aiOpis': 'Wyślij zdjęcie karty z własnym kluczem Claude API – otrzymasz strukturę pól.',
+  'ai.tytul': 'Układ karty ze zdjęcia (AI)',
+  'ai.opis':
+    'Model zwraca wyłącznie układ i typy pól (bez kopiowania grafik i treści). Zdjęcie jest wysyłane bezpośrednio z przeglądarki do Claude API.',
+  'ai.kluczEtykieta': 'Klucz Claude API',
+  'ai.kluczPodpowiedz':
+    'Przechowywany wyłącznie lokalnie w tej przeglądarce (localStorage) – nigdy nie trafia do projektu ani paczki szablonu.',
+  'ai.zapiszKlucz': 'Zapamiętaj klucz w tej przeglądarce',
+  'ai.usunKlucz': 'Usuń zapisany klucz',
+  'ai.kluczUsuniety': 'Usunięto zapisany klucz API z tej przeglądarki.',
+  'ai.zdjecieEtykieta': 'Zdjęcie lub skan karty (PNG, JPG, WebP)',
+  'ai.wybierzZdjecie': 'Wybierz zdjęcie karty…',
+  'ai.dolaczPodklad': 'Dołącz zdjęcie jako podkład w edytorze szablonu (nie jest drukowany)',
+  'ai.rozpoznaj': 'Rozpoznaj układ',
+  'ai.analizuje': 'Rozpoznaję układ…',
+  'ai.anulujAnalize': 'Przerwij',
+  'ai.podgladOpis':
+    'Sprawdź rozmieszczenie pól i otwórz szablon w edytorze, żeby dopracować szczegóły.',
+  'ai.otworzEdytor': 'Otwórz w edytorze szablonu',
+  'ai.nazwaDomyslna': 'Szablon ze zdjęcia',
+  'ai.brakKlucza': 'Podaj klucz Claude API przed uruchomieniem rozpoznawania.',
+  'ai.brakObrazu': 'Wybierz zdjęcie lub skan karty (PNG, JPG lub WebP).',
+  'ai.zaDuzyObraz': 'Zdjęcie po zmniejszeniu nadal przekracza limit 5 MB.',
+  'ai.bladKlucza': 'Claude API odrzuciło klucz (HTTP 401/403). Sprawdź poprawność klucza API.',
+  'ai.bladLimitu': 'Przekroczono limit zapytań Claude API (HTTP 429). Spróbuj ponownie za chwilę.',
+  'ai.bladHttp': 'Claude API zwróciło błąd (HTTP {status}).',
+  'ai.bladCzasu': 'Przekroczono limit czasu oczekiwania na odpowiedź Claude API.',
+  'ai.bladSieci':
+    'Błąd połączenia z Claude API ({szczegoly}). Sprawdź sieć lub blokady przeglądarki.',
+  'ai.bladJson': 'Odpowiedź modelu nie zawiera poprawnego obiektu JSON z układem.',
+  'ai.bladSchematu':
+    'Rozpoznany układ nie spełnia wymagań schematu szablonu. Spróbuj wyraźniejszego zdjęcia.',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;
@@ -1374,6 +1407,12 @@ export const plMnoga = {
     few: 'Pobrano krój „{rodzina}” ({n} warianty) i zapisano lokalnie w projekcie.',
     many: 'Pobrano krój „{rodzina}” ({n} wariantów) i zapisano lokalnie w projekcie.',
     other: 'Pobrano krój „{rodzina}” ({n} wariantu) i zapisano lokalnie w projekcie.',
+  },
+  'ai.podgladTytul': {
+    one: 'Rozpoznany układ ({n} pole)',
+    few: 'Rozpoznany układ ({n} pola)',
+    many: 'Rozpoznany układ ({n} pól)',
+    other: 'Rozpoznany układ ({n} pola)',
   },
 } as const satisfies Record<string, FormyMnogie>;
 

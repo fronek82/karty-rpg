@@ -71,10 +71,19 @@ export async function nowyProjektZSzablonu(
 export async function nowyProjektZSzablonuKreatora(
   szablon: import('../model/szablon').Szablon,
   bazaUrl: string = import.meta.env.BASE_URL,
+  dodatkowe?: {
+    zasoby: import('../model/projekt').OpisZasobu[];
+    dane: Map<string, Uint8Array>;
+  },
 ): Promise<string> {
   const { nowyProjektWlasny } = await import('../dane/wlasneKarty');
   const { projekt, zasoby } = await nowyProjektWlasny(
-    { szablon, role: {}, zasoby: [], dane: new Map() },
+    {
+      szablon,
+      role: {},
+      zasoby: dodatkowe?.zasoby ?? [],
+      dane: dodatkowe?.dane ?? new Map(),
+    },
     (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
   );
   await baza().zapisz(projekt, zasoby);
