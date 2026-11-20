@@ -56,6 +56,8 @@ export function PanelWezla({
   kolejnosc,
   wyrownanie,
   mozeNaSwobodny = true,
+  bezDanych = false,
+  korzenSwobodnyTylko = false,
 }: {
   szablon: Szablon;
   wezel: Wezel;
@@ -82,6 +84,10 @@ export function PanelWezla({
   wyrownanie?: ReactNode;
   /** Konwersja na swobodny wymaga układu z podglądu – bez niego przycisk jest wyłączony. */
   mozeNaSwobodny?: boolean;
+  /** Tryb bez danych karty (edytor rewersu): ukrywa klucze, grupy stylów i reguły z danych. */
+  bezDanych?: boolean;
+  /** Korzeń musi pozostać kontenerem swobodnym (np. w edytorze rewersu). */
+  korzenSwobodnyTylko?: boolean;
 }) {
   const id = wezel.id;
   const korzen = wezel.id === szablon.korzen.id;
@@ -99,17 +105,21 @@ export function PanelWezla({
 
   const typy = czyKontener(wezel)
     ? (['wiersz', 'kolumna', 'warstwy', 'swobodny'] as const)
-    : TYPY_POL;
+    : bezDanych
+      ? (['tekst', 'wartosc', 'obraz', 'ikona', 'separator'] as const)
+      : TYPY_POL;
 
   return (
     <>
       {wiele && <p className="uwaga">{t('wlasciwosci.wieleNaraz')}</p>}
-      <Lista
-        etykieta={t('wlasciwosci.typ')}
-        opcje={typy.map((x) => ({ wartosc: x, tekst: t(`wezel.${x}`) }))}
-        wartosc={wezel.typ}
-        zmien={(v) => zmienTyp(v)}
-      />
+      {!(korzen && korzenSwobodnyTylko) && (
+        <Lista
+          etykieta={t('wlasciwosci.typ')}
+          opcje={typy.map((x) => ({ wartosc: x, tekst: t(`wezel.${x}`) }))}
+          wartosc={wezel.typ}
+          zmien={(v) => zmienTyp(v)}
+        />
+      )}
       {!wiele && (
         <div className="pole-panelu">
           <label htmlFor={`nazwa-${id}`}>{t('szablon.nazwaElementu')}</label>
@@ -155,32 +165,34 @@ export function PanelWezla({
 
       {pole && ZE_ZRODLEM.has(pole.typ) && !wiele && (
         <>
-          <Przelacznik
-            etykieta={t('wlasciwosci.zrodlo')}
-            opcje={[
-              { wartosc: 'dane', tekst: t('wlasciwosci.zrodlo.dane') },
-              { wartosc: 'staly', tekst: t('wlasciwosci.zrodlo.staly') },
-            ]}
-            wartosc={pole.klucz ? 'dane' : 'staly'}
-            zmien={(v) =>
-              zmienWezel((w) => {
-                const x = { ...w } as Pole;
-                if (v === 'staly') {
-                  // Stały tekst: na start wartość przykładowa albo nazwa.
-                  if ((x.typ === 'tekst' || x.typ === 'wartosc') && !x.tekst)
-                    x.tekst = (x.klucz && szablon.przyklad?.[x.klucz]) || x.nazwa || '';
-                  delete x.klucz;
-                } else {
-                  x.klucz = kluczZNazwy(
-                    x.nazwa || x.typ,
-                    new Set([...kluczeSzablonu(szablon), ...zajeteKlucze()]),
-                  );
-                }
-                return x;
-              })
-            }
-          />
-          {pole.klucz ? (
+          {!bezDanych && (
+            <Przelacznik
+              etykieta={t('wlasciwosci.zrodlo')}
+              opcje={[
+                { wartosc: 'dane', tekst: t('wlasciwosci.zrodlo.dane') },
+                { wartosc: 'staly', tekst: t('wlasciwosci.zrodlo.staly') },
+              ]}
+              wartosc={pole.klucz ? 'dane' : 'staly'}
+              zmien={(v) =>
+                zmienWezel((w) => {
+                  const x = { ...w } as Pole;
+                  if (v === 'staly') {
+                    // Stały tekst: na start wartość przykładowa albo nazwa.
+                    if ((x.typ === 'tekst' || x.typ === 'wartosc') && !x.tekst)
+                      x.tekst = (x.klucz && szablon.przyklad?.[x.klucz]) || x.nazwa || '';
+                    delete x.klucz;
+                  } else {
+                    x.klucz = kluczZNazwy(
+                      x.nazwa || x.typ,
+                      new Set([...kluczeSzablonu(szablon), ...zajeteKlucze()]),
+                    );
+                  }
+                  return x;
+                })
+              }
+            />
+          )}
+          {!bezDanych && pole.klucz ? (
             <p className="podpis">{t('szablon.kluczDanych', { klucz: pole.klucz })}</p>
           ) : (
             (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
@@ -306,7 +318,7 @@ export function PanelWezla({
                   }
                 />
               </Sekcja>
-              {!wiele && (
+              {!wiele && !bezDanych && (
                 <KolorZDanych
                   szablon={szablon}
                   {...(etykieta.kolorZDanych ? { regula: etykieta.kolorZDanych } : {})}
@@ -397,7 +409,7 @@ export function PanelWezla({
               }
             />
           )}
-          {!wiele && (
+          {!wiele && !(korzen && korzenSwobodnyTylko) && (
             <div className="pole-panelu konwersja">
               <div className="wiersz-przyciskow">
                 {wezel.typ !== 'swobodny' && (
@@ -433,7 +445,7 @@ export function PanelWezla({
         </>
       )}
 
-      {!wiele && maStylTekstu(wezel) && (
+      {!wiele && !bezDanych && maStylTekstu(wezel) && (
         <GrupyStylow szablon={szablon} czcionki={czcionki} zmien={zmienSzablon} pole={wezel} />
       )}
       {pole && (
@@ -445,6 +457,7 @@ export function PanelWezla({
           obrazy={obrazy}
           {...(wgrajStalyObraz ? { wgrajStalyObraz } : {})}
           wiele={wiele}
+          bezDanych={bezDanych}
           zajeteKlucze={zajeteKlucze}
         />
       )}
@@ -494,7 +507,7 @@ export function PanelWezla({
           }
         />
       )}
-      {!wiele && czyKontener(wezel) && (
+      {!wiele && !bezDanych && czyKontener(wezel) && (
         <KolorZDanych
           szablon={szablon}
           {...(wezel.tloZDanych ? { regula: wezel.tloZDanych } : {})}

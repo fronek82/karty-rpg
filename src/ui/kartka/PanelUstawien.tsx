@@ -19,6 +19,9 @@ import {
   type UstawieniaArkusza,
 } from '../../model/arkusz';
 import type { WynikArkusza } from '../../druk/arkusz';
+import { przypiszRewers } from '../../dane/rewers';
+import { PodgladRewersu } from '../rewers/PodgladRewersu';
+import { RewersyProjektu } from '../rewers/RewersyProjektu';
 import { PanelUkladu } from './PanelUkladu';
 import { PoleLiczby } from './PoleLiczby';
 import { SzablonyProjektu } from './SzablonyProjektu';
@@ -102,6 +105,11 @@ export function PanelUstawien({
     ...new Set(projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : []))),
   ];
   const A = arkusz.id;
+  const talia = projekt.talie.find((x) => x.id === arkusz.taliaId);
+  const rewersTalii =
+    typeof talia?.rewersId === 'string'
+      ? projekt.rewersy?.find((r) => r.id === talia.rewersId)
+      : undefined;
   const polozenie = !u.tytul || !u.tytul.tekst.trim() ? 'brak' : u.tytul.polozenie;
   // Tekst tytułu w polu (także przy „bez tytułu” – pamiętany do przywrócenia).
   const [tekstTytulu, ustawTekstTytulu] = useState(u.tytul?.tekst || arkusz.nazwa);
@@ -340,9 +348,39 @@ export function PanelUstawien({
           </p>
         )}
       </fieldset>
+      {talia && (
+        <fieldset className="sekcja-szablonow">
+          <legend>{t('rewers.przypisanieTalia')}</legend>
+          <div className="pole-panelu">
+            <select
+              aria-label={t('rewers.przypisanieTalia')}
+              value={typeof talia.rewersId === 'string' ? talia.rewersId : ''}
+              onChange={(e) =>
+                zmien((p) =>
+                  przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, e.target.value || undefined),
+                )
+              }
+            >
+              <option value="">{t('rewers.brakPrzypisania')}</option>
+              {(projekt.rewersy ?? []).map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.nazwa}
+                </option>
+              ))}
+            </select>
+          </div>
+          <PodgladRewersu
+            rewers={rewersTalii}
+            zasoby={edycja.zasoby.zasoby}
+            komunikatBraku={t('rewers.rozstrzygnietyBrak')}
+            etykieta={t('rewers.podgladEtykieta')}
+          />
+        </fieldset>
+      )}
       {kartkaDlaSzablonu && (
         <SzablonyProjektu edycja={edycja} kartkaDlaSzablonu={kartkaDlaSzablonu} />
       )}
+      <RewersyProjektu edycja={edycja} />
       {nowaKartka && (
         <p>
           <button type="button" onClick={nowaKartka}>

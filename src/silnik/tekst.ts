@@ -1,6 +1,7 @@
 import type { Mm } from '../model/jednostki';
 import type {
   Kolor,
+  LukTekstu,
   NazwaIkony,
   StylTekstu,
   WariantCzcionki,
@@ -151,6 +152,10 @@ interface GlifWWierszu {
   skala: number;
   kolor: Kolor;
   x: Mm;
+  /** Pozycja kursora przed dodaniem `dx` glifu – do wyznaczenia środka klastra na łuku. */
+  xKursor: Mm;
+  /** Szerokość przesunięcia glifu w mm (0 dla znaków łączących / dostawnych). */
+  przesuniecie: Mm;
   dy: Mm;
   id: number;
   /** Liczba odstępów między słowami przed glifem w wierszu (do justowania). */
@@ -170,6 +175,9 @@ export interface WierszTekstu {
   wysokosc: Mm;
   /** Odległość linii bazowej od góry wiersza. */
   linia: Mm;
+  /** Wznos i zejście pisma w wierszu (mm). */
+  wznos: Mm;
+  zejscie: Mm;
   glify: GlifWWierszu[];
   ikony?: IkonaWWierszu[];
   szerokoscPozycjiListy?: Mm;
@@ -200,8 +208,10 @@ function kawalek(
   const odstepLiter = (styl.odstepLiter ?? 0) * skala;
   const glify = czcionka.uloz(tekst, cechy);
   const naMm = rozmiar / czcionka.unitsPerEm;
-  const szerokosc =
-    glify.reduce((s, g) => s + g.przesuniecie * naMm, 0) + odstepLiter * glify.length;
+  const szerokosc = glify.reduce(
+    (s, g) => s + g.przesuniecie * naMm + (g.przesuniecie > 0 ? odstepLiter : 0),
+    0,
+  );
   return {
     czcionka,
     rozmiar,
@@ -335,26 +345,42 @@ function zbudujWiersz(
       x += k.szerokosc;
       continue;
     }
-    for (const g of k.glify) {
+    let oczekujeOdstep = false;
+    for (let i = 0; i < k.glify.length; i++) {
+      const g = k.glify[i]!;
+      const przesuniecie = g.przesuniecie * skala;
       if (!k.spacja) {
         glify.push({
           czcionka: k.czcionka,
           skala,
           kolor: k.kolor,
           x: x + g.dx * skala,
+          xKursor: x,
+          przesuniecie,
           dy: g.dy * skala,
           id: g.id,
           nrSpacji: spacje,
         });
       }
-      x += g.przesuniecie * skala + k.odstepLiter;
+      x += przesuniecie;
+      if (g.przesuniecie > 0) oczekujeOdstep = true;
+      const nastepny = k.glify[i + 1];
+      if (oczekujeOdstep && (!nastepny || nastepny.przesuniecie > 0)) {
+        x += k.odstepLiter;
+        oczekujeOdstep = false;
+      }
     }
   }
-  const szerokosc = kawalki.length > 0 ? x - (kawalki[kawalki.length - 1]?.odstepLiter ?? 0) : 0;
+  const ostKawalek = kawalki[kawalki.length - 1];
+  const ostOdstep =
+    ostKawalek && ostKawalek.glify.some((g) => g.przesuniecie > 0) ? ostKawalek.odstepLiter : 0;
+  const szerokosc = kawalki.length > 0 ? x - ostOdstep : 0;
   return {
     szerokosc,
     wysokosc,
     linia: (wysokosc - (wznos + zejscie)) / 2 + wznos,
+    wznos,
+    zejscie,
     glify,
     ...(ikony.length ? { ikony } : {}),
     spacje,
@@ -652,6 +678,191 @@ export function tekstNaScene(
       });
     y += w.wysokosc;
   }
+  const tekst = [...wgKoloru].map(([kolor, glify]) =>
+    obwodka && obwodka.grubosc > 0
+      ? {
+          typ: 'tekst' as const,
+          kolor,
+          glify,
+          obwodka: { kolor: obwodka.kolor, grubosc: obwodka.grubosc },
+        }
+      : { typ: 'tekst' as const, kolor, glify },
+  );
+  return [...tekst, ...ikony];
+}
+
+export interface GraniceLuku {
+  minX: Mm;
+  minY: Mm;
+  maxX: Mm;
+  maxY: Mm;
+  szer: Mm;
+  wys: Mm;
+}
+
+const KATY_KARDYNALNE = [-Math.PI, -Math.PI / 2, 0, Math.PI / 2, Math.PI];
+
+function promienWierszaNaLuku(luk: LukTekstu, przesunieciePionowe: Mm): Mm {
+  const r0 = Math.max(1, luk.promien);
+  return (luk.kierunek ?? 'gora') === 'dol'
+    ? r0 + przesunieciePionowe
+    : Math.max(1, r0 - przesunieciePionowe);
+}
+
+/** Dokładny prostokąt opisany na tekście ułożonym po łuku (względem środka okręgu (0, 0)). */
+export function graniceTekstuPoLuku(uklad: UkladTekstu, luk: LukTekstu): GraniceLuku {
+  const kierunek = luk.kierunek ?? 'gora';
+  const znakY = kierunek === 'dol' ? 1 : -1;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let przesuniecie = 0;
+
+  const dodajPunkt = (r: Mm, alfa: number) => {
+    const px = r * Math.sin(alfa);
+    const py = znakY * r * Math.cos(alfa);
+    if (px < minX) minX = px;
+    if (px > maxX) maxX = px;
+    if (py < minY) minY = py;
+    if (py > maxY) maxY = py;
+  };
+
+  for (const w of uklad.wiersze) {
+    const r = promienWierszaNaLuku(luk, przesuniecie);
+    const pol = w.szerokosc > 0 ? Math.min(Math.PI, w.szerokosc / (2 * r)) : 0;
+    const rZew = kierunek === 'dol' ? r + w.zejscie : r + w.wznos;
+    const rWew = Math.max(0, kierunek === 'dol' ? r - w.wznos : r - w.zejscie);
+    const katy = [-pol, pol];
+    for (const k of KATY_KARDYNALNE) if (k > -pol && k < pol) katy.push(k);
+    for (const alfa of katy) {
+      dodajPunkt(rZew, alfa);
+      dodajPunkt(rWew, alfa);
+    }
+    przesuniecie += w.wysokosc;
+  }
+
+  if (!Number.isFinite(minX)) return { minX: 0, minY: 0, maxX: 0, maxY: 0, szer: 0, wys: 0 };
+  return { minX, minY, maxX, maxY, szer: maxX - minX, wys: maxY - minY };
+}
+
+/** Auto-dopasowanie tekstu po łuku do prostokąta ramki (krok 2%, nie poniżej `minimalnaSkala`). */
+export function ulozPoLukuDopasowany(
+  fragmenty: Fragment[],
+  luk: LukTekstu,
+  szer: Mm,
+  wys: Mm,
+  czcionki: RejestrCzcionek,
+  minimalnaSkala: number,
+): UkladTekstu & { granice: GraniceLuku; przepelnienie: boolean } {
+  const miesciSie = (g: GraniceLuku) => g.szer <= szer + 1e-6 && g.wys <= wys + 1e-6;
+  let skala = 1;
+  let uklad = ulozTekst(fragmenty, undefined, czcionki, skala);
+  let granice = graniceTekstuPoLuku(uklad, luk);
+  while (!miesciSie(granice) && skala - 0.02 >= minimalnaSkala - 1e-9) {
+    skala -= 0.02;
+    uklad = ulozTekst(fragmenty, undefined, czcionki, skala);
+    granice = graniceTekstuPoLuku(uklad, luk);
+  }
+  return { ...uklad, granice, przepelnienie: !miesciSie(granice) };
+}
+
+/**
+ * Zamienia tekst ułożony po łuku na elementy sceny w ramce.
+ * Glify o zerowym przesunięciu (znaki łączące / dostawne) obracają się razem ze swoim glifem
+ * bazowym jako jeden klaster – nie odrywają się od litery bazowej na łuku.
+ */
+export function tekstPoLukuNaScene(
+  uklad: UkladTekstu,
+  luk: LukTekstu,
+  ramka: { x: Mm; y: Mm; szer: Mm; wys: Mm },
+  wyrownanie: WyrownanieTekstu,
+  wyrownaniePionowe: WyrownanieOsi,
+  slownikGlifow: Record<string, DefinicjaGlifu>,
+  obwodka?: { grubosc: Mm; kolor: Kolor },
+): ElementSceny[] {
+  const kierunek = luk.kierunek ?? 'gora';
+  const znakY = kierunek === 'dol' ? 1 : -1;
+  const g = graniceTekstuPoLuku(uklad, luk);
+  const wolneX = ramka.szer - g.szer;
+  const wolneY = ramka.wys - g.wys;
+  const ox = ramka.x + (wyrownanie === 'srodek' ? wolneX / 2 : wyrownanie === 'prawo' ? wolneX : 0);
+  const oy =
+    ramka.y +
+    (wyrownaniePionowe === 'srodek' ? wolneY / 2 : wyrownaniePionowe === 'koniec' ? wolneY : 0);
+  const cx = ox - g.minX;
+  const cy = oy - g.minY;
+
+  const wgKoloru = new Map<Kolor, GlifNaScenie[]>();
+  const ikony: ElementSceny[] = [];
+  let przesuniecie = 0;
+
+  for (const w of uklad.wiersze) {
+    const r = promienWierszaNaLuku(luk, przesuniecie);
+    // Grupowanie glifów w klastry (glif bazowy + kolejne znaki łączące o przesunięciu 0).
+    const klastry: GlifWWierszu[][] = [];
+    for (const gl of w.glify) {
+      const poprzedni = klastry[klastry.length - 1]?.[0];
+      if (!poprzedni || gl.przesuniecie > 0 || gl.nrSpacji !== poprzedni.nrSpacji) {
+        klastry.push([gl]);
+      } else {
+        klastry[klastry.length - 1]!.push(gl);
+      }
+    }
+    for (const kl of klastry) {
+      const baza = kl[0]!;
+      const srodek = baza.xKursor + baza.przesuniecie / 2;
+      const s = srodek - w.szerokosc / 2;
+      const alfa = s / r;
+      const ax = cx + r * Math.sin(alfa);
+      const ay = cy + znakY * r * Math.cos(alfa);
+      const fi = kierunek === 'dol' ? -alfa : alfa;
+      const cosFi = Math.cos(fi);
+      const sinFi = Math.sin(fi);
+      const obrot = (fi * 180) / Math.PI;
+      for (const gl of kl) {
+        const klucz = `${gl.czcionka.id}#${gl.id}`;
+        if (!slownikGlifow[klucz]) slownikGlifow[klucz] = { kontur: gl.czcionka.kontur(gl.id) };
+        const lx = gl.x - srodek;
+        const ly = -gl.dy;
+        const gx = ax + lx * cosFi - ly * sinFi;
+        const gy = ay + lx * sinFi + ly * cosFi;
+        const lista = wgKoloru.get(gl.kolor) ?? [];
+        lista.push({
+          klucz,
+          x: gx,
+          y: gy,
+          skala: gl.skala,
+          ...(Math.abs(obrot) > 1e-6 ? { obrot } : {}),
+        });
+        wgKoloru.set(gl.kolor, lista);
+      }
+    }
+    for (const i of w.ikony ?? []) {
+      const srodek = i.x + i.rozmiar / 2;
+      const s = srodek - w.szerokosc / 2;
+      const alfa = s / r;
+      const ax = cx + r * Math.sin(alfa);
+      const ay = cy + znakY * r * Math.cos(alfa);
+      const obrot = ((kierunek === 'dol' ? -alfa : alfa) * 180) / Math.PI;
+      ikony.push({
+        typ: 'grupa',
+        x: ax,
+        y: ay,
+        ...(Math.abs(obrot) > 1e-6 ? { obrot } : {}),
+        elementy: [
+          {
+            typ: 'sciezka',
+            kontur: konturIkony(i.ikona, -i.rozmiar / 2, -WZNOS_IKONY * i.rozmiar, i.rozmiar),
+            wypelnienie: i.kolor,
+            ...(obwodka && obwodka.grubosc > 0 ? { obrys: obwodka } : {}),
+          },
+        ],
+      });
+    }
+    przesuniecie += w.wysokosc;
+  }
+
   const tekst = [...wgKoloru].map(([kolor, glify]) =>
     obwodka && obwodka.grubosc > 0
       ? {

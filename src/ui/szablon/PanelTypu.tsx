@@ -20,6 +20,7 @@ import { Liczba, Lista, PoleKoloru, Przelacznik, Sekcja, Wybor } from './Kontrol
 import { PanelSeparatora } from './PanelSeparatora';
 import { PanelStylu } from './PanelStylu';
 import { PoleRamki, nazwaElementu } from './PanelWygladu';
+import { ELEMENTY_WBUDOWANE } from '../../ozdobniki/katalog';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { elementyRodzaju, useAdresBiblioteki, useElementyWlasne } from './elementyWlasne';
 
@@ -49,6 +50,7 @@ export function PanelTypu({
   obrazy,
   wgrajStalyObraz,
   wiele,
+  bezDanych = false,
   zajeteKlucze,
 }: {
   szablon: Szablon;
@@ -60,12 +62,16 @@ export function PanelTypu({
   wgrajStalyObraz?: (plik: File, sygnal: AbortSignal) => Promise<void>;
   /** Edycja kilku pól naraz – bez ustawień unikalnych (kolumny tabeli). */
   wiele: boolean;
+  /** Tryb bez danych karty (edytor rewersu) – ukrywa opcje zależne od danych talii. */
+  bezDanych?: boolean;
   /** Klucze zajęte poza szablonem (dane kart) – dla nowych kolumn tabeli. */
   zajeteKlucze: () => Iterable<string>;
 }) {
   const id = pole.id;
   const adresBiblioteki = useAdresBiblioteki();
-  const wlasneKsztalty = elementyRodzaju('ksztalt', useElementyWlasne());
+  const wlasneElementy = useElementyWlasne();
+  const wlasneKsztalty = elementyRodzaju('ksztalt', wlasneElementy);
+  const grafikiSvg = [...ELEMENTY_WBUDOWANE, ...wlasneElementy].filter((e) => e.kontury.length > 0);
   // Zmiana stylu jako funkcja – przy kilku zaznaczonych stosowana do stylu każdego elementu.
   const zmienStyl = (
     k: 'styl' | 'stylNaglowka',
@@ -92,7 +98,7 @@ export function PanelTypu({
           czcionki={czcionki}
           akapity={pole.typ === 'tekst'}
           domyslne={
-            pole.typ === 'wartosc'
+            pole.typ === 'wartosc' || (pole.typ === 'tekst' && pole.luk)
               ? { wyrownanie: 'srodek', wyrownaniePionowe: 'srodek' }
               : pole.typ === 'wpis'
                 ? { wyrownaniePionowe: 'srodek' }
@@ -132,14 +138,54 @@ export function PanelTypu({
           {(pole.listyNumerowane || pole.ikonyWTekscie) && (
             <p className="podpis">{t('wlasciwosci.notacjaPomoc')}</p>
           )}
-          {!wiele && (
+          {!wiele && !bezDanych && (
             <Wybor
               etykieta={t('wlasciwosci.kontynuuj')}
               wartosc={pole.kontynuuj === true}
               zmien={(v) => ustaw({ kontynuuj: v || undefined })}
             />
           )}
-          {pole.kontynuuj && <p className="podpis">{t('wlasciwosci.kontynuujPomoc')}</p>}
+          {!bezDanych && pole.kontynuuj && (
+            <p className="podpis">{t('wlasciwosci.kontynuujPomoc')}</p>
+          )}
+          <Wybor
+            etykieta={t('wlasciwosci.tekstPoLuku')}
+            wartosc={!!pole.luk}
+            zmien={(v) =>
+              ustaw({ luk: v ? { promien: 40, kierunek: 'gora' } : undefined }, `luk:${id}`)
+            }
+          />
+          {pole.luk && (
+            <>
+              <Liczba
+                etykieta={t('wlasciwosci.lukPromien')}
+                wartosc={pole.luk.promien}
+                min={5}
+                max={500}
+                krok={1}
+                zmien={(v) =>
+                  ustaw(
+                    {
+                      luk: {
+                        promien: Math.max(1, v),
+                        ...(pole.luk?.kierunek ? { kierunek: pole.luk.kierunek } : {}),
+                      },
+                    },
+                    `luk-promien:${id}`,
+                  )
+                }
+              />
+              <Przelacznik
+                etykieta={t('wlasciwosci.lukKierunek')}
+                opcje={(['gora', 'dol'] as const).map((k) => ({
+                  wartosc: k,
+                  tekst: t(`wlasciwosci.luk.${k}`),
+                }))}
+                wartosc={pole.luk.kierunek ?? 'gora'}
+                zmien={(k) => ustaw({ luk: { ...pole.luk!, kierunek: k } }, `luk-kierunek:${id}`)}
+              />
+            </>
+          )}
 
           {styl}
         </>
@@ -316,15 +362,60 @@ export function PanelTypu({
           )}
         </Sekcja>
       );
-    case 'ikona':
+    case 'ikona': {
+      const wybranySvg = pole.element ? grafikiSvg.find((e) => e.id === pole.element) : undefined;
       return (
         <Sekcja tytul={t('wlasciwosci.ikona')} otwarta>
-          <Lista
-            etykieta={t('wlasciwosci.ikona')}
-            opcje={IKONY.map((k) => ({ wartosc: k, tekst: t(`ikona.${k}`) }))}
-            wartosc={pole.ikona}
-            zmien={(v) => ustaw({ ikona: v })}
+          <Przelacznik
+            etykieta={t('ikona.typ')}
+            opcje={[
+              { wartosc: 'wbudowana', tekst: t('ikona.wbudowana') },
+              { wartosc: 'ozdobnik', tekst: t('ikona.ozdobnik') },
+            ]}
+            wartosc={pole.element ? 'ozdobnik' : 'wbudowana'}
+            zmien={(v) =>
+              ustaw(
+                v === 'ozdobnik'
+                  ? { element: pole.element ?? grafikiSvg[0]?.id }
+                  : { element: undefined },
+              )
+            }
           />
+          {pole.element ? (
+            <div className="pole-panelu">
+              <span id={`ikona-el-${id}`}>{t('ikona.wybierzOzdobnik')}</span>
+              <div
+                className="wybor-narozniki"
+                role="group"
+                aria-labelledby={`ikona-el-${id}`}
+                data-testid="wybor-ikony-svg"
+              >
+                {grafikiSvg.map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    aria-pressed={pole.element === e.id}
+                    aria-label={nazwaElementu(e)}
+                    onClick={() => ustaw({ element: e.id })}
+                  >
+                    <MiniaturaOzdobnika element={e} />
+                    <small>{nazwaElementu(e)}</small>
+                  </button>
+                ))}
+              </div>
+              <a href={adresBiblioteki}>{t('biblioteka.otworz')}</a>
+              {wybranySvg?.kolorowanie === 'oryginal' && (
+                <p className="podpis">{t('ikona.kolorWlasnyInfo')}</p>
+              )}
+            </div>
+          ) : (
+            <Lista
+              etykieta={t('wlasciwosci.ikona')}
+              opcje={IKONY.map((k) => ({ wartosc: k, tekst: t(`ikona.${k}`) }))}
+              wartosc={pole.ikona}
+              zmien={(v) => ustaw({ ikona: v })}
+            />
+          )}
           <div className="dwa-pola">
             <Liczba
               etykieta={t('wlasciwosci.rozmiarMm')}
@@ -333,15 +424,18 @@ export function PanelTypu({
               max={100}
               zmien={(v) => ustaw({ rozmiar: v })}
             />
-            <PoleKoloru
-              etykieta={t('styl.kolor')}
-              wartosc={pole.kolor ?? '#000000'}
-              moznaBrak={false}
-              zmien={(v) => ustaw({ kolor: v })}
-            />
+            {(!wybranySvg || wybranySvg.kolorowanie !== 'oryginal') && (
+              <PoleKoloru
+                etykieta={t('styl.kolor')}
+                wartosc={pole.kolor ?? '#000000'}
+                moznaBrak={false}
+                zmien={(v) => ustaw({ kolor: v })}
+              />
+            )}
           </div>
         </Sekcja>
       );
+    }
     case 'separator':
       return <PanelSeparatora pole={pole} ustaw={ustaw} />;
     case 'tabela':

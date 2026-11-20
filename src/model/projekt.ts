@@ -25,8 +25,10 @@ import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  *      przezroczystość, widoczność); poza plikiem szablonu, nigdy w scenie, PDF ani eksporcie obrazów.
  * 17 – M2c-1: `Arkusz.wlasnySzablonId` dla własnej kartki w projekcie pakietowym.
  * 23 – M4-1: rewersy projektu i opcjonalne przypisania na talii, szablonie i karcie.
+ * 24 – M4-2: tryb tekstury tła rewersu (`teksturaTryb`) i grafika SVG z biblioteki na polu ikony (`element`).
+ * 25 – M4-3: tekst po łuku (`PoleTekst.luk`), krycie warstwy (`krycie`) oraz krycie i zabarwienie tekstury tła rewersu.
  */
-export const WERSJA_SCHEMATU = 23;
+export const WERSJA_SCHEMATU = 25;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

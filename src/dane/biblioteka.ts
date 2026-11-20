@@ -51,6 +51,7 @@ function* odwolania(s: Szablon): Generator<Odwolanie> {
       }
       if (!czyKontener(w) && w.typ === 'wartosc' && w.ksztalt === 'wlasny')
         yield* ref(w, 'ksztaltElement');
+      if (!czyKontener(w) && w.typ === 'ikona' && w.element) yield* ref(w, 'element');
     }
   }
 }

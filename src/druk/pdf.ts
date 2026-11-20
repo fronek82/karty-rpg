@@ -1,11 +1,11 @@
 import { konturOkregu, konturProstokata } from '../silnik/konturyFigur';
 import {
+  PDFDict,
   PDFDocument,
   PDFName,
   PDFOperator,
   PDFOperatorNames,
   PDFRef,
-  type PDFPage,
   appendBezierCurve,
   clip,
   closePath,
@@ -21,6 +21,7 @@ import {
   rectangle,
   setDashPattern,
   setFillingRgbColor,
+  setGraphicsState,
   setLineJoin,
   setLineWidth,
   setStrokingRgbColor,
@@ -36,6 +37,7 @@ import {
   kolorSceny,
   type DefinicjaSymbolu,
   type ElementSceny,
+  type GlifNaScenie,
   type Kontur,
   type Obrys,
   type Scena,
@@ -134,19 +136,49 @@ function rysujKsztalt(
   return ops;
 }
 
+interface ZasobyPdf {
+  xObject: (klucz: string, ref: PDFRef, przedrostek: string) => PDFName;
+  extGState: (krycie: number) => PDFName;
+}
+
+function macierzGlifu(gl: GlifNaScenie): PDFOperator {
+  if (!gl.obrot) {
+    const s = Math.round(gl.skala * 1e6) / 1e6;
+    return concatTransformationMatrix(s, 0, 0, -s, r3(gl.x), r3(gl.y));
+  }
+  const kat = (gl.obrot * Math.PI) / 180;
+  const a = Math.round(gl.skala * Math.cos(kat) * 1e6) / 1e6;
+  const b = Math.round(gl.skala * Math.sin(kat) * 1e6) / 1e6;
+  return concatTransformationMatrix(a, b, b, -a, r3(gl.x), r3(gl.y));
+}
+
 class BudowniczyPdf {
   /** Glif → referencja do XObject (wspólna dla wszystkich stron). */
   private readonly glifyXObject = new Map<string, PDFRef>();
   /** Symbol → XObject (bez koloru dla części `'kolor'` – dziedziczą go z miejsca wstawienia). */
   private readonly symboleXObject = new Map<string, PDFRef>();
   private readonly obrazy = new Map<string, PDFRef>();
+  /** Krycie (zaokrąglone do 0,0001) → wspólny obiekt ExtGState. */
+  private readonly stanyKrycia = new Map<number, PDFRef>();
   private licznikGlifow = 0;
+  private licznikGrup = 0;
   readonly pominieteObrazy = new Set<string>();
 
   constructor(
     private readonly doc: PDFDocument,
     private readonly opcje: OpcjePdf,
   ) {}
+
+  private refKrycia(krycie: number): PDFRef {
+    const a = Math.round(Math.max(0, Math.min(1, krycie)) * 10000) / 10000;
+    const istniejacy = this.stanyKrycia.get(a);
+    if (istniejacy) return istniejacy;
+    const ref = this.doc.context.register(
+      this.doc.context.obj({ Type: 'ExtGState', ca: a, CA: a }),
+    );
+    this.stanyKrycia.set(a, ref);
+    return ref;
+  }
 
   /**
    * XObject glifu. Wariant `obwodka` wypełnia i obrysowuje kontur (grubość linii i kolor
@@ -265,30 +297,45 @@ class BudowniczyPdf {
   async strona(scena: Scena): Promise<void> {
     const strona = this.doc.addPage([scena.szer * PT_NA_MM, scena.wys * PT_NA_MM]);
     const nazwy = new Map<string, PDFName>();
-    const nazwa = (klucz: string, ref: PDFRef, przedrostek: string) => {
-      let n = nazwy.get(klucz);
-      if (!n) {
-        n = strona.node.newXObject(przedrostek, ref);
-        nazwy.set(klucz, n);
-      }
-      return n;
+    const stany = new Map<number, PDFName>();
+    let nrGs = 0;
+    const zasoby: ZasobyPdf = {
+      xObject: (klucz, ref, przedrostek) => {
+        let n = nazwy.get(klucz);
+        if (!n) {
+          n = strona.node.newXObject(przedrostek, ref);
+          nazwy.set(klucz, n);
+        }
+        return n;
+      },
+      extGState: (krycie) => {
+        const a = Math.round(Math.max(0, Math.min(1, krycie)) * 10000) / 10000;
+        let n = stany.get(a);
+        if (!n) {
+          n = PDFName.of(`GS${++nrGs}`);
+          strona.node.setExtGState(n, this.refKrycia(a));
+          stany.set(a, n);
+        }
+        return n;
+      },
     };
     // Układ współrzędnych strony: mm, oś Y w dół, początek w lewym górnym rogu.
     const ops: PDFOperator[] = [
       pushGraphicsState(),
       concatTransformationMatrix(PT_NA_MM, 0, 0, -PT_NA_MM, 0, scena.wys * PT_NA_MM),
     ];
-    for (const e of scena.elementy) ops.push(...(await this.element(scena, e, strona, nazwa)));
+    for (const e of scena.elementy) ops.push(...(await this.element(scena, e, zasoby)));
     ops.push(popGraphicsState());
+    if (stany.size > 0) {
+      strona.node.set(
+        PDFName.of('Group'),
+        this.doc.context.obj({ Type: 'Group', S: 'Transparency', CS: 'DeviceRGB' }),
+      );
+    }
     strona.pushOperators(...ops);
   }
 
-  private async element(
-    scena: Scena,
-    e: ElementSceny,
-    strona: PDFPage,
-    nazwa: (klucz: string, ref: PDFRef, przedrostek: string) => PDFName,
-  ): Promise<PDFOperator[]> {
+  private async element(scena: Scena, e: ElementSceny, zasoby: ZasobyPdf): Promise<PDFOperator[]> {
     switch (e.typ) {
       case 'prostokat':
         return rysujKsztalt(
@@ -322,11 +369,15 @@ class BudowniczyPdf {
             setLineJoin(LineJoinStyle.Round),
           );
           for (const gl of e.glify) {
-            const n = nazwa(`${gl.klucz}|obwodka`, this.refGlifu(scena, gl.klucz, true), 'O');
+            const n = zasoby.xObject(
+              `${gl.klucz}|obwodka`,
+              this.refGlifu(scena, gl.klucz, true),
+              'O',
+            );
             const s = Math.round(gl.skala * 1e6) / 1e6;
             ops.push(
               pushGraphicsState(),
-              concatTransformationMatrix(s, 0, 0, -s, r3(gl.x), r3(gl.y)),
+              macierzGlifu(gl),
               // Grubość w jednostkach glifu: mm / skala.
               setLineWidth(Math.round((e.obwodka.grubosc / s) * 100) / 100),
               drawObject(n),
@@ -337,14 +388,8 @@ class BudowniczyPdf {
         }
         ops.push(pushGraphicsState(), setFillingRgbColor(r, g, b));
         for (const gl of e.glify) {
-          const n = nazwa(gl.klucz, this.refGlifu(scena, gl.klucz), 'G');
-          const s = Math.round(gl.skala * 1e6) / 1e6;
-          ops.push(
-            pushGraphicsState(),
-            concatTransformationMatrix(s, 0, 0, -s, r3(gl.x), r3(gl.y)),
-            drawObject(n),
-            popGraphicsState(),
-          );
+          const n = zasoby.xObject(gl.klucz, this.refGlifu(scena, gl.klucz), 'G');
+          ops.push(pushGraphicsState(), macierzGlifu(gl), drawObject(n), popGraphicsState());
         }
         ops.push(popGraphicsState());
         return ops;
@@ -377,7 +422,7 @@ class BudowniczyPdf {
         }
         ops.push(
           concatTransformationMatrix(r3(e.szer), 0, 0, -r3(e.wys), r3(e.x), r3(e.y + e.wys)),
-          drawObject(nazwa(`obraz:${e.zasob}`, ref, 'Im')),
+          drawObject(zasoby.xObject(`obraz:${e.zasob}`, ref, 'Im')),
           popGraphicsState(),
         );
         return ops;
@@ -385,7 +430,7 @@ class BudowniczyPdf {
       case 'symbol': {
         const d = scena.symbole?.[e.klucz];
         if (!d) return [];
-        const n = nazwa(`S|${e.klucz}`, this.refSymbolu(e.klucz, d), 'S');
+        const n = zasoby.xObject(`S|${e.klucz}`, this.refSymbolu(e.klucz, d), 'S');
         const [r, g, b] = kolorRgb(e.kolor ?? '#000000');
         const m = e.macierz;
         const r6 = (v: number) => Math.round(v * 1e6) / 1e6;
@@ -399,6 +444,7 @@ class BudowniczyPdf {
         ];
       }
       case 'grupa': {
+        if (e.krycie !== undefined && e.krycie <= 0) return [];
         const kat = ((e.obrot ?? 0) * Math.PI) / 180;
         const c = Math.round(Math.cos(kat) * 1e6) / 1e6;
         const s = Math.round(Math.sin(kat) * 1e6) / 1e6;
@@ -418,7 +464,63 @@ class BudowniczyPdf {
             concatTransformationMatrix(r6(m[0]), r6(m[1]), r6(m[2]), r6(m[3]), r3(m[4]), r3(m[5])),
           );
         }
-        for (const d of e.elementy) ops.push(...(await this.element(scena, d, strona, nazwa)));
+        if (e.krycie !== undefined && e.krycie < 1) {
+          // Izolowana grupa przezroczystości (PDF 1.7 Transparency Group) – identyczne mieszanie jak SVG <g opacity>.
+          const lokalneX = new Map<string, { nazwa: PDFName; ref: PDFRef }>();
+          const lokalneGs = new Map<number, { nazwa: PDFName; ref: PDFRef }>();
+          let nrX = 0;
+          let nrGs = 0;
+          const zasobyGrupy: ZasobyPdf = {
+            xObject: (klucz, ref, przedrostek) => {
+              let wpis = lokalneX.get(klucz);
+              if (!wpis) {
+                wpis = { nazwa: PDFName.of(`${przedrostek}${++nrX}`), ref };
+                lokalneX.set(klucz, wpis);
+              }
+              return wpis.nazwa;
+            },
+            extGState: (krycie) => {
+              const a = Math.round(Math.max(0, Math.min(1, krycie)) * 10000) / 10000;
+              let wpis = lokalneGs.get(a);
+              if (!wpis) {
+                wpis = { nazwa: PDFName.of(`GS${++nrGs}`), ref: this.refKrycia(a) };
+                lokalneGs.set(a, wpis);
+              }
+              return wpis.nazwa;
+            },
+          };
+          // Wewnątrz Form XObject zerujemy odziedziczone ca/CA do 1, żeby krycie nie mnożyło się podwójnie.
+          const wewOps: PDFOperator[] = [setGraphicsState(zasobyGrupy.extGState(1))];
+          for (const d of e.elementy) wewOps.push(...(await this.element(scena, d, zasobyGrupy)));
+          const zasobyDict: Record<string, PDFDict> = {};
+          if (lokalneX.size > 0) {
+            const xo = this.doc.context.obj({});
+            for (const { nazwa, ref } of lokalneX.values()) xo.set(nazwa, ref);
+            zasobyDict.XObject = xo;
+          }
+          if (lokalneGs.size > 0) {
+            const gs = this.doc.context.obj({});
+            for (const { nazwa, ref } of lokalneGs.values()) gs.set(nazwa, ref);
+            zasobyDict.ExtGState = gs;
+          }
+          const zasieg = Math.ceil(Math.max(scena.szer, scena.wys) * 2 + 50);
+          const strumien = this.doc.context.formXObject(wewOps, {
+            BBox: [-zasieg, -zasieg, zasieg, zasieg],
+            Group: this.doc.context.obj({
+              Type: 'Group',
+              S: 'Transparency',
+              CS: 'DeviceRGB',
+              I: true,
+              K: false,
+            }),
+            Resources: this.doc.context.obj(zasobyDict),
+          });
+          const refForm = this.doc.context.register(strumien);
+          const nazwaForm = zasoby.xObject(`T|${++this.licznikGrup}`, refForm, 'T');
+          ops.push(setGraphicsState(zasoby.extGState(e.krycie)), drawObject(nazwaForm));
+        } else {
+          for (const d of e.elementy) ops.push(...(await this.element(scena, d, zasoby)));
+        }
         ops.push(popGraphicsState());
         return ops;
       }
