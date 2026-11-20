@@ -1283,7 +1283,7 @@ describe('M4-2: edycja rewersów, tryby tła, ikony SVG i historia', () => {
 
 describe('M4-3: schemat v25, tekst po łuku, krycie warstw i zabarwienie tła', () => {
   it('migruje projekt i szablon v24 do v25 oraz waliduje nowe pola', () => {
-    expect(WERSJA_SCHEMATU).toBe(25);
+    expect(WERSJA_SCHEMATU).toBeGreaterThanOrEqual(25);
     expect(migruj({ wersja: 24, a: 1 }, 'projekt', 25)).toEqual({ wersja: 25, a: 1 });
     expect(migruj({ wersja: 24, a: 1 }, 'szablon', 25)).toEqual({ wersja: 25, a: 1 });
     expect(przygotujProjekt({ ...projekt, wersja: 24 })).toEqual(projekt);
@@ -1493,5 +1493,43 @@ describe('M4-3: schemat v25, tekst po łuku, krycie warstw i zabarwienie tła', 
     });
     expect(zrodloRewersuKarty(mapa, { rewersId: 'nie-ma' }, {}, {})).toEqual({ skad: 'brak' });
     expect(zrodloRewersuKarty(mapa, {}, {}, {})).toEqual({ skad: 'brak' });
+  });
+});
+
+describe('M4-4: schemat v26 i ustawienia druku dwustronnego', () => {
+  it('migruje projekt i szablon v25 do v26, waliduje dwustronny i przechodzi archiwum ZIP', () => {
+    expect(WERSJA_SCHEMATU).toBe(26);
+    expect(migruj({ wersja: 25, a: 1 }, 'projekt', 26)).toEqual({ wersja: 26, a: 1 });
+    expect(migruj({ wersja: 25, a: 1 }, 'szablon', 26)).toEqual({ wersja: 26, a: 1 });
+    expect(przygotujProjekt({ ...projekt, wersja: 25 })).toEqual(projekt);
+
+    const zDwu = (dwustronny: object): Projekt => ({
+      ...projekt,
+      arkusze: projekt.arkusze.map((a, i) =>
+        i === 0 ? { ...a, ustawienia: { ...a.ustawienia, dwustronny: dwustronny as never } } : a,
+      ),
+    });
+
+    const pDluga = zDwu({ wlaczony: true, krawedz: 'dluga' });
+    const pKrotka = zDwu({ wlaczony: false, krawedz: 'krotka' });
+    expect(przygotujProjekt(pDluga).arkusze[0]!.ustawienia.dwustronny).toEqual({
+      wlaczony: true,
+      krawedz: 'dluga',
+    });
+    expect(przygotujProjekt(pKrotka).arkusze[0]!.ustawienia.dwustronny).toEqual({
+      wlaczony: false,
+      krawedz: 'krotka',
+    });
+
+    // Round-trip przez archiwum projektu ZIP.
+    const poZip = importujProjekt(eksportujProjekt(pDluga, zasoby));
+    expect(poZip.projekt.arkusze[0]!.ustawienia.dwustronny).toEqual({
+      wlaczony: true,
+      krawedz: 'dluga',
+    });
+
+    // Odrzucenie niepoprawnych wartości.
+    expect(() => przygotujProjekt(zDwu({ wlaczony: true, krawedz: 'inna' }))).toThrow();
+    expect(() => przygotujProjekt(zDwu({ wlaczony: 'tak', krawedz: 'dluga' }))).toThrow();
   });
 });

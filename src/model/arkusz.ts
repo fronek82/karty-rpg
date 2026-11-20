@@ -228,7 +228,24 @@ export interface UstawieniaArkusza {
   rozmiary?: RozmiaryKart;
   /** Opcje trybu `mieszane`; brak – `MIESZANE_DOMYSLNE`. */
   mieszane?: OpcjeMieszane;
+  /** Druk dwustronny arkusza (przód i tył w parach stron); brak – tylko przody. */
+  dwustronny?: UstawieniaDwustronne;
 }
+
+/** Krawędź papieru, wokół której drukarka odwraca arkusz przy druku dwustronnym. */
+export type KrawedzOdwracania = 'dluga' | 'krotka';
+
+/** Ustawienia druku dwustronnego arkusza (M4-4). */
+export interface UstawieniaDwustronne {
+  wlaczony: boolean;
+  krawedz: KrawedzOdwracania;
+}
+
+/** Domyślne ustawienia druku dwustronnego (wyłączony, odwracanie wzdłuż długiej krawędzi). */
+export const DWUSTRONNY_DOMYSLNY: UstawieniaDwustronne = {
+  wlaczony: false,
+  krawedz: 'dluga',
+};
 
 /** Ręczne przypięcie egzemplarza karty do pozycji (w slotach). */
 export interface PrzypietaKarta {
