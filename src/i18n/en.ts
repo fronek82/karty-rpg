@@ -1276,7 +1276,7 @@ export const en: Slownik = {
   'dekoracje.kolorZabarwienia': 'Tint color',
   'dekoracje.silaZabarwienia': 'Tint strength (%)',
   'dwustronny.tytul': 'Double-sided printing',
-  'dwustronny.wlacz': 'Print card backs (front and back page pairs)',
+  'dwustronny.wlacz': 'Print both sides (front and back page pairs)',
   'dwustronny.krawedz': 'Flip edge',
   'dwustronny.dluga': 'Long edge',
   'dwustronny.krotka': 'Short edge',

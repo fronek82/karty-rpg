@@ -230,7 +230,7 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
     .click();
   await page.getByRole('button', { name: /Dark theme|Ciemny motyw/ }).click();
   const panelEn = page.getByRole('complementary', { name: 'Settings' });
-  await expect(panelEn.getByLabel('Print card backs (front and back page pairs)')).toBeChecked();
+  await expect(panelEn.getByLabel('Print both sides (front and back page pairs)')).toBeChecked();
   await expect(
     panelEn
       .getByRole('group', { name: 'Flip edge' })
