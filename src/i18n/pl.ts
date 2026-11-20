@@ -1399,6 +1399,10 @@ export const pl = {
   'galeria.bladTimeout': 'Przekroczono czas oczekiwania na pobranie szablonu.',
   'galeria.bladSieci':
     'Nie udało się pobrać szablonu. Sprawdź połączenie lub uprawnienia CORS serwera.',
+  'pdf.tytul': 'Opcje PDF',
+  'pdf.warstwaTekstowa': 'Niewidoczna warstwa tekstowa w PDF (wyszukiwanie i kopiowanie)',
+  'pdf.warstwaTekstowaOpis':
+    'Pozwala wyszukiwać i kopiować tekst z polskimi znakami w pliku PDF bez zmiany wyglądu liter (krzywe pozostają źródłem druku).',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;

@@ -57,6 +57,18 @@ export interface DefinicjaSymbolu {
   wys: number;
 }
 
+/** Metadane wiersza tekstu (mm) – używane wyłącznie przez opcjonalną niewidoczną warstwę tekstową PDF (`3 Tr`). */
+export interface WierszTekstuSceny {
+  tekst: string;
+  /** Początek wiersza na linii bazowej (mm). */
+  x: Mm;
+  y: Mm;
+  /** Szerokość ułożonego wiersza (mm) – do dopasowania skali poziomej zaznaczenia w PDF. */
+  szer: Mm;
+  /** Rozmiar pisma w mm. */
+  rozmiar: Mm;
+}
+
 export type ElementSceny =
   | {
       typ: 'prostokat';
@@ -78,6 +90,8 @@ export type ElementSceny =
       glify: GlifNaScenie[];
       /** Obwódka liter rysowana pod wypełnieniem (grubość całej linii, mm). */
       obwodka?: { kolor: Kolor; grubosc: Mm };
+      /** Opcjonalne wiersze tekstu dla niewidocznej warstwy wyszukiwania w PDF (ignorowane przez SVG). */
+      wierszeTekst?: WierszTekstuSceny[];
     }
   | {
       typ: 'obraz';

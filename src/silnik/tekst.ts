@@ -9,7 +9,7 @@ import type {
   WyrownanieTekstu,
 } from '../model/szablon';
 import type { Czcionka, RejestrCzcionek, UlozonyGlif } from './czcionki';
-import type { DefinicjaGlifu, ElementSceny, GlifNaScenie } from './scena';
+import type { DefinicjaGlifu, ElementSceny, GlifNaScenie, WierszTekstuSceny } from './scena';
 import { konturIkony } from './ikony';
 
 /** Fragment tekstu w jednym stylu. Akapit to ciąg fragmentów; `\n` w tekście kończy akapit. */
@@ -144,6 +144,8 @@ interface Kawalek {
   glify: UlozonyGlif[];
   szerokosc: Mm;
   spacja: boolean;
+  /** Tekst źródłowy kawałka (pusty dla ikon) – do niewidocznej warstwy tekstowej PDF. */
+  tekst: string;
   ikona?: NazwaIkony;
 }
 
@@ -185,6 +187,12 @@ export interface WierszTekstu {
   spacje: number;
   /** Ostatni wiersz akapitu (nie jest justowany). */
   ostatni: boolean;
+  /** Złożony tekst wiersza (do opcjonalnej warstwy tekstowej PDF). */
+  tekst?: string;
+  /** Wcięcie początku tekstu w wierszu (mm). */
+  xTekstu?: Mm;
+  /** Dominujący rozmiar pisma w wierszu (mm). */
+  rozmiarTekstu?: Mm;
 }
 
 export interface UkladTekstu {
@@ -202,6 +210,7 @@ function kawalek(
   czcionki: RejestrCzcionek,
   skala: number,
   cechy?: string[],
+  tekstZrodlowy?: string,
 ): Kawalek {
   const czcionka = czcionki.pobierz(styl.czcionka, styl.wariant);
   const rozmiar = styl.rozmiar * skala;
@@ -221,6 +230,7 @@ function kawalek(
     glify,
     szerokosc,
     spacja: false,
+    tekst: tekstZrodlowy ?? tekst,
   };
 }
 
@@ -260,7 +270,7 @@ function kawalkiSlowa(
     .filter((c) => c !== '')
     .map((c) =>
       /^\p{Ll}+$/u.test(c)
-        ? kawalek(c.toLocaleUpperCase('pl'), male, czcionki, skala)
+        ? kawalek(c.toLocaleUpperCase('pl'), male, czcionki, skala, undefined, c)
         : kawalek(c, styl, czcionki, skala),
     );
 }
@@ -375,6 +385,16 @@ function zbudujWiersz(
   const ostOdstep =
     ostKawalek && ostKawalek.glify.some((g) => g.przesuniecie > 0) ? ostKawalek.odstepLiter : 0;
   const szerokosc = kawalki.length > 0 ? x - ostOdstep : 0;
+  const tekstWiersza = kawalki
+    .map((k) => (k.ikona ? '' : k.tekst))
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
+  let rozmiarTekstu = 0;
+  for (const k of kawalki) {
+    if (!k.ikona && !k.spacja && k.tekst) rozmiarTekstu = Math.max(rozmiarTekstu, k.rozmiar);
+  }
+  if (rozmiarTekstu === 0 && doMetryk[0]) rozmiarTekstu = doMetryk[0].rozmiar;
   return {
     szerokosc,
     wysokosc,
@@ -385,6 +405,7 @@ function zbudujWiersz(
     ...(ikony.length ? { ikony } : {}),
     spacje,
     ostatni,
+    ...(tekstWiersza ? { tekst: tekstWiersza, xTekstu: wciecie, rozmiarTekstu } : {}),
   };
 }
 
@@ -638,6 +659,7 @@ export function tekstNaScene(
     (wyrownaniePionowe === 'srodek' ? wolne / 2 : wyrownaniePionowe === 'koniec' ? wolne : 0);
   // Glify grupujemy według koloru – jeden element sceny na kolor.
   const wgKoloru = new Map<Kolor, GlifNaScenie[]>();
+  const wierszeTekst: WierszTekstuSceny[] = [];
   const ikony: ElementSceny[] = [];
   for (const w of uklad.wiersze) {
     const wolneX = ramka.szer - w.szerokosc;
@@ -652,6 +674,17 @@ export function tekstNaScene(
     // Justowanie: wolne miejsce rozdzielone między odstępy słów (bez ostatniego wiersza akapitu).
     const naSpacje =
       wyrownanie === 'justuj' && !w.ostatni && w.spacje > 0 && wolneX > 0 ? wolneX / w.spacje : 0;
+    if (w.tekst) {
+      const xStart = w.xTekstu ?? 0;
+      const szerTekstu = Math.max(0.1, w.szerokosc - xStart + w.spacje * naSpacje);
+      wierszeTekst.push({
+        tekst: w.tekst,
+        x: x0 + xStart,
+        y: y + w.linia,
+        szer: szerTekstu,
+        rozmiar: w.rozmiarTekstu ?? 3,
+      });
+    }
     for (const g of w.glify) {
       const klucz = `${g.czcionka.id}#${g.id}`;
       if (!slownikGlifow[klucz]) slownikGlifow[klucz] = { kontur: g.czcionka.kontur(g.id) };
@@ -678,16 +711,15 @@ export function tekstNaScene(
       });
     y += w.wysokosc;
   }
-  const tekst = [...wgKoloru].map(([kolor, glify]) =>
-    obwodka && obwodka.grubosc > 0
-      ? {
-          typ: 'tekst' as const,
-          kolor,
-          glify,
-          obwodka: { kolor: obwodka.kolor, grubosc: obwodka.grubosc },
-        }
-      : { typ: 'tekst' as const, kolor, glify },
-  );
+  const tekst = [...wgKoloru].map(([kolor, glify], indeks) => ({
+    typ: 'tekst' as const,
+    kolor,
+    glify,
+    ...(obwodka && obwodka.grubosc > 0
+      ? { obwodka: { kolor: obwodka.kolor, grubosc: obwodka.grubosc } }
+      : {}),
+    ...(indeks === 0 && wierszeTekst.length > 0 ? { wierszeTekst } : {}),
+  }));
   return [...tekst, ...ikony];
 }
 
@@ -794,11 +826,21 @@ export function tekstPoLukuNaScene(
   const cy = oy - g.minY;
 
   const wgKoloru = new Map<Kolor, GlifNaScenie[]>();
+  const wierszeTekst: WierszTekstuSceny[] = [];
   const ikony: ElementSceny[] = [];
   let przesuniecie = 0;
 
   for (const w of uklad.wiersze) {
     const r = promienWierszaNaLuku(luk, przesuniecie);
+    if (w.tekst) {
+      wierszeTekst.push({
+        tekst: w.tekst,
+        x: ox,
+        y: oy + Math.min(g.wys, przesuniecie + w.linia),
+        szer: Math.max(0.1, g.szer),
+        rozmiar: w.rozmiarTekstu ?? 3,
+      });
+    }
     // Grupowanie glifów w klastry (glif bazowy + kolejne znaki łączące o przesunięciu 0).
     const klastry: GlifWWierszu[][] = [];
     for (const gl of w.glify) {
@@ -863,15 +905,14 @@ export function tekstPoLukuNaScene(
     przesuniecie += w.wysokosc;
   }
 
-  const tekst = [...wgKoloru].map(([kolor, glify]) =>
-    obwodka && obwodka.grubosc > 0
-      ? {
-          typ: 'tekst' as const,
-          kolor,
-          glify,
-          obwodka: { kolor: obwodka.kolor, grubosc: obwodka.grubosc },
-        }
-      : { typ: 'tekst' as const, kolor, glify },
-  );
+  const tekst = [...wgKoloru].map(([kolor, glify], indeks) => ({
+    typ: 'tekst' as const,
+    kolor,
+    glify,
+    ...(obwodka && obwodka.grubosc > 0
+      ? { obwodka: { kolor: obwodka.kolor, grubosc: obwodka.grubosc } }
+      : {}),
+    ...(indeks === 0 && wierszeTekst.length > 0 ? { wierszeTekst } : {}),
+  }));
   return [...tekst, ...ikony];
 }

@@ -2,10 +2,13 @@ import { konturOkregu, konturProstokata } from '../silnik/konturyFigur';
 import {
   PDFDict,
   PDFDocument,
+  PDFHexString,
   PDFName,
+  PDFNumber,
   PDFOperator,
   PDFOperatorNames,
   PDFRef,
+  PDFString,
   appendBezierCurve,
   clip,
   closePath,
@@ -41,12 +44,15 @@ import {
   type Kontur,
   type Obrys,
   type Scena,
+  type WierszTekstuSceny,
 } from '../silnik/scena';
 
 /**
  * Serializator sceny do PDF (pdf-lib). Każda scena = jedna strona o wymiarach sceny.
  * Tekst jako krzywe: każdy glif zapisany w dokumencie RAZ jako Form XObject
  * i wstawiany operatorem `Do` – PDF nie puchnie przy dużej ilości tekstu.
+ * Opcjonalnie dodaje niewidoczną warstwę tekstową (`3 Tr`, Type0 + ToUnicode) do wyszukiwania
+ * i kopiowania polskich znaków bez jakiejkolwiek zmiany w pikselach.
  */
 
 export interface ObrazDoPdf {
@@ -57,6 +63,8 @@ export interface ObrazDoPdf {
 export interface OpcjePdf {
   obraz?: (zasob: string) => ObrazDoPdf | undefined;
   tytul?: string;
+  /** Dodaje niewidoczną warstwę tekstową (`3 Tr`) do wyszukiwania i kopiowania tekstu w PDF. */
+  warstwaTekstowa?: boolean;
 }
 
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
@@ -139,6 +147,48 @@ function rysujKsztalt(
 interface ZasobyPdf {
   xObject: (klucz: string, ref: PDFRef, przedrostek: string) => PDFName;
   extGState: (krycie: number) => PDFName;
+  fontTekstu: () => PDFName;
+}
+
+const MAKS_BFCHAR_W_BLOKU = 100;
+const MAKS_CID = 65534;
+const SZEROKOSC_DOMYSLNA_CID = 500;
+
+/** Koduje pojedynczy punkt kodowy Unicode (także spoza BMP – para surogatów) jako hex UTF-16BE. */
+function utf16BeHex(znak: string): string {
+  let wynik = '';
+  for (let i = 0; i < znak.length; i++) {
+    wynik += znak.charCodeAt(i).toString(16).toUpperCase().padStart(4, '0');
+  }
+  return wynik;
+}
+
+/** Buduje strumień CMap `ToUnicode` zgodny z ISO 32000-1 (bloki po max 100 wpisów `bfchar`). */
+function zbudujToUnicodeCMap(znaki: Map<string, number>): string {
+  const wpisy = [...znaki.entries()].map(
+    ([znak, cid]) => `<${cid.toString(16).toUpperCase().padStart(4, '0')}> <${utf16BeHex(znak)}>`,
+  );
+  const sekcje: string[] = [];
+  for (let i = 0; i < wpisy.length; i += MAKS_BFCHAR_W_BLOKU) {
+    const porcja = wpisy.slice(i, i + MAKS_BFCHAR_W_BLOKU);
+    sekcje.push(`${porcja.length} beginbfchar\n${porcja.join('\n')}\nendbfchar`);
+  }
+  return [
+    '/CIDInit /ProcSet findresource begin',
+    '12 dict begin',
+    'begincmap',
+    '/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def',
+    '/CMapName /Adobe-Identity-UCS def',
+    '/CMapType 2 def',
+    '1 begincodespacerange',
+    '<0000> <FFFF>',
+    'endcodespacerange',
+    ...sekcje,
+    'endcmap',
+    'CMapName currentdict /CMap defineresource pop',
+    'end',
+    'end',
+  ].join('\n');
 }
 
 function macierzGlifu(gl: GlifNaScenie): PDFOperator {
@@ -160,6 +210,9 @@ class BudowniczyPdf {
   private readonly obrazy = new Map<string, PDFRef>();
   /** Krycie (zaokrąglone do 0,0001) → wspólny obiekt ExtGState. */
   private readonly stanyKrycia = new Map<number, PDFRef>();
+  /** Mapa znak Unicode → CID (1..65534) dla opcjonalnej niewidocznej warstwy tekstowej. */
+  private readonly znakiTekstu = new Map<string, number>();
+  private refCzcionkiTekstu?: PDFRef;
   private licznikGlifow = 0;
   private licznikGrup = 0;
   readonly pominieteObrazy = new Set<string>();
@@ -168,6 +221,117 @@ class BudowniczyPdf {
     private readonly doc: PDFDocument,
     private readonly opcje: OpcjePdf,
   ) {}
+
+  private pobierzRefCzcionkiTekstu(): PDFRef {
+    if (!this.refCzcionkiTekstu) {
+      this.refCzcionkiTekstu = this.doc.context.nextRef();
+    }
+    return this.refCzcionkiTekstu;
+  }
+
+  private kodujTekst(tekst: string): { hex: string; dlugosc: number } {
+    let hex = '';
+    let dlugosc = 0;
+    for (const znak of tekst) {
+      let cid = this.znakiTekstu.get(znak);
+      if (cid === undefined) {
+        if (this.znakiTekstu.size >= MAKS_CID) continue;
+        cid = this.znakiTekstu.size + 1;
+        this.znakiTekstu.set(znak, cid);
+      }
+      hex += cid.toString(16).toUpperCase().padStart(4, '0');
+      dlugosc++;
+    }
+    return { hex, dlugosc };
+  }
+
+  private operatoryWarstwyTekstowej(
+    wiersze: readonly WierszTekstuSceny[],
+    pobierzFont: () => PDFName,
+  ): PDFOperator[] {
+    const zakodowane: { wiersz: WierszTekstuSceny; hex: string; dlugosc: number }[] = [];
+    for (const wiersz of wiersze) {
+      if (!wiersz.tekst) continue;
+      const { hex, dlugosc } = this.kodujTekst(wiersz.tekst);
+      if (dlugosc > 0) zakodowane.push({ wiersz, hex, dlugosc });
+    }
+    if (zakodowane.length === 0) return [];
+    const nazwaFontu = pobierzFont();
+    const ops: PDFOperator[] = [
+      pushGraphicsState(),
+      PDFOperator.of(PDFOperatorNames.BeginText),
+      // Tryb 3 Tr: tekst niewidoczny (ani wypełnienie, ani obrys) – 0 zmian w pikselach.
+      PDFOperator.of(PDFOperatorNames.SetTextRenderingMode, [PDFNumber.of(3)]),
+    ];
+    for (const { wiersz, hex, dlugosc } of zakodowane) {
+      const rozmiar = Math.max(0.5, wiersz.rozmiar);
+      const szerNaturalna = dlugosc * (SZEROKOSC_DOMYSLNA_CID / 1000) * rozmiar;
+      const tz = Math.max(10, Math.min(400, (wiersz.szer / Math.max(0.1, szerNaturalna)) * 100));
+      ops.push(
+        PDFOperator.of(PDFOperatorNames.SetFontAndSize, [nazwaFontu, PDFNumber.of(r3(rozmiar))]),
+        PDFOperator.of(PDFOperatorNames.SetTextHorizontalScaling, [PDFNumber.of(r3(tz))]),
+        // Wewnątrz układu strony Y w dół macierz (1, 0, 0, -1, x, y) przywraca pionowy tekst w górę.
+        PDFOperator.of(PDFOperatorNames.SetTextMatrix, [
+          PDFNumber.of(1),
+          PDFNumber.of(0),
+          PDFNumber.of(0),
+          PDFNumber.of(-1),
+          PDFNumber.of(r3(wiersz.x)),
+          PDFNumber.of(r3(wiersz.y)),
+        ]),
+        PDFOperator.of(PDFOperatorNames.ShowText, [PDFHexString.of(hex)]),
+      );
+    }
+    ops.push(PDFOperator.of(PDFOperatorNames.EndText), popGraphicsState());
+    return ops;
+  }
+
+  /** Finalizuje współdzieloną czcionkę Type0 + ToUnicode po przetworzeniu wszystkich stron. */
+  zakoncz(): void {
+    if (!this.refCzcionkiTekstu || this.znakiTekstu.size === 0) return;
+    const toUnicodeRef = this.doc.context.register(
+      this.doc.context.flateStream(zbudujToUnicodeCMap(this.znakiTekstu)),
+    );
+    const deskryptorRef = this.doc.context.register(
+      this.doc.context.obj({
+        Type: 'FontDescriptor',
+        FontName: PDFName.of('KartyRpgText'),
+        Flags: 4,
+        FontBBox: [0, -200, 1000, 800],
+        ItalicAngle: 0,
+        Ascent: 800,
+        Descent: -200,
+        CapHeight: 700,
+        StemV: 80,
+      }),
+    );
+    const cidFontRef = this.doc.context.register(
+      this.doc.context.obj({
+        Type: 'Font',
+        Subtype: 'CIDFontType2',
+        BaseFont: PDFName.of('KartyRpgText'),
+        CIDSystemInfo: {
+          Registry: PDFString.of('Adobe'),
+          Ordering: PDFString.of('Identity'),
+          Supplement: 0,
+        },
+        FontDescriptor: deskryptorRef,
+        CIDToGIDMap: PDFName.of('Identity'),
+        DW: SZEROKOSC_DOMYSLNA_CID,
+      }),
+    );
+    this.doc.context.assign(
+      this.refCzcionkiTekstu,
+      this.doc.context.obj({
+        Type: 'Font',
+        Subtype: 'Type0',
+        BaseFont: PDFName.of('KartyRpgText'),
+        Encoding: PDFName.of('Identity-H'),
+        DescendantFonts: [cidFontRef],
+        ToUnicode: toUnicodeRef,
+      }),
+    );
+  }
 
   private refKrycia(krycie: number): PDFRef {
     const a = Math.round(Math.max(0, Math.min(1, krycie)) * 10000) / 10000;
@@ -299,6 +463,8 @@ class BudowniczyPdf {
     const nazwy = new Map<string, PDFName>();
     const stany = new Map<number, PDFName>();
     let nrGs = 0;
+    let zarejestrowanoFontTekstu = false;
+    const nazwaFontuTekstu = PDFName.of('FTxt');
     const zasoby: ZasobyPdf = {
       xObject: (klucz, ref, przedrostek) => {
         let n = nazwy.get(klucz);
@@ -317,6 +483,13 @@ class BudowniczyPdf {
           stany.set(a, n);
         }
         return n;
+      },
+      fontTekstu: () => {
+        if (!zarejestrowanoFontTekstu) {
+          strona.node.setFontDictionary(nazwaFontuTekstu, this.pobierzRefCzcionkiTekstu());
+          zarejestrowanoFontTekstu = true;
+        }
+        return nazwaFontuTekstu;
       },
     };
     // Układ współrzędnych strony: mm, oś Y w dół, początek w lewym górnym rogu.
@@ -392,6 +565,10 @@ class BudowniczyPdf {
           ops.push(pushGraphicsState(), macierzGlifu(gl), drawObject(n), popGraphicsState());
         }
         ops.push(popGraphicsState());
+        if (this.opcje.warstwaTekstowa && e.wierszeTekst && e.wierszeTekst.length > 0) {
+          const opsTekstu = this.operatoryWarstwyTekstowej(e.wierszeTekst, zasoby.fontTekstu);
+          if (opsTekstu.length > 0) ops.push(...opsTekstu);
+        }
         return ops;
       }
       case 'obraz': {
@@ -470,6 +647,8 @@ class BudowniczyPdf {
           const lokalneGs = new Map<number, { nazwa: PDFName; ref: PDFRef }>();
           let nrX = 0;
           let nrGs = 0;
+          let uzytyFontTekstu = false;
+          const nazwaFontuTekstu = PDFName.of('FTxt');
           const zasobyGrupy: ZasobyPdf = {
             xObject: (klucz, ref, przedrostek) => {
               let wpis = lokalneX.get(klucz);
@@ -488,6 +667,10 @@ class BudowniczyPdf {
               }
               return wpis.nazwa;
             },
+            fontTekstu: () => {
+              uzytyFontTekstu = true;
+              return nazwaFontuTekstu;
+            },
           };
           // Wewnątrz Form XObject zerujemy odziedziczone ca/CA do 1, żeby krycie nie mnożyło się podwójnie.
           const wewOps: PDFOperator[] = [setGraphicsState(zasobyGrupy.extGState(1))];
@@ -502,6 +685,11 @@ class BudowniczyPdf {
             const gs = this.doc.context.obj({});
             for (const { nazwa, ref } of lokalneGs.values()) gs.set(nazwa, ref);
             zasobyDict.ExtGState = gs;
+          }
+          if (uzytyFontTekstu) {
+            const fonty = this.doc.context.obj({});
+            fonty.set(nazwaFontuTekstu, this.pobierzRefCzcionkiTekstu());
+            zasobyDict.Font = fonty;
           }
           const zasieg = Math.ceil(Math.max(scena.szer, scena.wys) * 2 + 50);
           const strumien = this.doc.context.formXObject(wewOps, {
@@ -546,6 +734,7 @@ export async function scenyDoPdf(sceny: Scena[], opcje: OpcjePdf = {}): Promise<
   if (opcje.tytul) doc.setTitle(opcje.tytul);
   const budowniczy = new BudowniczyPdf(doc, opcje);
   for (const s of sceny) await budowniczy.strona(s);
+  budowniczy.zakoncz();
   const bajty = await doc.save({ useObjectStreams: true });
   return {
     bajty,

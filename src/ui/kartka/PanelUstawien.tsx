@@ -89,6 +89,8 @@ export function PanelUstawien({
   zmienKalibracje,
   kalibracjaRewersu,
   zmienKalibracjeRewersu,
+  warstwaTekstowaPdf,
+  zmienWarstweTekstowaPdf,
 }: {
   przelaczRozmiary?: (tryb: 'jeden' | 'mieszane') => void;
   naKartce?: ComponentProps<typeof PanelUkladu>['naKartce'];
@@ -96,6 +98,8 @@ export function PanelUstawien({
   zmienKalibracje: ComponentProps<typeof PanelUkladu>['zmienKalibracje'];
   kalibracjaRewersu: Kalibracja;
   zmienKalibracjeRewersu: (k: Kalibracja) => void;
+  warstwaTekstowaPdf: boolean;
+  zmienWarstweTekstowaPdf: (wlaczona: boolean) => void;
   /** Ostatnio zbudowana kartka (siatka startowa własnego układu). */
   wynik?: WynikArkusza;
   wydrukTestowy: () => void;
@@ -481,6 +485,18 @@ export function PanelUstawien({
           </fieldset>
         );
       })()}
+      <fieldset className="sekcja-pdf">
+        <legend>{t('pdf.tytul')}</legend>
+        <label className="wybor">
+          <input
+            type="checkbox"
+            checked={warstwaTekstowaPdf}
+            onChange={(e) => zmienWarstweTekstowaPdf(e.target.checked)}
+          />
+          <span>{t('pdf.warstwaTekstowa')}</span>
+        </label>
+        <p className="podpis">{t('pdf.warstwaTekstowaOpis')}</p>
+      </fieldset>
       <fieldset className="sekcja-czcionek">
         <legend>{t('czcionki.tytul')}</legend>
         {roleProjektu(projekt).map((rola) => (

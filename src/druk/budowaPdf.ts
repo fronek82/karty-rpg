@@ -53,6 +53,8 @@ export interface ZadaniePdf {
   testowyDwustronny?: string;
   /** Etykiety stron na dwustronnym wydruku próbnym (z bieżącego języka UI). */
   etykietyTestowe?: { przod: string; tyl: string };
+  /** Dodaje opcjonalną niewidoczną warstwę tekstową (`3 Tr`) do wyszukiwania w PDF. */
+  warstwaTekstowa?: boolean;
 }
 
 /** Buduje listę scen stron PDF z uwzględnieniem druku dwustronnego, kalibracji przodu/tyłu i wydruku próbnego. */
@@ -122,6 +124,7 @@ export async function zbudujPdf(z: ZadaniePdf): Promise<Uint8Array> {
   const sceny = scenyZadaniaPdf(z);
   const { bajty } = await scenyDoPdf(sceny, {
     tytul: z.tytul,
+    ...(z.warstwaTekstowa ? { warstwaTekstowa: true } : {}),
     obraz: (id) => {
       const o = obrazy.get(id);
       return o ? { dane: o.dane, format: o.format } : undefined;

@@ -1403,6 +1403,10 @@ export const en: Slownik = {
   'galeria.bladTimeout': 'Timed out waiting for the template download.',
   'galeria.bladSieci':
     'Could not download the template. Check your connection or server CORS rules.',
+  'pdf.tytul': 'PDF options',
+  'pdf.warstwaTekstowa': 'Invisible text layer in PDF (search and copy)',
+  'pdf.warstwaTekstowaOpis':
+    'Allows searching and copying text (including accented characters) in the PDF without changing letter appearance (outlines remain the print source).',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
