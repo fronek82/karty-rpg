@@ -208,6 +208,8 @@ interface WezelBazowy {
   minWysokosc?: Mm;
   /** Położenie w rodzicu swobodnym (R10); w innych kontenerach ignorowane, ale zostaje w modelu. */
   pozycja?: Pozycja;
+  /** Krycie warstwy/węzła 0–1 (domyślnie 1 – w pełni nieprzezroczysty). */
+  krycie?: number;
 }
 
 /**
@@ -304,6 +306,15 @@ export interface PoleTekst extends PoleBazowe {
   listyNumerowane?: boolean;
   ikonyWTekscie?: boolean;
   kontynuuj?: boolean;
+  /** Skład napisu po łuku (np. łuk u góry lub u dołu rewersu). */
+  luk?: LukTekstu;
+}
+
+export interface LukTekstu {
+  /** Promień okręgu łuku w mm (dodatni). */
+  promien: Mm;
+  /** `gora` – łuk wypukły ku górze; `dol` – wklęsły ku dołowi. Domyślnie `gora`. */
+  kierunek?: 'gora' | 'dol';
 }
 
 /** Krótka wartość (np. `k6`, `-1 obr`) w ramce o zadanym kształcie. */
@@ -397,6 +408,8 @@ export type NazwaIkony = 'gwiazdka' | 'nozyczki';
 export interface PoleIkona extends PoleBazowe {
   typ: 'ikona';
   ikona: NazwaIkony;
+  /** Opcjonalny element wektorowy z katalogu ozdobników lub biblioteki projektu. */
+  element?: string;
   rozmiar: Mm;
   kolor?: Kolor;
 }
@@ -520,6 +533,14 @@ export interface GrupaStylu {
   styl: StylTekstu;
 }
 
+export type TrybTla = 'wypelnij' | 'dopasuj' | 'rozciagnij' | 'kafelki';
+
+export interface ZabarwienieTla {
+  kolor: Kolor;
+  /** Siła zabarwienia 0–1 (krycie nakładki barwiącej na teksturze tła). */
+  krycie: number;
+}
+
 /** Samodzielny układ graficzny rewersu. Wymiary są formatem odniesienia warstw. */
 export interface Rewers {
   id: string;
@@ -528,6 +549,11 @@ export interface Rewers {
   korzen: Kontener & { typ: 'swobodny' };
   tlo?: Kolor;
   teksturaTla?: string;
+  teksturaTryb?: TrybTla;
+  /** Krycie obrazu tekstury tła 0–1 (domyślnie 1). */
+  teksturaKrycie?: number;
+  /** Zabarwienie tekstury tła na wybrany kolor. */
+  teksturaZabarwienie?: ZabarwienieTla;
   ramka?: RamkaKarty;
 }
 

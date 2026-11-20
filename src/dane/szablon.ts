@@ -87,6 +87,8 @@ export function nowyWezel(
     wWierszu?: boolean;
     /** Klucze zajęte poza szablonem (np. dane kart po usuniętych polach) – nie do ponownego użycia. */
     zajete?: Iterable<string>;
+    /** Rewers statyczny: pola tekstowe, wartości i obrazy powstają od razu bez klucza danych. */
+    bezKlucza?: boolean;
   } = {},
 ): Wezel {
   const id = noweIdWezla(s, rodzaj.startsWith('separator') ? 'separator' : rodzaj);
@@ -100,13 +102,15 @@ export function nowyWezel(
     case 'swobodny':
       return { id, nazwa, typ: 'swobodny', dzieci: [] };
     case 'tekst':
-      return { id, nazwa, typ: 'tekst', klucz: klucz(), styl: tresc(9) };
+      return opcje.bezKlucza
+        ? { id, nazwa, typ: 'tekst', tekst: nazwa, styl: tresc(9) }
+        : { id, nazwa, typ: 'tekst', klucz: klucz(), styl: tresc(9) };
     case 'etykieta-wartosc':
       return {
         id,
         nazwa,
         typ: 'tekst',
-        klucz: klucz(),
+        ...(opcje.bezKlucza ? { tekst: nazwa } : { klucz: klucz() }),
         styl: tresc(9),
         // Etykieta mniejsza od wartości – bez innych upiększeń (kolor, wersaliki ustawia użytkownik).
         etykieta: { tekst: nazwa, pozycja: 'nad', styl: { rozmiar: pt(7) } },
@@ -116,7 +120,7 @@ export function nowyWezel(
         id,
         nazwa,
         typ: 'wartosc',
-        klucz: klucz(),
+        ...(opcje.bezKlucza ? { tekst: nazwa } : { klucz: klucz() }),
         ksztalt: 'prostokat',
         // Rozmiar wg treści (bez rozciągania na całą szerokość / wysokość rodzica).
         wyrownanie: { poziomo: 'poczatek', pionowo: 'poczatek' },
@@ -129,7 +133,7 @@ export function nowyWezel(
         id,
         nazwa,
         typ: 'obraz',
-        klucz: klucz(),
+        ...(opcje.bezKlucza ? {} : { klucz: klucz() }),
         dopasowanie: 'dopasuj',
         wysokosc: { wypelnij: 1 },
       };
@@ -138,7 +142,7 @@ export function nowyWezel(
         id,
         nazwa,
         typ: 'znaczniki',
-        klucz: klucz(),
+        ...(opcje.bezKlucza ? {} : { klucz: klucz() }),
         kolumny: 3,
         rzedy: 1,
         ksztalt: 'kolo',
@@ -151,7 +155,7 @@ export function nowyWezel(
         id,
         nazwa,
         typ: 'wpis',
-        klucz: klucz(),
+        ...(opcje.bezKlucza ? {} : { klucz: klucz() }),
         styl: tresc(9),
         minWysokosc: 5,
         obramowanie: { grubosc: 0.25, kolor: CZARNY },
@@ -837,6 +841,7 @@ export function zmienTypPola(
   typ: Pole['typ'],
   nazwaTypu: string = typ,
   zajete: Iterable<string> = [],
+  bezKlucza = false,
 ): Szablon {
   const w = znajdzWezel(s, id);
   if (!w || czyKontener(w) || w.typ === typ) return s;
@@ -844,6 +849,7 @@ export function zmienTypPola(
   const nowy = nowyWezel(s, typ, w.nazwa || nazwaTypu, {
     wWierszu: r?.rodzic.typ === 'wiersz',
     zajete,
+    bezKlucza,
   }) as Pole;
   const wspolne = (
     [
@@ -858,6 +864,7 @@ export function zmienTypPola(
       'ozdoba',
       'narozniki',
       'promien',
+      'krycie',
       'minSzerokosc',
       'minWysokosc',
       'pozycja',
@@ -866,12 +873,21 @@ export function zmienTypPola(
   ).reduce<Record<string, unknown>>((a, k) => (w[k] !== undefined ? { ...a, [k]: w[k] } : a), {});
   const x = { ...nowy, ...wspolne, id } as Pole;
   if ('klucz' in nowy && nowy.klucz !== undefined) {
-    if (w.klucz) x.klucz = w.klucz;
-    else if (x.typ === 'tekst' || x.typ === 'wartosc') {
-      // Pole stałe zostaje stałe.
+    if (!bezKlucza && w.klucz) x.klucz = w.klucz;
+    else if (bezKlucza || x.typ === 'tekst' || x.typ === 'wartosc' || x.typ === 'obraz') {
+      // Pole stałe zostaje stałe (również po zmianie typu na obraz w edytorze rewersu).
       delete x.klucz;
-      if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.tekst !== undefined) x.tekst = w.tekst;
+      if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.tekst !== undefined) {
+        if (x.typ === 'tekst' || x.typ === 'wartosc') x.tekst = w.tekst;
+      }
     }
+  } else if (
+    bezKlucza &&
+    (x.typ === 'tekst' || x.typ === 'wartosc') &&
+    (w.typ === 'tekst' || w.typ === 'wartosc') &&
+    w.tekst !== undefined
+  ) {
+    x.tekst = w.tekst;
   }
   if (maStylTekstu(w) && maStylTekstu(x)) {
     x.styl = w.styl;
@@ -1047,12 +1063,14 @@ const WYGLAD = [
   'ozdoba',
   'narozniki',
   'promien',
+  'krycie',
   'padding',
   'margines',
 ] as const;
 /** Właściwości wyglądu zależne od typu – kopiowane tylko do elementu, który je ma. */
 const WYGLAD_TYPU = [
   'styl',
+  'luk',
   'ksztalt',
   'ksztaltElement',
   'linie',

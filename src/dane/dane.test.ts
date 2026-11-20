@@ -8,9 +8,24 @@ import { WERSJA_SCHEMATU, type DaneZasobow, type Projekt } from '../model/projek
 import { korzenKarty, type Rewers, type WariantCzcionki, type Wezel } from '../model/szablon';
 import { pakietMausritter } from '../pakiety/mausritter';
 import { ZESTAWY_STYLOW } from '../ozdobniki/zestawyStylow';
-import { dodajRewers, przypiszRewers, rewersKarty, usunRewers } from './rewers';
+import {
+  dodajRewers,
+  duplikujRewersWProjekcie,
+  nowyRewers,
+  przypisaniaRewersu,
+  przypiszRewers,
+  przypiszRewersKartom,
+  rewersJakoSzablon,
+  rewersKarty,
+  szablonDoRewersu,
+  ustawStalyObrazRewersu,
+  ustawTekstureRewersu,
+  usunRewers,
+  zmienRewers,
+  zrodloRewersuKarty,
+} from './rewers';
 import { BazaProjektow } from './baza';
-import { cofnij, pustaHistoria, zapamietaj } from './historia';
+import { cofnij, ponow, pustaHistoria, zapamietaj } from './historia';
 import { szablonyUzywajace } from './biblioteka';
 import {
   dodajSzablon,
@@ -24,7 +39,16 @@ import { MAKS_BAJTOW_CZCIONKI, wariantCzcionki, wgrajCzcionke } from './czcionki
 import { projektZPakietu, rejestrZProjektu } from './pakiet';
 import { BladDanych, MIGRACJE, migruj, ostrzezeniaProjektu, przygotujProjekt } from './schemat';
 import { szablonCzaru, szablonStatystyk, szablonWroga } from '../silnik/__testy__/przyklady';
-import { nowyWezel, utworzGrupeStylu, zastosujZestawStylu, zmienGrupeStylu } from './szablon';
+import {
+  nowyWezel,
+  skopiujStyl,
+  utworzGrupeStylu,
+  wklejStyl,
+  zastosujZestawStylu,
+  zmienGrupeStylu,
+  zmienKolejnoscRysowania,
+  zmienTypPola,
+} from './szablon';
 
 const czcionka = async (plik: string) => new Uint8Array(readFileSync(`public/czcionki/${plik}`));
 const obraz = async () =>
@@ -1161,5 +1185,313 @@ describe('M4-1: rewersy', () => {
     expect(kopia.ramka!.narozniki!.element).toBe('wl:naroznik-2');
     expect(dodany.projekt.szablony.find((s) => s.id === dodany.szablonId)!.rewersId).toBe(kopia.id);
     expect(() => dodajSzablon(cel, zasoby, { ...paczka, zasoby: [] })).toThrow(/nieznany zasób/);
+  });
+});
+
+describe('M4-2: edycja rewersów, tryby tła, ikony SVG i historia', () => {
+  it('tworzy, duplikuje i liczy bezpośrednie przypisania rewersów oraz wspiera bezKlucza', () => {
+    const utworzony = nowyRewers(projekt, { nazwa: 'Karta lasu' });
+    const rid = utworzony.id;
+    const rev = utworzony.projekt.rewersy!.find((r) => r.id === rid)!;
+    expect(rev.korzen.typ).toBe('swobodny');
+
+    const sz = rewersJakoSzablon(rev);
+    const poleTekstu = nowyWezel(sz, 'tekst', 'Opis', { bezKlucza: true });
+    expect('klucz' in poleTekstu).toBe(false);
+
+    const talia = utworzony.projekt.talie[0]!;
+    const kartyIds = talia.karty.slice(0, 2).map((k) => k.id);
+    let poPrzypisaniu = przypiszRewers(utworzony.projekt, { rodzaj: 'talia', id: talia.id }, rid);
+    poPrzypisaniu = przypiszRewers(
+      poPrzypisaniu,
+      { rodzaj: 'szablon', id: poPrzypisaniu.szablony[0]!.id },
+      rid,
+    );
+    poPrzypisaniu = przypiszRewersKartom(poPrzypisaniu, talia.id, kartyIds, rid);
+    expect(przypisaniaRewersu(poPrzypisaniu, rid)).toEqual({
+      talie: 1,
+      szablony: 1,
+      karty: 2,
+      razem: 4,
+    });
+
+    const kopia = duplikujRewersWProjekcie(poPrzypisaniu, rid, (n) =>
+      n === 1 ? 'kopia' : `kopia ${n}`,
+    );
+    expect(kopia.id).not.toBe(rid);
+    expect(kopia.projekt.rewersy!.some((r) => r.id === kopia.id)).toBe(true);
+    expect(
+      zrodloRewersuKarty(
+        new Map(kopia.projekt.rewersy!.map((r) => [r.id, r])),
+        {},
+        { rewersId: null },
+        { rewersId: rid },
+      ),
+    ).toEqual({ skad: 'szablon', wylaczony: true });
+  });
+
+  it('obsługuje zmianę kolejności warstw oraz cofanie/ponawianie w rewersie i migrację v24', () => {
+    const v23 = migruj({ ...projekt, wersja: 23 }, 'projekt');
+    expect((v23 as Projekt).wersja).toBe(WERSJA_SCHEMATU);
+
+    const baza = nowyRewers(projekt, { nazwa: 'Test kolejności' });
+    const start = baza.projekt;
+    const rev = start.rewersy!.find((r) => r.id === baza.id)!;
+    const revZWierstwa: Rewers = {
+      ...rev,
+      teksturaTryb: 'kafelki',
+      korzen: {
+        ...rev.korzen,
+        dzieci: [
+          {
+            id: 'w1',
+            typ: 'tekst',
+            tekst: 'Dolny',
+            pozycja: { x: 5, y: 5 },
+            styl: { czcionka: 'tresc', rozmiar: 4 },
+          },
+          { id: 'w2', typ: 'ikona', ikona: 'gwiazdka', element: 'wl:herb', rozmiar: 6 },
+        ],
+      },
+    };
+    const sz = rewersJakoSzablon(revZWierstwa);
+    const poKolejnosci = zmienKolejnoscRysowania(sz, 'w1', 'na-wierzch');
+    expect(poKolejnosci.korzen.dzieci.map((d) => d.id)).toEqual(['w2', 'w1']);
+    const zaktualizowany = szablonDoRewersu(revZWierstwa, poKolejnosci);
+    expect(zaktualizowany.teksturaTryb).toBe('kafelki');
+
+    const p1: Projekt = {
+      ...start,
+      rewersy: start.rewersy!.map((r) => (r.id === baza.id ? revZWierstwa : r)),
+    };
+    const p2: Projekt = {
+      ...start,
+      rewersy: start.rewersy!.map((r) => (r.id === baza.id ? zaktualizowany : r)),
+    };
+    const hist = zapamietaj(pustaHistoria<Projekt>(), p1);
+    const krokCof = cofnij(hist, p2);
+    expect(
+      krokCof?.stan.rewersy!.find((r) => r.id === baza.id)?.korzen.dzieci.map((d) => d.id),
+    ).toEqual(['w1', 'w2']);
+    const krokPon = ponow(krokCof!.historia, krokCof!.stan);
+    expect(
+      krokPon?.stan.rewersy!.find((r) => r.id === baza.id)?.korzen.dzieci.map((d) => d.id),
+    ).toEqual(['w2', 'w1']);
+    expect(szablonyUzywajace(p1, 'wl:herb').map((s) => s.id)).toEqual([baza.id]);
+  });
+});
+
+describe('M4-3: schemat v25, tekst po łuku, krycie warstw i zabarwienie tła', () => {
+  it('migruje projekt i szablon v24 do v25 oraz waliduje nowe pola', () => {
+    expect(WERSJA_SCHEMATU).toBe(25);
+    expect(migruj({ wersja: 24, a: 1 }, 'projekt', 25)).toEqual({ wersja: 25, a: 1 });
+    expect(migruj({ wersja: 24, a: 1 }, 'szablon', 25)).toEqual({ wersja: 25, a: 1 });
+    expect(przygotujProjekt({ ...projekt, wersja: 24 })).toEqual(projekt);
+
+    const obraz = projekt.zasoby.find((z) => z.rodzaj === 'obraz')!;
+    const rev: Rewers = {
+      id: 'rev-m43',
+      nazwa: 'Rewers z efektami',
+      rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+      tlo: '#1e293b',
+      teksturaTla: obraz.id,
+      teksturaTryb: 'wypelnij',
+      teksturaKrycie: 0.65,
+      teksturaZabarwienie: { kolor: '#7c2d12', krycie: 0.3 },
+      korzen: {
+        id: 'korzen',
+        typ: 'swobodny',
+        dzieci: [
+          {
+            id: 'napis-luk',
+            typ: 'tekst',
+            tekst: 'KARTA PRZYGODY',
+            krycie: 0.85,
+            pozycja: { x: 6, y: 10 },
+            szerokosc: { mm: 51 },
+            styl: { czcionka: 'tytul', rozmiar: 5, kolor: '#f8fafc', wyrownanie: 'srodek' },
+            luk: { promien: 40, kierunek: 'gora' },
+          },
+          {
+            id: 'znak',
+            typ: 'ikona',
+            ikona: 'gwiazdka',
+            rozmiar: 8,
+            krycie: 0.5,
+            pozycja: { x: 27, y: 40 },
+          },
+        ],
+      },
+    };
+
+    const zRev = (r: object): Projekt => ({
+      ...projekt,
+      rewersy: [r as Rewers],
+    });
+
+    // Poprawny rewers przechodzi walidację oraz round-trip przez szablonDoRewersu i archiwa ZIP.
+    const valid = przygotujProjekt(zRev(rev));
+    expect(valid.rewersy).toEqual([rev]);
+
+    const poEdycji = szablonDoRewersu(rev, rewersJakoSzablon(rev));
+    expect(poEdycji.teksturaKrycie).toBe(0.65);
+    expect(poEdycji.teksturaZabarwienie).toEqual({ kolor: '#7c2d12', krycie: 0.3 });
+
+    // Kopiowanie i wklejanie stylu przenosi krycie i łuk tekstu.
+    const zrodlo = rev.korzen.dzieci[0]!;
+    const cel: Wezel = {
+      id: 'cel',
+      typ: 'tekst',
+      tekst: 'Inny',
+      styl: { czcionka: 'tresc', rozmiar: 4 },
+    };
+    const wklejony = wklejStyl(cel, skopiujStyl(zrodlo));
+    expect(wklejony.krycie).toBe(0.85);
+    expect(wklejony.typ === 'tekst' && wklejony.luk).toEqual({ promien: 40, kierunek: 'gora' });
+
+    // Archiwum projektu i szablonu (z przypisanym rewersem) zachowuje efekty M4-3.
+    const szablonZRev = { ...projekt.szablony[0]!, rewersId: rev.id };
+    const pArch: Projekt = {
+      ...projekt,
+      rewersy: [rev],
+      szablony: [szablonZRev, ...projekt.szablony.slice(1)],
+    };
+    const roundProjekt = importujProjekt(eksportujProjekt(pArch, zasoby));
+    expect(roundProjekt.projekt.rewersy).toEqual([rev]);
+    const roundSzablon = importujSzablon(eksportujSzablon(pArch, zasoby, szablonZRev.id).bajty);
+    expect(roundSzablon.rewers).toEqual(rev);
+
+    // Odrzucenie niepoprawnych wartości poza zakresem.
+    expect(() => przygotujProjekt(zRev({ ...rev, teksturaKrycie: 1.5 }))).toThrow();
+    expect(() => przygotujProjekt(zRev({ ...rev, teksturaKrycie: -0.1 }))).toThrow();
+    expect(() =>
+      przygotujProjekt(zRev({ ...rev, teksturaZabarwienie: { kolor: '#000', krycie: 1.2 } })),
+    ).toThrow();
+    expect(() =>
+      przygotujProjekt(
+        zRev({
+          ...rev,
+          korzen: {
+            ...rev.korzen,
+            dzieci: [{ ...rev.korzen.dzieci[0]!, krycie: -0.2 }],
+          },
+        }),
+      ),
+    ).toThrow();
+    expect(() =>
+      przygotujProjekt(
+        zRev({
+          ...rev,
+          korzen: {
+            ...rev.korzen,
+            dzieci: [{ ...rev.korzen.dzieci[0]!, luk: { promien: 0, kierunek: 'gora' } }],
+          },
+        }),
+      ),
+    ).toThrow();
+    expect(() =>
+      przygotujProjekt(
+        zRev({
+          ...rev,
+          korzen: {
+            ...rev.korzen,
+            dzieci: [{ ...rev.korzen.dzieci[0]!, luk: { promien: 30, kierunek: 'lewo' } }],
+          },
+        }),
+      ),
+    ).toThrow();
+  });
+
+  it('zmienTypPola zachowuje krycie i tryb bezKlucza; pomocniki rewersu obsługują tekstury, obrazy i źródła', async () => {
+    const { projekt: zNowym, id: revId } = nowyRewers(projekt, { nazwa: 'Testowy' });
+    const rev0 = zNowym.rewersy!.find((r) => r.id === revId)!;
+
+    // zmienRewers aktualizuje rewers, a brak zmian zwraca referencję projektu.
+    expect(zmienRewers(zNowym, revId, (r) => r)).toBe(zNowym);
+    const zNazwa = zmienRewers(zNowym, revId, (r) => ({ ...r, nazwa: 'Zmieniony' }));
+    expect(zNazwa.rewersy!.find((r) => r.id === revId)?.nazwa).toBe('Zmieniony');
+
+    // ustawTekstureRewersu i szablonDoRewersu bez tekstury nie zostawiają osieroconych pól.
+    const png = await obraz();
+    const zTekstura = ustawTekstureRewersu(zNazwa, zasoby, revId, 'tlo.png', {
+      dane: png,
+      szerokosc: 64,
+      wysokosc: 64,
+    });
+    const revZTek = {
+      ...zTekstura.projekt.rewersy!.find((r) => r.id === revId)!,
+      teksturaTryb: 'kafelki' as const,
+      teksturaKrycie: 0.5,
+      teksturaZabarwienie: { kolor: '#1d4ed8', krycie: 0.25 },
+    };
+    expect(revZTek.teksturaTla).toBeDefined();
+    const szBezTekstury = rewersJakoSzablon(revZTek);
+    delete szBezTekstury.teksturaTla;
+    const poUsunieciuTekstury = szablonDoRewersu(revZTek, szBezTekstury);
+    expect(poUsunieciuTekstury.teksturaTla).toBeUndefined();
+    expect(poUsunieciuTekstury.teksturaTryb).toBeUndefined();
+    expect(poUsunieciuTekstury.teksturaKrycie).toBeUndefined();
+    expect(poUsunieciuTekstury.teksturaZabarwienie).toBeUndefined();
+
+    // zmienTypPola zachowuje krycie i przy bezKlucza=true tworzy pole obrazu bez klucza danych.
+    const szBaza = rewersJakoSzablon(rev0);
+    const szZTekstem = {
+      ...szBaza,
+      korzen: {
+        ...szBaza.korzen,
+        dzieci: [
+          {
+            id: 'w1',
+            typ: 'tekst' as const,
+            tekst: 'Napis',
+            krycie: 0.45,
+            styl: { czcionka: 'tytul', rozmiar: 5 },
+          },
+        ],
+      },
+    };
+    const szZObrazem = zmienTypPola(szZTekstem, 'w1', 'obraz', 'Obraz', [], true);
+    const poleObraz = szZObrazem.korzen.dzieci[0]!;
+    expect(poleObraz.typ).toBe('obraz');
+    expect(poleObraz.krycie).toBe(0.45);
+    expect('klucz' in poleObraz ? poleObraz.klucz : undefined).toBeUndefined();
+
+    // ustawStalyObrazRewersu zapisuje obraz do stałego pola obrazu po zmianie typu.
+    const pZObrazem = zmienRewers(zTekstura.projekt, revId, (r) => szablonDoRewersu(r, szZObrazem));
+    const poObrazie = ustawStalyObrazRewersu(
+      pZObrazem,
+      zTekstura.dane,
+      revId,
+      'w1',
+      'emblemat.png',
+      { dane: png, szerokosc: 64, wysokosc: 64 },
+    );
+    const polePo = poObrazie.projekt.rewersy!.find((r) => r.id === revId)!.korzen.dzieci[0]!;
+    expect(polePo.typ === 'obraz' && polePo.zasob).toBeTruthy();
+
+    // zrodloRewersuKarty dla wszystkich gałęzi: karta, szablon, talia, wyłączony, nieistniejące ID.
+    const mapa = new Map([[rev0.id, rev0]]);
+    expect(zrodloRewersuKarty(mapa, { rewersId: rev0.id }, {}, {})).toEqual({
+      rewers: rev0,
+      skad: 'karta',
+    });
+    expect(zrodloRewersuKarty(mapa, { rewersId: null }, { rewersId: rev0.id }, {})).toEqual({
+      skad: 'karta',
+      wylaczony: true,
+    });
+    expect(zrodloRewersuKarty(mapa, {}, { rewersId: rev0.id }, {})).toEqual({
+      rewers: rev0,
+      skad: 'szablon',
+    });
+    expect(zrodloRewersuKarty(mapa, {}, { rewersId: null }, { rewersId: rev0.id })).toEqual({
+      skad: 'szablon',
+      wylaczony: true,
+    });
+    expect(zrodloRewersuKarty(mapa, {}, {}, { rewersId: rev0.id })).toEqual({
+      rewers: rev0,
+      skad: 'talia',
+    });
+    expect(zrodloRewersuKarty(mapa, { rewersId: 'nie-ma' }, {}, {})).toEqual({ skad: 'brak' });
+    expect(zrodloRewersuKarty(mapa, {}, {}, {})).toEqual({ skad: 'brak' });
   });
 });

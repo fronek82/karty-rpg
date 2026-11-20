@@ -31,6 +31,8 @@ export interface GlifNaScenie {
   y: Mm;
   /** mm na jednostkę czcionki (rozmiar / unitsPerEm). */
   skala: number;
+  /** Obrót glifu wokół (x, y) w stopniach, zgodnie z ruchem wskazówek zegara (np. tekst po łuku). */
+  obrot?: number;
 }
 
 /** Macierz afiniczna jak w SVG `matrix(a b c d e f)` i PDF `cm`: x' = a·x + c·y + e, y' = b·x + d·y + f. */
@@ -111,6 +113,8 @@ export type ElementSceny =
       /** Przycięcie (mm) w układzie otaczającym grupę – nie podlega jej przekształceniu. */
       przyciecie?: { x: Mm; y: Mm; szer: Mm; wys: Mm };
       przyciecieKonturem?: Kontur;
+      /** Krycie grupy 0–1 (domyślnie 1); izolowana grupa przezroczystości (SVG opacity, PDF Transparency Group). */
+      krycie?: number;
       elementy: ElementSceny[];
     };
 

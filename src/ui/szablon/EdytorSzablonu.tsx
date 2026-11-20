@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { opisObrazu } from '../../dane/obrazy';
 import { ustawPodklad, usunPodklad } from '../../dane/podklad';
+import { przypiszRewers, rewersKarty } from '../../dane/rewers';
 import {
   danePodgladu,
   doPoprzedniegoKontenera,
@@ -59,6 +60,7 @@ import { TloDekoracyjne } from './PolaDekoracji';
 import { PoleRamki } from './PanelWygladu';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWyrownania } from './PanelWyrownania';
+import { PodgladRewersu } from '../rewers/PodgladRewersu';
 import { przygotujPlikObrazu } from '../obrazy';
 import {
   budujCele,
@@ -905,6 +907,7 @@ export function EdytorSzablonu({
             ) : (
               <>
                 <PanelKarty
+                  edycja={edycja}
                   szablon={szablon}
                   obrazy={obrazy}
                   zmienSz={zmienSz}
@@ -950,22 +953,39 @@ export function EdytorSzablonu({
   );
 }
 
-/** Ustawienia całej karty: rozmiar (mm), zaokrąglenie rogów, kolor tła. */
+/** Ustawienia całej karty: rozmiar (mm), zaokrąglenie rogów, kolor tła, przypisany rewers. */
 function PanelKarty({
+  edycja,
   szablon,
   obrazy,
   zmienSz,
   zmienRozmiar,
 }: {
+  edycja: ProjektWEdycji;
   szablon: Szablon;
   obrazy: readonly { wartosc: string; tekst: string }[];
   zmienSz: (f: (s: Szablon) => Szablon, klucz?: string) => void;
   zmienRozmiar: (szer: number, wys: number) => boolean;
 }) {
+  const { projekt, zmien } = edycja;
   const r = szablon.rozmiar;
   const [blad, ustawBlad] = useState(false);
   const { szer, wys } = wymiaryKarty(szablon);
   const rozmiar = (s: number, w: number) => ustawBlad(!zmienRozmiar(s, w));
+  const rewersyLista = projekt.rewersy ?? [];
+  const rewersyMapa = new Map(rewersyLista.map((x) => [x.id, x] as const));
+  const taliaSzablonu =
+    projekt.talie.find((x) => x.karty.some((k) => k.szablonId === szablon.id)) ?? projekt.talie[0];
+  const rewersTalii =
+    typeof taliaSzablonu?.rewersId === 'string'
+      ? rewersyMapa.get(taliaSzablonu.rewersId)
+      : undefined;
+  const zrodloDziedziczone = rewersTalii
+    ? t('rewers.zrodloTalia', { nazwa: rewersTalii.nazwa })
+    : t('rewers.zrodloBrak');
+  const wartoscRewersu =
+    szablon.rewersId === undefined ? '' : szablon.rewersId === null ? '__brak__' : szablon.rewersId;
+  const rozstrzygnietyRewers = rewersKarty(rewersyMapa, {}, szablon, taliaSzablonu ?? {});
   return (
     <>
       <h2>{t('szablon.karta')}</h2>
@@ -1153,6 +1173,42 @@ function PanelKarty({
             {t('wlasciwosci.jakRogiKarty')}
           </button>
         )}
+      </Sekcja>
+      <Sekcja tytul={t('rewers.przypisanieSzablon')} otwarta={szablon.rewersId !== undefined}>
+        <div className="pole-panelu">
+          <select
+            aria-label={t('rewers.przypisanieSzablon')}
+            value={wartoscRewersu}
+            onChange={(e) => {
+              const v = e.target.value;
+              const nowy = v === '' ? undefined : v === '__brak__' ? null : v;
+              zmien((p) => przypiszRewers(p, { rodzaj: 'szablon', id: szablon.id }, nowy));
+            }}
+          >
+            <option value="">{t('rewers.dziedzicz', { zrodlo: zrodloDziedziczone })}</option>
+            <option value="__brak__">{t('rewers.bezRewersu')}</option>
+            {rewersyLista.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.nazwa}
+              </option>
+            ))}
+          </select>
+        </div>
+        <PodgladRewersu
+          rewers={rozstrzygnietyRewers}
+          docelowy={{
+            szer,
+            wys,
+            ...(szablon.promienRogow !== undefined ? { promienRogow: szablon.promienRogow } : {}),
+          }}
+          zasoby={edycja.zasoby.zasoby}
+          komunikatBraku={
+            szablon.rewersId === null
+              ? t('rewers.rozstrzygnietyWylaczony')
+              : t('rewers.rozstrzygnietyBrak')
+          }
+          etykieta={t('rewers.podgladEtykieta')}
+        />
       </Sekcja>
       {szablon.warianty?.length ? <p className="podpis">{t('szablon.warianty')}</p> : null}
       {jedenWezelUwaga(szablon.korzen)}

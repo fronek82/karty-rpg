@@ -2,6 +2,7 @@ import {
   czyObrys,
   kolorSceny,
   type DefinicjaSymbolu,
+  type GlifNaScenie,
   type KolorSymbolu,
   type ElementSceny,
   type Kontur,
@@ -104,12 +105,21 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
       case 'sciezka':
         return `<path d="${konturNaD(e.kontur)}"${wypelnienie(e.wypelnienie)}${e.evenodd && e.wypelnienie !== undefined ? ' fill-rule="evenodd"' : ''}${atrybutyObrysu(e.obrys)}/>`;
       case 'tekst': {
+        const transformGlifu = (g: GlifNaScenie) => {
+          if (!g.obrot) {
+            const sk = liczba(g.skala, 6);
+            return `matrix(${sk} 0 0 -${sk} ${liczba(g.x)} ${liczba(g.y)})`;
+          }
+          const kat = (g.obrot * Math.PI) / 180;
+          const a = g.skala * Math.cos(kat);
+          const b = g.skala * Math.sin(kat);
+          return `matrix(${liczba(a, 6)} ${liczba(b, 6)} ${liczba(b, 6)} ${liczba(-a, 6)} ${liczba(g.x)} ${liczba(g.y)})`;
+        };
         const uzycia = (obrys?: { grubosc: number }) =>
           e.glify
             .map((g) => {
-              const sk = liczba(g.skala, 6);
               const sw = obrys ? ` stroke-width="${liczba(obrys.grubosc / g.skala, 2)}"` : '';
-              return `<use href="#${idGlifu.get(g.klucz)}" transform="matrix(${sk} 0 0 -${sk} ${liczba(g.x)} ${liczba(g.y)})"${sw}/>`;
+              return `<use href="#${idGlifu.get(g.klucz)}" transform="${transformGlifu(g)}"${sw}/>`;
             })
             .join('');
         // Obwódka: osobna warstwa pod literami (grubość w jednostkach glifu = mm / skala).
@@ -144,9 +154,12 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
         return `<use href="#${id}" transform="${macierzSvg(e.macierz)}" color="${kolorSceny(e.kolor)}"/>`;
       }
       case 'grupa': {
+        if (e.krycie !== undefined && e.krycie <= 0) return '';
         const obrot = e.obrot ? ` rotate(${liczba(e.obrot)})` : '';
         const macierz = e.macierz ? ` ${macierzSvg(e.macierz)}` : '';
-        let g = `<g transform="translate(${liczba(e.x)} ${liczba(e.y)})${obrot}${macierz}">${e.elementy.map(element).join('')}</g>`;
+        const krycie =
+          e.krycie !== undefined && e.krycie < 1 ? ` opacity="${liczba(e.krycie, 4)}"` : '';
+        let g = `<g transform="translate(${liczba(e.x)} ${liczba(e.y)})${obrot}${macierz}"${krycie}>${e.elementy.map(element).join('')}</g>`;
         // Przycięcia w układzie otaczającym. Zagnieżdżenie wyznacza część wspólną obu klipów.
         const przytnij = (d: string) => {
           const id = `${px}p${licznikPrzyciec++}`;

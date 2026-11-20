@@ -582,6 +582,17 @@ export function PanelWygladu({ wezel, zmien }: { wezel: Wezel; zmien: Zmiana }) 
             zmien={(v) => ustaw('promien', v || undefined, `promien:${id}`)}
           />
         )}
+        <Liczba
+          etykieta={t('wlasciwosci.krycie')}
+          wartosc={Math.round((wezel.krycie ?? 1) * 100)}
+          min={0}
+          max={100}
+          krok={5}
+          zmien={(v) => {
+            const k = Math.max(0, Math.min(1, Math.round(v) / 100));
+            ustaw('krycie', k >= 1 ? undefined : k, `krycie:${id}`);
+          }}
+        />
       </Sekcja>
       <Sekcja tytul={t('wlasciwosci.odstepy')}>
         <PoleOdstepow

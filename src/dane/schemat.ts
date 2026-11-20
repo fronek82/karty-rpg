@@ -128,6 +128,7 @@ const baza = {
   minSzerokosc: opc(nieujemna),
   minWysokosc: opc(nieujemna),
   pozycja: opc(pozycja),
+  krycie: opc(liczba.min(0).max(1)),
 };
 const bazaPola = {
   ...baza,
@@ -185,6 +186,7 @@ const pole = z.discriminatedUnion('typ', [
     listyNumerowane: opc(z.boolean()),
     ikonyWTekscie: opc(z.boolean()),
     kontynuuj: opc(z.boolean()),
+    luk: opc(obj({ promien: dodatnia.max(1000), kierunek: opc(z.enum(['gora', 'dol'])) })),
   }),
   obj({
     ...bazaPola,
@@ -244,6 +246,7 @@ const pole = z.discriminatedUnion('typ', [
     ...bazaPola,
     typ: z.literal('ikona'),
     ikona: z.enum(['gwiazdka', 'nozyczki']),
+    element: opc(identyfikator),
     rozmiar: dodatnia,
     kolor: opc(z.string()),
   }),
@@ -366,6 +369,9 @@ const szablon = obj({
 
 export const schematRewersu = z.strictObject({
   ...szablon.pick({ id: true, nazwa: true, tlo: true, teksturaTla: true, ramka: true }).shape,
+  teksturaTryb: opc(z.enum(['wypelnij', 'dopasuj', 'rozciagnij', 'kafelki'])),
+  teksturaKrycie: opc(liczba.min(0).max(1)),
+  teksturaZabarwienie: opc(obj({ kolor: z.string(), krycie: liczba.min(0).max(1) })),
   rozmiar: obj({ tryb: z.literal('mm'), szerokosc: dodatnia, wysokosc: dodatnia }),
   korzen: kontener.and(obj({ typ: z.literal('swobodny') })),
 });
@@ -785,6 +791,10 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     21: (d) => d,
     // 22→23: brak przypisania pozostawia dotychczasowy projekt z samymi przodami.
     22: (d) => d,
+    // 23→24: tryb tekstury rewersu i element SVG na polu ikony są opcjonalne.
+    23: (d) => d,
+    // 24→25: tekst po łuku, krycie warstw oraz krycie i zabarwienie tekstury są opcjonalne.
+    24: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -810,6 +820,10 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     21: (d) => d,
     // 22→23: brak przypisania pozostawia dotychczasowy projekt z samymi przodami.
     22: (d) => d,
+    // 23→24: tryb tekstury rewersu i element SVG na polu ikony są opcjonalne.
+    23: (d) => d,
+    // 24→25: tekst po łuku, krycie warstw oraz krycie i zabarwienie tekstury są opcjonalne.
+    24: (d) => d,
   },
 };
 

@@ -23,8 +23,11 @@ import {
   type StylLinii,
   type StylTekstu,
   type Szablon,
+  type Rewers,
+  type TrybTla,
   type UstawieniaObrazu,
   type Wezel,
+  type ZabarwienieTla,
 } from '../model/szablon';
 import type { RejestrCzcionek } from './czcionki';
 import { kolorZDanych, styleZDanych } from './styleZDanych';
@@ -37,7 +40,11 @@ import { konturPostrzepiony, szkicujElementy } from '../ozdobniki/dekoracje';
 import { konturProstokata } from './konturyFigur';
 import { MIN_DPI_RAMKI, ramka9ZElementu, type WynikRamki9 } from '../ozdobniki/ramka9';
 import { rysujSeparatorOzdobny, wysokoscOzdobySeparatora } from '../ozdobniki/separator';
-import { narozniki as rysujNarozniki, type WynikNarozniki } from '../ozdobniki/narozniki';
+import {
+  narozniki as rysujNarozniki,
+  symbolZElementu,
+  type WynikNarozniki,
+} from '../ozdobniki/narozniki';
 import {
   symboleSceny,
   type DefinicjaGlifu,
@@ -50,8 +57,11 @@ import {
 import {
   parsujFormatowanie,
   dodajNotacjeTekstu,
+  graniceTekstuPoLuku,
   tekstNaScene,
+  tekstPoLukuNaScene,
   ulozDopasowany,
+  ulozPoLukuDopasowany,
   ulozTekst,
   type Fragment,
   type UkladTekstu,
@@ -302,6 +312,11 @@ export function renderujKarte(
   szablon: Szablon,
   karta: Pick<Karta, 'dane' | 'rozmiar' | 'obrazy'>,
   ctx: KontekstRenderowania,
+  opcje?: {
+    teksturaTryb?: TrybTla;
+    teksturaKrycie?: number;
+    teksturaZabarwienie?: ZabarwienieTla;
+  },
 ): WyrenderowanaKarta {
   const { szer, wys } = wymiaryKarty(szablon, karta);
   const dane = daneZParametrami(szablon, karta.dane);
@@ -313,25 +328,81 @@ export function renderujKarte(
   const poszarpanaKarta = szablon.postrzepienie?.sila
     ? konturPostrzepiony(ramkaKarty, szablon.postrzepienie)
     : undefined;
-  const teksturaTla = (zasob: string, r: Ramka, promien: Mm | undefined, pole: string) => {
+  const teksturaTla = (
+    zasob: string,
+    r: Ramka,
+    promien: Mm | undefined,
+    pole: string,
+    tryb: TrybTla = 'wypelnij',
+    krycie?: number,
+    zabarwienie?: ZabarwienieTla,
+  ) => {
     const info = ctx.obraz?.(zasob);
     if (!info || info.szerokosc <= 0 || info.wysokosc <= 0) {
       ostrzezenia.push({ pole, komunikat: 'brak-obrazu', szczegoly: zasob });
       return;
     }
     if (!(r.szer > 0 && r.wys > 0)) return;
-    const obraz = rysujObraz(zasob, info, r, r, 'wypelnij', { x: 0.5, y: 0.5 });
-    if (!promien) {
-      elementy.push(obraz);
-      return;
+    const ukrytaTekstura = krycie !== undefined && krycie <= 0;
+    const maKrycieTekstury = krycie !== undefined && krycie < 1;
+    if (!ukrytaTekstura) {
+      let tresc: ElementSceny[];
+      if (tryb === 'kafelki') {
+        const MM_NA_PX = 25.4 / 300;
+        let tw = Math.max(4, info.szerokosc * MM_NA_PX);
+        let th = info.wysokosc * (tw / info.szerokosc);
+        const minTw = r.szer / 64;
+        const minTh = r.wys / 64;
+        if (tw < minTw) {
+          th *= minTw / tw;
+          tw = minTw;
+        }
+        if (th < minTh) {
+          tw *= minTh / th;
+          th = minTh;
+        }
+        tresc = [];
+        for (let y = r.y; y < r.y + r.wys - 1e-6; y += th) {
+          for (let x = r.x; x < r.x + r.szer - 1e-6; x += tw) {
+            tresc.push({ typ: 'obraz', zasob, x, y, szer: tw, wys: th });
+          }
+        }
+      } else {
+        tresc = [rysujObraz(zasob, info, r, r, tryb, { x: 0.5, y: 0.5 })];
+      }
+      if (!promien && tryb !== 'kafelki' && !maKrycieTekstury) {
+        elementy.push(...tresc);
+      } else {
+        elementy.push({
+          typ: 'grupa',
+          x: 0,
+          y: 0,
+          ...(promien
+            ? { przyciecieKonturem: konturProstokata(r.x, r.y, r.szer, r.wys, promien) }
+            : tryb === 'kafelki'
+              ? { przyciecie: { ...r } }
+              : {}),
+          ...(maKrycieTekstury ? { krycie } : {}),
+          elementy: tresc,
+        });
+      }
     }
-    elementy.push({
-      typ: 'grupa',
-      x: 0,
-      y: 0,
-      przyciecieKonturem: konturProstokata(r.x, r.y, r.szer, r.wys, promien),
-      elementy: [obraz],
-    });
+    if (zabarwienie && zabarwienie.krycie > 0) {
+      const nakladka: ElementSceny = {
+        typ: 'prostokat',
+        x: r.x,
+        y: r.y,
+        szer: r.szer,
+        wys: r.wys,
+        ...(promien ? { promien } : {}),
+        wypelnienie: zabarwienie.kolor,
+      };
+      elementy.push(
+        zabarwienie.krycie < 1
+          ? { typ: 'grupa', x: 0, y: 0, krycie: zabarwienie.krycie, elementy: [nakladka] }
+          : nakladka,
+      );
+    }
   };
   /** Narożniki z biblioteki: elementy na scenę, rysunek do słownika symboli, ostrzeżenie o nieznanym. */
   const wypiszNarozniki = (w: WynikNarozniki, id: string) => {
@@ -455,6 +526,9 @@ export function renderujKarte(
       ramkaKarty,
       poszarpanaKarta ? 0 : szablon.promienRogow,
       'tlo-karty',
+      opcje?.teksturaTryb,
+      opcje?.teksturaKrycie,
+      opcje?.teksturaZabarwienie,
     );
   if (szablon.ramka?.ozdoba?.rodzaj === 'ramka9') {
     const o = szablon.ramka.odsuniecie ?? 0;
@@ -560,9 +634,12 @@ export function renderujKarte(
    * środka ramki; współrzędne wewnątrz zostają bezwzględne (macierz przesuwa środek do początku).
    */
   const rysuj = (u: UlozonyWezel, wObrocie = false) => {
+    const krycie = u.wezel.krycie;
+    if (krycie !== undefined && krycie <= 0) return;
+    const maKrycie = krycie !== undefined && krycie < 1;
     const postrzepienie = czyKontener(u.wezel) ? u.wezel.postrzepienie : undefined;
     const obrocony = wObrocie || Boolean(u.obrot);
-    if (!u.obrot && !postrzepienie?.sila) return rysujWezel(u, obrocony);
+    if (!u.obrot && !postrzepienie?.sila && !maKrycie) return rysujWezel(u, obrocony);
     const zewnetrzne = elementy;
     elementy = [];
     rysujWezel(u, obrocony);
@@ -579,7 +656,8 @@ export function renderujKarte(
       : elementy;
     elementy = zewnetrzne;
     if (!u.obrot) {
-      elementy.push(...wewnetrzne);
+      if (maKrycie) elementy.push({ typ: 'grupa', x: 0, y: 0, krycie, elementy: wewnetrzne });
+      else elementy.push(...wewnetrzne);
       return;
     }
     const cx = u.x + u.szer / 2;
@@ -590,6 +668,7 @@ export function renderujKarte(
       y: cy,
       obrot: u.obrot,
       macierz: [1, 0, 0, 1, -cx, -cy],
+      ...(maKrycie ? { krycie } : {}),
       elementy: wewnetrzne,
     });
   };
@@ -847,6 +926,35 @@ export function renderujKarte(
   };
 }
 
+/**
+ * Renderuje rewers karty na scenę (mm) w podanym rozmiarze docelowym (lub rozmiarze odniesienia rewersu).
+ */
+export function renderujRewers(
+  rewers: Rewers,
+  ctx: KontekstRenderowania,
+  docelowy?: { szer: Mm; wys: Mm; promienRogow?: Mm },
+): WyrenderowanaKarta {
+  const szablon: Szablon = {
+    id: rewers.id,
+    nazwa: rewers.nazwa,
+    rozmiar: docelowy
+      ? { tryb: 'mm', szerokosc: docelowy.szer, wysokosc: docelowy.wys }
+      : rewers.rozmiar,
+    ...(docelowy?.promienRogow ? { promienRogow: docelowy.promienRogow } : {}),
+    ...(rewers.tlo !== undefined ? { tlo: rewers.tlo } : {}),
+    ...(rewers.teksturaTla !== undefined ? { teksturaTla: rewers.teksturaTla } : {}),
+    ...(rewers.ramka !== undefined ? { ramka: rewers.ramka } : {}),
+    korzen: rewers.korzen,
+  };
+  return renderujKarte(szablon, { dane: {} }, ctx, {
+    ...(rewers.teksturaTryb ? { teksturaTryb: rewers.teksturaTryb } : {}),
+    ...(rewers.teksturaKrycie !== undefined ? { teksturaKrycie: rewers.teksturaKrycie } : {}),
+    ...(rewers.teksturaZabarwienie !== undefined
+      ? { teksturaZabarwienie: rewers.teksturaZabarwienie }
+      : {}),
+  });
+}
+
 /** Ramka całej karty: linia w odległości `odsuniecie` od krawędzi, rogi zgodne z kartą. */
 function rysujRamkeKarty(
   r: RamkaKarty,
@@ -1069,6 +1177,10 @@ function zmierzPole(
       const fr = fragmentyTekstu(pole, wartosc, dane, ctx);
       if (fr.length === 0) return { szer: 0, wys: 0 };
       const naturalny = ulozTekst(fr, undefined, ctx.czcionki);
+      if (pole.luk) {
+        const g = graniceTekstuPoLuku(naturalny, pole.luk);
+        return { szer: g.szer, wys: g.wys };
+      }
       if (
         pole.wieleWierszy === false ||
         ogr.szer === undefined ||
@@ -1130,8 +1242,16 @@ function zmierzPole(
       );
       return { szer: ogr.szer ?? u.szerokosc, wys: u.wysokosc };
     }
-    case 'ikona':
+    case 'ikona': {
+      if (pole.element) {
+        const e = znajdzElement(pole.element, ctx.elementy);
+        if (e && e.kontury.length > 0) {
+          const skala = pole.rozmiar / Math.max(e.szer, e.wys);
+          return { szer: e.szer * skala, wys: e.wys * skala };
+        }
+      }
       return { szer: pole.rozmiar, wys: pole.rozmiar };
+    }
   }
 }
 
@@ -1148,8 +1268,25 @@ function rysujTekst(
 ): ElementSceny[] {
   const fr = fragmentyTekstu(pole, wartosc, dane, ctx);
   if (fr.length === 0) return [];
-  const wieleWierszy = pole.wieleWierszy !== false;
   const minSkala = minimalnaSkala(pole.styl);
+  if (pole.luk) {
+    const uklad = ulozPoLukuDopasowany(fr, pole.luk, ramka.szer, ramka.wys, ctx.czcionki, minSkala);
+    if (uklad.przepelnienie) ostrzezenia.push({ pole: pole.id, komunikat: 'tekst-nie-miesci-sie' });
+    dodajOstrzezenieZnakow(pole.id, fr, ctx, ostrzezenia);
+    const elementy = tekstPoLukuNaScene(
+      uklad,
+      pole.luk,
+      ramka,
+      pole.styl.wyrownanie ?? 'srodek',
+      pole.styl.wyrownaniePionowe ?? 'srodek',
+      glify,
+      pole.styl.obwodka,
+    );
+    return uklad.przepelnienie
+      ? [{ typ: 'grupa', x: 0, y: 0, przyciecie: ramka, elementy }]
+      : elementy;
+  }
+  const wieleWierszy = pole.wieleWierszy !== false;
   const uklad = ulozDopasowany(
     fr,
     ramka.szer,
@@ -1318,6 +1455,35 @@ function rysujPole(
     case 'tabela':
       return rysujTabele(pole, ramka, dane, ctx, glify, ostrzezenia);
     case 'ikona': {
+      if (pole.element) {
+        const e = znajdzElement(pole.element, ctx.elementy);
+        if (!e || e.kontury.length === 0) {
+          ostrzezenia.push({
+            pole: pole.id,
+            komunikat: 'nieznany-element-ozdobny',
+            szczegoly: pole.element,
+          });
+          return [];
+        }
+        const wypelniaj = pole.szerokosc !== undefined && pole.wysokosc !== undefined;
+        const maxSzer = wypelniaj ? ramka.szer : Math.min(pole.rozmiar, ramka.szer);
+        const maxWys = wypelniaj ? ramka.wys : Math.min(pole.rozmiar, ramka.wys);
+        const skala = Math.min(maxSzer / e.szer, maxWys / e.wys);
+        if (!(skala > 0)) return [];
+        const w = e.szer * skala;
+        const h = e.wys * skala;
+        const dx = ramka.x + (ramka.szer - w) / 2;
+        const dy = ramka.y + (ramka.wys - h) / 2;
+        symbole[e.id] = symbolZElementu(e);
+        return [
+          {
+            typ: 'symbol',
+            klucz: e.id,
+            macierz: [skala, 0, 0, skala, dx, dy],
+            kolor: pole.kolor ?? CZARNY,
+          },
+        ];
+      }
       const bok = Math.min(pole.rozmiar, ramka.szer, ramka.wys);
       const x = ramka.x + (ramka.szer - bok) / 2;
       const y = ramka.y + (ramka.wys - bok) / 2;

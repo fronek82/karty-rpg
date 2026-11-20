@@ -2505,3 +2505,40 @@ button.maly {
 .pomin-pasek:not(:focus) {
   clip-path: inset(50%);
 }
+
+.podglad-rewersu-kontener {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.4rem;
+}
+
+.podglad-rewersu-mini {
+  width: 100%;
+  max-width: 11rem;
+  border: 1px solid var(--obramowanie-pola);
+  border-radius: 0.35rem;
+  overflow: hidden;
+  background: repeating-conic-gradient(var(--szachownica-1) 0 25%, var(--szachownica-2) 0 50%) 0 0 /
+    12px 12px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 18%);
+}
+
+.podglad-rewersu-mini > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.potwierdzenie-usuniecia {
+  flex-basis: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--niebezpieczny-obrys);
+  border-radius: 0.4rem;
+  background: var(--tlo);
+}
+
+.potwierdzenie-usuniecia .podpis {
+  margin: 0 0 0.4rem;
+  color: var(--tekst);
+}

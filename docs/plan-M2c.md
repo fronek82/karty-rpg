@@ -1,6 +1,6 @@
 # Plan M2c – biblioteka globalna, wymiary arkusza i eksport obrazów
 
-**Status.** Etapy wdrożeniowe M2c ukończono 19.11.2026. [Ręczny odbiór M2c](#4-etapy): oczekuje. Plan przyjęto 18.11.2026 zgodnie z dyspozycją właściciela. Punktem wyjścia jest `main` po UI-9. Zakres pochodzi z [planu M2b, sekcji 6 i decyzji R2](plan-M2b.md) oraz [decyzji B31](plan-M2.md).
+**Status.** Etapy wdrożeniowe M2c ukończono 19.11.2026. [Ręczny odbiór M2c](#4-etapy): ukończony 20.11.2026. Plan przyjęto 18.11.2026 zgodnie z dyspozycją właściciela. Punktem wyjścia jest `main` po UI-9. Zakres pochodzi z [planu M2b, sekcji 6 i decyzji R2](plan-M2b.md) oraz [decyzji B31](plan-M2.md).
 
 ## 1. Cel i kryterium ukończenia
 
@@ -55,7 +55,7 @@ Jeden etap to jedna gałąź od aktualnego `main` i jeden PR. Status ✓ z datą
 
 Końcowa weryfikacja objęła biblioteki, diagram wymiarów i pobieranie plików w PL i EN, w obu motywach. Zrzuty dokumentacyjne są w [galerii M2c](obrazy/m2c-4/README.md). Wzorce PNG kart, arkuszy i przykładów są identyczne z wersją sprzed M2c.
 
-- [ ] **Ręczny odbiór M2c: oczekuje**. W PL i EN oraz w obu motywach sprawdzić zapis, pobranie, import i użycie szablonu oraz ozdobnika w drugim projekcie. Sprawdzić zmianę marginesu po przejściu klawiaturą z etykiety wymiaru do pola. W Safari na macOS pobrać i otworzyć PNG i JPG oraz archiwa ZIP dla kart i arkuszy zawierających ilustrację.
+- [x] **Ręczny odbiór M2c: ukończony 20.11.2026**. W PL i EN oraz w obu motywach sprawdzić zapis, pobranie, import i użycie szablonu oraz ozdobnika w drugim projekcie. Sprawdzić zmianę marginesu po przejściu klawiaturą z etykiety wymiaru do pola. W Safari na macOS pobrać i otworzyć PNG i JPG oraz archiwa ZIP dla kart i arkuszy zawierających ilustrację.
 
 ## 5. Zakres pierwszej wersji
 
