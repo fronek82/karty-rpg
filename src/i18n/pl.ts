@@ -48,6 +48,9 @@ export const pl = {
     'Szablon odwołuje się do elementu ozdobnego „{id}”, którego nie ma w pliku – użyto elementu o tym id z projektu.',
   'dane.nieznanyElement':
     '{gdzie}: element ozdobny „{id}” nie istnieje w bibliotece (ozdoba zostanie pominięta).',
+  'dane.gdzie.rewersy': 'rewersy',
+  'dane.gdzie.rewers': 'rewers {id}',
+  'dane.nieznanyRewers': 'przypisanie wskazuje nieznany rewers „{id}”',
   'dane.gdzie.szablony': 'szablony',
   'dane.gdzie.talie': 'talie',
   'dane.gdzie.arkusze': 'arkusze',

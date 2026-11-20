@@ -1,6 +1,6 @@
 # Plan M4 – rewersy i przygotowanie do druku
 
-**Status.** Plan przygotowany 19.11.2026. Najbliższy etap to M4-1. Punktem wyjścia jest ukończony [M3](plan-M3.md). [Ręczny odbiór M2c](plan-M2c.md#4-etapy) oczekuje. Zakres wynika ze [specyfikacji rewersu, czcionek i druku](../SPEC.md#7-rewers-tył-karty).
+**Status.** Plan przygotowany 19.11.2026. M4-1 ukończono 19.11.2026. Najbliższy etap to M4-2. Punktem wyjścia jest ukończony [M3](plan-M3.md). [Ręczny odbiór M2c](plan-M2c.md#4-etapy) oczekuje. Zakres wynika ze [specyfikacji rewersu, czcionek i druku](../SPEC.md#7-rewers-tył-karty).
 
 ## 1. Cel i kryterium ukończenia
 
@@ -32,17 +32,19 @@
 
 Każdy etap zaczyna się od aktualnego `main` i ma osobny PR. Zmiana schematu obejmuje migrację w `src/dane/schemat.ts`, test istniejących danych i zapis po ponownym otwarciu. Lokalnie uruchamiamy testy zakresu zmiany, a pełny zestaw wykonuje CI. Po scaleniu sprawdzamy wdrożenie.
 
-| Etap | Status | Wielkość | Zakres z testami                                                                                                                                                                                     | Agenci                                                   |
-| ---- | ------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| M4-1 | ✗      | M        | Model rewersów, przypisania i paczki. Test migracji projektu i szablonu, priorytetów, pustego przypisania, kolizji zasobów, historii, ponownego otwarcia i licencji kroju użytego tylko na rewersie. | dane-import, silnik-layoutu, tester                      |
-| M4-2 | ✗      | L        | Edycja i podgląd warstw, przypisania w UI. Testy czterech trybów tła, czcionek, ramek, wyboru szablonu lub talii, przyciągania, kolejności i cofania. E2E w obu językach i motywach.                 | edytor-ui, silnik-layoutu, biblioteka-ozdobnikow, tester |
-| M4-3 | ✗      | M        | Tekst rewersu po łuku i uzupełnienie efektów warstw. Testy geometrii, złożonych glifów, krycia i zgodności PDF/SVG.                                                                                  | silnik-layoutu, druk-pdf, edytor-ui, tester              |
-| M4-4 | ✗      | L        | Dwustronny podgląd, PDF i wydruk próbny. Test obu krawędzi i orientacji na niesymetrycznej obróconej karcie. Regresje siatki, MaxRects, nakładu, pustych tyłów, kontynuacji i kalibracji.            | druk-pdf, edytor-ui, tester                              |
-| M4-5 | ✗      | L        | Tryb drukarni, spad, znaczniki i DPI. Testy pojedynczej karty i siatki, kroju netto i brutto, rastra po kadrowaniu, grafiki wektorowej oraz zgodności eksportu.                                      | druk-pdf, silnik-layoutu, edytor-ui, tester              |
-| M4-6 | ✗      | M        | Katalog Google Fonts i zapis wariantów. Testy błędu pobrania, pracy bez sieci, polskich znaków, paczki i zgodności PDF/SVG.                                                                          | dane-import, edytor-ui, tester                           |
-| M4-7 | ✗      | S        | Domknięcie, README, galeria neutralnych przykładów, kontrola regresji M2c i M3 oraz instrukcja fizycznego odbioru.                                                                                   | edytor-ui, tester, recenzent                             |
+| Etap | Status       | Wielkość | Zakres z testami                                                                                                                                                                                     | Agenci                                                   |
+| ---- | ------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| M4-1 | ✓ 19.11.2026 | M        | Model rewersów, przypisania i paczki. Test migracji projektu i szablonu, priorytetów, pustego przypisania, kolizji zasobów, historii, ponownego otwarcia i licencji kroju użytego tylko na rewersie. | dane-import, silnik-layoutu, tester                      |
+| M4-2 | ✗            | L        | Edycja i podgląd warstw, przypisania w UI. Testy czterech trybów tła, czcionek, ramek, wyboru szablonu lub talii, przyciągania, kolejności i cofania. E2E w obu językach i motywach.                 | edytor-ui, silnik-layoutu, biblioteka-ozdobnikow, tester |
+| M4-3 | ✗            | M        | Tekst rewersu po łuku i uzupełnienie efektów warstw. Testy geometrii, złożonych glifów, krycia i zgodności PDF/SVG.                                                                                  | silnik-layoutu, druk-pdf, edytor-ui, tester              |
+| M4-4 | ✗            | L        | Dwustronny podgląd, PDF i wydruk próbny. Test obu krawędzi i orientacji na niesymetrycznej obróconej karcie. Regresje siatki, MaxRects, nakładu, pustych tyłów, kontynuacji i kalibracji.            | druk-pdf, edytor-ui, tester                              |
+| M4-5 | ✗            | L        | Tryb drukarni, spad, znaczniki i DPI. Testy pojedynczej karty i siatki, kroju netto i brutto, rastra po kadrowaniu, grafiki wektorowej oraz zgodności eksportu.                                      | druk-pdf, silnik-layoutu, edytor-ui, tester              |
+| M4-6 | ✗            | M        | Katalog Google Fonts i zapis wariantów. Testy błędu pobrania, pracy bez sieci, polskich znaków, paczki i zgodności PDF/SVG.                                                                          | dane-import, edytor-ui, tester                           |
+| M4-7 | ✗            | S        | Domknięcie, README, galeria neutralnych przykładów, kontrola regresji M2c i M3 oraz instrukcja fizycznego odbioru.                                                                                   | edytor-ui, tester, recenzent                             |
 
 ### Ręczne sprawdzenia M4
+
+- [ ] M4-1. Po udostępnieniu UI przełożyć do innego projektu paczkę rewersu używającego obrazu, własnej ramki oraz własnego kroju. Sprawdzić ostrzeżenie licencyjne i niezależność kopii.
 
 - [ ] Odbiór w PL i EN oraz w obu motywach. Utworzyć rewers, zmienić kolejność warstw, przypisać go na wszystkich trzech poziomach, zapisać i przenieść do drugiego projektu.
 - [ ] Wydrukować w skali 100% w pionie i poziomie dla obu krawędzi odwracania. Użyć niesymetrycznego rewersu, mieszanych formatów, kilku kopii i karty bez rewersu. Sprawdzić strony, kolejność i korektę X/Y.
@@ -76,9 +78,10 @@ Niewidoczna warstwa tekstowa do wyszukiwania w PDF jest opcjonalnym rozszerzenie
 
 ## 9. Decyzje podjęte bez konsultacji
 
-| #    | Etap | Sprawa                 | Decyzja                                                                                                                                           |
-| ---- | ---- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B261 | Plan | Rewers i dziedziczenie | Zapis w projekcie, kolejność karta → szablon → talia. Jawny brak rewersu zatrzymuje dziedziczenie.                                                |
-| B262 | Plan | Pary stron             | Rewers korzysta z prostokątów gotowego przodu. Odbijamy położenie i kierunek górnej krawędzi karty. Rewers uzyskuje właściwy kąt obrotem grafiki. |
-| B263 | Plan | Spad i DPI             | Tryb drukarni włączany jawnie. Domyślny spad 3 mm i ostrzeżenia przy efektywnym DPI poniżej 300.                                                  |
-| B264 | Plan | Katalog czcionek       | Wersjonowany wybór rodzin z udokumentowaną licencją. Warianty zapisane w projekcie działają bez sieci.                                            |
+| #    | Etap | Sprawa                 | Decyzja                                                                                                                                                                                                                |
+| ---- | ---- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B261 | Plan | Rewers i dziedziczenie | Zapis w projekcie, kolejność karta → szablon → talia. Jawny brak rewersu zatrzymuje dziedziczenie.                                                                                                                     |
+| B262 | Plan | Pary stron             | Rewers korzysta z prostokątów gotowego przodu. Odbijamy położenie i kierunek górnej krawędzi karty. Rewers uzyskuje właściwy kąt obrotem grafiki.                                                                      |
+| B263 | Plan | Spad i DPI             | Tryb drukarni włączany jawnie. Domyślny spad 3 mm i ostrzeżenia przy efektywnym DPI poniżej 300.                                                                                                                       |
+| B264 | Plan | Katalog czcionek       | Wersjonowany wybór rodzin z udokumentowaną licencją. Warianty zapisane w projekcie działają bez sieci.                                                                                                                 |
+| B265 | M4-1 | Schemat 23 i zasoby    | Rewers przechowuje swobodny układ w wymiarach odniesienia. Paczka szablonu niesie bezpośrednio przypisany rewers z zasobami. Usunięcie rewersu zamienia jego bezpośrednie przypisania na jawny brak w jednej operacji. |

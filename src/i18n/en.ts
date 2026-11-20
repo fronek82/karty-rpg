@@ -52,6 +52,9 @@ export const en: Slownik = {
     'The template refers to an ornament “{id}” that is not in the file – the element with that id from the project was used.',
   'dane.nieznanyElement':
     '{gdzie}: ornament “{id}” does not exist in the library (the ornament will be skipped).',
+  'dane.gdzie.rewersy': 'card backs',
+  'dane.gdzie.rewers': 'card back {id}',
+  'dane.nieznanyRewers': 'the assignment uses an unknown card back “{id}”',
   'dane.gdzie.szablony': 'templates',
   'dane.gdzie.talie': 'decks',
   'dane.gdzie.arkusze': 'sheets',

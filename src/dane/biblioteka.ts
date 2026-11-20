@@ -98,9 +98,9 @@ export function zasobyObrazowSzablonu(s: Szablon, wlasne: readonly ElementOzdobn
   return [...zasobySzablonu(s), ...zasobyElementow(wlasne.filter((e) => uzyte.has(e.id)))];
 }
 
-/** Szablony projektu używające elementu (do ostrzeżenia przy usuwaniu). */
+/** Szablony i rewersy projektu używające elementu (do ostrzeżenia przy usuwaniu). */
 export function szablonyUzywajace(p: Projekt, id: string): Szablon[] {
-  return p.szablony.filter((s) => odwolaniaDoElementow(s).includes(id));
+  return [...p.szablony, ...(p.rewersy ?? [])].filter((s) => odwolaniaDoElementow(s).includes(id));
 }
 
 /** Najdłuższa nazwa elementu (jak w schemacie). */

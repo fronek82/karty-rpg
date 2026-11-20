@@ -520,8 +520,23 @@ export interface GrupaStylu {
   styl: StylTekstu;
 }
 
+/** Samodzielny układ graficzny rewersu. Wymiary są formatem odniesienia warstw. */
+export interface Rewers {
+  id: string;
+  nazwa: string;
+  rozmiar: Extract<RozmiarKarty, { tryb: 'mm' }>;
+  korzen: Kontener & { typ: 'swobodny' };
+  tlo?: Kolor;
+  teksturaTla?: string;
+  ramka?: RamkaKarty;
+}
+
+/** Brak pola dziedziczy, null jawnie wyłącza rewers. */
+export type PrzypisanieRewersu = string | null;
+
 export interface Szablon {
   id: string;
+  rewersId?: PrzypisanieRewersu;
   /** Napisy stałe z wartościami domyślnymi (np. „Usunięcie:”, „/ 250p”). */
   parametry?: ParametrSzablonu[];
   nazwa: string;
@@ -564,6 +579,7 @@ export function korzenKarty(szablon: Szablon, karta?: Pick<Karta, 'rozmiar'>): K
 
 export interface Karta {
   id: string;
+  rewersId?: PrzypisanieRewersu;
   szablonId: string;
   /** Wartości pól według kluczy szablonu. */
   dane: Record<string, string>;
@@ -586,9 +602,10 @@ export interface GrupaKart {
   karty: string[];
 }
 
-/** Talia – zbiór kart (na razie bez rewersu – M4). */
+/** Talia – zbiór kart ze wspólnym domyślnym rewersem. */
 export interface Talia {
   id: string;
+  rewersId?: PrzypisanieRewersu;
   nazwa: string;
   karty: Karta[];
   grupy?: GrupaKart[];
