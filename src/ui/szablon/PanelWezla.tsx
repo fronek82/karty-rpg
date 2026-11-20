@@ -27,6 +27,7 @@ import { PoleRozmiaru } from './PoleRozmiaru';
 import { GrupyStylow } from './GrupyStylow';
 import { KolorZDanych } from './KolorZDanych';
 import { TloDekoracyjne } from './PolaDekoracji';
+import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
 
 type Opcje = readonly { wartosc: string; tekst: string }[];
 
@@ -65,7 +66,7 @@ export function PanelWezla({
   wymiary: { szer: number; wys: number } | undefined;
   zmienSzablon: (f: (s: Szablon) => Szablon, klucz?: string) => void;
   zmienWezel: (f: (w: Wezel) => Wezel, klucz?: string) => void;
-  zmienPrzyklad: (klucz: string, wartosc: string) => void;
+  zmienPrzyklad: (klucz: string, wartosc: string, grupuj?: boolean) => void;
   zmienTyp: (typ: Wezel['typ']) => void;
   czcionki: Opcje;
   obrazy: Opcje;
@@ -204,6 +205,9 @@ export function PanelWezla({
                   value={stalyTekst}
                   onChange={(e) =>
                     zmienWezel((w) => ({ ...w, tekst: e.target.value }) as Wezel, `staly:${id}`)
+                  }
+                  onPaste={(e) =>
+                    obsluzWklejenieZPdf(e, (v) => zmienWezel((w) => ({ ...w, tekst: v }) as Wezel))
                   }
                 />
               </div>
@@ -534,7 +538,8 @@ export function PanelWezla({
             id={`przyklad-${id}`}
             rows={pole.typ === 'tekst' ? 3 : 1}
             value={szablon.przyklad?.[pole.klucz] ?? ''}
-            onChange={(e) => zmienPrzyklad(pole.klucz!, e.target.value)}
+            onChange={(e) => zmienPrzyklad(pole.klucz!, e.target.value, !czyWklejanieWToku())}
+            onPaste={(e) => obsluzWklejenieZPdf(e, (v) => zmienPrzyklad(pole.klucz!, v, false))}
           />
           <p className="podpis">{t('szablon.przykladOpis')}</p>
         </div>

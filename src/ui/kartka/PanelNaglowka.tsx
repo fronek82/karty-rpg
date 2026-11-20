@@ -1,5 +1,6 @@
 import { formatujLiczbeZUlamkiem, t } from '../../i18n';
 import type { Arkusz, NaglowekGrupy } from '../../model/arkusz';
+import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
 
 /** Panel nagłówka grupy: tekst, opis, szerokość w kolumnach, odstęp przed grupą, usunięcie. */
 export function PanelNaglowka({
@@ -59,7 +60,10 @@ export function PanelNaglowka({
           id="naglowek-opis"
           rows={3}
           value={naglowek.opis ?? ''}
-          onChange={(e) => zmien({ opis: e.target.value }, 'opis')}
+          onChange={(e) =>
+            zmien({ opis: e.target.value }, czyWklejanieWToku() ? undefined : 'opis')
+          }
+          onPaste={(e) => obsluzWklejenieZPdf(e, (v) => zmien({ opis: v }))}
         />
       </div>
       <div className="pole-panelu">

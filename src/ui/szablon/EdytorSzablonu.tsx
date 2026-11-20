@@ -883,10 +883,10 @@ export function EdytorSzablonu({
                       ),
                     )
                   }
-                  zmienPrzyklad={(klucz, v) =>
+                  zmienPrzyklad={(klucz, v, grupuj = true) =>
                     zmienSz(
                       (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
-                      `przyklad:${klucz}`,
+                      grupuj ? `przyklad:${klucz}` : undefined,
                     )
                   }
                 />
