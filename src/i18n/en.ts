@@ -1337,6 +1337,37 @@ export const en: Slownik = {
   'googleFonts.przekroczonoCzas': 'request timed out',
   'googleFonts.bladPobrania':
     'Could not download “{rodzina}” from Google Fonts ({szczegoly}). Check your connection and try again.',
+  'wlasne.aiNazwa': 'Layout from photo (AI)',
+  'wlasne.aiOpis': 'Send a card photo with your own Claude API key to detect field structure.',
+  'ai.tytul': 'Card layout from photo (AI)',
+  'ai.opis':
+    'The model returns only layout geometry and field types (no artwork or text copying). The image is sent directly from your browser to the Claude API.',
+  'ai.kluczEtykieta': 'Claude API key',
+  'ai.kluczPodpowiedz':
+    'Stored locally in this browser only (localStorage) – never exported in project or template files.',
+  'ai.zapiszKlucz': 'Remember key in this browser',
+  'ai.usunKlucz': 'Remove saved key',
+  'ai.kluczUsuniety': 'Removed the saved API key from this browser.',
+  'ai.zdjecieEtykieta': 'Card photo or scan (PNG, JPG, WebP)',
+  'ai.wybierzZdjecie': 'Choose card photo…',
+  'ai.dolaczPodklad': 'Attach photo as reference overlay in the template editor (not printed)',
+  'ai.rozpoznaj': 'Detect layout',
+  'ai.analizuje': 'Detecting layout…',
+  'ai.anulujAnalize': 'Cancel',
+  'ai.podgladOpis': 'Check the detected field placement and open the template editor to refine it.',
+  'ai.otworzEdytor': 'Open in template editor',
+  'ai.nazwaDomyslna': 'Template from photo',
+  'ai.brakKlucza': 'Enter your Claude API key before detecting the layout.',
+  'ai.brakObrazu': 'Choose a card photo or scan (PNG, JPG, or WebP).',
+  'ai.zaDuzyObraz': 'The resized photo still exceeds the 5 MB limit.',
+  'ai.bladKlucza': 'Claude API rejected the key (HTTP 401/403). Check your API key.',
+  'ai.bladLimitu': 'Claude API rate limit exceeded (HTTP 429). Try again shortly.',
+  'ai.bladHttp': 'Claude API returned an error (HTTP {status}).',
+  'ai.bladCzasu': 'Timed out waiting for Claude API response.',
+  'ai.bladSieci':
+    'Could not reach Claude API ({szczegoly}). Check your network or browser blockers.',
+  'ai.bladJson': 'The model response did not contain a valid layout JSON object.',
+  'ai.bladSchematu': 'The detected layout did not match the template schema. Try a clearer photo.',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
@@ -1361,5 +1392,9 @@ export const enMnoga: SlownikMnogi = {
   'googleFonts.pobrano': {
     one: 'Downloaded “{rodzina}” ({n} variant) and saved locally in the project.',
     other: 'Downloaded “{rodzina}” ({n} variants) and saved locally in the project.',
+  },
+  'ai.podgladTytul': {
+    one: 'Detected layout ({n} field)',
+    other: 'Detected layout ({n} fields)',
   },
 };
