@@ -4,7 +4,7 @@ Aplikacja przeglądarkowa (Vite + TypeScript + React) do projektowania i drukowa
 
 ## Gdzie co jest
 
-- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b ukończony 18.11.2026), `docs/plan-UI.md` (przebudowa interfejsu – UI-1…UI-9 ukończone 18.11.2026), `docs/plan-M3.md` (M3 ukończony 19.11.2026), `docs/plan-M4.md` (M4 ukończony 20.11.2026). Aktualny plan: `docs/plan-M5.md`. M5-1 (automatyczne czyszczenie tekstu wklejanego z PDF) i M5-2 (rozpoznawanie układu karty ze zdjęcia przez AI) ukończone 20.11.2026. Następny etap: M5-3 (kuratorowana galeria szablonów online i import z URL). Ręczny odbiór M2c ukończony 20.11.2026 (`docs/plan-M2c.md`); lista ręcznego odbioru fizycznego M4 jest w `docs/plan-M4.md#ręczne-sprawdzenia-m4`.
+- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b ukończony 18.11.2026), `docs/plan-UI.md` (przebudowa interfejsu – UI-1…UI-9 ukończone 18.11.2026), `docs/plan-M3.md` (M3 ukończony 19.11.2026), `docs/plan-M4.md` (M4 ukończony 20.11.2026). Aktualny plan: `docs/plan-M5.md`. M5-1 (wklejanie tekstu z PDF), M5-2 (układ karty ze zdjęcia przez AI) i M5-3 (kuratorowana galeria szablonów online i import z URL) ukończone 20.11.2026. Następny etap: M5-4 (opcjonalna niewidoczna warstwa tekstowa w PDF `3 Tr`). Ręczny odbiór M2c ukończony 20.11.2026 (`docs/plan-M2c.md`); lista ręcznego odbioru fizycznego M4 jest w `docs/plan-M4.md#ręczne-sprawdzenia-m4`.
 - Decyzje podjęte bez konsultacji: sekcja 9 planu (B1…); nowe dopisuj tam.
 - Przykłady szablonów: `docs/przyklady/`; zrzuty ekranu: `docs/obrazy/`.
 - Agenci: `.claude/agents/` (np. `recenzent` – przegląd, tylko odczyt).
