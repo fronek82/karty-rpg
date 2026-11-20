@@ -440,6 +440,8 @@ export function EdytorKartki({
     if (!zasoby) return m;
     for (const a of projekt.arkusze) {
       if (!a.ustawienia.slot) continue;
+      if (a.ustawienia.drukarnia?.wlaczony && a.ustawienia.drukarnia.uklad === 'pojedyncza')
+        continue;
       try {
         const w = zbudujArkusz(
           { ...a, przypiete: [], liczbaStron: 1 },
@@ -1444,11 +1446,35 @@ export function EdytorKartki({
   const ileKart = (k: Kartka, kod: string) =>
     new Set((k.wynik?.ostrzezenia ?? []).filter((o) => o.komunikat === kod).map((o) => o.kartaId))
       .size;
+  const ileKartDpi = (k: Kartka) =>
+    new Set(
+      (k.wynik?.ostrzezenia ?? [])
+        .filter(
+          (o) =>
+            o.komunikat.startsWith('niska-rozdzielczosc-obrazu:') ||
+            o.komunikat.startsWith('niska-rozdzielczosc-ramki:'),
+        )
+        .map((o) => o.kartaId),
+    ).size;
   const ostrzezeniaKartek = kartki.flatMap((k) => [
     ...(k.wynik?.ostrzezenia ?? [])
       .filter((o) => !o.kartaId)
       .map((o) => `${k.arkusz.nazwa}: ${tekstOstrzezeniaArkusza(o)}`),
-    // Ostrzeżenia kart dotyczące całej kartki (rozmiar, strefa przycięcia) – zbiorczo.
+    // Ostrzeżenia kart dotyczące całej kartki (rozmiar, strefa przycięcia, DPI, spad) – zbiorczo.
+    ...(ileKart(k, 'papier-za-maly-na-spad') > 0 &&
+    !(k.wynik?.ostrzezenia ?? []).some(
+      (o) => !o.kartaId && o.komunikat === 'papier-za-maly-na-spad',
+    )
+      ? [`${k.arkusz.nazwa}: ${tekstOstrzezeniaArkusza({ komunikat: 'papier-za-maly-na-spad' })}`]
+      : []),
+    ...(ileKartDpi(k)
+      ? [
+          t('kartka.niskieDpi', {
+            kartka: k.arkusz.nazwa,
+            liczba: ileKartDpi(k),
+          }),
+        ]
+      : []),
     ...(ileKart(k, 'karta-w-strefie-przyciecia')
       ? [
           t('kartka.wStrefie', {
@@ -1670,7 +1696,7 @@ export function EdytorKartki({
               wiele={aktualneKartki.length > 1}
               karty={kartyNaKartkach.get(k.arkusz.id) ?? []}
               liczbaStron={
-                czyMieszane(k.arkusz)
+                czyMieszane(k.arkusz) || k.arkusz.ustawienia.drukarnia?.wlaczony
                   ? (k.wynik?.strony.length ?? 1)
                   : Math.max(liczbaStronKartki(projekt, k.arkusz.id), k.svg.length)
               }
@@ -1899,15 +1925,19 @@ function WidokKartki({
           }
         };
         const maRewersy = !!k.svgRewersow;
+        const drukarniaAktywna = !!k.arkusz.ustawienia.drukarnia?.wlaczony;
+        const scenaStrony = k.wynik?.strony[s];
+        const szerStrony = scenaStrony?.szer ?? g?.szer;
+        const wysStrony = scenaStrony?.wys ?? g?.wys;
+        const wymiaryStronyCss =
+          szerStrony && wysStrony ? { aspectRatio: `${szerStrony} / ${wysStrony}` } : undefined;
+        const pozycjeDrukarni = drukarniaAktywna
+          ? (k.wynik?.pozycjeKart.filter((p) => p.strona === s) ?? [])
+          : [];
         const stronaPrzodu = (
-          <div
-            className="strona-kartki"
-            data-arkusz={id}
-            data-strona={s}
-            style={g ? { aspectRatio: `${g.szer} / ${g.wys}` } : undefined}
-          >
+          <div className="strona-kartki" data-arkusz={id} data-strona={s} style={wymiaryStronyCss}>
             <div className="svg-opakowanie" dangerouslySetInnerHTML={{ __html: k.svg[s] ?? '' }} />
-            {g && (k.arkusz.ustawienia.marginesBezpieczenstwa ?? 0) > 0 && (
+            {g && !drukarniaAktywna && (k.arkusz.ustawienia.marginesBezpieczenstwa ?? 0) > 0 && (
               // Strefa przycięcia (np. punkt foto) – tylko w edytorze, nie w druku.
               <div className="strefa-bezpieczenstwa" aria-hidden="true">
                 <div
@@ -1921,7 +1951,40 @@ function WidokKartki({
                 />
               </div>
             )}
-            {g && mieszane && (
+            {drukarniaAktywna && szerStrony && wysStrony && (
+              <div className="warstwa">
+                {pozycjeDrukarni.map((p) => {
+                  const nazwa =
+                    nazwaKarty(p.karta.dane, szablony?.get(p.karta.szablonId)) ||
+                    t('karta.bezNazwy');
+                  return (
+                    <button
+                      key={`${p.karta.id}#${p.numer}`}
+                      type="button"
+                      className={`karta-na-kartce${zaznaczone.has(p.karta.id) ? ' zaznaczona' : ''}`}
+                      data-karta={p.karta.id}
+                      style={{
+                        left: `${(p.x / szerStrony) * 100}%`,
+                        top: `${(p.y / wysStrony) * 100}%`,
+                        width: `${(p.szer / szerStrony) * 100}%`,
+                        height: `${(p.wys / wysStrony) * 100}%`,
+                      }}
+                      aria-pressed={zaznaczone.has(p.karta.id)}
+                      onClick={(e) => wybierzKarte(p.karta.id, e.shiftKey)}
+                      aria-label={t('mieszane.kartaEtykieta', {
+                        nazwa: p.czesc
+                          ? `${nazwa} – ${t('kartka.ciagDalszy')} ${p.czesc + 1}`
+                          : nazwa,
+                        strona: s + 1,
+                        szer: Math.round(p.szer),
+                        wys: Math.round(p.wys),
+                      })}
+                    />
+                  );
+                })}
+              </div>
+            )}
+            {g && !drukarniaAktywna && mieszane && (
               <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
                 {mieszane.wolne.map((w, i) =>
                   w.strona !== s ? null : (
@@ -2032,7 +2095,7 @@ function WidokKartki({
                   })()}
               </div>
             )}
-            {g && !mieszane && (
+            {g && !drukarniaAktywna && !mieszane && (
               <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
                 {Array.from({ length: g.siatka.rzedy }, (_, r) =>
                   Array.from({ length: g.siatka.kolumny }, (_, c) =>
@@ -2199,14 +2262,14 @@ function WidokKartki({
         return (
           <div key={s} className="strona-opakowanie">
             <div className="etykieta-strony">
-              {mieszane
+              {mieszane && !drukarniaAktywna
                 ? tn('mieszane.zajete', kartyMieszane.length, {
                     numer: s + 1,
                     liczba: liczbaStron,
                     procent: polePol > 0 ? Math.round((zajetePole / polePol) * 100) : 0,
                   })
                 : t('kartka.strona', { numer: s + 1, liczba: liczbaStron })}
-              {pusta && liczbaStron > 1 && (
+              {!drukarniaAktywna && pusta && liczbaStron > 1 && (
                 <button type="button" className="usun-strone" onClick={() => usunStrone(s)}>
                   {t('kartka.usunStrone')}
                 </button>
@@ -2228,7 +2291,7 @@ function WidokKartki({
                     data-strona-rewersu={s}
                     role="img"
                     aria-label={t('dwustronny.podgladTylu', { numer: s + 1, liczba: liczbaStron })}
-                    style={g ? { aspectRatio: `${g.szer} / ${g.wys}` } : undefined}
+                    style={wymiaryStronyCss}
                   >
                     <div
                       className="svg-opakowanie"
@@ -2243,7 +2306,7 @@ function WidokKartki({
           </div>
         );
       })}
-      {!mieszane && (
+      {!mieszane && !k.arkusz.ustawienia.drukarnia?.wlaczony && (
         <button type="button" className="dodaj-strone" onClick={dodajStrone}>
           ＋ {t('kartka.dodajStrone')}
         </button>

@@ -11,13 +11,17 @@ import { BladDanych } from '../../dane/schemat';
 import { formatujLiczbe, t, tJesliJest } from '../../i18n';
 import {
   czyFormatZdjeciowy,
+  DRUKARNIA_DOMYSLNA,
   DWUSTRONNY_DOMYSLNY,
   MARGINES_BEZPIECZENSTWA_FOTO,
   PAPIERY,
+  SLOT_DOMYSLNY,
+  SPAD_MAKS,
   wymiaryStrony,
   type Arkusz,
   type KrawedzOdwracania,
   type Papier,
+  type UkladDrukarni,
   type UstawieniaArkusza,
 } from '../../model/arkusz';
 import type { WynikArkusza } from '../../druk/arkusz';
@@ -382,6 +386,95 @@ export function PanelUstawien({
                   {t('dwustronny.wydrukProbny')}
                 </button>
                 <p className="podpis">{t('dwustronny.wydrukProbnyOpis')}</p>
+              </>
+            )}
+          </fieldset>
+        );
+      })()}
+      {(() => {
+        const druk = u.drukarnia ?? DRUKARNIA_DOMYSLNA;
+        const zmienDruk = (z: Partial<typeof druk>, klucz?: string) =>
+          zmien(
+            (p) => ustawUstawieniaArkusza(p, A, { drukarnia: { ...druk, ...z } }),
+            klucz ? { klucz: `drukarnia:${A}:${klucz}` } : {},
+          );
+        const kartaWymiar = wynik?.slot ?? u.slot ?? SLOT_DOMYSLNY;
+        const ostrzezeniaDpi = (wynik?.ostrzezenia ?? []).filter(
+          (o) =>
+            o.komunikat.startsWith('niska-rozdzielczosc-obrazu:') ||
+            o.komunikat.startsWith('niska-rozdzielczosc-ramki:'),
+        );
+        return (
+          <fieldset className="sekcja-drukarni">
+            <legend>{t('drukarnia.tytul')}</legend>
+            <label className="wybor">
+              <input
+                type="checkbox"
+                checked={druk.wlaczony}
+                onChange={(e) => zmienDruk({ wlaczony: e.target.checked })}
+              />
+              <span>{t('drukarnia.wlacz')}</span>
+            </label>
+            {druk.wlaczony && (
+              <>
+                <div className="pole-panelu">
+                  <PoleLiczby
+                    id={`spad-${A}`}
+                    etykieta={t('drukarnia.spad')}
+                    wartosc={druk.spad}
+                    min={0}
+                    max={SPAD_MAKS}
+                    krok={0.5}
+                    zmien={(v) => zmienDruk({ spad: v }, 'spad')}
+                  />
+                </div>
+                <label className="wybor">
+                  <input
+                    type="checkbox"
+                    checked={druk.znacznikiCiecia}
+                    onChange={(e) => zmienDruk({ znacznikiCiecia: e.target.checked }, 'znaczniki')}
+                  />
+                  <span>{t('drukarnia.znaczniki')}</span>
+                </label>
+                <div className="pole-panelu">
+                  <span id={`uklad-drukarni-${A}`}>{t('drukarnia.uklad')}</span>
+                  <div
+                    className="przelacznik-segmentowy"
+                    role="group"
+                    aria-labelledby={`uklad-drukarni-${A}`}
+                  >
+                    {(['siatka', 'pojedyncza'] as const).map((uk: UkladDrukarni) => (
+                      <button
+                        key={uk}
+                        type="button"
+                        aria-pressed={druk.uklad === uk}
+                        onClick={() => zmienDruk({ uklad: uk }, 'uklad')}
+                      >
+                        {t(`drukarnia.${uk}`)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="podpis">
+                    {t(
+                      druk.uklad === 'pojedyncza'
+                        ? 'drukarnia.opisPojedyncza'
+                        : 'drukarnia.opisSiatka',
+                    )}
+                  </p>
+                </div>
+                <p className="podpis">
+                  {t('drukarnia.wymiary', {
+                    nettoSzer: zaokr(kartaWymiar.szerokosc),
+                    nettoWys: zaokr(kartaWymiar.wysokosc),
+                    bruttoSzer: zaokr(kartaWymiar.szerokosc + 2 * druk.spad),
+                    bruttoWys: zaokr(kartaWymiar.wysokosc + 2 * druk.spad),
+                  })}
+                </p>
+                {ostrzezeniaDpi.length > 0 && (
+                  <p role="status" className="uwaga">
+                    {t('drukarnia.ostrzezenieDpi', { liczba: ostrzezeniaDpi.length })}
+                  </p>
+                )}
               </>
             )}
           </fieldset>

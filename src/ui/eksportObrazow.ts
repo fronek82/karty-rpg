@@ -1,10 +1,16 @@
 import { zipSync } from 'fflate';
 import { nazwaKarty } from '../dane/szablon';
-import { wSkaliSzarosci, zSzarymiObrazami, type WynikArkusza } from '../druk/arkusz';
-import type { Arkusz } from '../model/arkusz';
+import {
+  symboleWSzarosci,
+  wSkaliSzarosci,
+  zSzarymiObrazami,
+  type WynikArkusza,
+} from '../druk/arkusz';
+import { zbudujStronePojedynczejKarty } from '../druk/drukarnia';
+import type { Arkusz, UstawieniaDrukarni } from '../model/arkusz';
 import type { Karta, Talia } from '../model/szablon';
 import { kartyZKontynuacja } from '../silnik/kontynuacja';
-import type { Scena } from '../silnik/scena';
+import { symboleSceny, type Scena } from '../silnik/scena';
 import { scenaDoSvg } from '../silnik/svg';
 import { t } from '../i18n';
 import { nazwaPliku } from './pliki';
@@ -130,16 +136,24 @@ export function scenyKart(
   format: FormatObrazu,
 ): { nazwa: string; scena: Scena; czarnoBialy: boolean }[] {
   const widziane = new Set<string>();
-  const karty: { karta: Karta; czarnoBialy: boolean }[] = [];
-  for (const k of kartki)
+  const karty: { karta: Karta; czarnoBialy: boolean; drukarnia?: UstawieniaDrukarni }[] = [];
+  for (const k of kartki) {
+    const drukarnia = k.arkusz.ustawienia.drukarnia?.wlaczony
+      ? k.arkusz.ustawienia.drukarnia
+      : undefined;
     for (const karta of k.talia.karty)
       if (!widziane.has(karta.id) && zasoby.szablony.has(karta.szablonId)) {
         widziane.add(karta.id);
-        karty.push({ karta, czarnoBialy: !!k.arkusz.ustawienia.czarnoBialy });
+        karty.push({
+          karta,
+          czarnoBialy: !!k.arkusz.ustawienia.czarnoBialy,
+          ...(drukarnia ? { drukarnia } : {}),
+        });
       }
-  const czesci = karty.flatMap(({ karta, czarnoBialy }) => {
+  }
+  const czesci = karty.flatMap(({ karta, czarnoBialy, drukarnia }) => {
     const s = zasoby.szablony.get(karta.szablonId)!;
-    const karty = kartyZKontynuacja(
+    const lista = kartyZKontynuacja(
       s,
       karta,
       {
@@ -148,18 +162,31 @@ export function scenyKart(
         ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
       },
       t('kartka.ciagDalszy'),
+      undefined,
+      drukarnia ? { spad: drukarnia.spad } : undefined,
     );
     const opis = nazwaKarty(karta.dane, s) || s.nazwa;
-    return karty.map(({ scena }, nr) => ({
+    return lista.map(({ scena }, nr) => ({
       opis: nr ? `${opis}-${t('kartka.ciagDalszy')}-${nr + 1}` : opis,
-      scena,
+      scena: drukarnia
+        ? zbudujStronePojedynczejKarty(scena, {
+            spad: drukarnia.spad,
+            znacznikiCiecia: drukarnia.znacznikiCiecia,
+          })
+        : scena,
       czarnoBialy,
     }));
   });
   return unikalneNazwy(
     czesci.map(({ opis, scena, czarnoBialy }, i) => ({
       nazwa: nazwaPliku(`${nr(i, czesci.length)}-${opis}`, `.${format}`),
-      scena: czarnoBialy ? { ...scena, elementy: wSkaliSzarosci(scena.elementy) } : scena,
+      scena: czarnoBialy
+        ? {
+            ...scena,
+            elementy: wSkaliSzarosci(scena.elementy),
+            ...symboleSceny(symboleWSzarosci(scena.symbole)),
+          }
+        : scena,
       czarnoBialy,
     })),
   );

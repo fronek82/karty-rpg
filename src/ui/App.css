@@ -2056,7 +2056,8 @@ button.maly {
   margin: 0.75rem 0;
 }
 .sekcja-ukladu label.wybor,
-.sekcja-dwustronny label.wybor {
+.sekcja-dwustronny label.wybor,
+.sekcja-drukarni label.wybor {
   display: flex;
   gap: 0.4rem;
   align-items: center;
@@ -2569,7 +2570,8 @@ button.maly {
   color: var(--tekst-przygaszony);
 }
 
-.sekcja-dwustronny {
+.sekcja-dwustronny,
+.sekcja-drukarni {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

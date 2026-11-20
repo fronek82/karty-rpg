@@ -1296,6 +1296,27 @@ export const en: Slownik = {
   'dwustronny.podgladTylu': 'Back of page {numer} of {liczba}',
   'dwustronny.testPrzod': 'FRONT · 100%',
   'dwustronny.testTyl': 'BACK · 100%',
+  'ostrzezenie.niskaRozdzielczoscObrazu':
+    'the image has an effective resolution of only {a} dpi (at least 300 dpi recommended) – upload a larger file or reduce zoom',
+  'ostrzezenie.papierZaMalyNaSpad':
+    'the paper is too small for cards with bleed and crop marks – choose larger paper, reduce bleed, or use “One card per page”',
+  'kartka.niskieDpi':
+    '{kartka}: {liczba} cards have images below 300 dpi – click a card to check details',
+  'drukarnia.tytul': 'Print-shop mode',
+  'drukarnia.wlacz': 'Prepare for print shop (bleed and crop marks)',
+  'drukarnia.spad': 'Bleed (mm)',
+  'drukarnia.znaczniki': 'Crop marks',
+  'drukarnia.uklad': 'Print layout',
+  'drukarnia.siatka': 'Sheet grid',
+  'drukarnia.pojedyncza': 'One card per page',
+  'drukarnia.wymiary':
+    'Trim: {nettoSzer} × {nettoWys} mm · Gross with bleed: {bruttoSzer} × {bruttoWys} mm',
+  'drukarnia.opisSiatka':
+    'Packing reserves bleed and clearance for crop marks. Background and texture extend into bleed; content and frame stay within trim.',
+  'drukarnia.opisPojedyncza':
+    'Each page matches the exact card size plus bleed and (when enabled) crop marks.',
+  'drukarnia.ostrzezenieDpi':
+    'Warning: {liczba} images on this sheet have an effective resolution below 300 dpi (click a card for details).',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */

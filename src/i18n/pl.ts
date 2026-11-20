@@ -1290,6 +1290,27 @@ export const pl = {
   'dwustronny.podgladTylu': 'Tył strony {numer} z {liczba}',
   'dwustronny.testPrzod': 'PRZÓD · 100%',
   'dwustronny.testTyl': 'TYŁ · 100%',
+  'ostrzezenie.niskaRozdzielczoscObrazu':
+    'obraz ma efektywną rozdzielczość tylko {a} dpi (zalecane co najmniej 300 dpi) – wgraj większy plik albo zmniejsz powiększenie',
+  'ostrzezenie.papierZaMalyNaSpad':
+    'papier jest za mały na karty ze spadem i znacznikami cięcia – wybierz większy papier, zmniejsz spad albo użyj układu „Jedna karta na stronę”',
+  'kartka.niskieDpi':
+    '{kartka}: {liczba} kart ma obrazy poniżej 300 dpi – kliknij kartę, aby sprawdzić szczegóły',
+  'drukarnia.tytul': 'Tryb drukarni',
+  'drukarnia.wlacz': 'Przygotuj do drukarni (spad i znaczniki cięcia)',
+  'drukarnia.spad': 'Spad (mm)',
+  'drukarnia.znaczniki': 'Znaczniki cięcia',
+  'drukarnia.uklad': 'Układ drukarski',
+  'drukarnia.siatka': 'Siatka na arkuszu',
+  'drukarnia.pojedyncza': 'Jedna karta na stronę',
+  'drukarnia.wymiary':
+    'Netto: {nettoSzer} × {nettoWys} mm · Brutto ze spadem: {bruttoSzer} × {bruttoWys} mm',
+  'drukarnia.opisSiatka':
+    'Pakowanie rezerwuje spad i odstęp na znaczniki cięcia. Tło i tekstura sięgają spadu, a treść i ramka zostają w formacie netto.',
+  'drukarnia.opisPojedyncza':
+    'Każda strona ma dokładny rozmiar karty powiększony o spad i (gdy włączone) znaczniki cięcia.',
+  'drukarnia.ostrzezenieDpi':
+    'Ostrzeżenie: {liczba} obrazów na tej kartce ma efektywną rozdzielczość poniżej 300 dpi (kliknij kartę, aby zobaczyć szczegóły).',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;

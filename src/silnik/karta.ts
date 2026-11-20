@@ -98,6 +98,19 @@ export interface KontekstRenderowania {
   elementy?: readonly ElementOzdobny[];
 }
 
+/** Minimalna efektywna rozdzielczość obrazu rastrowego w trybie drukarni (SPEC 10). */
+export const MIN_DPI_DRUKARNI = 300;
+
+export interface OpcjeRenderowaniaKarty {
+  teksturaTryb?: TrybTla;
+  teksturaKrycie?: number;
+  teksturaZabarwienie?: ZabarwienieTla;
+  /** Spad z każdej strony karty (mm, tryb drukarni): tło i tekstura tła sięgają obszaru brutto. */
+  spad?: Mm;
+  /** Próg efektywnego DPI obrazów rastrowych (tryb drukarni: 300 dpi). */
+  minDpi?: number;
+}
+
 export interface Ostrzezenie {
   pole: string;
   komunikat:
@@ -107,7 +120,8 @@ export interface Ostrzezenie {
     | 'brak-miejsca-na-obraz'
     | 'nieznane-pole-do-omijania'
     | 'nieznany-element-ozdobny'
-    | 'niska-rozdzielczosc-ramki';
+    | 'niska-rozdzielczosc-ramki'
+    | 'niska-rozdzielczosc-obrazu';
   szczegoly?: string;
 }
 
@@ -312,22 +326,38 @@ export function renderujKarte(
   szablon: Szablon,
   karta: Pick<Karta, 'dane' | 'rozmiar' | 'obrazy'>,
   ctx: KontekstRenderowania,
-  opcje?: {
-    teksturaTryb?: TrybTla;
-    teksturaKrycie?: number;
-    teksturaZabarwienie?: ZabarwienieTla;
-  },
+  opcje?: OpcjeRenderowaniaKarty,
 ): WyrenderowanaKarta {
   const { szer, wys } = wymiaryKarty(szablon, karta);
+  const spad = opcje?.spad && opcje.spad > 0 ? opcje.spad : 0;
+  const minDpi = opcje?.minDpi && opcje.minDpi > 0 ? opcje.minDpi : undefined;
   const dane = daneZParametrami(szablon, karta.dane);
   const glify: Record<string, DefinicjaGlifu> = {};
   const symbole: Record<string, DefinicjaSymbolu> = {};
   let elementy: ElementSceny[] = [];
   const ostrzezenia: Ostrzezenie[] = [];
   const ramkaKarty = { x: 0, y: 0, szer, wys };
+  const ramkaBrutto =
+    spad > 0 ? { x: -spad, y: -spad, szer: szer + 2 * spad, wys: wys + 2 * spad } : ramkaKarty;
   const poszarpanaKarta = szablon.postrzepienie?.sila
     ? konturPostrzepiony(ramkaKarty, szablon.postrzepienie)
     : undefined;
+  const sprawdzDpi = (
+    pole: string,
+    info: InformacjaOObrazie,
+    narysowany: { x: Mm; y: Mm; szer: Mm; wys: Mm; obrot?: number },
+    przyciecie?: Ramka,
+  ) => {
+    if (!minDpi) return;
+    const dpi = efektywneDpiObrazu(info, narysowany, przyciecie);
+    if (dpi !== undefined && dpi < minDpi - 1e-6) {
+      ostrzezenia.push({
+        pole,
+        komunikat: 'niska-rozdzielczosc-obrazu',
+        szczegoly: String(Math.floor(dpi)),
+      });
+    }
+  };
   const teksturaTla = (
     zasob: string,
     r: Ramka,
@@ -361,6 +391,7 @@ export function renderujKarte(
           tw *= minTh / th;
           th = minTh;
         }
+        sprawdzDpi(pole, info, { x: r.x, y: r.y, szer: tw, wys: th }, r);
         tresc = [];
         for (let y = r.y; y < r.y + r.wys - 1e-6; y += th) {
           for (let x = r.x; x < r.x + r.szer - 1e-6; x += tw) {
@@ -368,7 +399,9 @@ export function renderujKarte(
           }
         }
       } else {
-        tresc = [rysujObraz(zasob, info, r, r, tryb, { x: 0.5, y: 0.5 })];
+        const el = rysujObraz(zasob, info, r, r, tryb, { x: 0.5, y: 0.5 });
+        if (el.typ === 'obraz') sprawdzDpi(pole, info, el, el.przyciecie);
+        tresc = [el];
       }
       if (!promien && tryb !== 'kafelki' && !maKrycieTekstury) {
         elementy.push(...tresc);
@@ -512,19 +545,19 @@ export function renderujKarte(
   if (tlo) {
     elementy.push({
       typ: 'prostokat',
-      x: 0,
-      y: 0,
-      szer,
-      wys,
-      promien: poszarpanaKarta ? undefined : szablon.promienRogow,
+      x: ramkaBrutto.x,
+      y: ramkaBrutto.y,
+      szer: ramkaBrutto.szer,
+      wys: ramkaBrutto.wys,
+      promien: spad > 0 || poszarpanaKarta ? undefined : szablon.promienRogow,
       wypelnienie: tlo,
     });
   }
   if (szablon.teksturaTla)
     teksturaTla(
       szablon.teksturaTla,
-      ramkaKarty,
-      poszarpanaKarta ? 0 : szablon.promienRogow,
+      ramkaBrutto,
+      spad > 0 || poszarpanaKarta ? 0 : szablon.promienRogow,
       'tlo-karty',
       opcje?.teksturaTryb,
       opcje?.teksturaKrycie,
@@ -811,7 +844,16 @@ export function renderujKarte(
           // Przeszkoda obrócona (swobodny) zajmuje prostokąt po obrocie, w układzie swojego rodzica.
           .map(prostokatPoObrocie);
         elementy.push(
-          ...rysujPoleObrazu(w, ramka, dane, ctx, ostrzezenia, przeszkody, karta.obrazy?.[w.id]),
+          ...rysujPoleObrazu(
+            w,
+            ramka,
+            dane,
+            ctx,
+            ostrzezenia,
+            przeszkody,
+            karta.obrazy?.[w.id],
+            minDpi,
+          ),
         );
       } else if (w.typ === 'tekst') elementy.push(...tekstWPole(w, wartoscPola(w, dane), ramka));
       else elementy.push(...rysujPole(w, ramka, dane, ctx, glify, ostrzezenia, symbole));
@@ -915,9 +957,12 @@ export function renderujKarte(
     scena: {
       szer,
       wys,
-      elementy: poszarpanaKarta
-        ? [{ typ: 'grupa', x: 0, y: 0, przyciecieKonturem: poszarpanaKarta, elementy }]
-        : elementy,
+      elementy:
+        spad > 0
+          ? [{ typ: 'grupa', x: 0, y: 0, przyciecie: { ...ramkaBrutto }, elementy }]
+          : poszarpanaKarta
+            ? [{ typ: 'grupa', x: 0, y: 0, przyciecieKonturem: poszarpanaKarta, elementy }]
+            : elementy,
       glify,
       ...symboleSceny(symbole),
     },
@@ -932,7 +977,7 @@ export function renderujKarte(
 export function renderujRewers(
   rewers: Rewers,
   ctx: KontekstRenderowania,
-  docelowy?: { szer: Mm; wys: Mm; promienRogow?: Mm },
+  docelowy?: { szer: Mm; wys: Mm; promienRogow?: Mm; spad?: Mm; minDpi?: number },
 ): WyrenderowanaKarta {
   const szablon: Szablon = {
     id: rewers.id,
@@ -952,6 +997,8 @@ export function renderujRewers(
     ...(rewers.teksturaZabarwienie !== undefined
       ? { teksturaZabarwienie: rewers.teksturaZabarwienie }
       : {}),
+    ...(docelowy?.spad ? { spad: docelowy.spad } : {}),
+    ...(docelowy?.minDpi ? { minDpi: docelowy.minDpi } : {}),
   });
 }
 
@@ -1730,6 +1777,47 @@ function rysujTabele(
   return wynik;
 }
 
+/**
+ * Efektywna rozdzielczość obrazu rastrowego (DPI) po dopasowaniu, skalowaniu i kadrowaniu:
+ * korzysta z pikseli źródłowych faktycznie użytych w widocznym kadrze i ich wymiaru w mm na wydruku.
+ * Zwraca `undefined`, gdy obraz po przycięciu nie ma widocznego obszaru.
+ */
+export function efektywneDpiObrazu(
+  info: InformacjaOObrazie,
+  narysowany: { x: Mm; y: Mm; szer: Mm; wys: Mm; obrot?: number },
+  przyciecie?: Ramka,
+): number | undefined {
+  const EPS = 1e-6;
+  if (
+    !(info.szerokosc > 0) ||
+    !(info.wysokosc > 0) ||
+    !(narysowany.szer > EPS) ||
+    !(narysowany.wys > EPS)
+  )
+    return undefined;
+  if (przyciecie) {
+    const obwiednia =
+      narysowany.obrot && narysowany.obrot % 360 !== 0
+        ? obrocProstokat(
+            narysowany,
+            narysowany.x + narysowany.szer / 2,
+            narysowany.y + narysowany.wys / 2,
+            narysowany.obrot,
+          )
+        : narysowany;
+    const visX =
+      Math.min(obwiednia.x + obwiednia.szer, przyciecie.x + przyciecie.szer) -
+      Math.max(obwiednia.x, przyciecie.x);
+    const visY =
+      Math.min(obwiednia.y + obwiednia.wys, przyciecie.y + przyciecie.wys) -
+      Math.max(obwiednia.y, przyciecie.y);
+    if (!(visX > EPS && visY > EPS)) return undefined;
+  }
+  const dpiX = (info.szerokosc * 25.4) / narysowany.szer;
+  const dpiY = (info.wysokosc * 25.4) / narysowany.wys;
+  return Math.min(dpiX, dpiY);
+}
+
 function rysujPoleObrazu(
   pole: PoleObraz,
   ramka: Ramka,
@@ -1738,6 +1826,7 @@ function rysujPoleObrazu(
   ostrzezenia: Ostrzezenie[],
   przeszkody: Ramka[],
   ustawienia: UstawieniaObrazu | undefined,
+  minDpi?: number,
 ): ElementSceny[] {
   const zasob = wartoscPola(pole, dane);
   const info = ctx.obraz?.(zasob);
@@ -1753,7 +1842,18 @@ function rysujPoleObrazu(
     return [];
   }
   const kadr = pole.kadr ?? { x: 0.5, y: 0.5 };
-  return [rysujObraz(zasob, info, obszar, ramka, dopasowanie, kadr, u)];
+  const el = rysujObraz(zasob, info, obszar, ramka, dopasowanie, kadr, u);
+  if (minDpi && el.typ === 'obraz') {
+    const dpi = efektywneDpiObrazu(info, el, el.przyciecie);
+    if (dpi !== undefined && dpi < minDpi - 1e-6) {
+      ostrzezenia.push({
+        pole: pole.id,
+        komunikat: 'niska-rozdzielczosc-obrazu',
+        szczegoly: String(Math.floor(dpi)),
+      });
+    }
+  }
+  return [el];
 }
 
 /**

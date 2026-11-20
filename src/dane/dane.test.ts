@@ -1498,7 +1498,7 @@ describe('M4-3: schemat v25, tekst po łuku, krycie warstw i zabarwienie tła', 
 
 describe('M4-4: schemat v26 i ustawienia druku dwustronnego', () => {
   it('migruje projekt i szablon v25 do v26, waliduje dwustronny i przechodzi archiwum ZIP', () => {
-    expect(WERSJA_SCHEMATU).toBe(26);
+    expect(WERSJA_SCHEMATU).toBeGreaterThanOrEqual(26);
     expect(migruj({ wersja: 25, a: 1 }, 'projekt', 26)).toEqual({ wersja: 26, a: 1 });
     expect(migruj({ wersja: 25, a: 1 }, 'szablon', 26)).toEqual({ wersja: 26, a: 1 });
     expect(przygotujProjekt({ ...projekt, wersja: 25 })).toEqual(projekt);
@@ -1531,5 +1531,64 @@ describe('M4-4: schemat v26 i ustawienia druku dwustronnego', () => {
     // Odrzucenie niepoprawnych wartości.
     expect(() => przygotujProjekt(zDwu({ wlaczony: true, krawedz: 'inna' }))).toThrow();
     expect(() => przygotujProjekt(zDwu({ wlaczony: 'tak', krawedz: 'dluga' }))).toThrow();
+  });
+});
+
+describe('M4-5: schemat v27 i ustawienia trybu drukarni', () => {
+  it('migruje projekt i szablon v26 do v27, waliduje drukarnia i przechodzi archiwum ZIP', () => {
+    expect(WERSJA_SCHEMATU).toBe(27);
+    expect(migruj({ wersja: 26, a: 1 }, 'projekt', 27)).toEqual({ wersja: 27, a: 1 });
+    expect(migruj({ wersja: 26, a: 1 }, 'szablon', 27)).toEqual({ wersja: 27, a: 1 });
+    // Stary projekt v26 bez pola drukarnia otwiera się z domyślnym drukiem domowym.
+    const zV26 = przygotujProjekt({ ...projekt, wersja: 26 });
+    expect(zV26).toEqual(projekt);
+    expect(zV26.arkusze[0]!.ustawienia.drukarnia).toBeUndefined();
+
+    const zDruk = (drukarnia: object): Projekt => ({
+      ...projekt,
+      arkusze: projekt.arkusze.map((a, i) =>
+        i === 0 ? { ...a, ustawienia: { ...a.ustawienia, drukarnia: drukarnia as never } } : a,
+      ),
+    });
+
+    const pSiatka = zDruk({ wlaczony: true, spad: 3, znacznikiCiecia: true, uklad: 'siatka' });
+    const pPojedyncza = zDruk({
+      wlaczony: true,
+      spad: 5,
+      znacznikiCiecia: false,
+      uklad: 'pojedyncza',
+    });
+    expect(przygotujProjekt(pSiatka).arkusze[0]!.ustawienia.drukarnia).toEqual({
+      wlaczony: true,
+      spad: 3,
+      znacznikiCiecia: true,
+      uklad: 'siatka',
+    });
+    expect(przygotujProjekt(pPojedyncza).arkusze[0]!.ustawienia.drukarnia).toEqual({
+      wlaczony: true,
+      spad: 5,
+      znacznikiCiecia: false,
+      uklad: 'pojedyncza',
+    });
+
+    // Round-trip przez archiwum projektu ZIP.
+    const poZip = importujProjekt(eksportujProjekt(pPojedyncza, zasoby));
+    expect(poZip.projekt.arkusze[0]!.ustawienia.drukarnia).toEqual({
+      wlaczony: true,
+      spad: 5,
+      znacznikiCiecia: false,
+      uklad: 'pojedyncza',
+    });
+
+    // Odrzucenie niepoprawnych wartości.
+    expect(() =>
+      przygotujProjekt(zDruk({ wlaczony: true, spad: -1, znacznikiCiecia: true, uklad: 'siatka' })),
+    ).toThrow();
+    expect(() =>
+      przygotujProjekt(zDruk({ wlaczony: true, spad: 11, znacznikiCiecia: true, uklad: 'siatka' })),
+    ).toThrow();
+    expect(() =>
+      przygotujProjekt(zDruk({ wlaczony: true, spad: 3, znacznikiCiecia: true, uklad: 'inny' })),
+    ).toThrow();
   });
 });

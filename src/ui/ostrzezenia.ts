@@ -14,9 +14,11 @@ export const KODY: Record<string, KluczTekstu> = {
   'nieznane-pole-do-omijania': 'ostrzezenie.nieznanePoleDoOmijania',
   'nieznany-element-ozdobny': 'ostrzezenie.nieznanyElementOzdobny',
   'niska-rozdzielczosc-ramki': 'ostrzezenie.niskaRozdzielczoscRamki',
+  'niska-rozdzielczosc-obrazu': 'ostrzezenie.niskaRozdzielczoscObrazu',
   'brak-szablonu': 'ostrzezenie.brakSzablonu',
   'karta-inny-rozmiar': 'ostrzezenie.kartaInnyRozmiar',
   'brak-slotow-na-stronie': 'ostrzezenie.brakSlotow',
+  'papier-za-maly-na-spad': 'ostrzezenie.papierZaMalyNaSpad',
   'karta-w-strefie-przyciecia': 'ostrzezenie.kartaWStrefiePrzyciecia',
   'uklad-poza-papierem': 'ostrzezenie.ukladPozaPapierem',
   'tytul-nie-miesci-sie': 'ostrzezenie.tytulNieMiesciSie',
@@ -58,6 +60,7 @@ export function tekstOstrzezeniaArkusza(o: OstrzezenieArkusza, nazwaKarty?: stri
     'nieznane-pole-do-omijania',
     'nieznany-element-ozdobny',
     'niska-rozdzielczosc-ramki',
+    'niska-rozdzielczosc-obrazu',
   ].includes(kod);
   const tekst = czyKarty
     ? t('ostrzezenie.wPolu', { pole: reszta[0] ?? '', tekst: zKodu(kod, reszta.slice(1)) })

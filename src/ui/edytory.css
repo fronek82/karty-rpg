@@ -125,6 +125,7 @@
   details.sekcja-panelu,
   fieldset.sekcja-ukladu,
   fieldset.sekcja-dwustronny,
+  fieldset.sekcja-drukarni,
   fieldset.sekcja-obrazu,
   fieldset.sekcja-czcionek,
   fieldset.sekcja-szablonow,
@@ -161,6 +162,7 @@ details.sekcja-panelu:nth-of-type(4n) {
 fieldset:is(
     .sekcja-ukladu,
     .sekcja-dwustronny,
+    .sekcja-drukarni,
     .sekcja-obrazu,
     .sekcja-czcionek,
     .sekcja-szablonow,
@@ -175,6 +177,7 @@ fieldset:is(
 fieldset:is(
     .sekcja-ukladu,
     .sekcja-dwustronny,
+    .sekcja-drukarni,
     .sekcja-obrazu,
     .sekcja-czcionek,
     .sekcja-szablonow,
@@ -189,6 +192,7 @@ fieldset:is(
 fieldset:is(
     .sekcja-ukladu,
     .sekcja-dwustronny,
+    .sekcja-drukarni,
     .sekcja-obrazu,
     .sekcja-czcionek,
     .sekcja-szablonow,
@@ -203,6 +207,7 @@ fieldset:is(
 fieldset:is(
     .sekcja-ukladu,
     .sekcja-dwustronny,
+    .sekcja-drukarni,
     .sekcja-obrazu,
     .sekcja-czcionek,
     .sekcja-szablonow,
@@ -230,6 +235,7 @@ fieldset:is(
   :is(
     fieldset.sekcja-ukladu,
     fieldset.sekcja-dwustronny,
+    fieldset.sekcja-drukarni,
     fieldset.sekcja-obrazu,
     fieldset.sekcja-czcionek,
     fieldset.sekcja-szablonow,
