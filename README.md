@@ -2,7 +2,8 @@
 
 Aplikacja przeglądarkowa do projektowania i drukowania kart do gier RPG i planszowych.
 Specyfikację znajdziesz w [`SPEC.md`](SPEC.md). Plany opisują [interfejs](docs/plan-UI.md),
-[M2](docs/plan-M2.md), [M2b](docs/plan-M2b.md), [M2c](docs/plan-M2c.md) i ukończone [M3](docs/plan-M3.md).
+[M2](docs/plan-M2.md), [M2b](docs/plan-M2b.md), [M2c](docs/plan-M2c.md), [M3](docs/plan-M3.md)
+i ukończone [M4](docs/plan-M4.md).
 
 **Aplikacja online:** <https://fronek82.github.io/karty-rpg/>. Działa w całości w przeglądarce;
 projekty zostają na Twoim komputerze (IndexedDB).
@@ -35,7 +36,8 @@ używa polskiego w polskiej przeglądarce, angielskiego w pozostałych i motywu 
 4. Karty **przeciągasz myszą**, także na kolejną stronę. **„Duplikuj”** dodaje jedną kopię.
    **„Liczba kopii”** obejmuje oryginał i kopie. Zmień ją strzałkami, zatwierdź Enterem lub opuść pole.
    Na arkuszu stanów dodasz **nagłówek grupy** nad kolumnami.
-5. **Ustawienia**: tytuł kartki, czarno-biały, papier, czcionki (także własne).
+5. **Ustawienia**: tytuł kartki, czarno-biały, papier, czcionki (także własne i katalog Google Fonts),
+   druk dwustronny oraz tryb drukarni.
 6. **Pobierz PDF** i drukuj w **skali 100%** (bez „dopasuj do strony”). **Eksportuj** zapisuje
    projekt do pliku `.kartyrpg` (kopia zapasowa, przeniesienie na inny komputer – import na starcie).
 
@@ -105,6 +107,31 @@ Przykładowe szablony do wypróbowania (do testów, nie gotowe pakiety gier):
   jednoznacznej nazwie obrazu w bibliotece projektu. Cofnięcie usuwa całą dodaną partię.
 
 [Neutralne przykłady M3 w PL i EN, w obu motywach](docs/obrazy/m3-8/README.md).
+
+## Rewersy, druk dwustronny, tryb drukarni i Google Fonts
+
+- **Rewersy**: w **Ustawieniach → Rewersy** utworzysz własne rewersy w edytorze warstw
+  (tło i tekstura PNG/JPG w czterech trybach dopasowania z kryciem i zabarwieniem, napisy także po
+  łuku w górę lub w dół, grafiki, obrót i krycie warstw, ramki i narożniki). Rewers przypiszesz na
+  trzech poziomach z dziedziczeniem: **talia → szablon → konkretna karta** (jawny wybór **„Bez
+  rewersu”** zatrzymuje dziedziczenie). Eksport paczki szablonu przenosi przypisany rewers wraz z jego
+  zasobami.
+- **Druk dwustronny**: w **Ustawieniach → Druk dwustronny** włączysz pary stron przód / lustrzany
+  tył (także przy mieszanych rozmiarach, nakładzie, pustych polach i kontynuacjach) z wyborem
+  **krawędzi odwracania** (długa lub krótka). Osobna lokalna **Korekta rewersu X / Y (mm)** i
+  **„Wydruk próbny dwustronny (PDF)”** z krzyżykami oraz strzałkami góry pozwalają wyrównać drukarkę
+  pod światło.
+- **Tryb drukarni**: w **Ustawieniach → Tryb drukarni** dodasz **spad** (0–10 mm, domyślnie 3 mm),
+  **znaczniki cięcia** i wybierzesz układ **Siatka na arkuszu** albo **Jedna karta na stronę**
+  (dokładny wymiar brutto + znaczniki). Tło i tekstura sięgają spadu, a treść i ramka zostają w
+  formacie netto. Aplikacja ostrzega, gdy efektywna rozdzielczość rastra po kadrowaniu i powiększeniu
+  spada poniżej 300 dpi.
+- **Katalog Google Fonts**: w **Ustawieniach → Czcionki → Katalog Google Fonts** pobierzesz jednym
+  kliknięciem wybrane kroje na licencji SIL OFL 1.1 z potwierdzonymi polskimi znakami. Pliki TTF
+  zapisują się lokalnie w projekcie, działają bez sieci i przenoszą się w paczkach bez ostrzeżenia
+  o własnej licencji.
+
+[Neutralne przykłady M4 w PL i EN, w obu motywach](docs/obrazy/m4-7/README.md).
 
 ## Ozdobniki
 
