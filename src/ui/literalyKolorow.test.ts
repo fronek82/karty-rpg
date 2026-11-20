@@ -14,6 +14,7 @@ const korzen = fileURLToPath(new URL('.', import.meta.url));
  * pól i ramek nowego szablonu, kolor tła obrazu eksportu, podgląd ozdobnika na „pergaminie”.
  */
 const DOZWOLONE: Record<string, string[]> = {
+  'rewers/EdytorRewersu.tsx': ['#000000'], // domyślny kolor grafiki i obrysu rewersu
   'biblioteka/podgladElementu.ts': ['#7a2e24', '#f7f0dc', '#fff8e6'],
   'eksportObrazow.ts': ['#ffffff'], // tło eksportowanego obrazu
   'szablon/EdytorSzablonu.tsx': ['#ffffff'], // domyślne tło karty

@@ -2505,3 +2505,22 @@ button.maly {
 .pomin-pasek:not(:focus) {
   clip-path: inset(50%);
 }
+
+.rewers-warstwy {
+  padding-inline-start: 1.5rem;
+}
+
+.rewers-warstwy button {
+  width: 100%;
+  margin-bottom: 0.3rem;
+}
+
+.rewers-podglad {
+  width: min(100%, 32rem);
+}
+
+.rewers-podglad svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}

@@ -1,5 +1,11 @@
 import type { Projekt } from '../model/projekt';
-import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
+import {
+  czyKontener,
+  type Kontener,
+  type Rewers,
+  type Szablon,
+  type Wezel,
+} from '../model/szablon';
 import { czyWbudowany } from '../ozdobniki/katalog';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { t, tn } from '../i18n';
@@ -34,12 +40,17 @@ function* ref(o: unknown, klucz: string): Generator<Odwolanie> {
  * Wszystkie odwołania szablonu do elementów biblioteki (ozdoba, narożniki, motyw/zakończenia/
  * środek separatora, własny kształt wartości, ramka karty) z możliwością przepisania identyfikatora.
  */
-function* odwolania(s: Szablon): Generator<Odwolanie> {
+function* odwolania(s: Szablon | Rewers): Generator<Odwolanie> {
+  if ('grafiki' in s)
+    for (const grafika of Object.values(s.grafiki ?? {})) yield* ref(grafika, 'element');
   if (s.ramka) {
     yield* ref(s.ramka.ozdoba, 'element');
     yield* ref(s.ramka.narozniki, 'element');
   }
-  const korzenie: Kontener[] = [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)];
+  const korzenie: Kontener[] = [
+    s.korzen,
+    ...('warianty' in s ? (s.warianty ?? []).map((w) => w.korzen) : []),
+  ];
   for (const k of korzenie) {
     for (const w of wezly(k)) {
       yield* ref(w.ozdoba, 'element');

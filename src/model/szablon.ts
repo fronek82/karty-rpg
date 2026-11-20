@@ -528,6 +528,9 @@ export interface Rewers {
   korzen: Kontener & { typ: 'swobodny' };
   tlo?: Kolor;
   teksturaTla?: string;
+  dopasowanieTla?: DopasowanieObrazu | 'kafelki';
+  /** Grafika wektorowa zastępująca obraz w warstwie o danym identyfikatorze. */
+  grafiki?: Record<string, { element: string; kolor: Kolor }>;
   ramka?: RamkaKarty;
 }
 

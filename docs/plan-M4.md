@@ -1,6 +1,6 @@
 # Plan M4 – rewersy i przygotowanie do druku
 
-**Status.** Plan przygotowany 19.11.2026. M4-1 ukończono 19.11.2026. Najbliższy etap to M4-2. Punktem wyjścia jest ukończony [M3](plan-M3.md). [Ręczny odbiór M2c](plan-M2c.md#4-etapy) oczekuje. Zakres wynika ze [specyfikacji rewersu, czcionek i druku](../SPEC.md#7-rewers-tył-karty).
+**Status.** Plan przygotowany 19.11.2026. M4-1 ukończono 19.11.2026. M4-2 ukończono 20.11.2026. Najbliższy etap to M4-3. Punktem wyjścia jest ukończony [M3](plan-M3.md). [Ręczny odbiór M2c](plan-M2c.md#4-etapy) oczekuje. Zakres wynika ze [specyfikacji rewersu, czcionek i druku](../SPEC.md#7-rewers-tył-karty).
 
 ## 1. Cel i kryterium ukończenia
 
@@ -35,12 +35,14 @@ Każdy etap zaczyna się od aktualnego `main` i ma osobny PR. Zmiana schematu ob
 | Etap | Status       | Wielkość | Zakres z testami                                                                                                                                                                                     | Agenci                                                   |
 | ---- | ------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | M4-1 | ✓ 19.11.2026 | M        | Model rewersów, przypisania i paczki. Test migracji projektu i szablonu, priorytetów, pustego przypisania, kolizji zasobów, historii, ponownego otwarcia i licencji kroju użytego tylko na rewersie. | dane-import, silnik-layoutu, tester                      |
-| M4-2 | ✗            | L        | Edycja i podgląd warstw, przypisania w UI. Testy czterech trybów tła, czcionek, ramek, wyboru szablonu lub talii, przyciągania, kolejności i cofania. E2E w obu językach i motywach.                 | edytor-ui, silnik-layoutu, biblioteka-ozdobnikow, tester |
+| M4-2 | ✓ 20.11.2026 | L        | Edycja i podgląd warstw, przypisania w UI. Testy czterech trybów tła, czcionek, ramek, wyboru szablonu lub talii, przyciągania, kolejności i cofania. E2E w obu językach i motywach.                 | edytor-ui, silnik-layoutu, biblioteka-ozdobnikow, tester |
 | M4-3 | ✗            | M        | Tekst rewersu po łuku i uzupełnienie efektów warstw. Testy geometrii, złożonych glifów, krycia i zgodności PDF/SVG.                                                                                  | silnik-layoutu, druk-pdf, edytor-ui, tester              |
 | M4-4 | ✗            | L        | Dwustronny podgląd, PDF i wydruk próbny. Test obu krawędzi i orientacji na niesymetrycznej obróconej karcie. Regresje siatki, MaxRects, nakładu, pustych tyłów, kontynuacji i kalibracji.            | druk-pdf, edytor-ui, tester                              |
 | M4-5 | ✗            | L        | Tryb drukarni, spad, znaczniki i DPI. Testy pojedynczej karty i siatki, kroju netto i brutto, rastra po kadrowaniu, grafiki wektorowej oraz zgodności eksportu.                                      | druk-pdf, silnik-layoutu, edytor-ui, tester              |
 | M4-6 | ✗            | M        | Katalog Google Fonts i zapis wariantów. Testy błędu pobrania, pracy bez sieci, polskich znaków, paczki i zgodności PDF/SVG.                                                                          | dane-import, edytor-ui, tester                           |
 | M4-7 | ✗            | S        | Domknięcie, README, galeria neutralnych przykładów, kontrola regresji M2c i M3 oraz instrukcja fizycznego odbioru.                                                                                   | edytor-ui, tester, recenzent                             |
+
+[Edytor rewersu](obrazy/m4-2-edytor-rewersu.png)
 
 ### Ręczne sprawdzenia M4
 
@@ -85,3 +87,4 @@ Niewidoczna warstwa tekstowa do wyszukiwania w PDF jest opcjonalnym rozszerzenie
 | B263 | Plan | Spad i DPI             | Tryb drukarni włączany jawnie. Domyślny spad 3 mm i ostrzeżenia przy efektywnym DPI poniżej 300.                                                                                                                       |
 | B264 | Plan | Katalog czcionek       | Wersjonowany wybór rodzin z udokumentowaną licencją. Warianty zapisane w projekcie działają bez sieci.                                                                                                                 |
 | B265 | M4-1 | Schemat 23 i zasoby    | Rewers przechowuje swobodny układ w wymiarach odniesienia. Paczka szablonu niesie bezpośrednio przypisany rewers z zasobami. Usunięcie rewersu zamienia jego bezpośrednie przypisania na jawny brak w jednej operacji. |
+| B266 | M4-2 | Geometria i grafiki    | Warstwy zapisują pozycję w milimetrach formatu odniesienia. Scena przelicza je na format egzemplarza. Grafika SVG odwołuje się do zwalidowanego ozdobnika projektu.                                                    |

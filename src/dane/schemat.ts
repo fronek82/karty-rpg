@@ -368,6 +368,8 @@ export const schematRewersu = z.strictObject({
   ...szablon.pick({ id: true, nazwa: true, tlo: true, teksturaTla: true, ramka: true }).shape,
   rozmiar: obj({ tryb: z.literal('mm'), szerokosc: dodatnia, wysokosc: dodatnia }),
   korzen: kontener.and(obj({ typ: z.literal('swobodny') })),
+  dopasowanieTla: opc(z.enum(['dopasuj', 'wypelnij', 'rozciagnij', 'kafelki'])),
+  grafiki: opc(z.record(z.string(), obj({ element: identyfikator, kolor: z.string() }))),
 });
 
 const ustawieniaObrazu = obj({
@@ -785,6 +787,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     21: (d) => d,
     // 22→23: brak przypisania pozostawia dotychczasowy projekt z samymi przodami.
     22: (d) => d,
+    // 23→24: rewers bez opcji tła nadal wypełnia pole obrazem.
+    23: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -810,6 +814,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     21: (d) => d,
     // 22→23: brak przypisania pozostawia dotychczasowy projekt z samymi przodami.
     22: (d) => d,
+    // 23→24: rewers bez opcji tła nadal wypełnia pole obrazem.
+    23: (d) => d,
   },
 };
 

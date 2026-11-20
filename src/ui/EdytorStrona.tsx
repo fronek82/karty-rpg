@@ -5,6 +5,7 @@ import { EdytorKartki } from './kartka/EdytorKartki';
 import { EdytorSzablonu } from './szablon/EdytorSzablonu';
 import { Kreator } from './szablon/Kreator';
 import { szablonZKreatora } from './szablon/nowySzablonUI';
+import { EdytorRewersu } from './rewers/EdytorRewersu';
 import { useProjekt } from './useProjekt';
 
 /**
@@ -26,6 +27,7 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
     );
   const sciezka = `#/projekt/${encodeURIComponent(id)}`;
   const zGry = !czyProjektWlasny(stan.projekt);
+  if (podtrasa === 'rewersy') return <EdytorRewersu edycja={stan} />;
   if (podtrasa === 'biblioteka') return <BibliotekaOzdobnikow edycja={stan} />;
   const identyfikator = /^szablon\/(.+)$/.exec(podtrasa)?.[1];
   const szablon = identyfikator && decodeURIComponent(identyfikator);
