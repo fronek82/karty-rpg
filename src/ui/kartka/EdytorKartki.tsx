@@ -1483,9 +1483,6 @@ export function EdytorKartki({
       >
         ⎙ {t('arkusze.pobierzPdf')}
       </button>
-      <a className="przycisk-kontur" href={`#/projekt/${encodeURIComponent(projekt.id)}/rewersy`}>
-        {t('rewers.tytul')}
-      </a>
       <MenuPobierz
         wylaczone={!zasoby || zajete}
         pobierz={(co) =>

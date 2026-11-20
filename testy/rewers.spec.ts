@@ -6,6 +6,7 @@ test.use({ viewport: { width: 1440, height: 1050 } });
 test('tworzy, przypisuje i zapisuje rewers z dwiema warstwami', async ({ page }) => {
   await nowaPustaKartka(page);
   await dodajKarte(page, 1, 1, 1, 'Ekwipunek', 'Przedmiot');
+  await page.getByRole('button', { name: /Ustawienia/ }).click();
   await page.getByRole('link', { name: 'Rewersy', exact: true }).click();
   await page.getByRole('button', { name: 'Dodaj rewers' }).click();
   await page.getByLabel('Nazwa rewersu').fill('Mapa próbna');

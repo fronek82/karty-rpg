@@ -145,6 +145,9 @@ export function PanelUstawien({
         </button>
       </div>
       <p className="podpis">{t('kartka.ustawieniaOpis', { kartka: arkusz.nazwa })}</p>
+      <a className="przycisk" href={`#/projekt/${encodeURIComponent(projekt.id)}/rewersy`}>
+        {t('rewers.tytul')}
+      </a>
       {blad && (
         <p role="alert" className="blad-pola">
           {blad}
