@@ -266,3 +266,28 @@ test('luz karty w slocie (M2b-1): 63×88 w slocie 63,5×89 bez ostrzeżeń, luz 
   ]);
   expect(test.suggestedFilename()).toMatch(/wydruk-testowy.*\.pdf$/);
 });
+
+test('kolor i wzór linii cięcia – np. białe linie dla czarnych kart', async ({ page }) => {
+  const ust = await kartkaCzaru(page);
+  const sekcja = ust.getByRole('group', { name: 'Linie cięcia', exact: true });
+  const strona = page.locator('.strona-kartki .svg-strony').first();
+  await expect(strona.locator('line[stroke="#ffffff"][stroke-dasharray]')).toHaveCount(0);
+  await sekcja.getByLabel('Kolor linii').fill('#ffffff');
+  await expect(strona.locator('line[stroke="#ffffff"][stroke-dasharray]').first()).toBeAttached();
+  await expect(strona.locator('line[stroke="#000000"][stroke-dasharray]')).toHaveCount(0);
+  // Przerwa 0 – linia ciągła (bez wzoru kreski).
+  await sekcja.getByLabel('Przerwa (mm)').fill('0');
+  await expect(strona.locator('line[stroke="#ffffff"][stroke-dasharray]')).toHaveCount(0);
+  await sekcja.getByLabel('Grubość (mm)').fill('0.5');
+  await expect(strona.locator('line[stroke="#ffffff"][stroke-width="0.5"]').first()).toBeAttached();
+  // Cofnij (przycisk aplikacji, nie natywne cofanie w polu) przywraca poprzednią grubość.
+  await sekcja.getByLabel('Grubość (mm)').blur();
+  await page.getByRole('button', { name: 'Cofnij', exact: true }).first().click();
+  await expect(strona.locator('line[stroke="#ffffff"][stroke-width="0.5"]')).toHaveCount(0);
+  await expect(strona.locator('line[stroke="#ffffff"]').first()).toBeAttached();
+  // Własny układ bez linii cięcia – sekcja wyłączona z wyjaśnieniem.
+  await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
+  await ust.getByLabel('Linie cięcia wokół kart').uncheck();
+  await expect(sekcja.getByLabel('Kolor linii')).toBeDisabled();
+  await expect(sekcja).toContainText('wyłączone w układzie kartki');
+});

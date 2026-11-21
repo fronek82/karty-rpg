@@ -12,6 +12,7 @@ import {
   wymiaryUkladu,
   type Arkusz,
   type DopasowanieDoSlotu,
+  type LinieCiecia,
   type OpcjeMieszane,
   type PresetUkladu,
   type UkladArkusza,
@@ -19,6 +20,8 @@ import {
 import type { Projekt } from '../../model/projekt';
 import { baza } from '../baza';
 import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
+import { kolorSceny } from '../../silnik/scena';
+import { PoleKoloru } from '../szablon/Kontrolki';
 import { PoleLiczby } from './PoleLiczby';
 import { PodgladWymiarowUkladu } from './PodgladWymiarowUkladu';
 
@@ -106,6 +109,16 @@ export function PanelUkladu({
     zmienUklad(
       (p) => ustawUstawieniaArkusza(p, A, { dopasowanie: { ...dopasowanie, ...z } }),
       `dopasowanie-${klucz}`,
+    );
+
+  // Linie cięcia (też nożyczki i linie prowadzące) – np. jasne na ciemnych kartach.
+  // Tryb drukarni rysuje znaczniki cięcia zamiast linii; własny układ może linie wyłączyć.
+  const drukarnia = !!u.drukarnia?.wlaczony;
+  const rysujLinie = !drukarnia && (!uklad || uklad.linieCiecia);
+  const zmienLinie = (z: Partial<LinieCiecia>, klucz: string) =>
+    zmienUklad(
+      (p) => ustawUstawieniaArkusza(p, A, { linie: { ...u.linie, ...z } }),
+      `linie-${A}-${klucz}`,
     );
 
   const zmienMieszane = (z: Partial<OpcjeMieszane>, klucz: string) =>
@@ -525,6 +538,47 @@ export function PanelUkladu({
       <p role="status" aria-live="polite" className="podpis">
         {status}
       </p>
+      <fieldset className="linie-ciecia" disabled={!rysujLinie}>
+        <legend>{t('linie.tytul')}</legend>
+        <PoleKoloru
+          etykieta={t('linie.kolor')}
+          wartosc={kolorSceny(u.linie.kolor)}
+          moznaBrak={false}
+          zmien={(v) => v && zmienLinie({ kolor: v }, 'kolor')}
+        />
+        <PoleLiczby
+          id="linie-grubosc"
+          etykieta={t('linie.grubosc')}
+          wartosc={u.linie.grubosc}
+          min={0.05}
+          max={2}
+          krok={0.01}
+          zmien={(v) => zmienLinie({ grubosc: v }, 'grubosc')}
+        />
+        <div className="pole-panelu dwa-pola">
+          <PoleLiczby
+            id="linie-kreska"
+            etykieta={t('linie.kreska')}
+            wartosc={u.linie.kreska}
+            min={0.5}
+            max={20}
+            krok={0.5}
+            zmien={(v) => zmienLinie({ kreska: v }, 'kreska')}
+          />
+          <PoleLiczby
+            id="linie-przerwa"
+            etykieta={t('linie.przerwa')}
+            wartosc={u.linie.przerwa}
+            min={0}
+            max={20}
+            krok={0.5}
+            zmien={(v) => zmienLinie({ przerwa: v }, 'przerwa')}
+          />
+        </div>
+        <p className="podpis">
+          {t(rysujLinie ? 'linie.opis' : drukarnia ? 'linie.drukarnia' : 'linie.wylaczone')}
+        </p>
+      </fieldset>
       <fieldset className="kalibracja">
         <legend>{t('uklad.kalibracja')}</legend>
         <p className="podpis">{t('uklad.kalibracjaOpis')}</p>

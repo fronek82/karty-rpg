@@ -312,6 +312,16 @@ export const en: Slownik = {
   'kartka.marginesBezpieczenstwa': 'Safe margin (mm)',
   'kartka.marginesBezpieczenstwaOpis':
     'The zone near the sheet edge that cards should not enter – e.g. photo labs trim print edges by 1–3 mm (3 mm by default for photo formats). A card in the zone causes a warning; the zone is marked on the sheet. 0 – no zone.',
+  'linie.tytul': 'Cut lines',
+  'linie.kolor': 'Line colour',
+  'linie.grubosc': 'Thickness (mm)',
+  'linie.kreska': 'Dash (mm)',
+  'linie.przerwa': 'Gap (mm)',
+  'linie.opis':
+    'Colour and pattern of cut lines, scissors and guide lines. On dark cards choose a light colour, e.g. white or light grey. Gap 0 – solid line.',
+  'linie.drukarnia':
+    'In print-shop mode crop marks replace cut lines – line settings have no effect.',
+  'linie.wylaczone': 'Cut lines around cards are turned off in the sheet layout.',
   'uklad.tytul': 'Sheet layout',
   'uklad.tryb': 'Card layout on the sheet',
   'uklad.automatyczny': 'automatic',
