@@ -28,6 +28,7 @@ import {
 import type { Pakiet, TypKarty } from '../../pakiety/typy';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
 import type { ProjektWEdycji } from '../useProjekt';
+import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
 import { SekcjaObrazu } from './SekcjaObrazu';
 
 function* pola(w: Wezel): Generator<Pole> {
@@ -133,9 +134,10 @@ export function PanelKart({
     return v.size === 1 ? [...v][0]! : undefined;
   };
   const ustaw = (klucz: string, v: string) =>
-    zmien((p) => ustawDaneKart(p, arkusz.id, ids, klucz, v), {
-      klucz: `pole:${klucz}:${ids.join(',')}`,
-    });
+    zmien(
+      (p) => ustawDaneKart(p, arkusz.id, ids, klucz, v),
+      czyWklejanieWToku() ? undefined : { klucz: `pole:${klucz}:${ids.join(',')}` },
+    );
 
   // Mieszane rozmiary: bez slotów – nie ma położenia w siatce ani zmiany rozmiaru w slotach.
   const mieszane = arkusz.ustawienia.rozmiary === 'mieszane';
@@ -253,7 +255,15 @@ export function PanelKart({
             <div key={kol.klucz} className="pole-panelu">
               <label htmlFor={id}>{nazwa}</label>
               {dlugi ? (
-                <textarea rows={2} {...wspolne} />
+                <textarea
+                  rows={2}
+                  {...wspolne}
+                  onPaste={(e) =>
+                    obsluzWklejenieZPdf(e, (v) =>
+                      zmien((p) => ustawDaneKart(p, arkusz.id, ids, kol.klucz, v)),
+                    )
+                  }
+                />
               ) : (
                 <input type="text" list={lista ? `${id}-lista` : undefined} {...wspolne} />
               )}

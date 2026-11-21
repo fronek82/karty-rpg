@@ -1,6 +1,6 @@
 # Plan M5 – AI, udostępnianie i wygoda pracy
 
-**Status.** Plan przygotowany 20.11.2026. Najbliższy etap to M5-1. Punktem wyjścia jest ukończony [M4](plan-M4.md). Zakres wynika ze [specyfikacji AI, udostępniania i PDF](../SPEC.md#11-udostępnianie) oraz potrzeb zgłoszonych podczas pracy z kartami.
+**Status.** Plan przygotowany 20.11.2026. M5-1 ukończono 20.11.2026. Najbliższy etap to M5-2. Punktem wyjścia jest ukończony [M4](plan-M4.md). Zakres wynika ze [specyfikacji AI, udostępniania i PDF](../SPEC.md#11-udostępnianie) oraz potrzeb zgłoszonych podczas pracy z kartami.
 
 ## 1. Cel i kryterium ukończenia
 
@@ -75,6 +75,7 @@ Obsługa wielu dostawców AI poza Claude API, współdzielone konta użytkownik�
 
 ## 9. Decyzje podjęte bez konsultacji
 
-| #    | Etap | Sprawa                | Decyzja                                                                                                                                                                                                                                                                                                            |
-| ---- | ---- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| B272 | Plan | Kolejność i zakres M5 | Ułożono M5 w 6 etapów (M5-1…M5-6), zaczynając od szybkiego usprawnienia codziennej pracy (M5-1: automatyczne czyszczenie tekstu wklejanego z PDF zgodnie z wyborem właściciela), przed większymi etapami AI (M5-2), galerii online (M5-3), warstwy tekstowej PDF (M5-4) oraz aktualizacją instrukcji PL/EN (M5-5). |
+| #    | Etap | Sprawa                    | Decyzja                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---- | ---- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B272 | Plan | Kolejność i zakres M5     | Ułożono M5 w 6 etapów (M5-1…M5-6), zaczynając od szybkiego usprawnienia codziennej pracy (M5-1: automatyczne czyszczenie tekstu wklejanego z PDF zgodnie z wyborem właściciela), przed większymi etapami AI (M5-2), galerii online (M5-3), warstwy tekstowej PDF (M5-4) oraz aktualizacją instrukcji PL/EN (M5-5).                                                                                |
+| B273 | M5-1 | Czyszczenie schowka z PDF | Czysty moduł `src/wspolne/wklejaniePdf.ts` (`wyczyscTekstZPdf`, `wstawWklejonyTekst`) oraz adapter `src/ui/wklejaniePdfUI.ts` podpięte pod `onPaste` w `PanelKart` i `PanelWezla` (tekst stały i przykładowy). Wklejenie oczyszczonego tekstu zapisuje się jako osobny krok historii (bez grupowania z poprzednim wpisywaniem), a pojedyncze wiersze bez złamań zachowują celowe spacje brzegowe. |
