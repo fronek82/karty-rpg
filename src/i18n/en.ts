@@ -439,6 +439,7 @@ export const en: Slownik = {
   'papier.wlasny': 'Custom size…',
   'kartka.edytujSzablon': '✎ Edit the template “{nazwa}”',
   'kreator.tytul': 'New card template',
+  'kreator.akcje': 'Wizard actions',
   'kreator.opis': 'Step 1 of 2 – card size and look. You will arrange the fields in the next step.',
   'kreator.nazwa': 'Template name',
   'kreator.nazwaDomyslna': 'My card',

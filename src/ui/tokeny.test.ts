@@ -300,4 +300,38 @@ describe('tokeny motywów', () => {
         }
     });
   });
+
+  it('kroki menu: biały tekst AA i wyraźna gradacja (jasny = jaśnieją, ciemny = ciemnieją)', () => {
+    const gra = ['krok-gra-1', 'krok-gra-2'] as const;
+    const wlasne = ['krok-wlasne-1', 'krok-wlasne-2', 'krok-wlasne-3', 'krok-wlasne-4'] as const;
+    for (const m of [jasny, ciemny]) {
+      for (const k of [...gra, ...wlasne]) {
+        expect(kontrast(m['krok-tekst']!, m[k]!), k).toBeGreaterThanOrEqual(4.5);
+        expect(
+          kontrast(m['krok-tekst']!, mieszaj('#000000', 12, m[k]!)),
+          `${k}:hover`,
+        ).toBeGreaterThanOrEqual(4.5);
+        expect(
+          kontrast(m['krok-tekst']!, mieszaj('#000000', 22, m[k]!)),
+          `${k}:active`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+    // Motyw jasny: każdy kolejny krok wyraźnie jaśniejszy.
+    expect(luminancja(jasny['krok-gra-2']!)).toBeGreaterThan(
+      luminancja(jasny['krok-gra-1']!) * 1.6,
+    );
+    for (let i = 1; i < wlasne.length; i++) {
+      expect(luminancja(jasny[wlasne[i]!]!), wlasne[i]).toBeGreaterThan(
+        luminancja(jasny[wlasne[i - 1]!]!) * 1.4,
+      );
+    }
+    // Motyw ciemny: odwrotnie – każdy kolejny krok wyraźnie ciemniejszy.
+    expect(luminancja(ciemny['krok-gra-2']!)).toBeLessThan(luminancja(ciemny['krok-gra-1']!) / 1.6);
+    for (let i = 1; i < wlasne.length; i++) {
+      expect(luminancja(ciemny[wlasne[i]!]!), wlasne[i]).toBeLessThan(
+        luminancja(ciemny[wlasne[i - 1]!]!) / 1.4,
+      );
+    }
+  });
 });

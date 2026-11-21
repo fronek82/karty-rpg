@@ -138,6 +138,7 @@ test('ekran Mausrittera i nazwy gotowych układów po angielsku', async ({ page 
   await wybierz(page, 'EN');
   await expect(page.getByRole('heading', { level: 1, name: 'Cards for Mausritter' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Blank A4 sheet/ })).toBeEnabled();
+  await page.getByRole('button', { name: /^Start from a ready-made layout/ }).click();
   for (const u of ['Weapons and armor', 'Gear', 'Conditions', 'All three'])
     await expect(page.getByRole('button', { name: u, exact: true })).toBeVisible();
 });

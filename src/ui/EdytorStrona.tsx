@@ -49,7 +49,7 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
   if (szablon) return <EdytorSzablonu key={szablon} edycja={stan} szablonId={szablon} />;
   if (podtrasa === 'nowy-szablon')
     return (
-      <div className="tresc">
+      <div className="tresc tresc-start kreator-w-projekcie">
         <Kreator
           anuluj={() => (window.location.hash = sciezka)}
           utworz={(u) => {

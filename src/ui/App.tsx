@@ -102,9 +102,10 @@ export function App() {
     if (dawna) window.location.replace('#/');
   }, [dawna]);
 
-  // Ekrany startowe (start, gra, własne karty) mają szeroką treść; kreator jest wąski.
+  // Ekrany z lewym menu (start, gra, własne karty, kreator, AI) mają szeroką treść z jedną linią menu.
   const wlasne = trasa === '/wlasne' || trasa === '/gry/inne';
-  const szerokaTresc = trasa === '/' || dawna || !!gra || wlasne;
+  const szerokaTresc =
+    trasa === '/' || dawna || !!gra || wlasne || trasa === '/wlasne/nowy' || trasa === '/wlasne/ai';
 
   if (projekt) {
     // Edytor kartki zajmuje cały ekran (własny pasek górny).
