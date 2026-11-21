@@ -8,6 +8,7 @@ import { renderujKarte } from '../src/silnik/karta';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
+import { zapisano } from './pomoc';
 
 /**
  * M5-4: opcjonalna niewidoczna warstwa tekstowa w PDF (`3 Tr`):
@@ -116,6 +117,7 @@ test('przełącznik warstwy tekstowej PDF w Ustawieniach działa (PL/EN), pamię
   const panelKart = page.getByRole('complementary', { name: /Zaznaczona karta|Zaznaczone karty/ });
   const poleTytul = panelKart.getByLabel('Nazwa');
   await poleTytul.fill('Żółty kompas łąkowy');
+  await zapisano(page);
 
   // Otwórz Ustawienia i włącz niewidoczną warstwę tekstową PDF.
   await page.getByRole('button', { name: 'Ustawienia' }).click();
@@ -126,6 +128,7 @@ test('przełącznik warstwy tekstowej PDF w Ustawieniach działa (PL/EN), pamię
   await expect(przelacznik).toBeChecked();
 
   // Przeładuj i potwierdź zapamiętanie w localStorage + etykietę EN.
+  await zapisano(page);
   await page.reload();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await page.getByRole('button', { name: 'EN', exact: true }).click();
