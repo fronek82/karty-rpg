@@ -59,14 +59,15 @@ function pasekTytulu(): Pole {
   };
 }
 
-/** Pasek tytułu z gwiazdką zamiast nazwy (zaklęcia). */
+/** Pasek tytułu z gwiazdką i nazwą zaklęcia (puste pole zostawia miejsce do ręcznego wpisania). */
 function pasekGwiazdki(): Kontener {
   return {
     id: 'pasek',
     typ: 'wiersz',
     wysokosc: { mm: PASEK_TYTULU },
     margines: { lewo: 0.2, prawo: 0.2 },
-    padding: { lewo: 1.05 },
+    padding: { lewo: 1.05, prawo: 0.8 },
+    odstep: 0.8,
     obramowanie: { ...LINIA, krawedzie: { dol: true } },
     dzieci: [
       {
@@ -76,6 +77,16 @@ function pasekGwiazdki(): Kontener {
         rozmiar: 3.2,
         kolor: KOLOR,
         wyrownanie: { pionowo: 'srodek' },
+      },
+      {
+        id: 'nazwa',
+        typ: 'tekst',
+        klucz: 'nazwa',
+        szerokosc: { wypelnij: 1 },
+        wysokosc: { wypelnij: 1 },
+        padding: { gora: 0.3 },
+        wieleWierszy: false,
+        styl: tytul,
       },
     ],
   };
@@ -286,7 +297,7 @@ export const szablonSakiewka = karta(
   [{ klucz: 'pojemnosc', nazwa: 'Pojemność', domyslnie: '/ 250p' }],
 );
 
-/** Zaklęcie: gwiazdka zamiast nazwy; ilustracja może nachodzić na znaczniki. */
+/** Zaklęcie: gwiazdka i pole nazwy; ilustracja może nachodzić na znaczniki. */
 export const szablonZaklecie = karta('mausritter-zaklecie', 'Zaklęcie', 1, 1, [
   pasekGwiazdki(),
   {

@@ -149,7 +149,13 @@ export async function nowyProjektZRewersem(
     ? przypiszRewers(zRewersem, { rodzaj: 'talia', id: taliaId }, rewersId)
     : zRewersem;
   const id = await zapiszNowyProjekt(projekt, zasoby);
-  const { zapiszRewersGlobalnie } = await import('./rewersyGlobalne');
-  await zapiszRewersGlobalnie(projekt, zasoby, rewersId).catch(() => undefined);
+  const [{ zapiszRewersGlobalnie }, { zapiszMiniatureRewersu }] = await Promise.all([
+    import('./rewersyGlobalne'),
+    import('./miniaturaRewersu'),
+  ]);
+  await Promise.all([
+    zapiszRewersGlobalnie(projekt, zasoby, rewersId).catch(() => undefined),
+    zapiszMiniatureRewersu(projekt, zasoby, rewersId).catch(() => undefined),
+  ]);
   return { id, rewersId };
 }

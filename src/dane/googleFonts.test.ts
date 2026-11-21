@@ -487,4 +487,31 @@ describe('katalog Google Fonts (M4-6)', () => {
       }),
     ).rejects.toBeInstanceOf(BladDanych);
   });
+
+  it('leniwie wczytuje pełny katalog Google Fonts (>1500 krojów, w tym grupy ofl/apache/ufl i static/)', async () => {
+    const { wczytajPelnyKatalogGoogleFonts } = await import('./googleFonts');
+    const pelny = await wczytajPelnyKatalogGoogleFonts();
+    expect(pelny.length).toBeGreaterThanOrEqual(1500);
+    const zPolskimi = pelny.filter((p) => p.polskieZnaki);
+    expect(zPolskimi.length).toBeGreaterThanOrEqual(1400);
+
+    const kategorie = new Set(pelny.map((p) => p.kategoria));
+    expect(kategorie).toEqual(
+      new Set(['ozdobna', 'szeryfowa', 'bezszeryfowa', 'pisana', 'maszynowa']),
+    );
+    const grupy = new Set(pelny.map((p) => p.grupa));
+    expect(grupy.has('ofl')).toBe(true);
+    expect(grupy.has('apache')).toBe(true);
+
+    const apachePoz = pelny.find((p) => p.grupa === 'apache')!;
+    const adresyApache = adresyWariantuGoogle(apachePoz, apachePoz.warianty[0]!);
+    expect(adresyApache[0]).toMatch(
+      /^https:\/\/cdn\.jsdelivr\.net\/gh\/google\/fonts@main\/apache\//,
+    );
+
+    const staticPoz = pelny.find((p) => p.warianty.some((w) => w.plik.startsWith('static/')))!;
+    const staticWar = staticPoz.warianty.find((w) => w.plik.startsWith('static/'))!;
+    const adresyStatic = adresyWariantuGoogle(staticPoz, staticWar);
+    expect(adresyStatic[0]).toContain('/static/');
+  });
 });

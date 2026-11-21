@@ -16,7 +16,7 @@ Pakiety szablonów mają dodatkowo własny plik `LICENCJE.md` w swoim katalogu.
 
 ### Katalog Google Fonts (pobierane na żądanie użytkownika, nie dołączane do repozytorium)
 
-Katalog w `src/dane/googleFonts.ts` udostępnia wybrane rodziny z repozytorium [`google/fonts`](https://github.com/google/fonts) (wyłącznie statyczne pliki TTF z potwierdzonym zestawem `latin-ext` i licencją SIL OFL 1.1). Pliki są pobierane dopiero po wyborze użytkownika i zapisywane lokalnie w projekcie.
+Katalog w `src/dane/googleFonts.ts` oraz pełny indeks metadanych w `src/dane/katalogGoogleFonts.json` (generowany z oficjalnego katalogu Google Fonts i drzewa [`google/fonts`](https://github.com/google/fonts): grupy `ofl` – SIL OFL 1.1, `apache` – Apache 2.0, `ufl` – Ubuntu Font License) udostępniają kroje łacińskie na wolnych licencjach. Pliki TTF są pobierane dopiero po wyborze użytkownika i zapisywane lokalnie w przeglądarce oraz projekcie. Poniżej lista kuratorowanego zestawu bazowego:
 
 | Rodzina            | Katalog w `google/fonts` | Autor                                                          | Licencja    |
 | ------------------ | ------------------------ | -------------------------------------------------------------- | ----------- |
