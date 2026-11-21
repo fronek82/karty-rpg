@@ -30,7 +30,7 @@ test('przeciąganie: prowadnice i podpowiedź tylko w edytorze, siatka, Alt, jed
   await swobodny(page, 'Gesty');
   await dodaj(page, 'Tekst', 'A');
   await dodaj(page, 'Tekst', 'B');
-  const p = polozenie(page);
+  const p = await polozenie(page);
   await p.getByLabel('X (mm)').fill('40');
   await p.getByLabel('Y (mm)').fill('50');
   await zaznacz(page, 'A');
@@ -115,8 +115,9 @@ test('wyrównaj i rozłóż równo z panelu (jeden krok Cofnij), wiele zaznaczon
   const pozycje = { A: [5, 5], B: [20, 30], C: [40, 50] } as const;
   for (const [nazwa, [x, y]] of Object.entries(pozycje)) {
     await dodaj(page, 'Tekst', nazwa);
-    await polozenie(page).getByLabel('X (mm)').fill(String(x));
-    await polozenie(page).getByLabel('Y (mm)').fill(String(y));
+    const p = await polozenie(page);
+    await p.getByLabel('X (mm)').fill(String(x));
+    await p.getByLabel('Y (mm)').fill(String(y));
   }
   // Shift+klik w podglądzie dokłada do zaznaczenia.
   const klik = async (nazwa: string, shift: boolean) => {
@@ -218,8 +219,9 @@ test('zrzut: przeciąganie z prowadnicami i podpowiedzią', async ({ page }) => 
   await uchwyt(page, 'se', -18, 2);
   await dodaj(page, 'Wartość w kształcie', 'Atak');
   await panel(page).getByLabel('Kształt').selectOption('tarcza');
-  await polozenie(page).getByLabel('X (mm)').fill('3');
-  await polozenie(page).getByLabel('Y (mm)').fill('75');
+  const p = await polozenie(page);
+  await p.getByLabel('X (mm)').fill('3');
+  await p.getByLabel('Y (mm)').fill('75');
   await zaznacz(page, 'Koszt');
   const k = await pxNaMm(page);
   const s = await srodek(page, obszar(page, 'Koszt'));
@@ -306,7 +308,7 @@ test('upuszczenie w kolumnie pokazuje cel, Escape anuluje, Cofnij przywraca rodz
 }) => {
   await swobodny(page, 'Zmiana kontenera');
   await dodaj(page, 'Kolumna', 'Cel');
-  await polozenie(page).getByLabel('Y (mm)').fill('40');
+  await (await polozenie(page)).getByLabel('Y (mm)').fill('40');
   await karta(page);
   await dodaj(page, 'Tekst', 'Pole');
   const z = await srodek(page, obszar(page, 'Pole'));
@@ -331,8 +333,9 @@ test('uchwyt i pole szerokości skalują obwiednię zaznaczonych elementów', as
   await swobodny(page, 'Skalowanie');
   await dodaj(page, 'Tekst', 'A');
   await dodaj(page, 'Tekst', 'B');
-  await polozenie(page).getByLabel('X (mm)').fill('23');
-  await polozenie(page).getByLabel('Y (mm)').fill('32');
+  const p = await polozenie(page);
+  await p.getByLabel('X (mm)').fill('23');
+  await p.getByLabel('Y (mm)').fill('32');
   const a = await srodek(page, obszar(page, 'A'));
   await page.keyboard.down('Shift');
   await page.mouse.click(a.x, a.y);

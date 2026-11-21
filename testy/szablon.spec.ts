@@ -72,8 +72,12 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   await expect(element(page, /^Siła – Wartość w kształcie/)).toBeVisible();
   await expect(wlasciwosci(page)).toContainText('Pole danych karty: wartosc_w_ksztalcie');
   // Szerokość stała w mm.
-  await wlasciwosci(page).getByLabel('Szerokość', { exact: true }).selectOption('mm');
-  await wlasciwosci(page).getByLabel('Rozmiar (mm)').fill('12');
+  const rozmiar = wlasciwosci(page)
+    .locator('details.sekcja-panelu', { has: page.locator(':scope > summary:text-is("Rozmiar")') })
+    .first();
+  await rozmiar.locator(':scope > summary').click();
+  await rozmiar.getByLabel('Szerokość', { exact: true }).selectOption('mm');
+  await rozmiar.getByLabel('Rozmiar (mm)').fill('12');
   await element(page, /^Wiersz – /)
     .locator('.wezel-etykieta')
     .first()

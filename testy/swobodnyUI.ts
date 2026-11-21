@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import type { Szablon } from '../src/model/szablon';
 import { przeciagnij, srodek } from './pomoc';
-import { kreator, panel } from './szablonUI';
+import { kreator, sekcja } from './szablonUI';
 
 /** Wspólne kroki trybu swobodnego (M2b-9): testy myszą i przykład F. */
 
@@ -9,7 +9,7 @@ export const SZER = 63;
 export const WYS = 88;
 export const PODKLAD = 'testy/zasoby/podklad-testowy.png';
 export const podglad = (page: Page) => page.locator('.karta-podgladu');
-export const polozenie = (page: Page) => panel(page).getByRole('group', { name: 'Położenie' });
+export const polozenie = (page: Page) => sekcja(page, 'Położenie i rozmiar');
 export const obszar = (page: Page, nazwa: string) =>
   podglad(page).getByRole('button', { name: nazwa, exact: true });
 export const wTolerancji = (v: number, oczekiwane: number, tol = 0.05) =>
