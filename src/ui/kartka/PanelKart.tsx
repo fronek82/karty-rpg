@@ -35,6 +35,7 @@ import {
 import { PoleWielowierszowe } from '../PoleWielowierszowe';
 import type { ProjektWEdycji } from '../useProjekt';
 import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
+import { EksportCsvSzablonu } from './EksportCsvSzablonu';
 import { SekcjaObrazu } from './SekcjaObrazu';
 
 function* pola(w: Wezel): Generator<Pole> {
@@ -492,6 +493,10 @@ export function PanelKart({
           </a>
         </p>
       )}
+      <EksportCsvSzablonu
+        szablony={[...ctx.szablony.values()]}
+        {...(szablon ? { domyslnySzablonId: szablon.id } : {})}
+      />
     </aside>
   );
 }

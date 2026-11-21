@@ -517,7 +517,15 @@ function WyborNarozniki({
  * Wygląd i odstępy dowolnego elementu: tło, ramka z linii, zaokrąglenie, margines zewnętrzny,
  * padding, położenie w rodzicu i najmniejszy rozmiar.
  */
-export function PanelWygladu({ wezel, zmien }: { wezel: Wezel; zmien: Zmiana }) {
+export function PanelWygladu({
+  wezel,
+  zmien,
+  poWygladzie,
+}: {
+  wezel: Wezel;
+  zmien: Zmiana;
+  poWygladzie?: import('react').ReactNode;
+}) {
   const id = wezel.id;
   const ustaw = <K extends keyof Wezel>(k: K, v: Wezel[K] | undefined, klucz?: string) =>
     zmien((w) => (v === undefined ? bez(w, k) : ({ ...w, [k]: v } as Wezel)), klucz);
@@ -594,6 +602,7 @@ export function PanelWygladu({ wezel, zmien }: { wezel: Wezel; zmien: Zmiana }) 
           }}
         />
       </Sekcja>
+      {poWygladzie}
       <Sekcja tytul={t('wlasciwosci.odstepy')}>
         <PoleOdstepow
           etykieta={t('wlasciwosci.margines')}

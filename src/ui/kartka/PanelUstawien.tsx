@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
-import { wgrajCzcionke } from '../../dane/czcionki';
 import {
-  dodajZasoby,
   roleProjektu,
   ustawRole,
   ustawTytulArkusza,
@@ -35,6 +33,11 @@ import {
   PRZEDROSTEK_OPCJI_GLOBALNEJ,
   useRewersyGlobalne,
 } from '../rewersyGlobalne';
+import {
+  dolaczRodzineGlobalnaDoProjektu,
+  useCzcionkiGlobalne,
+  wgrajCzcionkiGlobalnie,
+} from '../zasobyGlobalne';
 import { KatalogGoogleFonts } from './KatalogGoogleFonts';
 import { PanelUkladu } from './PanelUkladu';
 import { PoleLiczby } from './PoleLiczby';
@@ -127,6 +130,7 @@ export function PanelUstawien({
 }) {
   const { projekt, zmien } = edycja;
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
+  const { rodzinyGlobalne } = useCzcionkiGlobalne(projekt);
   const u = arkusz.ustawienia;
   const [bladCzcionki, ustawBladCzcionki] = useState<string>();
   const [status, ustawStatus] = useState('');
@@ -151,20 +155,7 @@ export function PanelUstawien({
   const wgraj = async (pliki: File[]) => {
     ustawBladCzcionki(undefined);
     try {
-      const odczytane = await Promise.all(
-        pliki.map(async (f) => ({ nazwa: f.name, bajty: new Uint8Array(await f.arrayBuffer()) })),
-      );
-      let opisy: string[] = [];
-      await edycja.zmienZZasobami((p, d) => {
-        const zajete = new Set(p.zasoby.map((z) => z.id));
-        const nowe = odczytane.map(({ nazwa, bajty }) => {
-          const w = wgrajCzcionke(nazwa, bajty, { zajete });
-          zajete.add(w.opis.id);
-          return { opis: w.opis, dane: w.dane };
-        });
-        opisy = nowe.map((n) => `${n.opis.rodzina} (${t(`wariant.${n.opis.wariant}`)})`);
-        return dodajZasoby(p, d, nowe);
-      });
+      const opisy = await wgrajCzcionkiGlobalnie(pliki, edycja);
       ustawStatus(t('czcionki.wgrano', { lista: opisy.join(', ') }));
     } catch (e) {
       ustawBladCzcionki(komunikat(e));
@@ -533,7 +524,16 @@ export function PanelUstawien({
             <select
               aria-label={t('czcionki.rolaEtykieta', { rola: tJesliJest(`rola.${rola}`) ?? rola })}
               value={projekt.role[rola] ?? ''}
-              onChange={(e) => zmienUklad((p) => ustawRole(p, rola, e.target.value))}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v && rodzinyGlobalne.includes(v)) {
+                  void dolaczRodzineGlobalnaDoProjektu(v, edycja, (p) =>
+                    ustawRole(p, rola, v),
+                  ).catch(() => undefined);
+                  return;
+                }
+                zmienUklad((p) => ustawRole(p, rola, v));
+              }}
             >
               <option value="">{t('czcionki.brakRodziny')}</option>
               {rodziny.map((r) => (
@@ -541,6 +541,15 @@ export function PanelUstawien({
                   {r}
                 </option>
               ))}
+              {rodzinyGlobalne.length > 0 && (
+                <optgroup label={t('czcionki.globalneGrupa')}>
+                  {rodzinyGlobalne.map((r) => (
+                    <option key={`g:${r}`} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </label>
         ))}

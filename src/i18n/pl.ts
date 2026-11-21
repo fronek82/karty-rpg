@@ -1407,6 +1407,20 @@ export const pl = {
   'googleFonts.przekroczonoCzas': 'przekroczono limit czasu',
   'googleFonts.bladPobrania':
     'Nie udało się pobrać kroju „{rodzina}” z Google Fonts ({szczegoly}). Sprawdź połączenie i spróbuj ponownie.',
+  'googleFonts.brakNazwy': 'Wpisz nazwę kroju z Google Fonts.',
+  'googleFonts.nieZnaleziono':
+    'Nie znaleziono kroju „{rodzina}” w repozytorium Google Fonts. Sprawdź pisownię nazwy (np. Cinzel, Playfair Display, Orbitron).',
+  'googleFonts.brakPolskichUwaga': '(Uwaga: ten krój może nie zawierać części polskich znaków.)',
+  'googleFonts.pobierzPoNazwiePrzycisk': 'Pobierz „{nazwa}” bezpośrednio z Google Fonts',
+  'googleFonts.dowolnaEtykieta': 'Inny krój z Google Fonts (ponad 1700 rodzin)',
+  'googleFonts.dowolnaOpis':
+    'Wpisz dokładną nazwę z fonts.google.com, aby podejrzeć i zapisać krój dla wszystkich projektów.',
+  'googleFonts.dowolnaPlaceholder': 'np. Cinzel, Playfair Display, Orbitron',
+  'czcionki.globalneGrupa': 'Zapisane czcionki',
+  'csvSzablon.szablon': 'Szablon dla CSV',
+  'csvSzablon.przycisk': 'Eksportuj szablon CSV',
+  'csvSzablon.opis':
+    'Pobiera gotowy plik CSV z nazwami pól do uzupełnienia w arkuszu i ponownego importu.',
   'wlasne.aiNazwa': 'Układ ze zdjęcia (AI)',
   'wlasne.aiOpis': 'Wyślij zdjęcie karty z własnym kluczem Claude API – otrzymasz strukturę pól.',
   'ai.tytul': 'Układ karty ze zdjęcia (AI)',
@@ -1522,6 +1536,12 @@ export const plMnoga = {
     few: 'Pobrano krój „{rodzina}” ({n} warianty) i zapisano lokalnie w projekcie.',
     many: 'Pobrano krój „{rodzina}” ({n} wariantów) i zapisano lokalnie w projekcie.',
     other: 'Pobrano krój „{rodzina}” ({n} wariantu) i zapisano lokalnie w projekcie.',
+  },
+  'googleFonts.pobranoGlobalnie': {
+    one: 'Pobrano krój „{rodzina}” ({n} wariant) i zapisano dla wszystkich projektów.',
+    few: 'Pobrano krój „{rodzina}” ({n} warianty) i zapisano dla wszystkich projektów.',
+    many: 'Pobrano krój „{rodzina}” ({n} wariantów) i zapisano dla wszystkich projektów.',
+    other: 'Pobrano krój „{rodzina}” ({n} wariantu) i zapisano dla wszystkich projektów.',
   },
   'ai.podgladTytul': {
     one: 'Rozpoznany układ ({n} pole)',

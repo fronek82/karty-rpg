@@ -1,7 +1,8 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { t } from '../i18n';
 import type { PresetUkladu } from '../model/arkusz';
-import type { DaneZasobow, Projekt } from '../model/projekt';
+import type { DaneZasobow, Projekt, ZrodloCzcionki } from '../model/projekt';
+import type { WariantCzcionki } from '../model/szablon';
 import {
   BladDanych,
   migrujBajtyBazy,
@@ -48,6 +49,15 @@ export interface WpisRewersuZProjektu {
   projektId: string;
   rewersId: string;
   nazwa: string;
+}
+
+export interface WpisCzcionkiZProjektu {
+  projektId: string;
+  zasobId: string;
+  nazwa: string;
+  rodzina: string;
+  wariant: WariantCzcionki;
+  zrodlo: ZrodloCzcionki;
 }
 
 class BazaDexie extends Dexie {
@@ -173,6 +183,27 @@ export class BazaProjektow {
       if (pomijajProjektId && w.id === pomijajProjektId) continue;
       for (const r of w.projekt.rewersy ?? []) {
         wynik.push({ projektId: w.id, rewersId: r.id, nazwa: r.nazwa });
+      }
+    }
+    return wynik;
+  }
+
+  /** Lista własnych i pobranych z Google Fonts czcionek zapisanych w innych projektach w przeglądarce. */
+  async czcionkiZProjektow(pomijajProjektId?: string): Promise<WpisCzcionkiZProjektu[]> {
+    const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
+    const wynik: WpisCzcionkiZProjektu[] = [];
+    for (const w of wpisy) {
+      if (pomijajProjektId && w.id === pomijajProjektId) continue;
+      for (const z of w.projekt.zasoby) {
+        if (z.rodzaj !== 'czcionka' || z.zrodlo === 'wbudowana') continue;
+        wynik.push({
+          projektId: w.id,
+          zasobId: z.id,
+          nazwa: z.nazwa,
+          rodzina: z.rodzina,
+          wariant: z.wariant,
+          zrodlo: z.zrodlo,
+        });
       }
     }
     return wynik;

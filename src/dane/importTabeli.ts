@@ -1,8 +1,9 @@
 import { t } from '../i18n';
 import { MAKS_ZNACZNIKOW } from '../silnik/karta';
 import { MAKS_EGZEMPLARZY } from './kartka';
-import type { KolumnaDanych } from './edycja';
+import { kolumnySzablonu, type KolumnaDanych } from './edycja';
 import type { OpisZasobu } from '../model/projekt';
+import type { Szablon } from '../model/szablon';
 
 export const LIMIT_TABELI = { bajty: 8 * 1024 * 1024, wiersze: 500, kolumny: 128, sztuki: 2000 };
 export interface WierszImportu {
@@ -30,6 +31,52 @@ export interface MapowanieImportu {
 
 const pelny = (r: string[]) => r.some((v) => v.trim() !== '');
 const zaDuzaTabela = () => new Error(t('tabelaImport.limit', LIMIT_TABELI));
+
+const normalizujNaglowek = (s: string) =>
+  s
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/ł/g, 'l');
+
+function ucieczkaCsv(wartosc: string, sep: ';' | ','): string {
+  if (wartosc.includes(sep) || wartosc.includes('"') || /[\r\n]/.test(wartosc)) {
+    return `"${wartosc.replace(/"/g, '""')}"`;
+  }
+  return wartosc;
+}
+
+/**
+ * Generuje pusty szablon CSV z nagłówkami odpowiadającymi polom szablonu karty oraz kolumną ilości,
+ * gotowy do uzupełnienia w arkuszu kalkulacyjnym (Excel, Calc, Google Sheets) i ponownego importu.
+ */
+export function szablonCsv(
+  szablon: Szablon,
+  {
+    separator = ';',
+    etykietaIlosci = t('tabelaImport.ilosc'),
+    zBom = true,
+  }: { separator?: ';' | ','; etykietaIlosci?: string; zBom?: boolean } = {},
+): string {
+  const kolumny = kolumnySzablonu(szablon);
+  const zliczone = new Map<string, number>();
+  for (const k of kolumny) {
+    const n = normalizujNaglowek(k.nazwa);
+    zliczone.set(n, (zliczone.get(n) ?? 0) + 1);
+  }
+  const naglowki = kolumny.map((k) =>
+    (zliczone.get(normalizujNaglowek(k.nazwa)) ?? 0) > 1 ? k.klucz : k.nazwa,
+  );
+  if (
+    etykietaIlosci &&
+    !naglowki.some((h) => normalizujNaglowek(h) === normalizujNaglowek(etykietaIlosci))
+  ) {
+    naglowki.push(etykietaIlosci);
+  }
+  const wiersz = naglowki.map((h) => ucieczkaCsv(h, separator)).join(separator);
+  return `${zBom ? '\uFEFF' : ''}${wiersz}\r\n`;
+}
 
 export function tabelaZKomorek(wiersze: WierszImportu[]): TabelaImportu {
   const pierwszy = wiersze.findIndex((r) => r.bledy?.size || pelny(r.komorki));
@@ -65,7 +112,8 @@ function separatorCsv(tekst: string) {
   return sredniki > przecinki ? ';' : ',';
 }
 
-export function odczytajCsv(tekst: string): TabelaImportu {
+export function odczytajCsv(surowy: string): TabelaImportu {
+  const tekst = surowy.startsWith('\uFEFF') ? surowy.slice(1) : surowy;
   const sep = separatorCsv(tekst);
   const wynik: WierszImportu[] = [];
   let wiersz: string[] = [];

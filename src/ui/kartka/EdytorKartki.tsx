@@ -95,6 +95,7 @@ import {
   type CelKolejnosci,
   type Geometria,
 } from './geometria';
+import { EksportCsvSzablonu } from './EksportCsvSzablonu';
 import { ImportDanych } from './ImportDanych';
 import { MenuPobierz } from './MenuPobierz';
 import { MenuTypu } from './MenuTypu';
@@ -1484,6 +1485,9 @@ export function EdytorKartki({
         />
       );
   }
+  const szablonyCsvProjektu = [
+    ...new Map(projekt.arkusze.flatMap((a) => szablonyDoImportu(a)).map((s) => [s.id, s])).values(),
+  ];
   panel ??= (
     <aside className="panel-edytora" aria-label={t('kartka.pomoc')}>
       <h2>{t('kartka.nicNieZaznaczono')}</h2>
@@ -1491,6 +1495,7 @@ export function EdytorKartki({
       <p className="podpis">{t('kartka.pomocZaznaczanie')}</p>
       <p className="podpis">{t('kartka.pomocSkroty')}</p>
       <p className="podpis">{t('kartka.pomocDruk')}</p>
+      <EksportCsvSzablonu szablony={szablonyCsvProjektu} />
     </aside>
   );
 

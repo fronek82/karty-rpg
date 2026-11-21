@@ -194,7 +194,7 @@ function wszystkieWezly(s: Szablon): Wezel[] {
 }
 
 /** Nazwy czcionek (role lub rodziny) użyte w stylach szablonu. */
-function czcionkiSzablonu(s: Szablon): string[] {
+export function czcionkiSzablonu(s: Szablon): string[] {
   const nazwy = new Set((s.grupyStylow ?? []).map((g) => g.styl.czcionka));
   for (const w of wszystkieWezly(s)) {
     for (const st of stylePola(w)) if (st.czcionka) nazwy.add(st.czcionka);

@@ -106,7 +106,7 @@ test('nagłówek panelu karty nie pokazuje opisu, wysokość textarea zostaje mi
   await expect(katalog.locator('.podglad-google-font').first()).toContainText('Zażółć gęślą jaźń');
 });
 
-test('panel właściwości pola: Położenie i rozmiar zwijane (#1), Wygląd (#2) i Odstępy (#3) w PL i EN', async ({
+test('panel właściwości pola: Położenie i rozmiar (#1), Wygląd (#2), Styl tekstu (#3), Odstępy (#4) i pola wyboru na dole w PL i EN', async ({
   page,
 }) => {
   await kreator(page, {
@@ -119,7 +119,18 @@ test('panel właściwości pola: Położenie i rozmiar zwijane (#1), Wygląd (#2
   const sekcje = panel(page).locator(':scope > details.sekcja-panelu > summary');
   await expect(sekcje.nth(0)).toHaveText('Położenie i rozmiar');
   await expect(sekcje.nth(1)).toHaveText('Wygląd (tło, ramka, rogi)');
-  await expect(sekcje.nth(2)).toHaveText('Odstępy');
+  await expect(sekcje.nth(2)).toHaveText('Styl tekstu');
+  await expect(sekcje.nth(3)).toHaveText('Odstępy');
+
+  // Pola wyboru (Wiele wierszy, Formatowanie itd.) leżą na samym dole panelu – poniżej Stylu tekstu i Odstępów.
+  const pudelkoStylu = (await panel(page)
+    .locator(':scope > details.sekcja-panelu')
+    .nth(2)
+    .boundingBox())!;
+  const pudelkoWyboru = (await panel(page)
+    .getByLabel('Łam tekst na wiele wierszy', { exact: true })
+    .boundingBox())!;
+  expect(pudelkoWyboru.y).toBeGreaterThan(pudelkoStylu.y + pudelkoStylu.height - 1);
 
   // Pierwsza sekcja jest domyślnie zwinięta i po rozwinięciu zawiera jednocześnie położenie i rozmiar.
   const pierwsza = panel(page).locator(':scope > details.sekcja-panelu').nth(0);
@@ -130,18 +141,19 @@ test('panel właściwości pola: Położenie i rozmiar zwijane (#1), Wygląd (#2
   await expect(pierwsza.getByLabel('Szerokość', { exact: true })).toBeVisible();
   await expect(pierwsza.getByLabel('Wysokość', { exact: true })).toBeVisible();
 
-  // Pole w zwykłym kontenerze (kolumna): pierwsza zwijana sekcja to „Rozmiar”, potem „Wygląd” i „Odstępy”.
+  // Pole w zwykłym kontenerze (kolumna): Rozmiar, Wygląd, Styl tekstu, Odstępy.
   await dodaj(page, 'Kolumna', 'Blok');
   await dodaj(page, 'Tekst', 'Wewnatrz');
   await expect(sekcje.nth(0)).toHaveText('Rozmiar');
   await expect(sekcje.nth(1)).toHaveText('Wygląd (tło, ramka, rogi)');
-  await expect(sekcje.nth(2)).toHaveText('Odstępy');
+  await expect(sekcje.nth(2)).toHaveText('Styl tekstu');
+  await expect(sekcje.nth(3)).toHaveText('Odstępy');
   await expect(panel(page).locator(':scope > details.sekcja-panelu').nth(0)).not.toHaveAttribute(
     'open',
     '',
   );
 
-  // Przełączenie na angielski zachowuje kolejność i nowe etykiety w obu wariantach.
+  // Przełączenie na angielski zachowuje kolejność i etykiety w obu wariantach.
   const menuUst = await otworzUstawieniaAplikacji(page);
   await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
@@ -153,7 +165,8 @@ test('panel właściwości pola: Położenie i rozmiar zwijane (#1), Wygląd (#2
     .locator(':scope > details.sekcja-panelu > summary');
   await expect(sekcjeEn.nth(0)).toHaveText('Size');
   await expect(sekcjeEn.nth(1)).toHaveText('Appearance (background, frame, corners)');
-  await expect(sekcjeEn.nth(2)).toHaveText('Spacing');
+  await expect(sekcjeEn.nth(2)).toHaveText('Text style');
+  await expect(sekcjeEn.nth(3)).toHaveText('Spacing');
 
   await page
     .getByRole('tree', { name: 'Card structure' })
@@ -161,5 +174,6 @@ test('panel właściwości pola: Położenie i rozmiar zwijane (#1), Wygląd (#2
     .click();
   await expect(sekcjeEn.nth(0)).toHaveText('Position and size');
   await expect(sekcjeEn.nth(1)).toHaveText('Appearance (background, frame, corners)');
-  await expect(sekcjeEn.nth(2)).toHaveText('Spacing');
+  await expect(sekcjeEn.nth(2)).toHaveText('Text style');
+  await expect(sekcjeEn.nth(3)).toHaveText('Spacing');
 });

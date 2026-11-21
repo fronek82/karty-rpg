@@ -225,6 +225,357 @@ export const KATALOG_GOOGLE_FONTS: readonly PozycjaKataloguGoogle[] = [
     polskieZnaki: true,
     warianty: [{ wariant: 'normalny', plik: 'PressStart2P-Regular.ttf' }],
   },
+  {
+    id: 'macondo',
+    rodzina: 'Macondo',
+    kategoria: 'ozdobna',
+    autor: 'John Vargas Beltrán',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'macondo',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Macondo-Regular.ttf' }],
+  },
+  {
+    id: 'macondo-swash-caps',
+    rodzina: 'Macondo Swash Caps',
+    kategoria: 'ozdobna',
+    autor: 'John Vargas Beltrán',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'macondoswashcaps',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'MacondoSwashCaps-Regular.ttf' }],
+  },
+  {
+    id: 'bangers',
+    rodzina: 'Bangers',
+    kategoria: 'ozdobna',
+    autor: 'Vernon Adams',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'bangers',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Bangers-Regular.ttf' }],
+  },
+  {
+    id: 'bungee',
+    rodzina: 'Bungee',
+    kategoria: 'ozdobna',
+    autor: 'David Jonathan Ross',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'bungee',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Bungee-Regular.ttf' }],
+  },
+  {
+    id: 'bungee-inline',
+    rodzina: 'Bungee Inline',
+    kategoria: 'ozdobna',
+    autor: 'David Jonathan Ross',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'bungeeinline',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'BungeeInline-Regular.ttf' }],
+  },
+  {
+    id: 'bungee-shade',
+    rodzina: 'Bungee Shade',
+    kategoria: 'ozdobna',
+    autor: 'David Jonathan Ross',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'bungeeshade',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'BungeeShade-Regular.ttf' }],
+  },
+  {
+    id: 'black-ops-one',
+    rodzina: 'Black Ops One',
+    kategoria: 'ozdobna',
+    autor: 'James Grieshaber, Eben Sorkin',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'blackopsone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'BlackOpsOne-Regular.ttf' }],
+  },
+  {
+    id: 'russo-one',
+    rodzina: 'Russo One',
+    kategoria: 'ozdobna',
+    autor: 'Jovanny Lemonad',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'russoone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'RussoOne-Regular.ttf' }],
+  },
+  {
+    id: 'alfa-slab-one',
+    rodzina: 'Alfa Slab One',
+    kategoria: 'ozdobna',
+    autor: 'JM Solé',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'alfaslabone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'AlfaSlabOne-Regular.ttf' }],
+  },
+  {
+    id: 'bebas-neue',
+    rodzina: 'Bebas Neue',
+    kategoria: 'ozdobna',
+    autor: 'Ryoichi Tsunekawa',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'bebasneue',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'BebasNeue-Regular.ttf' }],
+  },
+  {
+    id: 'anton',
+    rodzina: 'Anton',
+    kategoria: 'ozdobna',
+    autor: 'Vernon Adams',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'anton',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Anton-Regular.ttf' }],
+  },
+  {
+    id: 'staatliches',
+    rodzina: 'Staatliches',
+    kategoria: 'ozdobna',
+    autor: 'Brian LaRossa, Erica Carras',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'staatliches',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Staatliches-Regular.ttf' }],
+  },
+  {
+    id: 'stalinist-one',
+    rodzina: 'Stalinist One',
+    kategoria: 'ozdobna',
+    autor: 'Alexey Maslov, Jovanny Lemonad',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'stalinistone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'StalinistOne-Regular.ttf' }],
+  },
+  {
+    id: 'goldman',
+    rodzina: 'Goldman',
+    kategoria: 'ozdobna',
+    autor: 'Jaikishan Patel',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'goldman',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'Goldman-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'Goldman-Bold.ttf' },
+    ],
+  },
+  {
+    id: 'chakra-petch',
+    rodzina: 'Chakra Petch',
+    kategoria: 'ozdobna',
+    autor: 'Cadson Demak',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'chakrapetch',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'ChakraPetch-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'ChakraPetch-Bold.ttf' },
+      { wariant: 'kursywa', plik: 'ChakraPetch-Italic.ttf' },
+      { wariant: 'pogrubiona-kursywa', plik: 'ChakraPetch-BoldItalic.ttf' },
+    ],
+  },
+  {
+    id: 'rubik-mono-one',
+    rodzina: 'Rubik Mono One',
+    kategoria: 'ozdobna',
+    autor: 'Hubert and Fischer',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'rubikmonoone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'RubikMonoOne-Regular.ttf' }],
+  },
+  {
+    id: 'rubik-glitch',
+    rodzina: 'Rubik Glitch',
+    kategoria: 'ozdobna',
+    autor: 'NaN, Luke Prowse',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'rubikglitch',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'RubikGlitch-Regular.ttf' }],
+  },
+  {
+    id: 'nosifer',
+    rodzina: 'Nosifer',
+    kategoria: 'ozdobna',
+    autor: 'Typomondo',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'nosifer',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Nosifer-Regular.ttf' }],
+  },
+  {
+    id: 'butcherman',
+    rodzina: 'Butcherman',
+    kategoria: 'ozdobna',
+    autor: 'Typomondo',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'butcherman',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Butcherman-Regular.ttf' }],
+  },
+  {
+    id: 'eater',
+    rodzina: 'Eater',
+    kategoria: 'ozdobna',
+    autor: 'Typomondo',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'eater',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Eater-Regular.ttf' }],
+  },
+  {
+    id: 'limelight',
+    rodzina: 'Limelight',
+    kategoria: 'ozdobna',
+    autor: 'Nicole Fally, Sorkin Type',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'limelight',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Limelight-Regular.ttf' }],
+  },
+  {
+    id: 'poiret-one',
+    rodzina: 'Poiret One',
+    kategoria: 'ozdobna',
+    autor: 'Denis Masharov',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'poiretone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'PoiretOne-Regular.ttf' }],
+  },
+  {
+    id: 'kelly-slab',
+    rodzina: 'Kelly Slab',
+    kategoria: 'ozdobna',
+    autor: 'Denis Masharov',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'kellyslab',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'KellySlab-Regular.ttf' }],
+  },
+  {
+    id: 'lilita-one',
+    rodzina: 'Lilita One',
+    kategoria: 'ozdobna',
+    autor: 'Juan Montoreano',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'lilitaone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'LilitaOne-Regular.ttf' }],
+  },
+  {
+    id: 'titan-one',
+    rodzina: 'Titan One',
+    kategoria: 'ozdobna',
+    autor: 'Rodrigo Fuenzalida',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'titanone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'TitanOne-Regular.ttf' }],
+  },
+  {
+    id: 'passion-one',
+    rodzina: 'Passion One',
+    kategoria: 'ozdobna',
+    autor: 'Fontstage',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'passionone',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'PassionOne-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'PassionOne-Bold.ttf' },
+    ],
+  },
+  {
+    id: 'fugaz-one',
+    rodzina: 'Fugaz One',
+    kategoria: 'ozdobna',
+    autor: 'LatinoType',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'fugazone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'FugazOne-Regular.ttf' }],
+  },
+  {
+    id: 'racing-sans-one',
+    rodzina: 'Racing Sans One',
+    kategoria: 'ozdobna',
+    autor: 'Impallari Type',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'racingsansone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'RacingSansOne-Regular.ttf' }],
+  },
+  {
+    id: 'concert-one',
+    rodzina: 'Concert One',
+    kategoria: 'ozdobna',
+    autor: 'Johan Kallas, Mihkel Virkus',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'concertone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'ConcertOne-Regular.ttf' }],
+  },
+  {
+    id: 'shrikhand',
+    rodzina: 'Shrikhand',
+    kategoria: 'ozdobna',
+    autor: 'Jonny Pinhorn',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'shrikhand',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Shrikhand-Regular.ttf' }],
+  },
+  {
+    id: 'chonburi',
+    rodzina: 'Chonburi',
+    kategoria: 'ozdobna',
+    autor: 'Cadson Demak',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'chonburi',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Chonburi-Regular.ttf' }],
+  },
+  {
+    id: 'rozha-one',
+    rodzina: 'Rozha One',
+    kategoria: 'ozdobna',
+    autor: 'Indian Type Foundry',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'rozhaone',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'RozhaOne-Regular.ttf' }],
+  },
+  {
+    id: 'bowlby-one-sc',
+    rodzina: 'Bowlby One SC',
+    kategoria: 'ozdobna',
+    autor: 'Vernon Adams',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'bowlbyonesc',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'BowlbyOneSC-Regular.ttf' }],
+  },
+  {
+    id: 'graduate',
+    rodzina: 'Graduate',
+    kategoria: 'ozdobna',
+    autor: 'Eduardo Tunni',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'graduate',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Graduate-Regular.ttf' }],
+  },
   // ---------- Szeryfowe ----------
   {
     id: 'marcellus',
@@ -407,6 +758,105 @@ export const KATALOG_GOOGLE_FONTS: readonly PozycjaKataloguGoogle[] = [
       { wariant: 'pogrubiona-kursywa', plik: 'IBMPlexSerif-BoldItalic.ttf' },
     ],
   },
+  {
+    id: 'vollkorn-sc',
+    rodzina: 'Vollkorn SC',
+    kategoria: 'szeryfowa',
+    autor: 'Friedrich Althausen',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'vollkornsc',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'VollkornSC-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'VollkornSC-Bold.ttf' },
+    ],
+  },
+  {
+    id: 'noticia-text',
+    rodzina: 'Noticia Text',
+    kategoria: 'szeryfowa',
+    autor: 'JM Solé',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'noticiatext',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'NoticiaText-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'NoticiaText-Bold.ttf' },
+      { wariant: 'kursywa', plik: 'NoticiaText-Italic.ttf' },
+      { wariant: 'pogrubiona-kursywa', plik: 'NoticiaText-BoldItalic.ttf' },
+    ],
+  },
+  {
+    id: 'forum',
+    rodzina: 'Forum',
+    kategoria: 'szeryfowa',
+    autor: 'Denis Masharov',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'forum',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Forum-Regular.ttf' }],
+  },
+  {
+    id: 'kurale',
+    rodzina: 'Kurale',
+    kategoria: 'szeryfowa',
+    autor: 'Eduardo Tunni',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'kurale',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Kurale-Regular.ttf' }],
+  },
+  {
+    id: 'rosarivo',
+    rodzina: 'Rosarivo',
+    kategoria: 'szeryfowa',
+    autor: 'Pablo Ugerman',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'rosarivo',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'Rosarivo-Regular.ttf' },
+      { wariant: 'kursywa', plik: 'Rosarivo-Italic.ttf' },
+    ],
+  },
+  {
+    id: 'sorts-mill-goudy',
+    rodzina: 'Sorts Mill Goudy',
+    kategoria: 'szeryfowa',
+    autor: 'Barry Schwartz',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'sortsmillgoudy',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'SortsMillGoudy-Regular.ttf' },
+      { wariant: 'kursywa', plik: 'SortsMillGoudy-Italic.ttf' },
+    ],
+  },
+  {
+    id: 'bree-serif',
+    rodzina: 'Bree Serif',
+    kategoria: 'szeryfowa',
+    autor: 'TypeTogether',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'breeserif',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'BreeSerif-Regular.ttf' }],
+  },
+  {
+    id: 'zilla-slab',
+    rodzina: 'Zilla Slab',
+    kategoria: 'szeryfowa',
+    autor: 'Typotheque',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'zillaslab',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'ZillaSlab-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'ZillaSlab-Bold.ttf' },
+      { wariant: 'kursywa', plik: 'ZillaSlab-Italic.ttf' },
+      { wariant: 'pogrubiona-kursywa', plik: 'ZillaSlab-BoldItalic.ttf' },
+    ],
+  },
   // ---------- Bezszeryfowe ----------
   {
     id: 'fira-sans',
@@ -511,6 +961,77 @@ export const KATALOG_GOOGLE_FONTS: readonly PozycjaKataloguGoogle[] = [
       { wariant: 'pogrubiony', plik: 'PT_Sans-Web-Bold.ttf' },
       { wariant: 'kursywa', plik: 'PT_Sans-Web-Italic.ttf' },
       { wariant: 'pogrubiona-kursywa', plik: 'PT_Sans-Web-BoldItalic.ttf' },
+    ],
+  },
+  {
+    id: 'poppins',
+    rodzina: 'Poppins',
+    kategoria: 'bezszeryfowa',
+    autor: 'Indian Type Foundry, Jonny Pinhorn, Ninad Kale',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'poppins',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'Poppins-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'Poppins-Bold.ttf' },
+      { wariant: 'kursywa', plik: 'Poppins-Italic.ttf' },
+      { wariant: 'pogrubiona-kursywa', plik: 'Poppins-BoldItalic.ttf' },
+    ],
+  },
+  {
+    id: 'play',
+    rodzina: 'Play',
+    kategoria: 'bezszeryfowa',
+    autor: 'Jonas Hecksher',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'play',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'Play-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'Play-Bold.ttf' },
+    ],
+  },
+  {
+    id: 'kanit',
+    rodzina: 'Kanit',
+    kategoria: 'bezszeryfowa',
+    autor: 'Cadson Demak',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'kanit',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'Kanit-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'Kanit-Bold.ttf' },
+      { wariant: 'kursywa', plik: 'Kanit-Italic.ttf' },
+      { wariant: 'pogrubiona-kursywa', plik: 'Kanit-BoldItalic.ttf' },
+    ],
+  },
+  {
+    id: 'saira-condensed',
+    rodzina: 'Saira Condensed',
+    kategoria: 'bezszeryfowa',
+    autor: 'Omnibus-Type',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'sairacondensed',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'SairaCondensed-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'SairaCondensed-Bold.ttf' },
+    ],
+  },
+  {
+    id: 'titillium-web',
+    rodzina: 'Titillium Web',
+    kategoria: 'bezszeryfowa',
+    autor: 'Accademia di Belle Arti di Urbino',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'titilliumweb',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'TitilliumWeb-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'TitilliumWeb-Bold.ttf' },
+      { wariant: 'kursywa', plik: 'TitilliumWeb-Italic.ttf' },
+      { wariant: 'pogrubiona-kursywa', plik: 'TitilliumWeb-BoldItalic.ttf' },
     ],
   },
   // ---------- Pisane i kaligrafia ----------
@@ -623,6 +1144,164 @@ export const KATALOG_GOOGLE_FONTS: readonly PozycjaKataloguGoogle[] = [
     polskieZnaki: true,
     warianty: [{ wariant: 'normalny', plik: 'MarckScript-Regular.ttf' }],
   },
+  {
+    id: 'pacifico',
+    rodzina: 'Pacifico',
+    kategoria: 'pisana',
+    autor: 'Vernon Adams, Jacques Le Bailly, Botjo Nikoltchev, Ani Petrova',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'pacifico',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Pacifico-Regular.ttf' }],
+  },
+  {
+    id: 'lobster',
+    rodzina: 'Lobster',
+    kategoria: 'pisana',
+    autor: 'Impallari Type',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'lobster',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Lobster-Regular.ttf' }],
+  },
+  {
+    id: 'kaushan-script',
+    rodzina: 'Kaushan Script',
+    kategoria: 'pisana',
+    autor: 'Impallari Type',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'kaushanscript',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'KaushanScript-Regular.ttf' }],
+  },
+  {
+    id: 'allura',
+    rodzina: 'Allura',
+    kategoria: 'pisana',
+    autor: 'Robert Leuschke',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'allura',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Allura-Regular.ttf' }],
+  },
+  {
+    id: 'parisienne',
+    rodzina: 'Parisienne',
+    kategoria: 'pisana',
+    autor: 'Astigmatic',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'parisienne',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Parisienne-Regular.ttf' }],
+  },
+  {
+    id: 'sacramento',
+    rodzina: 'Sacramento',
+    kategoria: 'pisana',
+    autor: 'Astigmatic',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'sacramento',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Sacramento-Regular.ttf' }],
+  },
+  {
+    id: 'alex-brush',
+    rodzina: 'Alex Brush',
+    kategoria: 'pisana',
+    autor: 'Robert Leuschke',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'alexbrush',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'AlexBrush-Regular.ttf' }],
+  },
+  {
+    id: 'pinyon-script',
+    rodzina: 'Pinyon Script',
+    kategoria: 'pisana',
+    autor: 'Nicole Fally',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'pinyonscript',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'PinyonScript-Regular.ttf' }],
+  },
+  {
+    id: 'italianno',
+    rodzina: 'Italianno',
+    kategoria: 'pisana',
+    autor: 'Robert Leuschke',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'italianno',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Italianno-Regular.ttf' }],
+  },
+  {
+    id: 'niconne',
+    rodzina: 'Niconne',
+    kategoria: 'pisana',
+    autor: 'Vernon Adams',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'niconne',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Niconne-Regular.ttf' }],
+  },
+  {
+    id: 'oleo-script',
+    rodzina: 'Oleo Script',
+    kategoria: 'pisana',
+    autor: 'soytutype fonts',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'oleoscript',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'OleoScript-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'OleoScript-Bold.ttf' },
+    ],
+  },
+  {
+    id: 'indie-flower',
+    rodzina: 'Indie Flower',
+    kategoria: 'pisana',
+    autor: 'Kimberly Geswein',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'indieflower',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'IndieFlower-Regular.ttf' }],
+  },
+  {
+    id: 'bad-script',
+    rodzina: 'Bad Script',
+    kategoria: 'pisana',
+    autor: 'Gaslight',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'badscript',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'BadScript-Regular.ttf' }],
+  },
+  {
+    id: 'mali',
+    rodzina: 'Mali',
+    kategoria: 'pisana',
+    autor: 'Cadson Demak',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'mali',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'Mali-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'Mali-Bold.ttf' },
+      { wariant: 'kursywa', plik: 'Mali-Italic.ttf' },
+      { wariant: 'pogrubiona-kursywa', plik: 'Mali-BoldItalic.ttf' },
+    ],
+  },
+  {
+    id: 'pangolin',
+    rodzina: 'Pangolin',
+    kategoria: 'pisana',
+    autor: 'Kevin Burke',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'pangolin',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'Pangolin-Regular.ttf' }],
+  },
   // ---------- Maszynowe ----------
   {
     id: 'ibm-plex-mono',
@@ -678,6 +1357,77 @@ export const KATALOG_GOOGLE_FONTS: readonly PozycjaKataloguGoogle[] = [
     katalog: 'vt323',
     polskieZnaki: true,
     warianty: [{ wariant: 'normalny', plik: 'VT323-Regular.ttf' }],
+  },
+  {
+    id: 'fira-mono',
+    rodzina: 'Fira Mono',
+    kategoria: 'maszynowa',
+    autor: 'Carrois Apostrophe',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'firamono',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'FiraMono-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'FiraMono-Bold.ttf' },
+    ],
+  },
+  {
+    id: 'inconsolata',
+    rodzina: 'Inconsolata',
+    kategoria: 'maszynowa',
+    autor: 'Raph Levien',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'inconsolata',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'static/Inconsolata-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'static/Inconsolata-Bold.ttf' },
+    ],
+  },
+  {
+    id: 'pt-mono',
+    rodzina: 'PT Mono',
+    kategoria: 'maszynowa',
+    autor: 'ParaType',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'ptmono',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'PTM55FT.ttf' }],
+  },
+  {
+    id: 'cutive-mono',
+    rodzina: 'Cutive Mono',
+    kategoria: 'maszynowa',
+    autor: 'Vernon Adams',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'cutivemono',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'CutiveMono-Regular.ttf' }],
+  },
+  {
+    id: 'anonymous-pro',
+    rodzina: 'Anonymous Pro',
+    kategoria: 'maszynowa',
+    autor: 'Mark Simonson',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'anonymouspro',
+    polskieZnaki: true,
+    warianty: [
+      { wariant: 'normalny', plik: 'AnonymousPro-Regular.ttf' },
+      { wariant: 'pogrubiony', plik: 'AnonymousPro-Bold.ttf' },
+      { wariant: 'kursywa', plik: 'AnonymousPro-Italic.ttf' },
+      { wariant: 'pogrubiona-kursywa', plik: 'AnonymousPro-BoldItalic.ttf' },
+    ],
+  },
+  {
+    id: 'syne-mono',
+    rodzina: 'Syne Mono',
+    kategoria: 'maszynowa',
+    autor: 'Bonjour Monde, Lucas Descroix',
+    licencja: 'SIL OFL 1.1',
+    katalog: 'synemono',
+    polskieZnaki: true,
+    warianty: [{ wariant: 'normalny', plik: 'SyneMono-Regular.ttf' }],
   },
 ];
 
@@ -890,4 +1640,201 @@ export async function pobierzRodzineGoogle(
     wynik.push(w);
   }
   return wynik;
+}
+
+interface WpisKataloguGithub {
+  name: string;
+  type: 'file' | 'dir';
+}
+
+export type FunkcjaPobieraniaDowolnej = (
+  url: string,
+  init?: { signal?: AbortSignal },
+) => Promise<Pick<Response, 'ok' | 'status' | 'arrayBuffer' | 'json'>>;
+
+function wybierzPlikiWariantow(
+  plikiTtf: readonly string[],
+  prefiks: string,
+): WariantKataloguGoogle[] {
+  const statyczne = plikiTtf.filter((f) => !f.includes('['));
+  if (statyczne.length > 0) {
+    const znajdz = (re: RegExp) => statyczne.find((f) => re.test(f));
+    const reg = znajdz(/-Regular\.ttf$/i) ?? (statyczne.length === 1 ? statyczne[0] : undefined);
+    const bold = znajdz(/-Bold\.ttf$/i);
+    const ital = znajdz(/-Italic\.ttf$/i);
+    const bi = znajdz(/-BoldItalic\.ttf$/i);
+    const wynik: WariantKataloguGoogle[] = [];
+    if (reg) wynik.push({ wariant: 'normalny', plik: `${prefiks}${reg}` });
+    if (bold) wynik.push({ wariant: 'pogrubiony', plik: `${prefiks}${bold}` });
+    if (ital) wynik.push({ wariant: 'kursywa', plik: `${prefiks}${ital}` });
+    if (bi) wynik.push({ wariant: 'pogrubiona-kursywa', plik: `${prefiks}${bi}` });
+    if (wynik.length > 0) return wynik;
+    return [{ wariant: 'normalny', plik: `${prefiks}${statyczne[0]!}` }];
+  }
+  // Wiele nowych rodzin w Google Fonts udostępnia wyłącznie pliki zmienne (`[wght].ttf`).
+  const zmienne = plikiTtf.filter((f) => f.includes('['));
+  if (zmienne.length === 0) return [];
+  const norm = zmienne.find((f) => !/italic/i.test(f)) ?? zmienne[0]!;
+  const kurs = zmienne.find((f) => /italic/i.test(f));
+  const wynik: WariantKataloguGoogle[] = [{ wariant: 'normalny', plik: `${prefiks}${norm}` }];
+  if (kurs && kurs !== norm) wynik.push({ wariant: 'kursywa', plik: `${prefiks}${kurs}` });
+  return wynik;
+}
+
+/**
+ * Pobiera dowolną rodzinę czcionek z repozytorium `google/fonts` po jej nazwie
+ * (np. „Cinzel”, „UnifrakturMaguntia”, „Playfair Display”). Jeśli rodzina istnieje
+ * w kuratorowanym katalogu, korzysta z niego bez dodatkowego zapytania o listę plików.
+ */
+export async function pobierzDowolnaRodzineGoogle(
+  nazwaRodziny: string,
+  {
+    zasoby = [],
+    pobierz = (url, init) => fetch(url, init),
+    signal,
+    limitCzasuMs = LIMIT_CZASU_POBIERANIA_MS,
+  }: {
+    zasoby?: readonly OpisZasobu[];
+    pobierz?: FunkcjaPobieraniaDowolnej;
+    signal?: AbortSignal;
+    limitCzasuMs?: number;
+  } = {},
+): Promise<{ rodzina: string; wgrane: WgranaCzcionka[]; brakPolskichZnakow: boolean }> {
+  const nazwa = nazwaRodziny.trim().replace(/\s+/g, ' ');
+  if (!nazwa) {
+    throw new BladDanych(t('googleFonts.brakNazwy'));
+  }
+  const zKatalogu = KATALOG_GOOGLE_FONTS.find(
+    (p) => p.rodzina.toLowerCase() === nazwa.toLowerCase(),
+  );
+  if (zKatalogu) {
+    const wgrane = await pobierzRodzineGoogle(zKatalogu, { zasoby, pobierz, signal, limitCzasuMs });
+    return { rodzina: zKatalogu.rodzina, wgrane, brakPolskichZnakow: false };
+  }
+
+  const slug = nazwa.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!slug) {
+    throw new BladDanych(t('googleFonts.nieZnaleziono', { rodzina: nazwa }));
+  }
+
+  let znalezionaGrupa: 'ofl' | 'apache' | 'ufl' | undefined;
+  let warianty: WariantKataloguGoogle[] = [];
+
+  for (const grupa of ['ofl', 'apache', 'ufl'] as const) {
+    if (signal?.aborted) throw bladAnulowania();
+    const { signal: sig, zwolnij } = przygotujSygnal(signal, limitCzasuMs);
+    try {
+      const res = await pobierz(
+        `https://api.github.com/repos/google/fonts/contents/${grupa}/${slug}`,
+        { signal: sig },
+      );
+      if (!res.ok) continue;
+      const wpisy = (await res.json()) as WpisKataloguGithub[];
+      if (!Array.isArray(wpisy)) continue;
+      znalezionaGrupa = grupa;
+      const glowneTtf = wpisy
+        .filter((w) => w.type === 'file' && w.name.toLowerCase().endsWith('.ttf'))
+        .map((w) => w.name);
+      const statyczneGlowne = glowneTtf.filter((f) => !f.includes('['));
+      if (statyczneGlowne.length > 0) {
+        warianty = wybierzPlikiWariantow(statyczneGlowne, '');
+      } else if (wpisy.some((w) => w.type === 'dir' && w.name === 'static')) {
+        const { signal: sigSt, zwolnij: zwolnijSt } = przygotujSygnal(signal, limitCzasuMs);
+        try {
+          const resSt = await pobierz(
+            `https://api.github.com/repos/google/fonts/contents/${grupa}/${slug}/static`,
+            { signal: sigSt },
+          );
+          if (resSt.ok) {
+            const stWpisy = (await resSt.json()) as WpisKataloguGithub[];
+            const stTtf = Array.isArray(stWpisy)
+              ? stWpisy
+                  .filter((w) => w.type === 'file' && w.name.toLowerCase().endsWith('.ttf'))
+                  .map((w) => w.name)
+              : [];
+            warianty = wybierzPlikiWariantow(stTtf, 'static/');
+          }
+        } finally {
+          zwolnijSt();
+        }
+      }
+      if (warianty.length === 0 && glowneTtf.length > 0) {
+        warianty = wybierzPlikiWariantow(glowneTtf, '');
+      }
+      break;
+    } catch (e) {
+      if (signal?.aborted) throw bladAnulowania();
+      if (e instanceof BladDanych) throw e;
+    } finally {
+      zwolnij();
+    }
+  }
+
+  if (!znalezionaGrupa || warianty.length === 0) {
+    throw new BladDanych(t('googleFonts.nieZnaleziono', { rodzina: nazwa }));
+  }
+
+  const zajete = new Set(zasoby.map((z) => z.id));
+  const wgrane: WgranaCzcionka[] = [];
+  let nazwaZPliku = nazwa;
+  for (const wariant of warianty) {
+    if (signal?.aborted) throw bladAnulowania();
+    const sciezkaPliku = wariant.plik.split('/').map(encodeURIComponent).join('/');
+    const sciezka = `${znalezionaGrupa}/${slug}/${sciezkaPliku}`;
+    const adresy = [
+      `https://cdn.jsdelivr.net/gh/google/fonts@main/${sciezka}`,
+      `https://raw.githubusercontent.com/google/fonts/main/${sciezka}`,
+    ];
+    let ostatniBlad = '';
+    let pobrany: WgranaCzcionka | undefined;
+    for (const url of adresy) {
+      if (signal?.aborted) throw bladAnulowania();
+      const { signal: sig, czyPrzekroczonoCzas, zwolnij } = przygotujSygnal(signal, limitCzasuMs);
+      try {
+        const res = await pobierz(url, { signal: sig });
+        if (signal?.aborted) throw bladAnulowania();
+        if (!res.ok) {
+          ostatniBlad = `HTTP ${res.status}`;
+          continue;
+        }
+        const bajty = new Uint8Array(await res.arrayBuffer());
+        if (signal?.aborted) throw bladAnulowania();
+        const nazwaPlikuTtf = wariant.plik.split('/').pop() ?? wariant.plik;
+        const w = wgrajCzcionke(nazwaPlikuTtf, bajty, { zrodlo: 'google', zajete });
+        if (wgrane.length === 0 && w.opis.rodzina) nazwaZPliku = w.opis.rodzina;
+        pobrany = {
+          ...w,
+          opis: {
+            ...w.opis,
+            rodzina: nazwaZPliku,
+            wariant: wariant.wariant,
+            zrodlo: 'google',
+          },
+        };
+        break;
+      } catch (e) {
+        if (signal?.aborted) throw bladAnulowania();
+        ostatniBlad = czyPrzekroczonoCzas()
+          ? t('googleFonts.przekroczonoCzas')
+          : e instanceof Error
+            ? e.message
+            : String(e);
+      } finally {
+        zwolnij();
+      }
+    }
+    if (!pobrany) {
+      throw new BladDanych(
+        t('googleFonts.bladPobrania', {
+          rodzina: nazwa,
+          szczegoly: ostatniBlad || t('googleFonts.brakPolaczenia'),
+        }),
+      );
+    }
+    zajete.add(pobrany.opis.id);
+    wgrane.push(pobrany);
+  }
+
+  const brakPolskichZnakow = wgrane.some((w) => !maPolskieZnaki(w.czcionka));
+  return { rodzina: nazwaZPliku, wgrane, brakPolskichZnakow };
 }
