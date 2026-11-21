@@ -90,26 +90,6 @@ export function PanelTypu({
       for (const [k, v] of Object.entries(z)) if (v === undefined) delete n[k];
       return n as unknown as Wezel;
     }, klucz);
-  const styl =
-    maStylTekstu(pole) && !znajdzGrupeStylu(szablon, pole.grupaStyluId) ? (
-      <Sekcja tytul={t('wlasciwosci.styl')} otwarta={pole.typ === 'tekst'}>
-        <PanelStylu
-          styl={pole.styl}
-          czcionki={czcionki}
-          akapity={pole.typ === 'tekst'}
-          domyslne={
-            pole.typ === 'wartosc' || (pole.typ === 'tekst' && pole.luk)
-              ? { wyrownanie: 'srodek', wyrownaniePionowe: 'srodek' }
-              : pole.typ === 'wpis'
-                ? { wyrownaniePionowe: 'srodek' }
-                : {}
-          }
-          zmien={(f) => zmienStyl('styl', f, `styl:${id}`)}
-          autoDopasowanie={pole.typ !== 'wpis'}
-          wyrownanie={pole.typ !== 'wpis'}
-        />
-      </Sekcja>
-    ) : null;
 
   switch (pole.typ) {
     case 'tekst':
@@ -186,8 +166,6 @@ export function PanelTypu({
               />
             </>
           )}
-
-          {styl}
         </>
       );
     case 'wartosc':
@@ -236,22 +214,18 @@ export function PanelTypu({
               <a href={adresBiblioteki}>{t('biblioteka.otworz')}</a>
             </div>
           )}
-          {styl}
         </>
       );
     case 'wpis':
       return (
-        <>
-          <div className="pole-panelu">
-            <label htmlFor={`sufiks-${id}`}>{t('wlasciwosci.sufiks')}</label>
-            <input
-              id={`sufiks-${id}`}
-              value={typeof pole.sufiks === 'string' ? pole.sufiks : ''}
-              onChange={(e) => ustaw({ sufiks: e.target.value || undefined }, `sufiks:${id}`)}
-            />
-          </div>
-          {styl}
-        </>
+        <div className="pole-panelu">
+          <label htmlFor={`sufiks-${id}`}>{t('wlasciwosci.sufiks')}</label>
+          <input
+            id={`sufiks-${id}`}
+            value={typeof pole.sufiks === 'string' ? pole.sufiks : ''}
+            onChange={(e) => ustaw({ sufiks: e.target.value || undefined }, `sufiks:${id}`)}
+          />
+        </div>
       );
     case 'znaczniki':
       return (
@@ -718,18 +692,6 @@ function PanelTabeli({
           />
         )}
       </Sekcja>
-      {!znajdzGrupeStylu(szablon, tabela.grupaStyluId) && (
-        <Sekcja tytul={t('wlasciwosci.styl')}>
-          <PanelStylu
-            styl={tabela.styl}
-            czcionki={czcionki}
-            akapity={false}
-            domyslne={{ wyrownanie: 'srodek' }}
-            wyrownaniePionowe={false}
-            zmien={(f) => zmienStyl('styl', f, `styl:${id}`)}
-          />
-        </Sekcja>
-      )}
       {tabela.naglowki !== false && (
         <Sekcja tytul={t('tabela.stylNaglowkow')}>
           <PanelStylu

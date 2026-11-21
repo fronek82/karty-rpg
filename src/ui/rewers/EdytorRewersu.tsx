@@ -31,6 +31,7 @@ import {
   type SkopiowanyStyl,
 } from '../../dane/szablon';
 import { roleProjektu } from '../../dane/edycja';
+import { czcionkiSzablonu } from '../../dane/archiwum';
 import { czyProjektWlasny } from '../../dane/wlasneKarty';
 import { t, tJesliJest } from '../../i18n';
 import {
@@ -51,6 +52,7 @@ import { PoleLiczby } from '../kartka/PoleLiczby';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import { przygotujPlikObrazu } from '../obrazy';
 import { tekstOstrzezenia } from '../ostrzezenia';
+import { useCzcionkiGlobalne, useSynchronizujCzcionkiGlobalne } from '../zasobyGlobalne';
 import { DrzewoSzablonu, nazwaWezla } from '../szablon/DrzewoSzablonu';
 import { ElementyWlasneKontekst } from '../szablon/elementyWlasne';
 import { Lista, Sekcja, Wybor } from '../szablon/Kontrolki';
@@ -120,6 +122,8 @@ function usePodgladRewersu(kluczRysunku: string, zasoby: ProjektWEdycji['zasoby'
 export function EdytorRewersu({ edycja, rewersId }: { edycja: ProjektWEdycji; rewersId: string }) {
   const { projekt, zmien } = edycja;
   const rewers = projekt.rewersy?.find((r) => r.id === rewersId);
+  const { rodzinyGlobalne } = useCzcionkiGlobalne(projekt);
+  useSynchronizujCzcionkiGlobalne(edycja, rodzinyGlobalne, rewers ? czcionkiSzablonu(rewers) : []);
   const [zazn, ustawZazn] = useState<string[]>([]);
   const [menuDodaj, ustawMenuDodaj] = useState(false);
   const [schowek, ustawSchowek] = useState<SkopiowanyStyl>();
@@ -490,7 +494,10 @@ export function EdytorRewersu({ edycja, rewersId }: { edycja: ProjektWEdycji; re
   const wymiary = (id: string) => wezlyKarty?.find((w) => w.id === id);
 
   const rodziny = [
-    ...new Set(projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : []))),
+    ...new Set([
+      ...projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : [])),
+      ...rodzinyGlobalne,
+    ]),
   ];
   const czcionki = [
     ...roleProjektu(projekt).map((r) => ({

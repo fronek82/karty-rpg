@@ -66,6 +66,8 @@ import {
   PRZEDROSTEK_OPCJI_GLOBALNEJ,
   useRewersyGlobalne,
 } from '../rewersyGlobalne';
+import { czcionkiSzablonu } from '../../dane/archiwum';
+import { useCzcionkiGlobalne, useSynchronizujCzcionkiGlobalne } from '../zasobyGlobalne';
 import { przygotujPlikObrazu } from '../obrazy';
 import {
   budujCele,
@@ -131,6 +133,12 @@ export function EdytorSzablonu({
 }) {
   const { projekt, zmien } = edycja;
   const szablon = projekt.szablony.find((s) => s.id === szablonId);
+  const { rodzinyGlobalne } = useCzcionkiGlobalne(projekt);
+  useSynchronizujCzcionkiGlobalne(
+    edycja,
+    rodzinyGlobalne,
+    szablon ? czcionkiSzablonu(szablon) : [],
+  );
   const [zazn, ustawZazn] = useState<string[]>([]);
   const [menuDodaj, ustawMenuDodaj] = useState(false);
   const [schowek, ustawSchowek] = useState<SkopiowanyStyl>();
@@ -506,9 +514,12 @@ export function EdytorSzablonu({
         : { szer: e.lokalne.szer, wys: e.lokalne.wys },
     };
   };
-  // Czcionki: role projektu i rodziny z biblioteki; obrazy z biblioteki.
+  // Czcionki: role projektu, rodziny w projekcie i rodziny zapisane globalnie w przeglądarce.
   const rodziny = [
-    ...new Set(projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : []))),
+    ...new Set([
+      ...projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : [])),
+      ...rodzinyGlobalne,
+    ]),
   ];
   const czcionki = [
     ...roleProjektu(projekt).map((r) => ({

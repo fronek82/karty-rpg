@@ -8,6 +8,7 @@ import {
   maStylTekstu,
   stylPola,
   kluczeTabeli,
+  znajdzGrupeStylu,
   type Kontener,
   type Pole,
   type Pozycja,
@@ -338,7 +339,39 @@ export function PanelWezla({
         </Sekcja>
       )}
 
-      <PanelWygladu wezel={wezel} zmien={zmienWezel} />
+      <PanelWygladu
+        wezel={wezel}
+        zmien={zmienWezel}
+        poWygladzie={
+          pole && maStylTekstu(pole) && !znajdzGrupeStylu(szablon, pole.grupaStyluId) ? (
+            <Sekcja tytul={t('wlasciwosci.styl')} otwarta={pole.typ === 'tekst'}>
+              <PanelStylu
+                styl={pole.styl}
+                czcionki={czcionki}
+                akapity={pole.typ === 'tekst'}
+                domyslne={
+                  pole.typ === 'wartosc' || (pole.typ === 'tekst' && pole.luk)
+                    ? { wyrownanie: 'srodek', wyrownaniePionowe: 'srodek' }
+                    : pole.typ === 'wpis'
+                      ? { wyrownaniePionowe: 'srodek' }
+                      : pole.typ === 'tabela'
+                        ? { wyrownanie: 'srodek' }
+                        : {}
+                }
+                zmien={(f) =>
+                  zmienWezel((w) => {
+                    if (!maStylTekstu(w) || znajdzGrupeStylu(szablon, w.grupaStyluId)) return w;
+                    return { ...w, styl: f(w.styl) } as Wezel;
+                  }, `styl:${id}`)
+                }
+                autoDopasowanie={pole.typ !== 'wpis'}
+                wyrownanie={pole.typ !== 'wpis'}
+                wyrownaniePionowe={pole.typ !== 'tabela'}
+              />
+            </Sekcja>
+          ) : undefined
+        }
+      />
       {!wiele && czyKontener(wezel) && (
         <TloDekoracyjne
           obrazy={obrazy}
@@ -504,7 +537,7 @@ export function PanelWezla({
       {!wiele && !bezDanych && maStylTekstu(wezel) && (
         <GrupyStylow szablon={szablon} czcionki={czcionki} zmien={zmienSzablon} pole={wezel} />
       )}
-      {pole && (
+      {pole && pole.typ !== 'tekst' && (
         <PanelTypu
           szablon={szablon}
           pole={pole}
@@ -572,6 +605,19 @@ export function PanelWezla({
             );
           })}
         </Sekcja>
+      )}
+      {pole && pole.typ === 'tekst' && (
+        <PanelTypu
+          szablon={szablon}
+          pole={pole}
+          zmien={zmienWezel}
+          czcionki={czcionki}
+          obrazy={obrazy}
+          {...(wgrajStalyObraz ? { wgrajStalyObraz } : {})}
+          wiele={wiele}
+          bezDanych={bezDanych}
+          zajeteKlucze={zajeteKlucze}
+        />
       )}
     </>
   );

@@ -3109,3 +3109,42 @@ button.maly {
   padding-top: 0.65rem;
   border-top: 1px solid var(--obramowanie);
 }
+
+.sekcja-eksportu-csv {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--obramowanie);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sekcja-eksportu-csv > button {
+  align-self: flex-start;
+}
+
+.katalog-google-dowolny {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--obramowanie);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.katalog-google-dowolny label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.katalog-google-dowolny input {
+  flex: 1;
+  min-width: 0;
+}
+
+.katalog-google-brak {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  align-items: flex-start;
+}

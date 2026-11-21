@@ -1,8 +1,10 @@
 import { expect, it } from 'vitest';
 import { utils, write } from 'xlsx';
-import { LIMIT_TABELI, odczytajCsv, otworzTabele, sprawdzImport } from './importTabeli';
+import { LIMIT_TABELI, odczytajCsv, otworzTabele, sprawdzImport, szablonCsv } from './importTabeli';
 import type { KolumnaDanych } from './edycja';
 import type { OpisObrazu } from '../model/projekt';
+import type { Szablon } from '../model/szablon';
+import { pt } from '../model/jednostki';
 
 const pola: KolumnaDanych[] = [
   { klucz: 'nazwa', nazwa: 'Nazwa', rodzaj: 'pole', typPola: 'tekst' },
@@ -89,4 +91,37 @@ it('mapowanie akceptuje puste komórki i tylko jednoznaczne nazwy lokalnych obra
     expect.stringMatching(/Wiersz 3.*liczbą całkowitą/),
     expect.stringMatching(/Wiersz 3.*brak lokalnego obrazu/),
   ]);
+});
+
+it('szablonCsv generuje plik UTF-8 z nagłówkami pól szablonu oraz kolumną Ilość i przechodzi przez odczytajCsv', () => {
+  const szablon: Szablon = {
+    id: 'sz-csv',
+    nazwa: 'Zaklęcie',
+    rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+    korzen: {
+      id: 'k',
+      typ: 'kolumna',
+      dzieci: [
+        {
+          id: 'p1',
+          typ: 'tekst',
+          klucz: 'tytul',
+          nazwa: 'Tytuł',
+          styl: { czcionka: 'tytul', rozmiar: pt(12), kolor: '#000000' },
+        },
+        {
+          id: 'p2',
+          typ: 'tekst',
+          klucz: 'opis',
+          nazwa: 'Opis; efekt',
+          styl: { czcionka: 'tresc', rozmiar: pt(9), kolor: '#000000' },
+        },
+      ],
+    },
+  };
+  const csv = szablonCsv(szablon, { separator: ';', etykietaIlosci: 'Ilość' });
+  expect(csv.startsWith('\uFEFF')).toBe(true);
+  const wczytane = odczytajCsv(`${csv}Ognista kula;Zadaje 3k6 obrażeń;2\r\n`);
+  expect(wczytane.naglowki).toEqual(['Tytuł', 'Opis; efekt', 'Ilość']);
+  expect(wczytane.wiersze[0]?.komorki).toEqual(['Ognista kula', 'Zadaje 3k6 obrażeń', '2']);
 });

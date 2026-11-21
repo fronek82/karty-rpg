@@ -450,4 +450,41 @@ describe('katalog Google Fonts (M4-6)', () => {
       zrodlo: 'google',
     });
   });
+
+  it('katalog zawiera co najmniej 120 zweryfikowanych rodzin i pobierzDowolnaRodzineGoogle pobiera dowolny krój po nazwie', async () => {
+    expect(KATALOG_GOOGLE_FONTS.length).toBeGreaterThanOrEqual(120);
+    const { pobierzDowolnaRodzineGoogle } = await import('./googleFonts');
+    const wynik = await pobierzDowolnaRodzineGoogle('Cinzel', {
+      pobierz: async (url) => {
+        if (url.endsWith('/ofl/cinzel')) {
+          return {
+            ok: true,
+            status: 200,
+            arrayBuffer: async () => new ArrayBuffer(0),
+            json: async () => [
+              { name: 'Cinzel-Regular.ttf', type: 'file' },
+              { name: 'Cinzel-Bold.ttf', type: 'file' },
+            ],
+          };
+        }
+        const buf = bajtyDlaAdresu(url);
+        return {
+          ...odpowiedzOk(buf),
+          json: async () => ({}),
+        };
+      },
+    });
+    expect(wynik.wgrane).toHaveLength(2);
+    expect(wynik.wgrane.every((w) => w.opis.zrodlo === 'google')).toBe(true);
+    expect(wynik.brakPolskichZnakow).toBe(false);
+
+    await expect(
+      pobierzDowolnaRodzineGoogle('NieistniejacaCzcionkaXYZ', {
+        pobierz: async () => ({
+          ...odpowiedzBlad(404),
+          json: async () => ({}),
+        }),
+      }),
+    ).rejects.toBeInstanceOf(BladDanych);
+  });
 });

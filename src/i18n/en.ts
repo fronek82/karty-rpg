@@ -1410,6 +1410,20 @@ export const en: Slownik = {
   'googleFonts.przekroczonoCzas': 'request timed out',
   'googleFonts.bladPobrania':
     'Could not download “{rodzina}” from Google Fonts ({szczegoly}). Check your connection and try again.',
+  'googleFonts.brakNazwy': 'Enter a Google Fonts typeface name.',
+  'googleFonts.nieZnaleziono':
+    'Could not find “{rodzina}” in the Google Fonts repository. Check the spelling (e.g. Cinzel, Playfair Display, Orbitron).',
+  'googleFonts.brakPolskichUwaga': '(Note: this typeface may be missing some Polish diacritics.)',
+  'googleFonts.pobierzPoNazwiePrzycisk': 'Download “{nazwa}” directly from Google Fonts',
+  'googleFonts.dowolnaEtykieta': 'Any other Google Fonts typeface (1700+ families)',
+  'googleFonts.dowolnaOpis':
+    'Type the exact name from fonts.google.com to preview and save it across all projects.',
+  'googleFonts.dowolnaPlaceholder': 'e.g. Cinzel, Playfair Display, Orbitron',
+  'czcionki.globalneGrupa': 'Saved fonts',
+  'csvSzablon.szablon': 'Template for CSV',
+  'csvSzablon.przycisk': 'Export CSV template',
+  'csvSzablon.opis':
+    'Downloads a ready-to-fill CSV file with the template field headers for spreadsheet editing and import.',
   'wlasne.aiNazwa': 'Layout from photo (AI)',
   'wlasne.aiOpis': 'Send a card photo with your own Claude API key to detect field structure.',
   'ai.tytul': 'Card layout from photo (AI)',
@@ -1504,6 +1518,10 @@ export const enMnoga: SlownikMnogi = {
   'googleFonts.pobrano': {
     one: 'Downloaded “{rodzina}” ({n} variant) and saved locally in the project.',
     other: 'Downloaded “{rodzina}” ({n} variants) and saved locally in the project.',
+  },
+  'googleFonts.pobranoGlobalnie': {
+    one: 'Downloaded “{rodzina}” ({n} variant) and saved for all projects.',
+    other: 'Downloaded “{rodzina}” ({n} variants) and saved for all projects.',
   },
   'ai.podgladTytul': {
     one: 'Detected layout ({n} field)',

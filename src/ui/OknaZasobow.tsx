@@ -9,6 +9,7 @@ import { KatalogGoogleFonts } from './kartka/KatalogGoogleFonts';
 import {
   dodajGlobalnaCzcionkeDoProjektu,
   dodajGlobalnyObrazDoProjektu,
+  powiadomZmianeCzcionekGlobalnych,
   wgrajCzcionkiGlobalnie,
   wgrajObrazyGlobalnie,
 } from './zasobyGlobalne';
@@ -177,6 +178,7 @@ export function OknoCzcionek({ zamknij }: { zamknij: () => void }) {
     ustawTrwa(true);
     try {
       await baza().usunZBiblioteki(w.id);
+      powiadomZmianeCzcionekGlobalnych();
       await odswiez();
       if (zamontowany.current) ustawStatus(t('zasobyOkno.usunieto', { nazwa: w.nazwa }));
     } catch (e) {
@@ -250,27 +252,28 @@ export function OknoCzcionek({ zamknij }: { zamknij: () => void }) {
           </ul>
         )}
       </section>
-      {edycja && (
-        <>
-          {czcionkiProjektu.length > 0 && (
-            <section className="okno-zasobow-sekcja">
-              <h3>{t('zasobyOkno.czcionkiWProjekcie')}</h3>
-              <ul className="lista-zasobow-okna">
-                {czcionkiProjektu.map((c) => (
-                  <li key={c.id}>
-                    <span className="nazwa-zasobu">
-                      {c.rodzina} ({t(`wariant.${c.wariant}`)})
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          <section className="okno-zasobow-sekcja">
-            <KatalogGoogleFonts edycja={edycja} onStatus={ustawStatus} onBlad={ustawBlad} />
-          </section>
-        </>
+      {edycja && czcionkiProjektu.length > 0 && (
+        <section className="okno-zasobow-sekcja">
+          <h3>{t('zasobyOkno.czcionkiWProjekcie')}</h3>
+          <ul className="lista-zasobow-okna">
+            {czcionkiProjektu.map((c) => (
+              <li key={c.id}>
+                <span className="nazwa-zasobu">
+                  {c.rodzina} ({t(`wariant.${c.wariant}`)})
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
+      <section className="okno-zasobow-sekcja">
+        <KatalogGoogleFonts
+          {...(edycja ? { edycja } : {})}
+          onStatus={ustawStatus}
+          onBlad={ustawBlad}
+          onPobranoGlobalnie={() => void odswiez()}
+        />
+      </section>
     </OknoModalne>
   );
 }
