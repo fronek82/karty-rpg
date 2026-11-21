@@ -227,9 +227,13 @@ export function GaleriaOnline({
         ...(paczka.biblioteka ? { elementy: paczka.biblioteka } : {}),
       };
       const karta = { dane: danePodgladu(paczka.szablon) };
-      const awers = scenaDoSvg(renderujKarte(paczka.szablon, karta, ctx).scena);
+      const awers = scenaDoSvg(renderujKarte(paczka.szablon, karta, ctx).scena, {
+        przedrostekId: `gal-${wpis.id}-a-`,
+      });
       const rewers = paczka.rewers
-        ? scenaDoSvg(renderujRewers(paczka.rewers, ctx).scena)
+        ? scenaDoSvg(renderujRewers(paczka.rewers, ctx).scena, {
+            przedrostekId: `gal-${wpis.id}-r-`,
+          })
         : undefined;
       if (!zamontowany.current || podgladCtrl.current !== kontroler) return;
       ustawPodglady((pop) => ({
