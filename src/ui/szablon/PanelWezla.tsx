@@ -27,6 +27,7 @@ import { PoleRozmiaru } from './PoleRozmiaru';
 import { GrupyStylow } from './GrupyStylow';
 import { KolorZDanych } from './KolorZDanych';
 import { TloDekoracyjne } from './PolaDekoracji';
+import { PoleWielowierszowe } from '../PoleWielowierszowe';
 import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
 
 type Opcje = readonly { wartosc: string; tekst: string }[];
@@ -167,7 +168,7 @@ export function PanelWezla({
       {pole && ZE_ZRODLEM.has(pole.typ) && !wiele && (
         <>
           {!bezDanych && (
-            <Przelacznik
+            <Lista
               etykieta={t('wlasciwosci.zrodlo')}
               opcje={[
                 { wartosc: 'dane', tekst: t('wlasciwosci.zrodlo.dane') },
@@ -199,7 +200,8 @@ export function PanelWezla({
             (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
               <div className="pole-panelu">
                 <label htmlFor={`staly-${id}`}>{t('wlasciwosci.stalyTekst')}</label>
-                <textarea
+                <PoleWielowierszowe
+                  kluczRozmiaru={`szablon:staly:${pole.typ === 'tekst' ? 'tekst' : 'krotki'}`}
                   id={`staly-${id}`}
                   rows={pole.typ === 'tekst' ? 2 : 1}
                   value={stalyTekst}
@@ -272,7 +274,7 @@ export function PanelWezla({
                   />
                 </div>
               )}
-              <Przelacznik
+              <Lista
                 etykieta={t('szablon.pozycjaEtykiety')}
                 opcje={(zEtykieta.typ === 'tekst'
                   ? (['nad', 'przed', 'pod'] as const)
@@ -396,7 +398,7 @@ export function PanelWezla({
             />
           )}
           {wezel.typ !== 'warstwy' && wezel.typ !== 'swobodny' && (
-            <Przelacznik
+            <Lista
               etykieta={t('wlasciwosci.rozklad')}
               opcje={(['poczatek', 'srodek', 'koniec', 'miedzy'] as const).map((r) => ({
                 wartosc: r,
@@ -534,7 +536,8 @@ export function PanelWezla({
       {!wiele && pole?.klucz && pole.typ !== 'obraz' && (
         <div className="pole-panelu">
           <label htmlFor={`przyklad-${id}`}>{t('szablon.przyklad')}</label>
-          <textarea
+          <PoleWielowierszowe
+            kluczRozmiaru={`szablon:przyklad:${pole.typ === 'tekst' ? 'tekst' : 'krotki'}`}
             id={`przyklad-${id}`}
             rows={pole.typ === 'tekst' ? 3 : 1}
             value={szablon.przyklad?.[pole.klucz] ?? ''}

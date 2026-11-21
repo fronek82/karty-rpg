@@ -1425,7 +1425,15 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   gap: 0.5rem;
 }
 
+.naglowek-panelu h2 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .naglowek-panelu .zamknij {
+  flex: 0 0 auto;
   padding: 0.1rem 0.5rem;
 }
 
@@ -1453,6 +1461,10 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   background: var(--tlo-panelu);
   color: inherit;
   width: 100%;
+}
+
+.pole-panelu textarea {
+  resize: vertical;
 }
 
 .licznik {
@@ -1834,9 +1846,6 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   display: flex;
   gap: 0.4rem;
   align-items: center;
-}
-.pole-rozmiaru .przelacznik-segmentowy button {
-  font-size: 0.82rem;
 }
 
 /* --- Kreator szablonu --- */
@@ -2598,6 +2607,10 @@ button.maly {
   margin: 0.4rem 0;
 }
 
+.katalog-google-liczba {
+  margin: 0.25rem 0 0;
+}
+
 .lista-google-fonts {
   list-style: none;
   margin: 0.4rem 0 0;
@@ -2605,7 +2618,7 @@ button.maly {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  max-height: 18rem;
+  max-height: 22rem;
   overflow-y: auto;
 }
 
@@ -2614,7 +2627,7 @@ button.maly {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.35rem 0.45rem;
+  padding: 0.4rem 0.5rem;
   border: 1px solid var(--obramowanie);
   border-radius: 0.35rem;
   background: var(--pole);
@@ -2623,13 +2636,22 @@ button.maly {
 .pozycja-google-info {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
   min-width: 0;
 }
 
 .pozycja-google-info strong {
   font-size: 0.86rem;
   color: var(--tekst);
+}
+
+.podglad-google-font {
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--tekst);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pozycja-google-font button {

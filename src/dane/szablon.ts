@@ -806,16 +806,27 @@ export function danePodgladu(s: Szablon): Record<string, string> {
 }
 
 /**
- * Nazwa karty dla użytkownika (etykiety, komunikaty): pole `nazwa`, a gdy go nie ma –
- * pierwsze niepuste pole tekstowe szablonu (w kolejności układu).
+ * Nazwa karty dla użytkownika (etykiety, komunikaty): pierwszy wiersz pola `nazwa`, a gdy szablon
+ * nie definiuje klucza `nazwa` – pierwszego pola tekstowego szablonu (bez przejmowania kolejnych
+ * pól opisu, gdy pierwsze pole jest puste).
  */
+const pierwszyWiersz = (tekst: string) =>
+  tekst
+    .split(/\r?\n/)
+    .map((w) => w.trim())
+    .find(Boolean) ?? '';
+
 export function nazwaKarty(dane: Record<string, string>, s: Szablon | undefined): string {
-  if (dane.nazwa?.trim()) return dane.nazwa;
-  for (const w of s ? wszystkieWezly(s) : []) {
-    if (!czyKontener(w) && w.typ === 'tekst' && w.klucz && dane[w.klucz]?.trim())
-      return dane[w.klucz]!;
-  }
-  return '';
+  if (dane.nazwa?.trim()) return pierwszyWiersz(dane.nazwa);
+  if (!s) return '';
+  const polaTekstowe = wszystkieWezly(s).filter(
+    (w): w is Pole & { typ: 'tekst'; klucz: string } =>
+      !czyKontener(w) && w.typ === 'tekst' && !!w.klucz,
+  );
+  // Gdy szablon ma jawne pole „nazwa” (puste), nie przejmuj treści innych pól (np. opisu) jako tytułu.
+  if (polaTekstowe.some((w) => w.klucz === 'nazwa')) return '';
+  const pierwsze = polaTekstowe[0];
+  return pierwsze && dane[pierwsze.klucz]?.trim() ? pierwszyWiersz(dane[pierwsze.klucz]!) : '';
 }
 
 /** Rodzaje pól, na które można zmienić typ elementu w panelu. */

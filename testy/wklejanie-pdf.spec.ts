@@ -63,14 +63,12 @@ test('wklejanie tekstu z PDF czyści złamania w edytorze szablonu i na karcie, 
   await expect(polePrzyklad).toHaveValue('Start: ');
 
   // 2) Stały tekst w edytorze szablonu.
-  await panelWlasciwosci
-    .getByRole('button', { name: 'stała (na każdej karcie)', exact: true })
-    .click();
+  await panelWlasciwosci.getByLabel('Treść', { exact: true }).selectOption('staly');
   const poleStaly = panelWlasciwosci.getByLabel('Stały tekst');
   await poleStaly.fill('');
   await wklejTekst(poleStaly, 'Pierwsza\nlinia z\u2010\nłamaniem');
   await expect(poleStaly).toHaveValue('Pierwsza linia złamaniem');
-  await panelWlasciwosci.getByRole('button', { name: 'z danych karty', exact: true }).click();
+  await panelWlasciwosci.getByLabel('Treść', { exact: true }).selectOption('dane');
 
   // 3) Pole opisu na karcie: wklejanie z PDF + Ctrl+Z z fokusem w polu + przycisk Cofnij.
   await page.getByRole('button', { name: 'Rób karty' }).click();

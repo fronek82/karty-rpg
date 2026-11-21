@@ -18,20 +18,60 @@ Pakiety szablonów mają dodatkowo własny plik `LICENCJE.md` w swoim katalogu.
 
 Katalog w `src/dane/googleFonts.ts` udostępnia wybrane rodziny z repozytorium [`google/fonts`](https://github.com/google/fonts) (wyłącznie statyczne pliki TTF z potwierdzonym zestawem `latin-ext` i licencją SIL OFL 1.1). Pliki są pobierane dopiero po wyborze użytkownika i zapisywane lokalnie w projekcie.
 
-| Rodzina           | Katalog w `google/fonts` | Autor                             | Licencja    |
-| ----------------- | ------------------------ | --------------------------------- | ----------- |
-| Almendra          | `ofl/almendra`           | Ana Sanfelippo                    | SIL OFL 1.1 |
-| MedievalSharp     | `ofl/medievalsharp`      | Wojciech Kalinowski               | SIL OFL 1.1 |
-| Metamorphous      | `ofl/metamorphous`       | Sorkin Type Co (James Grieshaber) | SIL OFL 1.1 |
-| Pirata One        | `ofl/pirataone`          | Rodrigo Fuenzalida, Nicolas Massi | SIL OFL 1.1 |
-| Marcellus         | `ofl/marcellus`          | Astigmatic                        | SIL OFL 1.1 |
-| Caudex            | `ofl/caudex`             | Nidud                             | SIL OFL 1.1 |
-| Crimson Text      | `ofl/crimsontext`        | Sebastian Kosch                   | SIL OFL 1.1 |
-| Spectral          | `ofl/spectral`           | Production Type                   | SIL OFL 1.1 |
-| Gentium Book Plus | `ofl/gentiumbookplus`    | SIL International                 | SIL OFL 1.1 |
-| PT Serif          | `ofl/ptserif`            | ParaType                          | SIL OFL 1.1 |
-| Fira Sans         | `ofl/firasans`           | Carrois Apostrophe                | SIL OFL 1.1 |
-| Lato              | `ofl/lato`               | Łukasz Dziedzic                   | SIL OFL 1.1 |
+| Rodzina           | Katalog w `google/fonts` | Autor                                   | Licencja    |
+| ----------------- | ------------------------ | --------------------------------------- | ----------- |
+| Almendra          | `ofl/almendra`           | Ana Sanfelippo                          | SIL OFL 1.1 |
+| Almendra Display  | `ofl/almendradisplay`    | Ana Sanfelippo                          | SIL OFL 1.1 |
+| MedievalSharp     | `ofl/medievalsharp`      | Wojciech Kalinowski                     | SIL OFL 1.1 |
+| Metamorphous      | `ofl/metamorphous`       | Sorkin Type Co (James Grieshaber)       | SIL OFL 1.1 |
+| Pirata One        | `ofl/pirataone`          | Rodrigo Fuenzalida, Nicolas Massi       | SIL OFL 1.1 |
+| Germania One      | `ofl/germaniaone`        | John Vargas Beltrán                     | SIL OFL 1.1 |
+| Yatra One         | `ofl/yatraone`           | Catherine Leigh Schmidt                 | SIL OFL 1.1 |
+| Rye               | `ofl/rye`                | Nicole Fally                            | SIL OFL 1.1 |
+| Sancreek          | `ofl/sancreek`           | Vernon Adams                            | SIL OFL 1.1 |
+| New Rocker        | `ofl/newrocker`          | Impallari Type                          | SIL OFL 1.1 |
+| Metal Mania       | `ofl/metalmania`         | Open Window                             | SIL OFL 1.1 |
+| Creepster         | `ofl/creepster`          | Sideshow                                | SIL OFL 1.1 |
+| Abril Fatface     | `ofl/abrilfatface`       | TypeTogether                            | SIL OFL 1.1 |
+| Yeseva One        | `ofl/yesevaone`          | Jovanny Lemonad                         | SIL OFL 1.1 |
+| Righteous         | `ofl/righteous`          | Astigmatic                              | SIL OFL 1.1 |
+| Audiowide         | `ofl/audiowide`          | Astigmatic                              | SIL OFL 1.1 |
+| Silkscreen        | `ofl/silkscreen`         | Jason Kottke                            | SIL OFL 1.1 |
+| Press Start 2P    | `ofl/pressstart2p`       | CodeMan38                               | SIL OFL 1.1 |
+| Marcellus         | `ofl/marcellus`          | Astigmatic                              | SIL OFL 1.1 |
+| Marcellus SC      | `ofl/marcellussc`        | Astigmatic                              | SIL OFL 1.1 |
+| Alegreya SC       | `ofl/alegreyasc`         | Juan Pablo del Peral, HT Fonts          | SIL OFL 1.1 |
+| Cormorant SC      | `ofl/cormorantsc`        | Christian Thalmann                      | SIL OFL 1.1 |
+| Caudex            | `ofl/caudex`             | Nidud                                   | SIL OFL 1.1 |
+| Cardo             | `ofl/cardo`              | David Perry                             | SIL OFL 1.1 |
+| Old Standard TT   | `ofl/oldstandardtt`      | Alexey Kryukov                          | SIL OFL 1.1 |
+| Crimson Text      | `ofl/crimsontext`        | Sebastian Kosch                         | SIL OFL 1.1 |
+| Spectral          | `ofl/spectral`           | Production Type                         | SIL OFL 1.1 |
+| Gentium Book Plus | `ofl/gentiumbookplus`    | SIL International                       | SIL OFL 1.1 |
+| Gentium Plus      | `ofl/gentiumplus`        | SIL International                       | SIL OFL 1.1 |
+| PT Serif          | `ofl/ptserif`            | ParaType                                | SIL OFL 1.1 |
+| IBM Plex Serif    | `ofl/ibmplexserif`       | Mike Abbink, Bold Monday                | SIL OFL 1.1 |
+| Fira Sans         | `ofl/firasans`           | Carrois Apostrophe                      | SIL OFL 1.1 |
+| Lato              | `ofl/lato`               | Łukasz Dziedzic                         | SIL OFL 1.1 |
+| Alegreya Sans     | `ofl/alegreyasans`       | Juan Pablo del Peral, HT Fonts          | SIL OFL 1.1 |
+| Philosopher       | `ofl/philosopher`        | Jovanny Lemonad                         | SIL OFL 1.1 |
+| Barlow            | `ofl/barlow`             | Jeremy Tribby                           | SIL OFL 1.1 |
+| Barlow Condensed  | `ofl/barlowcondensed`    | Jeremy Tribby                           | SIL OFL 1.1 |
+| PT Sans           | `ofl/ptsans`             | ParaType                                | SIL OFL 1.1 |
+| Eagle Lake        | `ofl/eaglelake`          | Astigmatic                              | SIL OFL 1.1 |
+| Fondamento        | `ofl/fondamento`         | Astigmatic                              | SIL OFL 1.1 |
+| Quintessential    | `ofl/quintessential`     | Astigmatic                              | SIL OFL 1.1 |
+| Berkshire Swash   | `ofl/berkshireswash`     | Astigmatic                              | SIL OFL 1.1 |
+| Patrick Hand      | `ofl/patrickhand`        | Patrick Wagesreiter                     | SIL OFL 1.1 |
+| Kalam             | `ofl/kalam`              | Indian Type Foundry                     | SIL OFL 1.1 |
+| Amatic SC         | `ofl/amaticsc`           | Vernon Adams, Ben Nathan, Thomas Jockin | SIL OFL 1.1 |
+| Courgette         | `ofl/courgette`          | Karolina Lach                           | SIL OFL 1.1 |
+| Great Vibes       | `ofl/greatvibes`         | Robert Leuschke                         | SIL OFL 1.1 |
+| Marck Script      | `ofl/marckscript`        | Denis Masharov                          | SIL OFL 1.1 |
+| IBM Plex Mono     | `ofl/ibmplexmono`        | Mike Abbink, Bold Monday                | SIL OFL 1.1 |
+| Space Mono        | `ofl/spacemono`          | Colophon Foundry                        | SIL OFL 1.1 |
+| Courier Prime     | `ofl/courierprime`       | Alan Dague-Greene                       | SIL OFL 1.1 |
+| VT323             | `ofl/vt323`              | Peter Hull                              | SIL OFL 1.1 |
 
 Pakiety szablonów: `src/pakiety/mausritter/LICENCJE.md`.
 

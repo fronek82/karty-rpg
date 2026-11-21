@@ -144,7 +144,7 @@ export function PanelStylu({
         </button>
       </div>
       {wyrownanie && (
-        <Przelacznik
+        <Lista
           etykieta={t('styl.wyrownanie')}
           opcje={(['lewo', 'srodek', 'prawo', 'justuj'] as const).map((w) => ({
             wartosc: w,

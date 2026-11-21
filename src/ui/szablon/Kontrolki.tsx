@@ -62,7 +62,7 @@ export function Lista<T extends string>({
   zmien,
 }: {
   etykieta: string;
-  opcje: readonly { wartosc: T; tekst: string }[];
+  opcje: readonly { wartosc: T; tekst: string; wylaczona?: boolean }[];
   wartosc: T;
   zmien: (v: T) => void;
 }) {
@@ -70,9 +70,16 @@ export function Lista<T extends string>({
   return (
     <div className="pole-panelu">
       <label htmlFor={id}>{etykieta}</label>
-      <select id={id} value={wartosc} onChange={(e) => zmien(e.target.value as T)}>
+      <select
+        id={id}
+        value={wartosc}
+        onChange={(e) => {
+          const wybrana = opcje.find((o) => o.wartosc === e.target.value);
+          if (wybrana && !wybrana.wylaczona) zmien(wybrana.wartosc);
+        }}
+      >
         {opcje.map((o) => (
-          <option key={o.wartosc} value={o.wartosc}>
+          <option key={o.wartosc} value={o.wartosc} disabled={o.wylaczona}>
             {o.tekst}
           </option>
         ))}

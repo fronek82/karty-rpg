@@ -83,10 +83,7 @@ test('import SVG: raport „co pominięto”, użycie jako kształt wartości i 
 
   await karta(page);
   const r = await sekcja(page, 'Ramka karty');
-  await r
-    .getByRole('group', { name: 'Ramka karty', exact: true })
-    .getByRole('button', { name: 'linia', exact: true })
-    .click();
+  await r.getByLabel('Ramka karty', { exact: true }).selectOption('linia');
   const naroz = r.getByRole('group', { name: 'Narożniki' });
   await expect(naroz.getByRole('button')).toHaveCount(8); // brak + 6 wbudowanych + własny
   await naroz.getByRole('button', { name: 'Pióro' }).click();

@@ -95,7 +95,7 @@ test('globalny szablon trafia na własną kartkę projektu pakietowego i można 
     await page.getByRole('button', { name: 'Nowa kartka dla szablonu Karta geometryczna' }).click();
   };
   await ustawieniaWlasnejKartki();
-  await page.getByRole('button', { name: 'własny układ arkusza' }).click();
+  await page.getByLabel('Układ kart na kartce').selectOption('wlasny');
   const szerokoscSlotu = page.getByLabel('Szerokość karty (mm)', { exact: true });
   await szerokoscSlotu.fill('30');
   await slot.click();

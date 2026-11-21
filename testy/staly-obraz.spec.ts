@@ -15,7 +15,7 @@ test('wgrany stały obraz jest wybrany w polu, widoczny w PNG i cofany w jednym 
   await dodaj(page, 'Obraz');
   const wgraj = panel(page).getByRole('button', { name: 'Wgraj obraz…', exact: true });
   await expect(wgraj).toHaveCount(0);
-  await panel(page).getByRole('button', { name: 'stała (na każdej karcie)', exact: true }).click();
+  await panel(page).getByLabel('Treść', { exact: true }).selectOption('staly');
 
   const [wybor] = await Promise.all([page.waitForEvent('filechooser'), wgraj.press('Enter')]);
   await wybor.setFiles({ name: 'zly.png', mimeType: 'image/png', buffer: Buffer.from('tekst') });
@@ -87,7 +87,7 @@ test('zakończenie odczytu po opuszczeniu pola nie dodaje obrazu do biblioteki',
     uklad: 'Pusta karta',
   });
   await dodaj(page, 'Obraz', 'Ilustracja');
-  await panel(page).getByRole('button', { name: 'stała (na każdej karcie)', exact: true }).click();
+  await panel(page).getByLabel('Treść', { exact: true }).selectOption('staly');
   await page.evaluate(() => {
     const dekoduj = window.createImageBitmap;
     window.createImageBitmap = ((obraz: ImageBitmapSource, opcje?: ImageBitmapOptions) =>

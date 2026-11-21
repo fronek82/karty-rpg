@@ -1,5 +1,6 @@
 import { formatujLiczbeZUlamkiem, t } from '../../i18n';
 import type { Arkusz, NaglowekGrupy } from '../../model/arkusz';
+import { PoleWielowierszowe } from '../PoleWielowierszowe';
 import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
 
 /** Panel nagłówka grupy: tekst, opis, szerokość w kolumnach, odstęp przed grupą, usunięcie. */
@@ -56,7 +57,8 @@ export function PanelNaglowka({
       </div>
       <div className="pole-panelu">
         <label htmlFor="naglowek-opis">{t('kartka.opisNaglowka')}</label>
-        <textarea
+        <PoleWielowierszowe
+          kluczRozmiaru="kartka:naglowek-opis"
           id="naglowek-opis"
           rows={3}
           value={naglowek.opis ?? ''}

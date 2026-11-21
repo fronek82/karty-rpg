@@ -206,10 +206,7 @@ test('A. karta czaru: kolorowa karta, białe panele, siatka 2×2 etykieta/warto�
   // Ramka całej karty i odstępy karty.
   await karta(page);
   const r = await sekcja(page, 'Ramka karty');
-  await r
-    .getByRole('group', { name: 'Ramka karty', exact: true })
-    .getByRole('button', { name: 'linia', exact: true })
-    .click();
+  await r.getByLabel('Ramka karty', { exact: true }).selectOption('linia');
   await r.getByLabel('Grubość linii (mm)').fill('0.3');
   await r.getByLabel('Kolor linii').fill('#ffffff');
   await r.getByLabel('Odsunięcie od krawędzi (mm)').fill('1');
@@ -286,10 +283,7 @@ test('B. blok statystyk: tytuł kapitalikami, tabela cech, separator, akapity wy
 
   await karta(page);
   const r = await sekcja(page, 'Ramka karty');
-  await r
-    .getByRole('group', { name: 'Ramka karty', exact: true })
-    .getByRole('button', { name: 'linia', exact: true })
-    .click();
+  await r.getByLabel('Ramka karty', { exact: true }).selectOption('linia');
   await r.getByLabel('Grubość linii (mm)').fill('0.4');
   await r.getByLabel('Kolor linii').fill('#5a4630');
   await sekcja(page, 'Układ karty (odstępy, rozłożenie, wygląd)');
@@ -324,10 +318,7 @@ test('C. karta wroga: zagnieżdżony nagłówek, wartości w rombach z etykietą
   // Statystyki: wiersz rombów z etykietą (pierwszy ustawiony, reszta – duplikaty).
   await karta(page);
   await dodaj(page, 'Wiersz', 'Statystyki');
-  await panel(page)
-    .getByRole('group', { name: 'Rozłożenie elementów' })
-    .getByRole('button', { name: 'równo między' })
-    .click();
+  await panel(page).getByLabel('Rozłożenie elementów').selectOption('miedzy');
   await dodaj(page, 'Wartość w kształcie', 'Wytrzymałość');
   await panel(page).getByLabel('Kształt').selectOption('romb');
   await rozmiar(page, 'Szerokość', 'mm', 11);
@@ -484,8 +475,7 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   // Ramka karty z motywu (pnącze) z narożnikami.
   await karta(page);
   const r = await sekcja(page, 'Ramka karty');
-  const rodzaj = r.getByRole('group', { name: 'Ramka karty', exact: true });
-  await rodzaj.getByRole('button', { name: 'motyw' }).click();
+  await r.getByLabel('Ramka karty', { exact: true }).selectOption('motyw');
   await r
     .getByRole('group', { name: 'Motyw', exact: true })
     .getByRole('button', { name: 'pnącze' })
@@ -513,14 +503,8 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   // Panel z podwójną linią (pole opisu).
   await zaznacz(page, 'Opis');
   const w = await sekcja(page, 'Wygląd (tło, ramka, rogi)');
-  await w
-    .getByRole('group', { name: 'Ramka z linii', exact: true })
-    .getByRole('button', { name: 'linia', exact: true })
-    .click();
-  await w
-    .getByRole('group', { name: 'Styl linii' })
-    .getByRole('button', { name: 'podwójna' })
-    .click();
+  await w.getByLabel('Ramka z linii', { exact: true }).selectOption('linia');
+  await w.getByLabel('Styl linii').selectOption('podwojna');
   await w.getByLabel('Kolor linii').fill('#5b3a1e');
 
   // Biblioteka: własny SVG (kształt wartości) i ramka 9-slice z PNG – wgrane przez interfejs.
@@ -572,8 +556,7 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   });
   await karta(page);
   const r2 = await sekcja(page, 'Ramka karty');
-  const rodzaj2 = r2.getByRole('group', { name: 'Ramka karty', exact: true });
-  await rodzaj2.getByRole('button', { name: /z obrazu/ }).click();
+  await r2.getByLabel('Ramka karty', { exact: true }).selectOption('obraz');
   await r2.getByLabel('Grubość ramki (mm)').fill('2.5');
   const ramkaPng = page.locator('.karta-podgladu svg image');
   await expect(ramkaPng.first()).toBeVisible();
@@ -716,10 +699,7 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
   await page.getByRole('button', { name: /Ustawienia/ }).click();
   const ust = page.getByRole('complementary', { name: 'Ustawienia' });
 
-  await ust
-    .getByRole('group', { name: 'Układ kart na kartce' })
-    .getByRole('button', { name: 'własny układ arkusza' })
-    .click();
+  await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
   await ust.getByLabel('Szerokość karty (mm)').fill('63.5');
   await ust.getByLabel('Wysokość karty (mm)').fill('89');
   const luz = ust.getByRole('group', { name: 'Karta w slocie' });

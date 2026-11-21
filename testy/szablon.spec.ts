@@ -72,10 +72,7 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   await expect(element(page, /^Siła – Wartość w kształcie/)).toBeVisible();
   await expect(wlasciwosci(page)).toContainText('Pole danych karty: wartosc_w_ksztalcie');
   // Szerokość stała w mm.
-  await wlasciwosci(page)
-    .getByRole('group', { name: 'Szerokość' })
-    .getByRole('button', { name: 'mm' })
-    .click();
+  await wlasciwosci(page).getByLabel('Szerokość', { exact: true }).selectOption('mm');
   await wlasciwosci(page).getByLabel('Rozmiar (mm)').fill('12');
   await element(page, /^Wiersz – /)
     .locator('.wezel-etykieta')

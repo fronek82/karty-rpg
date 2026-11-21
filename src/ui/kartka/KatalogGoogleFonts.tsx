@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { unikalneId } from '../../dane/czcionki';
 import { dodajZasoby } from '../../dane/edycja';
 import {
   KATALOG_GOOGLE_FONTS,
+  adresyPodgladuGoogleFonts,
   czyRodzinaDodana,
   pobierzRodzineGoogle,
+  zapasowaRodzinaKategorii,
   type KategoriaGoogleFonts,
   type PozycjaKataloguGoogle,
 } from '../../dane/googleFonts';
@@ -14,14 +16,22 @@ import type { ProjektWEdycji } from '../useProjekt';
 
 type FiltrKategorii = 'wszystkie' | KategoriaGoogleFonts;
 
-const KATEGORIE: readonly FiltrKategorii[] = ['wszystkie', 'ozdobna', 'szeryfowa', 'bezszeryfowa'];
+const KATEGORIE: readonly FiltrKategorii[] = [
+  'wszystkie',
+  'ozdobna',
+  'szeryfowa',
+  'bezszeryfowa',
+  'pisana',
+  'maszynowa',
+];
 
 const komunikat = (e: unknown) =>
   e instanceof BladDanych ? e.message : String(e instanceof Error ? e.message : e);
 
 /**
- * Kuratorowany katalog Google Fonts w panelu ustawień projektu (M4-6).
- * Pobiera statyczne warianty TTF dopiero po kliknięciu użytkownika i zapisuje je lokalnie
+ * Kuratorowany katalog Google Fonts w panelu ustawień projektu.
+ * Po rozwinięciu ładuje lekkie podzbiory CSS2 (`&text=...`) wyłącznie do podglądu próbki,
+ * a pełne statyczne warianty TTF pobiera dopiero po kliknięciu użytkownika i zapisuje lokalnie
  * w zasobach projektu (`zrodlo: 'google'`), dzięki czemu po zapisie projekt działa bez sieci.
  */
 export function KatalogGoogleFonts({
@@ -33,10 +43,12 @@ export function KatalogGoogleFonts({
   onStatus: (tekst: string) => void;
   onBlad: (tekst: string | undefined) => void;
 }) {
+  const [otwarty, ustawOtwarty] = useState(false);
   const [filtr, ustawFiltr] = useState<FiltrKategorii>('wszystkie');
   const [szukaj, ustawSzukaj] = useState('');
   const [pobieranaId, ustawPobieranaId] = useState<string>();
   const kontrolerRef = useRef<AbortController | null>(null);
+  const idKategorii = useId();
 
   useEffect(
     () => () => {
@@ -45,6 +57,35 @@ export function KatalogGoogleFonts({
     },
     [],
   );
+
+  const probka = t('googleFonts.probka');
+
+  // Leniwie dołącza arkusze CSS2 z parametrem `text=` dopiero po rozwinięciu katalogu (bez duplikatów).
+  useEffect(() => {
+    if (!otwarty || typeof document === 'undefined') return;
+    const adresy = adresyPodgladuGoogleFonts(
+      KATALOG_GOOGLE_FONTS.map((p) => p.rodzina),
+      probka,
+    );
+    const oczekiwane = new Set(adresy);
+    const istniejace = new Set<string>();
+    for (const el of document.head.querySelectorAll('link[data-google-fonts-podglad]')) {
+      const klucz = el.getAttribute('data-google-fonts-podglad');
+      if (!klucz || !oczekiwane.has(klucz)) {
+        el.remove();
+      } else {
+        istniejace.add(klucz);
+      }
+    }
+    for (const href of adresy) {
+      if (istniejace.has(href)) continue;
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.setAttribute('data-google-fonts-podglad', href);
+      document.head.appendChild(link);
+    }
+  }, [otwarty, probka]);
 
   const fraza = szukaj.trim().toLowerCase();
   const widoczne = KATALOG_GOOGLE_FONTS.filter((p) => {
@@ -100,7 +141,7 @@ export function KatalogGoogleFonts({
   };
 
   return (
-    <details className="katalog-google-fonts">
+    <details className="katalog-google-fonts" onToggle={(e) => ustawOtwarty(e.currentTarget.open)}>
       <summary>{t('googleFonts.otworz')}</summary>
       <p className="podpis">{t('googleFonts.opis')}</p>
       <div className="pole-panelu">
@@ -112,17 +153,26 @@ export function KatalogGoogleFonts({
           onChange={(e) => ustawSzukaj(e.target.value)}
         />
       </div>
-      <div
-        className="przelacznik-segmentowy katalog-google-kategorie"
-        role="group"
-        aria-label={t('googleFonts.kategorie')}
-      >
-        {KATEGORIE.map((k) => (
-          <button key={k} type="button" aria-pressed={filtr === k} onClick={() => ustawFiltr(k)}>
-            {t(`googleFonts.kategoria.${k}`)}
-          </button>
-        ))}
+      <div className="pole-panelu katalog-google-kategorie">
+        <label htmlFor={idKategorii}>{t('googleFonts.kategorie')}</label>
+        <select
+          id={idKategorii}
+          value={filtr}
+          onChange={(e) => ustawFiltr(e.target.value as FiltrKategorii)}
+        >
+          {KATEGORIE.map((k) => (
+            <option key={k} value={k}>
+              {t(`googleFonts.kategoria.${k}`)}
+            </option>
+          ))}
+        </select>
       </div>
+      <p className="podpis katalog-google-liczba">
+        {t('googleFonts.liczba', {
+          widoczne: widoczne.length,
+          wszystkie: KATALOG_GOOGLE_FONTS.length,
+        })}
+      </p>
       {widoczne.length === 0 ? (
         <p className="podpis">{t('googleFonts.brakWynikow')}</p>
       ) : (
@@ -135,6 +185,14 @@ export function KatalogGoogleFonts({
               <li key={p.id} className="pozycja-google-font">
                 <div className="pozycja-google-info">
                   <strong>{p.rodzina}</strong>
+                  <span
+                    className="podglad-google-font"
+                    style={{
+                      fontFamily: `"${p.rodzina}", ${zapasowaRodzinaKategorii(p.kategoria)}`,
+                    }}
+                  >
+                    {probka}
+                  </span>
                   <span className="podpis">
                     {t('googleFonts.meta', {
                       kategoria: t(`googleFonts.kategoria.${p.kategoria}`),

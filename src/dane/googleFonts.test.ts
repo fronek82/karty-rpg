@@ -19,11 +19,13 @@ import { dodajZasoby, ustawRole } from './edycja';
 import {
   KATALOG_GOOGLE_FONTS,
   POLSKIE_ZNAKI,
+  adresyPodgladuGoogleFonts,
   adresyWariantuGoogle,
   brakujaceWariantyRodziny,
   czyRodzinaDodana,
   maPolskieZnaki,
   pobierzRodzineGoogle,
+  zapasowaRodzinaKategorii,
   type FunkcjaPobierania,
 } from './googleFonts';
 import { BladDanych } from './schemat';
@@ -113,7 +115,11 @@ const kartaTestowa: Karta = {
 
 describe('katalog Google Fonts (M4-6)', () => {
   it('zawiera spójne, udokumentowane w LICENCJE.md rodziny SIL OFL 1.1 z polskimi znakami', () => {
-    expect(KATALOG_GOOGLE_FONTS.length).toBeGreaterThanOrEqual(8);
+    expect(KATALOG_GOOGLE_FONTS.length).toBeGreaterThanOrEqual(50);
+    const kategorie = new Set(KATALOG_GOOGLE_FONTS.map((p) => p.kategoria));
+    expect(kategorie).toEqual(
+      new Set(['ozdobna', 'szeryfowa', 'bezszeryfowa', 'pisana', 'maszynowa']),
+    );
     const licencje = readFileSync(resolve('LICENCJE.md'), 'utf8');
     const ids = new Set<string>();
     const rodziny = new Set<string>();
@@ -142,6 +148,21 @@ describe('katalog Google Fonts (M4-6)', () => {
         );
       }
     }
+  });
+
+  it('buduje lekkie adresy podglądu CSS2 ograniczone do unikalnych znaków próbki', () => {
+    const adresy = adresyPodgladuGoogleFonts(
+      ['Almendra', 'Press Start 2P', 'IBM Plex Mono'],
+      'Zażółć Zażółć',
+      2,
+    );
+    expect(adresy).toHaveLength(2);
+    expect(adresy[0]).toContain('family=Almendra&family=Press+Start+2P');
+    expect(adresy[0]).toContain(`text=${encodeURIComponent('Zażółć ')}`);
+    expect(adresy[0]).toContain('display=swap');
+    expect(adresy[1]).toContain('family=IBM+Plex+Mono');
+    expect(zapasowaRodzinaKategorii('pisana')).toBe('cursive');
+    expect(zapasowaRodzinaKategorii('maszynowa')).toBe('monospace');
   });
 
   it('pobiera wszystkie warianty rodziny ze źródłem „google” i pomija już obecne', async () => {

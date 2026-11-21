@@ -18,7 +18,7 @@ import {
 } from './elementyWlasne';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { PoleSzkicu } from './PolaDekoracji';
-import { Liczba, PoleKoloru, PoleOdstepow, Przelacznik, Sekcja, Wybor } from './Kontrolki';
+import { Liczba, Lista, PoleKoloru, PoleOdstepow, Sekcja, Wybor } from './Kontrolki';
 
 type Zmiana = (f: (w: Wezel) => Wezel, klucz?: string) => void;
 
@@ -73,7 +73,7 @@ export function PoleRamki<R extends Obramowanie>({
     <>
       {rodzaj ? (
         <>
-          <Przelacznik
+          <Lista
             etykieta={etykieta}
             opcje={[
               { wartosc: 'brak', tekst: t('ramka.rodzaj.brak') },
@@ -184,7 +184,7 @@ export function PoleRamki<R extends Obramowanie>({
             {...(ramka.szkic ? { wartosc: ramka.szkic } : {})}
             zmien={(v) => zmienRamke((r) => (v ? { ...r, szkic: v } : bez(r, 'szkic')))}
           />
-          <Przelacznik
+          <Lista
             etykieta={t('wlasciwosci.stylLinii')}
             opcje={(['ciagla', 'przerywana', 'kropkowana', 'podwojna'] as const).map((s) => ({
               wartosc: s,
@@ -616,13 +616,13 @@ export function PanelWygladu({ wezel, zmien }: { wezel: Wezel; zmien: Zmiana }) 
             }, `padding:${id}`)
           }
         />
-        <Przelacznik
+        <Lista
           etykieta={t('wlasciwosci.wyrownaniePoziome')}
           opcje={opcjeWyr('poziomo')}
           wartosc={wyr.poziomo ?? 'rozciagnij'}
           zmien={(v) => ustawWyr('poziomo', v)}
         />
-        <Przelacznik
+        <Lista
           etykieta={t('wlasciwosci.wyrownaniePionowe')}
           opcje={opcjeWyr('pionowo')}
           wartosc={wyr.pionowo ?? 'rozciagnij'}

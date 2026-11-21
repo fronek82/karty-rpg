@@ -175,7 +175,7 @@ export function PanelTypu({
                   )
                 }
               />
-              <Przelacznik
+              <Lista
                 etykieta={t('wlasciwosci.lukKierunek')}
                 opcje={(['gora', 'dol'] as const).map((k) => ({
                   wartosc: k,
@@ -317,7 +317,7 @@ export function PanelTypu({
     case 'obraz':
       return (
         <Sekcja tytul={t('wlasciwosci.obraz')} otwarta>
-          <Przelacznik
+          <Lista
             etykieta={t('wlasciwosci.dopasowanie')}
             opcje={(['dopasuj', 'wypelnij', 'rozciagnij'] as const).map((k) => ({
               wartosc: k,
@@ -366,7 +366,7 @@ export function PanelTypu({
       const wybranySvg = pole.element ? grafikiSvg.find((e) => e.id === pole.element) : undefined;
       return (
         <Sekcja tytul={t('wlasciwosci.ikona')} otwarta>
-          <Przelacznik
+          <Lista
             etykieta={t('ikona.typ')}
             opcje={[
               { wartosc: 'wbudowana', tekst: t('ikona.wbudowana') },
@@ -577,7 +577,7 @@ function PanelTabeli({
                     }
                   />
                 )}
-                <Przelacznik
+                <Lista
                   etykieta={t('tabela.wyrownanie', { n: i + 1 })}
                   opcje={(['domyslnie', 'lewo', 'srodek', 'prawo'] as const).map((w) => ({
                     wartosc: w,

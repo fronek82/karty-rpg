@@ -89,7 +89,7 @@ test('kształt z listy, styl tekstu, stały tekst, ramka pola i karty; kopiuj/wk
     'true',
   );
   // Stały tekst – ten sam na każdej karcie; klucz danych znika.
-  await panel(page).getByRole('button', { name: 'stała (na każdej karcie)' }).click();
+  await panel(page).getByLabel('Treść', { exact: true }).selectOption('staly');
   await panel(page).getByLabel('Stały tekst').fill('★');
   await expect(panel(page)).not.toContainText('Pole danych karty');
   // Ramka pola.
@@ -130,10 +130,7 @@ test('kształt z listy, styl tekstu, stały tekst, ramka pola i karty; kopiuj/wk
   await page.keyboard.press('Escape');
   await page.locator('.karta-podgladu').click({ position: { x: 2, y: 2 } });
   const r = await otworz(page, 'Ramka karty');
-  await r
-    .getByRole('group', { name: 'Ramka karty', exact: true })
-    .getByRole('button', { name: 'linia', exact: true })
-    .click();
+  await r.getByLabel('Ramka karty', { exact: true }).selectOption('linia');
   await r.getByLabel('Odsunięcie od krawędzi (mm)').fill('2');
   await expect(page.locator('.karta-podgladu svg rect[stroke]').last()).toBeAttached();
 });

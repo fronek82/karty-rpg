@@ -52,7 +52,7 @@ import { przygotujPlikObrazu } from '../obrazy';
 import { tekstOstrzezenia } from '../ostrzezenia';
 import { DrzewoSzablonu, nazwaWezla } from '../szablon/DrzewoSzablonu';
 import { ElementyWlasneKontekst } from '../szablon/elementyWlasne';
-import { Lista, Przelacznik, Sekcja, Wybor } from '../szablon/Kontrolki';
+import { Lista, Sekcja, Wybor } from '../szablon/Kontrolki';
 import { NakladkaSwobodna } from '../szablon/NakladkaSwobodna';
 import { PanelWezla } from '../szablon/PanelWezla';
 import { PoleRamki } from '../szablon/PanelWygladu';
@@ -931,7 +931,7 @@ export function EdytorRewersu({ edycja, rewersId }: { edycja: ProjektWEdycji; re
                   )}
                   {rewers.teksturaTla && (
                     <>
-                      <Przelacznik
+                      <Lista
                         etykieta={t('dekoracje.trybTla')}
                         opcje={(['wypelnij', 'dopasuj', 'rozciagnij', 'kafelki'] as const).map(
                           (m: TrybTla) => ({

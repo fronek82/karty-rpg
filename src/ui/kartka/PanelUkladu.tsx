@@ -191,23 +191,18 @@ export function PanelUkladu({
       <legend>{t('uklad.tytul')}</legend>
       {przelaczRozmiary && (
         <div className="pole-panelu">
-          <span id={`rozmiary-${A}`}>{t('mieszane.tytul')}</span>
-          <div className="przelacznik-segmentowy" role="group" aria-labelledby={`rozmiary-${A}`}>
-            <button
-              type="button"
-              aria-pressed={!mieszane}
-              onClick={() => mieszane && przelaczRozmiary('jeden')}
-            >
-              {t('mieszane.jeden')}
-            </button>
-            <button
-              type="button"
-              aria-pressed={mieszane}
-              onClick={() => !mieszane && przelaczRozmiary('mieszane')}
-            >
-              {t('mieszane.mieszane')}
-            </button>
-          </div>
+          <label htmlFor={`rozmiary-${A}`}>{t('mieszane.tytul')}</label>
+          <select
+            id={`rozmiary-${A}`}
+            value={mieszane ? 'mieszane' : 'jeden'}
+            onChange={(e) => {
+              const v = e.target.value as 'jeden' | 'mieszane';
+              if ((v === 'mieszane') !== mieszane) przelaczRozmiary(v);
+            }}
+          >
+            <option value="jeden">{t('mieszane.jeden')}</option>
+            <option value="mieszane">{t('mieszane.mieszane')}</option>
+          </select>
         </div>
       )}
       {mieszane && (
@@ -233,19 +228,18 @@ export function PanelUkladu({
             </p>
           </div>
           <div className="pole-panelu">
-            <span id={`kolejnosc-${A}`}>{t('mieszane.kolejnosc')}</span>
-            <div className="przelacznik-segmentowy" role="group" aria-labelledby={`kolejnosc-${A}`}>
+            <label htmlFor={`kolejnosc-${A}`}>{t('mieszane.kolejnosc')}</label>
+            <select
+              id={`kolejnosc-${A}`}
+              value={opcje.kolejnosc}
+              onChange={(e) => wybierzKolejnosc(e.target.value as 'najwieksze' | 'wlasna')}
+            >
               {(['najwieksze', 'wlasna'] as const).map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  aria-pressed={opcje.kolejnosc === k}
-                  onClick={() => wybierzKolejnosc(k)}
-                >
+                <option key={k} value={k}>
                   {t(`mieszane.${k}`)}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
             <p className="podpis">{t('mieszane.kolejnoscOpis')}</p>
           </div>
           <label className="pole-panelu wybor">
@@ -303,21 +297,23 @@ export function PanelUkladu({
         </>
       )}
       <div className="pole-panelu">
-        <span id={`tryb-ukladu-${A}`}>{t('uklad.tryb')}</span>
-        <div className="przelacznik-segmentowy" role="group" aria-labelledby={`tryb-ukladu-${A}`}>
-          <button type="button" aria-pressed={!uklad} onClick={() => uklad && wylaczWlasny()}>
-            {t('uklad.automatyczny')}
-          </button>
-          <button
-            type="button"
-            aria-pressed={!!uklad}
-            disabled={mieszane}
-            title={mieszane ? t('mieszane.wlasnyUklad') : undefined}
-            onClick={() => !uklad && wlaczWlasny()}
-          >
+        <label htmlFor={`tryb-ukladu-${A}`}>{t('uklad.tryb')}</label>
+        <select
+          id={`tryb-ukladu-${A}`}
+          value={uklad ? 'wlasny' : 'auto'}
+          onChange={(e) => {
+            if (e.target.value === 'wlasny') {
+              if (!uklad && !mieszane) wlaczWlasny();
+            } else if (uklad) {
+              wylaczWlasny();
+            }
+          }}
+        >
+          <option value="auto">{t('uklad.automatyczny')}</option>
+          <option value="wlasny" disabled={mieszane}>
             {t('uklad.wlasny')}
-          </button>
-        </div>
+          </option>
+        </select>
         <p className="podpis">{t('uklad.opis')}</p>
       </div>
       {!mieszane && (

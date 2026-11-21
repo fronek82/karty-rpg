@@ -350,7 +350,20 @@ describe('poprawki po przeglądzie', () => {
     expect(danePodgladu(s).imie).toBe('Imię');
     expect(nazwaKarty({ imie: 'Gryf' }, s)).toBe('Gryf');
     expect(nazwaKarty({ nazwa: 'N', imie: 'Gryf' }, s)).toBe('N');
+    expect(nazwaKarty({ nazwa: 'Pierwsza linia\nDruga linia' }, s)).toBe('Pierwsza linia');
     expect(nazwaKarty({}, s)).toBe('');
+
+    // Drugie pole tekstowe (np. Opis) nie trafia w nagłówek, gdy pierwsze pole (tytułowe) jest puste.
+    s = wstawWezel(s, 'karta', nowyWezel(s, 'tekst', 'Opis'));
+    expect(nazwaKarty({ opis: 'Bardzo długi opis karty' }, s)).toBe('');
+    expect(nazwaKarty({ imie: 'Gryf', opis: 'Bardzo długi opis karty' }, s)).toBe('Gryf');
+
+    // Szablon z jawnym kluczem `nazwa`: przy pustej nazwie nie przejmuje innego pola tekstowego.
+    let zNazwa = pusty();
+    zNazwa = wstawWezel(zNazwa, 'karta', nowyWezel(zNazwa, 'tekst', 'Opis'));
+    zNazwa = wstawWezel(zNazwa, 'karta', nowyWezel(zNazwa, 'tekst', 'Nazwa'));
+    expect(nazwaKarty({ opis: 'Treść opisu' }, zNazwa)).toBe('');
+    expect(nazwaKarty({ nazwa: 'Zaklęcie', opis: 'Treść opisu' }, zNazwa)).toBe('Zaklęcie');
   });
 });
 

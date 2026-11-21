@@ -16,11 +16,8 @@ test('ramka 9-slice z PNG: edytor wcięć, podglądy, dpi i użycie w panelu Ram
     uklad: 'Tytuł i opis',
   });
   await karta(page);
-  const rodzaj = (await sekcja(page, 'Ramka karty')).getByRole('group', {
-    name: 'Ramka karty',
-    exact: true,
-  });
-  await expect(rodzaj.getByRole('button', { name: /z obrazu/ })).toBeDisabled();
+  const rodzaj = (await sekcja(page, 'Ramka karty')).getByLabel('Ramka karty', { exact: true });
+  await expect(rodzaj.locator('option[value="obraz"]')).toBeDisabled();
 
   await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
   await page.getByTestId('plik-png').setInputFiles('testy/zasoby/ramka-testowa.png');
@@ -109,9 +106,9 @@ test('ramka 9-slice z PNG: edytor wcięć, podglądy, dpi i użycie w panelu Ram
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
   await karta(page);
   const r2 = await sekcja(page, 'Ramka karty');
-  const rodzaj2 = r2.getByRole('group', { name: 'Ramka karty', exact: true });
-  await expect(rodzaj2.getByRole('button', { name: /z obrazu/ })).toBeEnabled();
-  await rodzaj2.getByRole('button', { name: /z obrazu/ }).click();
+  const rodzaj2 = r2.getByLabel('Ramka karty', { exact: true });
+  await expect(rodzaj2.locator('option[value="obraz"]')).toBeEnabled();
+  await rodzaj2.selectOption('obraz');
   const podgladKarty = page.locator('.karta-podgladu svg');
   await expect(podgladKarty.locator('image')).not.toHaveCount(0);
   await r2.getByLabel('Grubość ramki (mm)').fill('2.5');
@@ -119,6 +116,6 @@ test('ramka 9-slice z PNG: edytor wcięć, podglądy, dpi i użycie w panelu Ram
   await r2.getByLabel('Grubość ramki (mm)').fill('5');
   await expect(page.getByText(/152 dpi/).first()).toBeVisible();
   // Powrót do „brak” czyści ozdobę.
-  await rodzaj2.getByRole('button', { name: 'brak', exact: true }).click();
+  await rodzaj2.selectOption('brak');
   await expect(podgladKarty.locator('image')).toHaveCount(0);
 });
