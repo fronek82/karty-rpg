@@ -4,7 +4,7 @@ Aplikacja przeglądarkowa (Vite + TypeScript + React) do projektowania i drukowa
 
 ## Gdzie co jest
 
-- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b ukończony 18.11.2026), `docs/plan-UI.md` (przebudowa interfejsu – UI-1…UI-9 ukończone 18.11.2026), `docs/plan-M3.md` (M3 ukończony 19.11.2026), `docs/plan-M4.md` (M4 ukończony 20.11.2026). M4-1 (model rewersów, przypisania i paczki) ukończony 19.11.2026. M4-2 (edytor i podgląd rewersu), M4-3 (tekst rewersu po łuku i efekty warstw), M4-4 (druk dwustronny i wydruk próbny), M4-5 (tryb drukarni, spad, znaczniki i DPI), M4-6 (katalog Google Fonts i zapis wariantów) oraz M4-7 (domknięcie, README, galeria przykładów i odbiór) ukończone 20.11.2026. Ręczny odbiór M2c ukończony 20.11.2026 (`docs/plan-M2c.md`). Ręczne sprawdzenia fizycznego wydruku M4 są zebrane w `docs/plan-M4.md#ręczne-sprawdzenia-m4`. Następny kamień milowy do zaplanowania: M5 (wg `SPEC.md`).
+- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b ukończony 18.11.2026), `docs/plan-UI.md` (przebudowa interfejsu – UI-1…UI-9 ukończone 18.11.2026), `docs/plan-M3.md` (M3 ukończony 19.11.2026), `docs/plan-M4.md` (M4 ukończony 20.11.2026). Aktualny plan: `docs/plan-M5.md` (przygotowany 20.11.2026). Następny etap: M5-1 (automatyczne czyszczenie tekstu wklejanego z PDF). Ręczny odbiór M2c ukończony 20.11.2026 (`docs/plan-M2c.md`); lista ręcznego odbioru fizycznego M4 jest w `docs/plan-M4.md#ręczne-sprawdzenia-m4`.
 - Decyzje podjęte bez konsultacji: sekcja 9 planu (B1…); nowe dopisuj tam.
 - Przykłady szablonów: `docs/przyklady/`; zrzuty ekranu: `docs/obrazy/`.
 - Agenci: `.claude/agents/` (np. `recenzent` – przegląd, tylko odczyt).
