@@ -10,7 +10,7 @@ import type { Karta, Rewers, Szablon, Talia } from '../src/model/szablon';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { zapisano } from './pomoc';
+import { kliknijPobierzPdf, zapisano } from './pomoc';
 import { dodaj, kreator, panel } from './szablonUI';
 
 /**
@@ -194,10 +194,7 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
   await zapisano(page);
 
   // Pobierz dwustronny PDF -> 2 strony (przód + tył).
-  const [pobraniePdf] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pobraniePdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const sciezkaPdf = await pobraniePdf.path();
   expect(sciezkaPdf).toBeTruthy();
   const docPdf = await PDFDocument.load(readFileSync(sciezkaPdf!));

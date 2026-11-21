@@ -25,7 +25,7 @@ export async function kreator(
     adres?: string;
   },
 ) {
-  await page.goto(o.adres ?? './#/wlasne/nowy');
+  await page.goto(o.adres ?? './#/wlasne/nowy/awers');
   await page.getByLabel('Nazwa szablonu').fill(o.nazwa);
   await page.locator('label.format', { hasText: o.format }).click();
   if (o.pozioma) await page.getByRole('button', { name: 'poziomo', exact: true }).click();

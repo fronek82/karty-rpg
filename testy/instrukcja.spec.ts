@@ -191,7 +191,7 @@ test('link „Instrukcja” z aplikacji otwiera stronę w nowym oknie w języku 
 });
 
 test('link działa także z edytora kartki i z edytora szablonu', async ({ page }) => {
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   const link = page.getByRole('link', { name: /^Instrukcja/ });
   await expect(link).toHaveAttribute('href', 'instrukcja/?lang=pl');
   await expect(link).toHaveAttribute('target', '_blank');

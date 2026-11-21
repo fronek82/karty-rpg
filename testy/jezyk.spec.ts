@@ -146,7 +146,7 @@ test('ekran Mausrittera i nazwy gotowych układów po angielsku', async ({ page 
 test('kreator szablonu: napisy po angielsku, bez przeładowania i z zachowaniem wpisanych wartości', async ({
   page,
 }) => {
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   await page.getByLabel('Nazwa szablonu').fill('Moja karta testowa');
   await wybierz(page, 'EN');
   const nazwa = page.getByLabel('Template name');
@@ -253,7 +253,7 @@ test.describe('edytor szablonu po angielsku', () => {
   test('kreator i edytor: napisy EN; przełączenie w trakcie zachowuje zaznaczenie', async ({
     page,
   }) => {
-    await page.goto('./#/wlasne/nowy');
+    await page.goto('./#/wlasne/nowy/awers');
     await page.getByLabel('Template name').fill('Test card');
     await page.locator('label.format', { hasText: 'Mini Euro' }).click();
     await page.locator('label.uklad', { hasText: 'Title and description' }).click();

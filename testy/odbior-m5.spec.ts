@@ -2,6 +2,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { ADRES_CLAUDE_API } from '../src/dane/aiUklad';
+import { kliknijPobierzPdf } from './pomoc';
 
 /**
  * M5-6: neutralny odbiór całego kamienia milowego M5 w PL i EN oraz w motywie jasnym i ciemnym:
@@ -147,7 +148,7 @@ for (const en of [false, true]) {
 
       const [pobranie] = await Promise.all([
         page.waitForEvent('download'),
-        page.getByRole('button', { name: en ? 'Download PDF' : 'Pobierz PDF' }).click(),
+        kliknijPobierzPdf(page, en),
       ]);
       const sciezkaPdf = await pobranie.path();
       expect(sciezkaPdf).toBeTruthy();

@@ -11,7 +11,7 @@ import { konturIkony } from '../src/silnik/ikony';
 import { konturNaD, scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { przeciagnij, slot, srodek, zapisano } from './pomoc';
+import { kliknijPobierzPdf, przeciagnij, slot, srodek, zapisano } from './pomoc';
 import {
   SZABLONY,
   TALIA,
@@ -314,10 +314,7 @@ test('na mieszanej kartce 1×1, 1×2 i 2×1 kalibracja chroni początki linii', 
     kopia.append(grupa);
     return kopia.outerHTML;
   });
-  const [pdf] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const bajty = await readFile(await pdf.path());
   await przygotujStrone(page);
   const wynik = await porownaj(page, przesuniety, bajty, { x: 5, y: 20, szer: 6, wys: 8 });

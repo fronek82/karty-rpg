@@ -9,7 +9,15 @@ import { expect, test, type Page } from '@playwright/test';
 import { konturIkony } from '../src/silnik/ikony';
 import { porownaj, przygotujStrone } from './pdfSvg';
 import { konturNaD } from '../src/silnik/svg';
-import { dodajKarte, karta, nowaPustaKartka, przeciagnij, slot, srodek } from './pomoc';
+import {
+  dodajKarte,
+  karta,
+  kliknijPobierzPdf,
+  nowaPustaKartka,
+  przeciagnij,
+  slot,
+  srodek,
+} from './pomoc';
 
 test.use({ viewport: { width: 1440, height: 1150 } });
 
@@ -109,10 +117,7 @@ test('zewnętrzne nożyczki na ręcznej kartce 1×1, 1×2 i 2×1 omijają karty'
     for (const ile of ciemne) expect(ile).toBeGreaterThan(100);
   }
 
-  const [pdf] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const bajty = await readFile(await pdf.path());
   await przygotujStrone(page);
   for (const o of okolice) {

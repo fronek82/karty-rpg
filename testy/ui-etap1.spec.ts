@@ -99,8 +99,19 @@ for (const motyw of ['light', 'dark'] as const) {
     else expect(kWlasne2.lum).toBeLessThan(kWlasne1.lum);
     const szerMenu = (await linkNowy.boundingBox())!.width;
 
-    // 4) Kreator nowego szablonu: przyciski w lewym menu, tej samej szerokości; Anuluj = tło.
+    // 4) Krok 3 (Awers / Rewers) po kliknięciu „Nowy szablon od zera”.
     await linkNowy.click();
+    await page.mouse.move(0, 0);
+    const linkAwers = page.getByRole('link', { name: /^Awers/ });
+    const btnRewers = page.getByRole('button', { name: /^Rewers/ });
+    const kWlasne3 = await kolory(linkAwers);
+    expect(kWlasne3.tlo).toBe((await kolory(btnRewers)).tlo);
+    expect(kontrastRgb(kWlasne3.tekst, kWlasne3.tlo)).toBeGreaterThanOrEqual(4.5);
+    if (motyw === 'light') expect(kWlasne3.lum).toBeGreaterThan(kWlasne2.lum);
+    else expect(kWlasne3.lum).toBeLessThan(kWlasne2.lum);
+
+    // 5) Krok 4: Kreator nowego szablonu (Awers) – przyciski w lewym menu, tej samej szerokości; Anuluj = tło.
+    await linkAwers.click();
     await page.mouse.move(0, 0);
     const dalej = page.getByRole('button', { name: /Dalej: układ pól/ });
     const anuluj = page.getByRole('button', { name: 'Anuluj', exact: true });
@@ -114,14 +125,14 @@ for (const motyw of ['light', 'dark'] as const) {
 
     const kWlasne4 = await kolory(dalej);
     expect(kontrastRgb(kWlasne4.tekst, kWlasne4.tlo)).toBeGreaterThanOrEqual(4.5);
-    if (motyw === 'light') expect(kWlasne4.lum).toBeGreaterThan(kWlasne2.lum);
-    else expect(kWlasne4.lum).toBeLessThan(kWlasne2.lum);
+    if (motyw === 'light') expect(kWlasne4.lum).toBeGreaterThan(kWlasne3.lum);
+    else expect(kWlasne4.lum).toBeLessThan(kWlasne3.lum);
 
     const kAnuluj = await kolory(anuluj);
     expect(kAnuluj.tlo).toBe(await tloStrony(page));
     expect(kontrastRgb(kAnuluj.tekst, kAnuluj.tlo)).toBeGreaterThanOrEqual(4.5);
 
-    // 5) Układ ze zdjęcia (AI): Rozpoznaj i Anuluj w lewym menu, te same kolory i szerokość.
+    // 6) Układ ze zdjęcia (AI): Rozpoznaj i Anuluj w lewym menu, te same kolory i szerokość.
     await page.goto('./#/wlasne/ai');
     const rozpoznaj = page.getByRole('button', { name: 'Rozpoznaj układ', exact: true });
     const anulujAi = page.getByRole('link', { name: 'Anuluj', exact: true });
@@ -149,7 +160,7 @@ test('kreator: na mobile formularz jest nad przyciskami, a Enter zatwierdza form
   page,
 }) => {
   await page.setViewportSize({ width: 420, height: 900 });
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   const form = (await page.locator('.kreator-formularz').boundingBox())!;
   const dalej = (await page.getByRole('button', { name: /Dalej: układ pól/ }).boundingBox())!;
   expect(dalej.y).toBeGreaterThan(form.y);

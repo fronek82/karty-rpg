@@ -3,6 +3,7 @@ import { unzipSync } from 'fflate';
 import { PDFDocument } from 'pdf-lib';
 import { expect, test } from '@playwright/test';
 import { kreator, panel, rozmiar, zaznacz, kartaNaKartce } from './szablonUI';
+import { kliknijPobierzPdf } from './pomoc';
 
 test('dalsze części opisu pojawiają się na arkuszu i w pobraniu kart', async ({ page }) => {
   await kreator(page, {
@@ -23,10 +24,7 @@ test('dalsze części opisu pojawiają się na arkuszu i w pobraniu kart', async
 
   if (process.env.ZRZUTY_M3_4) await page.screenshot({ path: 'docs/obrazy/m3-4-ciag-dalszy.png' });
 
-  const [pdf] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const dok = await PDFDocument.load(await readFile(await pdf.path()));
   expect(dok.getPageCount()).toBe(await page.locator('.strona-kartki').count());
 

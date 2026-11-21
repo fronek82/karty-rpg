@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
+import { kliknijPobierzPdf } from './pomoc';
 import { eksportujProjekt } from '../src/dane/archiwum';
 import { projektZPakietu } from '../src/dane/pakiet';
 import { PAKIET_WLASNY, pakietWlasny, ustawieniaKartkiDla } from '../src/dane/wlasneKarty';
@@ -276,7 +277,7 @@ for (const en of [false, true]) {
         await page.screenshot({ path: `docs/obrazy/m3-8/${jezyk}-${motyw}.png` });
       const [plik] = await Promise.all([
         page.waitForEvent('download'),
-        page.getByRole('button', { name: en ? /Download PDF/ : /Pobierz PDF/ }).click(),
+        kliknijPobierzPdf(page, en),
       ]);
       expect((await readFile(await plik.path())).subarray(0, 5).toString()).toBe('%PDF-');
     });

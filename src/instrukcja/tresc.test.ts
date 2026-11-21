@@ -46,7 +46,8 @@ const SKROTY: Record<Jezyk, string[]> = {
 const KLUCZOWE: Record<string, (j: Jezyk) => string> = {
   'kartka.ustawienia': (j) => SLOWNIKI[j]['kartka.ustawienia']!,
   'projekty.eksportuj': (j) => SLOWNIKI[j]['projekty.eksportuj']!,
-  'arkusze.pobierzPdf': (j) => SLOWNIKI[j]['arkusze.pobierzPdf']!,
+  'pobierz.menu': (j) => SLOWNIKI[j]['pobierz.menu']!,
+  'pobierz.pdf': (j) => SLOWNIKI[j]['pobierz.pdf']!,
   'start.importujPliki': (j) => SLOWNIKI[j]['start.importujPliki']!,
   'start.stworzDo': (j) =>
     SLOWNIKI[j]['start.stworzDo']!.replace('{gra}', SLOWNIKI[j]['gra.mausritter.nazwaDo']!),

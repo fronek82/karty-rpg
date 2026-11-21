@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { karta, kartaNaKartce, dodaj, kreator, sekcja, zaznacz } from './szablonUI';
-import { zapisano } from './pomoc';
+import { kliknijPobierzPdf, zapisano } from './pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
 
 test('tekstura i postrzępiona krawędź trafiają na kartę, do PDF i pozostają po zapisaniu', async ({
@@ -75,10 +75,7 @@ test('tekstura i postrzępiona krawędź trafiają na kartę, do PDF i pozostaj�
     /href="blob:[^"]+"/g,
     `href="data:image/png;base64,${base64}"`,
   );
-  const [pobranie] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pobranie] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const pdf = await readFile(await pobranie.path());
   await przygotujStrone(page);
   const wynik = await porownaj(page, tekstSvg, pdf, krawedz);

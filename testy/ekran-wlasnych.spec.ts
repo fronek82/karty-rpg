@@ -101,10 +101,16 @@ test('podwójne kliknięcie tworzy jeden projekt', async ({ page }) => {
   await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
 });
 
-test('„Nowy szablon od zera” otwiera kreator', async ({ page }) => {
+test('„Nowy szablon od zera” otwiera wybór Awers / Rewers, a Awers otwiera kreator', async ({
+  page,
+}) => {
   await wejdz(page);
   await page.getByRole('link', { name: /Nowy szablon od zera/ }).click();
   await expect(page).toHaveURL(/#\/wlasne\/nowy$/);
+  await expect(page.getByRole('link', { name: /^Awers/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Rewers/ })).toBeVisible();
+  await page.getByRole('link', { name: /^Awers/ }).click();
+  await expect(page).toHaveURL(/#\/wlasne\/nowy\/awers$/);
   await expect(page.getByLabel('Nazwa szablonu')).toBeVisible();
 });
 

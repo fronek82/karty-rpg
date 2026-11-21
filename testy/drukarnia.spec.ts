@@ -10,7 +10,7 @@ import type { Karta, Rewers, Szablon, Talia } from '../src/model/szablon';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { zapisano } from './pomoc';
+import { kliknijPobierzPdf, zapisano } from './pomoc';
 import { dodaj, kreator } from './szablonUI';
 
 /**
@@ -157,10 +157,7 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
   await ust.getByLabel('Układ drukarski').selectOption('pojedyncza');
   await zapisano(page);
 
-  const [pobranie] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pobranie] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const sciezka = await pobranie.path();
   expect(sciezka).toBeTruthy();
   const pdf = await PDFDocument.load(readFileSync(sciezka!));

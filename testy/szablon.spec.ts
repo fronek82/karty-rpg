@@ -16,7 +16,7 @@ async function dodaj(page: Page, rodzaj: string) {
 }
 
 test('kreator domyślnie tworzy kartę swobodną, a pusty układ jest ostatni', async ({ page }) => {
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   await page.getByLabel('Nazwa szablonu').fill('Karta w układzie swobodnym');
   const opcje = page.locator('input[name="uklad"]');
   expect(await opcje.evaluateAll((pola: HTMLInputElement[]) => pola.map((p) => p.value))).toEqual([
@@ -35,6 +35,7 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
 }) => {
   await page.goto('./#/wlasne');
   await page.getByRole('link', { name: /Nowy szablon od zera/ }).click();
+  await page.getByRole('link', { name: /^Awers/ }).click();
   await page.getByLabel('Nazwa szablonu').fill('Karta testowa');
   await page.getByText('Mini Euro').click();
   await page.getByRole('button', { name: 'poziomo' }).click();
@@ -134,7 +135,7 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
 });
 
 test('nowy szablon w istniejącym projekcie: kreator z kartki, siatka 2×2', async ({ page }) => {
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
   await page.getByRole('link', { name: '← Kartki' }).click();
@@ -159,7 +160,7 @@ test('edytor szablonu nie otwiera się dla projektu gry ani nieznanego szablonu'
   const id = page.url().split('/projekt/')[1]!;
   await page.goto(`${adres}#/projekt/${id}/szablon/mausritter-bron`);
   await expect(page.getByRole('alert')).toContainText('Szablony z pakietu gry');
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
   const wlasny = page.url().split('/szablon/')[0]!;
@@ -172,7 +173,7 @@ test('edytor szablonu nie otwiera się dla projektu gry ani nieznanego szablonu'
 test('duplikuje szablon z paska i ustawień, a Cofnij pozostawia oryginał w edytorze', async ({
   page,
 }) => {
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   await page.getByLabel('Nazwa szablonu').fill('Oryginał');
   await page.getByText('Tytuł i opis').click();
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();

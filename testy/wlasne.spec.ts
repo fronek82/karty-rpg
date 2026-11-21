@@ -4,7 +4,7 @@ import { eksportujSzablon } from '../src/dane/archiwum';
 import { WERSJA_SCHEMATU, type Projekt } from '../src/model/projekt';
 import type { Szablon } from '../src/model/szablon';
 import { szablonCzaru, szablonStatystyk } from '../src/silnik/__testy__/przyklady';
-import { slot, zapisano } from './pomoc';
+import { kliknijPobierzPdf, slot, zapisano } from './pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
 
 /** Własne karty: import szablonu, karty w mm na kartce, papier, eksport i import szablonów. */
@@ -74,10 +74,7 @@ test('import szablonu → kartka 63×88 (3×3), karta z menu, papier zdjęciowy,
   expect(plik.suggestedFilename()).toBe('czar-test.kartyrpg-szablon');
 
   // PDF się pobiera.
-  const [pdf] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   expect(pdf.suggestedFilename()).toMatch(/\.pdf$/);
 });
 
@@ -182,10 +179,7 @@ test('pole tekstu zawija ciąg bez spacji i zachowuje szerokość panelu na kart
   expect(await panel.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1);
 
   const svgTekst = await svg.evaluate((e) => e.outerHTML);
-  const [pdf] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const bajty = await readFile(await pdf.path());
   await przygotujStrone(page);
   const wydruk = await porownaj(page, svgTekst, bajty, { x: 76, y: 12, szer: 55, wys: 40 });

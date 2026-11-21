@@ -14,6 +14,9 @@ const WyborGry = lazy(() => import('./start/WyborGry').then((m) => ({ default: m
 const WlasneKarty = lazy(() =>
   import('./start/WlasneKarty').then((m) => ({ default: m.WlasneKarty })),
 );
+const WybierzStroneSzablonu = lazy(() =>
+  import('./start/WybierzStroneSzablonu').then((m) => ({ default: m.WybierzStroneSzablonu })),
+);
 const KreatorStrona = lazy(() =>
   import('./start/KreatorStrona').then((m) => ({ default: m.KreatorStrona })),
 );
@@ -105,7 +108,13 @@ export function App() {
   // Ekrany z lewym menu (start, gra, własne karty, kreator, AI) mają szeroką treść z jedną linią menu.
   const wlasne = trasa === '/wlasne' || trasa === '/gry/inne';
   const szerokaTresc =
-    trasa === '/' || dawna || !!gra || wlasne || trasa === '/wlasne/nowy' || trasa === '/wlasne/ai';
+    trasa === '/' ||
+    dawna ||
+    !!gra ||
+    wlasne ||
+    trasa === '/wlasne/nowy' ||
+    trasa === '/wlasne/nowy/awers' ||
+    trasa === '/wlasne/ai';
 
   if (projekt) {
     // Edytor kartki zajmuje cały ekran (własny pasek górny).
@@ -140,6 +149,10 @@ export function App() {
             <WyborGry id={decodeURIComponent(gra)} />
           </Leniwa>
         ) : trasa === '/wlasne/nowy' ? (
+          <Leniwa>
+            <WybierzStroneSzablonu />
+          </Leniwa>
+        ) : trasa === '/wlasne/nowy/awers' ? (
           <Leniwa>
             <KreatorStrona />
           </Leniwa>
