@@ -11,9 +11,13 @@ export const POLSKIE_ZNAKI = 'ąćęłńóśźżĄĆĘŁŃÓŚŹŻ';
 export type KategoriaGoogleFonts =
   'ozdobna' | 'szeryfowa' | 'bezszeryfowa' | 'pisana' | 'maszynowa';
 
+export type GrupaGoogleFonts = 'ofl' | 'apache' | 'ufl';
+
+export type LicencjaGoogleFonts = 'SIL OFL 1.1' | 'Apache 2.0' | 'Ubuntu Font License';
+
 export interface WariantKataloguGoogle {
   wariant: WariantCzcionki;
-  /** Nazwa statycznego pliku TTF w repozytorium `google/fonts`. */
+  /** Ścieżka pliku TTF względem katalogu rodziny w repozytorium `google/fonts` (np. `Font-Regular.ttf` lub `static/Font-Regular.ttf`). */
   plik: string;
 }
 
@@ -22,11 +26,13 @@ export interface PozycjaKataloguGoogle {
   rodzina: string;
   kategoria: KategoriaGoogleFonts;
   autor: string;
-  licencja: 'SIL OFL 1.1';
-  /** Podkatalog w `google/fonts/ofl/<katalog>`. */
+  licencja: LicencjaGoogleFonts;
+  /** Grupa licencyjna w `google/fonts` (domyślnie `ofl`). */
+  grupa?: GrupaGoogleFonts;
+  /** Podkatalog w `google/fonts/<grupa>/<katalog>`. */
   katalog: string;
-  /** Zweryfikowane pokrycie polskich znaków (`latin-ext` w METADATA.pb). */
-  polskieZnaki: true;
+  /** Zweryfikowane pokrycie polskich znaków (`latin-ext` w metadanych Google Fonts). */
+  polskieZnaki: boolean;
   warianty: readonly WariantKataloguGoogle[];
 }
 
@@ -1472,15 +1478,77 @@ export function adresyPodgladuGoogleFonts(
 
 /** Adresy pobierania pliku TTF wariantu (CDN jsDelivr z zapasowym raw.githubusercontent.com). */
 export function adresyWariantuGoogle(
-  pozycja: Pick<PozycjaKataloguGoogle, 'katalog'>,
+  pozycja: Pick<PozycjaKataloguGoogle, 'katalog' | 'grupa'>,
   wariant: Pick<WariantKataloguGoogle, 'plik'>,
 ): readonly string[] {
+  const grupa = pozycja.grupa ?? 'ofl';
   const sciezkaPliku = wariant.plik.split('/').map(encodeURIComponent).join('/');
-  const sciezka = `ofl/${pozycja.katalog}/${sciezkaPliku}`;
+  const sciezka = `${grupa}/${pozycja.katalog}/${sciezkaPliku}`;
   return [
     `https://cdn.jsdelivr.net/gh/google/fonts@main/${sciezka}`,
     `https://raw.githubusercontent.com/google/fonts/main/${sciezka}`,
   ];
+}
+
+const KATEGORIE_Z_KODU: readonly KategoriaGoogleFonts[] = [
+  'ozdobna',
+  'szeryfowa',
+  'bezszeryfowa',
+  'pisana',
+  'maszynowa',
+];
+const GRUPY_Z_KODU: readonly GrupaGoogleFonts[] = ['ofl', 'apache', 'ufl'];
+const LICENCJE_Z_KODU: readonly LicencjaGoogleFonts[] = [
+  'SIL OFL 1.1',
+  'Apache 2.0',
+  'Ubuntu Font License',
+];
+
+type KompaktoweWarianty = { n: string; b?: string; i?: string; bi?: string };
+type KrotkaKatalogu = readonly [string, number, string, number, string, number, KompaktoweWarianty];
+
+let obietnicaPelnegoKatalogu: Promise<readonly PozycjaKataloguGoogle[]> | undefined;
+
+/**
+ * Leniwie wczytuje pełny katalog Google Fonts (~1800 rodzin łacińskich, w tym ~1500 z polskimi
+ * znakami) z kompaktowego pliku JSON wydzielonego przez Vite w osobnym chunku.
+ */
+export function wczytajPelnyKatalogGoogleFonts(): Promise<readonly PozycjaKataloguGoogle[]> {
+  if (!obietnicaPelnegoKatalogu) {
+    obietnicaPelnegoKatalogu = import('./katalogGoogleFonts.json')
+      .then((mod) => {
+        const surowe = mod.default as unknown as readonly KrotkaKatalogu[];
+        const znane = new Set(KATALOG_GOOGLE_FONTS.map((p) => p.rodzina.toLowerCase()));
+        const pozostale: PozycjaKataloguGoogle[] = [];
+        for (const [rodzina, katKod, autor, grupaKod, katalog, pl, w] of surowe) {
+          if (znane.has(rodzina.toLowerCase())) continue;
+          const warianty: WariantKataloguGoogle[] = [{ wariant: 'normalny', plik: w.n }];
+          if (w.b) warianty.push({ wariant: 'pogrubiony', plik: w.b });
+          if (w.i) warianty.push({ wariant: 'kursywa', plik: w.i });
+          if (w.bi) warianty.push({ wariant: 'pogrubiona-kursywa', plik: w.bi });
+          pozostale.push({
+            id: rodzina
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, ''),
+            rodzina,
+            kategoria: KATEGORIE_Z_KODU[katKod] ?? 'bezszeryfowa',
+            autor,
+            licencja: LICENCJE_Z_KODU[grupaKod] ?? 'SIL OFL 1.1',
+            grupa: GRUPY_Z_KODU[grupaKod] ?? 'ofl',
+            katalog,
+            polskieZnaki: pl === 1,
+            warianty,
+          });
+        }
+        return [...KATALOG_GOOGLE_FONTS, ...pozostale];
+      })
+      .catch((e) => {
+        obietnicaPelnegoKatalogu = undefined;
+        throw e;
+      });
+  }
+  return obietnicaPelnegoKatalogu;
 }
 
 /** Warianty rodziny, których jeszcze nie ma w bibliotece zasobów projektu. */
@@ -1573,7 +1641,8 @@ async function pobierzIZwalidujWariant(
       }
       const bajty = new Uint8Array(await res.arrayBuffer());
       if (sygnal?.aborted) throw bladAnulowania();
-      const w = wgrajCzcionke(wariant.plik, bajty, { zrodlo: 'google', zajete });
+      const nazwaPlikuTtf = wariant.plik.split('/').pop() ?? wariant.plik;
+      const w = wgrajCzcionke(nazwaPlikuTtf, bajty, { zrodlo: 'google', zajete });
       return {
         ...w,
         opis: {

@@ -138,9 +138,17 @@ export const pl = {
   'projekty.zmieniono': 'zmieniony {data}',
   'projekty.zaimportowano': 'Zaimportowano projekt „{nazwa}”.',
   'projekty.wyeksportowano': 'Wyeksportowano projekt „{nazwa}” – sprawdź pobrane pliki.',
+  'projekty.wyeksportowanoRewers': 'Wyeksportowano rewers „{nazwa}” – sprawdź pobrane pliki.',
   'projekty.usunieto': 'Usunięto projekt „{nazwa}”.',
+  'projekty.usunietoRewers': 'Usunięto rewers „{nazwa}”.',
   'projekty.potwierdzUsuniecie':
     'Usunąć projekt „{nazwa}” z tej przeglądarki? Tej operacji nie można cofnąć (chyba że masz plik eksportu).',
+  'projekty.potwierdzUsuniecieRewersu':
+    'Usunąć rewers „{nazwa}” z projektu „{projekt}”? Tej operacji nie można cofnąć.',
+  'projekty.stronaAwers': 'Awers',
+  'projekty.stronaRewers': 'Rewers',
+  'projekty.rewersZProjektu': 'Z projektu: {projekt}',
+  'projekty.usunRewersEtykieta': 'Usuń rewers {nazwa}',
   'projekty.kolizja':
     'Projekt „{nazwa}” jest już w tej przeglądarce. Zastąpić go zawartością pliku czy zapisać plik jako kopię?',
   'projekty.zastap': 'Zastąp',
@@ -1402,6 +1410,9 @@ export const pl = {
   'googleFonts.dodano': 'Dodano',
   'googleFonts.dodanoEtykieta': '{rodzina} – dodano',
   'googleFonts.meta': '{kategoria} · {warianty} · polskie znaki · {licencja} · {autor}',
+  'googleFonts.metaBezPl': '{kategoria} · {warianty} · bez polskich znaków · {licencja} · {autor}',
+  'googleFonts.tylkoPolskie': 'Tylko z polskimi znakami',
+  'googleFonts.pokazWiecej': 'Pokaż więcej ({pozostalo} pozostało)',
   'googleFonts.brakWynikow': 'Brak pasujących krojów w katalogu.',
   'googleFonts.brakPolaczenia': 'brak połączenia',
   'googleFonts.przekroczonoCzas': 'przekroczono limit czasu',

@@ -141,9 +141,17 @@ export const en: Slownik = {
   'projekty.zmieniono': 'changed {data}',
   'projekty.zaimportowano': 'Imported the project “{nazwa}”.',
   'projekty.wyeksportowano': 'Exported the project “{nazwa}” – check your downloads.',
+  'projekty.wyeksportowanoRewers': 'Exported the back “{nazwa}” – check your downloads.',
   'projekty.usunieto': 'Deleted the project “{nazwa}”.',
+  'projekty.usunietoRewers': 'Deleted the back “{nazwa}”.',
   'projekty.potwierdzUsuniecie':
     'Delete the project “{nazwa}” from this browser? This cannot be undone (unless you have an export file).',
+  'projekty.potwierdzUsuniecieRewersu':
+    'Delete the back “{nazwa}” from “{projekt}”? This cannot be undone.',
+  'projekty.stronaAwers': 'Front',
+  'projekty.stronaRewers': 'Back',
+  'projekty.rewersZProjektu': 'From project: {projekt}',
+  'projekty.usunRewersEtykieta': 'Delete back {nazwa}',
   'projekty.kolizja':
     'The project “{nazwa}” is already in this browser. Replace it with the contents of the file, or save the file as a copy?',
   'projekty.zastap': 'Replace',
@@ -1405,6 +1413,9 @@ export const en: Slownik = {
   'googleFonts.dodano': 'Added',
   'googleFonts.dodanoEtykieta': '{rodzina} – added',
   'googleFonts.meta': '{kategoria} · {warianty} · Polish glyphs · {licencja} · {autor}',
+  'googleFonts.metaBezPl': '{kategoria} · {warianty} · no Polish glyphs · {licencja} · {autor}',
+  'googleFonts.tylkoPolskie': 'Polish characters only',
+  'googleFonts.pokazWiecej': 'Show more ({pozostalo} remaining)',
   'googleFonts.brakWynikow': 'No matching typefaces in the catalog.',
   'googleFonts.brakPolaczenia': 'no connection',
   'googleFonts.przekroczonoCzas': 'request timed out',

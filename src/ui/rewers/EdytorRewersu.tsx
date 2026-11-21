@@ -187,6 +187,38 @@ export function EdytorRewersu({ edycja, rewersId }: { edycja: ProjektWEdycji; re
       : undefined;
   const kluczRysunku = widocznyRewers ? JSON.stringify(widocznyRewers) : '';
   const podglad = usePodgladRewersu(kluczRysunku, zasoby);
+  const scenaPodgladu = podglad && 'scena' in podglad ? podglad.scena : undefined;
+
+  // Miniatura karty rewersu na liście „Moje projekty” (z obrazami jako data: URI).
+  useEffect(() => {
+    if (!scenaPodgladu || !rewers) return;
+    const z = setTimeout(() => {
+      void import('../miniaturaRewersu')
+        .then(({ zapiszMiniatureRewersu }) =>
+          zapiszMiniatureRewersu(projekt, edycja.dane, rewersId, scenaPodgladu),
+        )
+        .catch(() => undefined);
+    }, 1000);
+    return () => clearTimeout(z);
+  }, [scenaPodgladu, projekt, edycja.dane, rewers, rewersId]);
+  const ostatniaScenaRewersu = useRef(scenaPodgladu);
+  useEffect(() => {
+    ostatniaScenaRewersu.current = scenaPodgladu;
+  });
+  useEffect(
+    () => () => {
+      const stan = aktualnyDoZapisu.current;
+      const scena = ostatniaScenaRewersu.current;
+      if (!stan || !scena) return;
+      void import('../miniaturaRewersu')
+        .then(({ zapiszMiniatureRewersu }) =>
+          zapiszMiniatureRewersu(stan.projekt, stan.dane, rewersId, scena),
+        )
+        .catch(() => undefined);
+    },
+    [rewersId],
+  );
+
   const wezlyPoId = useMemo(
     () => new Map(szablon ? wszystkieWezly(szablon).map((w) => [w.id, w] as const) : []),
     [szablon],

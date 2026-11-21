@@ -1,5 +1,6 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
+import { czyProjektRewersowy } from '../../dane/baza';
 import {
   kartkaDlaSzablonu,
   opisRozmiaruSzablonu,
@@ -717,7 +718,8 @@ export function EdytorKartki({
   }, [aktywne, druk, duplikuj, edycja, przesunZaznaczone, ustawMenu, usunZaznaczone, ustawZazn]);
 
   // Miniatura pierwszej strony na liście projektów (bez obrazów – adresy blob: są chwilowe).
-  const pierwszaStrona = kartki[0]?.wynik?.strony[0];
+  // Dla samodzielnego projektu rewersowego zachowujemy miniaturę karty rewersu z EdytorRewersu.
+  const pierwszaStrona = czyProjektRewersowy(projekt) ? undefined : kartki[0]?.wynik?.strony[0];
   useEffect(() => {
     if (!pierwszaStrona) return;
     const z = setTimeout(() => {

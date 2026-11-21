@@ -1,12 +1,14 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { unikalneId } from '../../dane/czcionki';
 import { dodajZasoby } from '../../dane/edycja';
 import {
   KATALOG_GOOGLE_FONTS,
   adresyPodgladuGoogleFonts,
   czyRodzinaDodana,
+  maPolskieZnaki,
   pobierzDowolnaRodzineGoogle,
   pobierzRodzineGoogle,
+  wczytajPelnyKatalogGoogleFonts,
   zapasowaRodzinaKategorii,
   type KategoriaGoogleFonts,
   type PozycjaKataloguGoogle,
@@ -32,14 +34,17 @@ const KATEGORIE: readonly FiltrKategorii[] = [
   'maszynowa',
 ];
 
+const PORCJA_LISTY = 150;
+const WSTEPNY_PODGLAD = 20;
+
 const komunikat = (e: unknown) =>
   e instanceof BladDanych ? e.message : String(e instanceof Error ? e.message : e);
 
 /**
- * Kuratorowany katalog Google Fonts + pobieranie dowolnego kroju po nazwie.
- * Po rozwinięciu ładuje lekkie podzbiory CSS2 (`&text=...`) wyłącznie do podglądu próbki,
- * a pełne warianty TTF pobiera dopiero po kliknięciu użytkownika i zapisuje zarówno globalnie
- * w przeglądarce (dla wszystkich projektów), jak i w aktywnym projekcie (`zrodlo: 'google'`).
+ * Pełny katalog Google Fonts (~1800 rodzin łacińskich, w tym ~1500 z polskimi znakami)
+ * ładowany leniwie po rozwinięciu + pobieranie dowolnego kroju po nazwie.
+ * Podgląd CSS2 (`&text=...`) dołącza wyłącznie dla krojów widocznych na ekranie,
+ * a pliki TTF pobiera dopiero po kliknięciu użytkownika i zapisuje lokalnie w przeglądarce.
  */
 export function KatalogGoogleFonts({
   edycja,
@@ -53,15 +58,25 @@ export function KatalogGoogleFonts({
   onPobranoGlobalnie?: () => void;
 }) {
   const [otwarty, ustawOtwarty] = useState(false);
+  const [katalog, ustawKatalog] = useState<readonly PozycjaKataloguGoogle[]>(KATALOG_GOOGLE_FONTS);
   const [filtr, ustawFiltr] = useState<FiltrKategorii>('wszystkie');
+  const [tylkoPolskie, ustawTylkoPolskie] = useState(true);
   const [szukaj, ustawSzukaj] = useState('');
+  const [limit, ustawLimit] = useState(PORCJA_LISTY);
   const [wlasnaNazwa, ustawWlasnaNazwe] = useState('');
   const [podgladWlasnej, ustawPodgladWlasnej] = useState('');
   const [pobieranaId, ustawPobieranaId] = useState<string>();
   const [globalneRodziny, ustawGlobalneRodziny] = useState<Set<string>>(new Set());
+  const [podgladane, ustawPodgladane] = useState<Set<string>>(new Set());
   const kontrolerRef = useRef<AbortController | null>(null);
+  const listaRef = useRef<HTMLUListElement | null>(null);
+  const zaladowanePodgladyRef = useRef<{ probka: string; rodziny: Set<string> }>({
+    probka: '',
+    rodziny: new Set(),
+  });
   const idKategorii = useId();
   const idWlasnej = useId();
+  const idPolskie = useId();
 
   useEffect(
     () => () => {
@@ -70,6 +85,20 @@ export function KatalogGoogleFonts({
     },
     [],
   );
+
+  // Leniwe wczytanie pełnego indeksu Google Fonts (~1800 rodzin) po otwarciu katalogu.
+  useEffect(() => {
+    if (!otwarty) return;
+    let aktywny = true;
+    void wczytajPelnyKatalogGoogleFonts()
+      .then((pelny) => {
+        if (aktywny && pelny.length > 0) ustawKatalog(pelny);
+      })
+      .catch(() => undefined);
+    return () => {
+      aktywny = false;
+    };
+  }, [otwarty]);
 
   // Odświeżenie listy rodzin zapisanych globalnie przy otwarciu katalogu.
   useEffect(() => {
@@ -94,40 +123,88 @@ export function KatalogGoogleFonts({
 
   const probka = t('googleFonts.probka');
 
-  // Leniwie dołącza arkusze CSS2 z parametrem `text=` dopiero po rozwinięciu katalogu (bez duplikatów).
+  const fraza = szukaj.trim().toLowerCase();
+  const widoczne = useMemo(
+    () =>
+      katalog.filter((p) => {
+        if (tylkoPolskie && !p.polskieZnaki) return false;
+        if (filtr !== 'wszystkie' && p.kategoria !== filtr) return false;
+        if (!fraza) return true;
+        return p.rodzina.toLowerCase().includes(fraza) || p.autor.toLowerCase().includes(fraza);
+      }),
+    [katalog, tylkoPolskie, filtr, fraza],
+  );
+
+  const wyswietlane = useMemo(() => widoczne.slice(0, limit), [widoczne, limit]);
+
+  // Obserwuje wyłącznie widoczne wiersze listy, żeby nie pobierać CSS2 dla ~1800 krojów naraz.
+  useEffect(() => {
+    if (!otwarty || typeof IntersectionObserver === 'undefined') return;
+    const lista = listaRef.current;
+    if (!lista) return;
+    const obs = new IntersectionObserver(
+      (wpisy) => {
+        const nowe: string[] = [];
+        for (const wpis of wpisy) {
+          if (!wpis.isIntersecting) continue;
+          const rodzina = (wpis.target as HTMLElement).dataset.rodzina;
+          if (rodzina) nowe.push(rodzina);
+          obs.unobserve(wpis.target);
+        }
+        if (nowe.length === 0) return;
+        ustawPodgladane((pop) => {
+          let zmieniono = false;
+          const nast = new Set(pop);
+          for (const r of nowe) {
+            if (!nast.has(r)) {
+              nast.add(r);
+              zmieniono = true;
+            }
+          }
+          return zmieniono ? nast : pop;
+        });
+      },
+      { root: lista, rootMargin: '250px 0px' },
+    );
+    for (const el of lista.querySelectorAll<HTMLElement>('[data-rodzina]')) {
+      obs.observe(el);
+    }
+    return () => obs.disconnect();
+  }, [otwarty, wyswietlane]);
+
+  // Leniwie dołącza arkusze CSS2 (`&text=...`) wyłącznie dla nowo widocznych krojów (bez duplikatów).
   useEffect(() => {
     if (!otwarty || typeof document === 'undefined') return;
-    const rodzinyDoPodgladu = [
-      ...KATALOG_GOOGLE_FONTS.map((p) => p.rodzina),
-      ...(aktywnyPodgladWlasnej ? [aktywnyPodgladWlasnej] : []),
-    ];
-    const adresy = adresyPodgladuGoogleFonts(rodzinyDoPodgladu, probka, 20);
-    const oczekiwane = new Set(adresy);
-    const istniejace = new Set<string>();
-    for (const el of document.head.querySelectorAll('link[data-google-fonts-podglad]')) {
-      const klucz = el.getAttribute('data-google-fonts-podglad');
-      if (!klucz || !oczekiwane.has(klucz)) {
+    if (zaladowanePodgladyRef.current.probka !== probka) {
+      for (const el of document.head.querySelectorAll('link[data-google-fonts-podglad]')) {
         el.remove();
-      } else {
-        istniejace.add(klucz);
       }
+      zaladowanePodgladyRef.current = { probka, rodziny: new Set() };
     }
-    for (const href of adresy) {
-      if (istniejace.has(href)) continue;
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = href;
-      link.setAttribute('data-google-fonts-podglad', href);
-      document.head.appendChild(link);
-    }
-  }, [otwarty, probka, aktywnyPodgladWlasnej]);
+    const timer = setTimeout(() => {
+      const juzZaladowane = zaladowanePodgladyRef.current.rodziny;
+      const nowe: string[] = [];
+      const dodaj = (r: string) => {
+        if (!juzZaladowane.has(r)) {
+          juzZaladowane.add(r);
+          nowe.push(r);
+        }
+      };
+      for (const p of wyswietlane.slice(0, WSTEPNY_PODGLAD)) dodaj(p.rodzina);
+      for (const r of podgladane) dodaj(r);
+      if (aktywnyPodgladWlasnej) dodaj(aktywnyPodgladWlasnej);
+      if (nowe.length === 0) return;
 
-  const fraza = szukaj.trim().toLowerCase();
-  const widoczne = KATALOG_GOOGLE_FONTS.filter((p) => {
-    if (filtr !== 'wszystkie' && p.kategoria !== filtr) return false;
-    if (!fraza) return true;
-    return p.rodzina.toLowerCase().includes(fraza) || p.autor.toLowerCase().includes(fraza);
-  });
+      for (const href of adresyPodgladuGoogleFonts(nowe, probka, 20)) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        link.setAttribute('data-google-fonts-podglad', href);
+        document.head.appendChild(link);
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [otwarty, probka, wyswietlane, podgladane, aktywnyPodgladWlasnej]);
 
   const zapiszPobrane = async (
     rodzina: string,
@@ -190,7 +267,8 @@ export function KatalogGoogleFonts({
         zasoby: edycja?.projekt.zasoby ?? [],
         signal: kontroler.signal,
       });
-      await zapiszPobrane(pozycja.rodzina, wgrane, kontroler.signal);
+      const brakPolskich = wgrane.some((w) => !maPolskieZnaki(w.czcionka));
+      await zapiszPobrane(pozycja.rodzina, wgrane, kontroler.signal, brakPolskich);
     } catch (e) {
       if (!kontroler.signal.aborted) onBlad(komunikat(e));
     } finally {
@@ -227,6 +305,8 @@ export function KatalogGoogleFonts({
     }
   };
 
+  const pozostalo = widoczne.length - wyswietlane.length;
+
   return (
     <details className="katalog-google-fonts" onToggle={(e) => ustawOtwarty(e.currentTarget.open)}>
       <summary>{t('googleFonts.otworz')}</summary>
@@ -237,7 +317,10 @@ export function KatalogGoogleFonts({
           aria-label={t('googleFonts.szukaj')}
           placeholder={t('googleFonts.szukaj')}
           value={szukaj}
-          onChange={(e) => ustawSzukaj(e.target.value)}
+          onChange={(e) => {
+            ustawSzukaj(e.target.value);
+            ustawLimit(PORCJA_LISTY);
+          }}
         />
       </div>
       <div className="pole-panelu katalog-google-kategorie">
@@ -245,7 +328,10 @@ export function KatalogGoogleFonts({
         <select
           id={idKategorii}
           value={filtr}
-          onChange={(e) => ustawFiltr(e.target.value as FiltrKategorii)}
+          onChange={(e) => {
+            ustawFiltr(e.target.value as FiltrKategorii);
+            ustawLimit(PORCJA_LISTY);
+          }}
         >
           {KATEGORIE.map((k) => (
             <option key={k} value={k}>
@@ -254,10 +340,22 @@ export function KatalogGoogleFonts({
           ))}
         </select>
       </div>
+      <label className="pole-wyboru katalog-google-polskie" htmlFor={idPolskie}>
+        <input
+          id={idPolskie}
+          type="checkbox"
+          checked={tylkoPolskie}
+          onChange={(e) => {
+            ustawTylkoPolskie(e.target.checked);
+            ustawLimit(PORCJA_LISTY);
+          }}
+        />
+        <span>{t('googleFonts.tylkoPolskie')}</span>
+      </label>
       <p className="podpis katalog-google-liczba">
         {t('googleFonts.liczba', {
           widoczne: widoczne.length,
-          wszystkie: KATALOG_GOOGLE_FONTS.length,
+          wszystkie: katalog.length,
         })}
       </p>
       {widoczne.length === 0 ? (
@@ -276,54 +374,65 @@ export function KatalogGoogleFonts({
           )}
         </div>
       ) : (
-        <ul className="lista-google-fonts">
-          {widoczne.map((p) => {
-            const dodana = edycja
-              ? czyRodzinaDodana(p, edycja.projekt.zasoby)
-              : globalneRodziny.has(p.rodzina.toLowerCase());
-            const trwa = pobieranaId === p.id;
-            const listaWariantow = p.warianty.map((w) => t(`wariant.${w.wariant}`)).join(', ');
-            return (
-              <li key={p.id} className="pozycja-google-font">
-                <div className="pozycja-google-info">
-                  <strong>{p.rodzina}</strong>
-                  <span
-                    className="podglad-google-font"
-                    style={{
-                      fontFamily: `"${p.rodzina}", ${zapasowaRodzinaKategorii(p.kategoria)}`,
-                    }}
+        <>
+          <ul className="lista-google-fonts" ref={listaRef}>
+            {wyswietlane.map((p) => {
+              const dodana = edycja
+                ? czyRodzinaDodana(p, edycja.projekt.zasoby)
+                : globalneRodziny.has(p.rodzina.toLowerCase());
+              const trwa = pobieranaId === p.id;
+              const listaWariantow = p.warianty.map((w) => t(`wariant.${w.wariant}`)).join(', ');
+              return (
+                <li key={p.id} className="pozycja-google-font" data-rodzina={p.rodzina}>
+                  <div className="pozycja-google-info">
+                    <strong>{p.rodzina}</strong>
+                    <span
+                      className="podglad-google-font"
+                      style={{
+                        fontFamily: `"${p.rodzina}", ${zapasowaRodzinaKategorii(p.kategoria)}`,
+                      }}
+                    >
+                      {probka}
+                    </span>
+                    <span className="podpis">
+                      {t(p.polskieZnaki ? 'googleFonts.meta' : 'googleFonts.metaBezPl', {
+                        kategoria: t(`googleFonts.kategoria.${p.kategoria}`),
+                        warianty: listaWariantow,
+                        licencja: p.licencja,
+                        autor: p.autor,
+                      })}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={dodana || pobieranaId !== undefined}
+                    aria-label={
+                      dodana
+                        ? t('googleFonts.dodanoEtykieta', { rodzina: p.rodzina })
+                        : t('googleFonts.pobierzEtykieta', { rodzina: p.rodzina })
+                    }
+                    onClick={() => void pobierz(p)}
                   >
-                    {probka}
-                  </span>
-                  <span className="podpis">
-                    {t('googleFonts.meta', {
-                      kategoria: t(`googleFonts.kategoria.${p.kategoria}`),
-                      warianty: listaWariantow,
-                      licencja: p.licencja,
-                      autor: p.autor,
-                    })}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  disabled={dodana || pobieranaId !== undefined}
-                  aria-label={
-                    dodana
-                      ? t('googleFonts.dodanoEtykieta', { rodzina: p.rodzina })
-                      : t('googleFonts.pobierzEtykieta', { rodzina: p.rodzina })
-                  }
-                  onClick={() => void pobierz(p)}
-                >
-                  {dodana
-                    ? t('googleFonts.dodano')
-                    : trwa
-                      ? t('googleFonts.pobieram')
-                      : t('googleFonts.pobierz')}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                    {dodana
+                      ? t('googleFonts.dodano')
+                      : trwa
+                        ? t('googleFonts.pobieram')
+                        : t('googleFonts.pobierz')}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {pozostalo > 0 && (
+            <button
+              type="button"
+              className="katalog-google-wiecej"
+              onClick={() => ustawLimit((l) => l + PORCJA_LISTY)}
+            >
+              {t('googleFonts.pokazWiecej', { pozostalo })}
+            </button>
+          )}
+        </>
       )}
       <div className="katalog-google-dowolny">
         <label htmlFor={idWlasnej}>{t('googleFonts.dowolnaEtykieta')}</label>

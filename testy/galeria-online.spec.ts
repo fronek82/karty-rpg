@@ -65,7 +65,10 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
   await context.setOffline(true);
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
   await page.getByRole('link', { name: 'Karty RPG' }).click();
-  await expect(page.locator('.kafelek-projektu')).toContainText('Karta przedmiotu');
+  await expect(page.locator('.kafelek-projektu').first()).toContainText('Karta przedmiotu');
+  await expect(
+    page.locator('.kafelek-projektu').filter({ hasText: 'Rewers przedmiotu' }),
+  ).toHaveCount(1);
   await page.locator('.kafelek-projektu').first().click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await context.setOffline(false);

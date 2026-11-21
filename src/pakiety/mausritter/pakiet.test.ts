@@ -75,6 +75,24 @@ describe('pakiet Mausritter', () => {
       );
     });
   }
+
+  it('zaklęcie obsługuje pole nazwy obok gwiazdki bez ostrzeżeń', () => {
+    const zaklecieSzablon = szablony.get('mausritter-zaklecie')!;
+    const bezNazwy = renderujKarte(zaklecieSzablon, { dane: { obraz: OBRAZ_ZASTEPCZY } }, ctx);
+    const zNazwa = renderujKarte(
+      zaklecieSzablon,
+      { dane: { nazwa: 'Kula ognia', obraz: OBRAZ_ZASTEPCZY } },
+      ctx,
+    );
+    const zDlugaNazwa = renderujKarte(
+      zaklecieSzablon,
+      { dane: { nazwa: 'Niewidzialność', obraz: OBRAZ_ZASTEPCZY } },
+      ctx,
+    );
+    expect(zNazwa.ostrzezenia).toEqual([]);
+    expect(zDlugaNazwa.ostrzezenia).toEqual([]);
+    expect(zNazwa.scena.elementy.length).toBeGreaterThan(bezNazwy.scena.elementy.length);
+  });
 });
 
 describe('pakiet Mausritter – edytor kartki', () => {

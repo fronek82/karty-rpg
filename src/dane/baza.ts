@@ -31,6 +31,28 @@ export interface PodsumowanieProjektu {
   liczbaKart: number;
   liczbaStron: number;
   pakiet?: string;
+  /** Czy projekt reprezentuje awers (talię/arkusz) czy samodzielny rewers. */
+  typStrony?: 'awers' | 'rewers';
+  /** Identyfikator rewersu otwieranego domyślnie dla samodzielnego projektu rewersowego. */
+  rewersId?: string;
+}
+
+/** Stabilny klucz miniatury SVG konkretnego rewersu w tabeli `miniatury`. */
+export const kluczMiniaturyRewersu = (projektId: string, rewersId: string): string =>
+  `rewers:${projektId}:${rewersId}`;
+
+/**
+ * Rozpoznaje samodzielny projekt rewersowy utworzony przez „Nowy szablon → Rewers”
+ * (bez pakietu, z pustym szablonem awersu i co najmniej jednym rewersem).
+ */
+export function czyProjektRewersowy(projekt: Projekt): boolean {
+  return (
+    (!projekt.pakiet || projekt.pakiet === 'wlasne') &&
+    (projekt.rewersy?.length ?? 0) > 0 &&
+    projekt.szablony.length === 1 &&
+    projekt.szablony[0]!.korzen.dzieci.length === 0 &&
+    projekt.talie.every((t) => t.karty.every((k) => Object.keys(k.dane).length === 0))
+  );
 }
 
 interface WpisMiniatury {
@@ -47,8 +69,11 @@ export interface WpisBibliotekiGlobalnej {
 
 export interface WpisRewersuZProjektu {
   projektId: string;
+  projektNazwa?: string;
+  zmieniono?: string;
   rewersId: string;
   nazwa: string;
+  projektRewersowy?: boolean;
 }
 
 export interface WpisCzcionkiZProjektu {
@@ -104,26 +129,34 @@ export class BazaProjektow {
 
   async lista(): Promise<PodsumowanieProjektu[]> {
     const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
-    return wpisy.map((w) => ({
-      id: w.id,
-      nazwa: w.projekt.nazwa,
-      zmieniono: w.zmieniono,
-      liczbaKart: w.projekt.talie.reduce((s, t) => s + t.karty.reduce((a, k) => a + k.ilosc, 0), 0),
-      liczbaStron: w.projekt.arkusze.reduce(
-        (s, a) =>
-          s +
-          // Mieszane rozmiary: liczba stron wychodzi z układu pasów (wymaga czcionek) – tu minimum 1.
-          (a.ustawienia.rozmiary === 'mieszane'
-            ? 1
-            : Math.max(
-                1,
-                a.liczbaStron ?? 1,
-                ...(a.przypiete ?? []).map((x) => (x.strona ?? 0) + 1),
-              )),
-        0,
-      ),
-      ...(w.projekt.pakiet ? { pakiet: w.projekt.pakiet } : {}),
-    }));
+    return wpisy.map((w) => {
+      const rewersowy = czyProjektRewersowy(w.projekt);
+      const pierwszyRewers = rewersowy ? w.projekt.rewersy?.[0] : undefined;
+      return {
+        id: w.id,
+        nazwa: pierwszyRewers?.nazwa || w.projekt.nazwa,
+        zmieniono: w.zmieniono,
+        liczbaKart: w.projekt.talie.reduce(
+          (s, t) => s + t.karty.reduce((a, k) => a + k.ilosc, 0),
+          0,
+        ),
+        liczbaStron: w.projekt.arkusze.reduce(
+          (s, a) =>
+            s +
+            // Mieszane rozmiary: liczba stron wychodzi z układu pasów (wymaga czcionek) – tu minimum 1.
+            (a.ustawienia.rozmiary === 'mieszane'
+              ? 1
+              : Math.max(
+                  1,
+                  a.liczbaStron ?? 1,
+                  ...(a.przypiete ?? []).map((x) => (x.strona ?? 0) + 1),
+                )),
+          0,
+        ),
+        ...(pierwszyRewers ? { typStrony: 'rewers' as const, rewersId: pierwszyRewers.id } : {}),
+        ...(w.projekt.pakiet ? { pakiet: w.projekt.pakiet } : {}),
+      };
+    });
   }
 
   async zapiszMiniature(id: string, svg: string): Promise<void> {
@@ -181,8 +214,16 @@ export class BazaProjektow {
     const wynik: WpisRewersuZProjektu[] = [];
     for (const w of wpisy) {
       if (pomijajProjektId && w.id === pomijajProjektId) continue;
+      const projektRewersowy = czyProjektRewersowy(w.projekt);
       for (const r of w.projekt.rewersy ?? []) {
-        wynik.push({ projektId: w.id, rewersId: r.id, nazwa: r.nazwa });
+        wynik.push({
+          projektId: w.id,
+          projektNazwa: w.projekt.nazwa,
+          zmieniono: w.zmieniono,
+          rewersId: r.id,
+          nazwa: r.nazwa,
+          projektRewersowy,
+        });
       }
     }
     return wynik;
@@ -297,6 +338,7 @@ export class BazaProjektow {
         await this.db.zasoby.where('projektId').equals(id).delete();
         await this.db.projekty.delete(id);
         await this.db.miniatury.delete(id);
+        await this.db.miniatury.where('id').startsWith(`rewers:${id}:`).delete();
       },
     );
   }
