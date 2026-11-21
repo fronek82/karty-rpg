@@ -6,16 +6,24 @@ import {
   usunRewers,
 } from '../../dane/rewers';
 import { formatujLiczbe, t } from '../../i18n';
+import {
+  dolaczRewersGlobalnyDoProjektu,
+  useRewersyGlobalne,
+  type ZapisanyRewersGlobalny,
+} from '../rewersyGlobalne';
 import type { ProjektWEdycji } from '../useProjekt';
 
 /**
- * Sekcja „Rewersy” w ustawieniach kartki: tworzenie, otwieranie edytora, duplikowanie
- * oraz usuwanie z potwierdzeniem pokazującym liczbę bezpośrednich przypisań.
+ * Sekcja „Rewersy” w opcjach druku i arkusza: tworzenie, otwieranie edytora, duplikowanie,
+ * usuwanie oraz dodawanie rewersów zaprojektowanych w innych projektach (biblioteka globalna).
  */
 export function RewersyProjektu({ edycja }: { edycja: ProjektWEdycji }) {
   const { projekt, zmien } = edycja;
   const rewersy = projekt.rewersy ?? [];
+  const { rewersyGlobalne, usunGlobalny } = useRewersyGlobalne(projekt);
   const [doUsuniecia, ustawDoUsuniecia] = useState<string | undefined>();
+  const [komunikat, ustawKomunikat] = useState('');
+  const [trwa, ustawTrwa] = useState(false);
   const idProjektu = encodeURIComponent(projekt.id);
 
   const utworz = () => {
@@ -30,6 +38,19 @@ export function RewersyProjektu({ edycja }: { edycja: ProjektWEdycji }) {
     });
     if (noweId) {
       window.location.hash = `#/projekt/${idProjektu}/rewers/${encodeURIComponent(noweId)}`;
+    }
+  };
+
+  const dodajGlobalny = async (wpis: ZapisanyRewersGlobalny) => {
+    ustawTrwa(true);
+    ustawKomunikat('');
+    try {
+      await dolaczRewersGlobalnyDoProjektu(wpis, edycja);
+      ustawKomunikat(t('rewersy.dodanoZGlobalnych', { nazwa: wpis.nazwa }));
+    } catch (e) {
+      ustawKomunikat(e instanceof Error ? e.message : String(e));
+    } finally {
+      ustawTrwa(false);
     }
   };
 
@@ -115,6 +136,41 @@ export function RewersyProjektu({ edycja }: { edycja: ProjektWEdycji }) {
       <button type="button" onClick={utworz}>
         {t('rewersy.nowy')}
       </button>
+      {komunikat && (
+        <p role="status" className="podpis">
+          {komunikat}
+        </p>
+      )}
+      {rewersyGlobalne.length > 0 && (
+        <div className="sekcja-rewersow-globalnych">
+          <p className="podpis">{t('rewersy.globalneTytul')}</p>
+          <ul className="lista-szablonow">
+            {rewersyGlobalne.map((w) => (
+              <li key={w.klucz}>
+                <span>
+                  <strong>{w.nazwa}</strong>
+                </span>
+                <span className="akcje-szablonu">
+                  <button type="button" disabled={trwa} onClick={() => void dodajGlobalny(w)}>
+                    {t('rewersy.dodajDoProjektu')}
+                  </button>
+                  {w.zrodlo === 'biblioteka' && (
+                    <button
+                      type="button"
+                      className="niebezpieczny"
+                      disabled={trwa}
+                      aria-label={t('rewersy.usunGlobalnyEtykieta', { nazwa: w.nazwa })}
+                      onClick={() => void usunGlobalny(w).catch(() => undefined)}
+                    >
+                      {t('rewersy.usun')}
+                    </button>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </fieldset>
   );
 }

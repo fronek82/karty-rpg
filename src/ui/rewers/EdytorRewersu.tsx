@@ -133,6 +133,32 @@ export function EdytorRewersu({ edycja, rewersId }: { edycja: ProjektWEdycji; re
   const kopia = projekt.rewersy?.find((r) => r.id === idKopii);
   const idProjektu = encodeURIComponent(projekt.id);
 
+  // Każdy zaprojektowany w edytorze rewers trafia automatycznie do biblioteki rewersów
+  // (po zapisaniu oraz przy opuszczeniu edytora), żeby można go było wybrać przy dowolnej karcie.
+  const aktualnyDoZapisu = useRef<
+    { projekt: typeof projekt; dane: typeof edycja.dane } | undefined
+  >(undefined);
+  useEffect(() => {
+    aktualnyDoZapisu.current = rewers ? { projekt, dane: edycja.dane } : undefined;
+  }, [projekt, edycja.dane, rewers]);
+  useEffect(() => {
+    if (!rewers || edycja.zapis.stan !== 'zapisano') return;
+    void import('../rewersyGlobalne')
+      .then(({ zapiszRewersGlobalnie }) => zapiszRewersGlobalnie(projekt, edycja.dane, rewersId))
+      .catch(() => undefined);
+  }, [edycja.zapis.stan, edycja.wersja, edycja.dane, projekt, rewers, rewersId]);
+  useEffect(() => {
+    return () => {
+      const stan = aktualnyDoZapisu.current;
+      if (!stan) return;
+      void import('../rewersyGlobalne')
+        .then(({ zapiszRewersGlobalnie }) =>
+          zapiszRewersGlobalnie(stan.projekt, stan.dane, rewersId),
+        )
+        .catch(() => undefined);
+    };
+  }, [rewersId]);
+
   const szablon = useMemo(() => (rewers ? rewersJakoSzablon(rewers) : undefined), [rewers]);
   const aktywne = szablon ? zazn.filter((id) => znajdzWezel(szablon, id)) : [];
   const jeden = szablon && aktywne.length === 1 ? znajdzWezel(szablon, aktywne[0]!) : undefined;

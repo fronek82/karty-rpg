@@ -27,6 +27,11 @@ import {
 } from '../../model/szablon';
 import type { Pakiet, TypKarty } from '../../pakiety/typy';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
+import {
+  dolaczRewersGlobalnyDoProjektu,
+  PRZEDROSTEK_OPCJI_GLOBALNEJ,
+  useRewersyGlobalne,
+} from '../rewersyGlobalne';
 import { PoleWielowierszowe } from '../PoleWielowierszowe';
 import type { ProjektWEdycji } from '../useProjekt';
 import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
@@ -93,6 +98,7 @@ export function PanelKart({
   zamknij: () => void;
 }) {
   const { projekt, zmien } = edycja;
+  const { rewersyGlobalne } = useRewersyGlobalne(projekt);
   const [wpisaneKopie, ustawWpisaneKopie] = useState<string>();
   const [bladRozmiaru, ustawBladRozmiaru] = useState<string>();
   const ids = karty.map((k) => k.karta.id);
@@ -421,6 +427,16 @@ export function PanelKart({
               onChange={(e) => {
                 const v = e.target.value;
                 if (v === '__rozne__') return;
+                if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
+                  const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
+                  const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
+                  if (wpis) {
+                    void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
+                      przypiszRewersKartom(p, arkusz.taliaId, ids, rid),
+                    ).catch(() => undefined);
+                  }
+                  return;
+                }
                 const nowy = v === '' ? undefined : v === '__brak__' ? null : v;
                 zmien((p) => przypiszRewersKartom(p, arkusz.taliaId, ids, nowy));
               }}
@@ -437,6 +453,15 @@ export function PanelKart({
                   {r.nazwa}
                 </option>
               ))}
+              {rewersyGlobalne.length > 0 && (
+                <optgroup label={t('rewersy.globalneGrupa')}>
+                  {rewersyGlobalne.map((w) => (
+                    <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
+                      {w.nazwa}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
             {(jedna || tenSamRozstrzygniety) && (
               <PodgladRewersu

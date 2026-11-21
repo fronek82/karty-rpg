@@ -40,7 +40,13 @@ interface WpisMiniatury {
 
 export interface WpisBibliotekiGlobalnej {
   id: string;
-  rodzaj: 'szablon' | 'ozdobnik' | 'czcionka' | 'obraz';
+  rodzaj: 'szablon' | 'ozdobnik' | 'czcionka' | 'obraz' | 'rewers';
+  nazwa: string;
+}
+
+export interface WpisRewersuZProjektu {
+  projektId: string;
+  rewersId: string;
   nazwa: string;
 }
 
@@ -150,13 +156,26 @@ export class BazaProjektow {
     rodzaj: WpisBibliotekiGlobalnej['rodzaj'],
     nazwa: string,
     bajty: Uint8Array,
+    id: string = crypto.randomUUID(),
   ): Promise<void> {
-    const id = crypto.randomUUID();
     const { bibliotekaGlobalna, paczkiBiblioteki } = this.db;
     await this.db.transaction('rw', bibliotekaGlobalna, paczkiBiblioteki, async () => {
-      await bibliotekaGlobalna.add({ id, rodzaj, nazwa });
-      await paczkiBiblioteki.add({ id, dane: bajty });
+      await bibliotekaGlobalna.put({ id, rodzaj, nazwa });
+      await paczkiBiblioteki.put({ id, dane: bajty });
     });
+  }
+
+  /** Lista rewersów zapisanych w innych projektach w tej przeglądarce (także starszych sprzed biblioteki). */
+  async rewersyZProjektow(pomijajProjektId?: string): Promise<WpisRewersuZProjektu[]> {
+    const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
+    const wynik: WpisRewersuZProjektu[] = [];
+    for (const w of wpisy) {
+      if (pomijajProjektId && w.id === pomijajProjektId) continue;
+      for (const r of w.projekt.rewersy ?? []) {
+        wynik.push({ projektId: w.id, rewersId: r.id, nazwa: r.nazwa });
+      }
+    }
+    return wynik;
   }
 
   async odczytajZBiblioteki(id: string): Promise<Uint8Array> {

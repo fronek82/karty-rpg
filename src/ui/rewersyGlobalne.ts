@@ -1,0 +1,190 @@
+import { useCallback, useEffect, useState } from 'react';
+import { dodajRewersZPaczki, eksportujRewers, importujRewers } from '../dane/archiwum';
+import type { DaneZasobow, Projekt } from '../model/projekt';
+import { baza } from './baza';
+import type { ProjektWEdycji } from './useProjekt';
+
+const PRZEDROSTEK_KLUCZA = 'rewers:';
+const KLUCZ_UKRYTYCH = 'karty-rpg:ukryte-rewersy';
+
+/** Stabilny klucz wpisu w bibliotece globalnej dla rewersu z konkretnego projektu. */
+export const kluczRewersuGlobalnego = (projektId: string, rewersId: string): string =>
+  `${PRZEDROSTEK_KLUCZA}${projektId}:${rewersId}`;
+
+export const PRZEDROSTEK_OPCJI_GLOBALNEJ = '__globalny__:';
+
+function wczytajUkryte(): Set<string> {
+  try {
+    if (typeof localStorage === 'undefined') return new Set();
+    const surowy = localStorage.getItem(KLUCZ_UKRYTYCH);
+    if (!surowy) return new Set();
+    const lista = JSON.parse(surowy) as unknown;
+    return Array.isArray(lista)
+      ? new Set(lista.filter((x): x is string => typeof x === 'string'))
+      : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function zapiszUkryte(ukryte: ReadonlySet<string>): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (ukryte.size === 0) localStorage.removeItem(KLUCZ_UKRYTYCH);
+    else localStorage.setItem(KLUCZ_UKRYTYCH, JSON.stringify([...ukryte]));
+  } catch {
+    // Brak lub zablokowane localStorage (np. tryb prywatny) – pomijamy.
+  }
+}
+
+export interface ZapisanyRewersGlobalny {
+  klucz: string;
+  nazwa: string;
+  zrodlo: 'biblioteka' | 'projekt';
+  wpisId?: string;
+  projektId?: string;
+  rewersId?: string;
+}
+
+/** Zapisuje (lub aktualizuje) zaprojektowany rewers w lokalnej bibliotece rewersów przeglądarki. */
+export async function zapiszRewersGlobalnie(
+  projekt: Projekt,
+  dane: DaneZasobow,
+  rewersId: string,
+): Promise<void> {
+  const rewers = projekt.rewersy?.find((r) => r.id === rewersId);
+  if (!rewers) return;
+  const klucz = kluczRewersuGlobalnego(projekt.id, rewersId);
+  const bajty = eksportujRewers(projekt, dane, rewersId);
+  await baza().zapiszWBibliotece('rewers', rewers.nazwa, bajty, klucz);
+  const ukryte = wczytajUkryte();
+  if (ukryte.delete(klucz)) zapiszUkryte(ukryte);
+}
+
+/**
+ * Zwraca listę rewersów dostępnych globalnie w przeglądarce (z biblioteki globalnej oraz z innych
+ * projektów – dzięki czemu także wcześniej zaprojektowane rewersy są od razu dostępne).
+ * Pomija rewersy należące już do bieżącego projektu oraz powtórzone kopie z projektów, które
+ * jedynie zaimportowały ten sam rewers.
+ */
+export async function listaRewersowGlobalnych(
+  biezacyProjektId?: string,
+  nazwyWProjekcie?: ReadonlySet<string>,
+): Promise<ZapisanyRewersGlobalny[]> {
+  let zBiblioteki: Awaited<ReturnType<ReturnType<typeof baza>['bibliotekaGlobalna']>>;
+  let zProjektow: Awaited<ReturnType<ReturnType<typeof baza>['rewersyZProjektow']>>;
+  try {
+    [zBiblioteki, zProjektow] = await Promise.all([
+      baza().bibliotekaGlobalna('rewers'),
+      baza().rewersyZProjektow(biezacyProjektId),
+    ]);
+  } catch {
+    return [];
+  }
+  const wynik: ZapisanyRewersGlobalny[] = [];
+  const widzianeKlucze = new Set<string>();
+  const widzianeNazwy = new Set<string>();
+  const ukryte = wczytajUkryte();
+  const przedrostekBiezacego = biezacyProjektId
+    ? `${PRZEDROSTEK_KLUCZA}${biezacyProjektId}:`
+    : undefined;
+
+  for (const w of zBiblioteki) {
+    if (przedrostekBiezacego && w.id.startsWith(przedrostekBiezacego)) continue;
+    if (nazwyWProjekcie?.has(w.nazwa)) continue;
+    widzianeKlucze.add(w.id);
+    widzianeNazwy.add(w.nazwa);
+    wynik.push({ klucz: w.id, nazwa: w.nazwa, zrodlo: 'biblioteka', wpisId: w.id });
+  }
+
+  for (const p of zProjektow) {
+    const klucz = kluczRewersuGlobalnego(p.projektId, p.rewersId);
+    if (widzianeKlucze.has(klucz) || ukryte.has(klucz)) continue;
+    if (nazwyWProjekcie?.has(p.nazwa) || widzianeNazwy.has(p.nazwa)) continue;
+    widzianeKlucze.add(klucz);
+    widzianeNazwy.add(p.nazwa);
+    wynik.push({
+      klucz,
+      nazwa: p.nazwa,
+      zrodlo: 'projekt',
+      projektId: p.projektId,
+      rewersId: p.rewersId,
+    });
+  }
+
+  return wynik.sort((a, b) => a.nazwa.localeCompare(b.nazwa));
+}
+
+async function wczytajPaczkeRewersu(wpis: ZapisanyRewersGlobalny): Promise<Uint8Array> {
+  if (wpis.zrodlo === 'biblioteka' && wpis.wpisId) {
+    return baza().odczytajZBiblioteki(wpis.wpisId);
+  }
+  if (wpis.projektId && wpis.rewersId) {
+    const { projekt, zasoby } = await baza().wczytaj(wpis.projektId);
+    return eksportujRewers(projekt, zasoby, wpis.rewersId);
+  }
+  throw new Error(`Nieprawidłowy wpis rewersu: ${wpis.klucz}`);
+}
+
+/**
+ * Dołącza wybrany globalny rewers (z jego obrazami, czcionkami i ozdobnikami) do bieżącego projektu
+ * i opcjonalnie od razu przypisuje go do karty, szablonu lub talii w jednym kroku historii.
+ */
+export async function dolaczRewersGlobalnyDoProjektu(
+  wpis: ZapisanyRewersGlobalny,
+  edycja: ProjektWEdycji,
+  przypisz?: (projekt: Projekt, rewersId: string) => Projekt,
+): Promise<string> {
+  const bajty = await wczytajPaczkeRewersu(wpis);
+  const paczka = importujRewers(bajty);
+  let wynikoweId = '';
+  await edycja.zmienZZasobami((p, d) => {
+    const dodany = dodajRewersZPaczki(p, d, paczka);
+    wynikoweId = dodany.rewersId;
+    return {
+      projekt: przypisz ? przypisz(dodany.projekt, dodany.rewersId) : dodany.projekt,
+      dane: dodany.dane,
+    };
+  });
+  return wynikoweId;
+}
+
+/** Hook wczytujący listę zapisanych rewersów spoza bieżącego projektu. */
+export function useRewersyGlobalne(projekt: Projekt) {
+  const [lista, ustawListe] = useState<ZapisanyRewersGlobalny[]>([]);
+  const podpisRewersow = (projekt.rewersy ?? []).map((r) => `${r.id}:${r.nazwa}`).join('|');
+
+  const odswiez = useCallback(async () => {
+    const nazwy = new Set((projekt.rewersy ?? []).map((r) => r.nazwa));
+    const wynik = await listaRewersowGlobalnych(projekt.id, nazwy);
+    ustawListe(wynik);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- odświeżamy przy zmianie projektu lub jego rewersów
+  }, [projekt.id, podpisRewersow]);
+
+  useEffect(() => {
+    let aktywny = true;
+    const nazwy = new Set((projekt.rewersy ?? []).map((r) => r.nazwa));
+    void listaRewersowGlobalnych(projekt.id, nazwy).then((wynik) => {
+      if (aktywny) ustawListe(wynik);
+    });
+    return () => {
+      aktywny = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- odświeżamy przy zmianie projektu lub jego rewersów
+  }, [projekt.id, podpisRewersow]);
+
+  const usunGlobalny = useCallback(
+    async (wpis: ZapisanyRewersGlobalny) => {
+      if (wpis.zrodlo === 'biblioteka' && wpis.wpisId) {
+        await baza().usunZBiblioteki(wpis.wpisId);
+        const ukryte = wczytajUkryte();
+        ukryte.add(wpis.klucz);
+        zapiszUkryte(ukryte);
+        await odswiez();
+      }
+    },
+    [odswiez],
+  );
+
+  return { rewersyGlobalne: lista, odswiez, usunGlobalny };
+}
