@@ -35,6 +35,9 @@ test('Mausritter: drugi ekran z pustą kartką i gotowymi układami', async ({ p
   await page.getByRole('link', { name: /Stwórz karty do Mausrittera/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Karty do Mausrittera' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Pusta kartka A4/ })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Broń i pancerze', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: /^Zacznij od gotowego układu/ }).click();
+  await expect(page.getByRole('button', { name: /Pusta kartka A4/ })).toHaveCount(0);
   for (const u of ['Broń i pancerze', 'Wyposażenie', 'Stany', 'Wszystkie trzy'])
     await expect(page.getByRole('button', { name: u, exact: true })).toBeVisible();
 });

@@ -11,6 +11,7 @@ export async function nowaPustaKartka(page: Page) {
 
 export async function gotowyUklad(page: Page, nazwa: string) {
   await page.goto('./#/gra/mausritter');
+  await page.getByRole('button', { name: /^Zacznij od gotowego układu/ }).click();
   await page.getByRole('button', { name: nazwa, exact: true }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 }

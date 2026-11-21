@@ -434,6 +434,7 @@ export const pl = {
   'papier.wlasny': 'Własny rozmiar…',
   'kartka.edytujSzablon': '✎ Edytuj szablon „{nazwa}”',
   'kreator.tytul': 'Nowy szablon karty',
+  'kreator.akcje': 'Akcje kreatora',
   'kreator.opis': 'Krok 1 z 2 – rozmiar i wygląd karty. Pola ułożysz w następnym kroku.',
   'kreator.nazwa': 'Nazwa szablonu',
   'kreator.nazwaDomyslna': 'Moja karta',

@@ -172,18 +172,18 @@ export function WlasneKarty() {
           <p id="wlasne-menu" className="etykieta-sekcji">
             {t('wlasne.menu')}
           </p>
-          <a href="#/wlasne/nowy" className="pasek-menu pasek-koral">
+          <a href="#/wlasne/nowy" className="pasek-menu pasek-wlasne-2">
             <b>{t('wlasne.nowyNazwa')}</b>
             <span>{t('wlasne.nowyOpis')}</span>
           </a>
-          <a href="#/wlasne/ai" className="pasek-menu pasek-granat">
+          <a href="#/wlasne/ai" className="pasek-menu pasek-wlasne-2">
             <b>{t('wlasne.aiNazwa')}</b>
             <span>{t('wlasne.aiOpis')}</span>
           </a>
           <button
             type="button"
             ref={przyciskImportu}
-            className="pasek-menu pasek-turkus"
+            className="pasek-menu pasek-wlasne-2"
             disabled={trwa}
             onClick={() => plik.current?.click()}
           >

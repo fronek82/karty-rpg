@@ -53,17 +53,20 @@ function KafelekUkladu({
 }
 
 /**
- * Drugi ekran gry: lewe menu to skróty do dwóch grup w środku – „Pusta kartka” (podgląd kartki
- * A4 z siatką slotów) i „Gotowe układy” (podgląd każdego układu pakietu). Podglądy liczy silnik
- * układu (ten sam SVG co w PDF); kliknięcie podglądu tworzy projekt i otwiera kartkę.
+ * Drugi ekran gry: lewe menu filtruje widok w środku między dwiema grupami – „Pusta kartka”
+ * (podgląd kartki A4 z siatką slotów) i „Gotowe układy” (podgląd każdego układu pakietu). Podglądy
+ * liczy silnik układu (ten sam SVG co w PDF); kliknięcie podglądu tworzy projekt i otwiera kartkę.
  */
 export function WyborGry({ id }: { id: string }) {
   const gra = gry.find((g) => g.id === id);
   const [pakiet, ustawPakiet] = useState<Pakiet>();
   const [blad, ustawBlad] = useState<string>();
   const [trwa, ustawTrwa] = useState(false);
-  // Ostatnio wybrana grupa (aria-current); położenie przewijania jej nie zmienia (B146).
+  // Wybrana grupa (pokazywana jako jedyna na środku i oznaczona przez aria-current).
   const [aktywna, ustawAktywna] = useState<Grupa>('pusta');
+  // Fokus na nagłówku nowej grupy przenosimy dopiero po jawnym kliknięciu w menu (nie przy starcie).
+  const [licznikWyboru, ustawLicznikWyboru] = useState(0);
+  const naglowekGrupy = useRef<HTMLHeadingElement>(null);
   // Ref chroni przed podwójnym kliknięciem w tym samym renderze (stan `trwa` bywa spóźniony).
   const wToku = useRef(false);
   useUruchomPodglady(pakiet);
@@ -83,6 +86,19 @@ export function WyborGry({ id }: { id: string }) {
       aktywny = false;
     };
   }, [gra]);
+  useEffect(() => {
+    if (licznikWyboru === 0) return;
+    const h2 = naglowekGrupy.current;
+    if (!h2) return;
+    const prostokat = h2.getBoundingClientRect?.();
+    const pozaEkranem =
+      prostokat && (prostokat.top < 0 || prostokat.top > (window.innerHeight || 0));
+    if (pozaEkranem) {
+      const spokojnie = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      h2.scrollIntoView?.({ behavior: spokojnie ? 'auto' : 'smooth', block: 'start' });
+    }
+    h2.focus({ preventScroll: true });
+  }, [aktywna, licznikWyboru]);
 
   if (!gra?.pakiet) {
     return (
@@ -108,14 +124,10 @@ export function WyborGry({ id }: { id: string }) {
     }
   };
 
-  // Skrót w menu: podświetla grupę, przewija do niej i przenosi fokus na jej nagłówek.
+  // Wybór grupy w menu: pokazuje wyłącznie wybraną grupę na środku i przenosi fokus na jej nagłówek.
   const idz = (g: Grupa) => {
     ustawAktywna(g);
-    const sekcja = document.querySelector<HTMLElement>(`[data-grupa="${g}"]`);
-    if (!sekcja) return;
-    const spokojnie = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    sekcja.scrollIntoView?.({ behavior: spokojnie ? 'auto' : 'smooth', block: 'start' });
-    sekcja.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+    ustawLicznikWyboru((n) => n + 1);
   };
 
   const siatkaPustej = pusta && 'podglad' in pusta ? pusta.podglad.strony[0]?.siatka : undefined;
@@ -135,7 +147,7 @@ export function WyborGry({ id }: { id: string }) {
           </p>
           <button
             type="button"
-            className="pasek-menu pasek-bursztyn"
+            className="pasek-menu pasek-gra-2"
             aria-current={aktywna === 'pusta' ? 'true' : undefined}
             aria-labelledby="skrot-pusta-nazwa"
             aria-describedby={`skrot-pusta-opis${aktywna === 'pusta' ? ' skrot-pusta-stan' : ''}`}
@@ -158,7 +170,7 @@ export function WyborGry({ id }: { id: string }) {
           </button>
           <button
             type="button"
-            className="pasek-menu pasek-turkus"
+            className="pasek-menu pasek-gra-2"
             aria-current={aktywna === 'uklady' ? 'true' : undefined}
             aria-labelledby="skrot-uklady-nazwa"
             aria-describedby={`skrot-uklady-opis${aktywna === 'uklady' ? ' skrot-uklady-stan' : ''}`}
@@ -177,64 +189,66 @@ export function WyborGry({ id }: { id: string }) {
         </nav>
 
         <div className="grupy-podgladow">
-          <section
-            className={`grupa-podgladow${aktywna === 'pusta' ? ' wyrozniona' : ''}`}
-            aria-labelledby="grupa-pusta"
-            data-grupa="pusta"
-          >
-            <h2 id="grupa-pusta" tabIndex={-1}>
-              {t('start.pustaKartka')}
-            </h2>
-            <button
-              type="button"
-              className="kafelek-podgladu szeroki"
-              data-podglad={ID_PUSTEJ}
-              aria-labelledby="pusta-nazwa"
-              aria-describedby="pusta-opis pusta-podpowiedz"
-              disabled={wylaczone}
-              onClick={() => void utworz()}
+          {aktywna === 'pusta' ? (
+            <section
+              className="grupa-podgladow wyrozniona"
+              aria-labelledby="grupa-pusta"
+              data-grupa="pusta"
             >
-              <span className="miniatura-podgladu">
-                <PodgladKartki wynik={pusta} />
-              </span>
-              <span className="opis-podgladu">
-                <b id="pusta-nazwa">{t('start.pustaKartkaA4')}</b>
-                <span id="pusta-opis" className="opis-tekst">
-                  {siatkaPustej
-                    ? t('start.pustaKartkaPodglad', {
-                        kolumny: siatkaPustej.kolumny,
-                        rzedy: siatkaPustej.rzedy,
-                        slot: formatujLiczbe(siatkaPustej.slot.szerokosc, 2),
-                      })
-                    : '\u00a0'}
+              <h2 id="grupa-pusta" ref={naglowekGrupy} tabIndex={-1}>
+                {t('start.pustaKartka')}
+              </h2>
+              <button
+                type="button"
+                className="kafelek-podgladu szeroki"
+                data-podglad={ID_PUSTEJ}
+                aria-labelledby="pusta-nazwa"
+                aria-describedby="pusta-opis pusta-podpowiedz"
+                disabled={wylaczone}
+                onClick={() => void utworz()}
+              >
+                <span className="miniatura-podgladu">
+                  <PodgladKartki wynik={pusta} />
                 </span>
-                <span id="pusta-podpowiedz" className="podpowiedz">
-                  {t('start.kliknijAbyZaczac')}
+                <span className="opis-podgladu">
+                  <b id="pusta-nazwa">{t('start.pustaKartkaA4')}</b>
+                  <span id="pusta-opis" className="opis-tekst">
+                    {siatkaPustej
+                      ? t('start.pustaKartkaPodglad', {
+                          kolumny: siatkaPustej.kolumny,
+                          rzedy: siatkaPustej.rzedy,
+                          slot: formatujLiczbe(siatkaPustej.slot.szerokosc, 2),
+                        })
+                      : '\u00a0'}
+                  </span>
+                  <span id="pusta-podpowiedz" className="podpowiedz">
+                    {t('start.kliknijAbyZaczac')}
+                  </span>
                 </span>
-              </span>
-            </button>
-          </section>
-
-          <section
-            className={`grupa-podgladow${aktywna === 'uklady' ? ' wyrozniona' : ''}`}
-            aria-labelledby="grupa-uklady"
-            data-grupa="uklady"
-          >
-            <h2 id="grupa-uklady" tabIndex={-1}>
-              {t('start.gotoweUklady')} <small>{t('start.gotoweUkladyPodpis')}</small>
-            </h2>
-            <div className="siatka-ukladow">
-              {pakiet?.gotoweUklady.map((u) => (
-                <KafelekUkladu
-                  key={u.id}
-                  pakietId={pakiet.id}
-                  uklad={u}
-                  wylaczony={wylaczone}
-                  utworz={(uk) => void utworz(uk)}
-                />
-              ))}
-            </div>
-          </section>
+              </button>
+            </section>
+          ) : (
+            <section
+              className="grupa-podgladow wyrozniona"
+              aria-labelledby="grupa-uklady"
+              data-grupa="uklady"
+            >
+              <h2 id="grupa-uklady" ref={naglowekGrupy} tabIndex={-1}>
+                {t('start.gotoweUklady')} <small>{t('start.gotoweUkladyPodpis')}</small>
+              </h2>
+              <div className="siatka-ukladow">
+                {pakiet?.gotoweUklady.map((u) => (
+                  <KafelekUkladu
+                    key={u.id}
+                    pakietId={pakiet.id}
+                    uklad={u}
+                    wylaczony={wylaczone}
+                    utworz={(uk) => void utworz(uk)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
       <p role="status" aria-live="polite" className="status">

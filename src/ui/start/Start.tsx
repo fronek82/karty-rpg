@@ -41,12 +41,12 @@ export function Start() {
           <p id="start-nowy" className="etykieta-sekcji">
             {t('start.nowyProjekt')}
           </p>
-          <a href="#/wlasne" className="pasek-menu pasek-bordo">
+          <a href="#/wlasne" className="pasek-menu pasek-wlasne-1">
             <b>{t('start.stworzWlasne')}</b>
             <span>{t('start.wlasneOpis')}</span>
           </a>
           {gry.map((g) => (
-            <a key={g.id} href={`#/gra/${g.id}`} className="pasek-menu pasek-granat">
+            <a key={g.id} href={`#/gra/${g.id}`} className="pasek-menu pasek-gra-1">
               <b>{t('start.stworzDo', { gra: nazwaGryDo(g) })}</b>
               <span>{t('start.gotoweOpis')}</span>
             </a>

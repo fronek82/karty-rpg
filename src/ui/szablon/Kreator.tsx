@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { FORMATY_KART, UKLADY_STARTOWE, type UkladStartowy } from '../../dane/szablon';
 import { formatujLiczbe, t } from '../../i18n';
 import type { Mm } from '../../model/jednostki';
@@ -25,6 +25,7 @@ export function Kreator({
   utworz: (u: UstawieniaNowegoSzablonu) => Promise<void> | void;
   anuluj: () => void;
 }) {
+  const idFormularza = useId();
   const [nazwa, ustawNazwe] = useState(t('kreator.nazwaDomyslna'));
   const [format, ustawFormat] = useState<string>('poker');
   const [wlasny, ustawWlasny] = useState({ szer: 63, wys: 88 });
@@ -60,6 +61,7 @@ export function Kreator({
         <h1>{t('kreator.tytul')}</h1>
         <p className="podpis">{t('kreator.opis')}</p>
         <form
+          id={idFormularza}
           onSubmit={(e) => {
             e.preventDefault();
             if (!poprawny || tworze) return;
@@ -202,15 +204,20 @@ export function Kreator({
               {blad}
             </p>
           )}
-          <p className="akcje-kreatora">
-            <button type="button" onClick={anuluj}>
-              {t('kreator.anuluj')}
-            </button>
-            <button type="submit" className="glowny" disabled={!poprawny || tworze}>
-              {tworze ? t('start.tworze') : t('kreator.dalej')}
-            </button>
-          </p>
         </form>
+      </div>
+      <div className="start-menu" role="group" aria-label={t('kreator.akcje')}>
+        <button
+          type="submit"
+          form={idFormularza}
+          className="pasek-menu pasek-wlasne-4"
+          disabled={!poprawny || tworze}
+        >
+          <b>{tworze ? t('start.tworze') : t('kreator.dalej')}</b>
+        </button>
+        <button type="button" className="pasek-menu pasek-neutralny" onClick={anuluj}>
+          <b>{t('kreator.anuluj')}</b>
+        </button>
       </div>
       <aside className="kreator-podglad" aria-label={t('kreator.podglad')}>
         <h2>{t('kreator.podglad')}</h2>
