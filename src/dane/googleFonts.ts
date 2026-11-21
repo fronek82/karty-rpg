@@ -1518,12 +1518,15 @@ export function wczytajPelnyKatalogGoogleFonts(): Promise<readonly PozycjaKatalo
     obietnicaPelnegoKatalogu = import('./katalogGoogleFonts.json')
       .then((mod) => {
         const surowe = mod.default as unknown as readonly KrotkaKatalogu[];
-        return surowe.map(([rodzina, katKod, autor, grupaKod, katalog, pl, w]) => {
+        const znane = new Set(KATALOG_GOOGLE_FONTS.map((p) => p.rodzina.toLowerCase()));
+        const pozostale: PozycjaKataloguGoogle[] = [];
+        for (const [rodzina, katKod, autor, grupaKod, katalog, pl, w] of surowe) {
+          if (znane.has(rodzina.toLowerCase())) continue;
           const warianty: WariantKataloguGoogle[] = [{ wariant: 'normalny', plik: w.n }];
           if (w.b) warianty.push({ wariant: 'pogrubiony', plik: w.b });
           if (w.i) warianty.push({ wariant: 'kursywa', plik: w.i });
           if (w.bi) warianty.push({ wariant: 'pogrubiona-kursywa', plik: w.bi });
-          return {
+          pozostale.push({
             id: rodzina
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, '-')
@@ -1536,8 +1539,9 @@ export function wczytajPelnyKatalogGoogleFonts(): Promise<readonly PozycjaKatalo
             katalog,
             polskieZnaki: pl === 1,
             warianty,
-          };
-        });
+          });
+        }
+        return [...KATALOG_GOOGLE_FONTS, ...pozostale];
       })
       .catch((e) => {
         obietnicaPelnegoKatalogu = undefined;

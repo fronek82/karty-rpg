@@ -34,7 +34,7 @@ const KATEGORIE: readonly FiltrKategorii[] = [
   'maszynowa',
 ];
 
-const PORCJA_LISTY = 120;
+const PORCJA_LISTY = 150;
 const WSTEPNY_PODGLAD = 20;
 
 const komunikat = (e: unknown) =>
