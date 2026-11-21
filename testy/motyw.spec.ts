@@ -113,13 +113,13 @@ test('pasek górny w edytorze kartki i szablonu; motyw trzyma się między ekran
     .first()
     .evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(papier).toBe('rgb(255, 255, 255)');
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   expect(await motyw(page)).toBe('dark');
   await pasek(page);
 });
 
 test('pasek w edytorze szablonu', async ({ page }) => {
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   await page.getByLabel('Nazwa szablonu').fill('Karta');
   await page.getByText('Mini Euro').click();
   await page.getByText('Tytuł i opis').click();

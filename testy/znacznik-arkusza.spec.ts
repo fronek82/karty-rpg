@@ -8,7 +8,7 @@ import { arkuszeMausrittera } from '../src/pakiety/mausritter/arkusze';
 import { SLOT, szablonBron, szablonPrzedmiot } from '../src/pakiety/mausritter/szablony';
 import { konturIkony } from '../src/silnik/ikony';
 import { konturNaD } from '../src/silnik/svg';
-import { karta } from './pomoc';
+import { karta, kliknijPobierzPdf } from './pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
 
 const NAZWA = 'Próba linii arkusza broni';
@@ -168,10 +168,7 @@ for (const pion of [false, true]) {
       );
       expect(piksele).toBeGreaterThan(100);
     }
-    const [pdf] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-    ]);
+    const [pdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
     const bajty = await readFile(await pdf.path());
     await przygotujStrone(page);
     const wynik = await porownaj(page, svgTekst, bajty, obszar);

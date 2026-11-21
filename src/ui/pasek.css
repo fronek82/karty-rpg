@@ -77,18 +77,21 @@
   background: color-mix(in srgb, black 32%, var(--pasek));
 }
 
-/* Przycisk główny na pasku: pełne białe tło, tekst w kolorze paska. */
-.pasek-gorny > :is(button, a.przycisk).glowny {
+/* Przycisk główny na pasku (także przycisk menu „Pobierz”): pełne białe tło, tekst w kolorze paska. */
+.pasek-gorny > :is(button, a.przycisk).glowny,
+.pasek-gorny .menu-pobierz > button.glowny {
   background: var(--pasek-tekst);
   border-color: var(--pasek-tekst);
   color: var(--pasek);
   font-weight: 600;
 }
 
-.pasek-gorny > :is(button, a.przycisk).glowny:hover:not(:disabled) {
+.pasek-gorny > :is(button, a.przycisk).glowny:hover:not(:disabled),
+.pasek-gorny .menu-pobierz > button.glowny:hover:not(:disabled),
+.pasek-gorny .menu-pobierz > button.glowny[aria-expanded='true'] {
   background: var(--pasek-tekst);
-  color: var(--pasek);
-  filter: brightness(0.93);
+  border-color: var(--pasek-tekst);
+  color: color-mix(in srgb, black 22%, var(--pasek));
 }
 
 .seg {

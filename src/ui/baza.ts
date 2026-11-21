@@ -102,3 +102,46 @@ export async function nowyProjektZPrzykladu(
   await baza().zapisz(projekt, zasoby);
   return projekt.id;
 }
+
+/** Nowy projekt własnych kart otwierany od razu w edytorze rewersu – zapisany w bazie. */
+export async function nowyProjektZRewersem(
+  bazaUrl: string = import.meta.env.BASE_URL,
+): Promise<{ id: string; rewersId: string }> {
+  const [
+    { nowyProjektWlasny },
+    { nowyRewers, przypiszRewers },
+    { DOMYSLNE_TLO_KARTY },
+    { szablonZKreatora },
+  ] = await Promise.all([
+    import('../dane/wlasneKarty'),
+    import('../dane/rewers'),
+    import('../model/szablon'),
+    import('./szablon/nowySzablonUI'),
+  ]);
+  const szablon = szablonZKreatora({
+    nazwa: t('kreator.nazwaDomyslna'),
+    szer: 63,
+    wys: 88,
+    promien: 3,
+    tlo: DOMYSLNE_TLO_KARTY,
+    uklad: 'swobodny',
+  });
+  const { projekt: bazowy, zasoby } = await nowyProjektWlasny(
+    { szablon, role: {}, zasoby: [], dane: new Map() },
+    (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
+  );
+  const nazwaRewersu = t('wlasne.rewersNazwa');
+  const { projekt: zRewersem, id: rewersId } = nowyRewers(
+    { ...bazowy, nazwa: nazwaRewersu },
+    {
+      nazwa: nazwaRewersu,
+      nazwaKorzenia: nazwaRewersu,
+    },
+  );
+  const taliaId = zRewersem.talie[0]?.id;
+  const projekt = taliaId
+    ? przypiszRewers(zRewersem, { rodzaj: 'talia', id: taliaId }, rewersId)
+    : zRewersem;
+  await baza().zapisz(projekt, zasoby);
+  return { id: projekt.id, rewersId };
+}

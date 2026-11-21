@@ -8,7 +8,7 @@ import { renderujKarte } from '../src/silnik/karta';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { zapisano } from './pomoc';
+import { kliknijPobierzPdf, zapisano } from './pomoc';
 
 /**
  * M5-4: opcjonalna niewidoczna warstwa tekstowa w PDF (`3 Tr`):
@@ -140,10 +140,7 @@ test('przełącznik warstwy tekstowej PDF w Ustawieniach działa (PL/EN), pamię
   // Pobierz PDF i sprawdź zawartość tekstową w pdfjs-dist.
   const [pobranie] = await Promise.all([
     page.waitForEvent('download'),
-    (async () => {
-      await page.getByRole('button', { name: 'Download', exact: true }).click();
-      await page.getByRole('menuitem', { name: 'PDF (for printing)' }).click();
-    })(),
+    kliknijPobierzPdf(page, true),
   ]);
   const sciezka = await pobranie.path();
   expect(sciezka).toBeTruthy();

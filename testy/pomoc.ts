@@ -60,3 +60,13 @@ export async function przeciagnij(
   await page.mouse.move(do_.x, do_.y, { steps: 10 });
   await page.mouse.up();
 }
+
+/** Otwiera rozwijane menu „Pobierz” i klika „Pobierz PDF (do druku)”. */
+export async function kliknijPobierzPdf(page: Page, en = false) {
+  await page.getByRole('button', { name: en ? 'Download' : 'Pobierz', exact: true }).click();
+  await page
+    .getByRole('menuitem', {
+      name: en ? 'Download PDF (for printing)' : 'Pobierz PDF (do druku)',
+    })
+    .click();
+}

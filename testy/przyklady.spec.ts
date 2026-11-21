@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
-import { zapisano } from './pomoc';
+import { kliknijPobierzPdf, zapisano } from './pomoc';
 import { kartkaCzaru } from './kartkaUI';
 import { SZABLONY, TALIA, arkuszMieszany, bliskie, otworzProjekt, polozenia } from './mieszaneUI';
 import {
@@ -602,10 +602,7 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   }
 
   // PDF bez ostrzeżeń: symbole motywu zapisane raz (XObject), PNG ramki raz.
-  const [pobranie] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pobranie] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const pdf = await PDFDocument.load(readFileSync(await pobranie.path()));
   expect(pdf.getPageCount()).toBe(1);
   const symbole = new Set<string>();
@@ -674,10 +671,7 @@ test('E(1): A4 z 2× 70×120, 3× 63×88, 5× 44×68 na jednej stronie – pasy,
   await zapisano(page);
 
   // PDF: jedna strona A4.
-  const [pobranie] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pobranie] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const pdf = await PDFDocument.load(readFileSync(await pobranie.path()));
   expect(pdf.getPageCount()).toBe(1);
   const { width, height } = pdf.getPage(0).getSize();

@@ -9,10 +9,11 @@ export function KreatorStrona() {
     <>
       <nav aria-label={t('projekt.nawigacja')} className="okruszki">
         <a href="#/">{t('nawigacja.start')}</a> › <a href="#/wlasne">{t('start.stworzWlasne')}</a> ›{' '}
-        {t('kreator.tytul')}
+        <a href="#/wlasne/nowy">{t('wlasne.nowyNazwa')}</a> ›{' '}
+        <span aria-current="page">{t('wlasne.awersNazwa')}</span>
       </nav>
       <Kreator
-        anuluj={() => (window.location.hash = '#/wlasne')}
+        anuluj={() => (window.location.hash = '#/wlasne/nowy')}
         utworz={async (u) => {
           const s = szablonZKreatora(u);
           const id = await nowyProjektZSzablonuKreatora(s);

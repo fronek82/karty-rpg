@@ -64,6 +64,7 @@ export function MenuPobierz({
       <button
         ref={przycisk}
         type="button"
+        className="glowny"
         disabled={wylaczone}
         aria-haspopup="menu"
         aria-expanded={otwarte}

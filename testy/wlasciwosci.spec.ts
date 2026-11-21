@@ -23,7 +23,7 @@ async function dodaj(page: Page, rodzaj: string) {
   await page.getByRole('menuitem', { name: rodzaj, exact: true }).click();
 }
 async function nowySzablon(page: Page) {
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   await page.getByText('Pusta karta').click();
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });

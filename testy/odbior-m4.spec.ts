@@ -1,6 +1,7 @@
 import { mkdir, readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
+import { kliknijPobierzPdf } from './pomoc';
 import { eksportujProjekt } from '../src/dane/archiwum';
 import { projektZPakietu } from '../src/dane/pakiet';
 import { PAKIET_WLASNY, pakietWlasny, ustawieniaKartkiDla } from '../src/dane/wlasneKarty';
@@ -372,7 +373,7 @@ for (const en of [false, true]) {
       // Pobierz dwustronny PDF w trybie drukarni i zweryfikuj obie strony A4 (przód + lustrzany tył).
       const [plik] = await Promise.all([
         page.waitForEvent('download'),
-        page.getByRole('button', { name: en ? /Download PDF/ : /Pobierz PDF/ }).click(),
+        kliknijPobierzPdf(page, en),
       ]);
       const bajtyPdf = await readFile((await plik.path())!);
       expect(bajtyPdf.subarray(0, 5).toString()).toBe('%PDF-');

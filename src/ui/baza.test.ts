@@ -1,36 +1,43 @@
-/// <reference types="node" />
-import 'fake-indexeddb/auto';
-import { readFileSync } from 'node:fs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PRZYKLADY } from '../przyklady';
-import { baza, nowyProjektZPrzykladu } from './baza';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DaneZasobow, Projekt } from '../model/projekt';
+
+const zapiszMock = vi.fn();
+vi.mock('../dane/baza', () => ({
+  BazaProjektow: class {
+    zapisz = (...a: unknown[]) => zapiszMock(...a);
+  },
+}));
+
+import { nowyProjektZRewersem } from './baza';
+
+const staraFetch = globalThis.fetch;
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', async (adres: string) => {
-    const bajty = readFileSync(`public/czcionki/${adres.split('/czcionki/')[1]}`);
-    return {
-      ok: true,
-      status: 200,
-      arrayBuffer: async () =>
-        bajty.buffer.slice(bajty.byteOffset, bajty.byteOffset + bajty.byteLength),
-    };
-  });
+  zapiszMock.mockReset();
+  zapiszMock.mockResolvedValue(undefined);
+  globalThis.fetch = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+  })) as unknown as typeof fetch;
 });
 
-describe('nowyProjektZPrzykladu (baza)', () => {
-  it('zapisuje projekt z szablonem i jedną kartą z danymi przykładowymi', async () => {
-    const przyklad = await PRZYKLADY[0]!.laduj();
-    const id = await nowyProjektZPrzykladu(przyklad);
-    const { projekt } = await baza().wczytaj(id);
-    expect(projekt.szablony).toHaveLength(1);
-    expect(projekt.talie[0]!.karty).toHaveLength(1);
-    expect(projekt.talie[0]!.karty[0]!.dane).toEqual(przyklad.dane);
-  });
+afterEach(() => {
+  globalThis.fetch = staraFetch;
+});
 
-  it('dwa wywołania dają dwa różne projekty', async () => {
-    const przyklad = await PRZYKLADY[1]!.laduj();
-    const a = await nowyProjektZPrzykladu(przyklad);
-    const b = await nowyProjektZPrzykladu(przyklad);
-    expect(a).not.toBe(b);
+describe('nowyProjektZRewersem', () => {
+  it('tworzy projekt własny z rewersem 63×88 mm przypisanym do talii i zapisuje go w bazie', async () => {
+    const wynik = await nowyProjektZRewersem('/');
+    expect(zapiszMock).toHaveBeenCalledTimes(1);
+    const [projekt, zasoby] = zapiszMock.mock.calls[0] as [Projekt, DaneZasobow];
+    expect(wynik.id).toBe(projekt.id);
+    expect(projekt.rewersy).toHaveLength(1);
+    const rewers = projekt.rewersy![0]!;
+    expect(rewers.id).toBe(wynik.rewersId);
+    expect(rewers.rozmiar).toEqual({ tryb: 'mm', szerokosc: 63, wysokosc: 88 });
+    expect(projekt.talie[0]?.rewersId).toBe(wynik.rewersId);
+    expect(projekt.nazwa).toBe(rewers.nazwa);
+    expect(zasoby.size).toBeGreaterThan(0);
   });
 });

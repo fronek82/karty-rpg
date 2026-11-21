@@ -125,7 +125,7 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
     });
 
     test('edytor szablonu z panelem właściwości', async ({ page }) => {
-      await page.goto('./#/wlasne/nowy');
+      await page.goto('./#/wlasne/nowy/awers');
       if (galeria) {
         await expect(page.getByRole('heading', { name: t('kreator.tytul') })).toBeVisible();
         await zapisz(page, 'kreator');

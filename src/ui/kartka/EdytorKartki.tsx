@@ -1598,14 +1598,6 @@ export function EdytorKartki({
       >
         ⤓ {t('projekty.eksportuj')}
       </button>
-      <button
-        type="button"
-        className="glowny"
-        disabled={!zasoby || zajete}
-        onClick={() => wTle(pobierzPdf)}
-      >
-        ⎙ {t('arkusze.pobierzPdf')}
-      </button>
       <MenuPobierz
         wylaczone={!zasoby || zajete}
         pobierz={(co) =>

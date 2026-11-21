@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { kartaNaKartce, kreator, panel, zaznacz } from './szablonUI';
+import { kliknijPobierzPdf } from './pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
 
 test('listy i ikony zachowują wygląd w edytorze, na arkuszu i w pobranych plikach', async ({
@@ -43,10 +44,7 @@ test('listy i ikony zachowują wygląd w edytorze, na arkuszu i w pobranych plik
     }),
   );
 
-  const [pdf] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   const bajtyPdf = await readFile(await pdf.path());
 
   await page.getByRole('button', { name: 'Pobierz', exact: true }).click();

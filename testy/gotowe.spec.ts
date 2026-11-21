@@ -7,7 +7,7 @@ import { arkuszeMausrittera } from '../src/pakiety/mausritter/arkusze';
 import { szablonyMausrittera } from '../src/pakiety/mausritter/szablony';
 import { OBRAZ_ZASTEPCZY, talieMausrittera } from '../src/pakiety/mausritter/talie';
 import type { Pakiet } from '../src/pakiety/typy';
-import { gotowyUklad, karta, zapisano } from './pomoc';
+import { gotowyUklad, karta, kliknijPobierzPdf, zapisano } from './pomoc';
 
 /** Gotowe układy z pakietu, nagłówki grup, PDF, eksport/import i projekty sprzed edytora. */
 
@@ -34,10 +34,7 @@ test('wszystkie trzy: trzy kartki; PDF z nazwą projektu ma trzy strony', async 
   await gotowyUklad(page, 'Wszystkie trzy');
   for (const t of ['Karty broni i pancerzy', 'Karty niezbędnego wyposażenia', 'Karty stanów'])
     await expect(page.getByRole('heading', { level: 2, name: t })).toBeVisible();
-  const [pobranie] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Pobierz PDF/ }).click(),
-  ]);
+  const [pobranie] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   expect(pobranie.suggestedFilename()).toBe('wszystkie-trzy.pdf');
   const pdf = await PDFDocument.load(readFileSync(await pobranie.path()));
   expect(pdf.getPageCount()).toBe(3);

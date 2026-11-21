@@ -84,7 +84,10 @@ for (const motyw of MOTYWY) {
     await tekst(pasek.locator('.status-zapisu'), 'status zapisu na pasku');
     await tekst(pasek.locator('.nazwa-projektu'), 'nazwa projektu na pasku');
     await tekst(pasek.getByRole('button', { name: /Ustawienia/ }), 'przycisk na pasku');
-    await tekst(pasek.getByRole('button', { name: /Pobierz PDF/ }), 'przycisk główny na pasku');
+    await tekst(
+      pasek.getByRole('button', { name: 'Pobierz', exact: true }),
+      'przycisk główny na pasku',
+    );
     // „Cofnij” jest wyłączone, dopóki nic nie zmieniono – test wymaga takiego przycisku.
     const wylaczony = pasek.locator('button:disabled').first();
     await expect(wylaczony).toBeDisabled();
@@ -291,7 +294,7 @@ for (const motyw of MOTYWY) {
     page,
   }) => {
     await page.emulateMedia({ colorScheme: motyw });
-    await page.goto('./#/wlasne/nowy');
+    await page.goto('./#/wlasne/nowy/awers');
     const dalej = page.getByRole('button', { name: /Dalej: układ pól/ });
     await page.getByLabel('Nazwa szablonu').fill('');
     // Bez nazwy przycisk jest wyłączony – musi się różnić od aktywnego (tło, kolor, obrys).
@@ -351,7 +354,7 @@ test('tryb wysokiego kontrastu (forced-colors): zaznaczenie widać bez własnych
   page,
 }) => {
   await page.emulateMedia({ forcedColors: 'active' });
-  await page.goto('./#/wlasne/nowy');
+  await page.goto('./#/wlasne/nowy/awers');
   const wybrany = page.locator('label.format.wybrany');
   const obrys = await wybrany.evaluate((e) => {
     const cs = getComputedStyle(e);
