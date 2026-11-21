@@ -153,8 +153,7 @@ export class BazaProjektow {
                 )),
           0,
         ),
-        typStrony: rewersowy ? 'rewers' : 'awers',
-        ...(pierwszyRewers ? { rewersId: pierwszyRewers.id } : {}),
+        ...(pierwszyRewers ? { typStrony: 'rewers' as const, rewersId: pierwszyRewers.id } : {}),
         ...(w.projekt.pakiet ? { pakiet: w.projekt.pakiet } : {}),
       };
     });
