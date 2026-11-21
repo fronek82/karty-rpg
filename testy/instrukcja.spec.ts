@@ -241,7 +241,7 @@ test('spis treści: wszystkie pozycje prowadzą do nagłówków w obu językach'
     await page.goto(`./instrukcja/?lang=${j}`);
     const linki = page.locator(`nav ol[lang="${j}"] a`);
     const n = await linki.count();
-    expect(n).toBe(8);
+    expect(n).toBe(9);
     for (let i = 0; i < n; i++) {
       const href = (await linki.nth(i).getAttribute('href'))!;
       await linki.nth(i).click();

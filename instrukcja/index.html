@@ -6,9 +6,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta
       name="description"
-      content="Instrukcja programu Karty RPG: karty do Mausrittera, własne szablony, druk, kalibracja drukarki, eksport i import."
-      data-pl="Instrukcja programu Karty RPG: karty do Mausrittera, własne szablony, druk, kalibracja drukarki, eksport i import."
-      data-en="Guide to RPG Cards: Mausritter cards, your own templates, printing, printer calibration, export and import."
+      content="Instrukcja programu Karty RPG: karty do Mausrittera, własne szablony, rewersy, druk dwustronny, tryb drukarni, import tabel, galeria szablonów i eksport PDF."
+      data-pl="Instrukcja programu Karty RPG: karty do Mausrittera, własne szablony, rewersy, druk dwustronny, tryb drukarni, import tabel, galeria szablonów i eksport PDF."
+      data-en="Guide to RPG Cards: Mausritter cards, your own templates, card backs, double-sided printing, print-shop mode, spreadsheet import, template gallery and PDF export."
     />
     <meta name="wersja" content="%VITE_WERSJA%" />
     <title>Instrukcja – Karty RPG</title>
@@ -187,6 +187,7 @@
             <li><a href="#pl-wlasne-szablony">Własne szablony</a></li>
             <li><a href="#pl-edycja-kart">Edycja kart na kartce</a></li>
             <li><a href="#pl-druk">Druk w skali 100%</a></li>
+            <li><a href="#pl-rewersy-i-drukarnia">Rewersy, druk dwustronny i drukarnia</a></li>
             <li><a href="#pl-kalibracja">Kalibracja drukarki</a></li>
             <li><a href="#pl-eksport-import">Eksport i import</a></li>
             <li><a href="#pl-jezyk-motyw">Język i motyw</a></li>
@@ -197,6 +198,9 @@
             <li><a href="#en-wlasne-szablony">Your own templates</a></li>
             <li><a href="#en-edycja-kart">Editing cards on the sheet</a></li>
             <li><a href="#en-druk">Printing at 100% scale</a></li>
+            <li>
+              <a href="#en-rewersy-i-drukarnia">Card backs, double-sided printing and print shop</a>
+            </li>
             <li><a href="#en-kalibracja">Printer calibration</a></li>
             <li><a href="#en-eksport-import">Export and import</a></li>
             <li><a href="#en-jezyk-motyw">Language and theme</a></li>
@@ -408,13 +412,19 @@
             <li>Tę samą ramkę ustawisz też w sekcji „Wygląd (tło, ramka, rogi)” każdego pola.</li>
             <li>
               Narożniki wybierasz w sekcji „Narożniki”: „kątownik”, „liść”, „okucie”, „gwiazda”,
-              „węzeł” albo „zawijas”. „Rozmiar narożnika (mm)” ustawia ich wielkość. Zaokrąglenie
-              rogów dotyczy tylko ramki z linii, a motyw biegnie po prostych bokach.
+              „węzeł” albo „zawijas”. „Rozmiar narożnika (mm)” ustawia ich wielkość. Przy
+              zaokrąglonych rogach motyw biegnie po prostych bokach, chyba że włączysz „Prowadź
+              motyw po łuku”.
             </li>
             <li>
               Ozdobny separator dodasz przyciskiem „Dodaj”: „Separator z zakończeniami” albo
               „Separator z motywem”. Zwykły „Separator” też ma ustawienia rysunku. Działa poziomo w
               kolumnie i pionowo w wierszu.
+            </li>
+            <li>
+              W ustawieniach karty znajdziesz też „Zestawy stylów” („Leśny”, „Runiczny”), „Styl
+              szkicowy” dla linii oraz sekcję „Tekstura i krawędź” do tła z tekstury i nieregularnej
+              krawędzi.
             </li>
           </ol>
           <h3 id="pl-wlasne-svg">Własne SVG i biblioteka ozdobników</h3>
@@ -492,8 +502,8 @@
             </li>
             <li>
               Sekcja „Położenie” robi to samo z klawiatury: „X (mm)”, „Y (mm)”, punkt „Liczone od” i
-              „Obrót” o 0, 90, 180 albo 270 stopni. „Kolejność rysowania” ma przyciski „Na wierzch”,
-              „Wyżej”, „Niżej” i „Na spód”.
+              „Obrót” o 0, 90, 180 albo 270 stopni, a także dowolny „Kąt obrotu (°)”. „Kolejność
+              rysowania” ma przyciski „Na wierzch”, „Wyżej”, „Niżej” i „Na spód”.
             </li>
             <li>
               Kilka zaznaczonych pól wyrównasz przyciskami z sekcji „Wyrównaj”, na przykład „Do
@@ -517,6 +527,63 @@
             Podkład nie łapie kliknięć i nie jest drukowany. Jest zapisany w eksporcie projektu, ale
             nie w pliku szablonu. „Usuń podkład” usuwa go z projektu.
           </p>
+          <h3 id="pl-grupy-stylow">Style, ikony w tekście i kontynuacja</h3>
+          <p>
+            W panelu „Właściwości” ustawisz wspólne style dla wielu pól, kolory sterowane danymi
+            karty oraz zaawansowane opcje tekstu.
+          </p>
+          <ul>
+            <li>
+              „Grupy stylów” pozwalają połączyć kilka pól jednym stylem. Kliknij „Nowa grupa z tego
+              pola” i przypisz grupę kolejnym polom. Zmiana czcionki albo koloru w jednym miejscu
+              aktualizuje całą grupę.
+            </li>
+            <li>
+              „Kolor z danych” uzależnia kolor tła karty, kontenera albo etykiety pola od wartości
+              innego pola karty, na przykład kategorii albo rzadkości. Gdy wartość nie pasuje do
+              żadnej reguły, działa „Domyślny kolor reguły”.
+            </li>
+            <li>
+              W polu tekstowym możesz włączyć „Listy numerowane” dla wierszy zaczynających się od
+              <code>1. </code> oraz „Ikony w tekście”, które zamieniają znaczniki
+              <code>:star:</code> i <code>:scissors:</code> na wbudowane ikony.
+            </li>
+            <li>
+              Opcja „Kontynuuj na następnej karcie” przenosi nadmiarowy tekst pola na kolejną
+              powiązaną kartę, gdy opis nie mieści się w jednym polu.
+            </li>
+            <li>
+              „Tekst po łuku” wygina napis wzdłuż okręgu, co przydaje się w nagłówkach, pieczęciach
+              i na rewersach kart.
+            </li>
+          </ul>
+          <h3 id="pl-ai-i-galeria">Układ ze zdjęcia i galeria szablonów</h3>
+          <p>
+            Nowy szablon możesz zacząć także od zdjęcia istniejącej karty albo pobrać gotowy
+            neutralny szablon z galerii online.
+          </p>
+          <ul>
+            <li>
+              Na ekranie „Stwórz własne karty” kliknij „Układ ze zdjęcia (AI)”. Wpisz własny „Klucz
+              Claude API”, wskaż plik zdjęcia i kliknij „Rozpoznaj układ”. Po zaznaczeniu
+              „Zapamiętaj klucz w tej przeglądarce” klucz zostaje lokalnie i nigdy nie trafia do
+              eksportowanych plików; usuniesz go przyciskiem „Usuń zapisany klucz”.
+            </li>
+            <li>
+              Model zwraca wyłącznie strukturę i proporcje pól bez kopiowania grafik ani treści. Po
+              sprawdzeniu podglądu kliknij „Otwórz w edytorze szablonu”, aby dopracować układ.
+            </li>
+            <li>
+              Na tym samym ekranie „Galeria szablonów online” pozwala wyszukiwać i filtrować
+              neutralne szablony oraz rewersy. Przycisk „Użyj szablonu” tworzy projekt, a „Do
+              biblioteki” zapisuje lokalną kopię w przeglądarce.
+            </li>
+            <li>
+              „Importuj szablon z linku (URL)” pobiera paczkę <code>.kartyrpg-szablon</code> z
+              podanego adresu i sprawdza jej poprawność przed zapisaniem. Pobrane szablony działają
+              później bez połączenia z siecią.
+            </li>
+          </ul>
           <h2 id="pl-edycja-kart">Edycja kart na kartce</h2>
           <p>
             Kartka to arkusz do druku z siatką slotów. Karty układasz na niej w edytorze kartki,
@@ -567,6 +634,27 @@
             <li>
               „Usuń” usuwa kartę. Dwa przyciski ze strzałkami na górnym pasku cofają i ponawiają
               zmiany. Ich podpowiedzi to „Cofnij” i „Ponów”.
+            </li>
+          </ul>
+          <h3 id="pl-import-tabel">Import z tabeli i wklejanie z PDF</h3>
+          <p>
+            Większe zestawy kart wczytasz z arkusza kalkulacyjnego, a opisy skopiowane z plików PDF
+            wkleisz bez ręcznego poprawiania końców wierszy.
+          </p>
+          <ul>
+            <li>
+              Przycisk „Importuj CSV lub XLSX” w edytorze kartki wczytuje karty z pliku tabeli.
+              Wybierz „Szablon nowych kart”, dopasuj kolumny w sekcji „Przypisz kolumny do pól” (w
+              tym „Ilość”), sprawdź podgląd i kliknij „Dodaj karty”.
+            </li>
+            <li>
+              Przy wklejaniu tekstu z PDF skrótem <kbd>Ctrl</kbd> + <kbd>V</kbd> do wielowierszowego
+              pola karty albo szablonu aplikacja usuwa sztuczne złamania wiersza i łączy wyrazy
+              podzielone dywizem. Puste linie między akapitami oraz punkty list zostają bez zmian.
+            </li>
+            <li>
+              Wklejony i oczyszczony tekst cofniesz skrótem <kbd>Ctrl</kbd> + <kbd>Z</kbd>. Na macOS
+              zamiast <kbd>Ctrl</kbd> działa <kbd>Cmd</kbd>.
             </li>
           </ul>
           <h3 id="pl-przeciaganie">Przeciąganie i skróty</h3>
@@ -624,7 +712,8 @@
             </li>
             <li>
               „Obracaj karty o 90°, gdy oszczędza to papier”, „Karty tego samego rozmiaru obok
-              siebie (mniej cięć)” i „Odstęp między kartami (mm)” dopracowują układ.
+              siebie (mniej cięć)”, „Pakowanie kart” z trybem „MaxRects” i „Odstęp między kartami
+              (mm)” dopracowują układ.
             </li>
             <li>
               Wolne miejsce na kartce otwiera menu „Dodaj kartę w to miejsce”. Szablon, który się
@@ -714,6 +803,76 @@
             Karta w strefie daje ostrzeżenie, a sama strefa jest zaznaczona na kartce. Wartość 0
             wyłącza strefę.
           </p>
+          <h2 id="pl-rewersy-i-drukarnia">Rewersy, druk dwustronny i drukarnia</h2>
+          <p>
+            Karty mogą mieć własne rewersy drukowane dwustronnie, a pliki PDF możesz przygotować ze
+            spadem, znacznikami cięcia, czcionkami z katalogu Google Fonts i warstwą wyszukiwania
+            tekstu.
+          </p>
+          <h3 id="pl-rewersy">Rewersy kart</h3>
+          <ol>
+            <li>Otwórz „Ustawienia”, znajdź sekcję „Rewersy” i kliknij „Nowy rewers”.</li>
+            <li>
+              Na ekranie „Edytor rewersu” ułóż warstwy z kształtów, obrazów, ozdobników i napisów.
+              Zmiany zapisują się same; do arkusza wrócisz przyciskiem „Kartki”.
+            </li>
+            <li>
+              Przypisz rewers na jednym z trzech poziomów: „Domyślny rewers talii” w „Ustawienia”,
+              „Rewers szablonu” na elemencie „Karta” w edytorze szablonu albo „Rewers” w panelu
+              zaznaczonej karty. Opcja „Bez rewersu” wyłącza rewers dla wybranego szablonu lub
+              karty.
+            </li>
+          </ol>
+          <h3 id="pl-druk-dwustronny">Druk dwustronny</h3>
+          <ol>
+            <li>
+              W „Ustawienia” otwórz sekcję „Druk dwustronny” i zaznacz „Drukuj rewersy (przód i tył
+              w parach stron)”.
+            </li>
+            <li>
+              Wybierz „Krawędź odwracania”: „Długa krawędź” (na pionowej kartce jak kartki książki)
+              albo „Krótka krawędź” (na pionowej kartce jak kalendarz ścienny). Na kartce poziomej
+              osie zamieniają się rolami; podpis pod przełącznikiem pokazuje oś odbicia dla bieżącej
+              orientacji.
+            </li>
+            <li>
+              Kliknij „Wydruk próbny dwustronny (PDF)” i wydrukuj dwie strony próbne dwustronnie w
+              skali 100%.
+            </li>
+            <li>
+              Przyjrzyj się kartce pod światło, zmierz przesunięcie krzyżyków i wpisz poprawkę w
+              polach „Korekta rewersu X (mm)” i „Korekta rewersu Y (mm)”.
+            </li>
+          </ol>
+          <h3 id="pl-tryb-drukarni">Tryb drukarni (spad i znaczniki)</h3>
+          <ol>
+            <li>
+              W „Ustawienia” otwórz sekcję „Tryb drukarni” i włącz „Przygotuj do drukarni (spad i
+              znaczniki cięcia)”.
+            </li>
+            <li>
+              Ustaw „Spad (mm)” (najczęściej 2 lub 3 mm) i zostaw zaznaczone „Znaczniki cięcia”,
+              jeśli drukarnia wymaga znaczników formatu.
+            </li>
+            <li>
+              W polu „Układ drukarski” wybierz „Siatka na arkuszu” dla całego arkusza albo „Jedna
+              karta na stronę”, gdy drukarnia oczekuje osobnych stron dla kart ze spadem. Jeśli
+              ilustracja ma mniej niż 300 dpi, przed eksportem pojawi się ostrzeżenie.
+            </li>
+          </ol>
+          <h3 id="pl-czcionki-i-pdf">Katalog czcionek i wyszukiwanie w PDF</h3>
+          <ul>
+            <li>
+              W „Ustawienia” sekcja „Katalog Google Fonts” pozwala przeglądać kroje z polskimi
+              znakami i dodawać je przyciskiem „Pobierz”. Pobrana czcionka zapisuje się w projekcie
+              i działa później bez dostępu do sieci.
+            </li>
+            <li>
+              W sekcji „Opcje PDF” przełącznik „Niewidoczna warstwa tekstowa w PDF (wyszukiwanie i
+              kopiowanie)” dodaje warstwę tekstu pod krzywymi liter, więc w przeglądarce PDF działa
+              wyszukiwanie i kopiowanie bez zmiany wyglądu kart.
+            </li>
+          </ul>
           <h2 id="pl-kalibracja">Kalibracja drukarki i wydruk testowy</h2>
           <p>
             Drukarki przesuwają obraz o ułamki milimetra. Przy arkuszach z perforacją to widać.
@@ -778,6 +937,19 @@
               „Importuj szablon…” w tej samej sekcji albo „Importuj szablon” na ekranie „Stwórz
               własne karty” wczytuje taki plik. „Importuj pliki…” na starcie też go przyjmie i
               utworzy z niego nowy projekt.
+            </li>
+          </ul>
+          <h3 id="pl-biblioteka-globalna">Biblioteka globalna w przeglądarce</h3>
+          <ul>
+            <li>
+              „Globalna biblioteka szablonów” (na ekranie „Stwórz własne karty” i w sekcji „Szablony
+              projektu”) oraz „Globalna biblioteka ozdobników” (w „Biblioteka ozdobników”)
+              przechowują kopie dostępne we wszystkich projektach w tej przeglądarce.
+            </li>
+            <li>
+              Kliknij „Zapisz w bibliotece globalnej”, aby zachować szablon albo ozdobnik do
+              późniejszego użycia, „Użyj”, aby dodać kopię do innego projektu, albo „Importuj do
+              biblioteki…”, aby wczytać plik paczki bez tworzenia nowego projektu.
             </li>
           </ul>
           <p>
@@ -1035,13 +1207,19 @@
             </li>
             <li>
               Pick corners in the “Corners” section: “angle bracket”, “leaf”, “metal corner”,
-              “star”, “knot” or “flourish”. “Corner size (mm)” sets their size. Corner rounding
-              applies only to the line frame, while a pattern runs along the straight sides.
+              “star”, “knot” or “flourish”. “Corner size (mm)” sets their size. With rounded
+              corners, a pattern runs along the straight sides unless you turn on “Follow rounded
+              corners”.
             </li>
             <li>
               Add a decorative divider with “Add”: “Divider with end caps” or “Divider with a
               pattern”. A plain “Divider” has drawing options too. It works horizontally in a column
               and vertically in a row.
+            </li>
+            <li>
+              Card settings also include “Style sets” (“Woodland”, “Runic”), “Sketch style” for
+              drawn lines and the “Texture and edge” section for textured backgrounds and ragged
+              edges.
             </li>
           </ol>
           <h3 id="en-wlasne-svg">Your own SVG and the ornament library</h3>
@@ -1117,8 +1295,9 @@
             </li>
             <li>
               The “Position” section does the same from the keyboard: “X (mm)”, “Y (mm)”, the
-              “Measured from” point and “Rotation” by 0, 90, 180 or 270 degrees. “Drawing order” has
-              the buttons “To front”, “Forward”, “Backward” and “To back”.
+              “Measured from” point and “Rotation” by 0, 90, 180 or 270 degrees, plus any custom
+              “Rotation angle (°)”. “Drawing order” has the buttons “To front”, “Forward”,
+              “Backward” and “To back”.
             </li>
             <li>
               Align several selected fields with the buttons in the “Align” section, for example
@@ -1143,6 +1322,63 @@
             The reference ignores clicks and is not printed. It is included in the project export
             but not in the template file. “Remove the reference” takes it out of the project.
           </p>
+          <h3 id="en-grupy-stylow">Styles, inline icons and continuation</h3>
+          <p>
+            In the “Properties” panel you can share styles across fields, drive colors from card
+            data and enable extra text options.
+          </p>
+          <ul>
+            <li>
+              “Style groups” tie several fields to one style. Click “New group from this field” and
+              assign the group to other fields. Changing a font or color in one place updates the
+              whole group.
+            </li>
+            <li>
+              “Color from data” sets the color of the card background, a container background or a
+              field label from another field on the card, such as a category or rarity. When a value
+              matches no rule, “Default rule color” applies.
+            </li>
+            <li>
+              In a text field you can turn on “Numbered lists” for lines starting with
+              <code>1. </code> and “Inline icons”, which turn <code>:star:</code> and
+              <code>:scissors:</code> into built-in icons.
+            </li>
+            <li>
+              “Continue on the next card” spills long text onto a linked continuation card when the
+              description does not fit in one field.
+            </li>
+            <li>
+              “Curved text” bends a line along a circle, which works well for headings, seals and
+              card backs.
+            </li>
+          </ul>
+          <h3 id="en-ai-i-galeria">Layout from photo and template gallery</h3>
+          <p>
+            You can also start a new template from a photo of an existing card, or grab a neutral
+            template from the online gallery.
+          </p>
+          <ul>
+            <li>
+              On the “Create your own cards” screen, click “Layout from photo (AI)”. Enter your own
+              “Claude API key”, pick a photo file and click “Detect layout”. If you check “Remember
+              key in this browser”, the key stays local and never goes into exported files; you can
+              clear it with “Remove saved key”.
+            </li>
+            <li>
+              The model returns only field structure and proportions without copying artwork or
+              text. Check the preview and click “Open in template editor” to adjust the layout.
+            </li>
+            <li>
+              On the same screen, “Online template gallery” lets you search and filter neutral
+              templates and card backs. “Use template” starts a project, and “Save to library” keeps
+              a local copy in the browser.
+            </li>
+            <li>
+              “Import template from URL” downloads a <code>.kartyrpg-szablon</code> package from a
+              web address and checks its structure before saving. Downloaded templates work offline
+              afterward.
+            </li>
+          </ul>
           <h2 id="en-edycja-kart">Editing cards on the sheet</h2>
           <p>
             The sheet is the page you print, with a grid of slots. You arrange cards on it in the
@@ -1193,6 +1429,27 @@
             <li>
               “Delete” removes the card. Two arrow buttons in the top bar undo and redo changes.
               Their tooltips read “Undo” and “Redo”.
+            </li>
+          </ul>
+          <h3 id="en-import-tabel">Spreadsheet import and pasting from PDF</h3>
+          <p>
+            You can load larger card sets from a spreadsheet, and paste descriptions copied from PDF
+            files without fixing line breaks by hand.
+          </p>
+          <ul>
+            <li>
+              “Import CSV or XLSX” in the sheet editor builds cards from a table file. Pick
+              “Template for new cards”, match columns under “Map columns to fields” (including
+              “Quantity”), review the preview and click “Add cards”.
+            </li>
+            <li>
+              When you paste text from a PDF with <kbd>Ctrl</kbd> + <kbd>V</kbd> into a multi-line
+              card or template field, the app removes forced line breaks inside paragraphs and joins
+              hyphenated words. Blank lines between paragraphs and list items stay untouched.
+            </li>
+            <li>
+              You can undo pasted and cleaned text with <kbd>Ctrl</kbd> + <kbd>Z</kbd>. On macOS use
+              <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd>.
             </li>
           </ul>
           <h3 id="en-przeciaganie">Dragging and shortcuts</h3>
@@ -1249,7 +1506,8 @@
             </li>
             <li>
               “Rotate cards by 90° when it saves paper”, “Cards of the same size side by side (fewer
-              cuts)” and “Gap between cards (mm)” fine-tune the result.
+              cuts)”, “Card packing” with “MaxRects” mode and “Gap between cards (mm)” fine-tune the
+              result.
             </li>
             <li>
               A free space on the sheet opens the “Add a card here” menu. A template that will not
@@ -1339,6 +1597,73 @@
             A card in the strip triggers a warning, and the strip itself is marked on the sheet. A
             value of 0 turns it off.
           </p>
+          <h2 id="en-rewersy-i-drukarnia">Card backs, double-sided printing and print shop</h2>
+          <p>
+            Cards can carry custom backs printed on both sides, and PDF files can include bleed,
+            crop marks, typefaces from the Google Fonts catalog and a searchable text layer.
+          </p>
+          <h3 id="en-rewersy">Card backs</h3>
+          <ol>
+            <li>Open “Settings”, find the “Card backs” section and click “New card back”.</li>
+            <li>
+              In the “Card back editor”, build layers from shapes, images, ornaments and text.
+              Changes save automatically; click “Sheets” to return.
+            </li>
+            <li>
+              Assign a back on one of three levels: “Default deck back” in “Settings”, “Template
+              card back” on the “Card” node in the template editor, or “Card back” in the selected
+              card panel. Pick “No back” to switch it off for a specific template or card.
+            </li>
+          </ol>
+          <h3 id="en-druk-dwustronny">Double-sided printing</h3>
+          <ol>
+            <li>
+              In “Settings” open “Double-sided printing” and check “Print both sides (front and back
+              page pairs)”.
+            </li>
+            <li>
+              Pick “Flip edge”: “Long edge” (on a portrait sheet, like pages of a book) or “Short
+              edge” (on a portrait sheet, like a wall calendar). On a landscape sheet the axes swap
+              roles; the note below the switch shows the reflection axis for the current page
+              orientation.
+            </li>
+            <li>
+              Click “Duplex calibration test (PDF)” and print the two test pages double-sided at
+              100% scale.
+            </li>
+            <li>
+              Hold the sheet up to a light, measure the shift between the crosses and enter the
+              offset in “Back offset X (mm)” and “Back offset Y (mm)”.
+            </li>
+          </ol>
+          <h3 id="en-tryb-drukarni">Print-shop mode (bleed and crop marks)</h3>
+          <ol>
+            <li>
+              In “Settings” open “Print-shop mode” and turn on “Prepare for print shop (bleed and
+              crop marks)”.
+            </li>
+            <li>
+              Set “Bleed (mm)” (usually 2 or 3 mm) and keep “Crop marks” enabled if the print shop
+              expects trim marks.
+            </li>
+            <li>
+              Under “Print layout” choose “Sheet grid” for full sheets or “One card per page” when a
+              print shop expects individual card pages with bleed. If an illustration drops below
+              300 dpi, a warning appears before export.
+            </li>
+          </ol>
+          <h3 id="en-czcionki-i-pdf">Font catalog and searchable PDF</h3>
+          <ul>
+            <li>
+              In “Settings”, “Google Fonts catalog” lists typefaces with Polish glyphs that you can
+              add with “Download”. A downloaded typeface stays inside the project and works offline.
+            </li>
+            <li>
+              Under “PDF options”, “Invisible text layer in PDF (search and copy)” places searchable
+              text behind the glyph outlines, so search and copy work in a PDF viewer without
+              altering how the cards look.
+            </li>
+          </ul>
           <h2 id="en-kalibracja">Printer calibration and the test print</h2>
           <p>
             Printers shift the image by fractions of a millimeter. On perforated sheets you can see
@@ -1406,6 +1731,19 @@
               “Import a template…” in the same section, or “Import a template” on the “Create your
               own cards” screen, loads such a file. “Import files…” on the start screen accepts it
               too and builds a new project from it.
+            </li>
+          </ul>
+          <h3 id="en-biblioteka-globalna">Global library in the browser</h3>
+          <ul>
+            <li>
+              “Global template library” (on the “Create your own cards” screen and under “Project
+              templates”) and “Global ornament library” (in “Ornament library”) keep copies
+              available across every project in this browser.
+            </li>
+            <li>
+              Click “Save to global library” to keep a template or ornament for reuse, “Use” to add
+              a copy to another project, or “Import into library…” to load a package file without
+              creating a new project.
             </li>
           </ul>
           <p>
