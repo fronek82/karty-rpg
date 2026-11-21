@@ -31,6 +31,7 @@ import {
   type SkopiowanyStyl,
 } from '../../dane/szablon';
 import { roleProjektu } from '../../dane/edycja';
+import { czyProjektWlasny } from '../../dane/wlasneKarty';
 import { t, tJesliJest } from '../../i18n';
 import {
   DOMYSLNE_TLO_KARTY,
@@ -509,9 +510,6 @@ export function EdytorRewersu({ edycja, rewersId }: { edycja: ProjektWEdycji; re
           <a className="przycisk" href={`#/projekt/${idProjektu}/biblioteka`}>
             {t('biblioteka.tytul')}
           </a>
-          <a className="przycisk" href={`#/projekt/${idProjektu}`}>
-            {t('szablon.wrocDoKartek')}
-          </a>
           <button
             type="button"
             aria-label={t('kartka.cofnij')}
@@ -544,6 +542,23 @@ export function EdytorRewersu({ edycja, rewersId }: { edycja: ProjektWEdycji; re
           >
             {t('szablony.duplikuj')}
           </button>
+          <a
+            className="przycisk"
+            href={
+              czyProjektWlasny(projekt) &&
+              projekt.talie.every((tl) => tl.karty.length === 0) &&
+              projekt.szablony.length === 1 &&
+              projekt.szablony[0]!.korzen.dzieci.length === 0 &&
+              projekt.nazwa === rewers.nazwa
+                ? '#/wlasne/nowy'
+                : `#/projekt/${idProjektu}/drukuj`
+            }
+          >
+            {t('pasek.powrot')}
+          </a>
+          <a className="przycisk glowny" href={`#/projekt/${idProjektu}`}>
+            {t('szablon.robKarty')}
+          </a>
           <NarzedziaPaska />
         </header>
         <h1 className="tylko-czytnik">{t('rewers.tytulEdytora')}</h1>

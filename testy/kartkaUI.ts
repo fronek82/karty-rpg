@@ -2,9 +2,9 @@ import { expect, type Page } from '@playwright/test';
 import { eksportujSzablon } from '../src/dane/archiwum';
 import { WERSJA_SCHEMATU, type Projekt } from '../src/model/projekt';
 import { szablonCzaru } from '../src/silnik/__testy__/przyklady';
-import { slot } from './pomoc';
+import { otworzDruk, slot } from './pomoc';
 
-/** Wspólny początek testów układu kartki: karta czaru (z pliku szablonu) w slocie 1×1 i panel ustawień. */
+/** Wspólny początek testów układu kartki: karta czaru (z pliku szablonu) w slocie 1×1 i panel opcji druku. */
 
 export function plikSzablonu() {
   const projekt: Projekt = {
@@ -37,6 +37,5 @@ export async function kartkaCzaru(page: Page) {
     .getByRole('complementary', { name: 'Zaznaczone karty' })
     .getByLabel('Nazwa', { exact: true })
     .fill('Ognista kula');
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  return page.getByRole('complementary', { name: 'Ustawienia' });
+  return otworzDruk(page);
 }

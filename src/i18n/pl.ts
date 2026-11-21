@@ -6,6 +6,10 @@
 export const pl = {
   'aplikacja.nazwa': 'Karty RPG',
   'pasek.narzedzia': 'Narzędzia aplikacji',
+  'pasek.ustawienia': 'Ustawienia',
+  'pasek.powrot': '← Powrót',
+  'pasek.wgrajCzcionki': 'Wgrywanie czcionek',
+  'pasek.wgrajObrazy': 'Wgrywanie obrazów',
   'pasek.instrukcja': 'Instrukcja',
   'pasek.instrukcjaOpis': 'Instrukcja (otwiera się w nowym oknie)',
   'pasek.noweOkno': ' (nowe okno)',
@@ -21,6 +25,32 @@ export const pl = {
   'motyw.grupa': 'Motyw',
   'motyw.jasny': 'Motyw jasny',
   'motyw.ciemny': 'Motyw ciemny',
+  'motyw.jasnyKrotki': 'Jasny',
+  'motyw.ciemnyKrotki': 'Ciemny',
+  'zasobyOkno.zamknij': 'Zamknij okno',
+  'zasobyOkno.czcionkiTytul': 'Wgrywanie czcionek',
+  'zasobyOkno.czcionkiOpis':
+    'Wgrane czcionki (TTF, OTF, WOFF, WOFF2) zapisują się w przeglądarce i trafiają automatycznie do nowych projektów.',
+  'zasobyOkno.czcionkiOpisProjekt':
+    'Wgrane czcionki trafiają od razu do tego projektu i zapisują się w przeglądarce dla kolejnych projektów.',
+  'zasobyOkno.wgrajCzcionki': 'Wgraj pliki czcionek…',
+  'zasobyOkno.czcionkiZapisane': 'Zapisane w przeglądarce',
+  'zasobyOkno.czcionkiBrak': 'Nie ma jeszcze zapisanych własnych czcionek.',
+  'zasobyOkno.czcionkiWProjekcie': 'Czcionki w bieżącym projekcie',
+  'zasobyOkno.obrazyTytul': 'Wgrywanie obrazów',
+  'zasobyOkno.obrazyOpis':
+    'Wgrane obrazy (PNG, JPG) zapisują się w przeglądarce i trafiają automatycznie do nowych projektów.',
+  'zasobyOkno.obrazyOpisProjekt':
+    'Wgrane obrazy trafiają od razu do biblioteki tego projektu i zapisują się w przeglądarce dla kolejnych projektów.',
+  'zasobyOkno.wgrajObrazy': 'Wgraj pliki obrazów…',
+  'zasobyOkno.obrazyZapisane': 'Zapisane w przeglądarce',
+  'zasobyOkno.obrazyBrak': 'Nie ma jeszcze zapisanych własnych obrazów.',
+  'zasobyOkno.obrazyWProjekcie': 'Obrazy w bieżącym projekcie',
+  'zasobyOkno.obrazyWgrano': 'Wgrano obrazy: {lista}.',
+  'zasobyOkno.dodajDoProjektu': 'Dodaj do projektu',
+  'zasobyOkno.dodanoDoProjektu': 'Dodano do projektu: {nazwa}.',
+  'zasobyOkno.usun': 'Usuń',
+  'zasobyOkno.usunieto': 'Usunięto z przeglądarki: {nazwa}.',
   'dane.nieArchiwum': 'To nie jest poprawny plik .kartyrpg (nie da się go rozpakować).',
   'dane.brakProjektu': 'W pliku brakuje pliku „{plik}”.',
   'dane.zlyJson': 'Plik „{plik}” jest uszkodzony (niepoprawny JSON).',
@@ -287,6 +317,9 @@ export const pl = {
   'kartka.naglowekPodpowiedz':
     'Karty pod nagłówkiem układasz jak na każdej kartce – nagłówek należy do kolumn, nie do kart.',
   'kartka.ustawienia': 'Ustawienia',
+  'kartka.drukujKarty': 'Drukuj karty ►',
+  'kartka.opcjeDruku': 'Opcje druku i arkusza',
+  'kartka.wybierzKartke': 'Arkusz do ustawień',
   'kartka.zamknijUstawienia': 'Zamknij ustawienia',
   'kartka.ustawieniaOpis': 'Dotyczą kartki „{kartka}” (wszystkich jej stron) i czcionek projektu.',
   'kartka.tytulKartki': 'Tytuł kartki',
@@ -480,7 +513,7 @@ export const pl = {
     'Karta w tym rozmiarze nie zmieści się na stronie kartki – zmień najpierw papier.',
   'szablon.tytulEdytora': 'Edytor szablonu',
   'szablon.wrocDoKartek': '← Kartki',
-  'szablon.robKarty': 'Rób karty ►',
+  'szablon.robKarty': 'Edytor kart ►',
   'szablon.nazwaSzablonu': 'Nazwa szablonu',
   'szablon.struktura': 'Struktura karty',
   'szablon.dodaj': '＋ Dodaj ▾',
@@ -910,7 +943,7 @@ export const pl = {
   'kartka.pomocSkroty':
     'Skróty: Delete – usuń, Ctrl+D – duplikuj, Ctrl+Z – cofnij (Ctrl+Shift+Z – ponów), strzałki – przesuń, Escape – odznacz.',
   'kartka.pomocDruk':
-    'Przerywane kratki są tylko na ekranie. Drukuj w skali 100% – slot ma wtedy rozmiar slotu na karcie postaci.',
+    'Gdy karty są gotowe, kliknij „Drukuj karty ►”, aby ustawić papier, układ druku i pobrać PDF. Przerywane kratki są tylko na ekranie.',
   'start.tytul': 'Karty do gier – zaprojektuj i wydrukuj',
   'start.opis': 'Wszystko działa w przeglądarce, a projekty zostają na tym komputerze.',
   'start.nowyProjekt': 'Nowy projekt',
@@ -972,8 +1005,23 @@ export const pl = {
   'wlasne.stronaMenu': 'Strona karty',
   'wlasne.awersNazwa': 'Awers',
   'wlasne.awersOpis': 'Przód karty – rozmiar, wygląd i układ pól',
+  'wlasne.awersSzczegoly':
+    'Przód karty, na którym układasz strukturę pól wypełnianych później osobno dla każdej karty w talii.',
+  'wlasne.awersPunkt1': 'Wybierzesz format karty (np. Poker, Bridge, Mini Euro albo własny w mm).',
+  'wlasne.awersPunkt2':
+    'Rozmieścisz pola tekstowe, statystyki, ilustracje, tabele, ramki i ozdobniki.',
+  'wlasne.awersPunkt3':
+    'W kolejnym kroku przejdziesz do edytora kart, uzupełnisz treść i wydrukujesz arkusz.',
   'wlasne.rewersNazwa': 'Rewers',
   'wlasne.rewersOpis': 'Tył karty – otwiera od razu edytor rewersu',
+  'wlasne.rewersSzczegoly':
+    'Wspólny tył dla całej talii lub wybranych kart, wykorzystywany podczas druku dwustronnego.',
+  'wlasne.rewersPunkt1':
+    'Ustawisz tło, kolory, ramki, ilustrację centralną i ozdobniki na warstwach.',
+  'wlasne.rewersPunkt2':
+    'Rewers przypiszesz do całej talii albo do konkretnych kart w opcjach druku.',
+  'wlasne.rewersPunkt3':
+    'Podczas eksportu PDF aplikacja automatycznie wyrówna tył do przodu stron.',
   'wlasne.importNazwa': 'Importuj szablon',
   'wlasne.importOpis': 'Plik .kartyrpg-szablon',
   'wlasne.przyklady': 'Przykładowe szablony',

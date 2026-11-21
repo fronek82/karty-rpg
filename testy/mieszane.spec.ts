@@ -11,7 +11,7 @@ import { konturIkony } from '../src/silnik/ikony';
 import { konturNaD, scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { kliknijPobierzPdf, przeciagnij, slot, srodek, zapisano } from './pomoc';
+import { kliknijPobierzPdf, otworzDruk, przeciagnij, slot, srodek, zapisano } from './pomoc';
 import {
   SZABLONY,
   TALIA,
@@ -102,10 +102,11 @@ test('przeciąganie zmienia kolejność, „Dodaj w to miejsce” wstawia kartę
   await expect(menu.getByRole('menuitem', { name: /Czar/ })).toContainText('nie zmieści się tu');
   await expect(menu.getByRole('menuitem', { name: /Żeton/ })).not.toContainText('nie zmieści');
   if (process.env.ZRZUTY) {
-    await page.getByRole('button', { name: /Ustawienia/ }).click();
-    await expect(page.getByRole('complementary', { name: 'Ustawienia' })).toBeVisible();
+    await otworzDruk(page);
     await zapisano(page);
     await page.screenshot({ path: 'docs/obrazy/m2b-2-mieszane-rozmiary.png' });
+    await page.getByRole('link', { name: '← Powrót' }).click();
+    await page.getByRole('button', { name: /Wolne miejsce 44×52 mm/ }).click();
   }
   // Żeton 40×40 trafia dokładnie w to wolne miejsce.
   await menu.getByRole('menuitem', { name: /Żeton/ }).click();
@@ -140,7 +141,7 @@ function plikSzablonu(s: Szablon) {
   };
 }
 
-test('przełącznik w ustawieniach: jeden rozmiar ↔ mieszane, własny układ zablokowany', async ({
+test('przełącznik w opcjach druku: jeden rozmiar ↔ mieszane, własny układ zablokowany', async ({
   page,
 }) => {
   await page.goto('./#/');
@@ -150,13 +151,11 @@ test('przełącznik w ustawieniach: jeden rozmiar ↔ mieszane, własny układ z
   // Karta 70×120 w slocie (A4: 2 × 2 sloty).
   await slot(page, 1, 1, 1).click();
   await page.getByRole('menuitem', { name: /Arkana/ }).click();
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
-  // Drugi szablon (63×88) powstaje jako osobna kartka – otwieramy ustawienia pierwszej.
+  const ust = await otworzDruk(page);
+  // Drugi szablon (63×88) powstaje jako osobna kartka – przełączamy wybór na pierwszą kartkę.
   await ust.getByTestId('plik-szablonu').setInputFiles(plikSzablonu(SZABLONY[1]!));
   await expect(page.locator('.kartka')).toHaveCount(2);
-  await page.getByRole('button', { name: 'Zamknij ustawienia' }).click();
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await ust.getByLabel('Arkusz do ustawień').selectOption({ index: 0 });
   const rozmiary = ust.getByLabel('Rozmiary kart na kartce');
   const uklad = ust.getByLabel('Układ kart na kartce');
   await expect(rozmiary).toHaveValue('jeden');
@@ -177,7 +176,8 @@ test('przełącznik w ustawieniach: jeden rozmiar ↔ mieszane, własny układ z
   await ust.getByLabel('Obracaj karty o 90°, gdy oszczędza to papier').check();
   await ust.getByLabel('Odstęp między kartami (mm)').fill('2');
 
-  // Karta innego rozmiaru na tej samej kartce: wolne miejsce → menu → Czar 63×88.
+  // Powrót do Edytora kart: karta innego rozmiaru na tej samej kartce (wolne miejsce → Czar 63×88).
+  await page.getByRole('link', { name: '← Powrót' }).click();
   const kartka = page.locator('.kartka').first();
   await kartka
     .getByRole('button', { name: /Wolne miejsce/ })
@@ -185,13 +185,18 @@ test('przełącznik w ustawieniach: jeden rozmiar ↔ mieszane, własny układ z
     .click();
   await page.getByRole('menuitem', { name: /Czar/ }).click();
   await expect(kartka.locator('[data-karta]')).toHaveCount(2);
-  // Dodana karta jest zaznaczona – wracamy do ustawień kartki.
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  await expect(ust.getByText('Czar · 63×88 · 1 szt.')).toBeVisible();
+
+  // Wracamy do opcji druku i sprawdzamy listę oraz powrót do siatki.
+  const ustPo = await otworzDruk(page);
+  await ustPo.getByLabel('Arkusz do ustawień').selectOption({ index: 0 });
+  await expect(ustPo.getByText('Czar · 63×88 · 1 szt.')).toBeVisible();
 
   // Powrót do siatki: karty znowu w slotach, własny układ znów dostępny.
-  await rozmiary.selectOption('jeden');
-  await expect(uklad.locator('option[value="wlasny"]')).toBeEnabled();
+  await ustPo.getByLabel('Rozmiary kart na kartce').selectOption('jeden');
+  await expect(
+    ustPo.getByLabel('Układ kart na kartce').locator('option[value="wlasny"]'),
+  ).toBeEnabled();
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await expect(kartka.locator('.slot')).not.toHaveCount(0);
   await expect(kartka.locator('[data-karta]')).toHaveCount(2);
 });
@@ -200,15 +205,16 @@ test('MaxRects jest opcjonalny, zachowuje wszystkie karty i trafia do wydruku', 
   page,
 }) => {
   await otworzProjekt(page);
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await otworzDruk(page);
   const pakowanie = page.getByLabel('Pakowanie kart');
   await expect(pakowanie).toHaveValue('pasy');
   await pakowanie.selectOption('maxrects');
-  await expect(page.locator('.strona-kartki [data-karta]')).toHaveCount(10);
   await expect(
     page.getByText('MaxRects wypełnia wolne prostokąty.', { exact: false }),
   ).toBeVisible();
   if (process.env.ZRZUTY_M3_6) await page.screenshot({ path: 'docs/obrazy/m3-6-maxrects.png' });
+  await page.getByRole('link', { name: '← Powrót' }).click();
+  await expect(page.locator('.strona-kartki [data-karta]')).toHaveCount(10);
 
   const a = arkuszMieszany({
     mieszane: {
@@ -268,7 +274,7 @@ test('na mieszanej kartce 1×1, 1×2 i 2×1 kalibracja chroni początki linii', 
   const d = konturNaD(konturIkony('nozyczki', -2.75, -2.75, 5.5));
   const ikony = svg.locator(`path[d="${d}"]`);
   await expect(ikony).toHaveCount(6);
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await otworzDruk(page);
   await page.getByLabel('Przesunięcie X (mm)').fill('-7');
   await page.getByLabel('Przesunięcie Y (mm)').fill('6');
   // Ikona przy lewym początku słabiej odstaje od linii, gdy liczy się kalibracja.

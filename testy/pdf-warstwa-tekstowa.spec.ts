@@ -8,7 +8,13 @@ import { renderujKarte } from '../src/silnik/karta';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { kliknijPobierzPdf, zapisano } from './pomoc';
+import {
+  kliknijPobierzPdf,
+  otworzDruk,
+  otworzUstawieniaAplikacji,
+  panelDruku,
+  zapisano,
+} from './pomoc';
 
 /**
  * M5-4: opcjonalna niewidoczna warstwa tekstowa w PDF (`3 Tr`):
@@ -119,9 +125,8 @@ test('przełącznik warstwy tekstowej PDF w Ustawieniach działa (PL/EN), pamię
   await poleTytul.fill('Żółty kompas łąkowy');
   await zapisano(page);
 
-  // Otwórz Ustawienia i włącz niewidoczną warstwę tekstową PDF.
-  await page.getByRole('button', { name: 'Ustawienia' }).click();
-  const ustawienia = page.getByRole('complementary', { name: 'Ustawienia' });
+  // Otwórz widok drukowania i włącz niewidoczną warstwę tekstową PDF.
+  const ustawienia = await otworzDruk(page);
   const przelacznik = ustawienia.getByLabel(/Niewidoczna warstwa tekstowa w PDF/);
   await expect(przelacznik).not.toBeChecked();
   await przelacznik.check();
@@ -130,12 +135,11 @@ test('przełącznik warstwy tekstowej PDF w Ustawieniach działa (PL/EN), pamię
   // Przeładuj i potwierdź zapamiętanie w localStorage + etykietę EN.
   await zapisano(page);
   await page.reload();
-  await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: 'EN', exact: true }).click();
-  await page.getByRole('button', { name: 'Settings' }).click();
-  await expect(
-    page.getByRole('complementary', { name: 'Settings' }).getByLabel(/Invisible text layer in PDF/),
-  ).toBeChecked();
+  await expect(panelDruku(page)).toBeVisible({ timeout: 15000 });
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst.getByRole('button', { name: 'EN', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expect(panelDruku(page, true).getByLabel(/Invisible text layer in PDF/)).toBeChecked();
 
   // Pobierz PDF i sprawdź zawartość tekstową w pdfjs-dist.
   const [pobranie] = await Promise.all([

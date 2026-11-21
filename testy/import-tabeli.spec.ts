@@ -3,7 +3,7 @@ import { utils, write } from 'xlsx';
 import { strToU8, zipSync } from 'fflate';
 import { WERSJA_SCHEMATU } from '../src/model/projekt';
 import { kartaNaKartce, kreator, dodaj as dodajPole } from './szablonUI';
-import { nowaPustaKartka, zapisano } from './pomoc';
+import { nowaPustaKartka, otworzDruk, zapisano } from './pomoc';
 
 test('CSV: ręczne mapowanie, blokada błędnej partii i cofnięcie w jednym kroku', async ({
   page,
@@ -85,7 +85,7 @@ test('kartka pakietu oferuje tylko szablony dopuszczone w menu dodawania', async
   await nowaPustaKartka(page);
   const kartki = page.locator('.kartka');
   await expect(kartki).toHaveCount(1);
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await otworzDruk(page);
   const szablonWlasny = {
     wersja: WERSJA_SCHEMATU,
     szablon: {
@@ -103,6 +103,7 @@ test('kartka pakietu oferuje tylko szablony dopuszczone w menu dodawania', async
     buffer: Buffer.from(zipSync({ 'szablon.json': strToU8(JSON.stringify(szablonWlasny)) })),
   });
   await expect(kartki).toHaveCount(2);
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await kartki.last().getByRole('button', { name: 'Importuj CSV lub XLSX' }).click();
   const wlasna = page.getByRole('dialog');
   await expect(

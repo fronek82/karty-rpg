@@ -138,6 +138,7 @@ test('przełączanie motywu z pamięcią, wspólny klucz z aplikacją', async ({
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('./');
   expect(await motyw(page)).toBe('dark');
+  await page.getByRole('button', { name: /Ustawienia/ }).click();
   await page.getByRole('button', { name: 'Motyw jasny' }).click();
   await page.goto('./instrukcja/');
   expect(await motyw(page)).toBe('light');

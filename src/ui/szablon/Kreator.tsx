@@ -206,7 +206,10 @@ export function Kreator({
           )}
         </form>
       </div>
-      <div className="start-menu" role="group" aria-label={t('kreator.akcje')}>
+      <div className="start-menu" role="group" aria-labelledby={`${idFormularza}-akcje`}>
+        <p id={`${idFormularza}-akcje`} className="etykieta-sekcji">
+          {t('kreator.akcje')}
+        </p>
         <button
           type="submit"
           form={idFormularza}

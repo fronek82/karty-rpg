@@ -1,6 +1,11 @@
+import { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { JEZYKI, t, ustawJezyk, type Jezyk } from '../i18n';
 import { useJezyk } from '../i18n/react';
 import { useMotyw } from './motyw';
+
+// Okna zasobów ładowane leniwie, żeby start strony nie ciągnął fontkita ani katalogu Google Fonts.
+const OknoCzcionek = lazy(() => import('./OknaZasobow').then((m) => ({ default: m.OknoCzcionek })));
+const OknoObrazow = lazy(() => import('./OknaZasobow').then((m) => ({ default: m.OknoObrazow })));
 
 /**
  * Adres strony instrukcji względem strony aplikacji (druga strona wejściowa Vite, `instrukcja/index.html`;
@@ -44,59 +49,164 @@ function IkonaKsiezyca() {
 }
 
 /**
- * Grupa narzędzi na końcu paska górnego: Instrukcja, język PL | EN, motyw jasny | ciemny.
- * Język przełącza się od razu (bez przeładowania) i jest zapamiętany w localStorage.
+ * Rozwijane menu „⚙ Ustawienia ▾” na końcu paska górnego: motyw jasny/ciemny, język PL/EN,
+ * wgrywanie czcionek, wgrywanie obrazów oraz link do instrukcji.
  */
 export function NarzedziaPaska() {
   const { motyw, ustaw } = useMotyw();
   const aktywny = useJezyk();
+  const [otwarte, ustawOtwarte] = useState(false);
+  const [okno, ustawOkno] = useState<'czcionki' | 'obrazy'>();
+  const opakowanie = useRef<HTMLDivElement>(null);
+  const przycisk = useRef<HTMLButtonElement>(null);
+  const idPanelu = useId();
+
+  useEffect(() => {
+    if (!otwarte) return;
+    const klikPoza = (e: MouseEvent) => {
+      if (opakowanie.current && !opakowanie.current.contains(e.target as Node)) {
+        ustawOtwarte(false);
+      }
+    };
+    const klawisz = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        ustawOtwarte(false);
+        przycisk.current?.focus();
+      }
+    };
+    document.addEventListener('mousedown', klikPoza);
+    window.addEventListener('keydown', klawisz, true);
+    return () => {
+      document.removeEventListener('mousedown', klikPoza);
+      window.removeEventListener('keydown', klawisz, true);
+    };
+  }, [otwarte]);
+
+  const zamknijOkno = useCallback(() => {
+    ustawOkno(undefined);
+    przycisk.current?.focus();
+  }, []);
+
   return (
     <div className="narzedzia-paska" role="group" aria-label={t('pasek.narzedzia')}>
-      <a
-        className="przycisk-kontur"
-        href={adresInstrukcji(aktywny)}
-        target="_blank"
-        rel="noopener"
-        title={t('pasek.instrukcjaOpis')}
+      <div
+        className="menu-ustawien"
+        ref={opakowanie}
+        onBlur={(e) => {
+          if (
+            otwarte &&
+            e.relatedTarget &&
+            opakowanie.current &&
+            !opakowanie.current.contains(e.relatedTarget as Node)
+          ) {
+            ustawOtwarte(false);
+          }
+        }}
       >
-        {t('pasek.instrukcja')}
-        <span className="tylko-czytnik">{t('pasek.noweOkno')}</span>
-      </a>
-      <div className="seg" role="group" aria-label={t('jezyk.grupa')}>
-        {/* Nazwy języków są w obu słownikach takie same (każdy język nazwany po swojemu); `lang` na przycisku ustawia wymowę czytnika. */}
-        {JEZYKI.map((j) => (
-          <button
-            key={j}
-            type="button"
-            lang={j}
-            aria-pressed={aktywny === j}
-            title={t(`jezyk.${j}Opis`)}
-            onClick={() => ustawJezyk(j)}
-          >
-            {t(`jezyk.${j}`)}
-          </button>
-        ))}
-      </div>
-      <div className="seg" role="group" aria-label={t('motyw.grupa')}>
         <button
+          ref={przycisk}
           type="button"
-          aria-label={t('motyw.jasny')}
-          title={t('motyw.jasny')}
-          aria-pressed={motyw === 'light'}
-          onClick={() => ustaw('light')}
+          className="przycisk-kontur przycisk-menu-ustawien"
+          aria-haspopup="true"
+          aria-expanded={otwarte}
+          aria-controls={otwarte ? idPanelu : undefined}
+          onClick={() => ustawOtwarte((v) => !v)}
         >
-          <IkonaSlonca />
+          <span aria-hidden="true">⚙</span>
+          <span>{t('pasek.ustawienia')}</span>
+          <span aria-hidden="true">▾</span>
         </button>
-        <button
-          type="button"
-          aria-label={t('motyw.ciemny')}
-          title={t('motyw.ciemny')}
-          aria-pressed={motyw === 'dark'}
-          onClick={() => ustaw('dark')}
-        >
-          <IkonaKsiezyca />
-        </button>
+        {otwarte && (
+          <div id={idPanelu} className="menu-ustawien-panel">
+            <div className="menu-ustawien-wiersz">
+              <span className="menu-ustawien-etykieta">{t('motyw.grupa')}</span>
+              <div className="menu-ustawien-seg" role="group" aria-label={t('motyw.grupa')}>
+                <button
+                  type="button"
+                  aria-label={t('motyw.jasny')}
+                  title={t('motyw.jasny')}
+                  aria-pressed={motyw === 'light'}
+                  onClick={() => ustaw('light')}
+                >
+                  <IkonaSlonca />
+                  <span>{t('motyw.jasnyKrotki')}</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={t('motyw.ciemny')}
+                  title={t('motyw.ciemny')}
+                  aria-pressed={motyw === 'dark'}
+                  onClick={() => ustaw('dark')}
+                >
+                  <IkonaKsiezyca />
+                  <span>{t('motyw.ciemnyKrotki')}</span>
+                </button>
+              </div>
+            </div>
+            <div className="menu-ustawien-wiersz">
+              <span className="menu-ustawien-etykieta">{t('jezyk.grupa')}</span>
+              <div className="menu-ustawien-seg" role="group" aria-label={t('jezyk.grupa')}>
+                {JEZYKI.map((j) => (
+                  <button
+                    key={j}
+                    type="button"
+                    lang={j}
+                    aria-pressed={aktywny === j}
+                    title={t(`jezyk.${j}Opis`)}
+                    onClick={() => ustawJezyk(j)}
+                  >
+                    {t(`jezyk.${j}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <hr className="menu-ustawien-podzial" />
+            <button
+              type="button"
+              className="menu-ustawien-pozycja"
+              onClick={() => {
+                ustawOtwarte(false);
+                ustawOkno('czcionki');
+              }}
+            >
+              {t('pasek.wgrajCzcionki')}
+            </button>
+            <button
+              type="button"
+              className="menu-ustawien-pozycja"
+              onClick={() => {
+                ustawOtwarte(false);
+                ustawOkno('obrazy');
+              }}
+            >
+              {t('pasek.wgrajObrazy')}
+            </button>
+            <hr className="menu-ustawien-podzial" />
+            <a
+              className="menu-ustawien-pozycja"
+              href={adresInstrukcji(aktywny)}
+              target="_blank"
+              rel="noopener"
+              title={t('pasek.instrukcjaOpis')}
+              onClick={() => ustawOtwarte(false)}
+            >
+              {t('pasek.instrukcja')}
+              <span className="tylko-czytnik">{t('pasek.noweOkno')}</span>
+            </a>
+          </div>
+        )}
       </div>
+      {okno && (
+        <Suspense fallback={null}>
+          {okno === 'czcionki' ? (
+            <OknoCzcionek zamknij={zamknijOkno} />
+          ) : (
+            <OknoObrazow zamknij={zamknijOkno} />
+          )}
+        </Suspense>
+      )}
     </div>
   );
 }

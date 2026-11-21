@@ -83,6 +83,26 @@ export function WybierzStroneSzablonu() {
         <div className="grupa-podgladow">
           <h1>{t('wlasne.stronaTytul')}</h1>
           <p className="podpis">{t('wlasne.stronaOpis')}</p>
+          <div className="opisy-stron-karty">
+            <section className="opis-strony-karty" aria-labelledby="opis-awers-tytul">
+              <h2 id="opis-awers-tytul">{t('wlasne.awersNazwa')}</h2>
+              <p>{t('wlasne.awersSzczegoly')}</p>
+              <ul>
+                <li>{t('wlasne.awersPunkt1')}</li>
+                <li>{t('wlasne.awersPunkt2')}</li>
+                <li>{t('wlasne.awersPunkt3')}</li>
+              </ul>
+            </section>
+            <section className="opis-strony-karty" aria-labelledby="opis-rewers-tytul">
+              <h2 id="opis-rewers-tytul">{t('wlasne.rewersNazwa')}</h2>
+              <p>{t('wlasne.rewersSzczegoly')}</p>
+              <ul>
+                <li>{t('wlasne.rewersPunkt1')}</li>
+                <li>{t('wlasne.rewersPunkt2')}</li>
+                <li>{t('wlasne.rewersPunkt3')}</li>
+              </ul>
+            </section>
+          </div>
           <p role="status" aria-live="polite" className="status">
             {trwa ? t('start.tworze') : ''}
           </p>

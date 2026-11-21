@@ -9,6 +9,10 @@ import type { Slownik, SlownikMnogi } from './pl';
 export const en: Slownik = {
   'aplikacja.nazwa': 'RPG Cards',
   'pasek.narzedzia': 'Application tools',
+  'pasek.ustawienia': 'Settings',
+  'pasek.powrot': '← Back',
+  'pasek.wgrajCzcionki': 'Upload fonts',
+  'pasek.wgrajObrazy': 'Upload images',
   'pasek.instrukcja': 'Guide',
   'pasek.instrukcjaOpis': 'Guide (opens in a new window)',
   'pasek.noweOkno': ' (new window)',
@@ -24,6 +28,32 @@ export const en: Slownik = {
   'motyw.grupa': 'Theme',
   'motyw.jasny': 'Light theme',
   'motyw.ciemny': 'Dark theme',
+  'motyw.jasnyKrotki': 'Light',
+  'motyw.ciemnyKrotki': 'Dark',
+  'zasobyOkno.zamknij': 'Close window',
+  'zasobyOkno.czcionkiTytul': 'Upload fonts',
+  'zasobyOkno.czcionkiOpis':
+    'Uploaded fonts (TTF, OTF, WOFF, WOFF2) are saved in this browser and automatically added to new projects.',
+  'zasobyOkno.czcionkiOpisProjekt':
+    'Uploaded fonts are added to this project right away and saved in this browser for future projects.',
+  'zasobyOkno.wgrajCzcionki': 'Upload font files…',
+  'zasobyOkno.czcionkiZapisane': 'Saved in this browser',
+  'zasobyOkno.czcionkiBrak': 'No custom fonts saved yet.',
+  'zasobyOkno.czcionkiWProjekcie': 'Fonts in current project',
+  'zasobyOkno.obrazyTytul': 'Upload images',
+  'zasobyOkno.obrazyOpis':
+    'Uploaded images (PNG, JPG) are saved in this browser and automatically added to new projects.',
+  'zasobyOkno.obrazyOpisProjekt':
+    'Uploaded images are added to this project library right away and saved in this browser for future projects.',
+  'zasobyOkno.wgrajObrazy': 'Upload image files…',
+  'zasobyOkno.obrazyZapisane': 'Saved in this browser',
+  'zasobyOkno.obrazyBrak': 'No custom images saved yet.',
+  'zasobyOkno.obrazyWProjekcie': 'Images in current project',
+  'zasobyOkno.obrazyWgrano': 'Uploaded images: {lista}.',
+  'zasobyOkno.dodajDoProjektu': 'Add to project',
+  'zasobyOkno.dodanoDoProjektu': 'Added to project: {nazwa}.',
+  'zasobyOkno.usun': 'Delete',
+  'zasobyOkno.usunieto': 'Removed from browser: {nazwa}.',
   'dane.nieArchiwum': 'This is not a valid .kartyrpg file (it cannot be unpacked).',
   'dane.brakProjektu': 'The file is missing “{plik}”.',
   'dane.zlyJson': 'The file “{plik}” is damaged (invalid JSON).',
@@ -291,6 +321,9 @@ export const en: Slownik = {
   'kartka.naglowekPodpowiedz':
     'You arrange the cards under the heading as on any sheet – the heading belongs to the columns, not to the cards.',
   'kartka.ustawienia': 'Settings',
+  'kartka.drukujKarty': 'Print cards ►',
+  'kartka.opcjeDruku': 'Print & sheet options',
+  'kartka.wybierzKartke': 'Sheet to configure',
   'kartka.zamknijUstawienia': 'Close settings',
   'kartka.ustawieniaOpis':
     'Apply to the sheet “{kartka}” (all its pages) and to the project fonts.',
@@ -485,7 +518,7 @@ export const en: Slownik = {
     'A card of this size will not fit on the sheet page – change the paper first.',
   'szablon.tytulEdytora': 'Template editor',
   'szablon.wrocDoKartek': '← Sheets',
-  'szablon.robKarty': 'Make cards ►',
+  'szablon.robKarty': 'Card editor ►',
   'szablon.nazwaSzablonu': 'Template name',
   'szablon.struktura': 'Card structure',
   'szablon.dodaj': '＋ Add ▾',
@@ -918,7 +951,7 @@ export const en: Slownik = {
   'kartka.pomocSkroty':
     'Shortcuts: Delete – delete, Ctrl+D – duplicate, Ctrl+Z – undo (Ctrl+Shift+Z – redo), arrows – move, Escape – deselect.',
   'kartka.pomocDruk':
-    'The dashed squares are on screen only. Print at 100% scale – a slot is then the size of the slot on the character sheet.',
+    'When your cards are ready, click “Print cards ►” to set up paper, print layout, and download PDF. The dashed squares are on screen only.',
   'start.tytul': 'Game Cards – Design and Print',
   'start.opis': 'Everything runs in the browser, and your projects stay on this computer.',
   'start.nowyProjekt': 'New project',
@@ -979,8 +1012,20 @@ export const en: Slownik = {
   'wlasne.stronaMenu': 'Card side',
   'wlasne.awersNazwa': 'Front',
   'wlasne.awersOpis': 'Front of the card – size, look, and field layout',
+  'wlasne.awersSzczegoly':
+    'The front of the card where you design the field structure filled individually for each card in the deck.',
+  'wlasne.awersPunkt1': 'Choose a card format (e.g. Poker, Bridge, Mini Euro, or custom mm).',
+  'wlasne.awersPunkt2': 'Arrange text fields, stats, artwork, tables, borders, and ornaments.',
+  'wlasne.awersPunkt3':
+    'Then switch to the card editor to fill in card content and print the sheet.',
   'wlasne.rewersNazwa': 'Back',
   'wlasne.rewersOpis': 'Back of the card – opens the back editor right away',
+  'wlasne.rewersSzczegoly':
+    'A shared back design for an entire deck or selected cards, used when printing double-sided.',
+  'wlasne.rewersPunkt1': 'Set background, colors, frames, central artwork, and layered ornaments.',
+  'wlasne.rewersPunkt2': 'Assign the back to the whole deck or specific cards in print options.',
+  'wlasne.rewersPunkt3':
+    'When exporting PDF, the app aligns the back automatically with the front pages.',
   'wlasne.importNazwa': 'Import a template',
   'wlasne.importOpis': '.kartyrpg-szablon file',
   'wlasne.przyklady': 'Sample templates',

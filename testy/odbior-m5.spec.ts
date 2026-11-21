@@ -2,7 +2,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { ADRES_CLAUDE_API } from '../src/dane/aiUklad';
-import { kliknijPobierzPdf } from './pomoc';
+import { kliknijPobierzPdf, otworzDruk } from './pomoc';
 
 /**
  * M5-6: neutralny odbiór całego kamienia milowego M5 w PL i EN oraz w motywie jasnym i ciemnym:
@@ -137,7 +137,7 @@ for (const en of [false, true]) {
       await expect(poleOpisu).toHaveValue(oczekiwanyTekst);
 
       // 3. Niewidoczna warstwa tekstowa w PDF (M5-4) – włączenie i odczyt przez pdfjs-dist.
-      await page.getByRole('button', { name: new RegExp(en ? 'Settings' : 'Ustawienia') }).click();
+      await otworzDruk(page, en);
       const przelacznikPdf = page.getByLabel(
         en
           ? 'Invisible text layer in PDF (search and copy)'

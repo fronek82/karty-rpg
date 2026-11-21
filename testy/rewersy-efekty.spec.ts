@@ -8,7 +8,7 @@ import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
 import { dodaj, kreator, panel, sekcja } from './szablonUI';
-import { zapisano } from './pomoc';
+import { otworzDruk, otworzUstawieniaAplikacji, zapisano } from './pomoc';
 
 /**
  * M4-3: Zgodność PDF i SVG dla tekstu po łuku (góra/dół, polskie znaki, obwódka),
@@ -133,11 +133,10 @@ test('edytor rewersu: tekst po łuku, krycie warstw oraz krycie i zabarwienie te
     format: 'Poker',
     uklad: 'Swobodny',
   });
-  await page.getByRole('button', { name: 'Rób karty' }).click();
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  const ust = await otworzDruk(page);
   await ust.getByRole('button', { name: 'Nowy rewers' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Edytor rewersu' })).toBeVisible();
 
@@ -173,10 +172,12 @@ test('edytor rewersu: tekst po łuku, krycie warstw oraz krycie i zabarwienie te
   await expect(podgladSvg.locator('g[opacity="0.35"] rect[fill="#1d4ed8"]')).toHaveCount(1);
   await expect(podgladSvg.locator('g[opacity="0.75"]')).toHaveCount(1);
 
-  await page
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
+  await page.keyboard.press('Escape');
   await expect(page.getByLabel('Texture opacity (%)')).toHaveValue('60');
   await expect(page.getByLabel('Background color tint')).toBeChecked();
   await expect(page.getByLabel('Tint strength (%)')).toHaveValue('35');

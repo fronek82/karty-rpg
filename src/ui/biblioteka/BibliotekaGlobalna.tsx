@@ -19,7 +19,7 @@ export function BibliotekaGlobalna({
   dodaj,
   zablokowana = false,
 }: {
-  rodzaj: WpisBibliotekiGlobalnej['rodzaj'];
+  rodzaj: 'szablon' | 'ozdobnik';
   dodaj: (bajty: Uint8Array, przycisk: HTMLButtonElement) => Promise<void | boolean>;
   zablokowana?: boolean;
 }) {

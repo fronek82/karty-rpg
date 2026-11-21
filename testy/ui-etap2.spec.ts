@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-import { kliknijPobierzPdf, nowaPustaKartka } from './pomoc';
+import { kliknijPobierzPdf, nowaPustaKartka, otworzDruk, otworzUstawieniaAplikacji } from './pomoc';
 
 /**
  * Etap 2 przebudowy UI:
@@ -29,10 +29,12 @@ test('Nowy szablon od zera: krok Awers / Rewers (PL i EN), Rewers otwiera od raz
   await expect(page).toHaveURL(/#\/wlasne\/nowy$/);
 
   // Język angielski: Front i Back.
-  await page
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
+  await page.keyboard.press('Escape');
   const menuEn = page.getByRole('navigation', { name: 'Card side' });
   await expect(menuEn.getByRole('link', { name: /^Front/ })).toBeVisible();
   await expect(menuEn.getByRole('button', { name: /^Back/ })).toBeVisible();
@@ -50,6 +52,7 @@ test('Pobierz PDF znajduje się wyłącznie w rozwijanym menu Pobierz i pobiera 
   page,
 }) => {
   await nowaPustaKartka(page);
+  await otworzDruk(page);
   await expect(page.getByRole('button', { name: /Pobierz PDF/ })).toHaveCount(0);
 
   const przyciskPobierz = page.getByRole('button', { name: 'Pobierz', exact: true });

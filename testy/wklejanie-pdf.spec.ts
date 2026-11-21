@@ -71,7 +71,7 @@ test('wklejanie tekstu z PDF czyści złamania w edytorze szablonu i na karcie, 
   await panelWlasciwosci.getByLabel('Treść', { exact: true }).selectOption('dane');
 
   // 3) Pole opisu na karcie: wklejanie z PDF + Ctrl+Z z fokusem w polu + przycisk Cofnij.
-  await page.getByRole('button', { name: 'Rób karty' }).click();
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await page.locator('.strona-kartki .slot').first().click();
   await page.getByRole('menu').getByRole('menuitem').first().click();

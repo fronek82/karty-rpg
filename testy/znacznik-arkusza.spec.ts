@@ -8,7 +8,7 @@ import { arkuszeMausrittera } from '../src/pakiety/mausritter/arkusze';
 import { SLOT, szablonBron, szablonPrzedmiot } from '../src/pakiety/mausritter/szablony';
 import { konturIkony } from '../src/silnik/ikony';
 import { konturNaD } from '../src/silnik/svg';
-import { karta, kliknijPobierzPdf } from './pomoc';
+import { karta, kliknijPobierzPdf, otworzDruk } from './pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
 
 const NAZWA = 'Próba linii arkusza broni';
@@ -136,6 +136,7 @@ for (const pion of [false, true]) {
       : { x: punkt.x - 8, y: punkt.y - 3, szer: 11, wys: 6 };
     const svgTekst = await svg.evaluate((e) => e.outerHTML);
 
+    await otworzDruk(page);
     for (const f of ['png', 'jpg'] as const) {
       await page.getByRole('button', { name: 'Pobierz', exact: true }).click();
       const [plik] = await Promise.all([

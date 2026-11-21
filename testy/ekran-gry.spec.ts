@@ -240,10 +240,12 @@ test.describe('angielski', () => {
     await page.goto('./#/gra/mausritter');
     await expect(page.locator('[data-podglad]')).toHaveCount(1);
     await expect(page.locator('.szkielet')).toHaveCount(0, { timeout: 15000 });
+    await page.getByRole('button', { name: /Settings/ }).click();
     await page
       .getByRole('group', { name: 'Language' })
       .getByRole('button', { name: 'PL', exact: true })
       .click();
+    await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { level: 2, name: 'Pusta kartka' })).toBeVisible();
     await expect(page.locator('.szkielet')).toHaveCount(0, { timeout: 15000 });
     await expect(page.locator('[data-podglad]')).toHaveCount(1);
@@ -261,7 +263,9 @@ test.describe('zrzuty UI-4', () => {
     await pokazUklady(page);
     await page.getByRole('button', { name: 'Broń i pancerze', exact: true }).hover();
     await page.screenshot({ path: 'docs/obrazy/ui-4-mausritter-jasny.png' });
+    await page.getByRole('button', { name: /Ustawienia/ }).click();
     await page.getByRole('button', { name: 'Motyw ciemny' }).click();
+    await page.keyboard.press('Escape');
     await page.screenshot({ path: 'docs/obrazy/ui-4-mausritter-ciemny.png' });
   });
 

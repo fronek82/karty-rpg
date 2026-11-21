@@ -153,11 +153,135 @@
 /* Fokus na pasku: biały obrys, widoczny w obu motywach. */
 .naglowek :is(a, button):focus-visible,
 .pasek-gorny > :is(a, button, input):focus-visible,
-.pasek-gorny .menu-pobierz > button:focus-visible {
+.pasek-gorny .menu-pobierz > button:focus-visible,
+.pasek-gorny .przycisk-menu-ustawien:focus-visible {
   outline: 3px solid var(--pasek-tekst);
   outline-offset: 2px;
 }
 
 .seg button:focus-visible {
   outline-offset: -4px;
+}
+
+/* Rozwijane menu „⚙ Ustawienia ▾” w pasku górnym. */
+.menu-ustawien {
+  position: relative;
+}
+
+.przycisk-menu-ustawien,
+.pasek-gorny .menu-pobierz > button {
+  gap: 0.35rem;
+}
+
+.przycisk-menu-ustawien[aria-expanded='true'] {
+  background: color-mix(in srgb, black 32%, var(--pasek));
+}
+
+.menu-ustawien-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 60;
+  min-width: 17rem;
+  padding: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  background: var(--tlo-panelu);
+  color: var(--tekst);
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  box-shadow: var(--cien);
+}
+
+.menu-ustawien-wiersz {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.15rem 0.25rem;
+}
+
+.menu-ustawien-etykieta {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--tekst-przygaszony);
+}
+
+.menu-ustawien-seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--obramowanie-pola);
+  border-radius: 0.35rem;
+  background: var(--pole);
+}
+
+.menu-ustawien-seg button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 2.6rem;
+  height: 1.9rem;
+  padding: 0 0.55rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tekst);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.menu-ustawien-seg button + button {
+  border-left: 1px solid var(--obramowanie-pola);
+}
+
+.menu-ustawien-seg button:hover:not(:disabled) {
+  background: var(--zaznaczenie-tlo);
+}
+
+.menu-ustawien-seg button[aria-pressed='true'],
+.menu-ustawien-seg button[aria-pressed='true']:hover:not(:disabled) {
+  background: var(--akcent);
+  color: var(--akcent-tekst);
+}
+
+.menu-ustawien-seg svg {
+  display: block;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.menu-ustawien-podzial {
+  margin: 0.15rem 0;
+  border: 0;
+  border-top: 1px solid var(--obramowanie);
+}
+
+.menu-ustawien-pozycja {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--tekst);
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-ustawien-pozycja:hover {
+  background: var(--zaznaczenie-tlo);
+  color: var(--tekst);
+}
+
+.naglowek .menu-ustawien-panel :is(a, button):focus-visible,
+.pasek-gorny .menu-ustawien-panel :is(a, button):focus-visible {
+  outline: 2px solid var(--zaznaczenie);
+  outline-offset: -2px;
 }

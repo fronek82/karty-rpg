@@ -61,7 +61,7 @@ test('tekstura i postrzępiona krawędź trafiają na kartę, do PDF i pozostaj�
   await page.reload();
   await expect(svg.locator('clipPath path')).toHaveCount(1);
   await expect(svg.locator('path[stroke]')).toHaveCount(1);
-  await page.getByRole('button', { name: /Rób karty/ }).click();
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
   const arkusz = page.locator('.strona-kartki .svg-strony');
   await expect(arkusz.locator('clipPath path')).toHaveCount(1);
   const krawedz = await arkusz.evaluate((svg: SVGSVGElement) => {

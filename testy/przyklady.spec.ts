@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
-import { kliknijPobierzPdf, zapisano } from './pomoc';
+import { kliknijPobierzPdf, otworzDruk, zapisano } from './pomoc';
 import { kartkaCzaru } from './kartkaUI';
 import { SZABLONY, TALIA, arkuszMieszany, bliskie, otworzProjekt, polozenia } from './mieszaneUI';
 import {
@@ -78,6 +78,7 @@ const poziomo = (s: Scena) =>
 
 /** Eksport projektu z interfejsu → projekt odczytany w Node. */
 async function eksportZInterfejsu(page: Page) {
+  await otworzDruk(page);
   const [plik] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button', { name: /^⤓ Eksportuj$/ }).click(),
@@ -561,7 +562,7 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   const ramkaPng = page.locator('.karta-podgladu svg image');
   await expect(ramkaPng.first()).toBeVisible();
   await expect(r2.getByRole('group', { name: 'Ramka 9-slice z biblioteki' })).toBeVisible();
-  await page.getByRole('button', { name: 'Rób karty ►' }).click();
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
   await page.getByRole('button', { name: /^Pusty slot – strona 1, kolumna 2, rząd 1/ }).click();
   await page.getByRole('menuitem', { name: /Ozdobna PNG/ }).click();
   const dane = page.getByRole('complementary', { name: 'Zaznaczone karty' });
@@ -684,14 +685,14 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
 }) => {
   await page.setViewportSize({ width: 1440, height: 1800 });
   await kartkaCzaru(page);
-  // Cała siatka 3×3: karta i osiem kopii.
+  // Cała siatka 3×3: w Edytorze kart karta i osiem kopii.
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await page.locator('[data-karta]').first().click();
   const dane = page.getByRole('complementary', { name: 'Zaznaczone karty' });
   await dane.getByLabel('Liczba kopii').fill('9');
   await dane.getByLabel('Liczba kopii').press('Enter');
   await expect(page.locator('[data-karta]')).toHaveCount(9);
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  const ust = await otworzDruk(page);
 
   await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
   await ust.getByLabel('Szerokość karty (mm)').fill('63.5');
@@ -701,7 +702,6 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
   await luz.getByLabel('Tło do krawędzi slotu').check();
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
   await expect(page.locator('.strona-kartki')).toHaveCount(1);
-  await expect(page.locator('[data-karta]')).toHaveCount(9);
   await page.locator(':focus').blur();
   await page.mouse.move(5, 5);
   await expect(page.locator('.strona-kartki').first()).toHaveScreenshot(

@@ -14,6 +14,7 @@ import {
   karta,
   kliknijPobierzPdf,
   nowaPustaKartka,
+  otworzDruk,
   przeciagnij,
   slot,
   srodek,
@@ -78,6 +79,7 @@ test('zewnętrzne nożyczki na ręcznej kartce 1×1, 1×2 i 2×1 omijają karty'
     return kopia.outerHTML;
   });
 
+  await otworzDruk(page);
   for (const f of ['png', 'jpg'] as const) {
     await page.getByRole('button', { name: 'Pobierz', exact: true }).click();
     const [plik] = await Promise.all([

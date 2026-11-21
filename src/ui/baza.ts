@@ -33,6 +33,16 @@ async function pobierz(adres: string): Promise<Uint8Array> {
   return new Uint8Array(await odp.arrayBuffer());
 }
 
+async function zapiszNowyProjekt(
+  projekt: import('../model/projekt').Projekt,
+  zasoby: import('../model/projekt').DaneZasobow,
+): Promise<string> {
+  const { dolaczZasobyGlobalne } = await import('./zasobyGlobalne');
+  const zGlobalnymi = await dolaczZasobyGlobalne(projekt, zasoby);
+  await baza().zapisz(zGlobalnymi.projekt, zGlobalnymi.dane);
+  return zGlobalnymi.projekt.id;
+}
+
 /** Nowy projekt gry (pusta kartka albo gotowy układ) – zapisany w bazie; zwraca id. */
 export async function nowyProjektZPakietu(
   pakiet: Pakiet,
@@ -47,8 +57,7 @@ export async function nowyProjektZPakietu(
     pobierz,
     uklad ? { uklad } : {},
   );
-  await baza().zapisz(projekt, zasoby);
-  return projekt.id;
+  return zapiszNowyProjekt(projekt, zasoby);
 }
 
 /** Nowy projekt własnych kart z pliku szablonu (`.kartyrpg-szablon`) – zapisany w bazie; zwraca id. */
@@ -63,8 +72,7 @@ export async function nowyProjektZSzablonu(
   const { projekt, zasoby } = await nowyProjektWlasny(importujSzablon(bajty), (plik) =>
     pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  await baza().zapisz(projekt, zasoby);
-  return projekt.id;
+  return zapiszNowyProjekt(projekt, zasoby);
 }
 
 /** Nowy projekt własnych kart z szablonu z kreatora – zapisany w bazie; zwraca id. */
@@ -86,8 +94,7 @@ export async function nowyProjektZSzablonuKreatora(
     },
     (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  await baza().zapisz(projekt, zasoby);
-  return projekt.id;
+  return zapiszNowyProjekt(projekt, zasoby);
 }
 
 /** Nowy projekt własnych kart z przykładowego szablonu (z jedną kartą z danymi) – zapisany w bazie; zwraca id. */
@@ -99,8 +106,7 @@ export async function nowyProjektZPrzykladu(
   const { projekt, zasoby } = await utworz(przyklad, (plik) =>
     pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  await baza().zapisz(projekt, zasoby);
-  return projekt.id;
+  return zapiszNowyProjekt(projekt, zasoby);
 }
 
 /** Nowy projekt własnych kart otwierany od razu w edytorze rewersu – zapisany w bazie. */
@@ -142,6 +148,6 @@ export async function nowyProjektZRewersem(
   const projekt = taliaId
     ? przypiszRewers(zRewersem, { rodzaj: 'talia', id: taliaId }, rewersId)
     : zRewersem;
-  await baza().zapisz(projekt, zasoby);
-  return { id: projekt.id, rewersId };
+  const id = await zapiszNowyProjekt(projekt, zasoby);
+  return { id, rewersId };
 }

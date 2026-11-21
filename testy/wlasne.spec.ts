@@ -4,7 +4,7 @@ import { eksportujSzablon } from '../src/dane/archiwum';
 import { WERSJA_SCHEMATU, type Projekt } from '../src/model/projekt';
 import type { Szablon } from '../src/model/szablon';
 import { szablonCzaru, szablonStatystyk } from '../src/silnik/__testy__/przyklady';
-import { kliknijPobierzPdf, slot, zapisano } from './pomoc';
+import { kliknijPobierzPdf, otworzDruk, slot, zapisano } from './pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
 
 /** Własne karty: import szablonu, karty w mm na kartce, papier, eksport i import szablonów. */
@@ -54,8 +54,7 @@ test('import szablonu → kartka 63×88 (3×3), karta z menu, papier zdjęciowy,
 
   // Papier zdjęciowy 10×15: strefa bezpieczeństwa 3 mm widoczna; karta 63×88 mieści się
   // w orientacji poziomej (2 karty).
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  const ust = await otworzDruk(page);
   await ust.getByRole('button', { name: 'poziomo' }).click();
   await ust.getByLabel('Papier', { exact: true }).selectOption('foto-10x15');
   await expect(ust.getByLabel('Margines bezpieczeństwa (mm)')).toHaveValue('3');
@@ -63,9 +62,6 @@ test('import szablonu → kartka 63×88 (3×3), karta z menu, papier zdjęciowy,
   await expect(ust).toContainText('Strona 152 × 102 mm');
   await expect(ust.getByRole('alert')).toHaveCount(0);
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
-  // Karta została na kartce (poza strefą).
-  await expect(page.locator('[data-karta]')).toHaveCount(1);
-
   // Eksport szablonu z projektu.
   const [plik] = await Promise.all([
     page.waitForEvent('download'),
@@ -76,6 +72,10 @@ test('import szablonu → kartka 63×88 (3×3), karta z menu, papier zdjęciowy,
   // PDF się pobiera.
   const [pdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   expect(pdf.suggestedFilename()).toMatch(/\.pdf$/);
+
+  // Karta została na kartce (poza strefą).
+  await page.getByRole('link', { name: '← Powrót' }).click();
+  await expect(page.locator('[data-karta]')).toHaveCount(1);
 });
 
 test('szablon innego rozmiaru: własna kartka, w menu pierwszej kartki zablokowany', async ({
@@ -84,13 +84,13 @@ test('szablon innego rozmiaru: własna kartka, w menu pierwszej kartki zablokowa
   await page.goto('./#/wlasne');
   await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu(szablonCzaru));
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  const ust = await otworzDruk(page);
   await ust.getByTestId('plik-szablonu').setInputFiles(plikSzablonu(szablonStatystyk));
   await expect(ust.locator('.sekcja-szablonow [role="status"]')).toContainText(
     'Dodano szablon „Blok statystyk (test)”',
   );
-  // Druga kartka dla kart 88×63 (A4 poziomo, 3 × 3).
+  // Powrót do edytora kart: druga kartka dla kart 88×63 (A4 poziomo, 3 × 3).
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await expect(page.locator('.kartka')).toHaveCount(2);
   await expect(page.locator('.kartka').nth(1).locator('.slot')).toHaveCount(9);
 
@@ -115,8 +115,7 @@ test('własny papier: pola wymiarów, odrzucenie zbyt małego, Cofnij przywraca 
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await slot(page, 1, 1, 1).click();
   await page.getByRole('menuitem', { name: /Czar \(test\)/ }).click();
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  const ust = await otworzDruk(page);
   await ust.getByLabel('Papier', { exact: true }).selectOption('wlasny');
   const szer = ust.getByLabel('Szerokość w pionie (mm)');
   await expect(szer).toHaveValue('210');

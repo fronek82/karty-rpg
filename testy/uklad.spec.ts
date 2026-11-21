@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { unzipSync } from 'fflate';
 import { kartkaCzaru } from './kartkaUI';
-import { nowaPustaKartka, slot } from './pomoc';
+import { nowaPustaKartka, otworzDruk, panelDruku, slot } from './pomoc';
 
 /** M2-6: własny układ arkusza, „Moje układy”, kalibracja, wydruk testowy, eksport obrazów. */
 
@@ -72,15 +72,15 @@ test('diagram wymiarów pokazuje całą siatkę i prowadzi do edycji pola', asyn
     await podglad.screenshot({ path: 'docs/obrazy/m2c-2-podglad-wymiarow.png' });
   }
 
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await slot(page, 1, 3, 1).click();
   await page.getByRole('menuitem', { name: /Czar \(test\)/ }).click();
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await otworzDruk(page);
   await ust.getByText('Podgląd wymiarów', { exact: true }).click();
   await ust.getByLabel('Kolumny').fill('2');
   await expect(ust.getByText(/Po tej zmianie karty nie zmieściłyby się/)).toBeVisible();
   await expect(podglad).toContainText('Siatka 3 × 3 · 199 × 272 mm');
   await expect(wymiar('Margines prawy')).toContainText('6 mm');
-  await expect(page.locator('[data-karta]')).toHaveCount(2);
 
   await ust.getByLabel('Papier', { exact: true }).selectOption('wlasny');
   await ust.getByRole('button', { name: 'poziomo', exact: true }).click();
@@ -101,8 +101,7 @@ test('diagram wymiarów pokazuje całą siatkę i prowadzi do edycji pola', asyn
 
 test('diagram małego slotu rozdziela etykiety rozmiaru i zerowego odstępu', async ({ page }) => {
   await nowaPustaKartka(page);
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  const ust = await otworzDruk(page);
   await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
   await ust.getByText('Podgląd wymiarów', { exact: true }).click();
   const podpis = (pole: string) => ust.locator(`.podglad-wymiarow svg text[data-pole="${pole}"]`);
@@ -139,7 +138,8 @@ test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem,
   await ust.getByLabel('Odstęp poziomy (mm)').fill('4');
   await ust.getByLabel('Odstęp pionowy (mm)').fill('3');
   await expect(ust).toContainText('Kart na stronie: 9 · prawy margines 5 mm · dolny 15 mm');
-  // Slot (2, 1) przesunięty o kartę i odstęp: (8 + 63 + 4) / 210.
+  // Slot (2, 1) w Edytorze kart przesunięty o kartę i odstęp: (8 + 63 + 4) / 210.
+  await page.getByRole('link', { name: '← Powrót' }).click();
   const s21 = slot(page, 1, 2, 1);
   const s11 = page.locator('[data-karta]');
   const [a, b] = [await s11.boundingBox(), await s21.boundingBox()];
@@ -148,7 +148,8 @@ test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem,
   expect((b!.x - a!.x - a!.width) / strona.width).toBeCloseTo(4 / 210, 2);
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
 
-  // Za dużo kolumn – ostrzeżenie pod formularzem i w projekcie.
+  // Powrót do opcji druku: za dużo kolumn – ostrzeżenie pod formularzem i w projekcie.
+  await otworzDruk(page);
   await ust.getByLabel('Kolumny').fill('4');
   await expect(ust.getByRole('alert')).toContainText('Siatka wychodzi poza papier');
   await expect(page.locator('.ostrzezenia-projektu')).toContainText('poza papier');
@@ -171,8 +172,7 @@ test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem,
   await expect(ust.getByLabel('Linie cięcia wokół kart')).not.toBeChecked();
   // Presety są w przeglądarce – widać je w innym projekcie po przeładowaniu.
   await page.reload();
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  await expect(ust.locator('.moje-uklady')).toContainText('Arkusz z perforacją');
+  await expect(panelDruku(page).locator('.moje-uklady')).toContainText('Arkusz z perforacją');
   await ust.getByRole('button', { name: 'Usuń układ Arkusz z perforacją' }).click();
   await expect(ust).toContainText('Nie masz jeszcze zapisanych układów.');
 });
@@ -184,9 +184,8 @@ test('kalibracja zapamiętana w przeglądarce, wydruk testowy, eksport PNG/JPG 3
   await ust.getByLabel('Przesunięcie X (mm)').fill('1.5');
   await ust.getByLabel('Przesunięcie Y (mm)').fill('-0.5');
   await page.reload();
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  await expect(ust.getByLabel('Przesunięcie X (mm)')).toHaveValue('1.5');
-  await expect(ust.getByLabel('Przesunięcie Y (mm)')).toHaveValue('-0.5');
+  await expect(panelDruku(page).getByLabel('Przesunięcie X (mm)')).toHaveValue('1.5');
+  await expect(panelDruku(page).getByLabel('Przesunięcie Y (mm)')).toHaveValue('-0.5');
 
   const [test] = await Promise.all([
     page.waitForEvent('download'),
@@ -202,6 +201,7 @@ test('kalibracja zapamiętana w przeglądarce, wydruk testowy, eksport PNG/JPG 3
 
   // Obrazy stron: jedna strona A4 → jeden PNG 2480×3508 px (300 dpi).
   const pobierz = async (pozycja: string) => {
+    await otworzDruk(page);
     await page.getByRole('button', { name: 'Pobierz', exact: true }).click();
     const [p] = await Promise.all([
       page.waitForEvent('download'),
@@ -213,7 +213,8 @@ test('kalibracja zapamiętana w przeglądarce, wydruk testowy, eksport PNG/JPG 3
   expect(png.suggestedFilename()).toMatch(/\.png$/);
   expect(wymiaryPng(readFileSync(await png.path()))).toEqual([2480, 3508]);
 
-  // Karty osobno: druga karta → ZIP z dwoma JPG.
+  // Karty osobno: powrót do Edytora kart, druga karta → ZIP z dwoma JPG.
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await slot(page, 1, 2, 1).click();
   await page.getByRole('menuitem', { name: /Czar \(test\)/ }).click();
   await page

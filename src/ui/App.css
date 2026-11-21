@@ -531,10 +531,11 @@ button.glowny:active:not(:disabled) {
     gap: 2rem;
   }
 
-  /* Menu zostaje na widoku przy przewijaniu grup. */
+  /* Menu zostaje na widoku przy przewijaniu grup; górny odstęp wyrównuje pierwszy przycisk do kart po prawej. */
   .wybor-kolumny > .start-menu {
     position: sticky;
     top: 1rem;
+    padding-top: 1.5rem;
   }
 }
 
@@ -1906,6 +1907,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
     grid-row: 1 / -1;
     position: sticky;
     top: 1rem;
+    padding-top: 1.5rem;
   }
   .kreator > .kreator-formularz {
     grid-column: 2;
@@ -2959,4 +2961,140 @@ button.maly {
 .galeria-url-pole {
   flex: 1 1 18rem;
   margin: 0;
+}
+
+/* Opisy stron karty (Awers / Rewers) w kroku wyboru strony. */
+.opisy-stron-karty {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.opis-strony-karty {
+  margin: 0;
+  padding: 1.15rem 1.25rem;
+  background: var(--tlo-panelu);
+  border: 1px solid var(--obramowanie);
+  border-radius: 8px;
+}
+
+.opis-strony-karty h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--tytul);
+}
+
+.opis-strony-karty p {
+  margin: 0 0 0.75rem;
+  font-size: 0.94rem;
+  line-height: 1.5;
+  color: var(--tekst);
+}
+
+.opis-strony-karty ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--tekst-przygaszony);
+}
+
+/* Okna modalne wgrywania czcionek i obrazów z górnego menu Ustawienia. */
+.okno-zasobow-tlo {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--tlo-zaslonki) 55%, transparent);
+}
+
+.okno-zasobow {
+  width: min(38rem, 100%);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo-panelu);
+  color: var(--tekst);
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.65rem;
+  box-shadow: var(--cien);
+}
+
+.okno-zasobow-naglowek {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.15rem;
+  border-bottom: 1px solid var(--obramowanie);
+}
+
+.okno-zasobow-naglowek h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.okno-zasobow-tresc {
+  padding: 1rem 1.15rem 1.2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.okno-zasobow-tresc > p {
+  margin: 0;
+}
+
+.okno-zasobow-akcje {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.okno-zasobow-sekcja {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.okno-zasobow-sekcja h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--tekst-przygaszony);
+}
+
+.lista-zasobow-okna {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.lista-zasobow-okna li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: var(--pole);
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.4rem;
+}
+
+.lista-zasobow-okna .nazwa-zasobu {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
 }

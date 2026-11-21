@@ -4,48 +4,41 @@ import {
   dodajKarte,
   gotowyUklad,
   nowaPustaKartka,
+  otworzDruk,
   przeciagnij,
   slot,
   srodek,
   zapisano,
 } from './pomoc';
 
-/** Ustawienia kartki, nagłówek grupy na pustej kartce, ilustracje kart. */
+/** Opcje druku i arkusza, nagłówek grupy na pustej kartce, ilustracje kart. */
 
 test.use({ viewport: { width: 1440, height: 1100 } });
-const ustawienia = (page: import('@playwright/test').Page) =>
-  page.getByRole('complementary', { name: 'Ustawienia' });
 
 test('tytuł, położenie tytułu, czarno-biały, czcionki; zmiana papieru odrzucona, gdy karty się nie mieszczą', async ({
   page,
 }) => {
   await gotowyUklad(page, 'Broń i pancerze');
-  const otworz = page.getByRole('button', { name: /Ustawienia/ });
-  await otworz.press('Enter');
-  await expect(ustawienia(page).getByRole('heading', { name: 'Ustawienia' })).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(otworz).toBeFocused();
-  await otworz.press('Enter');
-  await ustawienia(page).getByRole('button', { name: 'Zamknij ustawienia' }).press('Enter');
-  await expect(otworz).toBeFocused();
-  await otworz.press('Enter');
-  await ustawienia(page).getByLabel('Tytuł kartki').fill('Moja broń');
+  const ust = await otworzDruk(page);
+  await expect(ust.getByRole('heading', { name: 'Opcje druku i arkusza' })).toBeVisible();
+  await expect(ust.getByRole('button', { name: 'Zamknij ustawienia' })).toHaveCount(0);
+  await ust.getByLabel('Tytuł kartki').fill('Moja broń');
   await zapisano(page);
-  await ustawienia(page).getByLabel('Położenie tytułu').selectOption('brak');
-  await expect(ustawienia(page).getByLabel('Tytuł kartki')).toBeDisabled();
-  await ustawienia(page).getByLabel('Położenie tytułu').selectOption('lewo');
-  await expect(ustawienia(page).getByLabel('Tytuł kartki')).toHaveValue('Moja broń');
+  await ust.getByLabel('Położenie tytułu').selectOption('brak');
+  await expect(ust.getByLabel('Tytuł kartki')).toBeDisabled();
+  await ust.getByLabel('Położenie tytułu').selectOption('lewo');
+  await expect(ust.getByLabel('Tytuł kartki')).toHaveValue('Moja broń');
 
   // Letter jest węższy – pełna siatka 10 kolumn się nie zmieści.
-  const papier = ustawienia(page).getByLabel('Papier', { exact: true });
+  const papier = ust.getByLabel('Papier', { exact: true });
   await papier.selectOption('Letter');
-  await expect(ustawienia(page).getByRole('alert')).toContainText('nie zmieściłyby się');
+  await expect(ust.getByRole('alert')).toContainText('nie zmieściłyby się');
   await expect(papier).toHaveValue('A4');
 
   // Czarno-biały: ilustracje w skali szarości.
   const obraz = page.locator('.strona-kartki image').first();
   const kolorowy = await obraz.getAttribute('href');
-  await ustawienia(page).getByRole('button', { name: 'czarno-biały' }).click();
+  await ust.getByRole('button', { name: 'czarno-biały' }).click();
   await expect(obraz).not.toHaveAttribute('href', kolorowy!);
 
   // Własna czcionka i rola.
@@ -54,10 +47,10 @@ test('tytuł, położenie tytułu, czarno-biały, czcionki; zmiana papieru odrzu
     mimeType: 'font/ttf',
     buffer: readFileSync('public/czcionki/EBGaramond-Bold.ttf'),
   });
-  await expect(
-    ustawienia(page).getByRole('group', { name: 'Czcionki' }).getByRole('status'),
-  ).toContainText('Wgrano: EB Garamond');
-  await ustawienia(page).getByLabel('Rodzina dla roli „Tytuł”').selectOption('EB Garamond');
+  await expect(ust.getByRole('group', { name: 'Czcionki' }).getByRole('status')).toContainText(
+    'Wgrano: EB Garamond',
+  );
+  await ust.getByLabel('Rodzina dla roli „Tytuł”').selectOption('EB Garamond');
   await zapisano(page);
 });
 
