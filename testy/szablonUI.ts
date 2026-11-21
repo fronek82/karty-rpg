@@ -121,7 +121,13 @@ export async function rozmiar(
   tryb: 'domyślnie' | 'wg treści' | 'wypełnij' | 'mm',
   liczba?: number,
 ) {
-  const p = panel(page).locator('.pole-rozmiaru', { has: page.locator(`label:text-is("${os}")`) });
+  const s = panel(page)
+    .locator('details.sekcja-panelu', {
+      has: page.locator(':scope > summary', { hasText: /^(Położenie i rozmiar|Rozmiar)$/ }),
+    })
+    .first();
+  if ((await s.getAttribute('open')) === null) await s.locator(':scope > summary').click();
+  const p = s.locator('.pole-rozmiaru', { has: page.locator(`label:text-is("${os}")`) });
   await p.locator('select').selectOption({ label: tryb });
   if (liczba !== undefined) await p.locator('input[type=number]').fill(String(liczba));
 }
@@ -148,7 +154,7 @@ export async function wyglad(
 
 /** Odstępy zaznaczonego elementu (padding / margines – wszystkie strony). */
 export async function odstepy(page: Page, o: { padding?: number; margines?: number }) {
-  const s = await sekcja(page, 'Odstępy i położenie');
+  const s = await sekcja(page, 'Odstępy');
   if (o.padding !== undefined)
     await s
       .locator('fieldset.odstepy', {

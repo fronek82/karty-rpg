@@ -185,8 +185,9 @@ for (const motyw of MOTYWY) {
     await tekst(pan.locator('.podpis').first(), 'podpis');
     const etykieta = await sekcja(page, 'Etykieta');
     await tekst(etykieta.locator(':scope > summary'), 'nagłówek sekcji');
+    const pol = await sekcja(page, 'Położenie i rozmiar');
     await tekst(
-      pan.locator('.przelacznik-segmentowy button[aria-pressed="true"]').first(),
+      pol.locator('.przelacznik-segmentowy button[aria-pressed="true"]').first(),
       'segment zaznaczony',
     );
     await tekst(pan.getByRole('button', { name: 'Wklej styl' }), 'przycisk wyłączony (Wklej styl)');
@@ -194,7 +195,7 @@ for (const motyw of MOTYWY) {
     await fokus(page, etykieta.locator(':scope > summary'), 'fokus na nagłówku sekcji');
 
     // Siatka kotwic (tryb swobodny).
-    const kotwica = pan.locator('.siatka-kotwic button[aria-checked="false"]').first();
+    const kotwica = pol.locator('.siatka-kotwic button[aria-checked="false"]').first();
     await obrys(kotwica, 'obrys przycisku kotwicy');
 
     // Menu „+ Dodaj”: tylko napisy.

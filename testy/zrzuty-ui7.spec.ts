@@ -51,8 +51,9 @@ test('tryb swobodny z prowadnicami, ciemny', async ({ page }) => {
   await uchwyt(page, 'se', -18, 2);
   await dodaj(page, 'Wartość w kształcie', 'Atak');
   await panel(page).getByLabel('Kształt').selectOption('tarcza');
-  await polozenie(page).getByLabel('X (mm)').fill('3');
-  await polozenie(page).getByLabel('Y (mm)').fill('75');
+  const polAtak = await polozenie(page);
+  await polAtak.getByLabel('X (mm)').fill('3');
+  await polAtak.getByLabel('Y (mm)').fill('75');
   await zaznacz(page, 'Koszt');
   const k = await pxNaMm(page);
   const s = await srodek(page, obszar(page, 'Koszt'));

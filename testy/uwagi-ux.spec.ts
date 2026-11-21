@@ -106,3 +106,59 @@ test('nagłówek panelu karty nie pokazuje opisu, wysokość textarea zostaje mi
   await expect(katalog.getByText('Eagle Lake', { exact: true })).toBeVisible();
   await expect(katalog.locator('.podglad-google-font').first()).toContainText('Zażółć gęślą jaźń');
 });
+
+test('panel właściwości pola: Położenie i rozmiar zwijane (#1), Wygląd (#2) i Odstępy (#3) w PL i EN', async ({
+  page,
+}) => {
+  await kreator(page, {
+    nazwa: 'Kolejność sekcji',
+    format: 'Standard / Poker',
+    uklad: 'Swobodny: pola w dowolnych miejscach',
+  });
+  await dodaj(page, 'Tekst', 'Opis');
+
+  const sekcje = panel(page).locator(':scope > details.sekcja-panelu > summary');
+  await expect(sekcje.nth(0)).toHaveText('Położenie i rozmiar');
+  await expect(sekcje.nth(1)).toHaveText('Wygląd (tło, ramka, rogi)');
+  await expect(sekcje.nth(2)).toHaveText('Odstępy');
+
+  // Pierwsza sekcja jest domyślnie zwinięta i po rozwinięciu zawiera jednocześnie położenie i rozmiar.
+  const pierwsza = panel(page).locator(':scope > details.sekcja-panelu').nth(0);
+  await expect(pierwsza).not.toHaveAttribute('open', '');
+  await pierwsza.locator(':scope > summary').click();
+  await expect(pierwsza.getByLabel('X (mm)')).toBeVisible();
+  await expect(pierwsza.getByLabel('Y (mm)')).toBeVisible();
+  await expect(pierwsza.getByLabel('Szerokość', { exact: true })).toBeVisible();
+  await expect(pierwsza.getByLabel('Wysokość', { exact: true })).toBeVisible();
+
+  // Pole w zwykłym kontenerze (kolumna): pierwsza zwijana sekcja to „Rozmiar”, potem „Wygląd” i „Odstępy”.
+  await dodaj(page, 'Kolumna', 'Blok');
+  await dodaj(page, 'Tekst', 'Wewnatrz');
+  await expect(sekcje.nth(0)).toHaveText('Rozmiar');
+  await expect(sekcje.nth(1)).toHaveText('Wygląd (tło, ramka, rogi)');
+  await expect(sekcje.nth(2)).toHaveText('Odstępy');
+  await expect(panel(page).locator(':scope > details.sekcja-panelu').nth(0)).not.toHaveAttribute(
+    'open',
+    '',
+  );
+
+  // Przełączenie na angielski zachowuje kolejność i nowe etykiety w obu wariantach.
+  await page
+    .getByRole('group', { name: /^(Język|Language)$/ })
+    .getByRole('button', { name: 'EN', exact: true })
+    .click();
+  const sekcjeEn = page
+    .getByRole('complementary', { name: 'Properties' })
+    .locator(':scope > details.sekcja-panelu > summary');
+  await expect(sekcjeEn.nth(0)).toHaveText('Size');
+  await expect(sekcjeEn.nth(1)).toHaveText('Appearance (background, frame, corners)');
+  await expect(sekcjeEn.nth(2)).toHaveText('Spacing');
+
+  await page
+    .getByRole('tree', { name: 'Card structure' })
+    .getByText('Opis', { exact: false })
+    .click();
+  await expect(sekcjeEn.nth(0)).toHaveText('Position and size');
+  await expect(sekcjeEn.nth(1)).toHaveText('Appearance (background, frame, corners)');
+  await expect(sekcjeEn.nth(2)).toHaveText('Spacing');
+});

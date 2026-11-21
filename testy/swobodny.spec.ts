@@ -10,7 +10,13 @@ test.use({ viewport: { width: 1440, height: 1000 } });
 
 const SZER = 63;
 const WYS = 88;
-const polozenie = (page: Page) => panel(page).getByRole('group', { name: 'Położenie' });
+const sekcjaPolozenia = (page: Page) =>
+  panel(page)
+    .locator('details.sekcja-panelu', {
+      has: page.locator(':scope > summary:text-is("Położenie i rozmiar")'),
+    })
+    .first();
+const polozenie = (page: Page) => sekcja(page, 'Położenie i rozmiar');
 const obszar = (page: Page, nazwa: string) =>
   page.locator('.karta-podgladu').getByRole('button', { name: nazwa, exact: true });
 
@@ -48,7 +54,7 @@ test('kreator „swobodny”: elementy dostają położenie z panelu (X, Y, kotw
 
   // Nowy element w kontenerze swobodnym ma położenie 3 · 3 mm i rozmiar w mm.
   await dodaj(page, 'Tekst', 'Tytuł');
-  const p = polozenie(page);
+  const p = await polozenie(page);
   await expect(p).toBeVisible();
   await expect(p.getByLabel('X (mm)')).toHaveValue('3');
   await expect(p.getByLabel('Y (mm)')).toHaveValue('3');
@@ -95,9 +101,10 @@ test('kreator „swobodny”: elementy dostają położenie z panelu (X, Y, kotw
 
   // Obrót o 90°: zajmowany prostokąt ma zamienione boki, środek bez zmian.
   await dodaj(page, 'Tekst', 'Typ');
-  await ustawXY(polozenie(page), 20, 30);
+  const polTyp = await polozenie(page);
+  await ustawXY(polTyp, 20, 30);
   const przed = await prostokatMm(page, 'Typ');
-  await polozenie(page).getByRole('button', { name: '90°', exact: true }).click();
+  await polTyp.getByRole('button', { name: '90°', exact: true }).click();
   const obrocony = await prostokatMm(page, 'Typ');
   blisko(obrocony.szer, przed.wys);
   blisko(obrocony.wys, przed.szer);
@@ -110,9 +117,9 @@ test('kreator „swobodny”: elementy dostają położenie z panelu (X, Y, kotw
   // Kolejność: „Na spód” przenosi element na początek drzewa (rysowany pod innymi).
   const elementy = drzewo(page).getByRole('treeitem');
   await expect(elementy.nth(1)).toHaveAttribute('aria-label', /^Tytuł – /);
-  await polozenie(page).getByRole('button', { name: 'Na spód' }).click();
+  await polTyp.getByRole('button', { name: 'Na spód' }).click();
   await expect(elementy.nth(1)).toHaveAttribute('aria-label', /^Typ – /);
-  await polozenie(page).getByRole('button', { name: 'Na wierzch' }).click();
+  await polTyp.getByRole('button', { name: 'Na wierzch' }).click();
   await expect(elementy.nth(2)).toHaveAttribute('aria-label', /^Typ – /);
 
   // Wartość w kole w rogu – wyrównanie kontrolek i brak ostrzeżeń.
@@ -157,9 +164,9 @@ test('konwersja kolumna → swobodny → kolumna: nic się nie przesuwa, kolejno
 
   // Opis przesunięty nad tytuł; powrót na kolumnę ustawia kolejność wg położenia.
   await zaznacz(page, 'Opis');
-  await ustawXY(polozenie(page), 3, 0);
+  await ustawXY(await polozenie(page), 3, 0);
   await zaznacz(page, 'Tytuł');
-  await ustawXY(polozenie(page), 3, 60);
+  await ustawXY(await polozenie(page), 3, 60);
   await karta(page);
   await (
     await sekcja(page, 'Układ karty (odstępy, rozłożenie, wygląd)')
@@ -180,10 +187,10 @@ test('konwersja kolumna → swobodny → kolumna: nic się nie przesuwa, kolejno
     .getByRole('button', { name: 'Zamień na swobodny' })
     .click();
   await dodaj(page, 'Kolumna', 'Panel');
-  await expect(polozenie(page)).toBeVisible();
+  await expect(sekcjaPolozenia(page)).toBeVisible();
   await dodaj(page, 'Tekst', 'W panelu');
-  // Element w zwykłej kolumnie nie ma sekcji „Położenie”.
-  await expect(polozenie(page)).toHaveCount(0);
+  // Element w zwykłej kolumnie nie ma sekcji „Położenie i rozmiar” (ma samo „Rozmiar”).
+  await expect(sekcjaPolozenia(page)).toHaveCount(0);
   await nazwij(page, 'W panelu');
 });
 
@@ -196,7 +203,7 @@ test('swobodny korzeń przeżywa przeładowanie; kotwicę zmienia się strzałka
     uklad: 'Swobodny: pola w dowolnych miejscach',
   });
   await dodaj(page, 'Tekst', 'Napis');
-  const p = polozenie(page);
+  const p = await polozenie(page);
   await ustawXY(p, 12, 34);
   await p.getByRole('button', { name: '270°', exact: true }).click();
 
@@ -219,8 +226,9 @@ test('swobodny korzeń przeżywa przeładowanie; kotwicę zmienia się strzałka
   await expect(napis).toContainText('12 · 34');
   await expect(napis).toContainText('↻270°');
   await zaznacz(page, 'Napis');
-  await expect(polozenie(page).getByLabel('X (mm)')).toHaveValue('12');
-  await expect(polozenie(page).getByRole('button', { name: '270°', exact: true })).toHaveAttribute(
+  const polPo = await polozenie(page);
+  await expect(polPo.getByLabel('X (mm)')).toHaveValue('12');
+  await expect(polPo.getByRole('button', { name: '270°', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
@@ -237,8 +245,9 @@ test('kąt dziesiętny obraca scenę, obszar wyboru i uchwyty oraz przetrwa pono
     uklad: 'Swobodny: pola w dowolnych miejscach',
   });
   await dodaj(page, 'Tekst', 'Kierunek');
-  await ustawXY(polozenie(page), 12, 18);
-  const kat = polozenie(page).getByLabel('Kąt obrotu (°)');
+  const pol = await polozenie(page);
+  await ustawXY(pol, 12, 18);
+  const kat = pol.getByLabel('Kąt obrotu (°)');
   await kat.fill('37.5');
   await kat.press('Tab');
   await expect(obszar(page, 'Kierunek')).toHaveCSS('transform', /^matrix\(0\.793/);

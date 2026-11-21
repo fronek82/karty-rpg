@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId } from 'react';
 import { zmienKotwice, type ZmianaKolejnosci } from '../../dane/szablon';
 import { t } from '../../i18n';
 import { KOTWICE, type Kotwica, type Pozycja } from '../../model/szablon';
@@ -19,9 +19,9 @@ export interface RozmiaryKotwicy {
 }
 
 /**
- * Sekcja „Położenie” elementu w kontenerze swobodnym: X i Y w mm, kotwica (9 punktów), obrót
- * (w stopniach oraz cztery skróty) i kolejność rysowania. Wszystko dostępne z klawiatury – przeciąganie
- * w podglądzie jest dodatkiem, nie jedyną drogą.
+ * Pola położenia elementu w kontenerze swobodnym (wewnątrz sekcji „Położenie i rozmiar”):
+ * X i Y w mm, kotwica (9 punktów), obrót (w stopniach oraz cztery skróty) i kolejność rysowania.
+ * Wszystko dostępne z klawiatury – przeciąganie w podglądzie jest dodatkiem, nie jedyną drogą.
  */
 export function PanelPolozenia({
   kontener,
@@ -29,9 +29,8 @@ export function PanelPolozenia({
   zmien,
   rozmiary,
   kolejnosc,
-  children,
 }: {
-  /** Nazwa kontenera swobodnego (do nagłówka). */
+  /** Nazwa kontenera swobodnego (do podpisu). */
   kontener: string;
   pozycja: Pozycja | undefined;
   /** Zmiana położenia – funkcja dostaje id węzła (przy kilku zaznaczonych liczona osobno). */
@@ -40,8 +39,6 @@ export function PanelPolozenia({
   rozmiary: (id: string) => RozmiaryKotwicy | undefined;
   /** Zmiana kolejności rysowania – tylko dla jednego elementu. */
   kolejnosc?: (jak: ZmianaKolejnosci) => void;
-  /** Dodatkowe sekcje na końcu (wyrównanie zaznaczonych). */
-  children?: ReactNode;
 }) {
   const p: Pozycja = pozycja ?? { x: 0, y: 0 };
   const kotwica = p.kotwica ?? 'lewy-gorny';
@@ -63,11 +60,8 @@ export function PanelPolozenia({
       return kat ? { ...reszta, obrot: kat } : reszta;
     }, 'poz-obrot');
   return (
-    <fieldset className="polozenie">
-      <legend>
-        <strong>{t('polozenie.tytul')}</strong>{' '}
-        <span className="podpis">{t('polozenie.wKontenerze', { kontener })}</span>
-      </legend>
+    <>
+      <p className="podpis">{t('polozenie.wKontenerze', { kontener })}</p>
       <div className="pole-panelu dwa-pola">
         <Liczba
           etykieta={t('polozenie.x')}
@@ -154,7 +148,6 @@ export function PanelPolozenia({
           </div>
         </div>
       )}
-      {children}
-    </fieldset>
+    </>
   );
 }

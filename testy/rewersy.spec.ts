@@ -108,7 +108,8 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
 
   // Kolejność warstw i cofanie/ponawianie (przyciski oraz Ctrl+Z).
   const elementyPrzed = await page.locator('.panel-drzewa [role="treeitem"]').allTextContents();
-  await panel(page).getByRole('button', { name: 'Na spód', exact: true }).click();
+  const pol = await sekcja(page, 'Położenie i rozmiar');
+  await pol.getByRole('button', { name: 'Na spód', exact: true }).click();
   const elementyPo = await page.locator('.panel-drzewa [role="treeitem"]').allTextContents();
   expect(elementyPo).not.toEqual(elementyPrzed);
   expect(elementyPo[1]).toContain('Znak SVG');

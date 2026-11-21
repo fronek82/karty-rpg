@@ -820,7 +820,7 @@ test('F. karta swobodna: ilustracja, tytuł na pasku, koło w rogu, napis obróc
 
   // Napis obrócony o 90° przy prawej krawędzi: obrót z panelu, położenie i rozmiar myszą.
   await dodaj(page, 'Tekst', 'Typ');
-  await polozenie(page).getByRole('button', { name: '90°', exact: true }).click();
+  await (await polozenie(page)).getByRole('button', { name: '90°', exact: true }).click();
   await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 6 });
   await przesun(page, 'Typ', 54, 5);
   await uchwyt(page, 's', 0, 10);
