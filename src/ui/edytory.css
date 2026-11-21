@@ -11,7 +11,7 @@
 /* ---------- Pola formularzy ---------- */
 
 /* Pola tekstowe, liczbowe, listy: wspólny wygląd; obrys >= 3:1 względem pola i panelu. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   :is(
     input:not(
       [type='checkbox'],
@@ -31,13 +31,13 @@
 }
 
 /* Zero specyficzności: dopełnia tylko kontrolki bez własnych odstępów (np. „Skala”, „Obrót”). */
-:where(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:where(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   :where(input[type='number'], input[type='text'], select, textarea) {
   font: inherit;
   padding: 0.3rem 0.5rem;
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   :is(input, select, textarea):disabled {
   color: var(--tekst-przygaszony);
   background: var(--tlo-panelu);
@@ -45,18 +45,19 @@
   cursor: not-allowed;
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   :is(input::placeholder, textarea::placeholder) {
   color: var(--tekst-przygaszony);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   :is(input[type='checkbox'], input[type='radio']) {
   accent-color: var(--akcent);
 }
 
 /* Próbnik koloru ma obrys jak inne pola. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) input[type='color'] {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+  input[type='color'] {
   background: var(--pole);
   border: 1px solid var(--obramowanie-pola);
   border-radius: 0.4rem;
@@ -65,24 +66,25 @@
 /* ---------- Przyciski w edytorach ---------- */
 
 /* Przyciski segmentowe: zaznaczony – morski z białym tekstem; hover tylko na niezaznaczonych. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .przelacznik-segmentowy {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+  .przelacznik-segmentowy {
   border-color: var(--obramowanie-pola);
   background: var(--tlo-panelu);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   .przelacznik-segmentowy
   button {
   border-right-color: var(--obramowanie-pola);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   .przelacznik-segmentowy
   button:hover:not(:disabled, [aria-pressed='true']) {
   background: var(--zaznaczenie-tlo);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   .przelacznik-segmentowy
   button:focus-visible {
   outline-offset: -4px;
@@ -94,15 +96,16 @@
 }
 
 /* Główny przycisk w panelach i dialogach: morski z białym tekstem (jak na pasku). */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   button.glowny:hover:not(:disabled),
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) a.przycisk.glowny:hover {
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+  a.przycisk.glowny:hover {
   background: color-mix(in srgb, black 18%, var(--akcent));
   border-color: color-mix(in srgb, black 18%, var(--akcent));
 }
 
 /* Przycisk zwykły w panelu: obrys wyraźniejszy niż linia podziału. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
   :is(.panel-edytora, .panel-drzewa, .panel-biblioteki, .kreator-formularz)
   :is(button, a.przycisk):not(.glowny, .niebezpieczny, :disabled) {
   border-color: var(--obramowanie-pola);

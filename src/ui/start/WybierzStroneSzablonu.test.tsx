@@ -16,12 +16,15 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('WybierzStroneSzablonu', () => {
-  it('pokazuje Awers (link do kreatora) i Rewers (przycisk)', () => {
-    render(<WybierzStroneSzablonu />);
+  it('pokazuje Awers (link do kreatora), Rewers (przycisk) i opisy obu stron bez grafik', () => {
+    const { container } = render(<WybierzStroneSzablonu />);
     expect(screen.getByRole('link', { name: /^Awers/ }).getAttribute('href')).toBe(
       '#/wlasne/nowy/awers',
     );
     expect(screen.getByRole('button', { name: /^Rewers/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Awers', level: 2 })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Rewers', level: 2 })).toBeTruthy();
+    expect(container.querySelector('svg')).toBeNull();
   });
 
   it('dwuklik na Rewers tworzy jeden projekt i otwiera edytor rewersu', async () => {

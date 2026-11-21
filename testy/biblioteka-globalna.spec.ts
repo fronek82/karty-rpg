@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, test, type Download, type Locator, type Page } from '@playwright/test';
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import { WERSJA_SCHEMATU } from '../src/model/projekt';
-import { nowaPustaKartka, zapisano } from './pomoc';
+import { nowaPustaKartka, otworzDruk, zapisano } from './pomoc';
 
 const nazwa = 'Karta geometryczna';
 const ramka = 'ramka-testowa';
@@ -71,7 +71,7 @@ test('globalny szablon trafia na własną kartkę projektu pakietowego i można 
   await nowaPustaKartka(page);
   const kartki = page.locator('.kartka');
   expect(await kartki.count()).toBe(1);
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await otworzDruk(page);
   const ustawienia = await otworzSzablony(page);
   await ustawienia.getByRole('button', { name: /Użyj „Karta geometryczna”/ }).click();
   await expect(kartki).toHaveCount(2);
@@ -82,6 +82,7 @@ test('globalny szablon trafia na własną kartkę projektu pakietowego i można 
   await zapisano(page);
   await page.reload();
   await expect(kartki).toHaveCount(2);
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await kartki
     .first()
     .getByRole('button', { name: /Pusty slot.*kolumna 1, rząd 1\./ })
@@ -91,13 +92,14 @@ test('globalny szablon trafia na własną kartkę projektu pakietowego i można 
   await page.keyboard.press('Escape');
   const slot = kartki.last().getByRole('button', { name: /Pusty slot.*kolumna 1, rząd 1\./ });
   const ustawieniaWlasnejKartki = async () => {
-    await page.getByRole('button', { name: /Ustawienia/ }).click();
+    await otworzDruk(page);
     await page.getByRole('button', { name: 'Nowa kartka dla szablonu Karta geometryczna' }).click();
   };
   await ustawieniaWlasnejKartki();
   await page.getByLabel('Układ kart na kartce').selectOption('wlasny');
   const szerokoscSlotu = page.getByLabel('Szerokość karty (mm)', { exact: true });
   await szerokoscSlotu.fill('30');
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await slot.click();
   const wlasnyTyp = page.getByRole('menuitem', { name: /Karta geometryczna/ });
   await expect(wlasnyTyp).toHaveAttribute('aria-disabled', 'true');
@@ -105,14 +107,16 @@ test('globalny szablon trafia na własną kartkę projektu pakietowego i można 
   await page.keyboard.press('Escape');
   await ustawieniaWlasnejKartki();
   await szerokoscSlotu.fill('25.75');
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await slot.click();
   await expect(page.getByRole('menuitem', { name: /Broń/ })).toHaveCount(0);
   await wlasnyTyp.click();
   await expect(kartki.last().locator('[data-karta]')).toHaveCount(1);
   await page.getByRole('link', { name: /Edytuj szablon/ }).click();
   await expect(page.getByLabel('Nazwa szablonu')).toHaveValue(nazwa);
-  await page.getByRole('link', { name: '← Kartki' }).click();
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
   await expect(kartki).toHaveCount(2);
+  await otworzDruk(page);
   const projekt = await pobierz(page, page.getByRole('button', { name: /^⤓ Eksportuj$/ }));
   const pustaBaza = await browser.newContext({
     locale: 'pl-PL',
@@ -131,7 +135,7 @@ test('globalny szablon trafia na własną kartkę projektu pakietowego i można 
     await pustaBaza.close();
   }
 
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await otworzDruk(page);
   const biblioteka = await otworzSzablony(page);
   page.once('dialog', (dialog) => void dialog.accept());
   await biblioteka.getByRole('button', { name: /Usuń „Karta geometryczna”/ }).click();
@@ -153,7 +157,7 @@ test('globalna ramka z PNG przechodzi między przeglądarkami i zachowuje lokaln
   browser,
 }) => {
   await nowaPustaKartka(page);
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await otworzDruk(page);
   await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
   await page.getByTestId('plik-png').setInputFiles('testy/zasoby/ramka-testowa.png');
   await page.getByRole('button', { name: /Zapisz „ramka-testowa” w bibliotece globalnej/ }).click();
@@ -172,7 +176,7 @@ test('globalna ramka z PNG przechodzi między przeglądarkami i zachowuje lokaln
   try {
     const nowa = await czysta.newPage();
     await nowaPustaKartka(nowa);
-    await nowa.getByRole('button', { name: /Ustawienia/ }).click();
+    await otworzDruk(nowa);
     await nowa.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
     await nowa.getByText('Globalna biblioteka ozdobników', { exact: true }).click();
     const panel = nowa.locator('details.biblioteka-globalna');

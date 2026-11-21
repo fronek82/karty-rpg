@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { zapisano } from './pomoc';
+import { otworzUstawieniaAplikacji, zapisano } from './pomoc';
 import { dodaj, kreator } from './szablonUI';
 
 /**
@@ -71,7 +71,7 @@ test('wklejanie tekstu z PDF czyści złamania w edytorze szablonu i na karcie, 
   await panelWlasciwosci.getByLabel('Treść', { exact: true }).selectOption('dane');
 
   // 3) Pole opisu na karcie: wklejanie z PDF + Ctrl+Z z fokusem w polu + przycisk Cofnij.
-  await page.getByRole('button', { name: 'Rób karty' }).click();
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await page.locator('.strona-kartki .slot').first().click();
   await page.getByRole('menu').getByRole('menuitem').first().click();
@@ -91,10 +91,12 @@ test('wklejanie tekstu z PDF czyści złamania w edytorze szablonu i na karcie, 
   await expect(poleOpisu).toHaveValue(`Wstęp: ${OCZEKIWANY_TEKST}`);
   await zapisano(page);
 
-  await page
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
+  await page.keyboard.press('Escape');
   const panelEn = page.getByRole('complementary', { name: 'Selected cards' });
   const poleEn = panelEn.getByLabel('Opis');
   await poleEn.fill('A [X] B');

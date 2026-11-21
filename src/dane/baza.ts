@@ -40,7 +40,7 @@ interface WpisMiniatury {
 
 export interface WpisBibliotekiGlobalnej {
   id: string;
-  rodzaj: 'szablon' | 'ozdobnik';
+  rodzaj: 'szablon' | 'ozdobnik' | 'czcionka' | 'obraz';
   nazwa: string;
 }
 

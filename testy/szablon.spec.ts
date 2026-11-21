@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { slot, zapisano } from './pomoc';
+import { otworzDruk, slot, zapisano } from './pomoc';
 
-/** Edytor szablonu od zera: kreator, drzewo, podgląd z zaznaczaniem, „Rób karty”, powrót. */
+/** Edytor szablonu od zera: kreator, drzewo, podgląd z zaznaczaniem, „Edytor kart”, powrót. */
 
 test.use({ viewport: { width: 1440, height: 1000 } });
 
@@ -109,8 +109,8 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   await expect(element(page, /^Karta – /)).toBeFocused();
   await zapisano(page);
 
-  // Rób karty: kartka dla rozmiaru 68×44, karta z menu, pola z nazwami z szablonu.
-  await page.getByRole('button', { name: 'Rób karty ►' }).click();
+  // Edytor kart: kartka dla rozmiaru 68×44, karta z menu, pola z nazwami z szablonu.
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible();
   await slot(page, 1, 1, 1).click();
   await page.getByRole('menuitem', { name: /Karta testowa/ }).click();
@@ -129,7 +129,7 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   await expect(element(page, /^Siła – /)).toHaveCount(0);
   await page.keyboard.press('Control+z');
   await expect(element(page, /^Siła – /)).toBeVisible();
-  await page.getByRole('link', { name: '← Kartki' }).click();
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
   await page.locator('[data-karta]').click();
   await expect(panel.getByLabel('Siła', { exact: true })).toHaveValue('7');
 });
@@ -138,8 +138,8 @@ test('nowy szablon w istniejącym projekcie: kreator z kartki, siatka 2×2', asy
   await page.goto('./#/wlasne/nowy/awers');
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
-  await page.getByRole('link', { name: '← Kartki' }).click();
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await otworzDruk(page);
   await page.getByRole('link', { name: '＋ Nowy szablon' }).click();
   await page.getByLabel('Nazwa szablonu').fill('Druga');
   await page.getByText('Tytuł, siatka 2×2, opis i stopka').click();
@@ -170,7 +170,7 @@ test('edytor szablonu nie otwiera się dla projektu gry ani nieznanego szablonu'
   ).toBeVisible();
 });
 
-test('duplikuje szablon z paska i ustawień, a Cofnij pozostawia oryginał w edytorze', async ({
+test('duplikuje szablon z paska i opcji druku, a Cofnij pozostawia oryginał w edytorze', async ({
   page,
 }) => {
   await page.goto('./#/wlasne/nowy/awers');
@@ -186,8 +186,8 @@ test('duplikuje szablon z paska i ustawień, a Cofnij pozostawia oryginał w edy
   await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Oryginał');
   await page.getByRole('button', { name: 'Ponów', exact: true }).click();
   await expect(otworz).toBeVisible();
-  await page.getByRole('button', { name: /Rób karty/ }).click();
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await otworzDruk(page);
   const lista = page.getByRole('group', { name: 'Szablony projektu' });
   await lista.getByRole('button', { name: 'Duplikuj szablon Oryginał', exact: true }).click();
   await expect(

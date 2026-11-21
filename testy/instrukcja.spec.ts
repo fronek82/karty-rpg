@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { existsSync, readFileSync, statSync } from 'node:fs';
+import { otworzUstawieniaAplikacji } from './pomoc';
 import {
   JEZYKI_ZRZUTOW,
   MAKS_BAJTOW_ZRZUTU,
@@ -138,6 +139,7 @@ test('przełączanie motywu z pamięcią, wspólny klucz z aplikacją', async ({
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('./');
   expect(await motyw(page)).toBe('dark');
+  await page.getByRole('button', { name: /Ustawienia/ }).click();
   await page.getByRole('button', { name: 'Motyw jasny' }).click();
   await page.goto('./instrukcja/');
   expect(await motyw(page)).toBe('light');
@@ -171,7 +173,8 @@ test('link „Instrukcja” z aplikacji otwiera stronę w nowym oknie w języku 
   page,
 }) => {
   await page.goto('./');
-  const link = page.getByRole('link', { name: /^Instrukcja/ });
+  const menuPl = await otworzUstawieniaAplikacji(page);
+  const link = menuPl.getByRole('link', { name: /^Instrukcja/ });
   await expect(link).toHaveAttribute('href', 'instrukcja/?lang=pl');
   const [okno] = await Promise.all([page.waitForEvent('popup'), link.click()]);
   await okno.waitForLoadState();
@@ -181,8 +184,9 @@ test('link „Instrukcja” z aplikacji otwiera stronę w nowym oknie w języku 
   await okno.close();
 
   // Po zmianie języka w aplikacji link prowadzi do angielskiej wersji.
+  const menuEn = await otworzUstawieniaAplikacji(page);
   await przyciskJezyka(page, 'EN').click();
-  const linkEn = page.getByRole('link', { name: /^Guide/ });
+  const linkEn = menuEn.getByRole('link', { name: /^Guide/ });
   await expect(linkEn).toHaveAttribute('href', 'instrukcja/?lang=en');
   const [oknoEn] = await Promise.all([page.waitForEvent('popup'), linkEn.click()]);
   await oknoEn.waitForLoadState();
@@ -192,7 +196,8 @@ test('link „Instrukcja” z aplikacji otwiera stronę w nowym oknie w języku 
 
 test('link działa także z edytora kartki i z edytora szablonu', async ({ page }) => {
   await page.goto('./#/wlasne/nowy/awers');
-  const link = page.getByRole('link', { name: /^Instrukcja/ });
+  const menu = await otworzUstawieniaAplikacji(page);
+  const link = menu.getByRole('link', { name: /^Instrukcja/ });
   await expect(link).toHaveAttribute('href', 'instrukcja/?lang=pl');
   await expect(link).toHaveAttribute('target', '_blank');
   await expect(link).toHaveAttribute('rel', /noopener/);

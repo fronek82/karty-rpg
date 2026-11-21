@@ -161,9 +161,9 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
     test('ustawienia kartki: kalibracja drukarki', async ({ page }) => {
       await nowaKartka(page);
       await page
-        .getByRole('button', { name: new RegExp(dokladnie(t('kartka.ustawienia'))) })
+        .getByRole('link', { name: new RegExp(dokladnie(goly(t('kartka.drukujKarty')))) })
         .click();
-      const panel = page.getByRole('complementary', { name: t('kartka.ustawienia') });
+      const panel = page.getByRole('complementary', { name: t('kartka.opcjeDruku') });
       await expect(panel).toBeVisible();
       await panel
         .locator('legend', { hasText: t('uklad.kalibracja') })

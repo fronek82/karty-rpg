@@ -10,7 +10,13 @@ import type { Karta, Rewers, Szablon, Talia } from '../src/model/szablon';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { kliknijPobierzPdf, zapisano } from './pomoc';
+import {
+  kliknijPobierzPdf,
+  otworzDruk,
+  otworzUstawieniaAplikacji,
+  panelDruku,
+  zapisano,
+} from './pomoc';
 import { dodaj, kreator } from './szablonUI';
 
 /**
@@ -127,7 +133,7 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
     uklad: 'Swobodny',
   });
   await dodaj(page, 'Obraz', 'Ilustracja');
-  await page.getByRole('button', { name: 'Rób karty' }).click();
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   // Dodaj kartę z rastrem 640×480 px (litera-f.png) i powiększ kadr 3×, żeby efektywne DPI spadło poniżej 300.
@@ -139,9 +145,8 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
   await panelKarty.getByLabel('Skala').fill('3');
   await zapisano(page);
 
-  // Otwórz Ustawienia i włącz Tryb drukarni.
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  // Otwórz widok drukowania i włącz Tryb drukarni.
+  const ust = await otworzDruk(page);
   const wlacz = ust.getByLabel('Przygotuj do drukarni (spad i znaczniki cięcia)');
   await expect(wlacz).not.toBeChecked();
   await wlacz.check();
@@ -149,7 +154,7 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
   await expect(ust.getByLabel('Znaczniki cięcia', { exact: true })).toBeChecked();
   await expect(ust.getByText(/Netto: 63 × 88 mm · Brutto ze spadem: 69 × 94 mm/)).toBeVisible();
 
-  // Ostrzeżenie o niskim DPI po kadrowaniu widoczne w panelu ustawień i na pasku ostrzeżeń projektu.
+  // Ostrzeżenie o niskim DPI po kadrowaniu widoczne w panelu opcji druku i na pasku ostrzeżeń projektu.
   await expect(ust.getByText(/poniżej 300 dpi/)).toBeVisible();
   await expect(page.locator('details.ostrzezenia-projektu')).toBeVisible();
 
@@ -166,7 +171,8 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
   expect(width / PT_NA_MM).toBeCloseTo(83, 1);
   expect(height / PT_NA_MM).toBeCloseTo(108, 1);
 
-  // Kliknięcie karty w układzie pojedynczej karty otwiera panel z dokładnym ostrzeżeniem DPI.
+  // Powrót do Edytora kart: kliknięcie karty w układzie pojedynczej karty otwiera panel z dokładnym ostrzeżeniem DPI.
+  await page.getByRole('link', { name: '← Powrót' }).click();
   await page.locator('.strona-kartki .karta-na-kartce').first().click();
   await expect(
     page.getByRole('complementary', { name: 'Zaznaczone karty' }).getByText(/dpi/i),
@@ -177,18 +183,19 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
   await expect(page.locator('.strona-kartki .karta-na-kartce').first()).toBeVisible({
     timeout: 15000,
   });
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ustPo = page.getByRole('complementary', { name: 'Ustawienia' });
+  const ustPo = await otworzDruk(page);
   await expect(ustPo.getByLabel('Przygotuj do drukarni (spad i znaczniki cięcia)')).toBeChecked();
   await expect(ustPo.getByLabel('Układ drukarski')).toHaveValue('pojedyncza');
 
   // EN + ciemny motyw.
-  await page
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
-  await page.getByRole('button', { name: /Dark theme|Ciemny motyw/ }).click();
-  const ustEn = page.getByRole('complementary', { name: 'Settings' });
+  await menuUst.getByRole('button', { name: /Dark theme|Motyw ciemny/ }).click();
+  await page.keyboard.press('Escape');
+  const ustEn = panelDruku(page, true);
   await expect(ustEn.getByLabel('Prepare for print shop (bleed and crop marks)')).toBeChecked();
   await expect(ustEn.getByLabel('Bleed (mm)')).toHaveValue('3');
   await expect(ustEn.getByLabel('Crop marks', { exact: true })).toBeChecked();

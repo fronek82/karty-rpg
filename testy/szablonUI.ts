@@ -196,7 +196,7 @@ export async function karta(page: Page) {
 
 /** Kartka: karta z menu w slocie, pola z panelu karty. */
 export async function kartaNaKartce(page: Page, szablon: string, dane: Record<string, string>) {
-  await page.getByRole('button', { name: 'Rób karty ►' }).click();
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
   await page.getByRole('button', { name: /^Pusty slot – strona 1, kolumna 1, rząd 1/ }).click();
   await page.getByRole('menuitem', { name: new RegExp(dokladnie(szablon)) }).click();
   const p = page.getByRole('complementary', { name: 'Zaznaczone karty' });

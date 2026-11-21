@@ -222,10 +222,14 @@ test.describe('zrzuty UI-5', () => {
     await page.evaluate(() => document.fonts.ready);
     await page.getByRole('button', { name: 'Karta z opisem' }).hover();
     await page.screenshot({ path: 'docs/obrazy/ui-5-wlasne-jasny.png' });
+    await page.getByRole('button', { name: /Ustawienia/ }).click();
     await page.getByRole('button', { name: 'Motyw ciemny' }).click();
+    await page.keyboard.press('Escape');
     await page.screenshot({ path: 'docs/obrazy/ui-5-wlasne-ciemny.png' });
+    await page.getByRole('button', { name: /Ustawienia/ }).click();
     await page.getByRole('button', { name: 'Motyw jasny' }).click();
     await page.getByRole('button', { name: 'EN' }).click();
+    await page.keyboard.press('Escape');
     await expect(page.getByRole('button', { name: 'Card with a description' })).toBeVisible();
     await expect(page.locator('.szkielet')).toHaveCount(0, { timeout: 15000 });
     await page.getByRole('button', { name: 'Card with a description' }).hover();

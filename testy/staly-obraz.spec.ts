@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { dodaj, kartaNaKartce, kreator, panel, karta, zaznacz } from './szablonUI';
-import { zapisano } from './pomoc';
+import { otworzDruk, zapisano } from './pomoc';
 
 test('wgrany stały obraz jest wybrany w polu, widoczny w PNG i cofany w jednym kroku', async ({
   page,
@@ -51,6 +51,7 @@ test('wgrany stały obraz jest wybrany w polu, widoczny w PNG i cofany w jednym 
   await zapisano(page);
   await kartaNaKartce(page, 'Stała ilustracja', {});
   await expect(page.locator('.strona-kartki svg image')).toHaveCount(1);
+  await otworzDruk(page);
   await page.getByRole('button', { name: 'Pobierz', exact: true }).click();
   const [plik] = await Promise.all([
     page.waitForEvent('download'),

@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { kontrastObrysu, kontrastTekstu, pomiarFokusu, trybKlawiatury } from './kontrastUI';
-import { gotowyUklad, karta, nowaPustaKartka } from './pomoc';
+import { gotowyUklad, karta, nowaPustaKartka, otworzDruk } from './pomoc';
 import { dodaj, drzewo, kreator, panel, sekcja, zaznacz } from './szablonUI';
 
 /**
@@ -79,15 +79,12 @@ for (const motyw of MOTYWY) {
     await tekst(pasekKarty.locator('button:not(.niebezpieczny)').first(), 'pasek karty: zwykły');
     await tekst(pasekKarty.locator('button.niebezpieczny'), 'pasek karty: niebezpieczny');
 
-    // Pasek górny.
+    // Pasek górny (Edytor kart).
     const pasek = page.locator('.pasek-gorny');
     await tekst(pasek.locator('.status-zapisu'), 'status zapisu na pasku');
     await tekst(pasek.locator('.nazwa-projektu'), 'nazwa projektu na pasku');
     await tekst(pasek.getByRole('button', { name: /Ustawienia/ }), 'przycisk na pasku');
-    await tekst(
-      pasek.getByRole('button', { name: 'Pobierz', exact: true }),
-      'przycisk główny na pasku',
-    );
+    await tekst(pasek.getByRole('link', { name: /^Drukuj karty/ }), 'przycisk główny na pasku');
     // „Cofnij” jest wyłączone, dopóki nic nie zmieniono – test wymaga takiego przycisku.
     const wylaczony = pasek.locator('button:disabled').first();
     await expect(wylaczony).toBeDisabled();
@@ -99,12 +96,11 @@ for (const motyw of MOTYWY) {
     const o = await pomiarFokusu(zaznaczona);
     expect(o.kontrast, `obrys zaznaczonej karty: ${o.tekst} na ${o.tlo}`).toBeGreaterThanOrEqual(3);
 
-    // Ustawienia: legendy sekcji i opisy.
-    await page.getByRole('button', { name: /Ustawienia/ }).click();
-    const u = page.getByRole('complementary', { name: 'Ustawienia' });
+    // Opcje druku i arkusza w widoku „Drukuj karty”: legendy sekcji i opisy.
+    const u = await otworzDruk(page);
     await tekst(u.locator('legend').first(), 'legenda sekcji');
-    await tekst(u.locator('.podpis').first(), 'opis w ustawieniach');
-    await tekst(u.locator('label').first(), 'etykieta w ustawieniach');
+    await tekst(u.locator('.podpis').first(), 'opis w opcjach druku');
+    await tekst(u.locator('label').first(), 'etykieta w opcjach druku');
 
     // Zaznaczony i wyłączony segment: w aplikacji ten stan jest trudno osiągalny, więc
     // ustawiamy go na prawdziwych przyciskach panelu (CSS reaguje na atrybuty).
@@ -125,6 +121,10 @@ for (const motyw of MOTYWY) {
     );
 
     // Menu „Pobierz”.
+    await tekst(
+      pasek.getByRole('button', { name: 'Pobierz', exact: true }),
+      'przycisk Pobierz na pasku druku',
+    );
     await page.getByRole('button', { name: /^Pobierz$/ }).click();
     await tekst(
       page.getByRole('menu').first().getByRole('menuitem').first(),

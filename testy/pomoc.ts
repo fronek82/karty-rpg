@@ -61,9 +61,39 @@ export async function przeciagnij(
   await page.mouse.up();
 }
 
-/** Otwiera rozwijane menu „Pobierz” i klika „Pobierz PDF (do druku)”. */
+/** Przechodzi do widoku „Drukuj karty” (jeśli jeszcze nie otwarty) i zwraca stały panel opcji druku. */
+export const panelDruku = (page: Page, en = false) =>
+  page.getByRole('complementary', {
+    name: en ? 'Print & sheet options' : 'Opcje druku i arkusza',
+  });
+
+export async function otworzDruk(page: Page, en = false) {
+  const panel = panelDruku(page, en);
+  if (!(await panel.isVisible())) {
+    await page.getByRole('link', { name: en ? /^Print cards/ : /^Drukuj karty/ }).click();
+    await expect(panel).toBeVisible({ timeout: 15000 });
+  }
+  return panel;
+}
+
+/** Otwiera górne rozwijane menu „Ustawienia” / „Settings” i zwraca jego panel. */
+export async function otworzUstawieniaAplikacji(page: Page) {
+  const przycisk = page.getByRole('button', { name: /^(⚙\s*)?(Ustawienia|Settings)(\s*▾)?$/ });
+  if ((await przycisk.getAttribute('aria-expanded')) !== 'true') {
+    await przycisk.click();
+  }
+  const panel = page.locator('.menu-ustawien-panel');
+  await expect(panel).toBeVisible();
+  return panel;
+}
+
+/** Otwiera rozwijane menu „Pobierz” (w razie potrzeby przechodzi najpierw do „Drukuj karty”) i klika „Pobierz PDF (do druku)”. */
 export async function kliknijPobierzPdf(page: Page, en = false) {
-  await page.getByRole('button', { name: en ? 'Download' : 'Pobierz', exact: true }).click();
+  const pobierz = page.getByRole('button', { name: en ? 'Download' : 'Pobierz', exact: true });
+  if (!(await pobierz.isVisible())) {
+    await otworzDruk(page, en);
+  }
+  await pobierz.click();
   await page
     .getByRole('menuitem', {
       name: en ? 'Download PDF (for printing)' : 'Pobierz PDF (do druku)',

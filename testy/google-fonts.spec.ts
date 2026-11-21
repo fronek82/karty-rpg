@@ -10,7 +10,7 @@ import type { Karta, Szablon, Talia } from '../src/model/szablon';
 import { RejestrCzcionek, wczytajCzcionke } from '../src/silnik/czcionki';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { zapisano } from './pomoc';
+import { otworzDruk, otworzUstawieniaAplikacji, panelDruku, zapisano } from './pomoc';
 import { dodaj, kreator } from './szablonUI';
 
 /**
@@ -154,7 +154,7 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
     uklad: 'Swobodny',
   });
   await dodaj(page, 'Tekst', 'Tytuł');
-  await page.getByRole('button', { name: 'Rób karty' }).click();
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   // Dodaj kartę z polskimi znakami.
@@ -181,9 +181,8 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
     await route.fulfill({ status: 200, contentType: 'text/css; charset=utf-8', body: '' });
   });
 
-  // Otwórz Ustawienia i rozwiń katalog Google Fonts.
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  // Otwórz widok drukowania i rozwiń katalog Google Fonts.
+  const ust = await otworzDruk(page);
   const katalog = ust.locator('details.katalog-google-fonts');
   await katalog.locator('summary').click();
 
@@ -245,14 +244,16 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
   trybSieci = 'offline';
   const przedPrzeladowaniem = wywolaniaZewnetrzne;
   await page.reload();
-  await expect(page.locator('.strona-kartki .karta-na-kartce').first()).toBeVisible({
+  const ustPo = panelDruku(page);
+  await expect(ustPo).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.strona-kartki svg.svg-strony').first()).toBeVisible({
     timeout: 15000,
   });
   expect(wywolaniaZewnetrzne).toBe(przedPrzeladowaniem);
-  expect(await page.locator('.strona-kartki svg path').count()).toBeGreaterThan(20);
+  await expect
+    .poll(() => page.locator('.strona-kartki svg path').count(), { timeout: 15000 })
+    .toBeGreaterThan(20);
 
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ustPo = page.getByRole('complementary', { name: 'Ustawienia' });
   await expect(ustPo.locator('fieldset.sekcja-czcionek select').first()).toHaveValue('Almendra');
   const katalogPo = ustPo.locator('details.katalog-google-fonts');
   await katalogPo.locator('summary').click();
@@ -261,12 +262,14 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
   expect(bledyStrony).toEqual([]);
 
   // 4) EN + ciemny motyw.
-  await page
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
-  await page.getByRole('button', { name: /Dark theme|Ciemny motyw/ }).click();
-  const ustEn = page.getByRole('complementary', { name: 'Settings' });
+  await menuUst.getByRole('button', { name: /Dark theme|Motyw ciemny/ }).click();
+  await page.keyboard.press('Escape');
+  const ustEn = panelDruku(page, true);
   const katalogEn = ustEn.locator('details.katalog-google-fonts');
   await expect(katalogEn.locator('summary')).toHaveText('Google Fonts catalog');
   await expect(katalogEn.getByLabel('Search typeface')).toBeVisible();

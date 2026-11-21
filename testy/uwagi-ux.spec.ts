@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { dodaj, kreator, panel, sekcja, zaznacz } from './szablonUI';
-import { slot, zapisano } from './pomoc';
+import { otworzDruk, otworzUstawieniaAplikacji, slot, zapisano } from './pomoc';
 
 /**
  * Poprawki UX po uwagach użytkownika:
@@ -59,8 +59,8 @@ test('nagłówek panelu karty nie pokazuje opisu, wysokość textarea zostaje mi
     .poll(() => polePrzykladu2.evaluate((el: HTMLTextAreaElement) => el.style.height))
     .toBe('196px');
 
-  // 3) W „Rób karty”: pusty tytuł + długi opis → opis NIE trafia w nagłówek panelu.
-  await page.getByRole('button', { name: 'Rób karty ►' }).click();
+  // 3) W „Edytor kart”: pusty tytuł + długi opis → opis NIE trafia w nagłówek panelu.
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await slot(page, 1, 1, 1).click();
   await page.getByRole('menuitem', { name: /Karta zaklęcia/ }).click();
@@ -90,8 +90,7 @@ test('nagłówek panelu karty nie pokazuje opisu, wysokość textarea zostaje mi
     .toBe('224px');
 
   // 4) Katalog Google Fonts: ≥ 50 krojów, filtr rozwijany i próbka podglądu przed pobraniem.
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  const ust = await otworzDruk(page);
   const katalog = ust.locator('details.katalog-google-fonts');
   await expect(page.locator('link[data-google-fonts-podglad]')).toHaveCount(0);
   await katalog.locator('summary').click();
@@ -143,10 +142,12 @@ test('panel właściwości pola: Położenie i rozmiar zwijane (#1), Wygląd (#2
   );
 
   // Przełączenie na angielski zachowuje kolejność i nowe etykiety w obu wariantach.
-  await page
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
+  await page.keyboard.press('Escape');
   const sekcjeEn = page
     .getByRole('complementary', { name: 'Properties' })
     .locator(':scope > details.sekcja-panelu > summary');

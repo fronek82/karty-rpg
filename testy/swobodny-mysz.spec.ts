@@ -202,7 +202,7 @@ test('podkład: pokaż / ukryj, przezroczystość, nie łapie kliknięć i nie t
   await expect(page.getByTestId('podklad-podgladu')).toHaveCSS('opacity', '0.2');
 
   // Na kartce (jak w PDF) podkładu nie ma.
-  await page.getByRole('button', { name: 'Rób karty ►' }).click();
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
   await expect(page.getByTestId('podklad-podgladu')).toHaveCount(0);
   await expect(page.locator('svg image')).toHaveCount(0);
 });

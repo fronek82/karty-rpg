@@ -10,7 +10,13 @@ import type { Karta, Rewers, Szablon, Talia } from '../src/model/szablon';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { kliknijPobierzPdf, zapisano } from './pomoc';
+import {
+  kliknijPobierzPdf,
+  otworzDruk,
+  otworzUstawieniaAplikacji,
+  panelDruku,
+  zapisano,
+} from './pomoc';
 import { dodaj, kreator, panel } from './szablonUI';
 
 /**
@@ -133,28 +139,26 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
     format: 'Poker',
     uklad: 'Swobodny',
   });
-  await page.getByRole('button', { name: 'Rób karty' }).click();
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   // Utwórz niesymetryczny rewers.
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const ust = page.getByRole('complementary', { name: 'Ustawienia' });
+  const ust = await otworzDruk(page);
   await ust.getByRole('button', { name: 'Nowy rewers' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Edytor rewersu' })).toBeVisible();
   await dodaj(page, 'Tekst', 'Napis góry');
   await panel(page).getByLabel('Stały tekst').fill('TYŁ KARTY');
   await zapisano(page);
 
-  // Wróć na kartkę, przypisz rewers do talii i włącz druk dwustronny.
-  await page.getByRole('link', { name: /Kartki|Wróć do kartek/ }).click();
+  // Przejdź do Edytora kart, dodaj kartę i włącz druk dwustronny w widoku drukowania.
+  await page.getByRole('link', { name: /Edytor kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   // Dodaj jedną kartę na arkuszu (w pierwszym wolnym slocie).
   await page.locator('.strona-kartki [data-slot="0,0"]').click();
   await page.getByRole('menuitem').first().click();
 
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const panelUst = page.getByRole('complementary', { name: 'Ustawienia' });
+  const panelUst = await otworzDruk(page);
   await panelUst.getByLabel('Domyślny rewers talii').selectOption({ index: 1 });
   await panelUst.getByLabel('Drukuj rewersy (przód i tył w parach stron)').check();
 
@@ -171,10 +175,13 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
   await expect(panelUst.getByText('Oś odbicia: pozioma (jak kalendarz).')).toBeVisible();
   await expect(stronaRewersu.locator('svg g[transform*="rotate(180)"]')).toHaveCount(1);
 
-  // Regresja: przeciągnięcie karty nad sąsiedni podgląd rewersu nie psuje liczby stron (brak NaN).
-  const kartaEl = para.locator('.karta-na-kartce').first();
+  // Regresja: przeciągnięcie karty nad sąsiedni podgląd rewersu w Edytorze kart nie psuje liczby stron (brak NaN).
+  await page.getByRole('link', { name: '← Powrót' }).click();
+  const paraEdycja = page.locator('.para-stron').first();
+  const kartaEl = paraEdycja.locator('.karta-na-kartce').first();
+  const stronaRewersuEdycja = paraEdycja.locator('[data-strona-rewersu="0"]');
   const boxKarty = await kartaEl.boundingBox();
-  const boxTylu = await stronaRewersu.boundingBox();
+  const boxTylu = await stronaRewersuEdycja.boundingBox();
   expect(boxKarty).toBeTruthy();
   expect(boxTylu).toBeTruthy();
   await page.mouse.move(boxKarty!.x + boxKarty!.width / 2, boxKarty!.y + boxKarty!.height / 2);
@@ -185,12 +192,11 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
   await page.mouse.up();
   await expect(page.locator('.para-stron')).toHaveCount(1);
   await expect(page.locator('.strona-kartki[data-strona="0"] .karta-na-kartce')).toHaveCount(1);
-  // Ponownie otwórz panel ustawień (klik na kartę mógł go przełączyć na panel karty).
-  if (!(await panelUst.isVisible())) await page.getByRole('button', { name: /Ustawienia/ }).click();
 
-  // Lokalna korekta rewersu X/Y.
-  await panelUst.getByLabel('Korekta rewersu X (mm)').fill('1.5');
-  await panelUst.getByLabel('Korekta rewersu Y (mm)').fill('-0.5');
+  // Wróć do opcji druku i ustaw lokalną korektę rewersu X/Y.
+  const panelDruk = await otworzDruk(page);
+  await panelDruk.getByLabel('Korekta rewersu X (mm)').fill('1.5');
+  await panelDruk.getByLabel('Korekta rewersu Y (mm)').fill('-0.5');
   await zapisano(page);
 
   // Pobierz dwustronny PDF -> 2 strony (przód + tył).
@@ -203,7 +209,7 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
   // Pobierz dwustronny wydruk próbny -> 2 strony (przód + lustrzany tył).
   const [pobranieProbny] = await Promise.all([
     page.waitForEvent('download'),
-    panelUst.getByRole('button', { name: 'Wydruk próbny dwustronny (PDF)' }).click(),
+    panelDruk.getByRole('button', { name: 'Wydruk próbny dwustronny (PDF)' }).click(),
   ]);
   const sciezkaProbny = await pobranieProbny.path();
   expect(sciezkaProbny).toBeTruthy();
@@ -215,18 +221,19 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
   await expect(page.locator('.para-stron [data-strona-rewersu="0"]')).toBeVisible({
     timeout: 15000,
   });
-  await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const panelPo = page.getByRole('complementary', { name: 'Ustawienia' });
+  const panelPo = panelDruku(page);
   await expect(panelPo.getByLabel('Korekta rewersu X (mm)')).toHaveValue('1.5');
   await expect(panelPo.getByLabel('Korekta rewersu Y (mm)')).toHaveValue('-0.5');
 
   // EN + ciemny motyw.
-  await page
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
-  await page.getByRole('button', { name: /Dark theme|Ciemny motyw/ }).click();
-  const panelEn = page.getByRole('complementary', { name: 'Settings' });
+  await menuUst.getByRole('button', { name: /Dark theme|Motyw ciemny/ }).click();
+  await page.keyboard.press('Escape');
+  const panelEn = panelDruku(page, true);
   await expect(panelEn.getByLabel('Print both sides (front and back page pairs)')).toBeChecked();
   await expect(
     panelEn

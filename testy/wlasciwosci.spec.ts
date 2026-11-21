@@ -52,7 +52,7 @@ test('tabela: kolumny, wiersze, nagłówki, linie; komórki to pola karty', asyn
   await expect(page.locator('.karta-podgladu svg line')).toHaveCount(0);
 
   // Na kartce: komórki 2 wierszy × 3 kolumn jako osobne pola.
-  await page.getByRole('button', { name: 'Rób karty ►' }).click();
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
   // Kartka musi być gotowa (slot widoczny), zanim klikniemy; karta dodana i zaznaczona (panel
   // widoczny) – dopiero potem sprawdzamy pola. Dłuższe limity: wolne CI (rzadka niestabilność).
   await expect(slot(page, 1, 1, 1)).toBeVisible({ timeout: 15000 });

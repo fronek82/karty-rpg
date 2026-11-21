@@ -1,24 +1,29 @@
 import { expect, test, type Page } from '@playwright/test';
-import { nowaPustaKartka } from './pomoc';
+import { nowaPustaKartka, otworzDruk, otworzUstawieniaAplikacji } from './pomoc';
 
-/** Motyw jasny/ciemny, pasek górny z trzema elementami (UI-1). */
+/** Motyw jasny/ciemny i rozwijane menu „Ustawienia” w pasku górnym. */
 
 const motyw = (page: Page) => page.locator('html').getAttribute('data-theme');
 const tloStrony = (page: Page) =>
   page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
 async function pasek(page: Page) {
-  await expect(page.getByRole('link', { name: 'Instrukcja' })).toBeVisible();
-  await expect(page.getByRole('group', { name: 'Język' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Motyw ciemny' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Motyw jasny' })).toBeVisible();
+  const panel = await otworzUstawieniaAplikacji(page);
+  await expect(panel.getByRole('link', { name: /Instrukcja/ })).toBeVisible();
+  await expect(panel.getByRole('group', { name: 'Język' })).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Motyw ciemny' })).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Motyw jasny' })).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Wgrywanie czcionek' })).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Wgrywanie obrazów' })).toBeVisible();
+  return panel;
 }
 
 test('domyślnie motyw według prefers-color-scheme (jasny)', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('./');
   expect(await motyw(page)).toBe('light');
-  await expect(page.getByRole('button', { name: 'Motyw jasny' })).toHaveAttribute(
+  const panel = await otworzUstawieniaAplikacji(page);
+  await expect(panel.getByRole('button', { name: 'Motyw jasny' })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
@@ -30,7 +35,8 @@ test('domyślnie motyw według prefers-color-scheme (ciemny) i reakcja na zmian�
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('./');
   expect(await motyw(page)).toBe('dark');
-  await expect(page.getByRole('button', { name: 'Motyw ciemny' })).toHaveAttribute(
+  const panel = await otworzUstawieniaAplikacji(page);
+  await expect(panel.getByRole('button', { name: 'Motyw ciemny' })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
@@ -42,21 +48,28 @@ test('przełączenie motywu zmienia kolory i jest zapamiętane po przeładowaniu
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('./');
   const jasne = await tloStrony(page);
-  await page.getByRole('button', { name: 'Motyw ciemny' }).click();
+  await (
+    await otworzUstawieniaAplikacji(page)
+  )
+    .getByRole('button', { name: 'Motyw ciemny' })
+    .click();
   expect(await motyw(page)).toBe('dark');
   expect(await tloStrony(page)).not.toBe(jasne);
   expect(await page.evaluate(() => localStorage.getItem('karty.motyw'))).toBe('dark');
   await page.reload();
   expect(await motyw(page)).toBe('dark');
-  await expect(page.getByRole('button', { name: 'Motyw ciemny' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  await expect(
+    (await otworzUstawieniaAplikacji(page)).getByRole('button', { name: 'Motyw ciemny' }),
+  ).toHaveAttribute('aria-pressed', 'true');
   // Jawny wybór wygrywa z ustawieniem systemu.
   await page.emulateMedia({ colorScheme: 'light' });
   await page.reload();
   expect(await motyw(page)).toBe('dark');
-  await page.getByRole('button', { name: 'Motyw jasny' }).click();
+  await (
+    await otworzUstawieniaAplikacji(page)
+  )
+    .getByRole('button', { name: 'Motyw jasny' })
+    .click();
   await page.reload();
   expect(await motyw(page)).toBe('light');
 });
@@ -78,7 +91,7 @@ test('motyw ustawiony przed pierwszym malowaniem i bez migotania', async ({ page
   await page.goto('./', { waitUntil: 'commit' });
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
   expect(await page.locator('#root').evaluate((el) => el.childElementCount)).toBe(0);
-  await expect(page.getByRole('link', { name: /Instrukcja/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ustawienia/ })).toBeVisible({ timeout: 10000 });
   const zapisane = await page.evaluate(
     () => (window as unknown as { __motywy: string[] }).__motywy,
   );
@@ -86,17 +99,16 @@ test('motyw ustawiony przed pierwszym malowaniem i bez migotania', async ({ page
   expect(zapisane.every((m) => m === 'dark')).toBe(true);
 });
 
-test('pasek górny: trzy elementy na starcie, Instrukcja w nowym oknie, język PL aktywny', async ({
+test('pasek górny: menu Ustawienia na starcie, Instrukcja w nowym oknie, język PL aktywny', async ({
   page,
 }) => {
   await page.goto('./');
-  await pasek(page);
-  const instrukcja = page.getByRole('link', { name: 'Instrukcja' });
+  const panel = await pasek(page);
+  const instrukcja = panel.getByRole('link', { name: /Instrukcja/ });
   await expect(instrukcja).toHaveAttribute('target', '_blank');
   await expect(instrukcja).toHaveAttribute('rel', /noopener/);
-  const jezyk = page.getByRole('group', { name: 'Język' });
+  const jezyk = panel.getByRole('group', { name: 'Język' });
   await expect(jezyk.getByRole('button', { name: 'PL' })).toHaveAttribute('aria-pressed', 'true');
-  // Od UI-2 przełącznik działa: EN jest aktywny (zmiana języka – testy/jezyk.spec.ts).
   await expect(jezyk.getByRole('button', { name: 'EN' })).toBeEnabled();
 });
 
@@ -105,8 +117,8 @@ test('pasek górny w edytorze kartki i szablonu; motyw trzyma się między ekran
 }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await nowaPustaKartka(page);
-  await pasek(page);
-  await page.getByRole('button', { name: 'Motyw ciemny' }).click();
+  const panel = await pasek(page);
+  await panel.getByRole('button', { name: 'Motyw ciemny' }).click();
   // Karta na podglądzie zawsze na białym papierze, niezależnie od motywu aplikacji.
   const papier = await page
     .locator('.strona-kartki')
@@ -142,6 +154,7 @@ function kontrast(a: string, b: string): number {
 }
 
 async function otworzMenuPobierz(page: Page) {
+  await otworzDruk(page);
   await page.getByRole('button', { name: /^Pobierz/ }).click();
   const poz = page.getByRole('menuitem').first();
   await expect(poz).toBeVisible();
@@ -187,13 +200,24 @@ test.describe('zrzuty UI-1', () => {
     await page.goto('./');
     await expect(page.getByRole('heading', { name: 'Moje projekty' })).toBeVisible();
     await page.screenshot({ path: 'docs/obrazy/ui-1-start-jasny.png' });
-    await page.getByRole('button', { name: 'Motyw ciemny' }).click();
+    await (
+      await otworzUstawieniaAplikacji(page)
+    )
+      .getByRole('button', { name: 'Motyw ciemny' })
+      .click();
+    await page.keyboard.press('Escape');
     await page.screenshot({ path: 'docs/obrazy/ui-1-start-ciemny.png' });
     await nowaPustaKartka(page);
     await page.screenshot({ path: 'docs/obrazy/ui-1-edytor-ciemny.png' });
     await otworzMenuPobierz(page);
     await page.screenshot({ path: 'docs/obrazy/ui-1-menu-pobierz-ciemny.png' });
-    await page.getByRole('button', { name: 'Motyw jasny' }).click();
+    await (
+      await otworzUstawieniaAplikacji(page)
+    )
+      .getByRole('button', { name: 'Motyw jasny' })
+      .click();
+    await page.keyboard.press('Escape');
+    await otworzMenuPobierz(page);
     await page.screenshot({ path: 'docs/obrazy/ui-1-menu-pobierz-jasny.png' });
   });
 });

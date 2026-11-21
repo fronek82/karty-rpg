@@ -546,9 +546,6 @@ export function EdytorSzablonu({
           <a className="przycisk" href={`#/projekt/${idProjektu}/biblioteka`}>
             {t('biblioteka.tytul')}
           </a>
-          <a className="przycisk" href={`#/projekt/${idProjektu}`}>
-            {t('szablon.wrocDoKartek')}
-          </a>
           <button
             type="button"
             aria-label={t('kartka.cofnij')}
@@ -583,6 +580,12 @@ export function EdytorSzablonu({
           >
             {t('szablony.duplikuj')}
           </button>
+          <a
+            className="przycisk"
+            href={czyProjektWlasny(projekt) ? '#/wlasne' : `#/projekt/${idProjektu}`}
+          >
+            {t('pasek.powrot')}
+          </a>
           <button type="button" className="glowny" onClick={robKarty}>
             {t('szablon.robKarty')}
           </button>

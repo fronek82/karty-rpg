@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import { WERSJA_SCHEMATU } from '../src/model/projekt';
 import type { Szablon } from '../src/model/szablon';
-import { dodajKarte, zapisano } from './pomoc';
+import { dodajKarte, otworzDruk, zapisano } from './pomoc';
 
 const NAZWA = 'Karta geometryczna';
 const NAZWA_PLIKU = 'karta-geometryczna';
@@ -59,6 +59,7 @@ async function sprawdzObraz(page: Page, format: Format, bajty: Uint8Array, rozmi
 }
 
 async function pobierz(page: Page, rodzaj: 'strony' | 'karty', format: Format) {
+  await otworzDruk(page);
   await page.getByRole('button', { name: 'Pobierz', exact: true }).click();
   const opcja =
     rodzaj === 'strony'
@@ -90,8 +91,9 @@ for (const format of ['png', 'jpg'] as const) {
       buffer: Buffer.from(zipSync({ 'szablon.json': strToU8(JSON.stringify(json)) })),
     });
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15_000 });
-    await page.getByRole('button', { name: /Ustawienia/ }).click();
+    await otworzDruk(page);
     await page.getByRole('button', { name: 'pionowo', exact: true }).click();
+    await page.getByRole('link', { name: /Powrót/ }).click();
 
     const piksele = await page.evaluate(() => {
       const canvas = document.createElement('canvas');
@@ -116,6 +118,7 @@ for (const format of ['png', 'jpg'] as const) {
     await expect(page.locator('.strona-kartki .svg-strony image')).toHaveCount(1);
 
     if (process.env.ZRZUTY && format === 'png') {
+      await otworzDruk(page);
       await page.getByRole('button', { name: 'Pobierz', exact: true }).click();
       await page.screenshot({ path: `docs/obrazy/m2c-3-eksport-${test.info().project.name}.png` });
       await page.keyboard.press('Escape');
@@ -128,6 +131,7 @@ for (const format of ['png', 'jpg'] as const) {
     expect(jednaKarta.nazwa).toBe(`1-${NAZWA_PLIKU}.${format}`);
     await sprawdzObraz(page, format, jednaKarta.bajty, karta);
 
+    await page.getByRole('link', { name: /Powrót/ }).click();
     await page.getByRole('button', { name: /Dodaj stronę/ }).click();
     await dodajZObrazem(2);
     for (const [rodzaj, docelowyRozmiar] of [

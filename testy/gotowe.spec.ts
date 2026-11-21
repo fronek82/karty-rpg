@@ -7,7 +7,7 @@ import { arkuszeMausrittera } from '../src/pakiety/mausritter/arkusze';
 import { szablonyMausrittera } from '../src/pakiety/mausritter/szablony';
 import { OBRAZ_ZASTEPCZY, talieMausrittera } from '../src/pakiety/mausritter/talie';
 import type { Pakiet } from '../src/pakiety/typy';
-import { gotowyUklad, karta, kliknijPobierzPdf, zapisano } from './pomoc';
+import { gotowyUklad, karta, kliknijPobierzPdf, otworzDruk, zapisano } from './pomoc';
 
 /** Gotowe układy z pakietu, nagłówki grup, PDF, eksport/import i projekty sprzed edytora. */
 
@@ -43,6 +43,7 @@ test('wszystkie trzy: trzy kartki; PDF z nazwą projektu ma trzy strony', async 
 test('eksport → import jako kopia → lista z miniaturą → usunięcie', async ({ page }) => {
   await gotowyUklad(page, 'Broń i pancerze');
   await zapisano(page);
+  await otworzDruk(page);
   const [eksport] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button', { name: /Eksportuj/ }).click(),

@@ -79,6 +79,9 @@ export function PanelUstawien({
   nowaKartka,
   kartkaDlaSzablonu,
   zamknij,
+  staly = false,
+  arkusze,
+  wybierzArkusz,
   blad,
   wynik,
   wydrukTestowy,
@@ -110,7 +113,11 @@ export function PanelUstawien({
   arkusz: Arkusz;
   zmienUklad: (f: (p: Projekt) => Projekt, klucz?: string) => boolean;
   nowaKartka?: () => void;
-  zamknij: () => void;
+  zamknij?: () => void;
+  /** Stały panel po prawej w widoku „Drukuj karty” – bez przycisku zamykania i bez przejmowania fokusu. */
+  staly?: boolean;
+  arkusze?: { id: string; nazwa: string }[];
+  wybierzArkusz?: (id: string) => void;
   blad?: string;
 }) {
   const { projekt, zmien } = edycja;
@@ -119,7 +126,9 @@ export function PanelUstawien({
   const [status, ustawStatus] = useState('');
   const plik = useRef<HTMLInputElement>(null);
   const naglowek = useRef<HTMLHeadingElement>(null);
-  useEffect(() => naglowek.current?.focus(), []);
+  useEffect(() => {
+    if (!staly) naglowek.current?.focus();
+  }, [staly]);
   const rodziny = [
     ...new Set(projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : []))),
   ];
@@ -156,21 +165,41 @@ export function PanelUstawien({
     }
   };
 
+  const tytulPanelu = staly ? t('kartka.opcjeDruku') : t('kartka.ustawienia');
+
   return (
-    <aside className="panel-edytora" aria-label={t('kartka.ustawienia')}>
+    <aside className="panel-edytora" aria-label={tytulPanelu}>
       <div className="naglowek-panelu">
-        <h2 ref={naglowek} tabIndex={-1}>
-          {t('kartka.ustawienia')}
+        <h2 ref={naglowek} tabIndex={staly ? undefined : -1}>
+          {tytulPanelu}
         </h2>
-        <button
-          type="button"
-          className="zamknij"
-          aria-label={t('kartka.zamknijUstawienia')}
-          onClick={zamknij}
-        >
-          ✕
-        </button>
+        {!staly && zamknij && (
+          <button
+            type="button"
+            className="zamknij"
+            aria-label={t('kartka.zamknijUstawienia')}
+            onClick={zamknij}
+          >
+            ✕
+          </button>
+        )}
       </div>
+      {arkusze && arkusze.length > 1 && wybierzArkusz && (
+        <div className="pole-panelu">
+          <label htmlFor="wybor-arkusza-druku">{t('kartka.wybierzKartke')}</label>
+          <select
+            id="wybor-arkusza-druku"
+            value={arkusz.id}
+            onChange={(e) => wybierzArkusz(e.target.value)}
+          >
+            {arkusze.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.nazwa}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <p className="podpis">{t('kartka.ustawieniaOpis', { kartka: arkusz.nazwa })}</p>
       {blad && (
         <p role="alert" className="blad-pola">

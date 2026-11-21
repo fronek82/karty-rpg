@@ -404,18 +404,23 @@ test.describe('przełącznik w pasku', () => {
     }) => {
       await page.emulateMedia({ colorScheme: motyw });
       await page.goto('./');
-      const aktywny = page.getByRole('button', { name: 'PL', exact: true });
+      await page.getByRole('button', { name: /Ustawienia/ }).click();
+      const aktywny = page
+        .locator('.menu-ustawien-panel')
+        .getByRole('button', { name: 'PL', exact: true });
       await expect(aktywny).toHaveAttribute('aria-pressed', 'true');
       await aktywny.hover();
       const kolory = await page.evaluate(() => {
         const korzen = getComputedStyle(document.documentElement);
-        const przycisk = document.querySelector<HTMLElement>(".seg button[aria-pressed='true']")!;
+        const przycisk = document.querySelector<HTMLElement>(
+          ".menu-ustawien-seg button[aria-pressed='true']",
+        )!;
         const stan = getComputedStyle(przycisk);
         return {
           tlo: stan.backgroundColor,
           tekst: stan.color,
-          oczekiwaneTlo: korzen.getPropertyValue('--pasek-tekst').trim(),
-          oczekiwanyTekst: korzen.getPropertyValue('--pasek').trim(),
+          oczekiwaneTlo: korzen.getPropertyValue('--akcent').trim(),
+          oczekiwanyTekst: korzen.getPropertyValue('--akcent-tekst').trim(),
         };
       });
       const rgb = (hex: string) => {
@@ -447,13 +452,19 @@ test.describe('zrzuty UI-3', () => {
     await expect(page.locator('.kafelek-projektu .miniatura img')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     await page.screenshot({ path: 'docs/obrazy/ui-3-start-jasny.png' });
+    await page.getByRole('button', { name: /Ustawienia/ }).click();
     await page.getByRole('button', { name: 'Motyw ciemny' }).click();
+    await page.keyboard.press('Escape');
     await page.screenshot({ path: 'docs/obrazy/ui-3-start-ciemny.png' });
+    await page.getByRole('button', { name: /Ustawienia/ }).click();
     await page.getByRole('button', { name: 'Motyw jasny' }).click();
     await page.getByRole('button', { name: 'EN' }).click();
+    await page.keyboard.press('Escape');
     await expect(page.getByRole('button', { name: 'Import files…' })).toBeVisible();
     await page.screenshot({ path: 'docs/obrazy/ui-3-start-en-jasny.png' });
+    await page.getByRole('button', { name: /Settings/ }).click();
     await page.getByRole('button', { name: 'PL' }).click();
+    await page.keyboard.press('Escape');
     await page.setViewportSize({ width: 800, height: 1500 });
     await page.screenshot({ path: 'docs/obrazy/ui-3-start-waski.png', fullPage: true });
   });

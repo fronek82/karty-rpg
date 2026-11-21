@@ -106,7 +106,6 @@ import { PanelUstawien } from './PanelUstawien';
 type Zaznaczenie =
   | { rodzaj: 'karty'; arkuszId: string; ids: string[] }
   | { rodzaj: 'naglowek'; arkuszId: string; id: string }
-  | { rodzaj: 'ustawienia'; arkuszId: string }
   | undefined;
 
 type Gest =
@@ -207,16 +206,20 @@ const wPolu = (e: Element | null) =>
   !!e &&
   (e.matches('input, textarea, select, [contenteditable="true"]') || !!e.closest('[role="menu"]'));
 
-/** Edytor kartki: strony A4 z siatką slotów, karty klikane, przeciągane i edytowane w panelu. */
+/** Edytor kart i widok drukowania: strony A4 z siatką slotów albo podgląd arkusza ze stałymi opcjami druku. */
 export function EdytorKartki({
   edycja,
   pokazKartke,
+  tryb = 'edycja',
 }: {
   edycja: ProjektWEdycji;
-  /** Kartka do pokazania po wejściu (np. po „Rób karty” z edytora szablonu). */
+  /** Kartka do pokazania po wejściu (np. po „Edytor kart” z edytora szablonu). */
   pokazKartke?: string;
+  /** Tryb pracy: „edycja” (tylko edycja kart) albo „drukuj” (podgląd druku i stałe opcje po prawej). */
+  tryb?: 'edycja' | 'drukuj';
 }) {
   const { projekt, zmien } = edycja;
+  const druk = tryb === 'drukuj';
   // Zmiana języka przerysowuje edytor, ale wynik useMemo się nie przelicza sam: KAŻDY nowy
   // useMemo, który woła t() / tn() / tJesliJest() (także pośrednio), musi mieć `jezykUi` w zależnościach.
   const jezykUi = useJezyk();
@@ -252,7 +255,20 @@ export function EdytorKartki({
   };
   const zasoby = useZSzarymiObrazami(edycja.zasoby.zasoby, projekt);
   const [zazn, ustawZaznSurowe] = useState<Zaznaczenie>();
-  const [menu, ustawMenu] = useState<{ arkuszId: string } & Polozenie>();
+  const [wyborDruku, ustawWyborDruku] = useState<{ bazowa?: string; arkuszId?: string }>({
+    bazowa: pokazKartke,
+  });
+  const wybranyArkuszDruku =
+    wyborDruku.bazowa === pokazKartke ? (wyborDruku.arkuszId ?? pokazKartke) : pokazKartke;
+  const [menuStan, ustawMenuStan] = useState<{
+    tryb: 'edycja' | 'drukuj';
+    dane?: { arkuszId: string } & Polozenie;
+  }>({ tryb });
+  const menu = menuStan.tryb === tryb && !druk ? menuStan.dane : undefined;
+  const ustawMenu = useCallback(
+    (dane: ({ arkuszId: string } & Polozenie) | undefined) => ustawMenuStan({ tryb, dane }),
+    [tryb],
+  );
   const [gest, ustawGest] = useState<Gest>();
   const gestRef = useRef<Gest | undefined>(undefined);
   const [importTabeli, ustawImportTabeli] = useState<string>();
@@ -263,12 +279,30 @@ export function EdytorKartki({
       ustawToastSurowy(x && { ...x, wersja: edycja.wersja + (x.cofnij ? zmian : 0) }),
     [edycja.wersja],
   );
-  const [bladUkladu, ustawBladUkladu] = useState<string>();
+  const [bladUkladuStan, ustawBladUkladuStan] = useState<{
+    tryb: 'edycja' | 'drukuj';
+    tekst?: string;
+  }>({ tryb });
+  const bladUkladu = bladUkladuStan.tryb === tryb ? bladUkladuStan.tekst : undefined;
+  const ustawBladUkladu = useCallback(
+    (tekst: string | undefined) => ustawBladUkladuStan({ tryb, tekst }),
+    [tryb],
+  );
+  const ustawWybranyArkuszDruku = useCallback(
+    (arkuszId: string | undefined) => {
+      ustawWyborDruku({ bazowa: pokazKartke, arkuszId });
+      ustawBladUkladu(undefined);
+    },
+    [pokazKartke, ustawBladUkladu],
+  );
   /** Zmiana zaznaczenia czyści komunikat o odrzuconej zmianie układu (należał do innego panelu). */
-  const ustawZazn = useCallback((z: Zaznaczenie) => {
-    ustawZaznSurowe(z);
-    ustawBladUkladu(undefined);
-  }, []);
+  const ustawZazn = useCallback(
+    (z: Zaznaczenie) => {
+      ustawZaznSurowe(z);
+      ustawBladUkladu(undefined);
+    },
+    [ustawBladUkladu],
+  );
   const [statusPdf, ustawStatusPdf] = useState('');
   /** Trwa tworzenie PDF albo obrazów – kolejne pobranie czeka (przyciski wyłączone). */
   const [zajete, ustawZajete] = useState(false);
@@ -278,11 +312,6 @@ export function EdytorKartki({
     void f().finally(() => ustawZajete(false));
   };
   const kartkiRef = useRef<HTMLDivElement>(null);
-  const przyciskUstawien = useRef<HTMLButtonElement>(null);
-  const zamknijUstawienia = useCallback(() => {
-    ustawZazn(undefined);
-    przyciskUstawien.current?.focus();
-  }, [ustawZazn]);
 
   // --- Budowa stron (ta sama scena co w PDF), z pamięcią kart i kartek między renderami.
   // Nowa pamięć kart przy każdej zmianie zasobów (czcionki, obrazy, szablony).
@@ -489,16 +518,15 @@ export function EdytorKartki({
   }, [zazn, kartyNaKartkach]);
 
   // Zaznaczenie wskazujące usunięte elementy (np. po „Cofnij”) – czyścimy.
-  const zaznaczenieAktualne =
-    zazn?.rodzaj === 'karty'
+  const zaznaczenieAktualne = druk
+    ? false
+    : zazn?.rodzaj === 'karty'
       ? zaznaczoneKarty.length > 0
       : zazn?.rodzaj === 'naglowek'
         ? !!projekt.arkusze
             .find((a) => a.id === zazn.arkuszId)
             ?.naglowki?.some((h) => h.id === zazn.id)
-        : zazn?.rodzaj === 'ustawienia'
-          ? projekt.arkusze.some((a) => a.id === zazn.arkuszId)
-          : true;
+        : true;
   const aktywne = zaznaczenieAktualne ? zazn : undefined;
 
   /**
@@ -559,7 +587,7 @@ export function EdytorKartki({
       zmien(f, klucz ? { klucz: `uklad:${klucz}` } : {});
       return true;
     },
-    [projekt, zasoby, zmien, pamiecKart, edycja.zasoby],
+    [projekt, zasoby, zmien, pamiecKart, edycja.zasoby, ustawBladUkladu],
   );
 
   // --- Akcje na zaznaczeniu.
@@ -656,6 +684,8 @@ export function EdytorKartki({
       } else if (ctrl && e.key.toLowerCase() === 'y') {
         e.preventDefault();
         edycja.ponow();
+      } else if (druk) {
+        return;
       } else if (ctrl && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         duplikuj(1);
@@ -666,8 +696,7 @@ export function EdytorKartki({
         }
       } else if (e.key === 'Escape') {
         ustawMenu(undefined);
-        if (aktywne?.rodzaj === 'ustawienia') zamknijUstawienia();
-        else ustawZazn(undefined);
+        ustawZazn(undefined);
       } else if (
         aktywne?.rodzaj === 'karty' &&
         e.key.startsWith('Arrow') &&
@@ -684,7 +713,7 @@ export function EdytorKartki({
     };
     window.addEventListener('keydown', klawisz);
     return () => window.removeEventListener('keydown', klawisz);
-  }, [aktywne, duplikuj, edycja, przesunZaznaczone, usunZaznaczone, ustawZazn, zamknijUstawienia]);
+  }, [aktywne, druk, duplikuj, edycja, przesunZaznaczone, ustawMenu, usunZaznaczone, ustawZazn]);
 
   // Miniatura pierwszej strony na liście projektów (bez obrazów – adresy blob: są chwilowe).
   const pierwszaStrona = kartki[0]?.wynik?.strony[0];
@@ -1249,15 +1278,20 @@ export function EdytorKartki({
     return dostepne.filter((s) => !slot || pasujeDoSlotu(s, slot, a.ustawienia.dopasowanie));
   };
   const arkuszZazn = aktywne && projekt.arkusze.find((a) => a.id === aktywne.arkuszId);
+  const arkuszDruku =
+    projekt.arkusze.find((a) => a.id === (wybranyArkuszDruku ?? pokazKartke)) ?? projekt.arkusze[0];
+  const arkuszBiezacy = druk ? arkuszDruku : arkuszZazn;
   const nowaKartka = pakiet
     ? () => {
         const nazwa = t('kartka.nazwaKartki', { numer: projekt.arkusze.length + 1 });
         // Własne karty: nowa kartka bez tytułu, z ustawieniami zaznaczonej (ten sam rozmiar kart).
         const wzor =
-          bezGry && arkuszZazn ? { nazwa, ustawienia: arkuszZazn.ustawienia } : pakiet.nowaKartka;
+          bezGry && arkuszBiezacy
+            ? { nazwa, ustawienia: arkuszBiezacy.ustawienia }
+            : pakiet.nowaKartka;
         const w = dodajKartke(projekt, wzor, nazwa, !bezGry);
         zmien((p) => dodajKartke(p, wzor, nazwa, !bezGry).projekt);
-        ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
+        ustawWybranyArkuszDruku(w.arkuszId);
       }
     : undefined;
   // Własne karty: nowa kartka dopasowana do rozmiaru szablonu (bez tytułu, papier jak zaznaczona).
@@ -1267,17 +1301,17 @@ export function EdytorKartki({
     if (!bezGry) {
       const w = kartkaDlaSzablonu(projekt, szablonId);
       if (w.projekt !== projekt) zmien((p) => kartkaDlaSzablonu(p, szablonId).projekt);
-      ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
+      ustawWybranyArkuszDruku(w.arkuszId);
       return;
     }
-    const papier = arkuszZazn?.ustawienia;
+    const papier = arkuszBiezacy?.ustawienia;
     const wzor = {
       nazwa: s.nazwa,
       ustawienia: ustawieniaKartkiDla(s, papier?.papier, papier?.wymiaryPapieru),
     };
     const w = dodajKartke(projekt, wzor, s.nazwa, false);
     zmien((p) => dodajKartke(p, wzor, s.nazwa, false).projekt);
-    ustawZazn({ rodzaj: 'ustawienia', arkuszId: w.arkuszId });
+    ustawWybranyArkuszDruku(w.arkuszId);
   };
   /** Karty kartki pogrupowane wg szablonu i wymiaru – lista „Na kartce” w trybie mieszanym. */
   const naKartce = (a: Arkusz) => {
@@ -1305,8 +1339,53 @@ export function EdytorKartki({
     }
     return [...grupy.values()];
   };
+
   let panel: React.ReactNode;
-  if (aktywne?.rodzaj === 'karty' && arkuszZazn && kontekst(arkuszZazn.id)) {
+  if (druk) {
+    if (arkuszDruku) {
+      const wynikDruku = kartki.find((k) => k.arkusz.id === arkuszDruku.id)?.wynik;
+      panel = (
+        <PanelUstawien
+          staly
+          kalibracja={kalibracja}
+          zmienKalibracje={zmienKalibracje}
+          kalibracjaRewersu={kalibracjaRewersu}
+          zmienKalibracjeRewersu={zmienKalibracjeRewersu}
+          warstwaTekstowaPdf={warstwaTekstowaPdf}
+          zmienWarstweTekstowaPdf={zmienWarstweTekstowaPdf}
+          key={arkuszDruku.id}
+          edycja={edycja}
+          arkusz={arkuszDruku}
+          arkusze={projekt.arkusze.map((a) => ({ id: a.id, nazwa: a.nazwa }))}
+          wybierzArkusz={(id) => {
+            ustawWybranyArkuszDruku(id);
+            ustawBladUkladu(undefined);
+          }}
+          zmienUklad={zmienUklad}
+          {...(wynikDruku ? { wynik: wynikDruku } : {})}
+          wydrukTestowy={() => wTle(() => wydrukTestowy(arkuszDruku))}
+          wydrukTestowyDwustronny={() => wTle(() => wydrukTestowyDwustronny(arkuszDruku))}
+          przelaczRozmiary={(trybRozm) => {
+            if (trybRozm === 'mieszane') zmienUklad((p) => naMieszane(p, arkuszDruku.id));
+            else if (zasoby) {
+              const ctxSiatki = {
+                czcionki: zasoby.czcionki,
+                obraz: (id: string) => zasoby.obrazy.get(id)?.info,
+              };
+              const { odlozone } = wrocDoSiatki(projekt, arkuszDruku.id, ctxSiatki);
+              zmien((p) => wrocDoSiatki(p, arkuszDruku.id, ctxSiatki).projekt);
+              if (odlozone > 0)
+                ustawToast({ tekst: tn('mieszane.odlozono', odlozone), cofnij: true });
+            }
+          }}
+          naKartce={naKartce(arkuszDruku)}
+          {...(bladUkladu ? { blad: bladUkladu } : {})}
+          {...(nowaKartka ? { nowaKartka } : {})}
+          kartkaDlaSzablonu={nowaKartkaDlaSzablonu}
+        />
+      );
+    }
+  } else if (aktywne?.rodzaj === 'karty' && arkuszZazn && kontekst(arkuszZazn.id)) {
     const ctx = kontekst(arkuszZazn.id)!;
     const naStronie = zaznaczoneKarty.filter((k) => k.strona === zaznaczoneKarty[0]?.strona);
     const od = Math.min(...naStronie.map((k) => k.kolumna));
@@ -1404,43 +1483,6 @@ export function EdytorKartki({
           zamknij={() => ustawZazn(undefined)}
         />
       );
-  } else if (aktywne?.rodzaj === 'ustawienia' && arkuszZazn) {
-    const wynikZazn = kartki.find((k) => k.arkusz.id === arkuszZazn.id)?.wynik;
-    panel = (
-      <PanelUstawien
-        kalibracja={kalibracja}
-        zmienKalibracje={zmienKalibracje}
-        kalibracjaRewersu={kalibracjaRewersu}
-        zmienKalibracjeRewersu={zmienKalibracjeRewersu}
-        warstwaTekstowaPdf={warstwaTekstowaPdf}
-        zmienWarstweTekstowaPdf={zmienWarstweTekstowaPdf}
-        key={arkuszZazn.id}
-        edycja={edycja}
-        arkusz={arkuszZazn}
-        zmienUklad={zmienUklad}
-        {...(wynikZazn ? { wynik: wynikZazn } : {})}
-        wydrukTestowy={() => wTle(() => wydrukTestowy(arkuszZazn))}
-        wydrukTestowyDwustronny={() => wTle(() => wydrukTestowyDwustronny(arkuszZazn))}
-        przelaczRozmiary={(tryb) => {
-          if (tryb === 'mieszane') zmienUklad((p) => naMieszane(p, arkuszZazn.id));
-          else if (zasoby) {
-            const ctxSiatki = {
-              czcionki: zasoby.czcionki,
-              obraz: (id: string) => zasoby.obrazy.get(id)?.info,
-            };
-            const { odlozone } = wrocDoSiatki(projekt, arkuszZazn.id, ctxSiatki);
-            zmien((p) => wrocDoSiatki(p, arkuszZazn.id, ctxSiatki).projekt);
-            if (odlozone > 0)
-              ustawToast({ tekst: tn('mieszane.odlozono', odlozone), cofnij: true });
-          }
-        }}
-        naKartce={naKartce(arkuszZazn)}
-        {...(bladUkladu ? { blad: bladUkladu } : {})}
-        {...(nowaKartka ? { nowaKartka } : {})}
-        kartkaDlaSzablonu={nowaKartkaDlaSzablonu}
-        zamknij={zamknijUstawienia}
-      />
-    );
   }
   panel ??= (
     <aside className="panel-edytora" aria-label={t('kartka.pomoc')}>
@@ -1526,6 +1568,24 @@ export function EdytorKartki({
   );
 
   // --- Widok.
+  const idProjektuUrl = encodeURIComponent(projekt.id);
+  const szablonPowrotu =
+    (pokazKartke
+      ? projekt.arkusze.find((a) => a.id === pokazKartke)?.wlasnySzablonId
+      : projekt.arkusze[0]?.wlasnySzablonId) ?? projekt.szablony[0]?.id;
+  const adresPowrotu = druk
+    ? pokazKartke
+      ? `#/projekt/${idProjektuUrl}/kartka/${encodeURIComponent(pokazKartke)}`
+      : `#/projekt/${idProjektuUrl}`
+    : bezGry && szablonPowrotu
+      ? `#/projekt/${idProjektuUrl}/szablon/${encodeURIComponent(szablonPowrotu)}`
+      : idPakietu && idPakietu !== PAKIET_WLASNY
+        ? `#/gra/${encodeURIComponent(idPakietu)}`
+        : '#/wlasne';
+  const adresDruku = pokazKartke
+    ? `#/projekt/${idProjektuUrl}/drukuj/${encodeURIComponent(pokazKartke)}`
+    : `#/projekt/${idProjektuUrl}/drukuj`;
+
   const naglowekProjektu = (
     <header className="pasek-gorny" role="banner">
       <a href="#/" className="logo">
@@ -1570,43 +1630,38 @@ export function EdytorKartki({
       >
         ↷
       </button>
-      <button
-        type="button"
-        ref={przyciskUstawien}
-        aria-pressed={aktywne?.rodzaj === 'ustawienia'}
-        disabled={projekt.arkusze.length === 0}
-        onClick={() => {
-          const arkuszId = aktywne?.arkuszId ?? projekt.arkusze[0]?.id;
-          ustawZazn(
-            aktywne?.rodzaj === 'ustawienia' || !arkuszId
-              ? undefined
-              : { rodzaj: 'ustawienia', arkuszId },
-          );
-        }}
-      >
-        ⚙ {t('kartka.ustawienia')}
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          zapiszPlik(
-            eksportujProjekt(projekt, edycja.dane),
-            'application/zip',
-            nazwaPliku(projekt.nazwa, ROZSZERZENIE_PROJEKTU),
-          )
-        }
-      >
-        ⤓ {t('projekty.eksportuj')}
-      </button>
-      <MenuPobierz
-        wylaczone={!zasoby || zajete}
-        pobierz={(co) =>
-          wTle(() => (co.rodzaj === 'pdf' ? pobierzPdf() : pobierzObrazy(co.rodzaj, co.format)))
-        }
-      />
-      <span role="status" aria-live="polite" className="status-pdf">
-        {statusPdf}
-      </span>
+      <a className="przycisk" href={adresPowrotu}>
+        {t('pasek.powrot')}
+      </a>
+      {druk ? (
+        <>
+          <button
+            type="button"
+            onClick={() =>
+              zapiszPlik(
+                eksportujProjekt(projekt, edycja.dane),
+                'application/zip',
+                nazwaPliku(projekt.nazwa, ROZSZERZENIE_PROJEKTU),
+              )
+            }
+          >
+            ⤓ {t('projekty.eksportuj')}
+          </button>
+          <MenuPobierz
+            wylaczone={!zasoby || zajete}
+            pobierz={(co) =>
+              wTle(() => (co.rodzaj === 'pdf' ? pobierzPdf() : pobierzObrazy(co.rodzaj, co.format)))
+            }
+          />
+          <span role="status" aria-live="polite" className="status-pdf">
+            {statusPdf}
+          </span>
+        </>
+      ) : (
+        <a className="przycisk glowny" href={adresDruku}>
+          {t('kartka.drukujKarty')}
+        </a>
+      )}
       <NarzedziaPaska />
     </header>
   );
@@ -1614,7 +1669,7 @@ export function EdytorKartki({
   return (
     <div className="edytor-kartki">
       {naglowekProjektu}
-      {kartkaImportu && (
+      {!druk && kartkaImportu && (
         <ImportDanych
           key={kartkaImportu.id}
           nazwaKartki={kartkaImportu.nazwa}
@@ -1688,9 +1743,18 @@ export function EdytorKartki({
           {aktualneKartki.map((k) => (
             <WidokKartki
               key={k.arkusz.id}
+              podgladDruku={druk}
+              onWybierzKartke={
+                druk && aktualneKartki.length > 1
+                  ? () => {
+                      ustawWybranyArkuszDruku(k.arkusz.id);
+                      ustawBladUkladu(undefined);
+                    }
+                  : undefined
+              }
               szablony={zasoby?.szablony}
               importujDane={
-                k.wynik && szablonyDoImportu(k.arkusz).length
+                !druk && k.wynik && szablonyDoImportu(k.arkusz).length
                   ? () => ustawImportTabeli(k.arkusz.id)
                   : undefined
               }
@@ -1812,6 +1876,8 @@ export function EdytorKartki({
 
 /** Jedna kartka: jej strony (SVG z silnika) z warstwą slotów, kart, nagłówków i podglądów. */
 function WidokKartki({
+  podgladDruku = false,
+  onWybierzKartke,
   szablony,
   importujDane,
   k,
@@ -1837,6 +1903,8 @@ function WidokKartki({
   wybierzKarte,
   wybierzNaglowek,
 }: {
+  podgladDruku?: boolean;
+  onWybierzKartke?: () => void;
   szablony: ReadonlyMap<string, Szablon> | undefined;
   importujDane: (() => void) | undefined;
   otworzMenu: (p: Polozenie) => void;
@@ -1885,7 +1953,12 @@ function WidokKartki({
     );
   }
   return (
-    <section className="kartka" data-kartka={k.arkusz.id} aria-label={k.arkusz.nazwa}>
+    <section
+      className="kartka"
+      data-kartka={k.arkusz.id}
+      aria-label={k.arkusz.nazwa}
+      onClick={onWybierzKartke}
+    >
       {wiele && <h2 className="tytul-kartki">{k.arkusz.nazwa}</h2>}
       {Array.from({ length: Math.max(liczbaStron, k.svg.length) }, (_, s) => {
         const naStronie = karty.filter((x) => x.strona === s);
@@ -1953,7 +2026,7 @@ function WidokKartki({
                 />
               </div>
             )}
-            {drukarniaAktywna && szerStrony && wysStrony && (
+            {!podgladDruku && drukarniaAktywna && szerStrony && wysStrony && (
               <div className="warstwa">
                 {pozycjeDrukarni.map((p) => {
                   const nazwa =
@@ -1986,7 +2059,7 @@ function WidokKartki({
                 })}
               </div>
             )}
-            {g && !drukarniaAktywna && mieszane && (
+            {!podgladDruku && g && !drukarniaAktywna && mieszane && (
               <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
                 {mieszane.wolne.map((w, i) =>
                   w.strona !== s ? null : (
@@ -2097,7 +2170,7 @@ function WidokKartki({
                   })()}
               </div>
             )}
-            {g && !drukarniaAktywna && !mieszane && (
+            {!podgladDruku && g && !drukarniaAktywna && !mieszane && (
               <div className="warstwa" onPointerDown={(e) => poczatekGestu(e, k, s)}>
                 {Array.from({ length: g.siatka.rzedy }, (_, r) =>
                   Array.from({ length: g.siatka.kolumny }, (_, c) =>
@@ -2271,7 +2344,7 @@ function WidokKartki({
                     procent: polePol > 0 ? Math.round((zajetePole / polePol) * 100) : 0,
                   })
                 : t('kartka.strona', { numer: s + 1, liczba: liczbaStron })}
-              {!drukarniaAktywna && pusta && liczbaStron > 1 && (
+              {!podgladDruku && !drukarniaAktywna && pusta && liczbaStron > 1 && (
                 <button type="button" className="usun-strone" onClick={() => usunStrone(s)}>
                   {t('kartka.usunStrone')}
                 </button>
@@ -2308,7 +2381,7 @@ function WidokKartki({
           </div>
         );
       })}
-      {!mieszane && !k.arkusz.ustawienia.drukarnia?.wlaczony && (
+      {!podgladDruku && !mieszane && !k.arkusz.ustawienia.drukarnia?.wlaczony && (
         <button type="button" className="dodaj-strone" onClick={dodajStrone}>
           ＋ {t('kartka.dodajStrone')}
         </button>
