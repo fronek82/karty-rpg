@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
+import { otworzUstawieniaAplikacji } from './pomoc';
 
 /**
  * Kuratorowana galeria szablonów online i import z linku URL (M5-3):
@@ -117,8 +118,10 @@ test('import szablonu z linku URL (walidacja, błąd HTTP, poprawna paczka) oraz
   await expect(sekcja.getByRole('alert')).toBeVisible();
 
   // Przełączenie na angielski i ciemny motyw.
-  await page.getByRole('button', { name: 'EN' }).click();
-  await page.getByRole('button', { name: /Dark|Ciemny/i }).click();
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst.getByRole('button', { name: 'EN', exact: true }).click();
+  await menuUst.getByRole('button', { name: /Dark theme|Motyw ciemny/i }).click();
+  await page.keyboard.press('Escape');
   await expect(
     sekcja.getByRole('heading', { level: 2, name: /Online template gallery/ }),
   ).toBeVisible();

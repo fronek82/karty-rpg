@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { ADRES_CLAUDE_API, KLUCZ_STORAGE_AI } from '../src/dane/aiUklad';
+import { otworzUstawieniaAplikacji } from './pomoc';
 
 /**
  * M5-2: rozpoznawanie układu karty ze zdjęcia przez Claude API (zapisana odpowiedź offline):
@@ -75,11 +76,13 @@ test('układ ze zdjęcia (AI): błąd klucza, rozpoznanie z zapisanej odpowiedzi
   await expect(page.getByTestId('podglad-szablonu-ai').locator('svg')).toBeVisible();
 
   // EN + ciemny motyw przed otwarciem edytora oraz usunięcie zapisanego klucza.
-  await page
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
-  await page.getByRole('button', { name: /Dark theme|Ciemny motyw/ }).click();
+  await menuUst.getByRole('button', { name: /Dark theme|Motyw ciemny/ }).click();
+  await page.keyboard.press('Escape');
   await expect(
     page.getByRole('heading', { level: 1, name: 'Card layout from photo (AI)' }),
   ).toBeVisible();

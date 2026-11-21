@@ -246,9 +246,13 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
   await page.reload();
   const ustPo = panelDruku(page);
   await expect(ustPo).toBeVisible({ timeout: 15000 });
-  await expect(page.locator('.strona-kartki svg path').first()).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.strona-kartki svg.svg-strony').first()).toBeVisible({
+    timeout: 15000,
+  });
   expect(wywolaniaZewnetrzne).toBe(przedPrzeladowaniem);
-  expect(await page.locator('.strona-kartki svg path').count()).toBeGreaterThan(20);
+  await expect
+    .poll(() => page.locator('.strona-kartki svg path').count(), { timeout: 15000 })
+    .toBeGreaterThan(20);
 
   await expect(ustPo.locator('fieldset.sekcja-czcionek select').first()).toHaveValue('Almendra');
   const katalogPo = ustPo.locator('details.katalog-google-fonts');

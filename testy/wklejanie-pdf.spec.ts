@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { zapisano } from './pomoc';
+import { otworzUstawieniaAplikacji, zapisano } from './pomoc';
 import { dodaj, kreator } from './szablonUI';
 
 /**
@@ -91,10 +91,12 @@ test('wklejanie tekstu z PDF czyści złamania w edytorze szablonu i na karcie, 
   await expect(poleOpisu).toHaveValue(`Wstęp: ${OCZEKIWANY_TEKST}`);
   await zapisano(page);
 
-  await page
+  const menuUst = await otworzUstawieniaAplikacji(page);
+  await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
+  await page.keyboard.press('Escape');
   const panelEn = page.getByRole('complementary', { name: 'Selected cards' });
   const poleEn = panelEn.getByLabel('Opis');
   await poleEn.fill('A [X] B');
