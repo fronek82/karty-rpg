@@ -1059,7 +1059,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   overflow-wrap: anywhere;
 }
 
-.etykieta-strony {
+.znacznik-strony-karty {
   flex-shrink: 0;
   font-size: 0.72rem;
   font-weight: 600;
@@ -1071,7 +1071,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   background: var(--tlo);
 }
 
-.etykieta-strony-rewers {
+.znacznik-strony-karty-rewers {
   border-color: var(--zaznaczenie);
   color: var(--zaznaczenie);
 }

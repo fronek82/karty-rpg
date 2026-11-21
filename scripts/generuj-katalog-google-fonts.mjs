@@ -121,16 +121,23 @@ async function main() {
         ? f.designers.join(', ')
         : 'Google Fonts';
     const polskie = f.subsets.includes('latin-ext') ? 1 : 0;
+    const popularnosc = typeof f.popularity === 'number' ? f.popularity : 999_999;
     // Format krotki: [rodzina, kategoriaKod, autor, grupaKod, katalog, polskieZnaki, warianty]
-    pozycje.push([f.family, katKod, autor, GRUPY[traf.grupa], traf.katalog, polskie, warianty]);
+    pozycje.push({
+      popularnosc,
+      krotka: [f.family, katKod, autor, GRUPY[traf.grupa], traf.katalog, polskie, warianty],
+    });
   }
 
-  pozycje.sort((a, b) => a[0].localeCompare(b[0], 'en'));
+  pozycje.sort(
+    (a, b) => a.popularnosc - b.popularnosc || a.krotka[0].localeCompare(b.krotka[0], 'en'),
+  );
+  const krotki = pozycje.map((p) => p.krotka);
 
   const cel = resolve('src/dane/katalogGoogleFonts.json');
-  writeFileSync(cel, `${JSON.stringify(pozycje)}\n`, 'utf8');
-  const zPolskimi = pozycje.filter((p) => p[5] === 1).length;
-  console.log(`Zapisano ${pozycje.length} rodzin (${zPolskimi} z polskimi znakami) do ${cel}`);
+  writeFileSync(cel, `${JSON.stringify(krotki)}\n`, 'utf8');
+  const zPolskimi = krotki.filter((p) => p[5] === 1).length;
+  console.log(`Zapisano ${krotki.length} rodzin (${zPolskimi} z polskimi znakami) do ${cel}`);
 }
 
 main().catch((e) => {

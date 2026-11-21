@@ -305,7 +305,9 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                     <a href={poz.href} className="nazwa">
                       {poz.nazwa}
                     </a>
-                    <span className={`etykieta-strony etykieta-strony-${poz.typStrony}`}>
+                    <span
+                      className={`znacznik-strony-karty znacznik-strony-karty-${poz.typStrony}`}
+                    >
                       {czyRewers ? t('projekty.stronaRewers') : t('projekty.stronaAwers')}
                     </span>
                   </div>
