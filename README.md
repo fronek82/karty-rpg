@@ -2,8 +2,8 @@
 
 Aplikacja przeglądarkowa do projektowania i drukowania kart do gier RPG i planszowych.
 Specyfikację znajdziesz w [`SPEC.md`](SPEC.md). Plany opisują [interfejs](docs/plan-UI.md),
-[M2](docs/plan-M2.md), [M2b](docs/plan-M2b.md), [M2c](docs/plan-M2c.md), [M3](docs/plan-M3.md)
-i ukończone [M4](docs/plan-M4.md).
+[M2](docs/plan-M2.md), [M2b](docs/plan-M2b.md), [M2c](docs/plan-M2c.md), [M3](docs/plan-M3.md),
+[M4](docs/plan-M4.md) i ukończone [M5](docs/plan-M5.md).
 
 **Aplikacja online:** <https://fronek82.github.io/karty-rpg/>. Działa w całości w przeglądarce;
 projekty zostają na Twoim komputerze (IndexedDB).
@@ -132,6 +132,28 @@ Przykładowe szablony do wypróbowania (do testów, nie gotowe pakiety gier):
   o własnej licencji.
 
 [Neutralne przykłady M4 w PL i EN, w obu motywach](docs/obrazy/m4-7/README.md).
+
+## Wklejanie z PDF, AI, galeria online i warstwa tekstowa PDF
+
+- **Automatyczne czyszczenie tekstu wklejanego z PDF**: przy wklejaniu (`Ctrl+V` / `Cmd+V`) do
+  wielowierszowych pól karty i szablonu aplikacja usuwa sztuczne złamania wiersza i łączy wyrazy
+  podzielone dywizem, zachowując puste linie między akapitami oraz listy numerowane i punktowane
+  (z możliwością cofnięcia `Ctrl+Z`).
+- **Układ karty ze zdjęcia (AI)**: na ekranie **„Stwórz własne karty” → „Układ ze zdjęcia (AI)”**
+  wyślesz zdjęcie karty do Claude API z własnym kluczem przechowywanym wyłącznie lokalnie w tej
+  przeglądarce. Model zwraca wyłącznie strukturę i proporcje pól (bez kopiowania grafik i treści),
+  którą obejrzysz na podglądzie SVG i otworzysz w edytorze szablonu.
+- **Galeria szablonów online i import z URL**: na ekranie **„Stwórz własne karty”** znajdziesz
+  kuratorowaną galerię neutralnych szablonów i rewersów na licencji MIT (filtrowanie, wyszukiwanie,
+  podgląd awersu i rewersu, zapis do lokalnej biblioteki, praca offline po pobraniu) oraz formularz
+  **„Importuj szablon z linku (URL)”**.
+- **Opcjonalna warstwa tekstowa w PDF**: w **Ustawieniach → Opcje PDF** włączysz **„Niewidoczną
+  warstwę tekstową w PDF (wyszukiwanie i kopiowanie)”** (`3 Tr`), umożliwiającą wyszukiwanie
+  (`Ctrl+F`) i kopiowanie polskich znaków bez jakiejkolwiek zmiany w wyglądzie kart.
+- **Instrukcja PL i EN**: statyczna strona [`instrukcja/`](instrukcja/index.html) obejmuje pełny
+  zakres funkcji M1–M5 wraz z odświeżonymi zrzutami ekranu.
+
+[Neutralne przykłady M5 w PL i EN, w obu motywach](docs/obrazy/m5-6/README.md).
 
 ## Ozdobniki
 

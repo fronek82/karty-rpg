@@ -184,7 +184,10 @@ export function KreatorAiStrona() {
           dane: rozpoznany.przyklad ?? {},
         };
         const wynik = renderujKarte(rozpoznany, karta, { czcionki });
-        ustawPodgladSvg({ id: rozpoznany.id, svg: scenaDoSvg(wynik.scena) });
+        ustawPodgladSvg({
+          id: rozpoznany.id,
+          svg: scenaDoSvg(wynik.scena, { przedrostekId: 'ai-' }),
+        });
       })
       .catch(() => {
         if (aktualne) ustawPodgladSvg(undefined);
