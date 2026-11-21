@@ -28,6 +28,7 @@ import {
   migruj,
   przygotujProjekt,
   schematPaczkiOzdobnika,
+  schematPaczkiRewersu,
   schematPlikuSzablonu,
   teksturySzablonu,
   zasobySzablonu,
@@ -536,5 +537,122 @@ export function dodajSzablon(
     zasoby: noweZasoby,
     szablonId: szablon.id,
     ostrzezenia,
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Pojedynczy rewers (paczka do biblioteki globalnej rewersów w przeglądarce)
+
+const PLIK_REWERSU = 'rewers.json';
+
+export interface PaczkaRewersu {
+  rewers: Rewers;
+  role: Record<string, string>;
+  zasoby: OpisZasobu[];
+  dane: DaneZasobow;
+  biblioteka?: ElementOzdobny[];
+}
+
+/** Pakuje rewers wraz z użytymi czcionkami, obrazami i ozdobnikami do samodzielnego archiwum ZIP. */
+export function eksportujRewers(projekt: Projekt, dane: DaneZasobow, rewersId: string): Uint8Array {
+  const rewers = projekt.rewersy?.find((r) => r.id === rewersId);
+  if (!rewers) throw new BladDanych(t('dane.nieznanyRewers', { id: rewersId }));
+  const role: Record<string, string> = {};
+  const rodziny = new Set<string>();
+  for (const nazwa of new Set(czcionkiSzablonu(rewers))) {
+    const rodzina = projekt.role[nazwa];
+    if (rodzina !== undefined) role[nazwa] = rodzina;
+    rodziny.add(rodzina ?? nazwa);
+  }
+  const obrazy = new Set(zasobyObrazowSzablonu(rewers, elementyProjektu(projekt)));
+  const uzyte = projekt.zasoby.filter((o) =>
+    o.rodzaj === 'czcionka' ? rodziny.has(o.rodzina) : obrazy.has(o.id),
+  );
+  const biblioteka = [
+    ...new Map(elementyUzyteWSzablonie(projekt, rewers).map((o) => [o.id, o])).values(),
+  ];
+  return spakuj(
+    {
+      wersja: 1,
+      rewers,
+      role,
+      zasoby: uzyte,
+      ...(biblioteka.length > 0 ? { biblioteka } : {}),
+    },
+    PLIK_REWERSU,
+    uzyte.map((o) => [o, bajtyZasobu(dane, o.id)]),
+  );
+}
+
+/** Rozpakowuje i waliduje samodzielną paczkę rewersu. */
+export function importujRewers(bajty: Uint8Array): PaczkaRewersu {
+  const pliki = rozpakuj(bajty, PLIK_REWERSU);
+  const plik = sprawdz(schematPaczkiRewersu, odczytajJson(pliki, PLIK_REWERSU)) as Omit<
+    PaczkaRewersu,
+    'dane'
+  >;
+  const gdzie = t('dane.gdzie.rewers', { id: plik.rewers.id });
+  const widziane = new Set<string>();
+  for (const w of wszystkieWezly(plik.rewers)) {
+    if (widziane.has(w.id)) throw new BladDanych(t('dane.powtorzonyId', { id: w.id, gdzie }));
+    widziane.add(w.id);
+  }
+  const obraz = new Set(plik.zasoby.filter((o) => o.rodzaj === 'obraz').map((o) => o.id));
+  for (const id of zasobySzablonu(plik.rewers))
+    if (!obraz.has(id)) throw new BladDanych(t('dane.nieznanyZasob', { gdzie, id }));
+  for (const id of odwolaniaDoElementow(plik.rewers)) {
+    const element = znajdzElement(id, plik.biblioteka);
+    if (!element) throw new BladDanych(t('dane.nieznanyElement', { gdzie, id }));
+    const z = element.ramka9?.zrodlo;
+    if (z?.typ === 'obraz' && !obraz.has(z.zasob))
+      throw new BladDanych(t('dane.ramka9BezObrazu', { id, zasob: z.zasob }));
+  }
+  return { ...plik, dane: zbierzZasoby(pliki, PLIK_REWERSU, plik.zasoby) };
+}
+
+/**
+ * Dołącza rewers z paczki (wraz z jego czcionkami, obrazami i ozdobnikami) do docelowego projektu.
+ * Kolizje identyfikatorów zasobów, ozdobników i samego rewersu są rozwiązywane przez bezpieczne przemianowanie.
+ */
+export function dodajRewersZPaczki(
+  projekt: Projekt,
+  dane: DaneZasobow,
+  paczka: PaczkaRewersu,
+): { projekt: Projekt; dane: DaneZasobow; rewersId: string } {
+  const { noweZasoby, opisy, przemianowane } = dolaczZasobyPaczki(projekt, dane, paczka);
+  const rewers = structuredClone(paczka.rewers);
+  if (rewers.teksturaTla) {
+    rewers.teksturaTla = przemianowane.get(rewers.teksturaTla) ?? rewers.teksturaTla;
+  }
+  for (const w of wszystkieWezly(rewers)) {
+    if (czyKontener(w) && w.teksturaTla)
+      w.teksturaTla = przemianowane.get(w.teksturaTla) ?? w.teksturaTla;
+    if (w.typ === 'obraz' && w.zasob) w.zasob = przemianowane.get(w.zasob) ?? w.zasob;
+  }
+  const uzyte = new Set(odwolaniaDoElementow(rewers).filter((id) => !czyWbudowany(id)));
+  const bibliotekaPaczki = (paczka.biblioteka ?? []).map((e) =>
+    przepiszObrazRamki(e, przemianowane),
+  );
+  const elementy = dolaczElementy(projekt, bibliotekaPaczki, uzyte);
+  przepiszOdwolania(rewers, elementy.mapa);
+  const role = { ...projekt.role };
+  for (const [rola, rodzina] of Object.entries(paczka.role)) {
+    if (role[rola] === undefined) role[rola] = rodzina;
+  }
+  rewers.id = unikalneId(rewers.id, new Set((projekt.rewersy ?? []).map((r) => r.id)));
+  const wynik: Projekt = {
+    ...projekt,
+    rewersy: [...(projekt.rewersy ?? []), rewers],
+    role,
+    zasoby: opisy,
+    ...(elementy.lista.length > 0
+      ? { biblioteka: { ...projekt.biblioteka, ozdobniki: elementy.lista } }
+      : {}),
+    zmieniono: new Date().toISOString(),
+  };
+  return {
+    projekt: przygotujProjekt(wynik),
+    dane: noweZasoby,
+    rewersId: rewers.id,
   };
 }

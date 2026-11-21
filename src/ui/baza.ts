@@ -149,5 +149,7 @@ export async function nowyProjektZRewersem(
     ? przypiszRewers(zRewersem, { rodzaj: 'talia', id: taliaId }, rewersId)
     : zRewersem;
   const id = await zapiszNowyProjekt(projekt, zasoby);
+  const { zapiszRewersGlobalnie } = await import('./rewersyGlobalne');
+  await zapiszRewersGlobalnie(projekt, zasoby, rewersId).catch(() => undefined);
   return { id, rewersId };
 }

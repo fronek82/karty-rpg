@@ -61,6 +61,11 @@ import { PoleRamki } from './PanelWygladu';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWyrownania } from './PanelWyrownania';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
+import {
+  dolaczRewersGlobalnyDoProjektu,
+  PRZEDROSTEK_OPCJI_GLOBALNEJ,
+  useRewersyGlobalne,
+} from '../rewersyGlobalne';
 import { przygotujPlikObrazu } from '../obrazy';
 import {
   budujCele,
@@ -971,6 +976,7 @@ function PanelKarty({
   zmienRozmiar: (szer: number, wys: number) => boolean;
 }) {
   const { projekt, zmien } = edycja;
+  const { rewersyGlobalne } = useRewersyGlobalne(projekt);
   const r = szablon.rozmiar;
   const [blad, ustawBlad] = useState(false);
   const { szer, wys } = wymiaryKarty(szablon);
@@ -1184,6 +1190,16 @@ function PanelKarty({
             value={wartoscRewersu}
             onChange={(e) => {
               const v = e.target.value;
+              if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
+                const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
+                const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
+                if (wpis) {
+                  void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
+                    przypiszRewers(p, { rodzaj: 'szablon', id: szablon.id }, rid),
+                  ).catch(() => undefined);
+                }
+                return;
+              }
               const nowy = v === '' ? undefined : v === '__brak__' ? null : v;
               zmien((p) => przypiszRewers(p, { rodzaj: 'szablon', id: szablon.id }, nowy));
             }}
@@ -1195,6 +1211,15 @@ function PanelKarty({
                 {x.nazwa}
               </option>
             ))}
+            {rewersyGlobalne.length > 0 && (
+              <optgroup label={t('rewersy.globalneGrupa')}>
+                {rewersyGlobalne.map((w) => (
+                  <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
+                    {w.nazwa}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
         <PodgladRewersu

@@ -658,6 +658,14 @@ export const schematPaczkiOzdobnika = obj({
   zasoby: z.array(opisZasobu).max(1),
 });
 
+export const schematPaczkiRewersu = obj({
+  wersja: z.literal(1),
+  rewers: schematRewersu,
+  role: z.record(z.string(), z.string()),
+  zasoby: z.array(opisZasobu),
+  biblioteka: opc(z.array(elementOzdobny).max(MAKS_ELEMENTOW_BIBLIOTEKI)),
+});
+
 export const schematPlikuSzablonu = obj({
   wersja: calkowita,
   szablon,

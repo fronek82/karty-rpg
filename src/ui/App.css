@@ -295,6 +295,11 @@ textarea:focus-visible {
   .start-kolumny {
     grid-template-columns: 260px minmax(0, 1fr) 240px;
   }
+
+  .start-kolumny > .start-menu,
+  .start-kolumny > .panel-importu {
+    padding-top: 1.5rem;
+  }
 }
 
 .etykieta-sekcji {
@@ -3097,4 +3102,10 @@ button.maly {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.9rem;
+}
+
+.sekcja-rewersow-globalnych {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--obramowanie);
 }

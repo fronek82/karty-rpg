@@ -30,6 +30,11 @@ import { przypiszRewers } from '../../dane/rewers';
 import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
 import { RewersyProjektu } from '../rewers/RewersyProjektu';
+import {
+  dolaczRewersGlobalnyDoProjektu,
+  PRZEDROSTEK_OPCJI_GLOBALNEJ,
+  useRewersyGlobalne,
+} from '../rewersyGlobalne';
 import { KatalogGoogleFonts } from './KatalogGoogleFonts';
 import { PanelUkladu } from './PanelUkladu';
 import { PoleLiczby } from './PoleLiczby';
@@ -121,6 +126,7 @@ export function PanelUstawien({
   blad?: string;
 }) {
   const { projekt, zmien } = edycja;
+  const { rewersyGlobalne } = useRewersyGlobalne(projekt);
   const u = arkusz.ustawienia;
   const [bladCzcionki, ustawBladCzcionki] = useState<string>();
   const [status, ustawStatus] = useState('');
@@ -571,11 +577,20 @@ export function PanelUstawien({
             <select
               aria-label={t('rewers.przypisanieTalia')}
               value={typeof talia.rewersId === 'string' ? talia.rewersId : ''}
-              onChange={(e) =>
-                zmien((p) =>
-                  przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, e.target.value || undefined),
-                )
-              }
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
+                  const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
+                  const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
+                  if (wpis) {
+                    void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
+                      przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, rid),
+                    ).catch(() => undefined);
+                  }
+                  return;
+                }
+                zmien((p) => przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, v || undefined));
+              }}
             >
               <option value="">{t('rewers.brakPrzypisania')}</option>
               {(projekt.rewersy ?? []).map((r) => (
@@ -583,6 +598,15 @@ export function PanelUstawien({
                   {r.nazwa}
                 </option>
               ))}
+              {rewersyGlobalne.length > 0 && (
+                <optgroup label={t('rewersy.globalneGrupa')}>
+                  {rewersyGlobalne.map((w) => (
+                    <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
+                      {w.nazwa}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
           <PodgladRewersu
