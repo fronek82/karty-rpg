@@ -17,7 +17,7 @@ const wymiaryPng = (b: Uint8Array) => {
 
 test('diagram wymiarów pokazuje całą siatkę i prowadzi do edycji pola', async ({ page }) => {
   const ust = await kartkaCzaru(page);
-  await ust.getByRole('button', { name: 'własny układ arkusza' }).click();
+  await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
   await ust.getByLabel('Margines lewy (mm)').fill('5');
   await ust.getByLabel('Margines górny (mm)').fill('10');
   await ust.getByLabel('Odstęp poziomy (mm)').fill('3');
@@ -103,7 +103,7 @@ test('diagram małego slotu rozdziela etykiety rozmiaru i zerowego odstępu', as
   await nowaPustaKartka(page);
   await page.getByRole('button', { name: /Ustawienia/ }).click();
   const ust = page.getByRole('complementary', { name: 'Ustawienia' });
-  await ust.getByRole('button', { name: 'własny układ arkusza' }).click();
+  await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
   await ust.getByText('Podgląd wymiarów', { exact: true }).click();
   const podpis = (pole: string) => ust.locator(`.podglad-wymiarow svg text[data-pole="${pole}"]`);
   const rozmiar = podpis('uklad-szerokosc');
@@ -128,12 +128,9 @@ test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem,
   page,
 }) => {
   const ust = await kartkaCzaru(page);
-  const tryb = ust.getByRole('group', { name: 'Układ kart na kartce' });
-  await tryb.getByRole('button', { name: 'własny układ arkusza' }).click();
-  await expect(tryb.getByRole('button', { name: 'własny układ arkusza' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  const tryb = ust.getByLabel('Układ kart na kartce');
+  await tryb.selectOption('wlasny');
+  await expect(tryb).toHaveValue('wlasny');
   // Start z bieżącej siatki (A4 pionowo, 3×3).
   await expect(ust.getByLabel('Kolumny')).toHaveValue('3');
   await expect(ust.getByLabel('Rzędy')).toHaveValue('3');
@@ -167,7 +164,7 @@ test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem,
   await ust.getByLabel('Nowa nazwa układu „Perforacja 3×3”').press('Enter');
   await expect(ust.locator('.moje-uklady')).toContainText('Arkusz z perforacją');
   await expect(ust.locator('.moje-uklady')).toContainText('A4 (210 × 297 mm), karta 63×88 mm, 3×3');
-  await tryb.getByRole('button', { name: 'automatyczny' }).click();
+  await tryb.selectOption('auto');
   await expect(ust.getByLabel('Kolumny')).toHaveCount(0);
   await ust.getByRole('button', { name: 'Użyj układu Arkusz z perforacją' }).click();
   await expect(ust.getByLabel('Odstęp poziomy (mm)')).toHaveValue('4');
@@ -235,8 +232,7 @@ test('luz karty w slocie (M2b-1): 63×88 w slocie 63,5×89 bez ostrzeżeń, luz 
   page,
 }) => {
   const ust = await kartkaCzaru(page);
-  const tryb = ust.getByRole('group', { name: 'Układ kart na kartce' });
-  await tryb.getByRole('button', { name: 'własny układ arkusza' }).click();
+  await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
   const sekcja = ust.getByRole('group', { name: 'Karta w slocie' });
   // Nowa kartka: luz 1 mm.
   await expect(sekcja.getByLabel('Luz (mm)')).toHaveValue('1');

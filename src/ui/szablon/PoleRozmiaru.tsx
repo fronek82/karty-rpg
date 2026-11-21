@@ -55,16 +55,16 @@ export function PoleRozmiaru({
     );
   return (
     <div className="pole-panelu pole-rozmiaru">
-      <span id={`${id}-etykieta`}>{etykieta}</span>
-      <div className="przelacznik-segmentowy" role="group" aria-labelledby={`${id}-etykieta`}>
+      <label htmlFor={`${id}-tryb`}>{etykieta}</label>
+      <select id={`${id}-tryb`} value={tryb} onChange={(e) => ustawTryb(e.target.value as Tryb)}>
         {(['domyslnie', 'auto', 'wypelnij', 'mm', 'procent'] as const)
           .filter((x) => x !== 'wypelnij' || !bezWypelnij || tryb === 'wypelnij')
           .map((x) => (
-            <button key={x} type="button" aria-pressed={tryb === x} onClick={() => ustawTryb(x)}>
+            <option key={x} value={x}>
               {t(`rozmiar.tryb.${x}`)}
-            </button>
+            </option>
           ))}
-      </div>
+      </select>
       {tryb !== 'auto' && tryb !== 'domyslnie' && (
         <PoleLiczby
           key={tryb}

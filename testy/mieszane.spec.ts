@@ -157,31 +157,23 @@ test('przełącznik w ustawieniach: jeden rozmiar ↔ mieszane, własny układ z
   await expect(page.locator('.kartka')).toHaveCount(2);
   await page.getByRole('button', { name: 'Zamknij ustawienia' }).click();
   await page.getByRole('button', { name: /Ustawienia/ }).click();
-  const rozmiary = ust.getByRole('group', { name: 'Rozmiary kart na kartce' });
-  const uklad = ust.getByRole('group', { name: 'Układ kart na kartce' });
-  await expect(rozmiary.getByRole('button', { name: /jeden rozmiar/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
-  await expect(uklad.getByRole('button', { name: 'własny układ arkusza' })).toBeEnabled();
+  const rozmiary = ust.getByLabel('Rozmiary kart na kartce');
+  const uklad = ust.getByLabel('Układ kart na kartce');
+  await expect(rozmiary).toHaveValue('jeden');
+  await expect(uklad.locator('option[value="wlasny"]')).toBeEnabled();
 
-  await rozmiary.getByRole('button', { name: 'mieszane' }).click();
-  await expect(rozmiary.getByRole('button', { name: 'mieszane' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  await rozmiary.selectOption('mieszane');
+  await expect(rozmiary).toHaveValue('mieszane');
   // Własny układ zablokowany, ostrzeżenie o ignorowanych przypięciach.
-  await expect(uklad.getByRole('button', { name: 'własny układ arkusza' })).toBeDisabled();
+  await expect(uklad.locator('option[value="wlasny"]')).toBeDisabled();
   await expect(ust.getByRole('note')).toContainText('działa tylko z jednym rozmiarem');
   await expect(ust.getByRole('note')).toContainText('Przypięcia kart w slotach');
   await expect(ust.getByText('Arkana · 70×120 · 1 szt.')).toBeVisible();
 
   // Opcje: kolejność własna, obracanie, odstęp.
-  await ust.getByRole('button', { name: 'własna (przeciąganie)' }).click();
-  await expect(ust.getByRole('button', { name: 'własna (przeciąganie)' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  const kolejnosc = ust.getByLabel('Kolejność rozmieszczania');
+  await kolejnosc.selectOption('wlasna');
+  await expect(kolejnosc).toHaveValue('wlasna');
   await ust.getByLabel('Obracaj karty o 90°, gdy oszczędza to papier').check();
   await ust.getByLabel('Odstęp między kartami (mm)').fill('2');
 
@@ -198,8 +190,8 @@ test('przełącznik w ustawieniach: jeden rozmiar ↔ mieszane, własny układ z
   await expect(ust.getByText('Czar · 63×88 · 1 szt.')).toBeVisible();
 
   // Powrót do siatki: karty znowu w slotach, własny układ znów dostępny.
-  await rozmiary.getByRole('button', { name: /jeden rozmiar/ }).click();
-  await expect(uklad.getByRole('button', { name: 'własny układ arkusza' })).toBeEnabled();
+  await rozmiary.selectOption('jeden');
+  await expect(uklad.locator('option[value="wlasny"]')).toBeEnabled();
   await expect(kartka.locator('.slot')).not.toHaveCount(0);
   await expect(kartka.locator('[data-karta]')).toHaveCount(2);
 });

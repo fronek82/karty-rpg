@@ -154,8 +154,7 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
   await expect(page.locator('details.ostrzezenia-projektu')).toBeVisible();
 
   // Przełącz układ na „Jedna karta na stronę” i pobierz PDF o wymiarach 83×108 mm.
-  const grupaUkladu = ust.getByRole('group', { name: 'Układ drukarski' });
-  await grupaUkladu.getByRole('button', { name: 'Jedna karta na stronę', exact: true }).click();
+  await ust.getByLabel('Układ drukarski').selectOption('pojedyncza');
   await zapisano(page);
 
   const [pobranie] = await Promise.all([
@@ -184,11 +183,7 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
   await page.getByRole('button', { name: /Ustawienia/ }).click();
   const ustPo = page.getByRole('complementary', { name: 'Ustawienia' });
   await expect(ustPo.getByLabel('Przygotuj do drukarni (spad i znaczniki cięcia)')).toBeChecked();
-  await expect(
-    ustPo
-      .getByRole('group', { name: 'Układ drukarski' })
-      .getByRole('button', { name: 'Jedna karta na stronę', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  await expect(ustPo.getByLabel('Układ drukarski')).toHaveValue('pojedyncza');
 
   // EN + ciemny motyw.
   await page
@@ -200,10 +195,6 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
   await expect(ustEn.getByLabel('Prepare for print shop (bleed and crop marks)')).toBeChecked();
   await expect(ustEn.getByLabel('Bleed (mm)')).toHaveValue('3');
   await expect(ustEn.getByLabel('Crop marks', { exact: true })).toBeChecked();
-  await expect(
-    ustEn
-      .getByRole('group', { name: 'Print layout' })
-      .getByRole('button', { name: 'One card per page', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  await expect(ustEn.getByLabel('Print layout')).toHaveValue('pojedyncza');
   await expect(ustEn.getByText(/below 300 dpi/)).toBeVisible();
 });

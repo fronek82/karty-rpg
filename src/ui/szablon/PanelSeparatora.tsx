@@ -4,7 +4,7 @@ import { t } from '../../i18n';
 import type { Pole, PoleSeparator } from '../../model/szablon';
 import { ODSTEP_OZDOBY_DOMYSLNY, znajdzElement, type ElementOzdobny } from '../../ozdobniki';
 import { elementyRodzaju, useElementyWlasne } from './elementyWlasne';
-import { Liczba, PoleKoloru, Przelacznik, Sekcja } from './Kontrolki';
+import { Liczba, Lista, PoleKoloru, Przelacznik, Sekcja } from './Kontrolki';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { nazwaElementu } from './PanelWygladu';
 
@@ -147,7 +147,7 @@ export function PanelSeparatora({
         </div>
       )}
       {!motywDziala && (
-        <Przelacznik
+        <Lista
           etykieta={t('wlasciwosci.stylLinii')}
           opcje={(['ciagla', 'przerywana', 'kropkowana', 'podwojna'] as const).map((s) => ({
             wartosc: s,

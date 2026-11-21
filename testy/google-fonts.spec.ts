@@ -168,23 +168,38 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
     .fill('Zażółć gęślą jaźń ĄĆĘŁŃÓŚŹŻ');
   await zapisano(page);
 
+  const bledyStrony: Error[] = [];
+  page.on('pageerror', (err) => bledyStrony.push(err));
+  let trybSieci: 'blad' | 'ok' | 'offline' = 'blad';
+  let wywolaniaZewnetrzne = 0;
+
+  await page.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, async (route) => {
+    if (trybSieci === 'offline') {
+      await route.abort('internetdisconnected');
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'text/css; charset=utf-8', body: '' });
+  });
+
   // Otwórz Ustawienia i rozwiń katalog Google Fonts.
   await page.getByRole('button', { name: /Ustawienia/ }).click();
   const ust = page.getByRole('complementary', { name: 'Ustawienia' });
   const katalog = ust.locator('details.katalog-google-fonts');
   await katalog.locator('summary').click();
 
-  // Filtr kategorii i wyszukiwanie.
-  await katalog.getByRole('button', { name: 'Bezszeryfowe', exact: true }).click();
-  await expect(katalog.getByText('Fira Sans')).toBeVisible();
-  await expect(katalog.getByText('Almendra')).toBeHidden();
-  await katalog.getByRole('button', { name: 'Wszystkie', exact: true }).click();
-  await katalog.getByLabel('Szukaj kroju').fill('Almendra');
+  // Filtr kategorii (lista rozwijana), podgląd kroju i wyszukiwanie.
+  const kategoria = katalog.getByLabel('Kategoria krojów');
+  await expect(katalog.locator('.podglad-google-font').first()).toBeVisible();
+  await kategoria.selectOption('bezszeryfowa');
+  await expect(katalog.getByText('Fira Sans', { exact: true })).toBeVisible();
+  await expect(katalog.getByText('Almendra', { exact: true })).toBeHidden();
+  await kategoria.selectOption('wszystkie');
+  await katalog.getByLabel('Szukaj kroju').fill('MedievalSharp');
   await expect(katalog.locator('.pozycja-google-font')).toHaveCount(1);
+  await katalog.getByLabel('Szukaj kroju').fill('Almendra');
+  await expect(katalog.locator('.pozycja-google-font')).toHaveCount(2);
 
   // 1) Błąd sieci: oba źródła zwracają HTTP 503 → czytelny komunikat błędu, krój NIE zostaje dodany.
-  let trybSieci: 'blad' | 'ok' | 'offline' = 'blad';
-  let wywolaniaZewnetrzne = 0;
   await page.route(
     /^https:\/\/(cdn\.jsdelivr\.net|raw\.githubusercontent\.com)\//,
     async (route) => {
@@ -241,7 +256,9 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
   await expect(ustPo.locator('fieldset.sekcja-czcionek select').first()).toHaveValue('Almendra');
   const katalogPo = ustPo.locator('details.katalog-google-fonts');
   await katalogPo.locator('summary').click();
+  await expect(katalogPo.locator('.podglad-google-font').first()).toBeVisible();
   await expect(katalogPo.getByRole('button', { name: 'Almendra – dodano' })).toBeDisabled();
+  expect(bledyStrony).toEqual([]);
 
   // 4) EN + ciemny motyw.
   await page
@@ -253,6 +270,6 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
   const katalogEn = ustEn.locator('details.katalog-google-fonts');
   await expect(katalogEn.locator('summary')).toHaveText('Google Fonts catalog');
   await expect(katalogEn.getByLabel('Search typeface')).toBeVisible();
-  await expect(katalogEn.getByRole('button', { name: 'Display', exact: true })).toBeVisible();
+  await expect(katalogEn.getByLabel('Typeface category')).toHaveValue('wszystkie');
   await expect(katalogEn.getByRole('button', { name: 'Almendra – added' })).toBeDisabled();
 });

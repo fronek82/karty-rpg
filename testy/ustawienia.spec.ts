@@ -31,9 +31,9 @@ test('tytuł, położenie tytułu, czarno-biały, czcionki; zmiana papieru odrzu
   await otworz.press('Enter');
   await ustawienia(page).getByLabel('Tytuł kartki').fill('Moja broń');
   await zapisano(page);
-  await ustawienia(page).getByRole('button', { name: 'bez tytułu' }).click();
+  await ustawienia(page).getByLabel('Położenie tytułu').selectOption('brak');
   await expect(ustawienia(page).getByLabel('Tytuł kartki')).toBeDisabled();
-  await ustawienia(page).getByRole('button', { name: 'z lewej, pionowo' }).click();
+  await ustawienia(page).getByLabel('Położenie tytułu').selectOption('lewo');
   await expect(ustawienia(page).getByLabel('Tytuł kartki')).toHaveValue('Moja broń');
 
   // Letter jest węższy – pełna siatka 10 kolumn się nie zmieści.

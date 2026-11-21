@@ -193,34 +193,32 @@ export function PanelUstawien({
         />
       </div>
       <div className="pole-panelu">
-        <span id="polozenie-tytulu">{t('kartka.polozenieTytulu')}</span>
-        <div className="przelacznik-segmentowy" role="group" aria-labelledby="polozenie-tytulu">
+        <label htmlFor="polozenie-tytulu">{t('kartka.polozenieTytulu')}</label>
+        <select
+          id="polozenie-tytulu"
+          value={polozenie}
+          disabled={!u.tytul}
+          onChange={(e) => {
+            const x = e.target.value as 'lewo' | 'gora' | 'brak';
+            if (!u.tytul) return;
+            zmienUklad((p) =>
+              ustawUstawieniaArkusza(p, A, {
+                tytul: {
+                  ...u.tytul!,
+                  tekst:
+                    x === 'brak' ? '' : u.tytul!.tekst.trim() || tekstTytulu.trim() || arkusz.nazwa,
+                  ...(x === 'brak' ? {} : { polozenie: x }),
+                },
+              }),
+            );
+          }}
+        >
           {(['lewo', 'gora', 'brak'] as const).map((x) => (
-            <button
-              key={x}
-              type="button"
-              aria-pressed={polozenie === x}
-              disabled={!u.tytul}
-              onClick={() =>
-                u.tytul &&
-                zmienUklad((p) =>
-                  ustawUstawieniaArkusza(p, A, {
-                    tytul: {
-                      ...u.tytul!,
-                      tekst:
-                        x === 'brak'
-                          ? ''
-                          : u.tytul!.tekst.trim() || tekstTytulu.trim() || arkusz.nazwa,
-                      ...(x === 'brak' ? {} : { polozenie: x }),
-                    },
-                  }),
-                )
-              }
-            >
+            <option key={x} value={x}>
               {t(`kartka.tytul.${x}`)}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
       <div className="pole-panelu">
         <span id="druk-kolor">{t('kartka.druk')}</span>
@@ -442,23 +440,18 @@ export function PanelUstawien({
                   <span>{t('drukarnia.znaczniki')}</span>
                 </label>
                 <div className="pole-panelu">
-                  <span id={`uklad-drukarni-${A}`}>{t('drukarnia.uklad')}</span>
-                  <div
-                    className="przelacznik-segmentowy"
-                    role="group"
-                    aria-labelledby={`uklad-drukarni-${A}`}
+                  <label htmlFor={`uklad-drukarni-${A}`}>{t('drukarnia.uklad')}</label>
+                  <select
+                    id={`uklad-drukarni-${A}`}
+                    value={druk.uklad}
+                    onChange={(e) => zmienDruk({ uklad: e.target.value as UkladDrukarni }, 'uklad')}
                   >
                     {(['siatka', 'pojedyncza'] as const).map((uk: UkladDrukarni) => (
-                      <button
-                        key={uk}
-                        type="button"
-                        aria-pressed={druk.uklad === uk}
-                        onClick={() => zmienDruk({ uklad: uk }, 'uklad')}
-                      >
+                      <option key={uk} value={uk}>
                         {t(`drukarnia.${uk}`)}
-                      </button>
+                      </option>
                     ))}
-                  </div>
+                  </select>
                   <p className="podpis">
                     {t(
                       druk.uklad === 'pojedyncza'

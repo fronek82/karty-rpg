@@ -52,8 +52,8 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   // Kolor tła, tekstura i 4 tryby dopasowania obrazu tła.
   await page.locator('#rewers-tlo-kolor').fill('#1e293b');
   await page.getByTestId('plik-tekstury-rewersu').setInputFiles('testy/zasoby/litera-f.png');
-  const grupaTrybu = page.getByRole('group', { name: 'Dopasowanie obrazu tła' });
-  await expect(grupaTrybu).toBeVisible();
+  const wyborTrybu = page.getByLabel('Dopasowanie obrazu tła');
+  await expect(wyborTrybu).toBeVisible();
 
   const obrazy = page.locator('.karta-podgladu .svg-opakowanie svg image');
   await expect(obrazy).toHaveCount(1);
@@ -64,7 +64,7 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   expect(wymiarWypelnij.w).toBeCloseTo((88 * 4) / 3, 1);
   expect(wymiarWypelnij.h).toBeCloseTo(88, 1);
 
-  await grupaTrybu.getByRole('button', { name: 'dopasuj', exact: true }).click();
+  await wyborTrybu.selectOption('dopasuj');
   const wymiarDopasuj = await obrazy.first().evaluate((el) => ({
     w: Number(el.getAttribute('width')),
     h: Number(el.getAttribute('height')),
@@ -72,7 +72,7 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   expect(wymiarDopasuj.w).toBeCloseTo(63, 1);
   expect(wymiarDopasuj.h).toBeCloseTo((63 * 3) / 4, 1);
 
-  await grupaTrybu.getByRole('button', { name: 'rozciągnij', exact: true }).click();
+  await wyborTrybu.selectOption('rozciagnij');
   const wymiarRozciagnij = await obrazy.first().evaluate((el) => ({
     w: Number(el.getAttribute('width')),
     h: Number(el.getAttribute('height')),
@@ -80,12 +80,12 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   expect(wymiarRozciagnij.w).toBeCloseTo(63, 1);
   expect(wymiarRozciagnij.h).toBeCloseTo(88, 1);
 
-  await grupaTrybu.getByRole('button', { name: 'kafelki', exact: true }).click();
+  await wyborTrybu.selectOption('kafelki');
   await expect.poll(() => obrazy.count()).toBeGreaterThanOrEqual(6);
 
   // Ramka karty na rewersie.
   const ramka = await sekcja(page, 'Ramka karty');
-  await ramka.getByRole('button', { name: 'linia', exact: true }).click();
+  await ramka.getByLabel('Ramka karty', { exact: true }).selectOption('linia');
   await expect(page.locator('#rewers-ramka-ods')).toBeVisible();
   await page.locator('#rewers-ramka-ods').fill('3');
 
@@ -101,10 +101,7 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
 
   // Warstwa grafiki SVG z katalogu (kolorowalna).
   await dodaj(page, 'Ikona', 'Znak SVG');
-  await panel(page)
-    .getByRole('group', { name: 'Rodzaj grafiki' })
-    .getByRole('button', { name: 'Grafika SVG z katalogu' })
-    .click();
+  await panel(page).getByLabel('Rodzaj grafiki').selectOption('ozdobnik');
   await page.getByTestId('wybor-ikony-svg').getByRole('button', { name: 'kątownik' }).click();
   await panel(page).getByLabel('Kolor tekstu', { exact: true }).fill('#facc15');
   await expect(uzyciaSvg).toHaveCount(liczbaPrzedIkona + 1);

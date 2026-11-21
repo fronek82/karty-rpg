@@ -158,10 +158,7 @@ test('edytor rewersu: tekst po łuku, krycie warstw oraz krycie i zabarwienie te
   await p.getByLabel('Stały tekst').fill('ARKANA');
   await p.getByLabel('Tekst po łuku').check();
   await p.getByLabel('Promień łuku (mm)').fill('34');
-  await p
-    .getByRole('group', { name: 'Kierunek łuku' })
-    .getByRole('button', { name: 'wklęsły (dół)', exact: true })
-    .click();
+  await p.getByLabel('Kierunek łuku').selectOption('dol');
   const wyglad = await sekcja(page, 'Wygląd (tło, ramka, rogi)');
   await wyglad.getByLabel('Krycie (%)').fill('75');
 
@@ -191,11 +188,7 @@ test('edytor rewersu: tekst po łuku, krycie warstw oraz krycie i zabarwienie te
   const pEn = page.getByRole('complementary', { name: 'Properties' });
   await expect(pEn.getByLabel('Curved text')).toBeChecked();
   await expect(pEn.getByLabel('Arc radius (mm)')).toHaveValue('34');
-  await expect(
-    pEn
-      .getByRole('group', { name: 'Arc direction' })
-      .getByRole('button', { name: 'concave (bottom)', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  await expect(pEn.getByLabel('Arc direction')).toHaveValue('dol');
   const appearance = pEn
     .locator('details.sekcja-panelu', {
       has: page.locator(':scope > summary:text-is("Appearance (background, frame, corners)")'),

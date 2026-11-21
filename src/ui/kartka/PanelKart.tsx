@@ -27,6 +27,7 @@ import {
 } from '../../model/szablon';
 import type { Pakiet, TypKarty } from '../../pakiety/typy';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
+import { PoleWielowierszowe } from '../PoleWielowierszowe';
 import type { ProjektWEdycji } from '../useProjekt';
 import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
 import { SekcjaObrazu } from './SekcjaObrazu';
@@ -160,7 +161,7 @@ export function PanelKart({
   return (
     <aside className="panel-edytora" aria-label={t('kartka.panelKart')}>
       <div className="naglowek-panelu">
-        <h2>{tytul}</h2>
+        <h2 title={tytul}>{tytul}</h2>
         <button
           type="button"
           className="zamknij"
@@ -255,7 +256,8 @@ export function PanelKart({
             <div key={kol.klucz} className="pole-panelu">
               <label htmlFor={id}>{nazwa}</label>
               {dlugi ? (
-                <textarea
+                <PoleWielowierszowe
+                  kluczRozmiaru={`kartka:${szablon.id}:${kol.klucz}`}
                   rows={2}
                   {...wspolne}
                   onPaste={(e) =>

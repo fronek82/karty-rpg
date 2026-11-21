@@ -104,10 +104,7 @@ export async function styl(
   if (o.wielkie !== undefined) await wlacz(s, 'WIELKIE', o.wielkie);
   if (o.kapitaliki !== undefined) await wlacz(s, 'Kapitaliki', o.kapitaliki);
   if (o.wyrownanie)
-    await s
-      .getByRole('group', { name: 'Wyrównanie' })
-      .getByRole('button', { name: o.wyrownanie })
-      .click();
+    await s.getByLabel('Wyrównanie', { exact: true }).selectOption({ label: o.wyrownanie });
   if (o.wciecie !== undefined) await s.getByLabel('Wcięcie akapitu (mm)').fill(String(o.wciecie));
   if (o.odstepAkapitow !== undefined)
     await s.getByLabel('Odstęp po akapicie (mm)').fill(String(o.odstepAkapitow));
@@ -124,8 +121,8 @@ export async function rozmiar(
   tryb: 'domyślnie' | 'wg treści' | 'wypełnij' | 'mm',
   liczba?: number,
 ) {
-  const p = panel(page).locator('.pole-rozmiaru', { has: page.locator(`span:text-is("${os}")`) });
-  await p.getByRole('button', { name: tryb, exact: true }).click();
+  const p = panel(page).locator('.pole-rozmiaru', { has: page.locator(`label:text-is("${os}")`) });
+  await p.locator('select').selectOption({ label: tryb });
   if (liczba !== undefined) await p.locator('input[type=number]').fill(String(liczba));
 }
 
@@ -141,10 +138,7 @@ export async function wyglad(
     await s.getByLabel('Tło', { exact: true }).fill(o.tlo);
   }
   if (o.ramka) {
-    await s
-      .getByRole('group', { name: 'Ramka z linii', exact: true })
-      .getByRole('button', { name: 'linia', exact: true })
-      .click();
+    await s.getByLabel('Ramka z linii', { exact: true }).selectOption('linia');
     await s.getByLabel('Grubość linii (mm)').fill(String(o.ramka.grubosc));
     await s.getByLabel('Kolor linii').fill(o.ramka.kolor);
   }
@@ -184,10 +178,7 @@ export async function etykieta(
   await s.getByLabel('Pokaż etykietę').check();
   if (o.tekst !== undefined) await s.getByLabel('Tekst etykiety').fill(o.tekst);
   if (o.pozycja)
-    await s
-      .getByRole('group', { name: 'Położenie etykiety' })
-      .getByRole('button', { name: o.pozycja })
-      .click();
+    await s.getByLabel('Położenie etykiety', { exact: true }).selectOption({ label: o.pozycja });
   if (o.styl) await styl(await sekcja(page, 'Styl etykiety'), o.styl);
 }
 

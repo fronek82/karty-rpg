@@ -40,7 +40,7 @@ test('dalsze części opisu pojawiają się na arkuszu i w pobraniu kart', async
   expect(Object.keys(pliki).filter((s) => s.includes('ciag-dalszy'))).toHaveLength(liczba - 1);
 
   await page.getByRole('button', { name: /Ustawienia/ }).click();
-  await page.getByRole('button', { name: 'mieszane', exact: true }).click();
+  await page.getByLabel('Rozmiary kart na kartce').selectOption('mieszane');
   await expect(page.getByRole('button', { name: /Północna droga – Ciąg dalszy/ })).toHaveCount(
     liczba - 1,
   );
