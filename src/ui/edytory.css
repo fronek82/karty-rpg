@@ -132,6 +132,7 @@
   fieldset.sekcja-szablonow,
   fieldset.tresc-ksztaltu,
   fieldset.karta-w-slocie,
+  fieldset.linie-ciecia,
   fieldset.kalibracja,
   .narzedzia-podgladu > fieldset
 ) {
@@ -170,6 +171,7 @@ fieldset:is(
     .sekcja-szablonow,
     .tresc-ksztaltu,
     .karta-w-slocie,
+    .linie-ciecia,
     .kalibracja
   ):nth-of-type(4n + 1),
 .narzedzia-podgladu > fieldset:nth-of-type(4n + 1) {
@@ -186,6 +188,7 @@ fieldset:is(
     .sekcja-szablonow,
     .tresc-ksztaltu,
     .karta-w-slocie,
+    .linie-ciecia,
     .kalibracja
   ):nth-of-type(4n + 2),
 .narzedzia-podgladu > fieldset:nth-of-type(4n + 2) {
@@ -202,6 +205,7 @@ fieldset:is(
     .sekcja-szablonow,
     .tresc-ksztaltu,
     .karta-w-slocie,
+    .linie-ciecia,
     .kalibracja
   ):nth-of-type(4n + 3),
 .narzedzia-podgladu > fieldset:nth-of-type(4n + 3) {
@@ -218,6 +222,7 @@ fieldset:is(
     .sekcja-szablonow,
     .tresc-ksztaltu,
     .karta-w-slocie,
+    .linie-ciecia,
     .kalibracja
   ):nth-of-type(4n),
 .narzedzia-podgladu > fieldset:nth-of-type(4n) {
@@ -226,7 +231,13 @@ fieldset:is(
 
 /* Sekcja w sekcji: pasek 2 px w kolorze rodzica (własnej wartości --znacznik nie ustawia). */
 :is(details.sekcja-panelu, fieldset.sekcja-ukladu, fieldset.sekcja-obrazu, fieldset.sekcja-czcionek)
-  :is(details.sekcja-panelu, fieldset.sekcja-ukladu, fieldset.karta-w-slocie, fieldset.kalibracja) {
+  :is(
+    details.sekcja-panelu,
+    fieldset.sekcja-ukladu,
+    fieldset.karta-w-slocie,
+    fieldset.linie-ciecia,
+    fieldset.kalibracja
+  ) {
   --znacznik: inherit;
   border-left-width: 2px;
   background: transparent;
@@ -247,6 +258,7 @@ fieldset:is(
     fieldset.sekcja-szablonow,
     fieldset.tresc-ksztaltu,
     fieldset.karta-w-slocie,
+    fieldset.linie-ciecia,
     fieldset.kalibracja,
     fieldset.polozenie,
     .narzedzia-podgladu > fieldset

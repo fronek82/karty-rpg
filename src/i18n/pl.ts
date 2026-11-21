@@ -307,6 +307,16 @@ export const pl = {
   'kartka.marginesBezpieczenstwa': 'Margines bezpieczeństwa (mm)',
   'kartka.marginesBezpieczenstwaOpis':
     'Strefa przy krawędzi kartki, w którą karty nie powinny wchodzić – np. punkty fotograficzne przycinają brzegi odbitki o 1–3 mm (dla formatów zdjęciowych domyślnie 3 mm). Karta w strefie daje ostrzeżenie; strefa jest zaznaczona na kartce. 0 – bez strefy.',
+  'linie.tytul': 'Linie cięcia',
+  'linie.kolor': 'Kolor linii',
+  'linie.grubosc': 'Grubość (mm)',
+  'linie.kreska': 'Kreska (mm)',
+  'linie.przerwa': 'Przerwa (mm)',
+  'linie.opis':
+    'Kolor i wzór linii cięcia, nożyczek i linii prowadzących. Na ciemnych kartach wybierz jasny kolor, np. biały lub jasnoszary. Przerwa 0 – linia ciągła.',
+  'linie.drukarnia':
+    'W trybie drukarni zamiast linii cięcia są znaczniki cięcia – ustawienia linii nie mają wpływu.',
+  'linie.wylaczone': 'Linie cięcia wokół kart są wyłączone w układzie kartki.',
   'uklad.tytul': 'Układ arkusza',
   'uklad.tryb': 'Układ kart na kartce',
   'uklad.automatyczny': 'automatyczny',
