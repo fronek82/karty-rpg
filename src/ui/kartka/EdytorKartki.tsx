@@ -74,8 +74,10 @@ import { pdfWWatku } from '../pdfWWatku';
 import {
   odczytajKalibracje,
   odczytajKalibracjeRewersu,
+  odczytajWarstweTekstowaPdf,
   zapiszKalibracje,
   zapiszKalibracjeRewersu,
+  zapiszWarstweTekstowaPdf,
   type Kalibracja,
 } from '../kalibracja';
 import { obrazyScen, scenyKart, scenyStron, spakuj, type FormatObrazu } from '../eksportObrazow';
@@ -325,6 +327,11 @@ export function EdytorKartki({
   const zmienKalibracjeRewersu = (k: Kalibracja) => {
     ustawKalibracjeRewersu(k);
     zapiszKalibracjeRewersu(k);
+  };
+  const [warstwaTekstowaPdf, ustawWarstweTekstowaPdf] = useState(odczytajWarstweTekstowaPdf);
+  const zmienWarstweTekstowaPdf = (wlaczona: boolean) => {
+    ustawWarstweTekstowaPdf(wlaczona);
+    zapiszWarstweTekstowaPdf(wlaczona);
   };
   const arkusze = useDeferredValue(projekt.arkusze);
   const talie = useDeferredValue(projekt.talie);
@@ -1130,6 +1137,7 @@ export function EdytorKartki({
       ...(kalibracjaRewersu.x || kalibracjaRewersu.y
         ? { przesuniecieRewersu: kalibracjaRewersu }
         : {}),
+      ...(warstwaTekstowaPdf ? { warstwaTekstowa: true } : {}),
       ...dodatki,
     };
   };
@@ -1404,6 +1412,8 @@ export function EdytorKartki({
         zmienKalibracje={zmienKalibracje}
         kalibracjaRewersu={kalibracjaRewersu}
         zmienKalibracjeRewersu={zmienKalibracjeRewersu}
+        warstwaTekstowaPdf={warstwaTekstowaPdf}
+        zmienWarstweTekstowaPdf={zmienWarstweTekstowaPdf}
         key={arkuszZazn.id}
         edycja={edycja}
         arkusz={arkuszZazn}

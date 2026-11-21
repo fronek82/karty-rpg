@@ -14,6 +14,9 @@ vi.mock('./ladujPrzyklady', () => ({
   useBladPodgladowPrzykladow: () => undefined,
   ponowPodgladyPrzykladow: () => Promise.resolve(),
 }));
+vi.mock('./GaleriaOnline', () => ({
+  GaleriaOnline: () => null,
+}));
 
 import { WlasneKarty } from './WlasneKarty';
 

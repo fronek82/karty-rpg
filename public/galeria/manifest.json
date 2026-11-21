@@ -1,0 +1,115 @@
+{
+  "wersja": 1,
+  "szablony": [
+    {
+      "id": "przedmiot-z-rewersem",
+      "nazwa": {
+        "pl": "Karta przedmiotu (z rewersem)",
+        "en": "Item card (with back)"
+      },
+      "opis": {
+        "pl": "Klasyczna karta 63×88 mm z tytułem, kategorią, wartością w rombie, opisem, polami użyć i dopasowanym rewersem.",
+        "en": "Classic 63×88 mm card with title, category, diamond value badge, description, usage boxes, and matching card back."
+      },
+      "kategoria": "karty",
+      "format": {
+        "szerokosc": 63,
+        "wysokosc": 88,
+        "nazwa": "Poker 63×88 mm"
+      },
+      "maRewers": true,
+      "plik": "przedmiot-z-rewersem.kartyrpg-szablon",
+      "autor": "Karty RPG",
+      "licencja": "MIT",
+      "tagi": ["poker", "ekwipunek", "item", "rewers", "back", "63x88"]
+    },
+    {
+      "id": "zdarzenie-poziome",
+      "nazwa": {
+        "pl": "Karta zdarzenia (pozioma)",
+        "en": "Event card (landscape)"
+      },
+      "opis": {
+        "pl": "Poziomy układ 88×63 mm z nagłówkiem, dwukolumnową tabelą efektów oraz obszernym opisem sytuacji.",
+        "en": "Landscape 88×63 mm layout with header, two-column effects table, and spacious situation description."
+      },
+      "kategoria": "zdarzenia",
+      "format": {
+        "szerokosc": 88,
+        "wysokosc": 63,
+        "nazwa": "Poker poziomy 88×63 mm"
+      },
+      "maRewers": false,
+      "plik": "zdarzenie-poziome.kartyrpg-szablon",
+      "autor": "Karty RPG",
+      "licencja": "MIT",
+      "tagi": ["pozioma", "landscape", "zdarzenie", "event", "tabela", "88x63"]
+    },
+    {
+      "id": "postac-tarot",
+      "nazwa": {
+        "pl": "Karta postaci (Tarot)",
+        "en": "Character card (Tarot)"
+      },
+      "opis": {
+        "pl": "Duży format 70×120 mm na postać lub towarzysza: portret, trzy cechy w rzędzie, zdolności, notatki i ozdobny rewers.",
+        "en": "Large 70×120 mm card for a character or companion: portrait, three stats in a row, abilities, notes, and ornamental back."
+      },
+      "kategoria": "postacie",
+      "format": {
+        "szerokosc": 70,
+        "wysokosc": 120,
+        "nazwa": "Tarot 70×120 mm"
+      },
+      "maRewers": true,
+      "plik": "postac-tarot.kartyrpg-szablon",
+      "autor": "Karty RPG",
+      "licencja": "MIT",
+      "tagi": ["tarot", "postac", "character", "npc", "rewers", "back", "70x120"]
+    },
+    {
+      "id": "zasob-mini",
+      "nazwa": {
+        "pl": "Karta zasobu (Mini)",
+        "en": "Resource card (Mini)"
+      },
+      "opis": {
+        "pl": "Kompaktowy format 44×68 mm do szybkich kart zasobów, stanów lub krótkich wskazówek przy stole.",
+        "en": "Compact 44×68 mm format for quick resource cards, conditions, or short table reminders."
+      },
+      "kategoria": "zasoby",
+      "format": {
+        "szerokosc": 44,
+        "wysokosc": 68,
+        "nazwa": "Mini Euro 44×68 mm"
+      },
+      "maRewers": false,
+      "plik": "zasob-mini.kartyrpg-szablon",
+      "autor": "Karty RPG",
+      "licencja": "MIT",
+      "tagi": ["mini", "zasob", "resource", "stan", "condition", "44x68"]
+    },
+    {
+      "id": "rewers-geometryczny",
+      "nazwa": {
+        "pl": "Szablon z rewersem geometrycznym",
+        "en": "Template with geometric back"
+      },
+      "opis": {
+        "pl": "Uniwersalna karta 63×88 mm z bogatym, dwukolorowym rewersem ornamentowym gotowym do druku dwustronnego.",
+        "en": "Versatile 63×88 mm card featuring an ornate two-tone geometric back ready for double-sided printing."
+      },
+      "kategoria": "rewersy",
+      "format": {
+        "szerokosc": 63,
+        "wysokosc": 88,
+        "nazwa": "Poker 63×88 mm"
+      },
+      "maRewers": true,
+      "plik": "rewers-geometryczny.kartyrpg-szablon",
+      "autor": "Karty RPG",
+      "licencja": "MIT",
+      "tagi": ["rewers", "back", "ornament", "dwustronny", "duplex", "poker", "63x88"]
+    }
+  ]
+}

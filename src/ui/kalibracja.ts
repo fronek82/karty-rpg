@@ -46,3 +46,22 @@ export function odczytajKalibracjeRewersu(): Kalibracja {
 export function zapiszKalibracjeRewersu(k: Kalibracja): void {
   zapisz(KLUCZ_REWERS, k);
 }
+
+const KLUCZ_WARSTWA_TEKSTOWA = 'karty-rpg:pdf-warstwa-tekstowa';
+
+/** Preferencja niewidocznej warstwy tekstowej w PDF (domyślnie wyłączona, pamiętana w przeglądarce). */
+export function odczytajWarstweTekstowaPdf(): boolean {
+  try {
+    return localStorage.getItem(KLUCZ_WARSTWA_TEKSTOWA) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function zapiszWarstweTekstowaPdf(wlaczona: boolean): void {
+  try {
+    localStorage.setItem(KLUCZ_WARSTWA_TEKSTOWA, wlaczona ? '1' : '0');
+  } catch {
+    // Prywatne okno / zablokowany zapis – opcja działa do końca sesji strony.
+  }
+}

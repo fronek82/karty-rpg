@@ -6,6 +6,7 @@ import { KAFELKI_SZABLONOW } from '../../przyklady';
 import type { OpisPrzykladu } from '../../przyklady/typy';
 import { nowyProjektZPrzykladu } from '../baza';
 import { BibliotekaGlobalna } from '../biblioteka/BibliotekaGlobalna';
+import { GaleriaOnline } from './GaleriaOnline';
 import { adresProjektu, importujPlikSzablonu, opisBleduImportu } from './importSzablonu';
 import {
   ponowPodgladyPrzykladow,
@@ -175,6 +176,10 @@ export function WlasneKarty() {
             <b>{t('wlasne.nowyNazwa')}</b>
             <span>{t('wlasne.nowyOpis')}</span>
           </a>
+          <a href="#/wlasne/ai" className="pasek-menu pasek-granat">
+            <b>{t('wlasne.aiNazwa')}</b>
+            <span>{t('wlasne.aiOpis')}</span>
+          </a>
           <button
             type="button"
             ref={przyciskImportu}
@@ -220,6 +225,10 @@ export function WlasneKarty() {
               <KafelekSzablonu key={o.id} opis={o} wylaczony={trwa} utworz={utworz} />
             ))}
           </div>
+          <GaleriaOnline
+            zablokowana={trwa}
+            uzyjSzablonu={(bajty, zrodlo) => wykonaj(() => importujPlikSzablonu(bajty), zrodlo)}
+          />
         </section>
       </div>
       <p role="status" aria-live="polite" className="status">
