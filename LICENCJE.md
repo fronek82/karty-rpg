@@ -47,6 +47,7 @@ Własne rysunki projektu (licencja jak kod, MIT), generowane skryptami z `narzed
 | Rysunek testowy SVG (gwiazdka z otworem) do testów importu własnego SVG                                    | `testy/zasoby/gwiazdka.svg`                                | narysowany ręcznie na potrzeby testów, bez zasobów zewnętrznych, licencja projektu (MIT)                           |
 | Obrazek testowy PNG ramki 9-slice (120×120 px) do testów ramek z obrazu                                    | `testy/zasoby/ramka-testowa.png`                           | `narzedzia/ramka-testowa.mjs` – generowany deterministycznie, własny rysunek projektu, licencja projektu (MIT)     |
 | Obrazek testowy PNG podkładu ze wzoru (252×352 px) do testów podkładu i trybu swobodnego                   | `testy/zasoby/podklad-testowy.png`                         | `narzedzia/podklad-testowy.mjs` – generowany deterministycznie, własny rysunek projektu, licencja projektu (MIT)   |
+| Galeria neutralnych szablonów i rewersów online (5 paczek `.kartyrpg-szablon` + `manifest.json`)           | `public/galeria/*`                                         | `narzedzia/generuj-galerie.mjs` – generowane deterministycznie, wyłącznie wbudowane ozdobniki i EB Garamond, MIT   |
 
 ## Zależności w aplikacji (środowisko uruchomieniowe)
 
