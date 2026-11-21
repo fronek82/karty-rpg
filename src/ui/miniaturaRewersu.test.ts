@@ -74,4 +74,65 @@ describe('miniaturaRewersu', () => {
     expect(svg).toContain('<svg');
     expect(svg).not.toContain('data:image/png;base64,');
   });
+
+  it('renderuje miniaturę pojedynczego szablonu awersu (renderujMiniatureSzablonu)', async () => {
+    const { renderujMiniatureSzablonu } = await import('./miniaturaRewersu');
+    const { projekt, dane } = projektZRewersem();
+    projekt.szablony = [
+      {
+        id: 'sz-1',
+        nazwa: 'Karta zaklęcia',
+        rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+        tlo: '#f5efe6',
+        korzen: { id: 'k', typ: 'kolumna', dzieci: [] },
+      },
+    ];
+    const svg = renderujMiniatureSzablonu(projekt, dane, 'sz-1');
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('#f5efe6');
+    expect(renderujMiniatureSzablonu(projekt, dane, 'brak')).toBeUndefined();
+  });
+
+  it('czyDwustronnyWlaczony włącza druk dwustronny domyślnie przy przypisanym rewersie i respektuje jawne wyłączenie', async () => {
+    const { czyDwustronnyWlaczony } = await import('../dane/rewers');
+    const { projekt } = projektZRewersem();
+    const rewersyMapa = new Map((projekt.rewersy ?? []).map((r) => [r.id, r] as const));
+    const szablonyMapa = new Map(projekt.szablony.map((s) => [s.id, s] as const));
+    const arkusz = { taliaId: 't1', ustawienia: {} as never };
+    const taliaBez = { id: 't1', nazwa: 'Talia', karty: [] };
+    const taliaZRew = { id: 't1', nazwa: 'Talia', rewersId: 'rew-1', karty: [] };
+
+    const taliaZRewKarty = {
+      id: 't1',
+      nazwa: 'Talia',
+      karty: [{ id: 'k1', szablonId: 'sz-1', dane: {}, ilosc: 1, rewersId: 'rew-1' }],
+    };
+    const szablonyZSz = new Map([
+      [
+        'sz-1',
+        {
+          id: 'sz-1',
+          nazwa: 'Karta',
+          rozmiar: { tryb: 'mm' as const, szerokosc: 63, wysokosc: 88 },
+          tlo: '#ffffff',
+          korzen: { id: 'k', typ: 'kolumna' as const, dzieci: [] },
+        },
+      ],
+    ]);
+
+    expect(czyDwustronnyWlaczony(arkusz, taliaBez, szablonyMapa, rewersyMapa)).toBe(false);
+    expect(czyDwustronnyWlaczony(arkusz, taliaZRew, szablonyMapa, rewersyMapa)).toBe(true);
+    expect(czyDwustronnyWlaczony(arkusz, taliaZRewKarty, szablonyZSz, rewersyMapa)).toBe(true);
+    expect(
+      czyDwustronnyWlaczony(
+        {
+          taliaId: 't1',
+          ustawienia: { dwustronny: { wlaczony: false, krawedz: 'dluga' } } as never,
+        },
+        taliaZRew,
+        szablonyMapa,
+        rewersyMapa,
+      ),
+    ).toBe(false);
+  });
 });

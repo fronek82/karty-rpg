@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
 import { czyProjektRewersowy } from '../../dane/baza';
 import {
+  czyProjektWlasny,
   kartkaDlaSzablonu,
   opisRozmiaruSzablonu,
   PAKIET_WLASNY,
@@ -9,6 +10,7 @@ import {
   pasujeDoSlotu,
   ustawieniaKartkiDla,
 } from '../../dane/wlasneKarty';
+import { czyDwustronnyWlaczony } from '../../dane/rewers';
 import {
   czyMieszane,
   dodajKarteMieszane,
@@ -103,6 +105,7 @@ import { MenuTypu } from './MenuTypu';
 import { skalaZKolka, zaokr, zmienObrazKarty } from './obrazKarty';
 import { PanelKart, typDlaSzablonu } from './PanelKart';
 import { PanelNaglowka } from './PanelNaglowka';
+import { PanelRewersuIAwersu } from './PanelRewersuIAwersu';
 import { PanelUstawien } from './PanelUstawien';
 
 type Zaznaczenie =
@@ -367,17 +370,21 @@ export function EdytorKartki({
   const arkusze = useDeferredValue(projekt.arkusze);
   const talie = useDeferredValue(projekt.talie);
   const rewersy = useDeferredValue(projekt.rewersy);
+  const projektRewersowy = czyProjektRewersowy(projekt);
+  const pierwszySzablonId = projekt.szablony[0]?.id;
   const kartki = useMemo((): Kartka[] => {
     if (!zasoby || !pamiecKart) return [];
     const rewersyMapa = new Map((rewersy ?? []).map((r) => [r.id, r] as const));
     return arkusze.map((arkusz) => {
       const talia = talie.find((x) => x.id === arkusz.taliaId)!;
+      const dwustronny = czyDwustronnyWlaczony(arkusz, talia, zasoby.szablony, rewersyMapa);
       const z = pamiecKartek.get(arkusz.id);
       if (
         z &&
         z.arkusz === arkusz &&
         z.talia === talia &&
-        (!arkusz.ustawienia.dwustronny?.wlaczony || z.rewersy === rewersy) &&
+        (!dwustronny || z.rewersy === rewersy) &&
+        Boolean(z.k.svgRewersow) === dwustronny &&
         z.zasoby === zasoby &&
         z.jezyk === jezykUi &&
         z.kalibracja === kalibracja
@@ -399,11 +406,25 @@ export function EdytorKartki({
               }
             : {}),
         };
-        const wynik = zbudujArkusz(arkusz, talia, ctxArkusza);
+        const taliaDoBudowy =
+          projektRewersowy && talia.karty.length === 0 && pierwszySzablonId
+            ? {
+                ...talia,
+                karty: [
+                  {
+                    id: '__podglad-rewersu__',
+                    szablonId: pierwszySzablonId,
+                    dane: {},
+                    ilosc: 1,
+                  },
+                ],
+              }
+            : talia;
+        const wynik = zbudujArkusz(arkusz, taliaDoBudowy, ctxArkusza);
         let svgRewersow: string[] | undefined;
         let pusteRewersy: boolean[] | undefined;
-        if (arkusz.ustawienia.dwustronny?.wlaczony) {
-          const wRev = zbudujStronyRewersow(arkusz, talia, wynik, {
+        if (dwustronny) {
+          const wRev = zbudujStronyRewersow(arkusz, taliaDoBudowy, wynik, {
             ...ctxArkusza,
             rewersy: rewersyMapa,
           });
@@ -450,6 +471,8 @@ export function EdytorKartki({
     arkusze,
     talie,
     rewersy,
+    projektRewersowy,
+    pierwszySzablonId,
     zasoby,
     pamiecKart,
     pamiecKartek,
@@ -718,8 +741,11 @@ export function EdytorKartki({
   }, [aktywne, druk, duplikuj, edycja, przesunZaznaczone, ustawMenu, usunZaznaczone, ustawZazn]);
 
   // Miniatura pierwszej strony na liście projektów (bez obrazów – adresy blob: są chwilowe).
-  // Dla samodzielnego projektu rewersowego zachowujemy miniaturę karty rewersu z EdytorRewersu.
-  const pierwszaStrona = czyProjektRewersowy(projekt) ? undefined : kartki[0]?.wynik?.strony[0];
+  // Dla projektów własnych i rewersowych zachowujemy miniaturę pojedynczego szablonu/rewersu.
+  const pierwszaStrona =
+    czyProjektRewersowy(projekt) || czyProjektWlasny(projekt)
+      ? undefined
+      : kartki[0]?.wynik?.strony[0];
   useEffect(() => {
     if (!pierwszaStrona) return;
     const z = setTimeout(() => {
@@ -1490,9 +1516,11 @@ export function EdytorKartki({
   const szablonyCsvProjektu = [
     ...new Map(projekt.arkusze.flatMap((a) => szablonyDoImportu(a)).map((s) => [s.id, s])).values(),
   ];
+  const taliaDomyslna = projekt.talie.find((x) => x.id === arkuszZazn?.taliaId) ?? projekt.talie[0];
   panel ??= (
     <aside className="panel-edytora" aria-label={t('kartka.pomoc')}>
       <h2>{t('kartka.nicNieZaznaczono')}</h2>
+      <PanelRewersuIAwersu edycja={edycja} talia={taliaDomyslna} />
       <p className="podpis">{t('kartka.pomocDodawanie')}</p>
       <p className="podpis">{t('kartka.pomocZaznaczanie')}</p>
       <p className="podpis">{t('kartka.pomocSkroty')}</p>
@@ -1751,6 +1779,7 @@ export function EdytorKartki({
             <WidokKartki
               key={k.arkusz.id}
               podgladDruku={druk}
+              tylkoRewers={czyProjektRewersowy(projekt)}
               onWybierzKartke={
                 druk && aktualneKartki.length > 1
                   ? () => {
@@ -1884,6 +1913,7 @@ export function EdytorKartki({
 /** Jedna kartka: jej strony (SVG z silnika) z warstwą slotów, kart, nagłówków i podglądów. */
 function WidokKartki({
   podgladDruku = false,
+  tylkoRewers = false,
   onWybierzKartke,
   szablony,
   importujDane,
@@ -1911,6 +1941,7 @@ function WidokKartki({
   wybierzNaglowek,
 }: {
   podgladDruku?: boolean;
+  tylkoRewers?: boolean;
   onWybierzKartke?: () => void;
   szablony: ReadonlyMap<string, Szablon> | undefined;
   importujDane: (() => void) | undefined;
@@ -2357,7 +2388,21 @@ function WidokKartki({
                 </button>
               )}
             </div>
-            {maRewersy ? (
+            {tylkoRewers && maRewersy ? (
+              <div
+                className="strona-kartki strona-rewersu"
+                data-arkusz={id}
+                data-strona-rewersu={s}
+                role="img"
+                aria-label={t('dwustronny.podgladTylu', { numer: s + 1, liczba: liczbaStron })}
+                style={wymiaryStronyCss}
+              >
+                <div
+                  className="svg-opakowanie"
+                  dangerouslySetInnerHTML={{ __html: k.svgRewersow?.[s] ?? '' }}
+                />
+              </div>
+            ) : maRewersy ? (
               <div className="para-stron">
                 <div className="strona-pary">
                   <div className="etykieta-pary">{t('dwustronny.przod')}</div>

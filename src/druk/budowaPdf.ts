@@ -1,3 +1,4 @@
+import { czyDwustronnyWlaczony } from '../dane/rewers';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import type { Arkusz } from '../model/arkusz';
 import type { Mm } from '../model/jednostki';
@@ -101,7 +102,9 @@ export function scenyZadaniaPdf(z: ZadaniePdf) {
     if (!testowa) throw new Error(`kartka ${z.testowy}`);
     return [przesunPrzod(stronaTestowa(testowa, taliaKartki(testowa), ctx))];
   }
-  const jestDwustronny = z.arkusze.some((a) => a.ustawienia.dwustronny?.wlaczony);
+  const dwustronnyArkusza = (a: Arkusz) =>
+    czyDwustronnyWlaczony(a, taliaKartki(a), szablony, rewersy);
+  const jestDwustronny = z.arkusze.some(dwustronnyArkusza);
   return z.arkusze.flatMap((a) => {
     const talia = taliaKartki(a);
     const wynik = zbudujArkusz(a, talia, ctx);
@@ -109,7 +112,7 @@ export function scenyZadaniaPdf(z: ZadaniePdf) {
       a.ustawienia.czarnoBialy ? wynik.strony.map(zSzarymiObrazami) : wynik.strony
     ).map(przesunPrzod);
     if (!jestDwustronny) return przody;
-    const tyly = a.ustawienia.dwustronny?.wlaczony
+    const tyly = dwustronnyArkusza(a)
       ? zbudujStronyRewersow(a, talia, wynik, { ...ctx, rewersy }).strony.map((s) =>
           przesunTyl(a.ustawienia.czarnoBialy ? zSzarymiObrazami(s) : s),
         )

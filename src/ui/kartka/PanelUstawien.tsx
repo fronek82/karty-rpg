@@ -24,7 +24,7 @@ import {
 } from '../../model/arkusz';
 import type { WynikArkusza } from '../../druk/arkusz';
 import { osOdwracania } from '../../druk/dwustronny';
-import { przypiszRewers } from '../../dane/rewers';
+import { czyDwustronnyWlaczony, przypiszRewers } from '../../dane/rewers';
 import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
 import { RewersyProjektu } from '../rewers/RewersyProjektu';
@@ -348,7 +348,12 @@ export function PanelUstawien({
         {...(naKartce ? { naKartce } : {})}
       />
       {(() => {
-        const dwu = u.dwustronny ?? DWUSTRONNY_DOMYSLNY;
+        const rewersyMapa = new Map((projekt.rewersy ?? []).map((r) => [r.id, r] as const));
+        const szablonyMapa = new Map(projekt.szablony.map((s) => [s.id, s] as const));
+        const dwu = u.dwustronny ?? {
+          ...DWUSTRONNY_DOMYSLNY,
+          wlaczony: czyDwustronnyWlaczony(arkusz, talia, szablonyMapa, rewersyMapa),
+        };
         const os = osOdwracania(wymiaryStrony(u), dwu.krawedz);
         const zmienDwu = (z: Partial<typeof dwu>, klucz?: string) =>
           zmien(

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { eksportujProjekt, eksportujRewers, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
 import {
   kluczMiniaturyRewersu,
+  kluczMiniaturySzablonu,
   type PodsumowanieProjektu,
   type WpisRewersuZProjektu,
 } from '../../dane/baza';
@@ -27,6 +28,7 @@ type PozycjaListy =
       href: string;
       projekt: PodsumowanieProjektu;
       rewersPodglad?: { projektId: string; rewersId: string };
+      szablonPodglad?: { projektId: string; szablonId: string };
     }
   | {
       klucz: string;
@@ -40,8 +42,8 @@ type PozycjaListy =
     };
 
 /**
- * „Moje projekty”: kafelki projektów (awersów) i rewersów z miniaturą karty/pierwszej strony,
- * oznaczeniem strony (Awers / Rewers), eksportem i usuwaniem.
+ * „Moje projekty”: kafelki szablonów (awersów) i rewersów z miniaturą pojedynczej karty
+ * (lub strony dla pakietów gier), oznaczeniem strony (Awers / Rewers), eksportem i usuwaniem.
  */
 export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   const [lista, ustawListe] = useState<PodsumowanieProjektu[]>();
@@ -56,7 +58,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   const odczyt = useRef(0);
   const naglowek = useRef<HTMLHeadingElement>(null);
   const otwierajacy = useRef<HTMLButtonElement>(null);
-  const wyrenderowaneRewersy = useRef<Set<string>>(new Set());
+  const wyrenderowaneKarty = useRef<Set<string>>(new Set());
   const anulujUsuniecie = () => {
     ustawDoUsuniecia(undefined);
     otwierajacy.current?.focus();
@@ -86,6 +88,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
     for (const p of lista) {
       const typStrony = p.typStrony ?? 'awers';
       const rewersId = typStrony === 'rewers' ? p.rewersId : undefined;
+      const szablonId = typStrony === 'awers' ? p.szablonId : undefined;
       if (rewersId) reprezentowaneRewersy.add(kluczMiniaturyRewersu(p.id, rewersId));
       wynik.push({
         klucz: `projekt:${p.id}`,
@@ -95,9 +98,12 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
         zmieniono: p.zmieniono,
         href: rewersId
           ? `#/projekt/${encodeURIComponent(p.id)}/rewers/${encodeURIComponent(rewersId)}`
-          : `#/projekt/${encodeURIComponent(p.id)}`,
+          : szablonId
+            ? `#/projekt/${encodeURIComponent(p.id)}/szablon/${encodeURIComponent(szablonId)}`
+            : `#/projekt/${encodeURIComponent(p.id)}`,
         projekt: p,
         ...(rewersId ? { rewersPodglad: { projektId: p.id, rewersId } } : {}),
+        ...(szablonId ? { szablonPodglad: { projektId: p.id, szablonId } } : {}),
       });
     }
     for (const r of rewersy) {
@@ -125,50 +131,75 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
     return mapa;
   }, [miniatury]);
 
-  // Dla rewersów bez zapisanej jeszcze miniatury (np. starszych) generujemy podgląd karty na żądanie.
+  // Dla szablonów awersów i rewersów bez zapisanej jeszcze miniatury karty generujemy podgląd na żądanie.
   useEffect(() => {
     if (!pozycje) return;
-    const brakujace = pozycje.flatMap((poz) => {
-      if (!poz.rewersPodglad) return [];
-      const klucz = kluczMiniaturyRewersu(poz.rewersPodglad.projektId, poz.rewersPodglad.rewersId);
-      if (miniatury.has(klucz) || wyrenderowaneRewersy.current.has(klucz)) return [];
-      if (poz.rodzaj === 'projekt' && miniatury.has(poz.projekt.id)) return [];
-      return [{ klucz, ...poz.rewersPodglad }];
-    });
+    type Brakujaca =
+      | { rodzaj: 'rewers'; klucz: string; projektId: string; rewersId: string }
+      | { rodzaj: 'szablon'; klucz: string; projektId: string; szablonId: string };
+    const brakujace: Brakujaca[] = [];
+    for (const poz of pozycje) {
+      if (poz.rewersPodglad) {
+        const klucz = kluczMiniaturyRewersu(
+          poz.rewersPodglad.projektId,
+          poz.rewersPodglad.rewersId,
+        );
+        if (
+          !miniatury.has(klucz) &&
+          !wyrenderowaneKarty.current.has(klucz) &&
+          !(poz.rodzaj === 'projekt' && miniatury.has(poz.projekt.id))
+        ) {
+          brakujace.push({ rodzaj: 'rewers', klucz, ...poz.rewersPodglad });
+        }
+      } else if (poz.rodzaj === 'projekt' && poz.szablonPodglad) {
+        const klucz = kluczMiniaturySzablonu(
+          poz.szablonPodglad.projektId,
+          poz.szablonPodglad.szablonId,
+        );
+        if (!miniatury.has(klucz) && !wyrenderowaneKarty.current.has(klucz)) {
+          brakujace.push({ rodzaj: 'szablon', klucz, ...poz.szablonPodglad });
+        }
+      }
+    }
     if (brakujace.length === 0) return;
 
     let aktywny = true;
 
-    void import('../miniaturaRewersu').then(async ({ zapiszMiniatureRewersu }) => {
-      const nowe = new Map<string, string>();
-      const projektyCache = new Map<
-        string,
-        Awaited<ReturnType<ReturnType<typeof baza>['wczytaj']>>
-      >();
-      for (const b of brakujace) {
-        if (!aktywny) return;
-        try {
-          let wczytany = projektyCache.get(b.projektId);
-          if (!wczytany) {
-            wczytany = await baza().wczytaj(b.projektId);
-            projektyCache.set(b.projektId, wczytany);
-          }
+    void import('../miniaturaRewersu').then(
+      async ({ zapiszMiniatureRewersu, zapiszMiniatureSzablonu }) => {
+        const nowe = new Map<string, string>();
+        const projektyCache = new Map<
+          string,
+          Awaited<ReturnType<ReturnType<typeof baza>['wczytaj']>>
+        >();
+        for (const b of brakujace) {
           if (!aktywny) return;
-          const svg = await zapiszMiniatureRewersu(wczytany.projekt, wczytany.zasoby, b.rewersId);
-          if (svg) nowe.set(b.klucz, svg);
-          wyrenderowaneRewersy.current.add(b.klucz);
-        } catch {
-          wyrenderowaneRewersy.current.add(b.klucz);
+          try {
+            let wczytany = projektyCache.get(b.projektId);
+            if (!wczytany) {
+              wczytany = await baza().wczytaj(b.projektId);
+              projektyCache.set(b.projektId, wczytany);
+            }
+            if (!aktywny) return;
+            const svg =
+              b.rodzaj === 'rewers'
+                ? await zapiszMiniatureRewersu(wczytany.projekt, wczytany.zasoby, b.rewersId)
+                : await zapiszMiniatureSzablonu(wczytany.projekt, wczytany.zasoby, b.szablonId);
+            if (svg) nowe.set(b.klucz, svg);
+            wyrenderowaneKarty.current.add(b.klucz);
+          } catch {
+            wyrenderowaneKarty.current.add(b.klucz);
+          }
         }
-      }
-      if (aktywny && nowe.size > 0) {
-        ustawMiniatury((pop) => {
-          const nast = new Map(pop);
-          for (const [k, v] of nowe) nast.set(k, v);
-          return nast;
-        });
-      }
-    });
+        if (aktywny && nowe.size > 0) {
+          ustawMiniatury((pop) => {
+            const nast = new Map(pop);
+            for (const [k, v] of nowe) nast.set(k, v);
+            return nast;
+          });
+        }
+      },
+    );
 
     return () => {
       aktywny = false;
@@ -233,6 +264,12 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
       );
       if (zRewersu) return zRewersu;
     }
+    if (poz.rodzaj === 'projekt' && poz.szablonPodglad) {
+      const zSzablonu = miniaturyUrl.get(
+        kluczMiniaturySzablonu(poz.szablonPodglad.projektId, poz.szablonPodglad.szablonId),
+      );
+      if (zSzablonu) return zSzablonu;
+    }
     return poz.rodzaj === 'projekt' ? miniaturyUrl.get(poz.projekt.id) : undefined;
   };
 
@@ -285,11 +322,13 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           {pozycje.map((poz) => {
             const urlMiniatury = miniaturaPozycji(poz);
             const czyRewers = poz.typStrony === 'rewers';
+            const podgladPojedynczejKarty =
+              czyRewers || (poz.rodzaj === 'projekt' && !!poz.szablonPodglad);
             return (
               <li key={poz.klucz} className="kafelek-projektu">
                 <a
                   href={poz.href}
-                  className={czyRewers ? 'miniatura miniatura-rewersu' : 'miniatura'}
+                  className={podgladPojedynczejKarty ? 'miniatura miniatura-rewersu' : 'miniatura'}
                   aria-hidden="true"
                   tabIndex={-1}
                 >

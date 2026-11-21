@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { opisObrazu } from '../../dane/obrazy';
 import { ustawPodklad, usunPodklad } from '../../dane/podklad';
-import { przypiszRewers, rewersKarty } from '../../dane/rewers';
 import {
   danePodgladu,
   doPoprzedniegoKontenera,
@@ -60,12 +59,6 @@ import { TloDekoracyjne } from './PolaDekoracji';
 import { PoleRamki } from './PanelWygladu';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWyrownania } from './PanelWyrownania';
-import { PodgladRewersu } from '../rewers/PodgladRewersu';
-import {
-  dolaczRewersGlobalnyDoProjektu,
-  PRZEDROSTEK_OPCJI_GLOBALNEJ,
-  useRewersyGlobalne,
-} from '../rewersyGlobalne';
 import { czcionkiSzablonu } from '../../dane/archiwum';
 import { useCzcionkiGlobalne, useSynchronizujCzcionkiGlobalne } from '../zasobyGlobalne';
 import { przygotujPlikObrazu } from '../obrazy';
@@ -177,6 +170,40 @@ export function EdytorSzablonu({
   const doRysunku = widoczny && { ...widoczny, nazwa: '', podklad: undefined };
   const kluczRysunku = doRysunku ? JSON.stringify(doRysunku) : '';
   const podglad = usePodgladSzablonu(kluczRysunku, zasoby);
+  const scenaPodgladu = podglad && 'scena' in podglad ? podglad.scena : undefined;
+
+  // Miniatura pojedynczego szablonu awersu na liście „Moje projekty”.
+  const aktualnyDoMiniatury = useRef<
+    { projekt: typeof projekt; dane: typeof edycja.dane; scena: typeof scenaPodgladu } | undefined
+  >(undefined);
+  useEffect(() => {
+    aktualnyDoMiniatury.current =
+      szablon && scenaPodgladu ? { projekt, dane: edycja.dane, scena: scenaPodgladu } : undefined;
+  }, [projekt, edycja.dane, szablon, scenaPodgladu]);
+  useEffect(() => {
+    if (!scenaPodgladu || !szablon) return;
+    const z = setTimeout(() => {
+      void import('../miniaturaRewersu')
+        .then(({ zapiszMiniatureSzablonu }) =>
+          zapiszMiniatureSzablonu(projekt, edycja.dane, szablonId, scenaPodgladu),
+        )
+        .catch(() => undefined);
+    }, 1000);
+    return () => clearTimeout(z);
+  }, [scenaPodgladu, projekt, edycja.dane, szablon, szablonId]);
+  useEffect(
+    () => () => {
+      const stan = aktualnyDoMiniatury.current;
+      if (!stan?.scena) return;
+      void import('../miniaturaRewersu')
+        .then(({ zapiszMiniatureSzablonu }) =>
+          zapiszMiniatureSzablonu(stan.projekt, stan.dane, szablonId, stan.scena),
+        )
+        .catch(() => undefined);
+    },
+    [szablonId],
+  );
+
   const wezlyPoId = useIndeksWezlow(szablon);
 
   // Układ do konwersji kontenerów (swobodny ↔ kolumna / wiersz): ramki z bieżącego podglądu.
@@ -926,7 +953,6 @@ export function EdytorSzablonu({
             ) : (
               <>
                 <PanelKarty
-                  edycja={edycja}
                   szablon={szablon}
                   obrazy={obrazy}
                   zmienSz={zmienSz}
@@ -972,40 +998,22 @@ export function EdytorSzablonu({
   );
 }
 
-/** Ustawienia całej karty: rozmiar (mm), zaokrąglenie rogów, kolor tła, przypisany rewers. */
+/** Ustawienia całej karty: rozmiar (mm), zaokrąglenie rogów, kolor tła i ramka. */
 function PanelKarty({
-  edycja,
   szablon,
   obrazy,
   zmienSz,
   zmienRozmiar,
 }: {
-  edycja: ProjektWEdycji;
   szablon: Szablon;
   obrazy: readonly { wartosc: string; tekst: string }[];
   zmienSz: (f: (s: Szablon) => Szablon, klucz?: string) => void;
   zmienRozmiar: (szer: number, wys: number) => boolean;
 }) {
-  const { projekt, zmien } = edycja;
-  const { rewersyGlobalne } = useRewersyGlobalne(projekt);
   const r = szablon.rozmiar;
   const [blad, ustawBlad] = useState(false);
   const { szer, wys } = wymiaryKarty(szablon);
   const rozmiar = (s: number, w: number) => ustawBlad(!zmienRozmiar(s, w));
-  const rewersyLista = projekt.rewersy ?? [];
-  const rewersyMapa = new Map(rewersyLista.map((x) => [x.id, x] as const));
-  const taliaSzablonu =
-    projekt.talie.find((x) => x.karty.some((k) => k.szablonId === szablon.id)) ?? projekt.talie[0];
-  const rewersTalii =
-    typeof taliaSzablonu?.rewersId === 'string'
-      ? rewersyMapa.get(taliaSzablonu.rewersId)
-      : undefined;
-  const zrodloDziedziczone = rewersTalii
-    ? t('rewers.zrodloTalia', { nazwa: rewersTalii.nazwa })
-    : t('rewers.zrodloBrak');
-  const wartoscRewersu =
-    szablon.rewersId === undefined ? '' : szablon.rewersId === null ? '__brak__' : szablon.rewersId;
-  const rozstrzygnietyRewers = rewersKarty(rewersyMapa, {}, szablon, taliaSzablonu ?? {});
   return (
     <>
       <h2>{t('szablon.karta')}</h2>
@@ -1193,61 +1201,6 @@ function PanelKarty({
             {t('wlasciwosci.jakRogiKarty')}
           </button>
         )}
-      </Sekcja>
-      <Sekcja tytul={t('rewers.przypisanieSzablon')} otwarta={szablon.rewersId !== undefined}>
-        <div className="pole-panelu">
-          <select
-            aria-label={t('rewers.przypisanieSzablon')}
-            value={wartoscRewersu}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
-                const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
-                const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
-                if (wpis) {
-                  void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
-                    przypiszRewers(p, { rodzaj: 'szablon', id: szablon.id }, rid),
-                  ).catch(() => undefined);
-                }
-                return;
-              }
-              const nowy = v === '' ? undefined : v === '__brak__' ? null : v;
-              zmien((p) => przypiszRewers(p, { rodzaj: 'szablon', id: szablon.id }, nowy));
-            }}
-          >
-            <option value="">{t('rewers.dziedzicz', { zrodlo: zrodloDziedziczone })}</option>
-            <option value="__brak__">{t('rewers.bezRewersu')}</option>
-            {rewersyLista.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.nazwa}
-              </option>
-            ))}
-            {rewersyGlobalne.length > 0 && (
-              <optgroup label={t('rewersy.globalneGrupa')}>
-                {rewersyGlobalne.map((w) => (
-                  <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
-                    {w.nazwa}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </select>
-        </div>
-        <PodgladRewersu
-          rewers={rozstrzygnietyRewers}
-          docelowy={{
-            szer,
-            wys,
-            ...(szablon.promienRogow !== undefined ? { promienRogow: szablon.promienRogow } : {}),
-          }}
-          zasoby={edycja.zasoby.zasoby}
-          komunikatBraku={
-            szablon.rewersId === null
-              ? t('rewers.rozstrzygnietyWylaczony')
-              : t('rewers.rozstrzygnietyBrak')
-          }
-          etykieta={t('rewers.podgladEtykieta')}
-        />
       </Sekcja>
       {szablon.warianty?.length ? <p className="podpis">{t('szablon.warianty')}</p> : null}
       {jedenWezelUwaga(szablon.korzen)}

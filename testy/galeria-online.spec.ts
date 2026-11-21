@@ -70,6 +70,10 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
     page.locator('.kafelek-projektu').filter({ hasText: 'Rewers przedmiotu' }),
   ).toHaveCount(1);
   await page.locator('.kafelek-projektu').first().click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Edytor szablonu' })).toBeVisible({
+    timeout: 15000,
+  });
+  await page.getByRole('button', { name: 'Edytor kart ►', exact: true }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await context.setOffline(false);
 });

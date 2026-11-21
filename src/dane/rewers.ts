@@ -1,3 +1,4 @@
+import type { Arkusz } from '../model/arkusz';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import {
   DOMYSLNE_TLO_KARTY,
@@ -25,6 +26,25 @@ export function rewersKarty(
         ? szablon.rewersId
         : talia.rewersId;
   return typeof id === 'string' ? rewersy.get(id) : undefined;
+}
+
+/**
+ * Czy druk dwustronny jest aktywny dla arkusza: jawne ustawienie ma pierwszeństwo,
+ * a bez niego druk dwustronny włącza się domyślnie, gdy talia lub choć jedna karta ma rewers.
+ */
+export function czyDwustronnyWlaczony(
+  arkusz: Pick<Arkusz, 'taliaId' | 'ustawienia'>,
+  talia: Talia | undefined,
+  szablony: ReadonlyMap<string, Szablon>,
+  rewersy: ReadonlyMap<string, Rewers>,
+): boolean {
+  if (arkusz.ustawienia.dwustronny !== undefined) return arkusz.ustawienia.dwustronny.wlaczony;
+  if (rewersy.size === 0 || !talia) return false;
+  if (typeof talia.rewersId === 'string' && rewersy.has(talia.rewersId)) return true;
+  return talia.karty.some((k) => {
+    const s = szablony.get(k.szablonId);
+    return s ? !!rewersKarty(rewersy, k, s, talia) : false;
+  });
 }
 
 export function zrodloRewersuKarty(

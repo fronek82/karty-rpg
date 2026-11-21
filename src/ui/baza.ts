@@ -94,7 +94,13 @@ export async function nowyProjektZSzablonuKreatora(
     },
     (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  return zapiszNowyProjekt(projekt, zasoby);
+  const id = await zapiszNowyProjekt(projekt, zasoby);
+  const pierwszySzablon = projekt.szablony[0]?.id;
+  if (pierwszySzablon) {
+    const { zapiszMiniatureSzablonu } = await import('./miniaturaRewersu');
+    await zapiszMiniatureSzablonu(projekt, zasoby, pierwszySzablon).catch(() => undefined);
+  }
+  return id;
 }
 
 /** Nowy projekt własnych kart z przykładowego szablonu (z jedną kartą z danymi) – zapisany w bazie; zwraca id. */
@@ -106,7 +112,13 @@ export async function nowyProjektZPrzykladu(
   const { projekt, zasoby } = await utworz(przyklad, (plik) =>
     pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  return zapiszNowyProjekt(projekt, zasoby);
+  const id = await zapiszNowyProjekt(projekt, zasoby);
+  const pierwszySzablon = projekt.szablony[0]?.id;
+  if (pierwszySzablon) {
+    const { zapiszMiniatureSzablonu } = await import('./miniaturaRewersu');
+    await zapiszMiniatureSzablonu(projekt, zasoby, pierwszySzablon).catch(() => undefined);
+  }
+  return id;
 }
 
 /** Nowy projekt własnych kart otwierany od razu w edytorze rewersu – zapisany w bazie. */

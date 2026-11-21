@@ -185,20 +185,17 @@ test('przypisania rewersu na 3 poziomach (talia -> szablon -> karta), duplikowan
   await expect(selectRewers).toContainText('Dziedzicz (z talii: Rewers A)');
   await expect(panelKart.locator('.podglad-rewersu-mini svg rect[fill="#112233"]')).toHaveCount(1);
 
-  // 2. Poziom szablonu: nadpisz rewersem B i sprawdź dziedziczenie na karcie.
-  await panelKart.getByRole('link', { name: /Edytuj szablon/ }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Edytor szablonu' })).toBeVisible();
-  const sekcjaRew = await sekcja(page, 'Rewers szablonu');
-  await sekcjaRew
-    .getByLabel('Rewers szablonu', { exact: true })
-    .selectOption({ label: 'Rewers B' });
-  await expect(sekcjaRew.locator('.podglad-rewersu-mini svg rect[fill="#445566"]')).toHaveCount(1);
-  await zapisano(page);
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  // 2. W Edytorze kart (bez zaznaczonej karty): zmiana rewersu dla wszystkich kart na Rewers B.
+  await page.keyboard.press('Escape');
+  const panelPomoc = page.getByRole('complementary', { name: 'Pomoc' });
+  await panelPomoc.getByLabel('Rewers dla wszystkich kart', { exact: true }).selectOption({
+    label: 'Rewers B',
+  });
+  await expect(panelPomoc.locator('.podglad-rewersu-mini svg rect[fill="#445566"]')).toHaveCount(1);
 
-  // Karta 1 dziedziczy teraz Rewers B z szablonu.
+  // Karta 1 dziedziczy teraz Rewers B z talii.
   await page.locator('[data-karta]').nth(0).click();
-  await expect(selectRewers).toContainText('Dziedzicz (z szablonu: Rewers B)');
+  await expect(selectRewers).toContainText('Dziedzicz (z talii: Rewers B)');
   await expect(panelKart.locator('.podglad-rewersu-mini svg rect[fill="#445566"]')).toHaveCount(1);
 
   // 3. Poziom karty: Karta 1 dostaje Rewers A, Karta 2 jawny brak rewersu.
