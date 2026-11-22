@@ -112,6 +112,7 @@ export async function otworzProjekt(page: Page) {
   await page.goto('./#/');
   await page.getByTestId('plik-importu').setInputFiles(await plikProjektu());
   await page.getByRole('link', { name: 'Mieszane' }).first().click();
+  await page.getByRole('button', { name: 'Edytor kart ►', exact: true }).click();
   await expect(page.locator('[data-karta]')).toHaveCount(10, { timeout: 15000 });
 }
 

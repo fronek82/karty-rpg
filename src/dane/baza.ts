@@ -57,7 +57,7 @@ export function czyProjektRewersowy(projekt: Projekt): boolean {
     (projekt.rewersy?.length ?? 0) > 0 &&
     projekt.szablony.length === 1 &&
     projekt.szablony[0]!.korzen.dzieci.length === 0 &&
-    projekt.talie.every((t) => t.karty.every((k) => Object.keys(k.dane).length === 0))
+    projekt.talie.every((t) => t.karty.length === 0)
   );
 }
 
