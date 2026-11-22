@@ -171,4 +171,31 @@ describe('useProjekt', () => {
     expect(gotowy(h.result.current).zapis.stan).toBe('zapisano');
     h.unmount();
   });
+
+  it('tryb ręcznego zapisu (autozapis: false): zmiany czekają na zapiszTeraz()', async () => {
+    const h = renderHook(() => useProjekt(id, { autozapis: false }));
+    await waitFor(() => expect(h.result.current.stan).toBe('gotowy'), { timeout: 4000 });
+    act(() => {
+      gotowy(h.result.current).zmien((p) => ({ ...p, nazwa: 'Ręcznie' }));
+    });
+    expect(gotowy(h.result.current).zapis.stan).toBe('niezapisane');
+    expect(gotowy(h.result.current).niezapisane).toBe(true);
+    // Po upływie czasu debouncingu baza nadal ma starą nazwę.
+    await new Promise((r) => setTimeout(r, 600));
+    expect((await baza().wczytaj(id)).projekt.nazwa).toBe(projekt.nazwa);
+    // Dopiero jawne zapiszTeraz() utrwala zmianę w bazie.
+    await act(async () => {
+      await gotowy(h.result.current).zapiszTeraz();
+    });
+    expect(gotowy(h.result.current).zapis.stan).toBe('zapisano');
+    expect(gotowy(h.result.current).niezapisane).toBe(false);
+    expect((await baza().wczytaj(id)).projekt.nazwa).toBe('Ręcznie');
+    // Kolejna niezapisana zmiana nie zapisuje się przy odmontowaniu.
+    act(() => {
+      gotowy(h.result.current).zmien((p) => ({ ...p, nazwa: 'Porzucona' }));
+    });
+    h.unmount();
+    await new Promise((r) => setTimeout(r, 100));
+    expect((await baza().wczytaj(id)).projekt.nazwa).toBe('Ręcznie');
+  });
 });

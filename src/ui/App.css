@@ -1306,6 +1306,14 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   color: var(--pasek-tekst);
 }
 
+.okno-wyjscia-akcje {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
 .pasek-gorny .status-zapisu.blad {
   color: var(--pasek-tekst);
   text-decoration: underline;

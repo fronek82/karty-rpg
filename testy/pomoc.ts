@@ -40,8 +40,15 @@ export async function dodajKarte(
   await expect(page.getByRole('complementary', { name: 'Zaznaczone karty' })).toBeVisible();
 }
 
-export const zapisano = (page: Page) =>
-  expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+export async function zapisano(page: Page) {
+  const przycisk = page
+    .locator('.pasek-gorny')
+    .getByRole('button', { name: 'Zapisz', exact: true });
+  if (await przycisk.isVisible().catch(() => false)) {
+    if (await przycisk.isEnabled().catch(() => false)) await przycisk.click();
+  }
+  await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+}
 
 /** Środek elementu w pikselach ekranu. */
 export async function srodek(_page: Page, selektor: ReturnType<Page['locator']>) {

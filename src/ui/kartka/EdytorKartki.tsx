@@ -53,6 +53,7 @@ import { t, tJesliJest, tn } from '../../i18n';
 import type { WyrenderowanaKarta } from '../../silnik/karta';
 import { useJezyk } from '../../i18n/react';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
+import { OknoModalne } from '../OknoModalne';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
 import {
@@ -244,6 +245,18 @@ export function EdytorKartki({
   const jezykUi = useJezyk();
   const awersyInne = useAwersyZProjektow(projekt.id, projekt.szablony);
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
+  const [celWyjscia, ustawCelWyjscia] = useState<string>();
+  const zapiszTeraz = edycja.zapiszTeraz;
+  useEffect(() => {
+    const naZapis = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        void zapiszTeraz().catch(() => undefined);
+      }
+    };
+    window.addEventListener('keydown', naZapis);
+    return () => window.removeEventListener('keydown', naZapis);
+  }, [zapiszTeraz]);
   // Po wejściu z edytora szablonu – przewiń do kartki dla jego rozmiaru.
   useEffect(() => {
     if (!pokazKartke) return;
@@ -763,24 +776,26 @@ export function EdytorKartki({
       ? undefined
       : kartki[0]?.wynik?.strony[0];
   useEffect(() => {
-    if (!pierwszaStrona) return;
+    if (!pierwszaStrona || edycja.niezapisane) return;
     const z = setTimeout(() => {
       void baza()
         .zapiszMiniature(projekt.id, scenaDoSvg(pierwszaStrona, { przedrostekId: 'min-' }))
         .catch(() => undefined);
     }, 1500);
     return () => clearTimeout(z);
-  }, [pierwszaStrona, projekt.id]);
-  // …i od razu przy wyjściu z edytora (zmiana tuż przed wyjściem nie czeka 1,5 s).
+  }, [edycja.niezapisane, pierwszaStrona, projekt.id]);
+  // …i od razu przy wyjściu z edytora (tylko gdy stan projektu jest zapisany).
   const ostatniaStrona = useRef(pierwszaStrona);
+  const niezapisaneRef = useRef(edycja.niezapisane);
   useEffect(() => {
     ostatniaStrona.current = pierwszaStrona;
+    niezapisaneRef.current = edycja.niezapisane;
   });
   const idProjektu = projekt.id;
   useEffect(
     () => () => {
       const s = ostatniaStrona.current;
-      if (s)
+      if (s && !niezapisaneRef.current)
         void baza()
           .zapiszMiniature(idProjektu, scenaDoSvg(s, { przedrostekId: 'min-' }))
           .catch(() => undefined);
@@ -1720,9 +1735,16 @@ export function EdytorKartki({
     ? `#/projekt/${idProjektuUrl}/drukuj/${encodeURIComponent(pokazKartke)}`
     : `#/projekt/${idProjektuUrl}/drukuj`;
 
+  const sprawdzWyjscie = (e: React.MouseEvent, cel: string) => {
+    if (!edycja.niezapisane) return;
+    if (cel.startsWith(`#/projekt/${idProjektuUrl}`)) return;
+    e.preventDefault();
+    ustawCelWyjscia(cel);
+  };
+
   const naglowekProjektu = (
     <header className="pasek-gorny" role="banner">
-      <a href="#/" className="logo">
+      <a href="#/" className="logo" onClick={(e) => sprawdzWyjscie(e, '#/')}>
         {t('aplikacja.nazwa')}
       </a>
       <input
@@ -1736,6 +1758,15 @@ export function EdytorKartki({
           })
         }
       />
+      <button
+        type="button"
+        className={edycja.niezapisane ? 'glowny przycisk-zapisz' : 'przycisk-zapisz'}
+        disabled={!edycja.niezapisane || edycja.zapis.stan === 'zapisywanie'}
+        title={t('projekt.zapiszPodpowiedz')}
+        onClick={() => void edycja.zapiszTeraz().catch(() => undefined)}
+      >
+        {t('projekt.zapisz')}
+      </button>
       <span
         role="status"
         aria-live="polite"
@@ -1764,7 +1795,7 @@ export function EdytorKartki({
       >
         ↷
       </button>
-      <a className="przycisk" href={adresPowrotu}>
+      <a className="przycisk" href={adresPowrotu} onClick={(e) => sprawdzWyjscie(e, adresPowrotu)}>
         {t('pasek.powrot')}
       </a>
       {druk ? (
@@ -1803,6 +1834,43 @@ export function EdytorKartki({
   return (
     <div className="edytor-kartki">
       {naglowekProjektu}
+      {celWyjscia && (
+        <OknoModalne tytul={t('projekt.wyjscieTytul')} zamknij={() => ustawCelWyjscia(undefined)}>
+          <p>{t('projekt.wyjscieOpis')}</p>
+          <div className="okno-wyjscia-akcje">
+            <button
+              type="button"
+              className="glowny"
+              onClick={() => {
+                const cel = celWyjscia;
+                void edycja
+                  .zapiszTeraz()
+                  .then(() => {
+                    ustawCelWyjscia(undefined);
+                    window.location.hash = cel;
+                  })
+                  .catch(() => ustawCelWyjscia(undefined));
+              }}
+            >
+              {t('projekt.zapiszIWyjdz')}
+            </button>
+            <button
+              type="button"
+              className="niebezpieczny"
+              onClick={() => {
+                const cel = celWyjscia;
+                ustawCelWyjscia(undefined);
+                window.location.hash = cel;
+              }}
+            >
+              {t('projekt.wyjdzBezZapisu')}
+            </button>
+            <button type="button" autoFocus onClick={() => ustawCelWyjscia(undefined)}>
+              {t('projekt.zostan')}
+            </button>
+          </div>
+        </OknoModalne>
+      )}
       {!druk && kartkaImportu && (
         <ImportDanych
           key={kartkaImportu.id}

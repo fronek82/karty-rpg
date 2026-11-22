@@ -9,7 +9,10 @@ import { baza } from './baza';
 import { zasobyProjektu, type ZasobyProjektu } from './zasobyProjektu';
 
 export type StanZapisu =
-  { stan: 'zapisano' } | { stan: 'zapisywanie' } | { stan: 'blad'; komunikat: string };
+  | { stan: 'zapisano' }
+  | { stan: 'niezapisane' }
+  | { stan: 'zapisywanie' }
+  | { stan: 'blad'; komunikat: string };
 
 export interface ProjektWEdycji {
   projekt: Projekt;
@@ -17,9 +20,14 @@ export interface ProjektWEdycji {
   zasoby: ZasobyProjektu;
   ostrzezenia: string[];
   zapis: StanZapisu;
+  /** Czy projekt ma niezapisane zmiany (w trybie ręcznego zapisu lub po błędzie zapisu). */
+  niezapisane: boolean;
+  /** Natychmiast zapisuje bieżący stan projektu (i zmienione zasoby) do IndexedDB. */
+  zapiszTeraz(): Promise<void>;
   /**
-   * Zmiana samego dokumentu (dane kart, układ) – zapis do bazy z opóźnieniem. `klucz` scala
-   * serię zmian (np. pisanie w jednym polu) w jeden krok „Cofnij”.
+   * Zmiana samego dokumentu (dane kart, układ) – zapis do bazy z opóźnieniem (gdy `autozapis`)
+   * albo oznaczenie niezapisanych zmian (gdy `autozapis: false`). `klucz` scala serię zmian
+   * (np. pisanie w jednym polu) w jeden krok „Cofnij”.
    */
   zmien(f: (p: Projekt) => Projekt, opcje?: { klucz?: string }): void;
   cofnij(): void;
@@ -30,8 +38,8 @@ export interface ProjektWEdycji {
   wersja: number;
   /**
    * Zmiana biblioteki zasobów (czcionki, obrazy). `f` dostaje NAJNOWSZY projekt i dane (nie te
-   * z renderu), wynik od razu trafia do stanu, a zapis z bajtami rusza natychmiast. Obietnica
-   * odrzucona, gdy `f` rzuci (stan bez zmian) albo zapis się nie uda (zmiany czekają na ponowienie).
+   * z renderu), wynik od razu trafia do stanu. Przy `autozapis` zapis rusza natychmiast; przy
+   * zapisie ręcznym czeka na `zapiszTeraz()`.
    */
   zmienZZasobami(
     f: (p: Projekt, dane: DaneZasobow) => { projekt: Projekt; dane: DaneZasobow },
@@ -77,9 +85,15 @@ interface Biezacy {
  * Projekt otwarty do edycji. Źródłem prawdy jest ref `biezacy` (zmiany liczone synchronicznie,
  * bez efektów ubocznych w updaterach stanu); stan Reacta tylko go odzwierciedla. Zapisy idą
  * po kolei (łańcuch obietnic); błąd zapisu zostawia flagi „brudny”, więc kolejna zmiana albo
- * zamknięcie projektu ponawia zapis, a przeglądarka ostrzega przy zamykaniu karty.
+ * ręczny zapis ponawia zapis, a przeglądarka ostrzega przy zamykaniu karty.
  */
-export function useProjekt(id: string): StanProjektu {
+export function useProjekt(id: string, opcje: { autozapis?: boolean } = {}): StanProjektu {
+  const autozapis = opcje.autozapis ?? true;
+  const autozapisRef = useRef(autozapis);
+  useEffect(() => {
+    autozapisRef.current = autozapis;
+  }, [autozapis]);
+
   const [widok, ustawWidok] = useState<
     { id: string; projekt: Projekt; dane: DaneZasobow } | { id: string; blad: string }
   >();
@@ -107,7 +121,11 @@ export function useProjekt(id: string): StanProjektu {
     clearTimeout(zegar.current);
     const zadanie = kolejka.current.then(async () => {
       const b = biezacy.current;
-      if (!b || !b.brudny) return;
+      if (!b || !b.brudny) {
+        if (b && !b.brudny) ustawZapis({ stan: 'zapisano' });
+        return;
+      }
+      ustawZapis({ stan: 'zapisywanie' });
       const { projekt, dane } = b;
       const zZasobami = b.zasobyBrudne;
       b.brudny = false;
@@ -116,7 +134,7 @@ export function useProjekt(id: string): StanProjektu {
         await baza().zapisz(projekt, zZasobami ? dane : undefined);
         if (!biezacy.current?.brudny) ustawZapis({ stan: 'zapisano' });
       } catch (e) {
-        // Zmiany czekają na ponowienie (kolejna edycja, zamknięcie projektu).
+        // Zmiany czekają na ponowienie (kolejna edycja, ręczny zapis lub zamknięcie projektu).
         b.brudny = true;
         b.zasobyBrudne ||= zZasobami;
         ustawZapis({ stan: 'blad', komunikat: komunikat(e) });
@@ -127,6 +145,10 @@ export function useProjekt(id: string): StanProjektu {
     ostatniZapis = kolejka.current;
     return zadanie;
   }, []);
+
+  useEffect(() => {
+    if (autozapis && biezacy.current?.brudny) void zapiszTeraz().catch(() => undefined);
+  }, [autozapis, zapiszTeraz]);
 
   useEffect(() => {
     let aktywny = true;
@@ -157,22 +179,22 @@ export function useProjekt(id: string): StanProjektu {
     };
   }, [id, zapiszTeraz]);
 
-  // Zapis przy zamknięciu projektu; ostrzeżenie przeglądarki przy zamykaniu karty z niezapisanymi zmianami.
+  // Zapis przy zamknięciu (tylko w trybie autozapisu); ostrzeżenie przeglądarki przy zamykaniu karty.
   useEffect(() => {
     const przedZamknieciem = (e: BeforeUnloadEvent) => {
       if (biezacy.current?.brudny) {
-        void zapiszTeraz().catch(() => undefined);
+        if (autozapisRef.current) void zapiszTeraz().catch(() => undefined);
         e.preventDefault();
       }
     };
     window.addEventListener('beforeunload', przedZamknieciem);
     return () => {
       window.removeEventListener('beforeunload', przedZamknieciem);
-      void zapiszTeraz().catch(() => undefined);
+      if (autozapisRef.current) void zapiszTeraz().catch(() => undefined);
     };
   }, [zapiszTeraz]);
 
-  /** Ustawia nowy dokument (z edycji, cofnięcia albo normalizacji) i planuje zapis. */
+  /** Ustawia nowy dokument (z edycji, cofnięcia albo normalizacji) i planuje zapis (jeśli autozapis). */
   const ustawDokument = useCallback(
     (nowy: Projekt) => {
       const b = biezacy.current;
@@ -181,12 +203,16 @@ export function useProjekt(id: string): StanProjektu {
       b.projekt = nowy;
       b.brudny = true;
       odswiez();
-      ustawZapis({ stan: 'zapisywanie' });
       clearTimeout(zegar.current);
-      zegar.current = setTimeout(
-        () => void zapiszTeraz().catch(() => undefined),
-        OPOZNIENIE_ZAPISU,
-      );
+      if (autozapisRef.current) {
+        ustawZapis({ stan: 'zapisywanie' });
+        zegar.current = setTimeout(
+          () => void zapiszTeraz().catch(() => undefined),
+          OPOZNIENIE_ZAPISU,
+        );
+      } else {
+        ustawZapis({ stan: 'niezapisane' });
+      }
     },
     [zapiszTeraz],
   );
@@ -242,8 +268,12 @@ export function useProjekt(id: string): StanProjektu {
       b.brudny = true;
       b.zasobyBrudne = true;
       odswiez();
-      ustawZapis({ stan: 'zapisywanie' });
-      await zapiszTeraz();
+      if (autozapisRef.current) {
+        ustawZapis({ stan: 'zapisywanie' });
+        await zapiszTeraz();
+      } else {
+        ustawZapis({ stan: 'niezapisane' });
+      }
     },
     [zapiszTeraz],
   );
@@ -307,6 +337,8 @@ export function useProjekt(id: string): StanProjektu {
     zasoby: zasobyZRolami,
     ostrzezenia: [...ostrzezenia, ...zasobyZRolami.ostrzezenia],
     zapis,
+    niezapisane: zapis.stan === 'niezapisane' || zapis.stan === 'blad',
+    zapiszTeraz,
     zmien,
     zmienZZasobami,
     cofnij: cofnijZmiane,
@@ -320,6 +352,8 @@ export function useProjekt(id: string): StanProjektu {
 export const tekstZapisu = (z: StanZapisu): string =>
   z.stan === 'zapisano'
     ? t('projekt.zapisano')
-    : z.stan === 'zapisywanie'
-      ? t('projekt.zapisywanie')
-      : t('projekt.bladZapisu', { komunikat: z.komunikat });
+    : z.stan === 'niezapisane'
+      ? t('projekt.niezapisane')
+      : z.stan === 'zapisywanie'
+        ? t('projekt.zapisywanie')
+        : t('projekt.bladZapisu', { komunikat: z.komunikat });
