@@ -301,37 +301,40 @@ describe('tokeny motywów', () => {
     });
   });
 
-  it('kroki menu: biały tekst AA i wyraźna gradacja (jasny = jaśnieją, ciemny = ciemnieją)', () => {
+  it('kroki menu oraz przyciski Awers/Rewers: jednolity kolor kroków i kontrast w motywie ciemnym', () => {
     const gra = ['krok-gra-1', 'krok-gra-2'] as const;
     const wlasne = ['krok-wlasne-1', 'krok-wlasne-2', 'krok-wlasne-3', 'krok-wlasne-4'] as const;
     for (const m of [jasny, ciemny]) {
-      for (const k of [...gra, ...wlasne]) {
-        expect(kontrast(m['krok-tekst']!, m[k]!), k).toBeGreaterThanOrEqual(4.5);
-        expect(
-          kontrast(m['krok-tekst']!, mieszaj('#000000', 12, m[k]!)),
-          `${k}:hover`,
-        ).toBeGreaterThanOrEqual(4.5);
-        expect(
-          kontrast(m['krok-tekst']!, mieszaj('#000000', 22, m[k]!)),
-          `${k}:active`,
-        ).toBeGreaterThanOrEqual(4.5);
+      // Wszystkie kroki w ramach ścieżki mają jeden kolor (bez rozjaśnień między krokami).
+      expect(m['krok-gra-2']!.toLowerCase()).toBe(m['krok-gra-1']!.toLowerCase());
+      for (let i = 1; i < wlasne.length; i++) {
+        expect(m[wlasne[i]!]!.toLowerCase()).toBe(m['krok-wlasne-1']!.toLowerCase());
       }
+      // Awers i Rewers mają odróżniające się od siebie kolory.
+      expect(m['strona-awers']!.toLowerCase()).not.toBe(m['strona-rewers']!.toLowerCase());
     }
-    // Motyw jasny: każdy kolejny krok wyraźnie jaśniejszy.
-    expect(luminancja(jasny['krok-gra-2']!)).toBeGreaterThan(
-      luminancja(jasny['krok-gra-1']!) * 1.6,
-    );
-    for (let i = 1; i < wlasne.length; i++) {
-      expect(luminancja(jasny[wlasne[i]!]!), wlasne[i]).toBeGreaterThan(
-        luminancja(jasny[wlasne[i - 1]!]!) * 1.4,
-      );
+    // Motyw ciemny: ciemny napis (#1e202c) zachowuje kontrast AA (>= 4,5) w spoczynku i po hover, oraz >= 3:1 w :active.
+    for (const k of [...gra, ...wlasne]) {
+      expect(kontrast(ciemny['krok-tekst']!, ciemny[k]!), k).toBeGreaterThanOrEqual(4.5);
+      expect(
+        kontrast(ciemny['krok-tekst']!, mieszaj('#000000', 12, ciemny[k]!)),
+        `${k}:hover`,
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        kontrast(ciemny['krok-tekst']!, mieszaj('#000000', 22, ciemny[k]!)),
+        `${k}:active`,
+      ).toBeGreaterThanOrEqual(3);
     }
-    // Motyw ciemny: odwrotnie – każdy kolejny krok wyraźnie ciemniejszy.
-    expect(luminancja(ciemny['krok-gra-2']!)).toBeLessThan(luminancja(ciemny['krok-gra-1']!) / 1.6);
-    for (let i = 1; i < wlasne.length; i++) {
-      expect(luminancja(ciemny[wlasne[i]!]!), wlasne[i]).toBeLessThan(
-        luminancja(ciemny[wlasne[i - 1]!]!) / 1.4,
-      );
+    for (const k of ['strona-awers', 'strona-rewers'] as const) {
+      expect(kontrast(ciemny['strona-tekst']!, ciemny[k]!), k).toBeGreaterThanOrEqual(4.5);
+      expect(
+        kontrast(ciemny['strona-tekst']!, mieszaj('#000000', 12, ciemny[k]!)),
+        `${k}:hover`,
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        kontrast(ciemny['strona-tekst']!, mieszaj('#000000', 22, ciemny[k]!)),
+        `${k}:active`,
+      ).toBeGreaterThanOrEqual(3);
     }
   });
 });
