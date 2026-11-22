@@ -593,7 +593,7 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   expect(uklad.glify).toBeGreaterThan(5);
   expect(uklad.obrazy).toBeGreaterThan(8);
   expect(uklad.srodekPrzedTekstem).toBe(true);
-  await page.locator(':focus').blur();
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press('Escape');
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
   await expect(page.locator('.ostrzezenia-karty')).toHaveCount(0);
@@ -702,7 +702,7 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
   await luz.getByLabel('Tło do krawędzi slotu').check();
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
   await expect(page.locator('.strona-kartki')).toHaveCount(1);
-  await page.locator(':focus').blur();
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.mouse.move(5, 5);
   await expect(page.locator('.strona-kartki').first()).toHaveScreenshot(
     'przyklad-e2-luz-strona.png',
