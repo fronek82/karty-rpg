@@ -26,11 +26,11 @@ describe('język w przeglądarce', () => {
     ustawJezyk('en');
     expect(localStorage.getItem(KLUCZ_JEZYKA)).toBe('en');
     expect(document.documentElement.lang).toBe('en');
-    expect(document.title).toBe('RPG Cards');
+    expect(document.title).toBe('Cards');
     expect(odczytajJezyk()).toBe('en');
     ustawJezyk('pl');
     expect(document.documentElement.lang).toBe('pl');
-    expect(document.title).toBe('Karty RPG');
+    expect(document.title).toBe('Karty');
   });
 
   it('bez zapisu – język z navigator.language (pl → PL, reszta EN)', () => {

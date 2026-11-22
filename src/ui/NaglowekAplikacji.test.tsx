@@ -169,7 +169,7 @@ describe('NaglowekAplikacji', () => {
   it('nazwa aplikacji po lewej, narzędzia na końcu', () => {
     const { container } = render(<NaglowekAplikacji />);
     const dzieci = [...container.querySelector('header')!.children];
-    expect(dzieci[0]!.textContent).toBe('Karty RPG');
+    expect(dzieci[0]!.textContent).toBe('Karty');
     expect(dzieci.at(-1)!.className).toContain('narzedzia-paska');
   });
 });

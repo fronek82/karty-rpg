@@ -64,7 +64,7 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
   // Zapisany projekt działa lokalnie w IndexedDB po przełączeniu w tryb offline (zero zapytań sieciowych).
   await context.setOffline(true);
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
-  await page.getByRole('link', { name: 'Karty RPG' }).click();
+  await page.getByRole('link', { name: 'Karty' }).click();
   await expect(page.locator('.kafelek-projektu').first()).toContainText('Karta przedmiotu');
   await expect(
     page.locator('.kafelek-projektu').filter({ hasText: 'Rewers przedmiotu' }),

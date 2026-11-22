@@ -20,7 +20,7 @@ afterEach(() => ustawJezyk('pl'));
 
 describe('t()', () => {
   it('zwraca tekst po polsku', () => {
-    expect(t('aplikacja.nazwa')).toBe('Karty RPG');
+    expect(t('aplikacja.nazwa')).toBe('Karty');
   });
 
   it('podstawia parametry', () => {

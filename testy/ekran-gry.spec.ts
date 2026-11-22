@@ -95,7 +95,7 @@ test('dwuklik w kafelek tworzy jeden projekt', async ({ page }) => {
   await page.getByRole('button', { name: 'Stany', exact: true }).dblclick();
   expect(await projektMaKarty(page)).toBeGreaterThan(10);
   await page.waitForTimeout(500);
-  await page.getByRole('link', { name: 'Karty RPG' }).click();
+  await page.getByRole('link', { name: 'Karty' }).click();
   await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
 });
 
