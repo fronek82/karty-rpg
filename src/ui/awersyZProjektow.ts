@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { eksportujSzablon, importujSzablon } from '../dane/archiwum';
 import type { WpisAwersuZProjektu } from '../dane/baza';
+import type { Szablon } from '../model/szablon';
 import { baza } from './baza';
 
 export const PRZEDROSTEK_AWERSU_INNEGO = '__inny_awers__:';
+
+export const normalizujNazweSzablonu = (nazwa: string): string => nazwa.trim().toLowerCase();
 
 export const kluczAwersuZProjektu = (a: Pick<WpisAwersuZProjektu, 'projektId' | 'szablonId'>) =>
   `${a.projektId}:${a.szablonId}`;
@@ -11,18 +14,30 @@ export const kluczAwersuZProjektu = (a: Pick<WpisAwersuZProjektu, 'projektId' | 
 export const etykietaAwersuZProjektu = (a: WpisAwersuZProjektu): string =>
   a.projektNazwa === a.szablonNazwa ? a.projektNazwa : `${a.projektNazwa} — ${a.szablonNazwa}`;
 
-/** Lista szablonów awersów dostępnych w innych projektach zapisanych w przeglądarce. */
+/**
+ * Lista szablonów awersów dostępnych w innych projektach zapisanych w przeglądarce,
+ * bez duplikatów po nazwie i z pominięciem nazw już obecnych w bieżącym projekcie.
+ */
 export function useAwersyZProjektow(
   projektId: string,
-  liczbaSzablonow: number,
+  szablonyWProjekcie: readonly Szablon[],
 ): WpisAwersuZProjektu[] {
   const [awersy, ustawAwersy] = useState<WpisAwersuZProjektu[]>([]);
+  const podpisNazw = useMemo(
+    () =>
+      szablonyWProjekcie
+        .filter((s) => s.korzen.dzieci.length > 0)
+        .map((s) => normalizujNazweSzablonu(s.nazwa))
+        .sort()
+        .join('\0'),
+    [szablonyWProjekcie],
+  );
 
   useEffect(() => {
-    void liczbaSzablonow;
+    const nazwyWProjekcie = new Set(podpisNazw ? podpisNazw.split('\0') : []);
     let aktywny = true;
     void baza()
-      .szablonyAwersowZProjektow(projektId)
+      .szablonyAwersowZProjektow(projektId, nazwyWProjekcie)
       .then((lista) => {
         if (aktywny) ustawAwersy(lista);
       })
@@ -30,7 +45,7 @@ export function useAwersyZProjektow(
     return () => {
       aktywny = false;
     };
-  }, [projektId, liczbaSzablonow]);
+  }, [projektId, podpisNazw]);
 
   return awersy;
 }

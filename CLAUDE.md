@@ -4,7 +4,7 @@ Aplikacja przeglądarkowa (Vite + TypeScript + React) do projektowania i drukowa
 
 ## Gdzie co jest
 
-- Specyfikacja: `SPEC.md`. Plany: `docs/plan-M2.md` (M2 ukończony), `docs/plan-M2b.md` (M2b ukończony 18.11.2026), `docs/plan-UI.md` (przebudowa interfejsu – UI-1…UI-9 ukończone 18.11.2026), `docs/plan-M3.md` (M3 ukończony 19.11.2026), `docs/plan-M4.md` (M4 ukończony 20.11.2026), `docs/plan-M5.md` (M5 ukończony 20.11.2026 – wszystkie etapy M5-1…M5-6 gotowe). Ręczny odbiór M2c ukończony 20.11.2026 (`docs/plan-M2c.md`); listy ręcznego odbioru fizycznego i użytkownika są w `docs/plan-M4.md#ręczne-sprawdzenia-m4` oraz `docs/plan-M5.md#ręczne-sprawdzenia-m5`.
+- Specyfikacja: `SPEC.md`. Aktualny plan: `docs/plan-porzadek-projektow.md` (P1 w realizacji, następnie P2 i P3). Ukończone plany: `docs/plan-M2.md`, `docs/plan-M2b.md`, `docs/plan-UI.md`, `docs/plan-M3.md`, `docs/plan-M4.md`, `docs/plan-M5.md`, `docs/plan-M2c.md`.
 - Decyzje podjęte bez konsultacji: sekcja 9 planu (B1…); nowe dopisuj tam.
 - Przykłady szablonów: `docs/przyklady/`; zrzuty ekranu: `docs/obrazy/`.
 - Agenci: `.claude/agents/` (np. `recenzent` – przegląd, tylko odczyt).

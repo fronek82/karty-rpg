@@ -37,6 +37,10 @@ export interface PodsumowanieProjektu {
   rewersId?: string;
   /** Identyfikator szablonu otwieranego w edytorze szablonu dla projektu własnego (awers). */
   szablonId?: string;
+  /** Pierwszy niepusty szablon awersu w projekcie (do podglądu Awers + Rewers). */
+  aktywnySzablonId?: string;
+  /** Aktywny rewers przypisany w talii, szablonie lub karcie (do podglądu Awers + Rewers). */
+  aktywnyRewersId?: string;
 }
 
 /** Stabilny klucz miniatury SVG konkretnego rewersu w tabeli `miniatury`. */
@@ -85,6 +89,7 @@ export interface WpisRewersuZProjektu {
 export interface WpisAwersuZProjektu {
   projektId: string;
   projektNazwa: string;
+  zmieniono?: string;
   szablonId: string;
   szablonNazwa: string;
 }
@@ -145,6 +150,30 @@ export class BazaProjektow {
     return wpisy.map((w) => {
       const rewersowy = czyProjektRewersowy(w.projekt);
       const pierwszyRewers = rewersowy ? w.projekt.rewersy?.[0] : undefined;
+      const rewersyIds = new Set((w.projekt.rewersy ?? []).map((r) => r.id));
+      const pierwszaKarta = w.projekt.talie.flatMap((tl) => tl.karty)[0];
+      const niepustySzablon =
+        (pierwszaKarta
+          ? w.projekt.szablony.find(
+              (s) => s.id === pierwszaKarta.szablonId && s.korzen.dzieci.length > 0,
+            )
+          : undefined) ?? w.projekt.szablony.find((s) => s.korzen.dzieci.length > 0);
+      const znajdzAktywnyRewers = (): string | undefined => {
+        if (pierwszyRewers) return pierwszyRewers.id;
+        for (const tl of w.projekt.talie) {
+          if (typeof tl.rewersId === 'string' && rewersyIds.has(tl.rewersId)) return tl.rewersId;
+        }
+        for (const s of w.projekt.szablony) {
+          if (typeof s.rewersId === 'string' && rewersyIds.has(s.rewersId)) return s.rewersId;
+        }
+        for (const tl of w.projekt.talie) {
+          for (const k of tl.karty) {
+            if (typeof k.rewersId === 'string' && rewersyIds.has(k.rewersId)) return k.rewersId;
+          }
+        }
+        return undefined;
+      };
+      const aktywnyRewersId = znajdzAktywnyRewers();
       return {
         id: w.id,
         nazwa: pierwszyRewers?.nazwa || w.projekt.nazwa,
@@ -170,6 +199,8 @@ export class BazaProjektow {
         ...(w.projekt.pakiet === 'wlasne' && !rewersowy && w.projekt.szablony[0]
           ? { szablonId: w.projekt.szablony[0].id }
           : {}),
+        ...(niepustySzablon ? { aktywnySzablonId: niepustySzablon.id } : {}),
+        ...(aktywnyRewersId ? { aktywnyRewersId } : {}),
         ...(w.projekt.pakiet ? { pakiet: w.projekt.pakiet } : {}),
       };
     });
@@ -245,19 +276,27 @@ export class BazaProjektow {
     return wynik;
   }
 
-  /** Lista szablonów awersów z innych projektów własnych w tej przeglądarce. */
-  async szablonyAwersowZProjektow(pomijajProjektId?: string): Promise<WpisAwersuZProjektu[]> {
+  /** Lista szablonów awersów z projektów własnych w tej przeglądarce (bez duplikatów po nazwie). */
+  async szablonyAwersowZProjektow(
+    pomijajProjektId?: string,
+    pominNazwy?: ReadonlySet<string>,
+  ): Promise<WpisAwersuZProjektu[]> {
     const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
     const wynik: WpisAwersuZProjektu[] = [];
+    const widzianeNazwy = new Set<string>();
     for (const w of wpisy) {
       if (pomijajProjektId && w.id === pomijajProjektId) continue;
       if (w.projekt.pakiet && w.projekt.pakiet !== 'wlasne') continue;
       if (czyProjektRewersowy(w.projekt)) continue;
       for (const s of w.projekt.szablony) {
         if (s.korzen.dzieci.length === 0) continue;
+        const norm = s.nazwa.trim().toLowerCase();
+        if (pominNazwy?.has(norm) || widzianeNazwy.has(norm)) continue;
+        widzianeNazwy.add(norm);
         wynik.push({
           projektId: w.id,
           projektNazwa: w.projekt.nazwa,
+          zmieniono: w.zmieniono,
           szablonId: s.id,
           szablonNazwa: s.nazwa,
         });

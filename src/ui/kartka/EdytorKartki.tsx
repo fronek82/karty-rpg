@@ -75,6 +75,7 @@ import { scenaDoSvg } from '../../silnik/svg';
 import {
   etykietaAwersuZProjektu,
   kluczAwersuZProjektu,
+  normalizujNazweSzablonu,
   useAwersyZProjektow,
   wczytajPaczkeAwersuBezRewersu,
 } from '../awersyZProjektow';
@@ -241,7 +242,7 @@ export function EdytorKartki({
   // Zmiana języka przerysowuje edytor, ale wynik useMemo się nie przelicza sam: KAŻDY nowy
   // useMemo, który woła t() / tn() / tJesliJest() (także pośrednio), musi mieć `jezykUi` w zależnościach.
   const jezykUi = useJezyk();
-  const awersyInne = useAwersyZProjektow(projekt.id, projekt.szablony.length);
+  const awersyInne = useAwersyZProjektow(projekt.id, projekt.szablony);
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
   // Po wejściu z edytora szablonu – przewiń do kartki dla jego rozmiaru.
   useEffect(() => {
@@ -1161,7 +1162,14 @@ export function EdytorKartki({
       const paczka = await wczytajPaczkeAwersuBezRewersu(wpis);
       let dodanaKartaId: string | undefined;
       await edycja.zmienZZasobami((p, d) => {
-        const dodany = dodajSzablon(p, d, paczka);
+        const istniejacy = p.szablony.find(
+          (s) =>
+            s.korzen.dzieci.length > 0 &&
+            normalizujNazweSzablonu(s.nazwa) === normalizujNazweSzablonu(wpis.szablonNazwa),
+        );
+        const dodany = istniejacy
+          ? { projekt: p, szablonId: istniejacy.id, zasoby: d }
+          : dodajSzablon(p, d, paczka);
         const nowySzablon = dodany.projekt.szablony.find((s) => s.id === dodany.szablonId);
         if (!nowySzablon) return { projekt: p, dane: d };
         const arkuszM = dodany.projekt.arkusze.find((a) => a.id === polozenie.arkuszId);
