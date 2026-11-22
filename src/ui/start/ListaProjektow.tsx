@@ -16,7 +16,7 @@ import {
 import { usunRewers } from '../../dane/rewers';
 import { BladDanych } from '../../dane/schemat';
 import { formatujDate, t } from '../../i18n';
-import { baza } from '../baza';
+import { baza, nowyProjektZAwersuZProjektu, nowyProjektZRewersuZProjektu } from '../baza';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import { poOstatnimZapisie } from '../useProjekt';
 
@@ -37,6 +37,10 @@ const komunikat = (e: unknown) =>
   e instanceof BladDanych
     ? e.message
     : t('projekty.bladNieoczekiwany', { szczegoly: String(e instanceof Error ? e.message : e) });
+
+const przejdzDoProjektu = (id: string) => {
+  window.location.hash = `#/projekt/${encodeURIComponent(id)}`;
+};
 
 type PozycjaSzablonu =
   | {
@@ -310,6 +314,35 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
       return t('projekty.wyeksportowano', { nazwa: poz.awers.szablonNazwa });
     });
 
+  const zamontowany = useRef(true);
+  const wToku = useRef(false);
+  useEffect(() => {
+    zamontowany.current = true;
+    return () => {
+      zamontowany.current = false;
+    };
+  }, []);
+
+  const uzyjWProjekcie = async (poz: PozycjaSzablonu) => {
+    if (wToku.current) return;
+    wToku.current = true;
+    ustawTrwa(true);
+    ustawBlad(undefined);
+    try {
+      const id =
+        poz.rodzaj === 'rewers'
+          ? await nowyProjektZRewersuZProjektu(poz.rewers.projektId, poz.rewers.rewersId)
+          : await nowyProjektZAwersuZProjektu(poz.awers.projektId, poz.awers.szablonId);
+      if (!zamontowany.current) return;
+      przejdzDoProjektu(id);
+    } catch (e) {
+      if (!zamontowany.current) return;
+      ustawBlad(komunikat(e));
+      wToku.current = false;
+      ustawTrwa(false);
+    }
+  };
+
   const usun = (cel: DoUsuniecia) =>
     wykonaj(async () => {
       ustawDoUsuniecia(undefined);
@@ -564,6 +597,9 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                     <a className="przycisk glowny" href={poz.href}>
                       {t('start.otworz')}
                     </a>
+                    <button type="button" disabled={trwa} onClick={() => void uzyjWProjekcie(poz)}>
+                      {t('projekty.uzyjWProjekcie')}
+                    </button>
                     <button
                       type="button"
                       disabled={trwa}
