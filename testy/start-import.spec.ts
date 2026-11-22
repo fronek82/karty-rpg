@@ -126,39 +126,32 @@ test.describe('układ', () => {
 });
 
 test.describe('czcionka tytułu', () => {
-  test('Cinzel Decorative Bold jest załadowana (bez preloadu – B141)', async ({ page }) => {
-    await page.goto('./');
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.locator('head link[rel="preload"]')).toHaveCount(0);
-    await page.evaluate(() => document.fonts.ready);
-    await expect
-      .poll(() => page.evaluate(() => document.fonts.check('700 40px "Cinzel Decorative"')))
-      .toBe(true);
-    const stan = await page.evaluate(
-      () => [...document.fonts].find((f) => f.family.includes('Cinzel'))?.status,
-    );
-    expect(stan).toBe('loaded');
-    const rodzina = await page.evaluate(
-      () => getComputedStyle(document.querySelector('h1')!).fontFamily,
-    );
-    expect(rodzina).toContain('Cinzel Decorative');
-  });
-
-  test('bez pliku czcionki tytuł pokazuje się czcionką awaryjną (Georgia, serif)', async ({
-    page,
-  }) => {
-    await page.route('**/CinzelDecorative-Bold.ttf', (r) => r.abort());
+  test('motyw jasny: bezszeryfowy pogrubiony nagłówek bez preloadu (B141)', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('./');
     const naglowek = page.getByRole('heading', { level: 1 });
     await expect(naglowek).toBeVisible();
     await expect(naglowek).toHaveText('Karty do gier – zaprojektuj i wydrukuj');
-    const rodzina = await naglowek.evaluate((el) => getComputedStyle(el).fontFamily);
-    expect(rodzina).toMatch(/Georgia,\s*serif$/);
-    await expect
-      .poll(() =>
-        page.evaluate(() => [...document.fonts].find((f) => f.family.includes('Cinzel'))?.status),
-      )
-      .toBe('error');
+    await expect(page.locator('head link[rel="preload"]')).toHaveCount(0);
+    const styl = await naglowek.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { rodzina: cs.fontFamily, grubosc: cs.fontWeight };
+    });
+    expect(styl.rodzina).toMatch(/sans-serif$/);
+    expect(styl.grubosc).toBe('800');
+  });
+
+  test('motyw ciemny: szeryfowy nagłówek Georgia 700', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('./');
+    const naglowek = page.getByRole('heading', { level: 1 });
+    await expect(naglowek).toBeVisible();
+    const styl = await naglowek.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { rodzina: cs.fontFamily, grubosc: cs.fontWeight };
+    });
+    expect(styl.rodzina).toMatch(/Georgia.*serif$/);
+    expect(styl.grubosc).toBe('700');
   });
 });
 
