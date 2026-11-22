@@ -1,6 +1,6 @@
 import { useId, useMemo } from 'react';
 import { t } from '../../i18n';
-import type { Rewers } from '../../model/szablon';
+import type { Rewers, Szablon } from '../../model/szablon';
 import { renderujRewers } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
 import type { ProjektWEdycji } from '../useProjekt';
@@ -12,12 +12,14 @@ import type { ProjektWEdycji } from '../useProjekt';
 export function PodgladRewersu({
   rewers,
   docelowy,
+  awers,
   zasoby,
   komunikatBraku,
   etykieta,
 }: {
   rewers: Rewers | undefined;
   docelowy?: { szer: number; wys: number; promienRogow?: number };
+  awers?: { szablon: Szablon; dane: Record<string, string> };
   zasoby: ProjektWEdycji['zasoby']['zasoby'];
   komunikatBraku?: string;
   etykieta?: string;
@@ -26,16 +28,23 @@ export function PodgladRewersu({
   const szerDoc = docelowy?.szer;
   const wysDoc = docelowy?.wys;
   const promienDoc = docelowy?.promienRogow;
+  const szablonAwersu = awers?.szablon;
+  const daneAwersu = awers?.dane;
   const wynik = useMemo(() => {
     if (!rewers) return undefined;
-    const rozmiar =
+    const daneDoRewersu =
+      szablonAwersu && daneAwersu ? { szablon: szablonAwersu, dane: daneAwersu } : undefined;
+    const opcje =
       szerDoc !== undefined && wysDoc !== undefined
         ? {
             szer: szerDoc,
             wys: wysDoc,
             ...(promienDoc !== undefined ? { promienRogow: promienDoc } : {}),
+            ...(daneDoRewersu ? { awers: daneDoRewersu } : {}),
           }
-        : undefined;
+        : daneDoRewersu
+          ? { awers: daneDoRewersu }
+          : undefined;
     const w = renderujRewers(
       rewers,
       {
@@ -43,7 +52,7 @@ export function PodgladRewersu({
         obraz: (id) => zasoby.obrazy.get(id)?.info,
         ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
       },
-      rozmiar,
+      opcje,
     );
     return {
       svg: scenaDoSvg(w.scena, {
@@ -53,7 +62,18 @@ export function PodgladRewersu({
       szer: w.scena.szer,
       wys: w.scena.wys,
     };
-  }, [rewers, szerDoc, wysDoc, promienDoc, zasoby.czcionki, zasoby.obrazy, zasoby.elementy, uid]);
+  }, [
+    rewers,
+    szerDoc,
+    wysDoc,
+    promienDoc,
+    szablonAwersu,
+    daneAwersu,
+    zasoby.czcionki,
+    zasoby.obrazy,
+    zasoby.elementy,
+    uid,
+  ]);
 
   if (!wynik) {
     return komunikatBraku ? <p className="podpis">{komunikatBraku}</p> : null;

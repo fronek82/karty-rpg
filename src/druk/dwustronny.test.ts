@@ -423,4 +423,68 @@ describe('M4-4: regresje siatki, MaxRects, nakładu, kontynuacji, pustych tyłó
     expect(wynik[1]).toBe(t1);
     expect(wynik[3]).toEqual({ szer: 297, wys: 210, elementy: [], glify: {} });
   });
+
+  it('wspólne pola awersu i rewersu renderują osobne wartości dla każdej karty bez kolizji pamięci podręcznej', () => {
+    const s = szablon('s1', 60, 90);
+    const rev: Rewers = {
+      id: 'rev-wspolne',
+      nazwa: 'Rewers z nazwą',
+      rozmiar: { tryb: 'mm', szerokosc: 60, wysokosc: 90 },
+      tlo: '#224466',
+      korzen: {
+        id: 'rk',
+        typ: 'swobodny',
+        dzieci: [
+          {
+            id: 'r-nazwa',
+            nazwa: 'Nazwa',
+            typ: 'tekst',
+            tekst: 'DOMYŚLNA',
+            pozycja: { x: 5, y: 5 },
+            szerokosc: { mm: 50 },
+            wysokosc: { mm: 12 },
+            styl: { czcionka: 'tytul', rozmiar: pt(10), kolor: '#ffffff' },
+          },
+        ],
+      },
+    };
+    const talia: Talia = {
+      id: 't1',
+      nazwa: 'Talia',
+      rewersId: rev.id,
+      karty: [
+        { id: 'k1', szablonId: s.id, dane: { nazwa: 'Miecz' }, ilosc: 1 },
+        { id: 'k2', szablonId: s.id, dane: { nazwa: 'Tarcza' }, ilosc: 1 },
+        { id: 'k3', szablonId: s.id, dane: {}, ilosc: 1 },
+      ],
+    };
+    const arkusz: Arkusz = {
+      id: 'a1',
+      nazwa: 'Arkusz',
+      taliaId: talia.id,
+      ustawienia: {
+        format: 'A4',
+        orientacja: 'pion',
+        marginesy: { gora: 10, prawo: 10, dol: 10, lewo: 10 },
+        odstep: 2,
+        znaczkiCiecia: false,
+        dwustronny: { wlaczony: true, krawedz: 'dluga' },
+      },
+    };
+    const szablony = new Map([[s.id, s]]);
+    const przod = zbudujArkusz(arkusz, talia, szablony, { czcionki });
+    const wynik = zbudujStronyRewersow(arkusz, talia, przod, {
+      szablony,
+      rewersy: new Map([[rev.id, rev]]),
+      czcionki,
+    });
+    expect(wynik.strony).toHaveLength(1);
+    const grupy = wynik.strony[0]!.elementy.filter(
+      (e): e is Extract<ElementSceny, { typ: 'grupa' }> => e.typ === 'grupa',
+    );
+    expect(grupy).toHaveLength(3);
+    // Każda z trzech kart (Miecz, Tarcza, pusta → DOMYŚLNA) ma inne glify na rewersie.
+    const podpisy = grupy.map((g) => JSON.stringify(g.elementy));
+    expect(new Set(podpisy).size).toBe(3);
+  });
 });

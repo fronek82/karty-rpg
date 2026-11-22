@@ -10,7 +10,8 @@ import {
 } from '../../dane/importTabeli';
 import { t } from '../../i18n';
 import type { OpisZasobu } from '../../model/projekt';
-import type { Szablon } from '../../model/szablon';
+import type { Rewers, Szablon } from '../../model/szablon';
+import { wspolneKluczeRewersu } from '../../silnik/karta';
 
 const normalizuj = (s: string) =>
   s
@@ -41,12 +42,14 @@ function domyslneMapowanie(
 export function ImportDanych({
   nazwaKartki,
   szablony,
+  rewersDlaSzablonu,
   zasoby,
   zapisz,
   zamknij,
 }: {
   nazwaKartki: string;
   szablony: Szablon[];
+  rewersDlaSzablonu?: (szablon: Szablon) => Rewers | undefined;
   zasoby: readonly OpisZasobu[];
   zapisz: (szablonId: string, wiersze: WartosciImportu[]) => boolean;
   zamknij: () => void;
@@ -63,6 +66,11 @@ export function ImportDanych({
   const [trwa, ustawTrwa] = useState(false);
   const szablon = szablony.find((s) => s.id === szablonId);
   const pola = useMemo(() => (szablon ? kolumnySzablonu(szablon) : []), [szablon]);
+  const rewers = szablon ? rewersDlaSzablonu?.(szablon) : undefined;
+  const wspolneZRewersem = useMemo(
+    () => (szablon && rewers ? wspolneKluczeRewersu(szablon, rewers) : new Set<string>()),
+    [szablon, rewers],
+  );
   const wynik = useMemo(
     () => (tabela ? sprawdzImport(tabela, mapowanie, pola, zasoby) : undefined),
     [mapowanie, pola, tabela, zasoby],
@@ -198,7 +206,9 @@ export function ImportDanych({
             <legend>{t('tabelaImport.mapowanie')}</legend>
             {pola.map((p) => (
               <label className="pole-panelu" key={p.klucz}>
-                {p.nazwa}
+                {wspolneZRewersem.has(p.klucz)
+                  ? `${p.nazwa} (${t('tabelaImport.awersIRewers')})`
+                  : p.nazwa}
                 <select
                   value={mapowanie.pola.get(p.klucz) ?? ''}
                   onChange={(e) => {

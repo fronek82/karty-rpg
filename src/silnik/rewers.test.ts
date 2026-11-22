@@ -2,9 +2,9 @@ import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { scenyDoPdf } from '../druk/pdf';
 import type { ElementOzdobny } from '../ozdobniki/typy';
-import type { Rewers, TrybTla } from '../model/szablon';
+import type { Rewers, Szablon, TrybTla } from '../model/szablon';
 import type { Czcionka, RejestrCzcionek } from './czcionki';
-import { renderujRewers } from './karta';
+import { renderujRewers, wspolneKluczeRewersu } from './karta';
 import type { ElementSceny, GlifNaScenie, Scena } from './scena';
 import { scenaDoSvg } from './svg';
 import { tekstPoLukuNaScene, ulozTekst } from './tekst';
@@ -610,5 +610,185 @@ describe('M4-3: tekst po łuku, krycie warstw i efekty tekstury tła', () => {
     // Szeroki łuk zawiera glify o kątach przekraczających 45°.
     const maxKat = Math.max(...teksty.flatMap((t) => t.glify.map((g) => Math.abs(g.obrot ?? 0))));
     expect(maxKat).toBeGreaterThan(45);
+  });
+});
+
+describe('wspólne pola awersu i rewersu', () => {
+  const awersSzablon: Szablon = {
+    id: 'sz-awers',
+    nazwa: 'Awers',
+    rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+    tlo: '#ffffff',
+    korzen: {
+      id: 'ak',
+      typ: 'kolumna',
+      dzieci: [
+        {
+          id: 'a-nazwa',
+          nazwa: 'Nazwa',
+          typ: 'tekst',
+          klucz: 'nazwa',
+          styl: { czcionka: 'tytul', rozmiar: 4, kolor: '#111111' },
+        },
+        {
+          id: 'a-koszt',
+          nazwa: 'Koszt',
+          typ: 'wartosc',
+          klucz: 'koszt',
+          ksztalt: 'prostokat',
+          styl: { czcionka: 'tytul', rozmiar: 4, kolor: '#111111' },
+        },
+        {
+          id: 'a-obraz',
+          nazwa: 'Ilustracja',
+          typ: 'obraz',
+          klucz: 'ilustracja',
+          dopasowanie: 'dopasuj',
+        },
+        {
+          id: 'a-konflikt-1',
+          nazwa: 'Notatka',
+          typ: 'tekst',
+          klucz: 'notatka1',
+          styl: { czcionka: 'tytul', rozmiar: 3, kolor: '#111111' },
+        },
+        {
+          id: 'a-konflikt-2',
+          nazwa: 'Notatka',
+          typ: 'tekst',
+          klucz: 'notatka2',
+          styl: { czcionka: 'tytul', rozmiar: 3, kolor: '#111111' },
+        },
+        {
+          id: 'a-tab',
+          nazwa: 'Statystyki',
+          typ: 'tabela',
+          kolumny: [
+            { naglowek: 'Siła', klucz: 'sila' },
+            { naglowek: 'Zręczność', klucz: 'zrecznosc' },
+          ],
+          stylNaglowka: { czcionka: 'tytul', rozmiar: 3, kolor: '#111111' },
+          stylWartosci: { czcionka: 'tytul', rozmiar: 3, kolor: '#111111' },
+        },
+      ],
+    },
+  };
+
+  const rewersWspolny: Rewers = {
+    id: 'rev-wsp',
+    nazwa: 'Rewers',
+    rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+    tlo: '#ffffff',
+    korzen: {
+      id: 'rk',
+      typ: 'swobodny',
+      dzieci: [
+        {
+          id: 'r-nazwa',
+          nazwa: '  nazwa  ',
+          typ: 'tekst',
+          tekst: 'STAŁA',
+          pozycja: { x: 4, y: 4 },
+          szerokosc: { mm: 55 },
+          wysokosc: { mm: 10 },
+          styl: { czcionka: 'tytul', rozmiar: 4, kolor: '#111111' },
+        },
+        {
+          // Ten sam napis „Koszt”, ale inny typ (tekst zamiast wartosc) – nie powinien się wiązać.
+          id: 'r-koszt-zly-typ',
+          nazwa: 'Koszt',
+          typ: 'tekst',
+          tekst: 'BEZ ZMIAN',
+          pozycja: { x: 4, y: 18 },
+          szerokosc: { mm: 55 },
+          wysokosc: { mm: 10 },
+          styl: { czcionka: 'tytul', rozmiar: 4, kolor: '#111111' },
+        },
+        {
+          id: 'r-obraz',
+          nazwa: 'Ilustracja',
+          typ: 'obraz',
+          zasob: 'obr-domyslny',
+          dopasowanie: 'dopasuj',
+          pozycja: { x: 4, y: 32 },
+          szerokosc: { mm: 30 },
+          wysokosc: { mm: 30 },
+        },
+        {
+          // Niejednoznaczna nazwa na awersie (notatka1 vs notatka2) – nie wiąże się.
+          id: 'r-notatka',
+          nazwa: 'Notatka',
+          typ: 'tekst',
+          tekst: 'DOMYŚLNA NOTATKA',
+          pozycja: { x: 4, y: 66 },
+          szerokosc: { mm: 55 },
+          wysokosc: { mm: 10 },
+          styl: { czcionka: 'tytul', rozmiar: 3, kolor: '#111111' },
+        },
+        {
+          // Tabela na rewersie ma własne klucze kolumn, ale te same nagłówki co awers.
+          id: 'r-tab',
+          nazwa: 'Statystyki',
+          typ: 'tabela',
+          pozycja: { x: 4, y: 76 },
+          szerokosc: { mm: 55 },
+          wysokosc: { mm: 10 },
+          kolumny: [
+            { naglowek: 'Siła', klucz: 'rew_kol_1' },
+            { naglowek: 'Nieznana', klucz: 'rew_kol_2' },
+          ],
+          stylNaglowka: { czcionka: 'tytul', rozmiar: 3, kolor: '#111111' },
+          stylWartosci: { czcionka: 'tytul', rozmiar: 3, kolor: '#111111' },
+        },
+      ],
+    },
+  };
+
+  it('wspolneKluczeRewersu wykrywa wyłącznie jednoznaczne pola (w tym kolumny tabeli) o tym samym typie i nazwie', () => {
+    const klucze = wspolneKluczeRewersu(awersSzablon, rewersWspolny);
+    expect([...klucze].sort()).toEqual(['ilustracja', 'nazwa', 'sila']);
+  });
+
+  it('renderujRewers podstawia wartości z awersu (tekst, obraz i tabela), a pomija inny typ i puste pola', () => {
+    const obrazy = new Map([
+      ['obr-domyslny', { szerokosc: 100, wysokosc: 100 }],
+      ['obr-karty', { szerokosc: 100, wysokosc: 100 }],
+    ]);
+    const kontekst = { czcionki, obraz: (id: string) => obrazy.get(id) };
+
+    const zDanymi = renderujRewers(rewersWspolny, kontekst, {
+      awers: {
+        szablon: awersSzablon,
+        dane: {
+          nazwa: 'Miecz ognia',
+          koszt: '99',
+          ilustracja: 'obr-karty',
+          notatka1: 'A',
+          notatka2: 'B',
+          sila: '14',
+        },
+      },
+    });
+    const bezDanych = renderujRewers(rewersWspolny, kontekst, {
+      awers: { szablon: awersSzablon, dane: { nazwa: '   ' } },
+    });
+
+    // Obraz na rewersie przejął zasób z danych karty; bez danych wraca do domyślnego.
+    const obrazyZDanymi = wszystkieElementy(zDanymi.scena)
+      .filter((e) => e.typ === 'obraz')
+      .map((e) => e.zasob);
+    const obrazyBezDanych = wszystkieElementy(bezDanych.scena)
+      .filter((e) => e.typ === 'obraz')
+      .map((e) => e.zasob);
+    expect(obrazyZDanymi).toEqual(['obr-karty']);
+    expect(obrazyBezDanych).toEqual(['obr-domyslny']);
+
+    // Tekst pola „Nazwa” i tabela zmieniły się; pole „Koszt” (inny typ) i „Notatka” (konflikt) zostały stałe.
+    const tekstyZ = wszystkieElementy(zDanymi.scena).filter((e) => e.typ === 'tekst');
+    const tekstyBez = wszystkieElementy(bezDanych.scena).filter((e) => e.typ === 'tekst');
+    expect(tekstyZ.length).toBeGreaterThan(tekstyBez.length);
+    expect(JSON.stringify(tekstyZ[0])).not.toBe(JSON.stringify(tekstyBez[0]));
+    expect(JSON.stringify(tekstyZ[1])).toBe(JSON.stringify(tekstyBez[1]));
+    expect(JSON.stringify(tekstyZ[2])).toBe(JSON.stringify(tekstyBez[2]));
   });
 });
