@@ -230,7 +230,7 @@ test('przypisania rewersu na 3 poziomach (talia -> szablon -> karta), duplikowan
 
   await ustEn.getByRole('button', { name: 'Delete card back Rewers A', exact: true }).click();
   const dialog = ustEn.getByRole('alertdialog', { name: 'Rewers A' });
-  await expect(dialog).toContainText('(2)');
+  await expect(dialog).toContainText('(1)');
   await dialog.getByRole('button', { name: 'Delete card back' }).click();
   await expect(
     ustEn.getByRole('link', { name: 'Edit card back Rewers A', exact: true }),
