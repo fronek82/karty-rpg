@@ -1,5 +1,5 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
+import { dodajSzablon, eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
 import { czyProjektRewersowy } from '../../dane/baza';
 import {
   czyProjektWlasny,
@@ -10,7 +10,7 @@ import {
   pasujeDoSlotu,
   ustawieniaKartkiDla,
 } from '../../dane/wlasneKarty';
-import { czyDwustronnyWlaczony, rewersKarty } from '../../dane/rewers';
+import { czyDwustronnyWlaczony, przypiszRewers, rewersKarty } from '../../dane/rewers';
 import {
   czyMieszane,
   dodajKarteMieszane,
@@ -47,7 +47,7 @@ import {
   zSzarymiObrazami,
   type WynikArkusza,
 } from '../../druk/arkusz';
-import { zbudujStronyRewersow } from '../../druk/dwustronny';
+import { odbijProstokat, osOdwracania, zbudujStronyRewersow } from '../../druk/dwustronny';
 import { kartyOdlozone, pakietProjektu, wrocDoSiatki } from '../../druk/normalizacja';
 import { t, tJesliJest, tn } from '../../i18n';
 import type { WyrenderowanaKarta } from '../../silnik/karta';
@@ -61,6 +61,7 @@ import {
   wymiaryKarty,
   type Karta,
   type PoleObraz,
+  type PrzypisanieRewersu,
   type Rewers,
   type Szablon,
   type Talia,
@@ -71,6 +72,12 @@ import type { Pakiet, TypKarty } from '../../pakiety/typy';
 import type { Ostrzezenie } from '../../silnik/karta';
 import type { Scena } from '../../silnik/scena';
 import { scenaDoSvg } from '../../silnik/svg';
+import {
+  etykietaAwersuZProjektu,
+  kluczAwersuZProjektu,
+  useAwersyZProjektow,
+  wczytajPaczkeAwersuBezRewersu,
+} from '../awersyZProjektow';
 import { baza } from '../baza';
 import { komunikatyBrakujacychWariantow, tekstOstrzezeniaArkusza } from '../ostrzezenia';
 import { pdfWWatku } from '../pdfWWatku';
@@ -86,6 +93,11 @@ import {
 import { obrazyScen, scenyKart, scenyStron, spakuj, type FormatObrazu } from '../eksportObrazow';
 import type { ZadaniePdf } from '../../druk/budowaPdf';
 import { nazwaPliku, zapiszPlik } from '../pliki';
+import {
+  dolaczRewersGlobalnyDoProjektu,
+  useRewersyGlobalne,
+  type ZapisanyRewersGlobalny,
+} from '../rewersyGlobalne';
 import { useZSzarymiObrazami } from '../szareObrazy';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
 import type { ZasobyPakietu } from '../zasoby';
@@ -101,6 +113,7 @@ import {
 import { EksportCsvSzablonu } from './EksportCsvSzablonu';
 import { ImportDanych } from './ImportDanych';
 import { MenuPobierz } from './MenuPobierz';
+import { MenuRewersu } from './MenuRewersu';
 import { MenuTypu } from './MenuTypu';
 import { skalaZKolka, zaokr, zmienObrazKarty } from './obrazKarty';
 import { PanelKart, typDlaSzablonu } from './PanelKart';
@@ -228,6 +241,8 @@ export function EdytorKartki({
   // Zmiana języka przerysowuje edytor, ale wynik useMemo się nie przelicza sam: KAŻDY nowy
   // useMemo, który woła t() / tn() / tJesliJest() (także pośrednio), musi mieć `jezykUi` w zależnościach.
   const jezykUi = useJezyk();
+  const awersyInne = useAwersyZProjektow(projekt.id, projekt.szablony.length);
+  const { rewersyGlobalne } = useRewersyGlobalne(projekt);
   // Po wejściu z edytora szablonu – przewiń do kartki dla jego rozmiaru.
   useEffect(() => {
     if (!pokazKartke) return;
@@ -1135,6 +1150,82 @@ export function EdytorKartki({
     ustawMenu(undefined);
     fokusPo(`[data-karta="${proba.kartaId}"]`);
   };
+
+  const dodajZInnegoProjektu = async (klucz: string) => {
+    if (!menu) return;
+    const polozenie = menu;
+    const wpis = awersyInne.find((a) => kluczAwersuZProjektu(a) === klucz);
+    if (!wpis) return;
+    ustawMenu(undefined);
+    try {
+      const paczka = await wczytajPaczkeAwersuBezRewersu(wpis);
+      let dodanaKartaId: string | undefined;
+      await edycja.zmienZZasobami((p, d) => {
+        const dodany = dodajSzablon(p, d, paczka);
+        const nowySzablon = dodany.projekt.szablony.find((s) => s.id === dodany.szablonId);
+        if (!nowySzablon) return { projekt: p, dane: d };
+        const arkuszM = dodany.projekt.arkusze.find((a) => a.id === polozenie.arkuszId);
+        if (arkuszM && czyMieszane(arkuszM)) {
+          const wolne = kartki.find((x) => x.arkusz.id === arkuszM.id)?.wynik?.mieszane?.wolne[
+            polozenie.kolumna
+          ];
+          const po = wolne?.poKluczu?.slice(0, wolne.poKluczu.lastIndexOf('#'));
+          const w = dodajKarteMieszane(
+            dodany.projekt,
+            arkuszM.id,
+            { szablonId: nowySzablon.id },
+            po,
+          );
+          dodanaKartaId = w.kartaId;
+          return { projekt: w.projekt, dane: dodany.zasoby };
+        }
+        const bazaCtx = kontekst(polozenie.arkuszId);
+        if (!bazaCtx) return { projekt: p, dane: d };
+        const szablonyZNowym = new Map(bazaCtx.szablony);
+        szablonyZNowym.set(nowySzablon.id, nowySzablon);
+        const domyslnyRozmiar =
+          nowySzablon.rozmiar.tryb === 'sloty'
+            ? { kolumny: nowySzablon.rozmiar.kolumny, rzedy: nowySzablon.rozmiar.rzedy }
+            : { kolumny: 1, rzedy: 1 };
+        const x = dodajKarteWSlocie(
+          dodany.projekt,
+          polozenie.arkuszId,
+          polozenie,
+          { szablonId: nowySzablon.id, rozmiary: [domyslnyRozmiar] },
+          { ...bazaCtx, szablony: szablonyZNowym },
+        );
+        if ('blad' in x) return { projekt: p, dane: d };
+        dodanaKartaId = x.kartaId;
+        return { projekt: x.projekt, dane: dodany.zasoby };
+      });
+      if (dodanaKartaId) {
+        ustawZazn({ rodzaj: 'karty', arkuszId: polozenie.arkuszId, ids: [dodanaKartaId] });
+        fokusPo(`[data-karta="${dodanaKartaId}"]`);
+      } else {
+        ustawToast({ tekst: t('kartka.nieMiesci') });
+      }
+    } catch (e) {
+      ustawToast({ tekst: e instanceof Error ? e.message : String(e) });
+    }
+  };
+
+  const wybierzRewersKarty = (
+    taliaId: string,
+    kartaId: string,
+    rewersId: PrzypisanieRewersu | undefined,
+  ) => {
+    zmien((p) => przypiszRewers(p, { rodzaj: 'karta', taliaId, id: kartaId }, rewersId));
+  };
+
+  const wybierzRewersGlobalnyKarty = (
+    taliaId: string,
+    kartaId: string,
+    wpis: ZapisanyRewersGlobalny,
+  ) => {
+    void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
+      przypiszRewers(p, { rodzaj: 'karta', taliaId, id: kartaId }, rid),
+    ).catch((e) => ustawToast({ tekst: e instanceof Error ? e.message : String(e) }));
+  };
   // Przycisk „Rozmiar” na pasku nad kartą: następny (cyklicznie) rozmiar typu, który się mieści.
   const nastepnyRozmiar = (() => {
     const jedna = aktywne?.rodzaj === 'karty' && zaznaczoneKarty.length === 1 && zaznaczoneKarty[0];
@@ -1851,6 +1942,17 @@ export function EdytorKartki({
                 return ok ? undefined : t('kartka.nieMiesci');
               }}
               dodaj={dodajZMenu}
+              dodatkoweAwersy={awersyInne.map((a) => ({
+                klucz: kluczAwersuZProjektu(a),
+                etykieta: etykietaAwersuZProjektu(a),
+              }))}
+              dodajZInnegoProjektu={(klucz) => void dodajZInnegoProjektu(klucz)}
+              rewersyLokalne={projekt.rewersy ?? []}
+              rewersyGlobalne={rewersyGlobalne}
+              wybierzRewersKarty={(kartaId, rid) => wybierzRewersKarty(k.talia.id, kartaId, rid)}
+              wybierzRewersGlobalnyKarty={(kartaId, wpis) =>
+                wybierzRewersGlobalnyKarty(k.talia.id, kartaId, wpis)
+              }
               zamknijMenu={zamknijMenu}
               poczatekGestu={poczatekGestu}
               duplikuj={() => duplikuj(1)}
@@ -1930,6 +2032,12 @@ function WidokKartki({
   gest,
   menu,
   typy,
+  dodatkoweAwersy,
+  dodajZInnegoProjektu,
+  rewersyLokalne,
+  rewersyGlobalne,
+  wybierzRewersKarty,
+  wybierzRewersGlobalnyKarty,
   blokada,
   uwaga,
   przesun,
@@ -1961,6 +2069,12 @@ function WidokKartki({
   gest: Gest | undefined;
   menu: Polozenie | undefined;
   typy: TypKarty[];
+  dodatkoweAwersy: { klucz: string; etykieta: string }[];
+  dodajZInnegoProjektu: (klucz: string) => void;
+  rewersyLokalne: readonly Rewers[];
+  rewersyGlobalne: readonly ZapisanyRewersGlobalny[];
+  wybierzRewersKarty: (kartaId: string, rewersId: PrzypisanieRewersu | undefined) => void;
+  wybierzRewersGlobalnyKarty: (kartaId: string, wpis: ZapisanyRewersGlobalny) => void;
   /** Powód, dla którego typu nie można dodać w tym slocie (undefined – można). */
   blokada: (typ: TypKarty) => string | undefined;
   /** Ostrzeżenie przy typie, który nadal można dodać (mieszane: nie zmieści się w tym miejscu). */
@@ -1984,6 +2098,18 @@ function WidokKartki({
     zazn?.rodzaj === 'karty' && zazn.arkuszId === id ? new Set(zazn.ids) : new Set<string>();
   const gestTu = gest && gest.arkuszId === id ? gest : undefined;
   const [kursor, ustawKursor] = useState<Record<number, string>>({});
+  const [menuRewersu, ustawMenuRewersu] = useState<{
+    strona: number;
+    kartaId: string;
+    maNadpisanie: boolean;
+    styl: React.CSSProperties;
+  }>();
+  useEffect(() => {
+    if (!menuRewersu) return;
+    const zamknij = () => ustawMenuRewersu(undefined);
+    window.addEventListener('pointerdown', zamknij);
+    return () => window.removeEventListener('pointerdown', zamknij);
+  }, [menuRewersu]);
   const pierwsza = karty
     .filter((x) => zaznaczone.has(x.karta.id))
     .sort((a, b) => a.strona - b.strona || a.rzad - b.rzad || a.kolumna - b.kolumna)[0];
@@ -2194,6 +2320,9 @@ function WidokKartki({
                     return (
                       <MenuTypu
                         typy={typy}
+                        dodatkowe={dodatkoweAwersy}
+                        dodatkoweNaglowek={t('kartka.awersyInneProjekty')}
+                        wybierzDodatkowe={dodajZInnegoProjektu}
                         tytul={t('mieszane.dodajTutaj', {
                           szer: Math.round(w.szer),
                           wys: Math.round(w.wys),
@@ -2359,6 +2488,9 @@ function WidokKartki({
                 {menu && menu.strona === s && (
                   <MenuTypu
                     typy={typy}
+                    dodatkowe={dodatkoweAwersy}
+                    dodatkoweNaglowek={t('kartka.awersyInneProjekty')}
+                    wybierzDodatkowe={dodajZInnegoProjektu}
                     styl={(() => {
                       const p = stylProstokata(g, s, menu.kolumna + 1, menu.rzad);
                       return menu.kolumna > g.siatka.kolumny - 4
@@ -2377,6 +2509,80 @@ function WidokKartki({
             )}
           </div>
         );
+        const warstwaRewersu = (() => {
+          if (podgladDruku || drukarniaAktywna || !szerStrony || !wysStrony) return null;
+          const krawedz = k.arkusz.ustawienia.dwustronny?.krawedz ?? 'dluga';
+          const stronaWym = { szer: szerStrony, wys: wysStrony };
+          const os = osOdwracania(stronaWym, krawedz);
+          const rewersyMapa = new Map(rewersyLokalne.map((r) => [r.id, r]));
+          const pozycjeStrony = (k.wynik?.pozycjeKart ?? []).filter((p) => p.strona === s);
+          return (
+            <div className="warstwa-rewersu">
+              {pozycjeStrony.map((p, idx) => {
+                const ob = odbijProstokat(p, stronaWym, os);
+                const sz = szablony?.get(p.karta.szablonId);
+                const maRewers = sz ? !!rewersKarty(rewersyMapa, p.karta, sz, k.talia) : false;
+                const leftPct = (ob.x / szerStrony) * 100;
+                const topPct = (ob.y / wysStrony) * 100;
+                const widthPct = (ob.szer / szerStrony) * 100;
+                const heightPct = (ob.wys / wysStrony) * 100;
+                return (
+                  <button
+                    key={`${p.karta.id}-${idx}`}
+                    type="button"
+                    className={maRewers ? 'slot-rewersu' : 'slot-rewersu pusty'}
+                    data-karta-rewers={p.karta.id}
+                    aria-label={
+                      maRewers ? t('kartka.wybierzRewersKarty') : t('kartka.dodajRewersKarty')
+                    }
+                    title={maRewers ? t('kartka.wybierzRewersKarty') : t('kartka.dodajRewersKarty')}
+                    style={{
+                      left: `${leftPct}%`,
+                      top: `${topPct}%`,
+                      width: `${widthPct}%`,
+                      height: `${heightPct}%`,
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const poPrawej = leftPct + widthPct < 60;
+                      ustawMenuRewersu({
+                        strona: s,
+                        kartaId: p.karta.id,
+                        maNadpisanie: p.karta.rewersId !== undefined,
+                        styl: poPrawej
+                          ? {
+                              position: 'absolute',
+                              left: `${leftPct + widthPct}%`,
+                              top: `${topPct}%`,
+                            }
+                          : { position: 'absolute', right: `${100 - leftPct}%`, top: `${topPct}%` },
+                      });
+                    }}
+                  />
+                );
+              })}
+              {menuRewersu && menuRewersu.strona === s && (
+                <MenuRewersu
+                  key={menuRewersu.kartaId}
+                  rewersyLokalne={rewersyLokalne}
+                  rewersyGlobalne={rewersyGlobalne}
+                  maNadpisanie={menuRewersu.maNadpisanie}
+                  styl={menuRewersu.styl}
+                  wybierzLokalny={(rid) => {
+                    wybierzRewersKarty(menuRewersu.kartaId, rid);
+                    ustawMenuRewersu(undefined);
+                  }}
+                  wybierzGlobalny={(wpis) => {
+                    wybierzRewersGlobalnyKarty(menuRewersu.kartaId, wpis);
+                    ustawMenuRewersu(undefined);
+                  }}
+                  zamknij={() => ustawMenuRewersu(undefined)}
+                />
+              )}
+            </div>
+          );
+        })();
         return (
           <div key={s} className="strona-opakowanie">
             <div className="etykieta-strony">
@@ -2398,7 +2604,7 @@ function WidokKartki({
                 className="strona-kartki strona-rewersu"
                 data-arkusz={id}
                 data-strona-rewersu={s}
-                role="img"
+                role={podgladDruku ? 'img' : 'region'}
                 aria-label={t('dwustronny.podgladTylu', { numer: s + 1, liczba: liczbaStron })}
                 style={wymiaryStronyCss}
               >
@@ -2406,6 +2612,7 @@ function WidokKartki({
                   className="svg-opakowanie"
                   dangerouslySetInnerHTML={{ __html: k.svgRewersow?.[s] ?? '' }}
                 />
+                {warstwaRewersu}
               </div>
             ) : maRewersy ? (
               <div className="para-stron">
@@ -2421,7 +2628,7 @@ function WidokKartki({
                     className="strona-kartki strona-rewersu"
                     data-arkusz={id}
                     data-strona-rewersu={s}
-                    role="img"
+                    role={podgladDruku ? 'img' : 'region'}
                     aria-label={t('dwustronny.podgladTylu', { numer: s + 1, liczba: liczbaStron })}
                     style={wymiaryStronyCss}
                   >
@@ -2429,6 +2636,7 @@ function WidokKartki({
                       className="svg-opakowanie"
                       dangerouslySetInnerHTML={{ __html: k.svgRewersow?.[s] ?? '' }}
                     />
+                    {warstwaRewersu}
                   </div>
                 </div>
               </div>

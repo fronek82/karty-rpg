@@ -30,3 +30,25 @@ it('pozycje mają same napisy – bez ikon', () => {
   }
   for (const p of pozycje) expect(p.textContent).toMatch(/^\p{L}/u);
 });
+
+it('wyświetla i obsługuje dodatkowe szablony z innych projektów', () => {
+  let wybrano = '';
+  render(
+    <MenuTypu
+      typy={typyKartMausrittera}
+      dodatkoweNaglowek="Z innych projektów"
+      dodatkowe={[{ klucz: 'p2:s1', etykieta: 'Warlock — Zaklęcie' }]}
+      styl={{}}
+      blokada={() => undefined}
+      wybierz={() => {}}
+      wybierzDodatkowe={(k) => {
+        wybrano = k;
+      }}
+      zamknij={() => {}}
+    />,
+  );
+  expect(screen.getByText('Z innych projektów')).toBeTruthy();
+  const przycisk = screen.getByRole('menuitem', { name: 'Warlock — Zaklęcie' });
+  przycisk.click();
+  expect(wybrano).toBe('p2:s1');
+});
