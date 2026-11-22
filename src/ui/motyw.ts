@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { zastosujKoloryPrzyciskow } from '../wspolne/koloryPrzyciskow';
 import { KLUCZ_MOTYWU } from '../wspolne/ustawienia';
 
 export { KLUCZ_MOTYWU };
@@ -41,9 +42,10 @@ export function motywDla(pref: PreferencjaMotywu, ciemnySystem: boolean): Motyw 
   return pref;
 }
 
-/** Ustawia data-theme na <html>. */
+/** Ustawia data-theme na <html> i nakłada ewentualne własne kolory przycisków dla tego motywu. */
 export function zastosujMotyw(motyw: Motyw): void {
   document.documentElement.dataset.theme = motyw;
+  zastosujKoloryPrzyciskow(motyw);
 }
 
 function migawka(): Motyw {

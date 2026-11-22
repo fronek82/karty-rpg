@@ -100,6 +100,7 @@ describe('parytet słowników pl ↔ en', () => {
       'jezyk.en',
       'jezyk.plOpis',
       'jezyk.enOpis',
+      'koloryOkno.mausritter',
       'karta.przesuniecieX',
       'karta.przesuniecieY',
       'ostrzezenie.karta',

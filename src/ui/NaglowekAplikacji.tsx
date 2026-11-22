@@ -6,6 +6,7 @@ import { useMotyw } from './motyw';
 // Okna zasobów ładowane leniwie, żeby start strony nie ciągnął fontkita ani katalogu Google Fonts.
 const OknoCzcionek = lazy(() => import('./OknaZasobow').then((m) => ({ default: m.OknoCzcionek })));
 const OknoObrazow = lazy(() => import('./OknaZasobow').then((m) => ({ default: m.OknoObrazow })));
+const OknoKolorow = lazy(() => import('./OknoKolorow').then((m) => ({ default: m.OknoKolorow })));
 
 /**
  * Adres strony instrukcji względem strony aplikacji (druga strona wejściowa Vite, `instrukcja/index.html`;
@@ -56,7 +57,7 @@ export function NarzedziaPaska() {
   const { motyw, ustaw } = useMotyw();
   const aktywny = useJezyk();
   const [otwarte, ustawOtwarte] = useState(false);
-  const [okno, ustawOkno] = useState<'czcionki' | 'obrazy'>();
+  const [okno, ustawOkno] = useState<'czcionki' | 'obrazy' | 'kolory'>();
   const opakowanie = useRef<HTMLDivElement>(null);
   const przycisk = useRef<HTMLButtonElement>(null);
   const idPanelu = useId();
@@ -183,6 +184,16 @@ export function NarzedziaPaska() {
             >
               {t('pasek.wgrajObrazy')}
             </button>
+            <button
+              type="button"
+              className="menu-ustawien-pozycja"
+              onClick={() => {
+                ustawOtwarte(false);
+                ustawOkno('kolory');
+              }}
+            >
+              {t('pasek.koloryPrzyciskow')}
+            </button>
             <hr className="menu-ustawien-podzial" />
             <a
               className="menu-ustawien-pozycja"
@@ -202,8 +213,10 @@ export function NarzedziaPaska() {
         <Suspense fallback={null}>
           {okno === 'czcionki' ? (
             <OknoCzcionek zamknij={zamknijOkno} />
-          ) : (
+          ) : okno === 'obrazy' ? (
             <OknoObrazow zamknij={zamknijOkno} />
+          ) : (
+            <OknoKolorow zamknij={zamknijOkno} />
           )}
         </Suspense>
       )}

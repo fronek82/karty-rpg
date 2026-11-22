@@ -285,3 +285,95 @@
   outline: 2px solid var(--zaznaczenie);
   outline-offset: -2px;
 }
+
+/* Okno wyboru kolorów przycisków w Ustawieniach */
+.okno-kolorow-pasek {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--obramowanie);
+}
+
+.okno-kolorow-grupa {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.okno-kolorow-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.okno-kolorow-wiersz {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--obramowanie);
+  border-radius: 10px;
+  background: var(--tlo);
+}
+
+.okno-kolorow-naglowek {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.okno-kolorow-podglad {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: var(--cien-paska);
+}
+
+.okno-kolorow-kod {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  color: var(--tekst-przygaszony);
+}
+
+.okno-kolorow-probki {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.okno-kolorow-probka {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border-radius: 7px;
+  border: 2px solid var(--obramowanie-pola);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.okno-kolorow-probka:hover {
+  transform: scale(1.1);
+}
+
+.okno-kolorow-probka.aktywna {
+  border-color: var(--tekst);
+  outline: 2px solid var(--akcent);
+  outline-offset: 1px;
+  transform: scale(1.08);
+}
+
+.okno-kolorow-stopka {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--obramowanie);
+}

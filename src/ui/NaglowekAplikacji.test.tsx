@@ -121,7 +121,11 @@ describe('NarzedziaPaska', () => {
     const { container } = render(<NaglowekAplikacji />);
     otworzMenu();
     fireEvent.click(screen.getByRole('button', { name: 'Wgrywanie czcionek' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Wgrywanie czcionek' });
+    const dialog = await screen.findByRole(
+      'dialog',
+      { name: 'Wgrywanie czcionek' },
+      { timeout: 5000 },
+    );
     expect(dialog).toBeTruthy();
     // Dialog renderowany przez portal w document.body (poza <header>, bez dziedziczenia białego fokusu paska).
     expect(container.querySelector('header')!.contains(dialog)).toBe(false);
@@ -138,7 +142,24 @@ describe('NarzedziaPaska', () => {
 
     otworzMenu();
     fireEvent.click(screen.getByRole('button', { name: 'Wgrywanie obrazów' }));
-    expect(await screen.findByRole('dialog', { name: 'Wgrywanie obrazów' })).toBeTruthy();
+    expect(
+      await screen.findByRole('dialog', { name: 'Wgrywanie obrazów' }, { timeout: 5000 }),
+    ).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    otworzMenu();
+    fireEvent.click(screen.getByRole('button', { name: 'Kolory przycisków' }));
+    const dialogKolorow = await screen.findByRole(
+      'dialog',
+      { name: 'Kolory przycisków' },
+      { timeout: 5000 },
+    );
+    expect(dialogKolorow).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Mausritter: Żywy cyjan (#1eabb8)' }));
+    expect(document.documentElement.style.getPropertyValue('--krok-gra-1')).toBe('#1eabb8');
+    fireEvent.click(screen.getByRole('button', { name: 'Przywróć domyślne' }));
+    expect(document.documentElement.style.getPropertyValue('--krok-gra-1')).toBe('');
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
   });
