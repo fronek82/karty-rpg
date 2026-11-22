@@ -100,15 +100,41 @@ test.describe('układ', () => {
     );
   });
 
-  test('menu: dwa paski prowadzą do ekranów własnych kart i Mausrittera', async ({ page }) => {
+  test('menu: sekcje Nowy projekt i Nowy szablon prowadzą do właściwych ekranów', async ({
+    page,
+  }) => {
     await page.goto('./');
-    const paski = page.locator('.start-menu a.pasek-menu');
-    await expect(paski).toHaveCount(2);
-    await expect(paski.nth(0)).toContainText('Stwórz własne karty');
-    await expect(paski.nth(1)).toContainText('Stwórz karty do Mausrittera');
-    await expect(paski.nth(1)).toHaveAttribute('href', '#/gra/mausritter');
-    await paski.nth(1).click();
+    const linki = page.locator('.start-menu a.pasek-menu');
+    await expect(linki).toHaveCount(3);
+    await expect(linki.nth(0)).toContainText('Stwórz własne karty');
+    await expect(linki.nth(1)).toContainText('Stwórz karty do Mausrittera');
+    await expect(linki.nth(1)).toHaveAttribute('href', '#/gra/mausritter');
+    await expect(linki.nth(2)).toContainText('Awers');
+    await expect(linki.nth(2)).toHaveAttribute('href', '#/wlasne/nowy/awers');
+    await expect(page.locator('.start-menu button.pasek-menu')).toContainText('Rewers');
+    await linki.nth(1).click();
     await expect(page).toHaveURL(/#\/gra\/mausritter$/);
+  });
+
+  test('Nowy szablon → Rewers i Użyj w projekcie z zakładki Moje szablony', async ({ page }) => {
+    await page.goto('./');
+    await page.locator('.start-menu button.pasek-menu').click();
+    await expect(page).toHaveURL(/#\/projekt\/([^/]+)\/rewers\//, { timeout: 15000 });
+    const idOryginalu = /#\/projekt\/([^/]+)\/rewers\//.exec(page.url())![1]!;
+    const poleNazwy = page.getByLabel('Nazwa rewersu');
+    await expect(poleNazwy).toBeVisible({ timeout: 15000 });
+    await poleNazwy.fill('Rewers ze startu');
+    await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+
+    await page.goto('./');
+    await page.getByRole('tab', { name: 'Moje szablony' }).click();
+    const kafelek = page.locator('.kafelek-projektu', { hasText: 'Rewers ze startu' });
+    await expect(kafelek).toBeVisible();
+    await kafelek.getByRole('button', { name: 'Użyj w projekcie' }).click();
+    await expect(page).toHaveURL(/#\/projekt\/[^/]+$/, { timeout: 15000 });
+    const idNowego = /#\/projekt\/([^/]+)$/.exec(page.url())![1]!;
+    expect(idNowego).not.toBe(idOryginalu);
+    await expect(page.locator('input.nazwa-projektu')).toHaveValue('Rewers ze startu');
   });
 
   test('stopka: wersja i linki do licencji oraz kodu', async ({ page }) => {

@@ -171,3 +171,74 @@ export async function nowyProjektZRewersem(
   ]);
   return { id, rewersId };
 }
+
+/** Nowy projekt własnych kart oparty o istniejący szablon awersu (bez modyfikacji oryginału). */
+export async function nowyProjektZAwersuZProjektu(
+  projektId: string,
+  szablonId: string,
+  bazaUrl: string = import.meta.env.BASE_URL,
+): Promise<string> {
+  const [{ wczytajPaczkeAwersuBezRewersu }, { nowyProjektWlasny }] = await Promise.all([
+    import('./awersyZProjektow'),
+    import('../dane/wlasneKarty'),
+  ]);
+  const paczka = await wczytajPaczkeAwersuBezRewersu({ projektId, szablonId });
+  const { projekt, zasoby } = await nowyProjektWlasny(paczka, (plik) =>
+    pobierz(`${bazaUrl}czcionki/${plik}`),
+  );
+  const id = await zapiszNowyProjekt(projekt, zasoby);
+  const pierwszySzablon = projekt.szablony[0]?.id;
+  if (pierwszySzablon) {
+    const { zapiszMiniatureSzablonu } = await import('./miniaturaRewersu');
+    await zapiszMiniatureSzablonu(projekt, zasoby, pierwszySzablon).catch(() => undefined);
+  }
+  return id;
+}
+
+/** Nowy projekt własnych kart z przypisanym istniejącym rewersem (bez modyfikacji oryginału). */
+export async function nowyProjektZRewersuZProjektu(
+  projektId: string,
+  rewersId: string,
+  bazaUrl: string = import.meta.env.BASE_URL,
+): Promise<string> {
+  const [
+    { dodajRewersZPaczki, eksportujRewers, importujRewers },
+    { nowyProjektWlasny },
+    { przypiszRewers },
+    { DOMYSLNE_TLO_KARTY },
+    { szablonZKreatora },
+  ] = await Promise.all([
+    import('../dane/archiwum'),
+    import('../dane/wlasneKarty'),
+    import('../dane/rewers'),
+    import('../model/szablon'),
+    import('./szablon/nowySzablonUI'),
+  ]);
+  const { projekt: zrodlo, zasoby: zrodloZasoby } = await baza().wczytaj(projektId);
+  const paczka = importujRewers(eksportujRewers(zrodlo, zrodloZasoby, rewersId));
+  const szablon = szablonZKreatora({
+    nazwa: t('kreator.nazwaDomyslna'),
+    szer: paczka.rewers.rozmiar.szerokosc,
+    wys: paczka.rewers.rozmiar.wysokosc,
+    promien: 3,
+    tlo: DOMYSLNE_TLO_KARTY,
+    uklad: 'swobodny',
+  });
+  const { projekt: bazowy, zasoby } = await nowyProjektWlasny(
+    { szablon, role: {}, zasoby: [], dane: new Map() },
+    (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
+  );
+  const zRewersem = dodajRewersZPaczki({ ...bazowy, nazwa: paczka.rewers.nazwa }, zasoby, paczka);
+  const zRolami = {
+    ...zRewersem.projekt,
+    role: { ...zRewersem.projekt.role, ...paczka.role },
+  };
+  const taliaId = zRolami.talie[0]?.id;
+  const projekt = taliaId
+    ? przypiszRewers(zRolami, { rodzaj: 'talia', id: taliaId }, zRewersem.rewersId)
+    : zRolami;
+  const id = await zapiszNowyProjekt(projekt, zRewersem.dane);
+  const { zapiszMiniatureRewersu } = await import('./miniaturaRewersu');
+  await zapiszMiniatureRewersu(projekt, zRewersem.dane, zRewersem.rewersId).catch(() => undefined);
+  return id;
+}

@@ -406,6 +406,10 @@ textarea:focus-visible {
   margin-bottom: 0;
 }
 
+.start-menu .etykieta-sekcji-odstep {
+  margin-top: 0.75rem;
+}
+
 a.pasek-menu {
   display: block;
   padding: 0.85rem 1rem;
