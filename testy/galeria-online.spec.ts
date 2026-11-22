@@ -66,10 +66,11 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
   await page.getByRole('link', { name: 'Karty', exact: true }).click();
   await expect(page.locator('.kafelek-projektu').first()).toContainText('Karta przedmiotu');
+  await page.getByRole('tab', { name: 'Moje szablony' }).click();
   await expect(
     page.locator('.kafelek-projektu').filter({ hasText: 'Rewers przedmiotu' }),
   ).toHaveCount(1);
-  await page.locator('.kafelek-projektu').first().click();
+  await page.locator('.kafelek-projektu').filter({ hasText: 'Karta przedmiotu' }).first().click();
   await expect(page.getByRole('heading', { level: 1, name: 'Edytor szablonu' })).toBeVisible({
     timeout: 15000,
   });

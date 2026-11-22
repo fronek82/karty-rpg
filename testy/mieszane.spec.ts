@@ -270,7 +270,6 @@ test('na mieszanej kartce 1×1, 1×2 i 2×1 kalibracja chroni początki linii', 
     buffer: Buffer.from(eksportujProjekt({ ...projekt, pakiet: PAKIET_WLASNY }, zasoby)),
   });
   await page.getByRole('link', { name: nazwa, exact: true }).first().click();
-  await page.getByRole('button', { name: 'Edytor kart ►', exact: true }).click();
   const svg = page.locator('svg.svg-strony');
   const d = konturNaD(konturIkony('nozyczki', -2.75, -2.75, 5.5));
   const ikony = svg.locator(`path[d="${d}"]`);

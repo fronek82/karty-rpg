@@ -506,13 +506,13 @@ describe('baza IndexedDB', () => {
     const nowy = { ...projekt, nazwa: 'Zmieniony', zmieniono: '2099-01-01T00:00:00.000Z' };
     await baza.zapisz(nowy);
     expect(await baza.lista()).toEqual([
-      {
+      expect.objectContaining({
         id: 'p1',
         nazwa: 'Zmieniony',
         zmieniono: '2099-01-01T00:00:00.000Z',
         liczbaKart: projekt.talie.reduce((s, t) => s + t.karty.reduce((a, k) => a + k.ilosc, 0), 0),
         liczbaStron: 3,
-      },
+      }),
     ]);
     await baza.zapiszMiniature('p1', '<svg/>');
     expect((await baza.miniatury()).get('p1')).toBe('<svg/>');
@@ -521,6 +521,44 @@ describe('baza IndexedDB', () => {
     expect(await baza.lista()).toEqual([]);
     expect((await baza.miniatury()).size).toBe(0);
     await expect(baza.wczytaj('p1')).rejects.toThrow(/Nie ma projektu/);
+  });
+
+  it('lista() wyznacza aktywnySzablonId i aktywnyRewersId, a szablonyAwersowZProjektow deduplikuje po nazwie', async () => {
+    baza = new BazaProjektow('test-lista-dedup');
+    const rev = {
+      id: 'r1',
+      nazwa: 'Rewers 1',
+      rozmiar: { tryb: 'mm' as const, szerokosc: 63, wysokosc: 88 },
+      korzen: { id: 'rk', typ: 'swobodny' as const, dzieci: [] },
+    };
+    const p1 = {
+      ...projekt,
+      id: 'pw1',
+      pakiet: 'wlasne',
+      zmieniono: '2026-11-22T10:00:00.000Z',
+      rewersy: [rev],
+      talie: projekt.talie.map((tl, i) => (i === 0 ? { ...tl, rewersId: 'r1' } : tl)),
+    };
+    const p2 = {
+      ...projekt,
+      id: 'pw2',
+      pakiet: 'wlasne',
+      zmieniono: '2026-11-22T09:00:00.000Z',
+    };
+    await baza.zapisz(p1, zasoby);
+    await baza.zapisz(p2, zasoby);
+    const podsumowania = await baza.lista();
+    const w1 = podsumowania.find((x) => x.id === 'pw1')!;
+    expect(w1.aktywnySzablonId).toBeTruthy();
+    expect(w1.aktywnyRewersId).toBe('r1');
+    const wszystkie = await baza.szablonyAwersowZProjektow();
+    const znormalizowane = wszystkie.map((s) => s.szablonNazwa.trim().toLowerCase());
+    expect(new Set(znormalizowane).size).toBe(znormalizowane.length);
+    const pierwszaNazwa = znormalizowane[0]!;
+    const bezPierwszej = await baza.szablonyAwersowZProjektow(undefined, new Set([pierwszaNazwa]));
+    expect(bezPierwszej.some((s) => s.szablonNazwa.trim().toLowerCase() === pierwszaNazwa)).toBe(
+      false,
+    );
   });
 
   it('zapis samego dokumentu: nowy opis bez Bloba odrzucony atomowo; istnieje()', async () => {

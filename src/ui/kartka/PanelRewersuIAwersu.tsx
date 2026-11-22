@@ -8,6 +8,7 @@ import type { Talia } from '../../model/szablon';
 import {
   etykietaAwersuZProjektu,
   kluczAwersuZProjektu,
+  normalizujNazweSzablonu,
   PRZEDROSTEK_AWERSU_INNEGO,
   useAwersyZProjektow,
   wczytajPaczkeAwersuBezRewersu,
@@ -35,17 +36,26 @@ export function PanelRewersuIAwersu({
   const { projekt, zmien } = edycja;
   const projektRewersowy = czyProjektRewersowy(projekt);
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
-  const awersyInne = useAwersyZProjektow(projekt.id, projekt.szablony.length);
+  const awersyInne = useAwersyZProjektow(projekt.id, projekt.szablony);
   const [status, ustawStatus] = useState('');
   const [blad, ustawBlad] = useState('');
   const [trwa, ustawTrwa] = useState(false);
   const idAwersu = useId();
   const idRewersu = useId();
 
-  const lokalneAwersy = projekt.szablony.filter((s) => s.korzen.dzieci.length > 0);
-  const lokalneIds = new Set(lokalneAwersy.map((s) => s.id));
   const unikalneAwersy = new Set((talia?.karty ?? []).map((k) => k.szablonId));
   const kandydatAwersu = unikalneAwersy.size === 1 ? [...unikalneAwersy][0]! : '';
+  const lokalneAwersy = (() => {
+    const niepuste = projekt.szablony.filter((s) => s.korzen.dzieci.length > 0);
+    const wgNazwy = new Map<string, (typeof niepuste)[number]>();
+    for (const s of niepuste) {
+      const k = normalizujNazweSzablonu(s.nazwa);
+      const obecny = wgNazwy.get(k);
+      if (!obecny || s.id === kandydatAwersu) wgNazwy.set(k, s);
+    }
+    return [...wgNazwy.values()];
+  })();
+  const lokalneIds = new Set(lokalneAwersy.map((s) => s.id));
   const wspolnyAwersId =
     unikalneAwersy.size > 1 ? '__rozne__' : lokalneIds.has(kandydatAwersu) ? kandydatAwersu : '';
 
@@ -75,6 +85,15 @@ export function PanelRewersuIAwersu({
     const klucz = wartosc.slice(PRZEDROSTEK_AWERSU_INNEGO.length);
     const wpis = awersyInne.find((a) => kluczAwersuZProjektu(a) === klucz);
     if (!wpis) return;
+    const istniejacy = projekt.szablony.find(
+      (s) =>
+        s.korzen.dzieci.length > 0 &&
+        normalizujNazweSzablonu(s.nazwa) === normalizujNazweSzablonu(wpis.szablonNazwa),
+    );
+    if (istniejacy) {
+      await ustawAwersDlaWszystkich(istniejacy.id);
+      return;
+    }
     ustawTrwa(true);
     try {
       const paczkaBezRewersu = await wczytajPaczkeAwersuBezRewersu(wpis);

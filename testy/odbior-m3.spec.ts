@@ -257,12 +257,6 @@ for (const en of [false, true]) {
         buffer: Buffer.from(eksportujProjekt({ ...projekt, pakiet: PAKIET_WLASNY }, zasoby)),
       });
       await page.getByRole('link', { name: nazwa, exact: true }).first().click();
-      await page
-        .getByRole('button', {
-          name: jezyk === 'pl' ? 'Edytor kart ►' : 'Card editor ►',
-          exact: true,
-        })
-        .click();
       await expect(page.locator('html')).toHaveAttribute('lang', jezyk);
       await expect(page.locator('html')).toHaveAttribute('data-theme', motyw);
       await expect(page.locator('[data-karta="pomiary"]')).toBeVisible();
