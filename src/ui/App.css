@@ -269,13 +269,22 @@ textarea:focus-visible {
 }
 
 .start-naglowek h1 {
-  font-family: 'Cinzel Decorative', Georgia, serif;
-  font-weight: 700;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-weight: 800;
   font-size: clamp(1.7rem, 3.4vw + 0.6rem, 2.75rem);
   line-height: 1.2;
-  letter-spacing: 0.01em;
-  color: var(--tytul);
+  letter-spacing: -0.01em;
+  color: var(--tekst);
   margin: 0;
+}
+
+[data-theme='dark'] .start-naglowek h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .start-naglowek p {
