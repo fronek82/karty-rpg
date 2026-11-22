@@ -1184,7 +1184,7 @@ export function EdytorKartki({
         const szablonyZNowym = new Map(bazaCtx.szablony);
         szablonyZNowym.set(nowySzablon.id, nowySzablon);
         const domyslnyRozmiar =
-          nowySzablon.rozmiar.tryb === 'siatka'
+          nowySzablon.rozmiar.tryb === 'sloty'
             ? { kolumny: nowySzablon.rozmiar.kolumny, rzedy: nowySzablon.rozmiar.rzedy }
             : { kolumny: 1, rzedy: 1 };
         const x = dodajKarteWSlocie(
