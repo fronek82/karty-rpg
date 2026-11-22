@@ -38,6 +38,10 @@ const komunikat = (e: unknown) =>
     ? e.message
     : t('projekty.bladNieoczekiwany', { szczegoly: String(e instanceof Error ? e.message : e) });
 
+const przejdzDoProjektu = (id: string) => {
+  window.location.hash = `#/projekt/${encodeURIComponent(id)}`;
+};
+
 type PozycjaSzablonu =
   | {
       klucz: string;
@@ -330,7 +334,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           ? await nowyProjektZRewersuZProjektu(poz.rewers.projektId, poz.rewers.rewersId)
           : await nowyProjektZAwersuZProjektu(poz.awers.projektId, poz.awers.szablonId);
       if (!zamontowany.current) return;
-      window.location.hash = `#/projekt/${encodeURIComponent(id)}`;
+      przejdzDoProjektu(id);
     } catch (e) {
       if (!zamontowany.current) return;
       ustawBlad(komunikat(e));
