@@ -349,7 +349,8 @@ export function kartkaDlaSzablonu(
   const szablony = new Map(p.szablony.map((x) => [x.id, x]));
   const jest = p.arkusze.find((a) =>
     wlasnyProjekt
-      ? pasujeDoSlotu(
+      ? a.ustawienia.rozmiary === 'mieszane' ||
+        pasujeDoSlotu(
           s,
           slotKartki(
             a,

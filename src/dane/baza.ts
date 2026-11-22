@@ -35,11 +35,17 @@ export interface PodsumowanieProjektu {
   typStrony?: 'awers' | 'rewers';
   /** Identyfikator rewersu otwieranego domyślnie dla samodzielnego projektu rewersowego. */
   rewersId?: string;
+  /** Identyfikator szablonu otwieranego w edytorze szablonu dla projektu własnego (awers). */
+  szablonId?: string;
 }
 
 /** Stabilny klucz miniatury SVG konkretnego rewersu w tabeli `miniatury`. */
 export const kluczMiniaturyRewersu = (projektId: string, rewersId: string): string =>
   `rewers:${projektId}:${rewersId}`;
+
+/** Stabilny klucz miniatury SVG pojedynczego szablonu awersu w tabeli `miniatury`. */
+export const kluczMiniaturySzablonu = (projektId: string, szablonId: string): string =>
+  `szablon:${projektId}:${szablonId}`;
 
 /**
  * Rozpoznaje samodzielny projekt rewersowy utworzony przez „Nowy szablon → Rewers”
@@ -51,7 +57,7 @@ export function czyProjektRewersowy(projekt: Projekt): boolean {
     (projekt.rewersy?.length ?? 0) > 0 &&
     projekt.szablony.length === 1 &&
     projekt.szablony[0]!.korzen.dzieci.length === 0 &&
-    projekt.talie.every((t) => t.karty.every((k) => Object.keys(k.dane).length === 0))
+    projekt.talie.every((t) => t.karty.length === 0)
   );
 }
 
@@ -74,6 +80,13 @@ export interface WpisRewersuZProjektu {
   rewersId: string;
   nazwa: string;
   projektRewersowy?: boolean;
+}
+
+export interface WpisAwersuZProjektu {
+  projektId: string;
+  projektNazwa: string;
+  szablonId: string;
+  szablonNazwa: string;
 }
 
 export interface WpisCzcionkiZProjektu {
@@ -154,6 +167,9 @@ export class BazaProjektow {
           0,
         ),
         ...(pierwszyRewers ? { typStrony: 'rewers' as const, rewersId: pierwszyRewers.id } : {}),
+        ...(w.projekt.pakiet === 'wlasne' && !rewersowy && w.projekt.szablony[0]
+          ? { szablonId: w.projekt.szablony[0].id }
+          : {}),
         ...(w.projekt.pakiet ? { pakiet: w.projekt.pakiet } : {}),
       };
     });
@@ -223,6 +239,27 @@ export class BazaProjektow {
           rewersId: r.id,
           nazwa: r.nazwa,
           projektRewersowy,
+        });
+      }
+    }
+    return wynik;
+  }
+
+  /** Lista szablonów awersów z innych projektów własnych w tej przeglądarce. */
+  async szablonyAwersowZProjektow(pomijajProjektId?: string): Promise<WpisAwersuZProjektu[]> {
+    const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
+    const wynik: WpisAwersuZProjektu[] = [];
+    for (const w of wpisy) {
+      if (pomijajProjektId && w.id === pomijajProjektId) continue;
+      if (w.projekt.pakiet && w.projekt.pakiet !== 'wlasne') continue;
+      if (czyProjektRewersowy(w.projekt)) continue;
+      for (const s of w.projekt.szablony) {
+        if (s.korzen.dzieci.length === 0) continue;
+        wynik.push({
+          projektId: w.id,
+          projektNazwa: w.projekt.nazwa,
+          szablonId: s.id,
+          szablonNazwa: s.nazwa,
         });
       }
     }
@@ -339,6 +376,7 @@ export class BazaProjektow {
         await this.db.projekty.delete(id);
         await this.db.miniatury.delete(id);
         await this.db.miniatury.where('id').startsWith(`rewers:${id}:`).delete();
+        await this.db.miniatury.where('id').startsWith(`szablon:${id}:`).delete();
       },
     );
   }

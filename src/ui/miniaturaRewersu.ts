@@ -1,7 +1,8 @@
-import { czyProjektRewersowy, kluczMiniaturyRewersu } from '../dane/baza';
+import { czyProjektRewersowy, kluczMiniaturyRewersu, kluczMiniaturySzablonu } from '../dane/baza';
+import { danePodgladu } from '../dane/szablon';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
 import { RejestrCzcionek, wczytajCzcionke } from '../silnik/czcionki';
-import { renderujRewers } from '../silnik/karta';
+import { renderujKarte, renderujRewers } from '../silnik/karta';
 import type { Scena } from '../silnik/scena';
 import { scenaDoSvg } from '../silnik/svg';
 import { baza } from './baza';
@@ -47,26 +48,7 @@ function adresObrazuDataUri(
   };
 }
 
-/** Zamienia gotową scenę rewersu na samodzielny SVG do podglądu na liście „Moje projekty”. */
-export function scenaRewersuDoMiniaturySvg(
-  scena: Scena,
-  projekt: Projekt,
-  dane: DaneZasobow,
-): string {
-  return scenaDoSvg(scena, {
-    adresObrazu: adresObrazuDataUri(projekt.zasoby, dane),
-    przedrostekId: 'min-rw-',
-  });
-}
-
-/** Renderuje kartę rewersu z projektu i jego zasobów do samodzielnego SVG miniatury. */
-export function renderujMiniatureRewersu(
-  projekt: Projekt,
-  dane: DaneZasobow,
-  rewersId: string,
-): string | undefined {
-  const rewers = projekt.rewersy?.find((r) => r.id === rewersId);
-  if (!rewers) return undefined;
+function zbudujKontekstMiniatury(projekt: Projekt, dane: DaneZasobow) {
   const rejestr = new RejestrCzcionek();
   for (const z of projekt.zasoby) {
     if (z.rodzaj !== 'czcionka') continue;
@@ -86,12 +68,72 @@ export function renderujMiniatureRewersu(
         : [],
     ),
   );
-  const wynik = renderujRewers(rewers, {
+  return {
     czcionki: rejestr,
-    obraz: (id) => obrazy.get(id),
+    obraz: (id: string) => obrazy.get(id),
     ...(projekt.biblioteka?.ozdobniki ? { elementy: projekt.biblioteka.ozdobniki } : {}),
+  };
+}
+
+/** Zamienia gotową scenę rewersu na samodzielny SVG do podglądu na liście „Moje projekty”. */
+export function scenaRewersuDoMiniaturySvg(
+  scena: Scena,
+  projekt: Projekt,
+  dane: DaneZasobow,
+): string {
+  return scenaDoSvg(scena, {
+    adresObrazu: adresObrazuDataUri(projekt.zasoby, dane),
+    przedrostekId: 'min-rw-',
   });
+}
+
+/** Zamienia gotową scenę pojedynczej karty szablonu na samodzielny SVG do „Moich projektów”. */
+export function scenaSzablonuDoMiniaturySvg(
+  scena: Scena,
+  projekt: Projekt,
+  dane: DaneZasobow,
+): string {
+  return scenaDoSvg(scena, {
+    adresObrazu: adresObrazuDataUri(projekt.zasoby, dane),
+    przedrostekId: 'min-sz-',
+  });
+}
+
+/** Renderuje kartę rewersu z projektu i jego zasobów do samodzielnego SVG miniatury. */
+export function renderujMiniatureRewersu(
+  projekt: Projekt,
+  dane: DaneZasobow,
+  rewersId: string,
+): string | undefined {
+  const rewers = projekt.rewersy?.find((r) => r.id === rewersId);
+  if (!rewers) return undefined;
+  const wynik = renderujRewers(rewers, zbudujKontekstMiniatury(projekt, dane));
   return scenaRewersuDoMiniaturySvg(wynik.scena, projekt, dane);
+}
+
+/** Renderuje pojedynczy szablon awersu z projektu do samodzielnego SVG miniatury. */
+export function renderujMiniatureSzablonu(
+  projekt: Projekt,
+  dane: DaneZasobow,
+  szablonId: string,
+): string | undefined {
+  const szablon = projekt.szablony.find((s) => s.id === szablonId);
+  if (!szablon) return undefined;
+  const pierwszaKarta = projekt.talie
+    .flatMap((t) => t.karty)
+    .find((k) => k.szablonId === szablon.id && Object.keys(k.dane).length > 0);
+  const daneKarty = pierwszaKarta
+    ? { ...danePodgladu(szablon), ...pierwszaKarta.dane }
+    : danePodgladu(szablon);
+  const wynik = renderujKarte(
+    szablon,
+    {
+      dane: daneKarty,
+      ...(pierwszaKarta?.obrazy ? { obrazy: pierwszaKarta.obrazy } : {}),
+    },
+    zbudujKontekstMiniatury(projekt, dane),
+  );
+  return scenaSzablonuDoMiniaturySvg(wynik.scena, projekt, dane);
 }
 
 /** Zapisuje miniaturę karty rewersu w IndexedDB (a dla samodzielnego projektu rewersowego także pod jego ID). */
@@ -108,6 +150,29 @@ export async function zapiszMiniatureRewersu(
   const db = baza();
   await db.zapiszMiniature(kluczMiniaturyRewersu(projekt.id, rewersId), svg);
   if (czyProjektRewersowy(projekt) && projekt.rewersy?.[0]?.id === rewersId) {
+    await db.zapiszMiniature(projekt.id, svg);
+  }
+  return svg;
+}
+
+/** Zapisuje miniaturę pojedynczego szablonu awersu w IndexedDB (pod kluczem szablonu i ID projektu). */
+export async function zapiszMiniatureSzablonu(
+  projekt: Projekt,
+  dane: DaneZasobow,
+  szablonId: string,
+  scena?: Scena,
+): Promise<string | undefined> {
+  const svg = scena
+    ? scenaSzablonuDoMiniaturySvg(scena, projekt, dane)
+    : renderujMiniatureSzablonu(projekt, dane, szablonId);
+  if (!svg) return undefined;
+  const db = baza();
+  await db.zapiszMiniature(kluczMiniaturySzablonu(projekt.id, szablonId), svg);
+  if (
+    (!projekt.pakiet || projekt.pakiet === 'wlasne') &&
+    !czyProjektRewersowy(projekt) &&
+    projekt.szablony[0]?.id === szablonId
+  ) {
     await db.zapiszMiniature(projekt.id, svg);
   }
   return svg;

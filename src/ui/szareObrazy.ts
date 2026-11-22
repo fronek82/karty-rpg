@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { zasobyObrazowSzablonu } from '../dane/biblioteka';
-import { rewersJakoSzablon, rewersKarty } from '../dane/rewers';
+import { czyDwustronnyWlaczony, rewersJakoSzablon, rewersKarty } from '../dane/rewers';
 import { SUFIKS_SZARY } from '../druk/arkusz';
 import type { Arkusz } from '../model/arkusz';
 import type { Rewers, Talia } from '../model/szablon';
@@ -17,7 +17,7 @@ export function obrazyCzarnoBialych(zrodlo: ZrodloArkuszy, z: ZasobyPakietu): Se
   for (const a of zrodlo.arkusze) {
     if (!a.ustawienia.czarnoBialy) continue;
     const talia = zrodlo.talie.find((x) => x.id === a.taliaId);
-    const dwustronny = !!a.ustawienia.dwustronny?.wlaczony && rewersyMapa.size > 0;
+    const dwustronny = czyDwustronnyWlaczony(a, talia, z.szablony, rewersyMapa);
     for (const k of talia?.karty ?? []) {
       for (const v of Object.values(k.dane)) if (z.obrazy.has(v)) ids.add(v);
       const s = z.szablony.get(k.szablonId);
