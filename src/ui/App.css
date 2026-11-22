@@ -1511,6 +1511,9 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 .menu-typu {
   z-index: 10;
   width: 18rem;
+  max-height: 24rem;
+  overflow-y: auto;
+  pointer-events: auto;
   background: var(--tlo-panelu);
   color: var(--tekst);
   border: 1px solid var(--obramowanie);
@@ -1526,6 +1529,43 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   letter-spacing: 0.04em;
   color: var(--tekst-przygaszony);
   padding: 0.35rem 0.6rem 0.2rem;
+}
+
+.menu-sekcja {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tekst-przygaszony);
+  padding: 0.45rem 0.6rem 0.2rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--obramowanie);
+}
+
+.warstwa-rewersu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.slot-rewersu {
+  position: absolute;
+  pointer-events: auto;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 0.25rem;
+  padding: 0;
+  cursor: pointer;
+}
+
+.slot-rewersu.pusty {
+  border: 2px dashed var(--obramowanie-pola);
+  background: color-mix(in srgb, var(--zaznaczenie-papier) 6%, transparent);
+}
+
+.slot-rewersu:hover,
+.slot-rewersu:focus-visible {
+  border: 2px solid var(--zaznaczenie-papier);
+  background: color-mix(in srgb, var(--zaznaczenie-papier) 10%, transparent);
 }
 
 .menu-pozycja {

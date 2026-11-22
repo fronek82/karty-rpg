@@ -14,12 +14,15 @@ const rozmiar = (r: { kolumny: number; rzedy: number; id?: string; nazwa?: strin
  */
 export function MenuTypu({
   typy,
+  dodatkowe,
+  dodatkoweNaglowek,
   styl,
   blokada,
   uwaga,
   tytul,
   stopka,
   wybierz,
+  wybierzDodatkowe,
   zamknij,
 }: {
   /** Tytuł menu (domyślnie „Dodaj kartę w tym slocie”). */
@@ -29,10 +32,14 @@ export function MenuTypu({
   /** Ostrzeżenie przy typie, który nadal można dodać (pozycja klikalna). */
   uwaga?: (typ: TypKarty) => string | undefined;
   typy: TypKarty[];
+  /** Dodatkowe szablony awersów z innych projektów w przeglądarce. */
+  dodatkowe?: { klucz: string; etykieta: string }[];
+  dodatkoweNaglowek?: string;
   styl: React.CSSProperties;
   /** Powód blokady typu w tym slocie (np. „nie mieści się”); undefined – można dodać. */
   blokada: (typ: TypKarty) => string | undefined;
   wybierz: (typ: TypKarty, wariant: number) => void;
+  wybierzDodatkowe?: (klucz: string) => void;
   zamknij: () => void;
 }) {
   const [rozwiniety, ustawRozwiniety] = useState<string>();
@@ -47,7 +54,7 @@ export function MenuTypu({
       (pozycje().find((b) => b.getAttribute('aria-disabled') !== 'true') ?? pozycje()[0])?.focus(),
     [],
   );
-  if (typy.length === 0) {
+  if (typy.length === 0 && (!dodatkowe || dodatkowe.length === 0)) {
     return (
       <div className="menu-typu" role="menu" aria-label={t('kartka.dodajKarte')} style={styl}>
         <p className="podpis">{t('kartka.brakTypow')}</p>
@@ -136,6 +143,22 @@ export function MenuTypu({
           </div>
         );
       })}
+      {dodatkowe && dodatkowe.length > 0 && wybierzDodatkowe && (
+        <>
+          {dodatkoweNaglowek && <div className="menu-sekcja">{dodatkoweNaglowek}</div>}
+          {dodatkowe.map((d) => (
+            <button
+              key={d.klucz}
+              type="button"
+              role="menuitem"
+              className="menu-pozycja"
+              onClick={() => wybierzDodatkowe(d.klucz)}
+            >
+              <span>{d.etykieta}</span>
+            </button>
+          ))}
+        </>
+      )}
       {stopka && <p className="menu-stopka">{stopka}</p>}
     </div>
   );

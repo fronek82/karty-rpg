@@ -1,11 +1,17 @@
-import { useEffect, useId, useState } from 'react';
-import { dodajSzablon, eksportujSzablon, importujSzablon } from '../../dane/archiwum';
-import { czyProjektRewersowy, type WpisAwersuZProjektu } from '../../dane/baza';
+import { useId, useState } from 'react';
+import { dodajSzablon } from '../../dane/archiwum';
+import { czyProjektRewersowy } from '../../dane/baza';
 import { przypiszRewers } from '../../dane/rewers';
 import { slotSzablonu } from '../../dane/wlasneKarty';
 import { t } from '../../i18n';
 import type { Talia } from '../../model/szablon';
-import { baza } from '../baza';
+import {
+  etykietaAwersuZProjektu,
+  kluczAwersuZProjektu,
+  PRZEDROSTEK_AWERSU_INNEGO,
+  useAwersyZProjektow,
+  wczytajPaczkeAwersuBezRewersu,
+} from '../awersyZProjektow';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
 import {
   dolaczRewersGlobalnyDoProjektu,
@@ -16,8 +22,8 @@ import type { ProjektWEdycji } from '../useProjekt';
 
 /**
  * Sekcja w prawym panelu Edytora kart (gdy żadna karta nie jest zaznaczona):
- * - dla projektu rewersowego: wybór awersu z istniejących projektów w przeglądarce;
- * - dla każdego projektu: wybór rewersu dla wszystkich kart w talii.
+ * - wybór awersu dla wszystkich kart w talii (z bieżącego i wszystkich innych projektów);
+ * - wybór rewersu dla wszystkich kart w talii (z bieżącego i wszystkich innych projektów).
  */
 export function PanelRewersuIAwersu({
   edycja,
@@ -29,67 +35,76 @@ export function PanelRewersuIAwersu({
   const { projekt, zmien } = edycja;
   const projektRewersowy = czyProjektRewersowy(projekt);
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
-  const [awersy, ustawAwersy] = useState<WpisAwersuZProjektu[]>([]);
+  const awersyInne = useAwersyZProjektow(projekt.id, projekt.szablony.length);
   const [status, ustawStatus] = useState('');
   const [blad, ustawBlad] = useState('');
   const [trwa, ustawTrwa] = useState(false);
   const idAwersu = useId();
   const idRewersu = useId();
 
-  useEffect(() => {
-    if (!projektRewersowy) return;
-    let aktywny = true;
-    void baza()
-      .szablonyAwersowZProjektow(projekt.id)
-      .then((lista) => {
-        if (aktywny) ustawAwersy(lista);
-      })
-      .catch(() => undefined);
-    return () => {
-      aktywny = false;
-    };
-  }, [projektRewersowy, projekt.id]);
+  const lokalneAwersy = projekt.szablony.filter((s) => s.korzen.dzieci.length > 0);
+  const lokalneIds = new Set(lokalneAwersy.map((s) => s.id));
+  const unikalneAwersy = new Set((talia?.karty ?? []).map((k) => k.szablonId));
+  const kandydatAwersu = unikalneAwersy.size === 1 ? [...unikalneAwersy][0]! : '';
+  const wspolnyAwersId =
+    unikalneAwersy.size > 1 ? '__rozne__' : lokalneIds.has(kandydatAwersu) ? kandydatAwersu : '';
 
-  const dolaczAwers = async (klucz: string) => {
-    if (!klucz || trwa) return;
-    const wpis = awersy.find((a) => `${a.projektId}:${a.szablonId}` === klucz);
-    if (!wpis) return;
-    ustawTrwa(true);
+  const ustawAwersDlaWszystkich = async (wartosc: string) => {
+    if (!wartosc || !talia || trwa) return;
     ustawStatus('');
     ustawBlad('');
+    if (!wartosc.startsWith(PRZEDROSTEK_AWERSU_INNEGO)) {
+      const sz = projekt.szablony.find((s) => s.id === wartosc);
+      if (!sz) return;
+      zmien((p) => {
+        const talie = p.talie.map((tl) => {
+          if (tl.id !== talia.id) return tl;
+          if (tl.karty.length === 0) {
+            return {
+              ...tl,
+              karty: [{ id: crypto.randomUUID(), szablonId: sz.id, dane: {}, ilosc: 1 }],
+            };
+          }
+          return { ...tl, karty: tl.karty.map((k) => ({ ...k, szablonId: sz.id })) };
+        });
+        return { ...p, zmieniono: new Date().toISOString(), talie };
+      });
+      return;
+    }
+
+    const klucz = wartosc.slice(PRZEDROSTEK_AWERSU_INNEGO.length);
+    const wpis = awersyInne.find((a) => kluczAwersuZProjektu(a) === klucz);
+    if (!wpis) return;
+    ustawTrwa(true);
     try {
-      const { projekt: zrodlo, zasoby: zrodloZasoby } = await baza().wczytaj(wpis.projektId);
-      const paczka = importujSzablon(eksportujSzablon(zrodlo, zrodloZasoby, wpis.szablonId).bajty);
-      // Zachowujemy rewers z bieżącego projektu rewersowego zamiast nadpisywać go rewersem źródła.
-      const paczkaBezRewersu = {
-        ...paczka,
-        szablon: { ...paczka.szablon, rewersId: undefined },
-        rewers: undefined,
-      };
+      const paczkaBezRewersu = await wczytajPaczkeAwersuBezRewersu(wpis);
       await edycja.zmienZZasobami((p, d) => {
-        const staryPustyId = p.szablony.length === 1 ? p.szablony[0]!.id : undefined;
+        const staryPustyId =
+          czyProjektRewersowy(p) && p.szablony.length === 1 ? p.szablony[0]!.id : undefined;
         const dodany = dodajSzablon(p, d, paczkaBezRewersu);
         const nowySzablon = dodany.projekt.szablony.find((s) => s.id === dodany.szablonId)!;
         const szablony = staryPustyId
           ? dodany.projekt.szablony.filter((s) => s.id !== staryPustyId)
           : dodany.projekt.szablony;
         const talie = dodany.projekt.talie.map((tl) => {
-          const zaktualizowane = tl.karty.map((k) =>
-            k.szablonId === staryPustyId ? { ...k, szablonId: dodany.szablonId } : k,
-          );
-          if (zaktualizowane.length === 0) {
+          if (tl.id !== talia.id) return tl;
+          if (tl.karty.length === 0) {
             return {
               ...tl,
               karty: [{ id: crypto.randomUUID(), szablonId: dodany.szablonId, dane: {}, ilosc: 1 }],
             };
           }
-          return { ...tl, karty: zaktualizowane };
+          return {
+            ...tl,
+            karty: tl.karty.map((k) => ({ ...k, szablonId: dodany.szablonId })),
+          };
         });
-        const slot = slotSzablonu(nowySzablon);
-        const arkusze = dodany.projekt.arkusze.map((a) => ({
-          ...a,
-          ustawienia: { ...a.ustawienia, slot },
-        }));
+        const arkusze = staryPustyId
+          ? dodany.projekt.arkusze.map((a) => ({
+              ...a,
+              ustawienia: { ...a.ustawienia, slot: slotSzablonu(nowySzablon) },
+            }))
+          : dodany.projekt.arkusze;
         return {
           projekt: {
             ...dodany.projekt,
@@ -116,32 +131,42 @@ export function PanelRewersuIAwersu({
 
   return (
     <div className="panel-rewers-awers">
-      {projektRewersowy && (
+      {talia && (lokalneAwersy.length > 0 || awersyInne.length > 0 || projektRewersowy) && (
         <div className="pole-panelu">
-          <label htmlFor={idAwersu}>{t('kartka.wybierzAwers')}</label>
-          {awersy.length === 0 ? (
+          <label htmlFor={idAwersu}>{t('kartka.awersWszystkich')}</label>
+          {lokalneAwersy.length === 0 && awersyInne.length === 0 ? (
             <p className="podpis">{t('kartka.brakAwersow')}</p>
           ) : (
             <select
               id={idAwersu}
-              aria-label={t('kartka.wybierzAwers')}
-              value=""
+              aria-label={t('kartka.awersWszystkich')}
+              value={wspolnyAwersId}
               disabled={trwa}
-              onChange={(e) => void dolaczAwers(e.target.value)}
+              onChange={(e) => void ustawAwersDlaWszystkich(e.target.value)}
             >
-              <option value="">{t('kartka.wybierzAwersOpcja')}</option>
-              {awersy.map((a) => {
-                const klucz = `${a.projektId}:${a.szablonId}`;
-                const etykieta =
-                  a.projektNazwa === a.szablonNazwa
-                    ? a.projektNazwa
-                    : `${a.projektNazwa} — ${a.szablonNazwa}`;
-                return (
-                  <option key={klucz} value={klucz}>
-                    {etykieta}
-                  </option>
-                );
-              })}
+              {wspolnyAwersId === '' && <option value="">{t('kartka.wybierzAwersOpcja')}</option>}
+              {wspolnyAwersId === '__rozne__' && (
+                <option value="__rozne__" disabled>
+                  {t('kartka.rozneAwersy')}
+                </option>
+              )}
+              {lokalneAwersy.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nazwa}
+                </option>
+              ))}
+              {awersyInne.length > 0 && (
+                <optgroup label={t('kartka.awersyInneProjekty')}>
+                  {awersyInne.map((a) => {
+                    const klucz = kluczAwersuZProjektu(a);
+                    return (
+                      <option key={klucz} value={`${PRZEDROSTEK_AWERSU_INNEGO}${klucz}`}>
+                        {etykietaAwersuZProjektu(a)}
+                      </option>
+                    );
+                  })}
+                </optgroup>
+              )}
             </select>
           )}
         </div>
