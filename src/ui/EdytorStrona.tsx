@@ -15,7 +15,12 @@ import { useProjekt } from './useProjekt';
  * (`nowy-szablon`). Projekt wczytany raz – przejścia nie przeładowują.
  */
 export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: string }) {
-  const stan = useProjekt(id);
+  const czyEdytorKart =
+    !podtrasa ||
+    podtrasa === 'drukuj' ||
+    podtrasa.startsWith('drukuj/') ||
+    podtrasa.startsWith('kartka/');
+  const stan = useProjekt(id, { autozapis: !czyEdytorKart });
   if (stan.stan === 'wczytywanie') return <p className="tresc">{t('projekty.wczytywanie')}</p>;
   if (stan.stan === 'blad')
     return (

@@ -230,9 +230,11 @@ test.describe('edytor kartki po angielsku', () => {
     await expect(page.getByRole('textbox', { name: 'Nazwa projektu' })).toHaveValue('My cards');
     expect(await page.evaluate(() => (window as unknown as { __bez?: boolean }).__bez)).toBe(true);
 
-    // Zapis w tle trwa, a edycja po zmianie języka dalej działa.
+    // Edycja po zmianie języka działa, a przycisk „Zapisz” zapisuje zmiany.
     await panel.getByLabel('Nazwa', { exact: true }).fill('Kula ognia');
     await expect(page.locator('[data-karta][aria-label^="Kula ognia – strona 1"]')).toHaveCount(1);
+    await expect(page.locator('.status-zapisu')).toHaveText('Niezapisane zmiany');
+    await page.getByRole('button', { name: 'Zapisz', exact: true }).click();
     await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
     await wybierz(page, 'EN');
     await expect(page.locator('.status-zapisu')).toHaveText('Saved');

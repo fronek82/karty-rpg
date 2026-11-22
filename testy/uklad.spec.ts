@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { unzipSync } from 'fflate';
 import { kartkaCzaru } from './kartkaUI';
-import { nowaPustaKartka, otworzDruk, panelDruku, slot } from './pomoc';
+import { nowaPustaKartka, otworzDruk, panelDruku, slot, zapisano } from './pomoc';
 
 /** M2-6: własny układ arkusza, „Moje układy”, kalibracja, wydruk testowy, eksport obrazów. */
 
@@ -183,6 +183,7 @@ test('kalibracja zapamiętana w przeglądarce, wydruk testowy, eksport PNG/JPG 3
   const ust = await kartkaCzaru(page);
   await ust.getByLabel('Przesunięcie X (mm)').fill('1.5');
   await ust.getByLabel('Przesunięcie Y (mm)').fill('-0.5');
+  await zapisano(page);
   await page.reload();
   await expect(panelDruku(page).getByLabel('Przesunięcie X (mm)')).toHaveValue('1.5');
   await expect(panelDruku(page).getByLabel('Przesunięcie Y (mm)')).toHaveValue('-0.5');

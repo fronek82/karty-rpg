@@ -61,7 +61,11 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
 
     const zapisz = async (page: Page, nazwa: string) => {
       await page.evaluate(() => document.fonts.ready);
-      // Edytory zapisują w tle – zrzut dopiero po „Zapisano”, żeby pasek zawsze wyglądał tak samo.
+      // W edytorze kart zapis jest ręczny – utrwal zmiany, żeby pasek zawsze pokazywał „Zapisano”.
+      const przyciskZapisu = page.locator('.pasek-gorny .przycisk-zapisz');
+      if (await przyciskZapisu.isVisible().catch(() => false)) {
+        if (await przyciskZapisu.isEnabled().catch(() => false)) await przyciskZapisu.click();
+      }
       const status = page.locator('.status-zapisu');
       if (await status.count()) await expect(status).toHaveText(t('projekt.zapisano'));
       await page.mouse.move(0, 0);

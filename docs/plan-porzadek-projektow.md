@@ -5,8 +5,8 @@ Nie zmienia silnika układu, PDF ani `WERSJA_SCHEMATU` w `src/model/projekt.ts`.
 
 **Status:**
 
-- **P1 (zakładki „Moje projekty” / „Moje szablony”, podgląd Awers+Rewers, deduplikacja szablonów):** w realizacji na gałęzi `plan-i-etap-p1-projekty-szablony`.
-- **P2 (ręczny przycisk „Zapisz” w Edytorze kart zamiast autozapisu):** do realizacji jako kolejny PR.
+- **P1 (zakładki „Moje projekty” / „Moje szablony”, podgląd Awers+Rewers, deduplikacja szablonów):** ukończony (PR #87).
+- **P2 (ręczny przycisk „Zapisz” w Edytorze kart zamiast autozapisu):** w realizacji na gałęzi `etap-p2-reczny-zapis-edytora-kart`.
 - **P3 (opcjonalne doszlifowanie lewego menu startowego i akcja „Użyj w projekcie”):** do realizacji po P2.
 
 ---
