@@ -136,7 +136,7 @@ async function porownajZWzorcem(
 
 async function wzorzecKarty(page: Page, nazwa: string) {
   // Fokus z pola panelu (skróty kartki pomijają zdarzenia z pól), potem odznaczenie karty.
-  await page.locator(':focus').blur();
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press('Escape');
   await expect(page.locator('.karta-na-kartce.zaznaczona')).toHaveCount(0);
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
