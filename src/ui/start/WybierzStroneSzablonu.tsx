@@ -59,7 +59,7 @@ export function WybierzStroneSzablonu() {
           </p>
           <a
             href="#/wlasne/nowy/awers"
-            className="pasek-menu pasek-wlasne-3"
+            className="pasek-menu pasek-awers"
             aria-disabled={trwa || undefined}
             onClick={(e) => {
               if (trwa) e.preventDefault();
@@ -71,7 +71,7 @@ export function WybierzStroneSzablonu() {
           <button
             ref={przyciskRewersu}
             type="button"
-            className="pasek-menu pasek-wlasne-3"
+            className="pasek-menu pasek-rewers"
             disabled={trwa}
             onClick={() => void utworzRewers()}
           >

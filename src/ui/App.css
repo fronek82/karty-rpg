@@ -379,7 +379,19 @@ a.pasek-menu span {
   color: var(--krok-tekst);
 }
 
-/* Przyciemnienie wyłącznie tła (bez filter), dzięki czemu biały napis zachowuje kontrast AA. */
+.pasek-menu.pasek-awers {
+  --krok-tlo: var(--strona-awers);
+  background: var(--krok-tlo);
+  color: var(--strona-tekst);
+}
+
+.pasek-menu.pasek-rewers {
+  --krok-tlo: var(--strona-rewers);
+  background: var(--krok-tlo);
+  color: var(--strona-tekst);
+}
+
+/* Przyciemnienie wyłącznie tła (bez filter), dzięki czemu napis zachowuje czytelność. */
 :is(a, button).pasek-menu:not(.pasek-neutralny):hover:not(:disabled) {
   background: color-mix(in srgb, black 12%, var(--krok-tlo));
   border-color: transparent;
@@ -389,13 +401,6 @@ a.pasek-menu span {
   background: color-mix(in srgb, black 22%, var(--krok-tlo));
   border-color: transparent;
   transform: translateY(1px);
-}
-
-/* W motywie ciemnym najciemniejsze kroki dostają wyraźną granicę względem tła strony. */
-[data-theme='dark'] :is(a, button).pasek-menu:not(.pasek-neutralny):not(:disabled),
-[data-theme='dark'] :is(a, button).pasek-menu:not(.pasek-neutralny):hover:not(:disabled),
-[data-theme='dark'] :is(a, button).pasek-menu:not(.pasek-neutralny):active:not(:disabled) {
-  border-color: var(--obramowanie-pola);
 }
 
 .pasek-menu.pasek-neutralny {
@@ -1062,18 +1067,23 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 .znacznik-strony-karty {
   flex-shrink: 0;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.2;
-  padding: 0.14rem 0.5rem;
+  padding: 0.16rem 0.55rem;
   border-radius: 999px;
-  border: 1px solid var(--obramowanie);
-  color: var(--tekst-przygaszony);
-  background: var(--tlo);
+  border: 1px solid transparent;
+  color: var(--strona-tekst);
+  background: var(--strona-awers);
+}
+
+.znacznik-strony-karty-awers {
+  background: var(--strona-awers);
+  color: var(--strona-tekst);
 }
 
 .znacznik-strony-karty-rewers {
-  border-color: var(--zaznaczenie);
-  color: var(--zaznaczenie);
+  background: var(--strona-rewers);
+  color: var(--strona-tekst);
 }
 
 .opis-projektu .akcje {
