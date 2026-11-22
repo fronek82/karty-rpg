@@ -268,27 +268,102 @@ textarea:focus-visible {
   padding: 1.5rem 0 0.4rem;
 }
 
-.start-naglowek h1 {
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
-  font-weight: 800;
-  font-size: clamp(1.7rem, 3.4vw + 0.6rem, 2.75rem);
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  color: var(--tekst);
+.start-baner {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.15rem;
+  text-align: left;
+}
+
+.start-baner-ikona {
+  width: 5.25rem;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.start-baner-karta-obrys {
+  fill: var(--pole);
+  stroke: currentColor;
+  stroke-width: 2.6;
+}
+
+.start-baner-karta-ramka {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+  stroke-opacity: 0.55;
+}
+
+.start-baner-karta-znak {
+  fill: currentColor;
+}
+
+.start-baner-karta-lewa {
+  color: var(--bordo);
+}
+
+.start-baner-karta-srodek {
+  color: var(--akcent);
+}
+
+.start-baner-karta-prawa {
+  color: var(--kolor-2);
+}
+
+[data-theme='dark'] .start-baner-karta-lewa {
+  color: var(--kolor-1);
+}
+
+[data-theme='dark'] .start-baner-karta-srodek {
+  color: var(--zaznaczenie);
+}
+
+.start-baner-tytul {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   margin: 0;
 }
 
-[data-theme='dark'] .start-naglowek h1 {
+.start-baner-glowny {
   font-family: Georgia, 'Times New Roman', serif;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  font-size: clamp(1.6rem, 2.8vw + 0.5rem, 2.35rem);
+  line-height: 1.1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tytul);
+}
+
+.start-baner-podtytul {
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-weight: 500;
+  font-size: clamp(0.95rem, 1.1vw + 0.45rem, 1.15rem);
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  color: var(--tekst);
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 560px) {
+  .start-baner {
+    flex-direction: column;
+    gap: 0.55rem;
+    text-align: center;
+  }
+
+  .start-baner-tytul {
+    align-items: center;
+  }
 }
 
 .start-naglowek p {
-  margin: 0.5rem 0 0;
+  margin: 0.65rem 0 0;
   color: var(--tekst-przygaszony);
 }
 

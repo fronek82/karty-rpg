@@ -77,9 +77,10 @@ test.describe('układ', () => {
     expect(Math.abs(lista.y - import_.y)).toBeLessThan(2);
     expect(Math.round(menu.width)).toBe(260);
     expect(Math.round(import_.width)).toBe(240);
-    const tytul = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
-    expect(Math.abs(tytul.x + tytul.width / 2 - 720)).toBeLessThan(2);
-    expect(tytul.y).toBeLessThan(menu.y);
+    const baner = (await page.locator('.start-baner').boundingBox())!;
+    expect(Math.abs(baner.x + baner.width / 2 - 720)).toBeLessThan(2);
+    expect(baner.y).toBeLessThan(menu.y);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.getByText('Wszystko działa w przeglądarce')).toBeVisible();
   });
 
@@ -113,7 +114,7 @@ test.describe('układ', () => {
   test('stopka: wersja i linki do licencji oraz kodu', async ({ page }) => {
     await page.goto('./');
     const stopka = page.locator('footer.stopka');
-    await expect(stopka).toContainText('Karty RPG · Wersja');
+    await expect(stopka).toContainText('Karty · Wersja');
     await expect(stopka.getByRole('link', { name: 'Licencje' })).toHaveAttribute(
       'href',
       /github\.com\/.+\/karty-rpg\/blob\/main\/LICENCJE\.md$/,
@@ -125,28 +126,39 @@ test.describe('układ', () => {
   });
 });
 
-test.describe('czcionka tytułu', () => {
-  test('motyw jasny: bezszeryfowy pogrubiony nagłówek bez preloadu (B141)', async ({ page }) => {
+test.describe('baner i czcionka tytułu', () => {
+  test('motyw jasny: baner z emblematem kart, szeryfowy tytuł Georgia 700 bez preloadu', async ({
+    page,
+  }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('./');
     const naglowek = page.getByRole('heading', { level: 1 });
     await expect(naglowek).toBeVisible();
     await expect(naglowek).toHaveText('Karty do gier – zaprojektuj i wydrukuj');
+    await expect(page.locator('.start-baner-ikona')).toBeVisible();
     await expect(page.locator('head link[rel="preload"]')).toHaveCount(0);
-    const styl = await naglowek.evaluate((el) => {
+    const stylGlowny = await page.locator('.start-baner-glowny').evaluate((el) => {
       const cs = getComputedStyle(el);
       return { rodzina: cs.fontFamily, grubosc: cs.fontWeight };
     });
-    expect(styl.rodzina).toMatch(/sans-serif$/);
-    expect(styl.grubosc).toBe('800');
+    expect(stylGlowny.rodzina).toMatch(/Georgia.*serif$/);
+    expect(stylGlowny.grubosc).toBe('700');
+    const stylPodtytul = await page.locator('.start-baner-podtytul').evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { rodzina: cs.fontFamily, grubosc: cs.fontWeight };
+    });
+    expect(stylPodtytul.rodzina).toMatch(/sans-serif$/);
   });
 
-  test('motyw ciemny: szeryfowy nagłówek Georgia 700', async ({ page }) => {
+  test('motyw ciemny: baner z emblematem kart i szeryfowym tytułem Georgia 700', async ({
+    page,
+  }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('./');
     const naglowek = page.getByRole('heading', { level: 1 });
     await expect(naglowek).toBeVisible();
-    const styl = await naglowek.evaluate((el) => {
+    await expect(page.locator('.start-baner-ikona')).toBeVisible();
+    const styl = await page.locator('.start-baner-glowny').evaluate((el) => {
       const cs = getComputedStyle(el);
       return { rodzina: cs.fontFamily, grubosc: cs.fontWeight };
     });
@@ -441,7 +453,7 @@ test.describe('zrzuty UI-3', () => {
     await page.getByRole('link', { name: 'Mieszane' }).first().click();
     await expect(page.locator('[data-karta]')).toHaveCount(10, { timeout: 15000 });
     await page.waitForTimeout(1800);
-    await page.getByRole('link', { name: 'Karty RPG' }).click();
+    await page.getByRole('link', { name: 'Karty', exact: true }).click();
     await expect(page.locator('.kafelek-projektu .miniatura img')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     await page.screenshot({ path: 'docs/obrazy/ui-3-start-jasny.png' });

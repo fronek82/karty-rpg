@@ -5,8 +5,40 @@ import { nazwaGryDo } from '../nazwyPakietu';
 import { ListaProjektow } from './ListaProjektow';
 import { PanelImportu } from './PanelImportu';
 
+/** Dekoracyjny emblemat trzech wachlarzowo ułożonych kart w banerze ekranu startowego. */
+function EmblematKart() {
+  return (
+    <svg
+      className="start-baner-ikona"
+      viewBox="0 0 84 58"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <g className="start-baner-karta-srodek" transform="translate(27, 3)">
+        <rect className="start-baner-karta-obrys" x="0" y="0" width="30" height="42" rx="4" />
+        <rect className="start-baner-karta-ramka" x="4" y="4" width="22" height="34" rx="2" />
+        <path className="start-baner-karta-znak" d="M15 13 L20.5 21 L15 29 L9.5 21 Z" />
+      </g>
+      <g className="start-baner-karta-lewa" transform="translate(9, 10) rotate(-17 15 21)">
+        <rect className="start-baner-karta-obrys" x="0" y="0" width="30" height="42" rx="4" />
+        <rect className="start-baner-karta-ramka" x="4" y="4" width="22" height="34" rx="2" />
+        <path
+          className="start-baner-karta-znak"
+          d="M15 13.5 L17.3 18.8 L22.5 21 L17.3 23.2 L15 28.5 L12.7 23.2 L7.5 21 L12.7 18.8 Z"
+        />
+      </g>
+      <g className="start-baner-karta-prawa" transform="translate(45, 10) rotate(17 15 21)">
+        <rect className="start-baner-karta-obrys" x="0" y="0" width="30" height="42" rx="4" />
+        <rect className="start-baner-karta-ramka" x="4" y="4" width="22" height="34" rx="2" />
+        <circle className="start-baner-karta-znak" cx="15" cy="21" r="5" />
+      </g>
+    </svg>
+  );
+}
+
 /**
- * Ekran startowy: tytuł i opis u góry, pod nimi trzy kolumny – menu „Nowy projekt”,
+ * Ekran startowy: baner z emblematem kart i opis u góry, pod nimi trzy kolumny – menu „Nowy projekt”,
  * „Moje projekty” i „Import”. Poniżej 900 px kolumny układają się jedna pod drugą w tej kolejności.
  */
 export function Start() {
@@ -33,7 +65,14 @@ export function Start() {
   return (
     <div className="start">
       <header className="start-naglowek">
-        <h1>{t('start.tytul')}</h1>
+        <div className="start-baner">
+          <EmblematKart />
+          <h1 className="start-baner-tytul">
+            <span className="start-baner-glowny">{t('start.banerTytul')}</span>
+            <span className="ukryte"> – </span>
+            <span className="start-baner-podtytul">{t('start.banerPodtytul')}</span>
+          </h1>
+        </div>
         <p>{t('start.opis')}</p>
       </header>
       <div className="start-kolumny">

@@ -46,7 +46,7 @@ test.describe('język domyślny według przeglądarki (D8)', () => {
       await expect(grupa.getByRole('button', { name: 'PL' })).toHaveAttribute('lang', 'pl');
       await expect(grupa.getByRole('button', { name: 'EN' })).toHaveAttribute('lang', 'en');
       await expect(panel.getByRole('button', { name: 'Dark theme' })).toBeVisible();
-      await expect(page).toHaveTitle('RPG Cards');
+      await expect(page).toHaveTitle('Cards');
     });
   });
 
@@ -66,7 +66,7 @@ test.describe('język domyślny według przeglądarki (D8)', () => {
         'true',
       );
       await expect(grupa.getByRole('button', { name: 'EN' })).toBeEnabled();
-      await expect(page).toHaveTitle('Karty RPG');
+      await expect(page).toHaveTitle('Karty');
     });
   });
 

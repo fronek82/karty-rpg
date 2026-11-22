@@ -729,8 +729,8 @@ export interface WynikPdf {
 /** Tworzy PDF – jedna strona na scenę. Wynik deterministyczny (stała data utworzenia). */
 export async function scenyDoPdf(sceny: Scena[], opcje: OpcjePdf = {}): Promise<WynikPdf> {
   const doc = await PDFDocument.create({ updateMetadata: false });
-  doc.setProducer('Karty RPG');
-  doc.setCreator('Karty RPG');
+  doc.setProducer('Karty');
+  doc.setCreator('Karty');
   if (opcje.tytul) doc.setTitle(opcje.tytul);
   const budowniczy = new BudowniczyPdf(doc, opcje);
   for (const s of sceny) await budowniczy.strona(s);

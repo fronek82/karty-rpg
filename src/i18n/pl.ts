@@ -4,7 +4,7 @@
  * Parametry w tekstach zapisujemy jako `{nazwa}`.
  */
 export const pl = {
-  'aplikacja.nazwa': 'Karty RPG',
+  'aplikacja.nazwa': 'Karty',
   'pasek.narzedzia': 'Narzędzia aplikacji',
   'pasek.ustawienia': 'Ustawienia',
   'pasek.powrot': '← Powrót',
@@ -17,7 +17,7 @@ export const pl = {
   'pasek.powrotDoAplikacji': 'Wróć do aplikacji',
   'instrukcja.spisTresci': 'Spis treści',
   'instrukcja.doTresci': 'Przejdź do treści',
-  'instrukcja.tytulStrony': 'Instrukcja – Karty RPG',
+  'instrukcja.tytulStrony': 'Instrukcja – Karty',
   'jezyk.grupa': 'Język',
   'jezyk.pl': 'PL',
   'jezyk.en': 'EN',
@@ -964,7 +964,8 @@ export const pl = {
     'Skróty: Delete – usuń, Ctrl+D – duplikuj, Ctrl+Z – cofnij (Ctrl+Shift+Z – ponów), strzałki – przesuń, Escape – odznacz.',
   'kartka.pomocDruk':
     'Gdy karty są gotowe, kliknij „Drukuj karty ►”, aby ustawić papier, układ druku i pobrać PDF. Przerywane kratki są tylko na ekranie.',
-  'start.tytul': 'Karty do gier – zaprojektuj i wydrukuj',
+  'start.banerTytul': 'Karty do gier',
+  'start.banerPodtytul': 'zaprojektuj i wydrukuj',
   'start.opis': 'Wszystko działa w przeglądarce, a projekty zostają na tym komputerze.',
   'start.nowyProjekt': 'Nowy projekt',
   'start.gotoweOpis': 'Kartka A4 ze slotami i gotowe układy',

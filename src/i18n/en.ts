@@ -7,7 +7,7 @@ import type { Slownik, SlownikMnogi } from './pl';
  * page = strona, slot = slot, template = szablon, layout = układ, deck = talia.
  */
 export const en: Slownik = {
-  'aplikacja.nazwa': 'RPG Cards',
+  'aplikacja.nazwa': 'Cards',
   'pasek.narzedzia': 'Application tools',
   'pasek.ustawienia': 'Settings',
   'pasek.powrot': '← Back',
@@ -20,7 +20,7 @@ export const en: Slownik = {
   'pasek.powrotDoAplikacji': 'Back to the app',
   'instrukcja.spisTresci': 'Contents',
   'instrukcja.doTresci': 'Skip to content',
-  'instrukcja.tytulStrony': 'Guide – RPG Cards',
+  'instrukcja.tytulStrony': 'Guide – Cards',
   'jezyk.grupa': 'Language',
   'jezyk.pl': 'PL',
   'jezyk.en': 'EN',
@@ -972,7 +972,8 @@ export const en: Slownik = {
     'Shortcuts: Delete – delete, Ctrl+D – duplicate, Ctrl+Z – undo (Ctrl+Shift+Z – redo), arrows – move, Escape – deselect.',
   'kartka.pomocDruk':
     'When your cards are ready, click “Print cards ►” to set up paper, print layout, and download PDF. The dashed squares are on screen only.',
-  'start.tytul': 'Game Cards – Design and Print',
+  'start.banerTytul': 'Game Cards',
+  'start.banerPodtytul': 'Design and Print',
   'start.opis': 'Everything runs in the browser, and your projects stay on this computer.',
   'start.nowyProjekt': 'New project',
   'start.gotoweOpis': 'A4 sheet with slots and ready-made layouts',

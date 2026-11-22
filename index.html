@@ -31,16 +31,16 @@
           jezyk = /^pl(?:[-_]|$)/i.test(navigator.language || '') ? 'pl' : 'en';
         }
         document.documentElement.setAttribute('lang', jezyk);
-        if (jezyk === 'en') document.title = 'RPG Cards';
+        if (jezyk === 'en') document.title = 'Cards';
       })();
     </script>
-    <title>Karty RPG</title>
+    <title>Karty</title>
   </head>
   <body>
     <div id="root"></div>
     <noscript
-      >Karty RPG działają w przeglądarce i wymagają włączonego JavaScriptu. / RPG Cards runs in the
-      browser and requires JavaScript to be enabled.</noscript
+      >Karty działają w przeglądarce i wymagają włączonego JavaScriptu. / Cards runs in the browser
+      and requires JavaScript to be enabled.</noscript
     >
     <script type="module" src="/src/main.tsx"></script>
   </body>

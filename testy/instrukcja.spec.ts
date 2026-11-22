@@ -29,7 +29,7 @@ test('strona instrukcji ładuje się pod ścieżką aplikacji (PL domyślnie z p
   expect(odpowiedz!.status()).toBe(200);
   expect(new URL(page.url()).pathname).toBe('/karty-rpg/instrukcja/');
   expect(await jezyk(page)).toBe('pl');
-  await expect(page).toHaveTitle('Instrukcja – Karty RPG');
+  await expect(page).toHaveTitle('Instrukcja – Karty');
   await expect(page.getByRole('heading', { level: 1, name: 'Instrukcja' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Karty do Mausrittera' })).toBeVisible();
   // Blok drugiego języka jest ukryty (nie ma go w drzewie dostępności).
@@ -54,7 +54,7 @@ test('?lang=en: angielska treść, lang i tytuł; ?lang ma pierwszeństwo przed 
   await page.addInitScript(() => localStorage.setItem('karty.jezyk', 'pl'));
   await page.goto('./instrukcja/?lang=en');
   expect(await jezyk(page)).toBe('en');
-  await expect(page).toHaveTitle('Guide – RPG Cards');
+  await expect(page).toHaveTitle('Guide – Cards');
   await expect(page.getByRole('heading', { level: 1, name: 'Guide' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Cards for Mausritter' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Karty do Mausrittera' })).toHaveCount(
@@ -71,7 +71,7 @@ test.describe('język przeglądarki', () => {
   test('bez ?lang i bez zapisu: angielski dla języka innego niż polski', async ({ page }) => {
     await page.goto('./instrukcja/');
     expect(await jezyk(page)).toBe('en');
-    await expect(page).toHaveTitle('Guide – RPG Cards');
+    await expect(page).toHaveTitle('Guide – Cards');
   });
 });
 
@@ -82,7 +82,7 @@ test('przełączanie języka bez przeładowania, z pamięcią i wspólnym klucze
   await page.evaluate(() => ((window as unknown as { __bez: boolean }).__bez = true));
   await przyciskJezyka(page, 'EN').click();
   expect(await jezyk(page)).toBe('en');
-  await expect(page).toHaveTitle('Guide – RPG Cards');
+  await expect(page).toHaveTitle('Guide – Cards');
   await expect(
     page.getByRole('heading', { level: 2, name: 'Printing at 100% scale' }),
   ).toBeVisible();
@@ -166,7 +166,7 @@ test('motyw i język ustawione przed pierwszym malowaniem', async ({ page }) => 
   await page.goto('./instrukcja/', { waitUntil: 'commit' });
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
   expect(await jezyk(page)).toBe('en');
-  await expect(page).toHaveTitle('Guide – RPG Cards');
+  await expect(page).toHaveTitle('Guide – Cards');
 });
 
 test('link „Instrukcja” z aplikacji otwiera stronę w nowym oknie w języku aplikacji', async ({
@@ -210,7 +210,10 @@ test('pasek: Instrukcja podświetlona, przełączniki PL | EN i motywu, link pow
   await expect(page.locator('.przycisk-kontur')).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('group', { name: 'Język' })).toBeVisible();
   await expect(page.getByRole('group', { name: 'Motyw' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Karty RPG' })).toHaveAttribute('href', '../');
+  await expect(page.getByRole('link', { name: 'Karty', exact: true })).toHaveAttribute(
+    'href',
+    '../',
+  );
 });
 
 test('spis treści działa z klawiatury, a nagłówek dostaje fokus', async ({ page }) => {
