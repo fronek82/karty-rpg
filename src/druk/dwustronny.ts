@@ -6,9 +6,20 @@ import {
   type KrawedzOdwracania,
 } from '../model/arkusz';
 import type { Mm } from '../model/jednostki';
-import { wymiaryKarty, type Rewers, type StylTekstu, type Talia } from '../model/szablon';
+import {
+  wymiaryKarty,
+  type Rewers,
+  type StylTekstu,
+  type Szablon,
+  type Talia,
+} from '../model/szablon';
 import type { RejestrCzcionek } from '../silnik/czcionki';
-import { MIN_DPI_DRUKARNI, renderujRewers, type Ostrzezenie } from '../silnik/karta';
+import {
+  MIN_DPI_DRUKARNI,
+  renderujRewers,
+  wspolneKluczeRewersu,
+  type Ostrzezenie,
+} from '../silnik/karta';
 import {
   polaczGlify,
   symboleSceny,
@@ -110,8 +121,9 @@ export function zbudujStronyRewersow(
     ...(ctx.elementy ? { elementy: ctx.elementy } : {}),
   };
 
-  // Pamięć wyrenderowanych rewersów (ta sama definicja + wymiary docelowe + spad → jeden render).
+  // Pamięć wyrenderowanych rewersów (ta sama definicja + wymiary + spad + wspólne dane → jeden render).
   const pamiec = new Map<string, { scena: Scena; ostrzezenia: Ostrzezenie[] }>();
+  const pamiecWspolnych = new Map<string, string[]>();
   const zgloszoneOstrzezenia = new Set<string>();
   const ostrzezenia: OstrzezenieArkusza[] = [];
 
@@ -121,8 +133,20 @@ export function zbudujStronyRewersow(
     kartaWys: Mm,
     promienRogow: Mm | undefined,
     kartaId: string,
+    szablon: Szablon,
+    dane: Record<string, string>,
   ) => {
-    const klucz = `${rewers.id}|${kartaSzer}|${kartaWys}|${promienRogow ?? ''}|${spad}|${minDpi ?? ''}`;
+    const kluczPary = `${szablon.id}|${rewers.id}`;
+    let wspolne = pamiecWspolnych.get(kluczPary);
+    if (!wspolne) {
+      wspolne = [...wspolneKluczeRewersu(szablon, rewers)].sort();
+      pamiecWspolnych.set(kluczPary, wspolne);
+    }
+    const kluczDanych =
+      wspolne.length > 0
+        ? `${szablon.id}:${JSON.stringify(wspolne.map((k) => [k, dane[k]?.trim() ? dane[k] : '']))}`
+        : '';
+    const klucz = `${rewers.id}|${kartaSzer}|${kartaWys}|${promienRogow ?? ''}|${spad}|${minDpi ?? ''}|${kluczDanych}`;
     let w = pamiec.get(klucz);
     if (!w) {
       w = renderujRewers(rewers, pliki, {
@@ -131,6 +155,7 @@ export function zbudujStronyRewersow(
         ...(promienRogow ? { promienRogow } : {}),
         ...(spad > 0 ? { spad } : {}),
         ...(minDpi ? { minDpi } : {}),
+        ...(wspolne.length > 0 ? { awers: { szablon, dane } } : {}),
       });
       pamiec.set(klucz, w);
     }
@@ -194,6 +219,8 @@ export function zbudujStronyRewersow(
         kartaWys,
         szablon.promienRogow,
         p.karta.id,
+        szablon,
+        p.karta.dane,
       );
       glify.push(scenaRewersu.glify);
       symbole.push(scenaRewersu.symbole);

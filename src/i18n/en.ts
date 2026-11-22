@@ -1277,6 +1277,7 @@ export const en: Slownik = {
   'tabelaImport.arkusz': 'Worksheet from the XLSX file',
   'tabelaImport.plik': 'CSV or XLSX file',
   'tabelaImport.mapowanie': 'Map columns to fields',
+  'tabelaImport.awersIRewers': 'front & back',
   'tabelaImport.ilosc': 'Quantity',
   'tabelaImport.kolumna': 'Column {numer} · {nazwa}',
   'tabelaImport.bezNaglowka': 'untitled',

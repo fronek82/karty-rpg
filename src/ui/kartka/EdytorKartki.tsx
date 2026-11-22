@@ -10,7 +10,7 @@ import {
   pasujeDoSlotu,
   ustawieniaKartkiDla,
 } from '../../dane/wlasneKarty';
-import { czyDwustronnyWlaczony } from '../../dane/rewers';
+import { czyDwustronnyWlaczony, rewersKarty } from '../../dane/rewers';
 import {
   czyMieszane,
   dodajKarteMieszane,
@@ -1709,6 +1709,11 @@ export function EdytorKartki({
           key={kartkaImportu.id}
           nazwaKartki={kartkaImportu.nazwa}
           szablony={szablonyDoImportu(kartkaImportu)}
+          rewersDlaSzablonu={(s) => {
+            const rewersy = new Map((projekt.rewersy ?? []).map((r) => [r.id, r]));
+            const talia = projekt.talie.find((x) => x.id === kartkaImportu.taliaId);
+            return rewersKarty(rewersy, {}, s, talia ?? {});
+          }}
           zasoby={projekt.zasoby}
           zamknij={() => ustawImportTabeli(undefined)}
           zapisz={(szablonId, wiersze) => {

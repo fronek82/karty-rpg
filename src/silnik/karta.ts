@@ -971,27 +971,182 @@ export function renderujKarte(
   };
 }
 
+const normalizujNazwePola = (nazwa: string): string => nazwa.trim().toLowerCase();
+
+function* polaWezlaSzablonu(w: Wezel): Generator<Pole> {
+  if (czyKontener(w)) for (const d of w.dzieci) yield* polaWezlaSzablonu(d);
+  else yield w;
+}
+
+const sygnaturaTabeli = (p: PoleTabela): string =>
+  `${Math.max(1, Math.floor(p.wiersze ?? 1))}|${p.kolumny.map((k) => `${normalizujNazwePola(k.naglowek ?? '')}:${k.klucz}`).join(',')}`;
+
+interface IndeksPolAwersu {
+  /** `${typ}:${znormalizowanaNazwa}` → jednoznaczny klucz danych pola (lub null przy konflikcie). */
+  pola: Map<string, string | null>;
+  /** Znormalizowana nazwa tabeli → jednoznaczna tabela awersu (lub null przy konflikcie). */
+  tabele: Map<string, PoleTabela | null>;
+}
+
+function indeksujPolaAwersu(szablon: Szablon): IndeksPolAwersu {
+  const pola = new Map<string, string | null>();
+  const tabele = new Map<string, PoleTabela | null>();
+  for (const korzen of [szablon.korzen, ...(szablon.warianty ?? []).map((w) => w.korzen)]) {
+    for (const pole of polaWezlaSzablonu(korzen)) {
+      if (pole.typ === 'tabela') {
+        const nazwa = pole.nazwa ? normalizujNazwePola(pole.nazwa) : '';
+        if (!nazwa) continue;
+        const istniejace = tabele.get(nazwa);
+        if (istniejace === undefined) tabele.set(nazwa, pole);
+        else if (istniejace !== null && sygnaturaTabeli(istniejace) !== sygnaturaTabeli(pole))
+          tabele.set(nazwa, null);
+        continue;
+      }
+      if (!pole.klucz) continue;
+      const nazwa = normalizujNazwePola(pole.nazwa || pole.klucz);
+      if (!nazwa) continue;
+      const idPola = `${pole.typ}:${nazwa}`;
+      const istniejacy = pola.get(idPola);
+      if (istniejacy === undefined) pola.set(idPola, pole.klucz);
+      else if (istniejacy !== null && istniejacy !== pole.klucz) pola.set(idPola, null);
+    }
+  }
+  return { pola, tabele };
+}
+
+function dopasujKolumnyTabeli(rewersTabela: PoleTabela, awersTabela: PoleTabela) {
+  const wiersze = Math.max(1, Math.floor(rewersTabela.wiersze ?? 1));
+  const awersWiersze = Math.max(1, Math.floor(awersTabela.wiersze ?? 1));
+  const dopasowaneKluczeKolumn: PoleTabela['kolumny'] = [];
+  const kolumny = rewersTabela.kolumny.map((k, i) => {
+    const nag = k.naglowek ? normalizujNazwePola(k.naglowek) : '';
+    const zrodlo = nag
+      ? awersTabela.kolumny.find(
+          (ak) => ak.klucz && ak.naglowek && normalizujNazwePola(ak.naglowek) === nag,
+        )
+      : awersTabela.kolumny[i];
+    if (!zrodlo?.klucz) return k;
+    const dopasowana = { ...k, klucz: zrodlo.klucz };
+    dopasowaneKluczeKolumn.push(dopasowana);
+    return dopasowana;
+  });
+  const klucze: string[] = [];
+  const limitWierszy = Math.min(wiersze, awersWiersze);
+  for (let r = 0; r < limitWierszy; r++) {
+    for (const k of dopasowaneKluczeKolumn) klucze.push(kluczKomorki(k, r));
+  }
+  return { kolumny, klucze };
+}
+
+/**
+ * Zwraca klucze danych szablonu awersu, dla których na rewersie istnieje pole
+ * tego samego typu i o tej samej nazwie (bez rozróżniania wielkości liter).
+ */
+export function wspolneKluczeRewersu(szablon: Szablon, rewers: Rewers): Set<string> {
+  const indeks = indeksujPolaAwersu(szablon);
+  const wynik = new Set<string>();
+  for (const pole of polaWezlaSzablonu(rewers.korzen)) {
+    const nazwa = pole.nazwa ? normalizujNazwePola(pole.nazwa) : '';
+    if (!nazwa) continue;
+    if (pole.typ === 'tabela') {
+      const awersTabela = indeks.tabele.get(nazwa);
+      if (!awersTabela) continue;
+      for (const klucz of dopasujKolumnyTabeli(pole, awersTabela).klucze) wynik.add(klucz);
+      continue;
+    }
+    const klucz = indeks.pola.get(`${pole.typ}:${nazwa}`);
+    if (klucz) wynik.add(klucz);
+  }
+  return wynik;
+}
+
+/**
+ * Podstawia klucze danych na pola rewersu pasujące typem i nazwą do pól awersu,
+ * o ile karta ma dla nich niepustą wartość. Pola bez wartości zachowują domyślną treść rewersu.
+ */
+function podstawWspolnePolaRewersu(
+  rewers: Rewers,
+  szablon: Szablon,
+  dane: Record<string, string>,
+): { korzen: Rewers['korzen']; dane: Record<string, string> } {
+  const indeks = indeksujPolaAwersu(szablon);
+  const uzyteDane: Record<string, string> = {};
+  let zmieniono = false;
+
+  const podmienWezel = (w: Wezel): Wezel => {
+    if (czyKontener(w)) {
+      const dzieci = w.dzieci.map(podmienWezel);
+      return dzieci.some((d, i) => d !== w.dzieci[i]) ? { ...w, dzieci } : w;
+    }
+    const nazwa = w.nazwa ? normalizujNazwePola(w.nazwa) : '';
+    if (!nazwa) return w;
+    if (w.typ === 'tabela') {
+      const awersTabela = indeks.tabele.get(nazwa);
+      if (!awersTabela) return w;
+      const { kolumny, klucze } = dopasujKolumnyTabeli(w, awersTabela);
+      let maWartosc = false;
+      for (const k of klucze) {
+        const val = dane[k];
+        if (val !== undefined && val.trim() !== '') {
+          uzyteDane[k] = val;
+          maWartosc = true;
+        }
+      }
+      if (!maWartosc) return w;
+      zmieniono = true;
+      return { ...w, kolumny };
+    }
+    const klucz = indeks.pola.get(`${w.typ}:${nazwa}`);
+    if (!klucz) return w;
+    const val = dane[klucz];
+    if (val === undefined || val.trim() === '') return w;
+    uzyteDane[klucz] = val;
+    zmieniono = true;
+    return { ...w, klucz };
+  };
+
+  const dzieci = rewers.korzen.dzieci.map(podmienWezel);
+  if (!zmieniono) return { korzen: rewers.korzen, dane: {} };
+  return {
+    korzen: { ...rewers.korzen, dzieci },
+    dane: uzyteDane,
+  };
+}
+
 /**
  * Renderuje rewers karty na scenę (mm) w podanym rozmiarze docelowym (lub rozmiarze odniesienia rewersu).
+ * Jeśli przekazano `docelowy.awers`, pola rewersu o tym samym typie i nazwie co pola awersu
+ * przejmują niepuste wartości z danych tej karty.
  */
 export function renderujRewers(
   rewers: Rewers,
   ctx: KontekstRenderowania,
-  docelowy?: { szer: Mm; wys: Mm; promienRogow?: Mm; spad?: Mm; minDpi?: number },
+  docelowy?: {
+    szer?: Mm;
+    wys?: Mm;
+    promienRogow?: Mm;
+    spad?: Mm;
+    minDpi?: number;
+    awers?: { szablon: Szablon; dane: Record<string, string> };
+  },
 ): WyrenderowanaKarta {
+  const podstawione = docelowy?.awers
+    ? podstawWspolnePolaRewersu(rewers, docelowy.awers.szablon, docelowy.awers.dane)
+    : undefined;
   const szablon: Szablon = {
     id: rewers.id,
     nazwa: rewers.nazwa,
-    rozmiar: docelowy
-      ? { tryb: 'mm', szerokosc: docelowy.szer, wysokosc: docelowy.wys }
-      : rewers.rozmiar,
+    rozmiar:
+      docelowy?.szer !== undefined && docelowy?.wys !== undefined
+        ? { tryb: 'mm', szerokosc: docelowy.szer, wysokosc: docelowy.wys }
+        : rewers.rozmiar,
     ...(docelowy?.promienRogow ? { promienRogow: docelowy.promienRogow } : {}),
     ...(rewers.tlo !== undefined ? { tlo: rewers.tlo } : {}),
     ...(rewers.teksturaTla !== undefined ? { teksturaTla: rewers.teksturaTla } : {}),
     ...(rewers.ramka !== undefined ? { ramka: rewers.ramka } : {}),
-    korzen: rewers.korzen,
+    korzen: podstawione ? podstawione.korzen : rewers.korzen,
   };
-  return renderujKarte(szablon, { dane: {} }, ctx, {
+  return renderujKarte(szablon, { dane: podstawione ? podstawione.dane : {} }, ctx, {
     ...(rewers.teksturaTryb ? { teksturaTryb: rewers.teksturaTryb } : {}),
     ...(rewers.teksturaKrycie !== undefined ? { teksturaKrycie: rewers.teksturaKrycie } : {}),
     ...(rewers.teksturaZabarwienie !== undefined
