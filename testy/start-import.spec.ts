@@ -77,9 +77,10 @@ test.describe('układ', () => {
     expect(Math.abs(lista.y - import_.y)).toBeLessThan(2);
     expect(Math.round(menu.width)).toBe(260);
     expect(Math.round(import_.width)).toBe(240);
-    const tytul = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
-    expect(Math.abs(tytul.x + tytul.width / 2 - 720)).toBeLessThan(2);
-    expect(tytul.y).toBeLessThan(menu.y);
+    const baner = (await page.locator('.start-baner').boundingBox())!;
+    expect(Math.abs(baner.x + baner.width / 2 - 720)).toBeLessThan(2);
+    expect(baner.y).toBeLessThan(menu.y);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.getByText('Wszystko działa w przeglądarce')).toBeVisible();
   });
 
@@ -452,7 +453,7 @@ test.describe('zrzuty UI-3', () => {
     await page.getByRole('link', { name: 'Mieszane' }).first().click();
     await expect(page.locator('[data-karta]')).toHaveCount(10, { timeout: 15000 });
     await page.waitForTimeout(1800);
-    await page.getByRole('link', { name: 'Karty' }).click();
+    await page.getByRole('link', { name: 'Karty', exact: true }).click();
     await expect(page.locator('.kafelek-projektu .miniatura img')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     await page.screenshot({ path: 'docs/obrazy/ui-3-start-jasny.png' });

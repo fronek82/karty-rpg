@@ -210,7 +210,10 @@ test('pasek: Instrukcja podświetlona, przełączniki PL | EN i motywu, link pow
   await expect(page.locator('.przycisk-kontur')).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('group', { name: 'Język' })).toBeVisible();
   await expect(page.getByRole('group', { name: 'Motyw' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Karty' })).toHaveAttribute('href', '../');
+  await expect(page.getByRole('link', { name: 'Karty', exact: true })).toHaveAttribute(
+    'href',
+    '../',
+  );
 });
 
 test('spis treści działa z klawiatury, a nagłówek dostaje fokus', async ({ page }) => {

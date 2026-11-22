@@ -50,7 +50,7 @@ test('eksport → import jako kopia → lista z miniaturą → usunięcie', asyn
   ]);
   expect(eksport.suggestedFilename()).toBe('bron-i-pancerze.kartyrpg');
   await page.waitForTimeout(1800); // miniatura zapisywana po chwili
-  await page.getByRole('link', { name: 'Karty' }).click();
+  await page.getByRole('link', { name: 'Karty', exact: true }).click();
   // Plik z pobrania ma w katalogu tymczasowym losową nazwę bez rozszerzenia – nadajemy tę z pobrania.
   await page.getByTestId('plik-importu').setInputFiles({
     name: eksport.suggestedFilename(),
