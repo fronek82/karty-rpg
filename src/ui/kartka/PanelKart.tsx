@@ -468,7 +468,7 @@ export function PanelKart({
               <PodgladRewersu
                 rewers={tenSamRozstrzygniety}
                 {...(docelowy ? { docelowy } : {})}
-                {...(jedna && szablon ? { awers: { szablon, dane: jedna.dane } } : {})}
+                {...(jedna && szablon ? { awers: { szablon, dane: jedna.karta.dane } } : {})}
                 zasoby={edycja.zasoby.zasoby}
                 komunikatBraku={
                   jedyneZrodlo?.wylaczony

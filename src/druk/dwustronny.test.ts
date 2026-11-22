@@ -464,7 +464,7 @@ describe('M4-4: regresje siatki, MaxRects, nakładu, kontynuacji, pustych tyłó
       taliaId: talia.id,
       ustawienia: {
         format: 'A4',
-        orientacja: 'pion',
+        orientacja: 'pionowa',
         marginesy: { gora: 10, prawo: 10, dol: 10, lewo: 10 },
         odstep: 2,
         znaczkiCiecia: false,
@@ -472,7 +472,7 @@ describe('M4-4: regresje siatki, MaxRects, nakładu, kontynuacji, pustych tyłó
       },
     };
     const szablony = new Map([[s.id, s]]);
-    const przod = zbudujArkusz(arkusz, talia, szablony, { czcionki });
+    const przod = zbudujArkusz(arkusz, talia, { szablony, czcionki });
     const wynik = zbudujStronyRewersow(arkusz, talia, przod, {
       szablony,
       rewersy: new Map([[rev.id, rev]]),
