@@ -132,6 +132,8 @@ export async function usunCel(cel: CelUsuniecia): Promise<boolean> {
     return true;
   }
   const poz = cel.pozycja;
+  // Przy usuwaniu zbiorczym projekt mógł zniknąć razem z poprzednim elementem.
+  if (!(await baza().istnieje(projektCelu(cel)))) return true;
   if (poz.rodzaj === 'rewers') {
     const { projekt, zasoby } = await baza().wczytaj(poz.rewers.projektId);
     if (poz.rewers.projektRewersowy && (projekt.rewersy?.length ?? 0) <= 1) {

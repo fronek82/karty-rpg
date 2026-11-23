@@ -37,6 +37,12 @@ Zrzut: `docs/obrazy/n6-wlasne-karty.png`.
 - Szukanie ignoruje wielkość liter i znaki diakrytyczne; sortowanie po nazwie – `Intl.Collator`
   z liczbami naturalnie („Broń 2” przed „Broń 10”). Fraza i zaznaczenie zerują się przy zmianie
   zakładki.
+- Na liście działa jedna operacja na bazie naraz (także „Cofnij” z paska). „Duplikuj” i „Użyj
+  w projekcie” zamykają pasek – cofnięcie z migawki nadpisałoby tę nowszą zmianę.
+- Pasek stoi tylko pod kursorem myszy (nie po dotknięciu – na dotyku nie ma „zjechania”).
+- Dług (do decyzji właściciela): pasek pojawia się jako nowy region `role="status"` na końcu
+  dokumentu, a fokus po usunięciu trafia na nagłówek listy – użytkownik klawiatury może nie zdążyć
+  do „Cofnij” w 8 s.
 - Trasa `#/wlasne/nowy` (wybór Awers / Rewers) zostaje – prowadzą do niej okruszki kreatora.
 
 ## W kodzie zostaje (nie UI)

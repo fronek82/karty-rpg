@@ -92,7 +92,9 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   const [blad, ustawBlad] = useState<string>();
   const [status, ustawStatus] = useState('');
   const [trwa, ustawTrwa] = useState(false);
-  const { pasek, pokaz } = usePasekKomunikatu();
+  const { pasek, pokaz, ukryj } = usePasekKomunikatu();
+  // Jedna operacja na bazie naraz (także „Cofnij” z paska – nie może wejść w trwające usuwanie).
+  const wToku = useRef(false);
 
   const odczyt = useRef(0);
   const naglowek = useRef<HTMLHeadingElement>(null);
@@ -227,6 +229,8 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   }, [zakladka, widoczneProjekty, widoczneSzablony, miniatury]);
 
   const wykonaj = async (zadanie: () => Promise<string | void>) => {
+    if (wToku.current) return;
+    wToku.current = true;
     ustawTrwa(true);
     ustawBlad(undefined);
     try {
@@ -236,6 +240,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
     } catch (e) {
       ustawBlad(komunikat(e));
     } finally {
+      wToku.current = false;
       ustawTrwa(false);
     }
   };
@@ -273,10 +278,13 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
     });
 
   const duplikuj = (poz: PozycjaSzablonu) =>
-    wykonaj(async () => t('projekty.zduplikowano', { nazwa: await duplikujPozycje(poz) }));
+    wykonaj(async () => {
+      // Nowa zmiana w bazie – „Cofnij” z migawki sprzed niej by ją nadpisał.
+      ukryj();
+      return t('projekty.zduplikowano', { nazwa: await duplikujPozycje(poz) });
+    });
 
   const zamontowany = useRef(true);
-  const wToku = useRef(false);
   useEffect(() => {
     zamontowany.current = true;
     return () => {
@@ -287,6 +295,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   const uzyjWProjekcie = async (poz: PozycjaSzablonu) => {
     if (wToku.current) return;
     wToku.current = true;
+    ukryj();
     ustawTrwa(true);
     ustawBlad(undefined);
     try {
@@ -327,6 +336,8 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
             naglowek.current?.focus();
             void wykonaj(async () => {
               await przywroc();
+              // Miniatury z migawki wracają z bazy; brakujące można dorysować ponownie.
+              wyrenderowaneKarty.current.clear();
               return jeden
                 ? t('pasek.przywrocono', { nazwa: jeden })
                 : tn('pasek.przywroconoWiele', usuniete.length);

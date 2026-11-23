@@ -49,8 +49,11 @@ export function PasekKomunikatu({
       role="status"
       aria-live="polite"
       data-testid="pasek-komunikatu"
-      onMouseEnter={() => ustawWstrzymany((w) => ({ ...w, mysz: true }))}
-      onMouseLeave={() => ustawWstrzymany((w) => ({ ...w, mysz: false }))}
+      // Tylko mysz: po dotknięciu `pointerleave` często nie przychodzi i pasek by „zamarzł”.
+      onPointerEnter={(e) =>
+        e.pointerType !== 'touch' && ustawWstrzymany((w) => ({ ...w, mysz: true }))
+      }
+      onPointerLeave={() => ustawWstrzymany((w) => ({ ...w, mysz: false }))}
       onFocus={() => ustawWstrzymany((w) => ({ ...w, fokus: true }))}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null))
