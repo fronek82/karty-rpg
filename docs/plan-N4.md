@@ -40,3 +40,9 @@ pod i obok).
   `src/silnik/__snapshots__/m2-wrog.svg` i pliki `docs/przyklady/*.kartyrpg-szablon`.
 - Zmiana typu wartość → tekst: etykieta obok staje się etykietą „przed”; tekst → wartość: „przed”
   staje się „nad”.
+- Etykieta obok zajmuje najwyżej 60% szerokości pola (dłuższa jest zmniejszana do `minRozmiar`
+  albo zgłasza przepełnienie) – kształt nie znika.
+- Wcięcie obrysu wielokątów ograniczone do 40% najmniejszej odległości środka od boków (gruba lub
+  podwójna linia na małej gwieździe nie wywraca konturu).
+- Przegląd: uwaga, że koło i kwadrat zmieniają wygląd – nieaktualna; kod sprzed N4 już wpisywał je
+  w kwadrat wyśrodkowany w polu.

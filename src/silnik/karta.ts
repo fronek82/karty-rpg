@@ -278,7 +278,8 @@ function podzialWartosci(
   if (!e) return { ksztalt: r };
   const pozycja = pole.etykieta!.pozycja;
   if (pozycja === 'lewo' || pozycja === 'prawo') {
-    const s = Math.min(r.szer, e.uklad.szerokosc);
+    // Etykieta obok zajmuje najwyżej 60% szerokości (dłuższa – zmniejszana), kształt nie znika.
+    const s = Math.min(r.szer * 0.6, e.uklad.szerokosc);
     const reszta = Math.max(0, r.szer - s - e.odstep);
     const lewo = pozycja === 'lewo';
     return {

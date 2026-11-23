@@ -8,6 +8,7 @@ import {
   type Kotwica,
   maStylTekstu,
   type Pole,
+  type PoleWartosc,
   type PoleZeStylem,
   rozwinOdstepy,
   stylPola,
@@ -897,11 +898,15 @@ export function zmienTypPola(
   if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta) {
     // Etykieta obok wartości staje się etykietą „przed” tekstem; „przed” – etykietą nad wartością.
     const poz = w.etykieta.pozycja;
-    if (x.typ === 'tekst')
+    if (x.typ === 'tekst') {
+      // `odstep` jest tylko w etykiecie wartości.
+      const { odstep: _odstep, ...etykieta } = w.etykieta as NonNullable<PoleWartosc['etykieta']>;
+      void _odstep;
       x.etykieta = {
-        ...w.etykieta,
+        ...etykieta,
         pozycja: poz === 'lewo' || poz === 'prawo' ? 'przed' : poz,
       };
+    }
     if (x.typ === 'wartosc')
       x.etykieta = {
         ...w.etykieta,

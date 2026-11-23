@@ -114,7 +114,7 @@ function opisFigury(f: Figura, ramiona: number): Opis {
           ['C', 0.62, 0, 0.5, 0.1, 0.5, 0.26],
           ['Z'],
         ],
-        srodek: [0.5, 0.43],
+        srodek: [0.5, 0.47],
       };
     case 'kropla':
       // Ostrze u góry, okrągły dół; treść w środku okrągłej części.
@@ -246,6 +246,23 @@ function poleZeZnakiem(w: Punkt[]): number {
  * pokrywa się wtedy z tłem. Wierzchołki – przecięcia przesuniętych boków.
  */
 function wcietyWielokat(w: Punkt[], d: number): Punkt[] {
+  if (d <= 0) return w;
+  // Wcięcie najwyżej 40% najmniejszej odległości środka od boków – inaczej wierzchołki zamieniłyby
+  // się miejscami (gruba albo podwójna linia na małej gwieździe).
+  const cx = w.reduce((s, p) => s + p[0], 0) / w.length;
+  const cy = w.reduce((s, p) => s + p[1], 0) / w.length;
+  let minOdl = Infinity;
+  for (let i = 0; i < w.length; i++) {
+    const p = w[i]!;
+    const q = w[(i + 1) % w.length]!;
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    if (l > 0)
+      minOdl = Math.min(
+        minOdl,
+        Math.abs((q[0] - p[0]) * (p[1] - cy) - (q[1] - p[1]) * (p[0] - cx)) / l,
+      );
+  }
+  if (Number.isFinite(minOdl)) d = Math.min(d, 0.4 * minOdl);
   if (d <= 0) return w;
   const znak = poleZeZnakiem(w) > 0 ? 1 : -1;
   const n = w.length;
