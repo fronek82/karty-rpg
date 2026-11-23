@@ -194,3 +194,59 @@ test('duplikuje szablon z paska i opcji druku, a Cofnij pozostawia oryginał w e
     lista.getByRole('link', { name: 'Edytuj szablon Oryginał (kopia 2)' }),
   ).toBeVisible();
 });
+
+test('Edytor szablonu: zapis ręczny (Ctrl+S), okno przy wyjściu, eksport i import pliku szablonu', async ({
+  page,
+}, info) => {
+  await page.goto('./#/wlasne/nowy/awers');
+  await page.getByLabel('Nazwa szablonu').fill('Karta do pliku');
+  await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+  const status = page.locator('.status-zapisu');
+  const zapisz = page.locator('.pasek-gorny').getByRole('button', { name: 'Zapisz', exact: true });
+
+  // Zmiana czeka na zapis; Ctrl+S (także w polu tekstowym) zapisuje.
+  await page.getByLabel('Nazwa szablonu').fill('Karta z pliku');
+  await expect(status).toHaveText('Niezapisane zmiany');
+  await expect(zapisz).toBeEnabled();
+  await page.keyboard.press('ControlOrMeta+s');
+  await expect(status).toHaveText('Zapisano');
+  await expect(zapisz).toBeDisabled();
+
+  // Wyjście z projektu z niezapisanymi zmianami pyta o zapis.
+  await page.getByLabel('Nazwa szablonu').fill('Karta z pliku 2');
+  await page.locator('.pasek-gorny a.logo').click();
+  const okno = page.getByRole('dialog', { name: 'Niezapisane zmiany' });
+  await expect(okno).toBeVisible();
+  await okno.getByRole('button', { name: 'Zostań' }).click();
+  await expect(drzewo(page)).toBeVisible();
+  await zapisz.click();
+  await expect(status).toHaveText('Zapisano');
+
+  // Eksport do wspólnego pliku szablonu.
+  const [pobranie] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Eksportuj szablon' }).click(),
+  ]);
+  expect(pobranie.suggestedFilename()).toMatch(/\.kartyrpg-szablon$/);
+  const plik = info.outputPath(pobranie.suggestedFilename());
+  await pobranie.saveAs(plik);
+
+  // Import w Edytorze szablonu: nowy szablon w projekcie, link do niego.
+  await page.locator('.pasek-gorny input[type=file]').setInputFiles(plik);
+  const link = page.getByRole('link', { name: /^Dodano szablon „Karta z pliku 2/ });
+  await expect(link).toBeVisible();
+  await link.click();
+  await expect(page.getByLabel('Nazwa szablonu')).toHaveValue(/^Karta z pliku 2/);
+
+  // Ten sam plik awersu w Edytorze rewersu wczytuje się jako rewers.
+  await zapisz.click();
+  await page.goto('./');
+  await page.locator('.start-menu button.pasek-menu').click();
+  await expect(page.getByLabel('Nazwa rewersu')).toBeVisible({ timeout: 15000 });
+  await page.locator('.pasek-gorny input[type=file]').setInputFiles(plik);
+  const linkRewersu = page.getByRole('link', { name: /^Dodano rewers „Karta z pliku 2/ });
+  await expect(linkRewersu).toBeVisible();
+  await linkRewersu.click();
+  await expect(page.getByLabel('Nazwa rewersu')).toHaveValue(/^Karta z pliku 2/);
+});

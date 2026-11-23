@@ -351,3 +351,34 @@ test('uchwyt i pole szerokości skalują obwiednię zaznaczonych elementów', as
   wTolerancji((await prostokatMm(page, 'A')).szer, 15);
   wTolerancji((await prostokatMm(page, 'B')).x, 13);
 });
+
+test('gładzik Maca: pointercancel / utrata przechwytu w trakcie przeciągania nie cofają elementu', async ({
+  page,
+}) => {
+  await swobodny(page, 'Gładzik');
+  await dodaj(page, 'Tekst', 'A');
+  await zaznacz(page, 'A');
+  const k = await pxNaMm(page);
+  // Przerwanie gestu przez przeglądarkę (Force Click, gest systemowy) zamiast pointerup.
+  for (const przerwanie of ['pointercancel', 'lostpointercapture']) {
+    const przed = await prostokatMm(page, 'A');
+    const s = await srodek(page, obszar(page, 'A'));
+    await page.mouse.move(s.x, s.y);
+    await page.mouse.down();
+    await page.mouse.move(s.x + 10 * k, s.y, { steps: 6 });
+    await expect(page.getByTestId('podpowiedz-przeciagania')).toBeVisible();
+    await page.locator('.karta-podgladu').evaluate((el, typ) => {
+      el.dispatchEvent(
+        new PointerEvent(typ, {
+          pointerId: 1,
+          pointerType: 'mouse',
+          isPrimary: true,
+          bubbles: true,
+        }),
+      );
+    }, przerwanie);
+    await page.mouse.up();
+    await expect(page.getByTestId('podpowiedz-przeciagania')).toHaveCount(0);
+    wTolerancji((await prostokatMm(page, 'A')).x, przed.x + 10, 0.6);
+  }
+});
