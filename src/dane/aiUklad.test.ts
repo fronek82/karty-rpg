@@ -340,7 +340,7 @@ describe('wstawianie układu ze zdjęcia do edytowanej strony (N7)', () => {
     expect(w.korzen.dzieci.map((d) => d.typ)).toEqual(['tekst', 'wartosc']);
     for (const d of w.korzen.dzieci) expect('klucz' in d && d.klucz).toBeFalsy();
     const tytul = w.korzen.dzieci[0];
-    expect(tytul.typ === 'tekst' && tytul.tekst).toBe(ai.przyklad?.tytul);
+    expect(tytul?.typ === 'tekst' && tytul.tekst).toBe(ai.przyklad?.tytul);
     expect(w.przyklad).toBeUndefined();
   });
 });

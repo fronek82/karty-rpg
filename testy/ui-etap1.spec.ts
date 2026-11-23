@@ -136,28 +136,6 @@ for (const motyw of ['light', 'dark'] as const) {
     const kAnuluj = await kolory(anuluj);
     expect(kAnuluj.tlo).toBe(await tloStrony(page));
     expect(kontrastRgb(kAnuluj.tekst, kAnuluj.tlo)).toBeGreaterThanOrEqual(4.5);
-
-    // 6) Układ ze zdjęcia (AI): Rozpoznaj i Anuluj w lewym menu, te same kolory i szerokość.
-    await page.goto('./#/wlasne/ai');
-    const rozpoznaj = page.getByRole('button', { name: 'Rozpoznaj układ', exact: true });
-    const anulujAi = page.getByRole('link', { name: 'Anuluj', exact: true });
-    const formAi = page.locator('.kreator-formularz');
-    const bRozp = (await rozpoznaj.boundingBox())!;
-    const bAnulujAi = (await anulujAi.boundingBox())!;
-    const bFormAi = (await formAi.boundingBox())!;
-    expect(bRozp.x + bRozp.width).toBeLessThan(bFormAi.x);
-    expect(Math.abs(bRozp.width - szerMenu)).toBeLessThanOrEqual(2);
-    expect(Math.abs(bAnulujAi.width - szerMenu)).toBeLessThanOrEqual(2);
-
-    expect((await kolory(rozpoznaj)).tlo).toBe(kWlasne4.tlo);
-    expect((await kolory(anulujAi)).tlo).toBe(await tloStrony(page));
-
-    // Hover na kolorowym przycisku nie wprowadza niebieskiego obrysu (i zachowuje AA w motywie ciemnym).
-    await rozpoznaj.hover();
-    const kHover = await kolory(rozpoznaj);
-    if (motyw === 'dark') expect(kontrastRgb(kHover.tekst, kHover.tlo)).toBeGreaterThanOrEqual(4.5);
-    const obrysHover = await rozpoznaj.evaluate((e) => getComputedStyle(e).borderTopColor);
-    expect(obrysHover).not.toBe('rgb(27, 127, 168)');
   });
 }
 

@@ -13,17 +13,14 @@ import {
   usunElementZBiblioteki,
   zmienElementBiblioteki,
 } from '../../dane/biblioteka';
-import { formatujLiczbe, t, tn, type KluczTekstu } from '../../i18n';
+import { formatujLiczbe, t, tn } from '../../i18n';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import { zapiszOzdobnikWBibliotece } from '../bazaUI';
 import { opisBleduImportu } from '../start/importSzablonu';
 import {
   ELEMENTY_WBUDOWANE,
-  BladImportuSvg,
   TRESC_DOMYSLNA,
   importujSvg,
-  LIMITY_SVG,
-  LIMITY_XML,
   type ElementOzdobny,
   type RodzajElementu,
   type WynikImportuSvg,
@@ -33,6 +30,7 @@ import { MiniaturaOzdobnika } from '../szablon/MiniaturaOzdobnika';
 import { nazwaElementu } from '../szablon/PanelWygladu';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
 import { przygotujObraz } from '../obrazyUI';
+import { bezRozszerzenia, opisBleduSvg } from '../biblioteki/plikiOzdobnikow';
 import { EdytorRamki9 } from './EdytorRamki9';
 import { BibliotekaGlobalna } from './BibliotekaGlobalna';
 import { KOLOR_PODGLADU, podgladElementu } from './podgladElementu';
@@ -56,8 +54,6 @@ interface Wczytany {
   kolorowanie: 'jednolity' | 'oryginal';
   nazwa: string;
 }
-
-const bezRozszerzenia = (n: string) => n.replace(/\.[^.]+$/, '');
 
 function Przyciski<T extends string>({
   etykieta,
@@ -179,19 +175,7 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
       });
     } catch (e) {
       ustawWczytany(undefined);
-      const powod =
-        e instanceof BladImportuSvg
-          ? t(`biblioteka.blad.${e.kod}`, {
-              szczegoly: e.szczegol
-                ? t(e.szczegol.klucz as KluczTekstu, e.szczegol.parametry)
-                : e.message,
-              limit: LIMITY_SVG.bajty / 1024,
-              limitElementow: LIMITY_XML.elementy,
-              limitGlebokosci: LIMITY_XML.glebokosc,
-              limitKsztaltow: LIMITY_SVG.ksztalty,
-              limitKomend: LIMITY_SVG.komendy,
-            })
-          : String(e instanceof Error ? e.message : e);
+      const powod = opisBleduSvg(e);
       ustawBlad(t('biblioteka.import.blad', { plik: f.name, powod }));
     }
   };

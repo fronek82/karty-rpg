@@ -1,11 +1,18 @@
-import { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type MouseEvent as MouseEventReact,
+} from 'react';
 import { JEZYKI, t, ustawJezyk, type Jezyk } from '../i18n';
 import { useJezyk } from '../i18n/react';
 import { useMotyw } from './motyw';
+import { useTrasa } from './useTrasa';
 
-// Okna zasobów ładowane leniwie, żeby start strony nie ciągnął fontkita ani katalogu Google Fonts.
-const OknoCzcionek = lazy(() => import('./OknaZasobow').then((m) => ({ default: m.OknoCzcionek })));
-const OknoObrazow = lazy(() => import('./OknaZasobow').then((m) => ({ default: m.OknoObrazow })));
 const OknoKolorow = lazy(() => import('./OknoKolorow').then((m) => ({ default: m.OknoKolorow })));
 
 /**
@@ -49,15 +56,24 @@ function IkonaKsiezyca() {
   );
 }
 
+/** Adres ekranu „Biblioteki” (obrazy, czcionki i ozdobniki w przeglądarce). */
+export const ADRES_BIBLIOTEK = '#/biblioteki';
+
 /**
- * Rozwijane menu „⚙ Ustawienia ▾” na końcu paska górnego: motyw jasny/ciemny, język PL/EN,
- * wgrywanie czcionek, wgrywanie obrazów oraz link do instrukcji.
+ * Narzędzia na końcu paska górnego: link „Biblioteki” i rozwijane menu „⚙ Ustawienia ▾”
+ * (tylko konfiguracja: motyw jasny/ciemny, język PL/EN, kolory przycisków) z linkiem do instrukcji.
+ * `sprawdzWyjscie` – straż niezapisanych zmian w edytorach z zapisem ręcznym.
  */
-export function NarzedziaPaska() {
+export function NarzedziaPaska({
+  sprawdzWyjscie,
+}: {
+  sprawdzWyjscie?: (e: MouseEventReact, adres: string) => void;
+} = {}) {
   const { motyw, ustaw } = useMotyw();
   const aktywny = useJezyk();
+  const trasa = useTrasa();
   const [otwarte, ustawOtwarte] = useState(false);
-  const [okno, ustawOkno] = useState<'czcionki' | 'obrazy' | 'kolory'>();
+  const [okno, ustawOkno] = useState<'kolory'>();
   const opakowanie = useRef<HTMLDivElement>(null);
   const przycisk = useRef<HTMLButtonElement>(null);
   const idPanelu = useId();
@@ -92,6 +108,14 @@ export function NarzedziaPaska() {
 
   return (
     <div className="narzedzia-paska" role="group" aria-label={t('pasek.narzedzia')}>
+      <a
+        className="przycisk-kontur przycisk-biblioteki"
+        href={ADRES_BIBLIOTEK}
+        aria-current={trasa.startsWith('/biblioteki') ? 'page' : undefined}
+        onClick={(e) => sprawdzWyjscie?.(e, ADRES_BIBLIOTEK)}
+      >
+        {t('biblioteki.tytul')}
+      </a>
       <div
         className="menu-ustawien"
         ref={opakowanie}
@@ -169,26 +193,6 @@ export function NarzedziaPaska() {
               className="menu-ustawien-pozycja"
               onClick={() => {
                 ustawOtwarte(false);
-                ustawOkno('czcionki');
-              }}
-            >
-              {t('pasek.wgrajCzcionki')}
-            </button>
-            <button
-              type="button"
-              className="menu-ustawien-pozycja"
-              onClick={() => {
-                ustawOtwarte(false);
-                ustawOkno('obrazy');
-              }}
-            >
-              {t('pasek.wgrajObrazy')}
-            </button>
-            <button
-              type="button"
-              className="menu-ustawien-pozycja"
-              onClick={() => {
-                ustawOtwarte(false);
                 ustawOkno('kolory');
               }}
             >
@@ -211,13 +215,7 @@ export function NarzedziaPaska() {
       </div>
       {okno && (
         <Suspense fallback={null}>
-          {okno === 'czcionki' ? (
-            <OknoCzcionek zamknij={zamknijOkno} />
-          ) : okno === 'obrazy' ? (
-            <OknoObrazow zamknij={zamknijOkno} />
-          ) : (
-            <OknoKolorow zamknij={zamknijOkno} />
-          )}
+          <OknoKolorow zamknij={zamknijOkno} />
         </Suspense>
       )}
     </div>

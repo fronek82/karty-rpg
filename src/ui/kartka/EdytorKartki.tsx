@@ -1815,7 +1815,7 @@ export function EdytorKartki({
           </a>
         )}
       </span>
-      <NarzedziaPaska />
+      <NarzedziaPaska sprawdzWyjscie={sprawdzWyjscie} />
     </header>
   );
 

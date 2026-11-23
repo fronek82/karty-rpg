@@ -20,6 +20,9 @@ const WybierzStroneSzablonu = lazy(() =>
 const KreatorStrona = lazy(() =>
   import('./start/KreatorStrona').then((m) => ({ default: m.KreatorStrona })),
 );
+const Biblioteki = lazy(() =>
+  import('./biblioteki/Biblioteki').then((m) => ({ default: m.Biblioteki })),
+);
 const EdytorStrona = lazy(() =>
   import('./EdytorStrona').then((m) => ({ default: m.EdytorStrona })),
 );
@@ -96,6 +99,8 @@ export function App() {
   const projekt = dopasowanie?.[1];
   const podtrasa = dopasowanie?.[2] ?? '';
   const gra = /^\/gra\/([^/]+)$/.exec(trasa)?.[1];
+  // „Biblioteki” (N7): `#/biblioteki` = pierwsza zakładka (Obrazy).
+  const biblioteka = /^\/biblioteki(?:\/([^/]*))?$/.exec(trasa);
   // Dawne trasy (lista projektów, arkusze pakietu) – teraz wszystko jest na starcie.
   const dawna = trasa === '/projekty' || trasa === '/arkusze';
   useEffect(() => {
@@ -152,6 +157,10 @@ export function App() {
         ) : trasa === '/wlasne/nowy/awers' ? (
           <Leniwa>
             <KreatorStrona />
+          </Leniwa>
+        ) : biblioteka ? (
+          <Leniwa>
+            <Biblioteki zakladka={biblioteka[1] ?? 'obrazy'} />
           </Leniwa>
         ) : wlasne ? (
           <Leniwa>

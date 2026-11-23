@@ -155,29 +155,7 @@ for (const en of [false, true]) {
       const zawartoscPdf = await tekstZPdf(new Uint8Array(await readFile(sciezkaPdf!)));
       expect(zawartoscPdf).toContain(en ? 'lantern' : 'latarnia');
       if (!en) expect(zawartoscPdf).toContain('żółty');
-
-      // 4. Rozpoznawanie układu ze zdjęcia AI z zapisanej odpowiedzi (M5-2).
-      await page.goto('./#/wlasne/ai');
-      await page.getByLabel(en ? 'Claude API key' : 'Klucz Claude API').fill('sk-ant-odbior-m5');
-      await page.getByTestId('plik-zdjecia-ai').setInputFiles('testy/zasoby/podklad-testowy.png');
-      await expect(page.locator('.ai-miniatura-zdjecia img')).toBeVisible();
-      await page.getByRole('button', { name: en ? 'Detect layout' : 'Rozpoznaj układ' }).click();
-      await expect(page.getByTestId('podglad-szablonu-ai').locator('svg')).toBeVisible({
-        timeout: 15000,
-      });
-      await expect(
-        page.getByTestId('podglad-szablonu-ai').locator('svg defs [id]').first(),
-      ).toHaveAttribute('id', /^ai-/);
-      await page
-        .getByRole('button', {
-          name: en ? 'Open in template editor' : 'Otwórz w edytorze szablonu',
-        })
-        .click();
-      await expect(
-        page.getByRole('tree', { name: en ? 'Card structure' : 'Struktura karty' }),
-      ).toBeVisible({
-        timeout: 15000,
-      });
+      // Układ ze zdjęcia (AI) – w Edytorze szablonu, osobny test: ai-uklad.spec.ts (N7).
     });
   }
 }

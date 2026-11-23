@@ -769,7 +769,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             </a>
             {u.akcjaGlowna}
           </span>
-          <NarzedziaPaska />
+          <NarzedziaPaska sprawdzWyjscie={sprawdzWyjscie} />
         </header>
         {oknoWyjscia}
         {oknoAi && (

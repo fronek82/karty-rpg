@@ -3562,3 +3562,153 @@ button.maly {
   gap: 0.45rem;
   align-items: flex-start;
 }
+
+/* „Biblioteki” (N7): wspólna strona obrazów, czcionek i ozdobników – siatka na środku. */
+.strona-biblioteki {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.strona-biblioteki > h1 {
+  margin: 0;
+}
+
+.strona-biblioteki > .podpis {
+  max-width: 44rem;
+  margin: 0;
+}
+
+.zakladki-bibliotek {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.zakladki-bibliotek a {
+  padding: 0.4rem 1rem;
+  border: 1.5px solid var(--obramowanie);
+  border-radius: 999px;
+  color: var(--tekst);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.zakladki-bibliotek a:hover {
+  border-color: var(--akcent);
+}
+
+.zakladki-bibliotek a[aria-current='page'] {
+  background: var(--akcent);
+  border-color: var(--akcent);
+  color: var(--akcent-tekst);
+}
+
+.narzedzia-biblioteki {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.szukaj-biblioteki {
+  width: min(20rem, 100%);
+}
+
+.katalog-biblioteki {
+  width: min(44rem, 100%);
+  text-align: left;
+}
+
+.pusta-biblioteka {
+  color: var(--tekst-przygaszony);
+}
+
+.siatka-biblioteki {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 13rem));
+  justify-content: center;
+  gap: 0.9rem;
+}
+
+.kafelek-biblioteki {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.5rem;
+  background: var(--tlo-panelu);
+  min-width: 0;
+}
+
+.podglad-biblioteki {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 7.5rem;
+  border-radius: 0.35rem;
+  background: var(--pole);
+  overflow: hidden;
+}
+
+.podglad-biblioteki .podglad-ozdobnika {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--papier-ozdobnika);
+}
+
+.podglad-biblioteki img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.podglad-biblioteki .podglad-ozdobnika svg {
+  width: 6.5rem;
+  height: 6.5rem;
+}
+
+.probka-czcionki {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0 0.5rem;
+  color: var(--tekst);
+}
+
+.probka-tekst {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nazwa-biblioteki {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.akcje-biblioteki {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}

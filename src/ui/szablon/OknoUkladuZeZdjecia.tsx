@@ -139,7 +139,7 @@ export function OknoUkladuZeZdjecia({
       wstawUkladAi(s, rozpoznany, tryb, { bezKlucza: bezDanych, zajete: zajeteKlucze() }),
     );
     if (dolaczPodklad && zdjecie && zPodkladem)
-      dolaczPodklad(new File([zdjecie.bajty], zdjecie.nazwa, { type: zdjecie.typMime }));
+      dolaczPodklad(new File([zdjecie.bajty.slice()], zdjecie.nazwa, { type: zdjecie.typMime }));
     zamknij();
   };
 
