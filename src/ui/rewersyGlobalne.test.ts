@@ -10,7 +10,7 @@ import type { ProjektWEdycji } from './useProjekt';
 const biblioteka = new Map<string, { wpis: WpisBibliotekiGlobalnej; dane: Uint8Array }>();
 const projektyWBazie = new Map<string, { projekt: Projekt; zasoby: DaneZasobow }>();
 
-vi.mock('./baza', () => ({
+vi.mock('./bazaUI', () => ({
   baza: () => ({
     bibliotekaGlobalna: async (rodzaj: WpisBibliotekiGlobalnej['rodzaj']) =>
       [...biblioteka.values()].map((v) => v.wpis).filter((w) => w.rodzaj === rodzaj),

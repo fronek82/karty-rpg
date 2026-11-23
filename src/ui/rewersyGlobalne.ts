@@ -7,7 +7,7 @@ import {
 } from '../dane/archiwum';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import { kluczTresciSzablonu } from '../model/szablon';
-import { baza } from './baza';
+import { baza } from './bazaUI';
 import type { ProjektWEdycji } from './useProjekt';
 
 const PRZEDROSTEK_KLUCZA = 'rewers:';
@@ -16,8 +16,6 @@ const KLUCZ_UKRYTYCH = 'karty-rpg:ukryte-rewersy';
 /** Stabilny klucz wpisu w bibliotece globalnej dla rewersu z konkretnego projektu. */
 export const kluczRewersuGlobalnego = (projektId: string, rewersId: string): string =>
   `${PRZEDROSTEK_KLUCZA}${projektId}:${rewersId}`;
-
-export const PRZEDROSTEK_OPCJI_GLOBALNEJ = '__globalny__:';
 
 function wczytajUkryte(): Set<string> {
   try {

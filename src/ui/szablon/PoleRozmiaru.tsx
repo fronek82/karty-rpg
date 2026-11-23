@@ -1,6 +1,7 @@
 import { t } from '../../i18n';
 import { PoleLiczby } from '../kartka/PoleLiczby';
 import type { Rozmiar } from '../../model/szablon';
+import { zaokraglij } from '../../model/geometria';
 
 type Tryb = 'domyslnie' | 'auto' | 'wypelnij' | 'mm' | 'procent';
 
@@ -48,7 +49,7 @@ export function PoleRozmiaru({
         : x === 'auto'
           ? 'auto'
           : x === 'mm'
-            ? { mm: Math.round(domyslneMm * 10) / 10 }
+            ? { mm: zaokraglij(domyslneMm, 1) }
             : x === 'procent'
               ? { procent: 50 }
               : { wypelnij: 1 },

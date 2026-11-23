@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const nowyProjektZRewersem = vi.fn();
-vi.mock('../baza', () => ({
+vi.mock('../bazaUI', () => ({
   nowyProjektZRewersem: (...a: unknown[]) => nowyProjektZRewersem(...a),
 }));
 

@@ -3,6 +3,7 @@ import type { KomendaKonturu, Kontur, KonturSymbolu, Macierz } from '../silnik/s
 import { kolorSceny } from '../silnik/scena';
 import { BladXml, parsujXml, type OpisBledu, type WezelXml } from './svgXml';
 import type { ElementOzdobny, RodzajElementu } from './typy';
+import { zaokraglij } from '../model/geometria';
 
 /**
  * Import własnego pliku SVG do biblioteki ozdobników (SPEC 5, plan M2b sekcja 3.4).
@@ -788,7 +789,7 @@ export function importujSvg(
     throw new BladImportuSvg('wymiary', 'Rysunek ma zerowy lub nieskończony rozmiar.');
 
   const sk = WYSOKOSC_IMPORTU / widok.wys;
-  const zaokr = (v: number) => Math.round(v * 1e4) / 1e4;
+  const zaokr = (v: number) => zaokraglij(v, 4);
   const kolory = new Set<string>();
   let komendy = 0;
   const kontury: KonturSymbolu[] = surowe.map((s) => {

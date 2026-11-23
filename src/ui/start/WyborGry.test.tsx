@@ -4,7 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pakietMausritter } from '../../pakiety/mausritter';
 
 const nowyProjektZPakietu = vi.fn();
-vi.mock('../baza', () => ({ nowyProjektZPakietu: (...a: unknown[]) => nowyProjektZPakietu(...a) }));
+vi.mock('../bazaUI', () => ({
+  nowyProjektZPakietu: (...a: unknown[]) => nowyProjektZPakietu(...a),
+}));
 vi.mock('./ladujPodglady', () => ({
   useUruchomPodglady: () => {},
   useWynikPodgladu: () => undefined,

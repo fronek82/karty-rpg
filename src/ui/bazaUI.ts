@@ -17,7 +17,7 @@ export async function zapiszOzdobnikWBibliotece(bajty: Uint8Array) {
   const { element, zasoby, dane } = importujOzdobnik(bajty);
   const opis = zasoby[0];
   if (opis?.rodzaj === 'obraz') {
-    const { przygotujObraz } = await import('./obrazy');
+    const { przygotujObraz } = await import('./obrazyUI');
     const wynik = await przygotujObraz(dane.get(opis.id)!);
     if (wynik.szerokosc !== opis.szerokosc || wynik.wysokosc !== opis.wysokosc)
       throw new BladDanych(t('globalna.zlyObraz', { id: opis.id }));
@@ -104,12 +104,12 @@ export async function nowyProjektZSzablonuKreatora(
 }
 
 /** Nowy projekt własnych kart z przykładowego szablonu (z jedną kartą z danymi) – zapisany w bazie; zwraca id. */
-export async function nowyProjektZPrzykladu(
+export async function zapiszProjektZPrzykladu(
   przyklad: import('../przyklady/typy').Przyklad,
   bazaUrl: string = import.meta.env.BASE_URL,
 ): Promise<string> {
-  const { nowyProjektZPrzykladu: utworz } = await import('../dane/wlasneKarty');
-  const { projekt, zasoby } = await utworz(przyklad, (plik) =>
+  const { nowyProjektZPrzykladu } = await import('../dane/wlasneKarty');
+  const { projekt, zasoby } = await nowyProjektZPrzykladu(przyklad, (plik) =>
     pobierz(`${bazaUrl}czcionki/${plik}`),
   );
   const id = await zapiszNowyProjekt(projekt, zasoby);

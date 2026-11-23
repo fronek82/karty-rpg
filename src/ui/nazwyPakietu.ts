@@ -22,8 +22,5 @@ export const nazwaUkladu = (u: Pick<GotowyUklad, 'id' | 'nazwa'>): string =>
 export const nazwaGryDo = (g: { id: string; nazwaDo: string }): string =>
   tJesliJest(`gra.${g.id}.nazwaDo`) ?? g.nazwaDo;
 
-export const opisGry = (g: { id: string; opis: string }): string =>
-  tJesliJest(`gra.${g.id}.opis`) ?? g.opis;
-
 export const atrybucjaPakietu = (p: { id: string; atrybucja: string }): string =>
   tJesliJest(`gra.${p.id}.atrybucja`) ?? p.atrybucja;

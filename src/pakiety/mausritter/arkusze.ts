@@ -2,6 +2,7 @@ import { pt, type Mm } from '../../model/jednostki';
 import type { Arkusz, PrzypietaKarta, UstawieniaArkusza } from '../../model/arkusz';
 import { SLOT } from './szablony';
 import { taliaBroni, taliaStanow, taliaWyposazenia } from './talie';
+import { zaokraglij } from '../../model/geometria';
 
 /**
  * Arkusze A4 poziomo jak w referencji. Położenie siatki zmierzone wektorowo z PDF (linie cięcia)
@@ -10,8 +11,8 @@ import { taliaBroni, taliaStanow, taliaWyposazenia } from './talie';
 
 const SKALA_REFERENCJI = SLOT / 25.725;
 const zReferencji = (x: Mm, y: Mm) => ({
-  x: Math.round(x * SKALA_REFERENCJI * 1000) / 1000,
-  y: Math.round(y * SKALA_REFERENCJI * 1000) / 1000,
+  x: zaokraglij(x * SKALA_REFERENCJI, 3),
+  y: zaokraglij(y * SKALA_REFERENCJI, 3),
 });
 
 const KOLOR = '#231f20';
@@ -203,7 +204,7 @@ export const arkuszStanow: Arkusz = {
       styl: { czcionka: 'tytul', wariant: 'pogrubiony', rozmiar: pt(13), kolor: KOLOR },
       stylOpisu: { czcionka: 'tresc', rozmiar: pt(9), kolor: KOLOR },
       // Odstępy w referencji wahają się (2,81–2,96 mm) – średnia z całej szerokości siatki.
-      odstep: Math.round(((284.24 - 12.53 - 10 * 25.725) / 5) * SKALA_REFERENCJI * 1000) / 1000,
+      odstep: zaokraglij(((284.24 - 12.53 - 10 * 25.725) / 5) * SKALA_REFERENCJI, 3),
       // Co najmniej 2 mm od dołu liter ostatniej linijki opisu do górnej linii cięcia kart
       // (odstęp liczony od dołu wiersza, z interlinią – stąd zapas).
       odstepOdKart: 2.5,

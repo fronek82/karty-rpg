@@ -14,7 +14,7 @@ import {
   opisRozmiaruSzablonu,
 } from '../../dane/wlasneKarty';
 import { t } from '../../i18n';
-import { baza } from '../baza';
+import { baza } from '../bazaUI';
 import { BibliotekaGlobalna } from '../biblioteka/BibliotekaGlobalna';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import type { ProjektWEdycji } from '../useProjekt';

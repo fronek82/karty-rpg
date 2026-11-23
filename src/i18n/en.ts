@@ -283,8 +283,6 @@ export const en: Slownik = {
   'pakiet.param.obrona': '-1 def',
   'pakiet.param.pojemnosc': '/ 250p',
   'gra.mausritter.nazwaDo': 'Mausritter',
-  'gra.mausritter.opis':
-    'Gear and condition cards in a grid of slots – weapons, armor, items, spells, conditions.',
   'gra.mausritter.atrybucja':
     'Card layout based on the game Mausritter (Isaac Williams, Losing Games). The package contains no artwork or text from the game materials.',
   'czcionki.tytul': 'Fonts',

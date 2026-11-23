@@ -13,7 +13,7 @@ import type {
   ZrodloCzcionki,
 } from '../model/projekt';
 import type { WariantCzcionki } from '../model/szablon';
-import { baza } from './baza';
+import { baza } from './bazaUI';
 import type { ProjektWEdycji } from './useProjekt';
 
 const kluczCzcionki = (rodzina: string, wariant: string) =>
@@ -149,7 +149,7 @@ export async function wgrajObrazyGlobalnie(
   pliki: File[],
   edycja?: ProjektWEdycji,
 ): Promise<string[]> {
-  const { przygotujObraz } = await import('./obrazy');
+  const { przygotujObraz } = await import('./obrazyUI');
   const przygotowane: { nazwa: string; dane: Uint8Array; szerokosc: number; wysokosc: number }[] =
     [];
   for (const plik of pliki) {
@@ -220,7 +220,7 @@ export async function dodajGlobalnyObrazDoProjektu(
   edycja: ProjektWEdycji,
 ): Promise<string> {
   const [{ przygotujObraz }, bajty] = await Promise.all([
-    import('./obrazy'),
+    import('./obrazyUI'),
     baza().odczytajZBiblioteki(wpis.id),
   ]);
   const wynik = await przygotujObraz(bajty);
@@ -557,7 +557,7 @@ export async function dolaczZasobyGlobalne(
   }
 
   if (obrazy.length > 0) {
-    const { przygotujObraz } = await import('./obrazy');
+    const { przygotujObraz } = await import('./obrazyUI');
     for (const wpis of obrazy) {
       if (obecneObrazy.has(wpis.nazwa)) continue;
       try {

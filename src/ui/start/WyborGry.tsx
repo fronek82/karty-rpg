@@ -3,7 +3,7 @@ import { BladDanych } from '../../dane/schemat';
 import { formatujLiczbe, t } from '../../i18n';
 import { gry } from '../../pakiety/gry';
 import type { GotowyUklad, Pakiet } from '../../pakiety/typy';
-import { nowyProjektZPakietu } from '../baza';
+import { nowyProjektZPakietu } from '../bazaUI';
 import { atrybucjaPakietu, nazwaGryDo, nazwaUkladu } from '../nazwyPakietu';
 import { ID_PUSTEJ } from './idPodgladow';
 import {

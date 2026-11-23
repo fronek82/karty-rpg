@@ -4,6 +4,7 @@ import { MAKS_EGZEMPLARZY } from './kartka';
 import { kolumnySzablonu, type KolumnaDanych } from './edycja';
 import type { OpisZasobu } from '../model/projekt';
 import type { Szablon } from '../model/szablon';
+import { normalizujNazwe } from '../model/nazwy';
 
 export const LIMIT_TABELI = { bajty: 8 * 1024 * 1024, wiersze: 500, kolumny: 128, sztuki: 2000 };
 export interface WierszImportu {
@@ -32,14 +33,6 @@ export interface MapowanieImportu {
 const pelny = (r: string[]) => r.some((v) => v.trim() !== '');
 const zaDuzaTabela = () => new Error(t('tabelaImport.limit', LIMIT_TABELI));
 
-const normalizujNaglowek = (s: string) =>
-  s
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/ł/g, 'l');
-
 function ucieczkaCsv(wartosc: string, sep: ';' | ','): string {
   if (wartosc.includes(sep) || wartosc.includes('"') || /[\r\n]/.test(wartosc)) {
     return `"${wartosc.replace(/"/g, '""')}"`;
@@ -62,15 +55,15 @@ export function szablonCsv(
   const kolumny = kolumnySzablonu(szablon);
   const zliczone = new Map<string, number>();
   for (const k of kolumny) {
-    const n = normalizujNaglowek(k.nazwa);
+    const n = normalizujNazwe(k.nazwa);
     zliczone.set(n, (zliczone.get(n) ?? 0) + 1);
   }
   const naglowki = kolumny.map((k) =>
-    (zliczone.get(normalizujNaglowek(k.nazwa)) ?? 0) > 1 ? k.klucz : k.nazwa,
+    (zliczone.get(normalizujNazwe(k.nazwa)) ?? 0) > 1 ? k.klucz : k.nazwa,
   );
   if (
     etykietaIlosci &&
-    !naglowki.some((h) => normalizujNaglowek(h) === normalizujNaglowek(etykietaIlosci))
+    !naglowki.some((h) => normalizujNazwe(h) === normalizujNazwe(etykietaIlosci))
   ) {
     naglowki.push(etykietaIlosci);
   }

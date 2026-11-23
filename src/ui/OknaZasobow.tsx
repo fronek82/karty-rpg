@@ -3,7 +3,7 @@ import type { WpisBibliotekiGlobalnej } from '../dane/baza';
 import { BladDanych } from '../dane/schemat';
 import { t } from '../i18n';
 import { useAktywnyProjekt } from './AktywnyProjektKontekst';
-import { baza } from './baza';
+import { baza } from './bazaUI';
 import { KatalogGoogleFonts } from './kartka/KatalogGoogleFonts';
 import { OknoModalne } from './OknoModalne';
 import {

@@ -13,7 +13,6 @@ import {
   ograniczDoRodzica,
   przesunCele,
   przyciagnijLinie,
-  pxNaMm,
   rozlozRowno,
   trafionyWezel,
   wyrownaj,
@@ -54,13 +53,10 @@ const poz = (w: { zmiany: Map<string, { pozycja: { x: number; y: number } }> }, 
   w.zmiany.get(id)!.pozycja.y,
 ];
 
-describe('przeliczenie px ↔ mm', () => {
+describe('przeliczenie mm → px', () => {
   it('liczy ze skali podglądu w obie strony', () => {
     // Karta 63 mm rysowana na 504 px: 8 px na mm.
-    expect(pxNaMm(8, 504, 63)).toBe(1);
-    expect(pxNaMm(6, 504, 63)).toBeCloseTo(0.75);
     expect(mmNaPx(0.5, 504, 63)).toBe(4);
-    expect(pxNaMm(mmNaPx(12.3, 333, 63), 333, 63)).toBeCloseTo(12.3);
   });
   it('doLokalnych cofa obrót przodków (zgodnie z zegarem)', () => {
     expect(doLokalnych(1, 2, 0)).toEqual([1, 2]);

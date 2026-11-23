@@ -1,5 +1,5 @@
 import type { Projekt } from '../model/projekt';
-import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
+import { czyKontener, korzenieSzablonu, type Szablon, wezlyDrzewa } from '../model/szablon';
 import { czyWbudowany } from '../ozdobniki/katalog';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { t, tn } from '../i18n';
@@ -7,6 +7,7 @@ import { identyfikatorZNazwy } from './czcionki';
 import { BladDanych, zasobySzablonu } from './schemat';
 import { przytnijWciecia } from '../ozdobniki/ramka9';
 import type { OpisObrazu } from '../model/projekt';
+import { zaokraglij } from '../model/geometria';
 
 /** Najwięcej własnych elementów w bibliotece projektu (ochrona przed rozdęciem projektu). */
 export const MAKS_ELEMENTOW_BIBLIOTEKI = 200;
@@ -14,11 +15,6 @@ export const MAKS_ELEMENTOW_BIBLIOTEKI = 200;
 interface Odwolanie {
   id: string;
   ustaw(nowe: string): void;
-}
-
-function* wezly(w: Wezel): Generator<Wezel> {
-  yield w;
-  if (czyKontener(w)) for (const d of w.dzieci) yield* wezly(d);
 }
 
 /** Odwołanie do elementu w polu `klucz` obiektu `o` (jeśli jest tekstem). */
@@ -39,9 +35,8 @@ function* odwolania(s: Szablon): Generator<Odwolanie> {
     yield* ref(s.ramka.ozdoba, 'element');
     yield* ref(s.ramka.narozniki, 'element');
   }
-  const korzenie: Kontener[] = [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)];
-  for (const k of korzenie) {
-    for (const w of wezly(k)) {
+  for (const k of korzenieSzablonu(s)) {
+    for (const w of wezlyDrzewa(k)) {
       yield* ref(w.ozdoba, 'element');
       yield* ref(w.narozniki, 'element');
       if (!czyKontener(w) && w.typ === 'separator') {
@@ -168,7 +163,7 @@ export function ramka9Domyslna(
   szer: number,
   wys: number,
 ): NonNullable<ElementOzdobny['ramka9']> {
-  const w = zrodlo.typ === 'obraz' ? Math.round : (v: number) => Math.round(v * 100) / 100;
+  const w = (v: number) => zaokraglij(v, zrodlo.typ === 'obraz' ? 0 : 2);
   return {
     zrodlo,
     wciecia: { gora: w(wys / 3), prawo: w(szer / 3), dol: w(wys / 3), lewo: w(szer / 3) },

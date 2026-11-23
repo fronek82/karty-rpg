@@ -2,24 +2,28 @@ import { pt, type Mm } from '../model/jednostki';
 import type { Projekt } from '../model/projekt';
 import {
   czyKontener,
-  type StylTekstu,
-  type PoleZeStylem,
-  stylPola,
-  znajdzGrupeStylu,
-  maStylTekstu,
   kluczeTabeli,
-  rozwinOdstepy,
-  ulamkiKotwicy,
   type Kolor,
-  type Kotwica,
   type Kontener,
+  type Kotwica,
+  maStylTekstu,
   type Pole,
+  type PoleZeStylem,
+  rozwinOdstepy,
+  stylPola,
+  type StylTekstu,
   type Szablon,
+  ulamkiKotwicy,
   type Wezel,
+  wezlyDrzewa,
+  wszystkieWezly,
+  znajdzGrupeStylu,
 } from '../model/szablon';
 import { unikalneId } from './czcionki';
 import { prostokatPoObrocie } from '../silnik/uklad';
 import type { WbudowanyZestawStylu } from '../ozdobniki/zestawyStylow';
+import { zaokraglij } from '../model/geometria';
+import { bezZnakowDiakrytycznych } from '../model/nazwy';
 
 /**
  * Edycja szablonu od zera: operacje na drzewie wierszy, kolumn i pól (czyste funkcje – projekt
@@ -33,16 +37,6 @@ export type RodzajNowego =
 
 const CZARNY: Kolor = '#000000';
 const tresc = (rozmiar: number) => ({ czcionka: 'tresc', rozmiar: pt(rozmiar) });
-
-function* wezly(w: Wezel): Generator<Wezel> {
-  yield w;
-  if (czyKontener(w)) for (const d of w.dzieci) yield* wezly(d);
-}
-
-/** Wszystkie węzły szablonu (korzeń i warianty układu). */
-export function wszystkieWezly(s: Szablon): Wezel[] {
-  return [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)].flatMap((k) => [...wezly(k)]);
-}
 
 /** Klucze danych używane w szablonie (pola i komórki tabel). */
 export function kluczeSzablonu(s: Szablon): Set<string> {
@@ -59,11 +53,7 @@ export function kluczeSzablonu(s: Szablon): Set<string> {
 /** Klucz danych z nazwy: małe litery, bez znaków diakrytycznych, `_` zamiast spacji; unikalny. */
 export function kluczZNazwy(nazwa: string, zajete: ReadonlySet<string>): string {
   const baza =
-    nazwa
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/ł/g, 'l')
-      .replace(/Ł/g, 'L')
+    bezZnakowDiakrytycznych(nazwa)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '_')
       .replace(/^_+|_+$/g, '') || 'pole';
@@ -308,7 +298,7 @@ export function przypiszGrupeStylu(
   const indeks = wariant ? indeksWariantu(s, wariant) : -1;
   const korzen = wariant ? s.warianty?.[indeks]?.korzen : s.korzen;
   if (!korzen) return s;
-  const w = [...wezly(korzen)].find((x) => x.id === id);
+  const w = [...wezlyDrzewa(korzen)].find((x) => x.id === id);
   if (!w || !maStylTekstu(w) || (w.grupaStyluId ?? '') === grupaId) return s;
   const pole = grupaId ? { ...w, grupaStyluId: grupaId } : odlaczStyl(w, stylPola(s, w));
   const nowy = mapuj(korzen, (x) => (x.id === id ? pole : x)) as Kontener;
@@ -326,7 +316,7 @@ export function utworzGrupeStylu(
   wariant?: WymiaryWariantu,
 ): Szablon {
   const korzen = wariant ? s.warianty?.[indeksWariantu(s, wariant)]?.korzen : s.korzen;
-  const w = korzen && [...wezly(korzen)].find((x) => x.id === idPola);
+  const w = korzen && [...wezlyDrzewa(korzen)].find((x) => x.id === idPola);
   if (!w || !maStylTekstu(w)) return s;
   const grupy = s.grupyStylow ?? [];
   const zajete = new Set(grupy.map((g) => g.id));
@@ -378,7 +368,7 @@ export function usunGrupeStylu(s: Szablon, id: string): Szablon {
 
 /** Węzeł o identyfikatorze (w korzeniu szablonu). */
 export function znajdzWezel(s: Szablon, id: string): Wezel | undefined {
-  return [...wezly(s.korzen)].find((w) => w.id === id);
+  return [...wezlyDrzewa(s.korzen)].find((w) => w.id === id);
 }
 
 /** Rodzic węzła i jego indeks wśród dzieci (korzeń nie ma rodzica). */
@@ -386,7 +376,7 @@ export function rodzicWezla(
   s: Szablon,
   id: string,
 ): { rodzic: Kontener; indeks: number } | undefined {
-  for (const w of wezly(s.korzen)) {
+  for (const w of wezlyDrzewa(s.korzen)) {
     if (!czyKontener(w)) continue;
     const indeks = w.dzieci.findIndex((d) => d.id === id);
     if (indeks >= 0) return { rodzic: w, indeks };
@@ -447,7 +437,7 @@ export function przesunWezel(s: Szablon, id: string, o: -1 | 1): Szablon {
 /** Czy `id` leży w poddrzewie `przodek` (albo jest nim). */
 function wPoddrzewie(s: Szablon, przodek: string, id: string): boolean {
   const p = znajdzWezel(s, przodek);
-  return !!p && [...wezly(p)].some((w) => w.id === id);
+  return !!p && [...wezlyDrzewa(p)].some((w) => w.id === id);
 }
 
 /**
@@ -617,7 +607,7 @@ export function duplikujSzablon(s: Szablon, id: string, nazwa: string): Szablon 
   const zajete = new Set(wszystkieWezly(s).map((w) => w.id));
   const kopiujDrzewo = (korzen: Kontener): Kontener => {
     const nowe = new Map<string, string>();
-    for (const w of wezly(korzen)) {
+    for (const w of wezlyDrzewa(korzen)) {
       const baza = w.id.replace(/-\d+$/, '') || w.id;
       const nid = unikalneId(baza, zajete);
       zajete.add(nid);
@@ -929,8 +919,8 @@ export interface RamkaUkladu {
 export type UkladWezlow = ReadonlyMap<string, RamkaUkladu>;
 
 /** Zaokrąglenie do 0,001 mm – ułamki z układu nie zostawiają śmieci w szablonie. */
-const zaokr = (v: number) => Math.round(v * 1000) / 1000;
-const zaokr01 = (v: number) => Math.round(v * 100) / 100;
+const zaokr = (v: number) => zaokraglij(v, 3);
+const zaokr01 = (v: number) => zaokraglij(v, 2);
 
 /**
  * Zmiana typu kontenera; separatory w nim obracają się (w wierszu – pionowe, w kolumnie – poziome).

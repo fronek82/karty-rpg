@@ -41,7 +41,6 @@ import {
   type Scena,
 } from '../silnik/scena';
 import { tekstNaScene, ulozTekst } from '../silnik/tekst';
-import type { Prostokat } from '../silnik/uklad';
 import {
   elementyZnacznikowCiecia,
   odstepMiedzyKartamiDrukarni,
@@ -61,6 +60,7 @@ import {
 } from './pasy';
 import { ulozMaxRects } from './maxrects';
 import { egzemplarze, rozmiescKarty, type WynikRozmieszczenia } from './rozmieszczanie';
+import { przecinajaSie, type Prostokat } from '../model/geometria';
 
 /**
  * Arkusz „Druk w domu”: karty talii rozmieszczone na stronach, wspólne linie cięcia,
@@ -1229,16 +1229,6 @@ function poleNapisu(n: { szer: Mm; wys: Mm }, x: Mm, y: Mm, pion = false): Prost
 }
 
 const EPS = 1e-6;
-const przecinajaSie = (a: Prostokat, b: Prostokat) =>
-  a.szer > EPS &&
-  a.wys > EPS &&
-  b.szer > EPS &&
-  b.wys > EPS &&
-  a.x + a.szer > b.x + EPS &&
-  b.x + b.szer > a.x + EPS &&
-  a.y + a.wys > b.y + EPS &&
-  b.y + b.wys > a.y + EPS;
-
 const MARGINES_DRUKARKI: Mm = 5;
 
 function graniceCiecia(papier: { szer: Mm; wys: Mm }, kalibracja = { x: 0, y: 0 }): Prostokat {

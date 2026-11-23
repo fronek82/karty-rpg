@@ -16,7 +16,7 @@ import {
 import { usunRewers } from '../../dane/rewers';
 import { BladDanych } from '../../dane/schemat';
 import { formatujDate, t } from '../../i18n';
-import { baza, nowyProjektZAwersuZProjektu, nowyProjektZRewersuZProjektu } from '../baza';
+import { baza, nowyProjektZAwersuZProjektu, nowyProjektZRewersuZProjektu } from '../bazaUI';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import { poOstatnimZapisie } from '../useProjekt';
 

@@ -9,6 +9,7 @@ import {
   type Wezel,
   type WyrownanieOsi,
 } from '../model/szablon';
+import { type Prostokat } from '../model/geometria';
 
 /**
  * Silnik układu: drzewo wierszy / kolumn / warstw → prostokąty w mm.
@@ -45,13 +46,6 @@ export interface UlozonyWezel {
   /** Obrót (stopnie, zgodnie z zegarem) wokół środka ramki – tylko dzieci kontenera swobodnego (R9). */
   obrot?: number;
   dzieci: UlozonyWezel[];
-}
-
-export interface Prostokat {
-  x: Mm;
-  y: Mm;
-  szer: Mm;
-  wys: Mm;
 }
 
 /** Obrót zgodnie z zegarem w układzie z osią Y skierowaną w dół. */

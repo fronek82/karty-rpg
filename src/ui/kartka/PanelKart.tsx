@@ -17,37 +17,29 @@ import { MAKS_ZNACZNIKOW } from '../../silnik/karta';
 import { nazwaRozmiaru, nazwaWariantu } from '../nazwyPakietu';
 import type { Arkusz } from '../../model/arkusz';
 import {
-  czyKontener,
-  wymiaryKarty,
+  korzenieSzablonu,
+  polaDrzewa,
   type Pole,
   type PoleObraz,
   type PoleZnaczniki,
   type Szablon,
-  type Wezel,
+  wymiaryKarty,
 } from '../../model/szablon';
 import type { Pakiet, TypKarty } from '../../pakiety/typy';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
-import {
-  dolaczRewersGlobalnyDoProjektu,
-  PRZEDROSTEK_OPCJI_GLOBALNEJ,
-  useRewersyGlobalne,
-} from '../rewersyGlobalne';
+import { dolaczRewersGlobalnyDoProjektu, useRewersyGlobalne } from '../rewersyGlobalne';
 import { PoleWielowierszowe } from '../PoleWielowierszowe';
 import type { ProjektWEdycji } from '../useProjekt';
 import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
 import { EksportCsvSzablonu } from './EksportCsvSzablonu';
 import { SekcjaObrazu } from './SekcjaObrazu';
-
-function* pola(w: Wezel): Generator<Pole> {
-  if (czyKontener(w)) for (const d of w.dzieci) yield* pola(d);
-  else yield w;
-}
+import { OpcjeRewersowGlobalnych, wybranaOpcja } from '../zrodloOpcji';
 
 /** Pola szablonu według klucza (wszystkie warianty układu). */
 function polaSzablonu(s: Szablon): Map<string, Pole> {
   const m = new Map<string, Pole>();
-  for (const k of [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)])
-    for (const p of pola(k)) if (p.klucz && !m.has(p.klucz)) m.set(p.klucz, p);
+  for (const k of korzenieSzablonu(s))
+    for (const p of polaDrzewa(k)) if (p.klucz && !m.has(p.klucz)) m.set(p.klucz, p);
   return m;
 }
 
@@ -431,11 +423,10 @@ export function PanelKart({
                 aria-label={t('rewers.przypisanieKarta')}
                 value={wartoscSelect}
                 onChange={(e) => {
-                  const v = e.target.value;
+                  const { id: v, zrodlo } = wybranaOpcja(e);
                   if (v === '__rozne__') return;
-                  if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
-                    const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
-                    const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
+                  if (zrodlo === 'globalny') {
+                    const wpis = rewersyGlobalne.find((w) => w.klucz === v);
                     if (wpis) {
                       void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
                         przypiszRewersKartom(p, arkusz.taliaId, ids, rid),
@@ -459,15 +450,7 @@ export function PanelKart({
                     {r.nazwa}
                   </option>
                 ))}
-                {rewersyGlobalne.length > 0 && (
-                  <optgroup label={t('rewersy.globalneGrupa')}>
-                    {rewersyGlobalne.map((w) => (
-                      <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
-                        {w.nazwa}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
+                <OpcjeRewersowGlobalnych lista={rewersyGlobalne} />
               </select>
               {(jedna || tenSamRozstrzygniety) && (
                 <PodgladRewersu

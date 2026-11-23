@@ -46,6 +46,7 @@ import {
   type Scena,
   type WierszTekstuSceny,
 } from '../silnik/scena';
+import { zaokraglij } from '../model/geometria';
 
 /**
  * Serializator sceny do PDF (pdf-lib). Każda scena = jedna strona o wymiarach sceny.
@@ -67,13 +68,13 @@ export interface OpcjePdf {
   warstwaTekstowa?: boolean;
 }
 
-const r3 = (v: number) => Math.round(v * 1000) / 1000;
+const r3 = (v: number) => zaokraglij(v, 3);
 
 function kolorRgb(k: Kolor): [number, number, number] {
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/.exec(kolorSceny(k));
   if (!m) return [0, 0, 0];
   return [parseInt(m[1]!, 16) / 255, parseInt(m[2]!, 16) / 255, parseInt(m[3]!, 16) / 255].map(
-    (v) => Math.round(v * 1000) / 1000,
+    (v) => zaokraglij(v, 3),
   ) as [number, number, number];
 }
 
@@ -334,7 +335,7 @@ class BudowniczyPdf {
   }
 
   private refKrycia(krycie: number): PDFRef {
-    const a = Math.round(Math.max(0, Math.min(1, krycie)) * 10000) / 10000;
+    const a = zaokraglij(Math.max(0, Math.min(1, krycie)), 4);
     const istniejacy = this.stanyKrycia.get(a);
     if (istniejacy) return istniejacy;
     const ref = this.doc.context.register(
@@ -371,10 +372,7 @@ class BudowniczyPdf {
     // XObject dziedziczy kolor wypełnienia z miejsca wstawienia.
     const ops =
       kontur.length > 0
-        ? [
-            ...operatorySciezki(kontur, (v) => Math.round(v * 100) / 100),
-            obwodka ? fillAndStroke() : fill(),
-          ]
+        ? [...operatorySciezki(kontur, (v) => zaokraglij(v, 2)), obwodka ? fillAndStroke() : fill()]
         : [];
     // BBox przycina rysunek – przy obwódce poszerzony z zapasem (grubość zależy od wstawienia).
     const zapas = obwodka ? 2000 : 0;
@@ -475,7 +473,7 @@ class BudowniczyPdf {
         return n;
       },
       extGState: (krycie) => {
-        const a = Math.round(Math.max(0, Math.min(1, krycie)) * 10000) / 10000;
+        const a = zaokraglij(Math.max(0, Math.min(1, krycie)), 4);
         let n = stany.get(a);
         if (!n) {
           n = PDFName.of(`GS${++nrGs}`);
@@ -552,7 +550,7 @@ class BudowniczyPdf {
               pushGraphicsState(),
               macierzGlifu(gl),
               // Grubość w jednostkach glifu: mm / skala.
-              setLineWidth(Math.round((e.obwodka.grubosc / s) * 100) / 100),
+              setLineWidth(zaokraglij(e.obwodka.grubosc / s, 2)),
               drawObject(n),
               popGraphicsState(),
             );
@@ -659,7 +657,7 @@ class BudowniczyPdf {
               return wpis.nazwa;
             },
             extGState: (krycie) => {
-              const a = Math.round(Math.max(0, Math.min(1, krycie)) * 10000) / 10000;
+              const a = zaokraglij(Math.max(0, Math.min(1, krycie)), 4);
               let wpis = lokalneGs.get(a);
               if (!wpis) {
                 wpis = { nazwa: PDFName.of(`GS${++nrGs}`), ref: this.refKrycia(a) };

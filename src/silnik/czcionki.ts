@@ -1,6 +1,7 @@
 import * as fontkit from 'fontkit';
 import type { WariantCzcionki } from '../model/szablon';
 import type { Kontur } from './scena';
+import { zaokraglij } from '../model/geometria';
 
 export interface UlozonyGlif {
   /** Numer glifu w czcionce. */
@@ -137,7 +138,7 @@ export class Czcionka {
   }
 }
 
-const zaokr = (v: number) => Math.round(v * 100) / 100;
+const zaokr = (v: number) => zaokraglij(v, 2);
 
 export function konturZFontkit(komendy: fontkit.PathCommand[]): Kontur {
   const wynik: Kontur = [];

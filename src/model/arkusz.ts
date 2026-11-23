@@ -276,10 +276,6 @@ export const DRUKARNIA_DOMYSLNA: UstawieniaDrukarni = {
   uklad: 'siatka',
 };
 
-/** Czy arkusz ma jawnie włączony tryb drukarni. */
-export const czyDrukarnia = (u: Pick<UstawieniaArkusza, 'drukarnia'>): boolean =>
-  Boolean(u.drukarnia?.wlaczony);
-
 /** Ręczne przypięcie egzemplarza karty do pozycji (w slotach). */
 export interface PrzypietaKarta {
   kartaId: string;

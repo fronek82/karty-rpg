@@ -280,8 +280,6 @@ export const pl = {
   'pakiet.param.obrona': '-1 obr',
   'pakiet.param.pojemnosc': '/ 250p',
   'gra.mausritter.nazwaDo': 'Mausrittera',
-  'gra.mausritter.opis':
-    'Karty ekwipunku i stanów w siatce slotów – broń, zbroje, przedmioty, zaklęcia, stany.',
   'gra.mausritter.atrybucja':
     'Układ kart według gry Mausritter (Isaac Williams, Losing Games). Pakiet nie zawiera grafik ani tekstów z materiałów do gry.',
   'czcionki.tytul': 'Czcionki',

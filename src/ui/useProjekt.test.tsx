@@ -10,7 +10,7 @@ import { dodajZasoby, ustawDane } from '../dane/edycja';
 import { projektZPakietu } from '../dane/pakiet';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import { pakietMausritter } from '../pakiety/mausritter';
-import { baza } from './baza';
+import { baza } from './bazaUI';
 import { czyKartkaZnormalizowana } from '../druk/normalizacja';
 import { useProjekt, type StanProjektu } from './useProjekt';
 

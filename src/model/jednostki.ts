@@ -11,7 +11,3 @@ export const PT_NA_MM = 72 / 25.4;
 export function pt(wartosc: number): Mm {
   return wartosc / PT_NA_MM;
 }
-
-export function mmNaPt(wartosc: Mm): number {
-  return wartosc * PT_NA_MM;
-}

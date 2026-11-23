@@ -84,7 +84,3 @@ export interface Projekt {
 
 /** Bajty zasobów projektu według identyfikatora. */
 export type DaneZasobow = Map<string, Uint8Array>;
-
-export function rozszerzenieZasobu(opis: OpisZasobu): string {
-  return opis.format;
-}

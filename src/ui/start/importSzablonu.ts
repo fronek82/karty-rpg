@@ -1,6 +1,6 @@
 import { BladDanych } from '../../dane/schemat';
 import { t } from '../../i18n';
-import { nowyProjektZSzablonu } from '../baza';
+import { nowyProjektZSzablonu } from '../bazaUI';
 
 /** Komunikat błędu importu dla użytkownika (błąd danych ma własne zdanie). */
 export const opisBleduImportu = (e: unknown) =>

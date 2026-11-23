@@ -10,7 +10,6 @@ export interface Gra {
   nazwa: string;
   /** Nazwa w dopełniaczu na kafelku „Stwórz karty do …”. */
   nazwaDo: string;
-  opis: string;
   /** Pakiet ładowany przy wyborze gry (osobny fragment kodu). */
   pakiet: () => Promise<Pakiet>;
   /** Karty gry są jednostronne – Edytor kart nie pokazuje wyboru ani listy rewersów. */
@@ -24,7 +23,6 @@ export const gry: Gra[] = [
     id: 'mausritter',
     nazwa: 'Mausritter',
     nazwaDo: 'Mausrittera',
-    opis: 'Karty ekwipunku i stanów w siatce slotów – broń, zbroje, przedmioty, zaklęcia, stany.',
     pakiet: () => import('./mausritter').then((m) => m.pakietMausritter),
     bezRewersow: true,
     bezImportuTabeli: true,

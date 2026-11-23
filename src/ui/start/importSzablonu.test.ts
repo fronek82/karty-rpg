@@ -6,7 +6,7 @@ import { eksportujSzablon } from '../../dane/archiwum';
 import { BladDanych } from '../../dane/schemat';
 import { WERSJA_SCHEMATU, type Projekt } from '../../model/projekt';
 import { PUSTA_KARTA } from '../../przyklady';
-import { baza } from '../baza';
+import { baza } from '../bazaUI';
 import { adresProjektu, importujPlikSzablonu, opisBleduImportu } from './importSzablonu';
 
 beforeEach(() => {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { t } from '../../i18n';
 import { gry } from '../../pakiety/gry';
-import { nowyProjektZRewersem } from '../baza';
+import { nowyProjektZRewersem } from '../bazaUI';
 import { nazwaGryDo } from '../nazwyPakietu';
 import { ListaProjektow } from './ListaProjektow';
 import { PanelImportu } from './PanelImportu';

@@ -5,7 +5,8 @@ import { t } from '../../i18n';
 import type { Karta, PoleObraz, UstawieniaObrazu } from '../../model/szablon';
 import { normalizujUstawieniaObrazu } from '../../silnik/karta';
 import type { ProjektWEdycji } from '../useProjekt';
-import { SKALA_MIN, wgrajObrazDoKart, zaokr, zmienObrazKarty } from './obrazKarty';
+import { SKALA_MIN, wgrajObrazDoKart, zmienObrazKarty } from './obrazKarty';
+import { zaokraglij } from '../../model/geometria';
 
 /**
  * Ilustracja zaznaczonych kart: wybór z biblioteki i wgrywanie (dla wszystkich zaznaczonych),
@@ -193,7 +194,7 @@ function Liczba({
         type="number"
         step={krok}
         min={min}
-        value={zaokr(wartosc, 3)}
+        value={zaokraglij(wartosc, 3)}
         onChange={(e) => {
           const v = e.target.valueAsNumber;
           if (Number.isFinite(v) && (min === undefined || v >= min)) zmiana(v);

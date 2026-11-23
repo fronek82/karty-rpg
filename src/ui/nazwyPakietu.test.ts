@@ -1,14 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { tJesliJest, ustawJezyk } from '../i18n';
 import { pakietMausritter } from '../pakiety/mausritter';
-import {
-  nazwaRozmiaru,
-  nazwaTypu,
-  nazwaUkladu,
-  nazwaWariantu,
-  nazwaGryDo,
-  opisGry,
-} from './nazwyPakietu';
+import { nazwaRozmiaru, nazwaTypu, nazwaUkladu, nazwaWariantu, nazwaGryDo } from './nazwyPakietu';
 import { gry } from '../pakiety/gry';
 
 afterEach(() => ustawJezyk('pl'));
@@ -23,10 +16,7 @@ describe('nazwy pakietu w obu językach', () => {
       for (const r of typ.rozmiary) expect(nazwaRozmiaru(r)).toBe(r.nazwa);
     }
     for (const u of pakietMausritter.gotoweUklady) expect(nazwaUkladu(u)).toBe(u.nazwa);
-    for (const g of gry) {
-      expect(nazwaGryDo(g)).toBe(g.nazwaDo);
-      expect(opisGry(g)).toBe(g.opis);
-    }
+    for (const g of gry) expect(nazwaGryDo(g)).toBe(g.nazwaDo);
   });
 
   it('każda nazwa ma tłumaczenie angielskie (inne niż polskie albo identyczne z założenia)', () => {
