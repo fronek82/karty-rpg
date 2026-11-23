@@ -30,7 +30,7 @@ import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 26 – M4-4: ustawienia druku dwustronnego arkusza (`UstawieniaArkusza.dwustronny`).
  * 27 – M4-5: ustawienia trybu drukarni arkusza (`UstawieniaArkusza.drukarnia`: spad, znaczniki cięcia, układ).
  */
-export const WERSJA_SCHEMATU = 27;
+export const WERSJA_SCHEMATU = 28;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

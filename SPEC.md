@@ -63,7 +63,7 @@ Układ to **drzewo kontenerów**:
 | Typ | Opis |
 |---|---|
 | **Tekst** | Tekst z formatowaniem (patrz niżej). Jedno- lub wielolinijkowy. |
-| **Wartość w kształcie** | Liczba lub krótki tekst (np. `8`, `—`, `+2`, `k6/k8`) w kształcie: romb, koło, kwadrat, zaokrąglony prostokąt, tarcza, sześciokąt, własna grafika SVG. |
+| **Wartość w kształcie** | Liczba lub krótki tekst (np. `8`, `—`, `+2`, `k6/k8`) w kształcie: romb, koło, kwadrat, zaokrąglony prostokąt, ścięte rogi, trójkąt, pięciokąt, sześciokąt, ośmiokąt, gwiazda (3–12 ramion), tarcza, serce, kropla, własna grafika SVG. Kształt domyślnie zachowuje proporcje (skaluje się i jest wyśrodkowany w polu); etykieta nad, pod albo obok kształtu ma osobne miejsce i nie zmienia jego proporcji. |
 | **Obraz** | Ilustracja z pliku; dopasowanie: wypełnij/dopasuj/rozciągnij, pozycja kadru. |
 | **Znaczniki użycia** | N kółek/kwadratów do zamalowania, w M rzędach, z rozmiarem i odstępem (Mausritter: 3 kółka; latarnia elektryczna: 2×3). |
 | **Pole do wpisania** | Pusta ramka do pisania ołówkiem, z opcjonalnym stałym tekstem (np. `/ 250p`). |

@@ -35,6 +35,14 @@ import { kolorZDanych, styleZDanych } from './styleZDanych';
 import { konturIkony } from './ikony';
 import { znajdzElement } from '../ozdobniki/katalog';
 import { konturWlasnegoKsztaltu, wnetrzeWlasnegoKsztaltu } from '../ozdobniki/ksztalt';
+import {
+  FIGURY,
+  type Figura,
+  konturFigury,
+  proporcjeFigury,
+  wnetrzeFigury,
+  wpiszProporcje,
+} from './ksztaltyWartosci';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { ramkaZMotywu } from '../ozdobniki/motyw';
 import { konturPostrzepiony, szkicujElementy } from '../ozdobniki/dekoracje';
@@ -252,7 +260,11 @@ function etykietaWartosci(
   };
 }
 
-/** Podział ramki wartości na pasek etykiety i obszar kształtu (tło, ramka, treść). */
+/**
+ * Podział ramki wartości na pasek etykiety (nad, pod albo obok) i obszar kształtu (tło, ramka,
+ * treść). Kształt o stałych proporcjach jest potem wpisywany w ten obszar – etykieta zmienia tylko
+ * jego wielkość, nie proporcje.
+ */
 function podzialWartosci(
   pole: PoleWartosc,
   r: Ramka,
@@ -264,9 +276,23 @@ function podzialWartosci(
 } {
   const e = etykietaWartosci(pole, dane, ctx);
   if (!e) return { ksztalt: r };
+  const pozycja = pole.etykieta!.pozycja;
+  if (pozycja === 'lewo' || pozycja === 'prawo') {
+    const s = Math.min(r.szer, e.uklad.szerokosc);
+    const reszta = Math.max(0, r.szer - s - e.odstep);
+    const lewo = pozycja === 'lewo';
+    return {
+      ksztalt: { x: lewo ? r.x + r.szer - reszta : r.x, y: r.y, szer: reszta, wys: r.wys },
+      etykieta: {
+        ramka: { x: lewo ? r.x : r.x + r.szer - s, y: r.y, szer: s, wys: r.wys },
+        fragmenty: e.fragmenty,
+        styl: e.styl,
+      },
+    };
+  }
   const h = Math.min(r.wys, e.uklad.wysokosc);
   const reszta = Math.max(0, r.wys - h - e.odstep);
-  const nad = pole.etykieta!.pozycja === 'nad';
+  const nad = pozycja === 'nad';
   return {
     ksztalt: { x: r.x, y: nad ? r.y + r.wys - reszta : r.y, szer: r.szer, wys: reszta },
     etykieta: {
@@ -730,23 +756,13 @@ export function renderujKarte(
     const podzial =
       !czyKontener(w) && w.typ === 'wartosc' ? podzialWartosci(w, u, dane, ctx) : undefined;
     let obszar: Ramka = podzial?.ksztalt ?? u;
-    // Kwadrat i koło zostają równoboczne także w szerszym polu (np. z szeroką etykietą).
-    if (
-      !czyKontener(w) &&
-      w.typ === 'wartosc' &&
-      (w.ksztalt === 'kwadrat' || w.ksztalt === 'kolo')
-    ) {
-      const bok = Math.min(obszar.szer, obszar.wys);
-      obszar = {
-        x: obszar.x + (obszar.szer - bok) / 2,
-        y: obszar.y + (obszar.wys - bok) / 2,
-        szer: bok,
-        wys: bok,
-      };
-    }
+    const pole = !czyKontener(w) && w.typ === 'wartosc' ? w : undefined;
+    // Kształt o stałych proporcjach (kwadrat, koło, romb, gwiazda…; własny – wg rysunku) skaluje
+    // się proporcjonalnie i jest wyśrodkowany w dostępnym miejscu.
+    const proporcje = pole ? proporcjeWartosci(pole, ctx) : undefined;
+    if (proporcje) obszar = wpiszProporcje(obszar, proporcje);
     const postrzepienie = czyKontener(w) ? w.postrzepienie : undefined;
     const promien = postrzepienie?.sila ? 0 : promienWezla(w, obszar);
-    const pole = !czyKontener(w) && w.typ === 'wartosc' ? w : undefined;
     // Własny kształt z biblioteki: brak elementu (albo inny rodzaj) = ostrzeżenie i zwykły prostokąt.
     const wlasny = pole?.ksztalt === 'wlasny' ? ksztaltWlasny(pole, ctx) : undefined;
     if (pole?.ksztalt === 'wlasny' && !wlasny)
@@ -773,7 +789,11 @@ export function renderujKarte(
           : ksztalt === 'sciety'
             ? { typ: 'sciezka', kontur: konturScietego(obszar, promien ?? 0), wypelnienie: w.tlo }
             : ksztalt
-              ? { typ: 'sciezka', kontur: konturKsztaltu(ksztalt, obszar), wypelnienie: w.tlo }
+              ? {
+                  typ: 'sciezka',
+                  kontur: konturSciezki(ksztalt, obszar, 0, pole?.ramiona),
+                  wypelnienie: w.tlo,
+                }
               : {
                   typ: 'prostokat',
                   x: obszar.x,
@@ -907,7 +927,10 @@ export function renderujKarte(
               w.obramowanie.szkic,
             ),
           );
-        else elementy.push(...rysujObramowanie(w.obramowanie, obszar, promien, ksztalt, wlasny));
+        else
+          elementy.push(
+            ...rysujObramowanie(w.obramowanie, obszar, promien, ksztalt, wlasny, pole?.ramiona),
+          );
       }
       if (w.narozniki) dodajNarozniki(w.narozniki, obszar, w.obramowanie?.kolor ?? CZARNY, w.id);
     }
@@ -1187,8 +1210,45 @@ function rysujRamkeKarty(
  * Romb wpisany w prostokąt; `wciecie` przesuwa boki do środka (prostopadle) – np. o pół grubości
  * linii, żeby zewnętrzna krawędź obrysu pokrywała się z tłem.
  */
-type KsztaltSciezki = 'sciety' | 'romb' | 'tarcza' | 'szesciokat' | 'wlasny';
-const KSZTALTY_SCIEZKI = new Set<string>(['sciety', 'romb', 'tarcza', 'szesciokat']);
+type KsztaltSciezki = 'sciety' | 'romb' | 'tarcza' | 'szesciokat' | 'wlasny' | Figura;
+const KSZTALTY_SCIEZKI = new Set<string>(['sciety', 'romb', 'tarcza', 'szesciokat', ...FIGURY]);
+const czyFigura = (k: string): k is Figura => (FIGURY as readonly string[]).includes(k);
+
+/** Naturalne proporcje (szerokość / wysokość) kształtów sprzed schematu 28. */
+const PROPORCJE: Partial<Record<PoleWartosc['ksztalt'], number>> = {
+  romb: 1,
+  tarcza: 0.85,
+  // Sześciokąt foremny (płaska góra): szerokość 2R, wysokość √3·R.
+  szesciokat: 2 / Math.sqrt(3),
+};
+
+/**
+ * Proporcje kształtu wartości (szerokość / wysokość), gdy ma je zachować; `undefined` – kształt
+ * wypełnia całe dostępne miejsce. Kwadrat i koło są zawsze równoboczne.
+ */
+function proporcjeWartosci(pole: PoleWartosc, ctx: KontekstRenderowania): number | undefined {
+  if (pole.ksztalt === 'kwadrat' || pole.ksztalt === 'kolo') return 1;
+  if (pole.zachowajProporcje === false) return undefined;
+  if (czyFigura(pole.ksztalt)) return proporcjeFigury(pole.ksztalt, pole.ramiona);
+  if (pole.ksztalt === 'wlasny') {
+    const e = ksztaltWlasny(pole, ctx);
+    return e && e.szer > 0 && e.wys > 0 ? e.szer / e.wys : undefined;
+  }
+  return PROPORCJE[pole.ksztalt];
+}
+
+/** Kontur kształtu ścieżkowego (bez ściętego) w ramce `r`, przesunięty do środka o `wciecie`. */
+function konturSciezki(
+  k: Exclude<KsztaltSciezki, 'sciety'>,
+  r: Ramka,
+  wciecie: Mm,
+  ramiona?: number,
+  wlasny?: ElementOzdobny,
+): Kontur {
+  if (k === 'wlasny') return wlasny ? konturWlasnegoKsztaltu(wlasny, r, wciecie) : [];
+  if (czyFigura(k)) return konturFigury(k, r, wciecie, ramiona);
+  return konturKsztaltu(k, r, wciecie);
+}
 
 /** Prostokąt treści wpisany w kształt – ułamki wymiarów kształtu (x, y, szerokość, wysokość). */
 const WNETRZA: Partial<
@@ -1214,6 +1274,7 @@ function ksztaltWlasny(pole: PoleWartosc, ctx: KontekstRenderowania): ElementOzd
 
 /** Prostokąt treści wpisany w kształt wartości (ułamki wymiarów) albo `undefined` (cała ramka). */
 function wnetrzeKsztaltu(pole: PoleWartosc, ctx: KontekstRenderowania) {
+  if (czyFigura(pole.ksztalt)) return wnetrzeFigury(pole.ksztalt, pole.ramiona);
   if (pole.ksztalt !== 'wlasny') return WNETRZA[pole.ksztalt];
   const e = ksztaltWlasny(pole, ctx);
   return e ? wnetrzeWlasnegoKsztaltu(e) : undefined;
@@ -1221,7 +1282,7 @@ function wnetrzeKsztaltu(pole: PoleWartosc, ctx: KontekstRenderowania) {
 
 /** Kontur kształtu wartości (romb, tarcza, sześciokąt) przesunięty do środka o `wciecie`. */
 export function konturKsztaltu(
-  k: Exclude<KsztaltSciezki, 'sciety' | 'wlasny'>,
+  k: 'romb' | 'tarcza' | 'szesciokat',
   r: Ramka,
   wciecie: Mm = 0,
 ): Kontur {
@@ -1278,11 +1339,14 @@ function rysujObramowanie(
   promien: Mm | undefined,
   ksztalt?: KsztaltSciezki,
   wlasny?: ElementOzdobny,
+  ramiona?: number,
 ): ElementSceny[] {
   const s = obrys(o);
   if (!s) return [];
   return szkicujElementy(
-    osieLinii(o).flatMap((d) => jednaLiniaObramowania(o, s, d, u, promien, ksztalt, wlasny)),
+    osieLinii(o).flatMap((d) =>
+      jednaLiniaObramowania(o, s, d, u, promien, ksztalt, wlasny, ramiona),
+    ),
     o.szkic,
   );
 }
@@ -1296,12 +1360,11 @@ function jednaLiniaObramowania(
   promien: Mm | undefined,
   ksztalt?: KsztaltSciezki,
   wlasny?: ElementOzdobny,
+  ramiona?: number,
 ): ElementSceny[] {
-  if (ksztalt === 'wlasny' && wlasny)
-    return [{ typ: 'sciezka', kontur: konturWlasnegoKsztaltu(wlasny, u, d), obrys: s }];
-  // Romb, tarcza, sześciokąt – zawsze pełny obrys (wybór krawędzi dotyczy prostokątów).
-  if (ksztalt && ksztalt !== 'sciety' && ksztalt !== 'wlasny')
-    return [{ typ: 'sciezka', kontur: konturKsztaltu(ksztalt, u, d), obrys: s }];
+  // Romb, tarcza, gwiazda, własny… – zawsze pełny obrys (wybór krawędzi dotyczy prostokątów).
+  if (ksztalt && ksztalt !== 'sciety' && (ksztalt !== 'wlasny' || wlasny))
+    return [{ typ: 'sciezka', kontur: konturSciezki(ksztalt, u, d, ramiona, wlasny), obrys: s }];
   const k = o.krawedzie;
   if (!k && ksztalt === 'sciety') {
     const wew = {
@@ -1403,11 +1466,20 @@ function zmierzPole(
           const m = marginesRombu(pole);
           k = { szer: (u.szerokosc + 2 * m) / w.szer, wys: (u.wysokosc + 2 * m) / w.wys };
         }
+        // Stałe proporcje: krótszy wymiar wydłużony do proporcji kształtu.
+        const p = proporcjeWartosci(pole, ctx);
+        if (p && k.wys > 0)
+          k =
+            k.szer / k.wys < p
+              ? { szer: k.wys * p, wys: k.wys }
+              : { szer: k.szer, wys: k.szer / p };
       }
       const e = etykietaWartosci(pole, dane, ctx);
-      return e
-        ? { szer: Math.max(k.szer, e.uklad.szerokosc), wys: k.wys + e.uklad.wysokosc + e.odstep }
-        : k;
+      if (!e) return k;
+      const obok = pole.etykieta!.pozycja === 'lewo' || pole.etykieta!.pozycja === 'prawo';
+      return obok
+        ? { szer: k.szer + e.uklad.szerokosc + e.odstep, wys: Math.max(k.wys, e.uklad.wysokosc) }
+        : { szer: Math.max(k.szer, e.uklad.szerokosc), wys: k.wys + e.uklad.wysokosc + e.odstep };
     }
     case 'separator': {
       // Długość 0 – linię wydłuża rozciągnięcie w rodzicu; inaczej separator rozpychałby

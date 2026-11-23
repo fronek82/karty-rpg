@@ -895,11 +895,17 @@ export function zmienTypPola(
     if (w.grupaStyluId) x.grupaStyluId = w.grupaStyluId;
   }
   if ((w.typ === 'tekst' || w.typ === 'wartosc') && w.etykieta) {
-    if (x.typ === 'tekst') x.etykieta = w.etykieta;
+    // Etykieta obok wartości staje się etykietą „przed” tekstem; „przed” – etykietą nad wartością.
+    const poz = w.etykieta.pozycja;
+    if (x.typ === 'tekst')
+      x.etykieta = {
+        ...w.etykieta,
+        pozycja: poz === 'lewo' || poz === 'prawo' ? 'przed' : poz,
+      };
     if (x.typ === 'wartosc')
       x.etykieta = {
         ...w.etykieta,
-        pozycja: w.etykieta.pozycja === 'pod' ? 'pod' : 'nad',
+        pozycja: poz === 'przed' ? 'nad' : poz,
       };
   }
   return zmienWezel(s, id, () => x);

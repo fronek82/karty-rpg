@@ -330,10 +330,21 @@ export interface PoleWartosc extends PoleBazowe {
    * Nieznany element: ostrzeżenie `nieznany-element-ozdobny` i zwykły prostokąt.
    */
   ksztaltElement?: string;
-  /** Etykieta nad albo pod kształtem (np. „WYTRZYMAŁOŚĆ” nad rombem); tło i ramka – tylko kształt. */
+  /** Liczba ramion gwiazdy (`ksztalt: 'gwiazda'`), od 3 do 12; domyślnie 5. */
+  ramiona?: number;
+  /**
+   * Kształt zachowuje swoje proporcje (romb, gwiazda, własny SVG…): skaluje się proporcjonalnie
+   * i jest wyśrodkowany w dostępnym miejscu. Domyślnie włączone; `false` – rozciągnięty do pola
+   * (zachowanie sprzed schematu 28). Kwadrat i koło są zawsze równoboczne.
+   */
+  zachowajProporcje?: boolean;
+  /**
+   * Etykieta w osobnym miejscu nad, pod albo obok kształtu (np. „WYTRZYMAŁOŚĆ” nad rombem);
+   * tło i ramka – tylko kształt. Etykieta nie zmienia proporcji kształtu.
+   */
   etykieta?: {
     tekst: NapisSzablonu;
-    pozycja: 'nad' | 'pod';
+    pozycja: PozycjaEtykietyWartosci;
     styl?: Partial<StylTekstu>;
     kolorZDanych?: KolorZDanych;
     /** Odstęp między etykietą a kształtem (mm, domyślnie 0,5). */
@@ -345,8 +356,29 @@ export interface PoleWartosc extends PoleBazowe {
  * Kształt ramki wartości. Prostokąt z zaokrągleniem (`promien`) to „zaokrąglony prostokąt”;
  * kwadrat – równe boki wg dłuższego wymiaru treści.
  */
-export type KsztaltWartosci =
-  'prostokat' | 'kwadrat' | 'kolo' | 'sciety' | 'romb' | 'tarcza' | 'szesciokat' | 'wlasny';
+export const KSZTALTY_WARTOSCI = [
+  'prostokat',
+  'kwadrat',
+  'kolo',
+  'sciety',
+  'romb',
+  'trojkat',
+  'pieciokat',
+  'szesciokat',
+  'osmiokat',
+  'gwiazda',
+  'tarcza',
+  'serce',
+  'kropla',
+  'wlasny',
+] as const;
+export type KsztaltWartosci = (typeof KSZTALTY_WARTOSCI)[number];
+
+export const POZYCJE_ETYKIETY_WARTOSCI = ['nad', 'pod', 'lewo', 'prawo'] as const;
+export type PozycjaEtykietyWartosci = (typeof POZYCJE_ETYKIETY_WARTOSCI)[number];
+
+/** Granice i domyślna liczba ramion gwiazdy. */
+export const RAMIONA_GWIAZDY = { min: 3, max: 12, domyslnie: 5 } as const;
 
 export interface PoleObraz extends PoleBazowe {
   typ: 'obraz';

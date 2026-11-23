@@ -178,6 +178,26 @@ describe('eksport i import .kartyrpg', () => {
     expect(migruj({ wersja: 16 }, 'szablon', 17)).toEqual({ wersja: 17 });
   });
 
+  it('migracja 27→28: rozciągane kształty wartości zachowują dotychczasowy wygląd', () => {
+    const wezly = [
+      { id: 'a', typ: 'wartosc', ksztalt: 'romb' },
+      { id: 'b', typ: 'wartosc', ksztalt: 'wlasny', ksztaltElement: 'x' },
+      { id: 'c', typ: 'wartosc', ksztalt: 'kolo' },
+      { id: 'd', typ: 'tekst', ksztalt: 'romb' },
+    ];
+    const dane = { wersja: 27, szablony: [{ korzen: { typ: 'kolumna', dzieci: wezly } }] };
+    for (const rodzaj of ['projekt', 'szablon'] as const) {
+      const wynik = migruj(dane, rodzaj, 28) as typeof dane;
+      expect(wynik.wersja).toBe(28);
+      expect(wynik.szablony[0]!.korzen.dzieci).toEqual([
+        { ...wezly[0], zachowajProporcje: false },
+        { ...wezly[1], zachowajProporcje: false },
+        wezly[2],
+        wezly[3],
+      ]);
+    }
+  });
+
   it('round-trip: projekt i bajty zasobów identyczne', () => {
     const bajty = eksportujProjekt(projekt, zasoby);
     const wynik = importujProjekt(bajty);
@@ -1574,7 +1594,7 @@ describe('M4-4: schemat v26 i ustawienia druku dwustronnego', () => {
 
 describe('M4-5: schemat v27 i ustawienia trybu drukarni', () => {
   it('migruje projekt i szablon v26 do v27, waliduje drukarnia i przechodzi archiwum ZIP', () => {
-    expect(WERSJA_SCHEMATU).toBe(27);
+    expect(WERSJA_SCHEMATU).toBeGreaterThanOrEqual(27);
     expect(migruj({ wersja: 26, a: 1 }, 'projekt', 27)).toEqual({ wersja: 27, a: 1 });
     expect(migruj({ wersja: 26, a: 1 }, 'szablon', 27)).toEqual({ wersja: 27, a: 1 });
     // Stary projekt v26 bez pola drukarnia otwiera się z domyślnym drukiem domowym.

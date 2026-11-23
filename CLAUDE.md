@@ -10,9 +10,10 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   rewersy globalne, Google Fonts, kolory przycisków, awers/rewers wszystkich kart (PR #78–#86),
   porządek projektów P1–P3 (PR #87–#89, `docs/plan-porzadek-projektow.md`), poprawki danych N1
   (`docs/plan-N1.md`), porządki w kodzie N2 (`docs/plan-N2.md`), edytor i UI N3 (`docs/plan-N3.md`:
-  eksport/import szablonu w edytorze, przeciąganie na gładziku, paski, zapis ręczny w edytorze szablonu).
-- Kolejne etapy (N4…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 27` (`src/model/projekt.ts`), baza Dexie w wersji 4.
+  eksport/import szablonu w edytorze, przeciąganie na gładziku, paski, zapis ręczny w edytorze szablonu),
+  blok „wartość w kształcie” N4 (`docs/plan-N4.md`: proporcje kształtu, etykieta obok, nowe kształty).
+- Kolejne etapy (N5…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
+- Schemat projektu: `WERSJA_SCHEMATU = 28` (`src/model/projekt.ts`), baza Dexie w wersji 4.
 
 ## Gdzie co jest
 
@@ -35,7 +36,7 @@ model  →  ozdobniki / silnik  →  druk  →  dane  →  ui
   drzewa węzłów (`wszystkieWezly`, `wezlyDrzewa`…), geometria i zaokrąglanie (`geometria.ts`),
   przekształcenia nazw (`nazwy.ts`).
 - `src/silnik/` – układ szablonu (`uklad.ts`), tekst i łamanie (`tekst.ts`, fontkit), czcionki,
-  budowa **sceny** karty (`karta.ts`) i SVG. Scena (lista elementów w mm) to jedno źródło dla
+  budowa **sceny** karty (`karta.ts`) i SVG; figury wartości (`ksztaltyWartosci.ts`). Scena (lista elementów w mm) to jedno źródło dla
   podglądu SVG i PDF.
 - `src/ozdobniki/` – ramki, narożniki, separatory, motywy, ramki 9-slice, import SVG.
 - `src/druk/` – rozmieszczanie kart na arkuszu (`arkusz.ts`, `rozmieszczanie.ts`, `maxrects.ts`),
