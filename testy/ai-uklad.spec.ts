@@ -81,7 +81,8 @@ test('układ ze zdjęcia (AI) w edytorze szablonu: błąd klucza, podgląd, zast
   await okno.getByRole('button', { name: 'Dodaj obok' }).click();
   await expect(okno).toBeHidden();
   await expect(drzewo(page).getByRole('treeitem', { name: /^Ilustracja/ })).toBeVisible();
-  await expect(drzewo(page).getByRole('treeitem')).toHaveCount(liczbaPrzed + 4);
+  // Korzeń „Tytuł i opis” to kolumna: dawny układ trafia do kontenera na całą kartę (+1) obok 4 pól.
+  await expect(drzewo(page).getByRole('treeitem')).toHaveCount(liczbaPrzed + 5);
   // Zdjęcie jako podkład (domyślnie zaznaczone).
   await expect(page.getByTestId('podklad-podgladu')).toBeVisible();
 

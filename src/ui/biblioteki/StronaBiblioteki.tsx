@@ -84,27 +84,45 @@ export function StronaBiblioteki({
     return () => subskrypcja.unsubscribe();
   }, [rodzaj]);
 
-  /** Jedna operacja na bazie naraz; komunikat albo błąd pod paskiem narzędzi. */
-  const wykonaj = (f: () => Promise<string>) => {
-    if (trwa.current) return;
+  /**
+   * Jedna operacja na bazie naraz (kolejka); komunikat albo błąd pod paskiem narzędzi. Kliknięcia
+   * w trakcie innej operacji są pomijane, a „Cofnij” z paska (`wKolejce`) czeka na swoją kolej –
+   * pasek zamyka się od razu, więc przywrócenie nie może przepaść.
+   */
+  const kolejka = useRef(Promise.resolve());
+  const wykonaj = (f: () => Promise<string>, wKolejce = false) => {
+    if (trwa.current && !wKolejce) return;
     trwa.current = true;
     ustawZajeta(true);
-    ustawBlad(undefined);
-    ustawStatus('');
-    void f()
-      .then(ustawStatus, (e: unknown) => ustawBlad(opisBleduImportu(e)))
-      .finally(() => {
+    kolejka.current = kolejka.current.then(async () => {
+      trwa.current = true;
+      ustawZajeta(true);
+      ustawBlad(undefined);
+      ustawStatus('');
+      try {
+        ustawStatus(await f());
+      } catch (e) {
+        ustawBlad(opisBleduImportu(e));
+      } finally {
         trwa.current = false;
         ustawZajeta(false);
-      });
+      }
+    });
   };
 
   const usun = (w: WpisBibliotekiGlobalnej) =>
     wykonaj(async () => {
-      const bajty = await baza().odczytajZBiblioteki(w.id);
+      // Wpis nieczytelny (podgląd „?”) też da się usunąć – wtedy bez „Cofnij”.
+      const bajty = await baza()
+        .odczytajZBiblioteki(w.id)
+        .catch(() => undefined);
       await baza().usunZBiblioteki(w.id);
       poUsunieciu?.();
       naglowek.current?.focus();
+      if (!bajty) {
+        pokaz({ tekst: t('pasek.usunieto', { nazwa: w.nazwa }) });
+        return '';
+      }
       pokaz({
         tekst: t('pasek.usunieto', { nazwa: w.nazwa }),
         akcja: {
@@ -114,7 +132,7 @@ export function StronaBiblioteki({
               await baza().zapiszWBibliotece(rodzaj, w.nazwa, bajty, w.id);
               poUsunieciu?.();
               return t('pasek.przywrocono', { nazwa: w.nazwa });
-            }),
+            }, true),
         },
       });
       return '';

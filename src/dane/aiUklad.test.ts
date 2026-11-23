@@ -343,4 +343,34 @@ describe('wstawianie układu ze zdjęcia do edytowanej strony (N7)', () => {
     expect(tytul?.typ === 'tekst' && tytul.tekst).toBe(ai.przyklad?.tytul);
     expect(w.przyklad).toBeUndefined();
   });
+
+  it('tabela zachowuje dane przykładowe kolumn pod nowymi kluczami', () => {
+    const w = wstawUkladAi(cel(), ai, 'dodaj');
+    const tabela = w.korzen.dzieci.find((d) => d.typ === 'tabela');
+    expect(tabela?.typ).toBe('tabela');
+    if (tabela?.typ !== 'tabela') return;
+    const zrodlo = ai.korzen.dzieci.find((d) => d.typ === 'tabela');
+    if (zrodlo?.typ !== 'tabela') throw new Error('brak tabeli AI');
+    const k0 = zrodlo.kolumny[0]!.klucz;
+    expect(w.przyklad?.[tabela.kolumny[0]!.klucz]).toBe(ai.przyklad?.[k0]);
+    expect(w.przyklad?.[`${tabela.kolumny[0]!.klucz}.2`]).toBe(ai.przyklad?.[`${k0}.2`]);
+  });
+
+  it('korzeń w strumieniu: „Zastąp” zmienia go na swobodny i czyści warianty, „Dodaj obok” opakowuje stary układ', () => {
+    const wKolumnie: Szablon = {
+      ...cel(),
+      korzen: { id: 'korzen', typ: 'kolumna', dzieci: [...cel().korzen.dzieci] },
+      warianty: [{ kolumny: 2, rzedy: 1, korzen: { id: 'w', typ: 'kolumna', dzieci: [] } }],
+    };
+    const z = wstawUkladAi(wKolumnie, ai, 'zastap');
+    expect(z.korzen.typ).toBe('swobodny');
+    expect(z.warianty).toBeUndefined();
+    const d = wstawUkladAi(wKolumnie, ai, 'dodaj');
+    expect(d.korzen.typ).toBe('swobodny');
+    expect(d.korzen.id).toBe('korzen');
+    const stary = d.korzen.dzieci[0]!;
+    expect(stary.typ).toBe('kolumna');
+    expect(stary.pozycja).toEqual({ x: 0, y: 0 });
+    expect(d.korzen.dzieci).toHaveLength(1 + ai.korzen.dzieci.length);
+  });
 });

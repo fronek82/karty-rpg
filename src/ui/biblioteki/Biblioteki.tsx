@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ROZSZERZENIE_OZDOBNIKA } from '../../dane/archiwum';
+import { importujOzdobnik, ROZSZERZENIE_OZDOBNIKA } from '../../dane/archiwum';
 import type { WpisBibliotekiGlobalnej } from '../../dane/baza';
 import { t } from '../../i18n';
 import type { ElementOzdobny } from '../../ozdobniki';
@@ -66,7 +66,7 @@ function PodgladObrazu({ wpis }: { wpis: WpisBibliotekiGlobalnej }) {
     };
   }, [wpis.id]);
   if (adres === null) return <Blad />;
-  return adres ? <img src={adres} alt="" /> : null;
+  return adres ? <img src={adres} alt="" loading="lazy" decoding="async" /> : null;
 }
 
 /** Próbka tekstu krojem z biblioteki (FontFace o nazwie unikalnej dla wpisu). */
@@ -124,17 +124,21 @@ function PodgladOzdobnika({ wpis }: { wpis: WpisBibliotekiGlobalnej }) {
     if (!bajty) return;
     let aktywny = true;
     let utworzony: string | undefined;
-    import('../../dane/archiwum')
-      .then(({ importujOzdobnik }) => {
-        if (!aktywny) return;
+    // Rozpakowanie po klatce – siatka rysuje się od razu, podglądy dochodzą.
+    const id = requestAnimationFrame(() => {
+      if (!aktywny) return;
+      try {
         const { element, zasoby, dane } = importujOzdobnik(bajty);
         const obraz = zasoby[0] && dane.get(zasoby[0].id);
         if (obraz) utworzony = adresBlob(obraz);
         ustawPaczke({ element, ...(utworzony ? { adres: utworzony } : {}) });
-      })
-      .catch(() => aktywny && ustawPaczke(null));
+      } catch {
+        ustawPaczke(null);
+      }
+    });
     return () => {
       aktywny = false;
+      cancelAnimationFrame(id);
       if (utworzony) URL.revokeObjectURL(utworzony);
     };
   }, [bajty]);

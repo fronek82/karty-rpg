@@ -47,7 +47,8 @@ export function OknoUkladuZeZdjecia({
   const [klucz, ustawKlucz] = useState(() => wczytajKluczAi());
   const [zapamietaj, ustawZapamietaj] = useState(() => wczytajKluczAi() !== '');
   const [maZapisanyKlucz, ustawMaZapisanyKlucz] = useState(() => wczytajKluczAi() !== '');
-  const [zPodkladem, ustawZPodkladem] = useState(true);
+  // Istniejący podkład nie jest nadpisywany bez wyraźnego wyboru.
+  const [zPodkladem, ustawZPodkladem] = useState(!szablon.podklad);
   const [zdjecie, ustawZdjecie] = useState<WgraneZdjecie>();
   const [rozpoznany, ustawRozpoznany] = useState<Szablon>();
   const [trwa, ustawTrwa] = useState(false);
@@ -72,13 +73,17 @@ export function OknoUkladuZeZdjecia({
     };
   }, []);
 
-  const opcjeWstawienia = { bezKlucza: bezDanych, zajete: zajeteKlucze() };
-  // Podgląd: rozpoznane pola na tej stronie (jak po „Zastąp”).
-  const svg = useMemo(
-    () => (rozpoznany ? podglad(wstawUkladAi(szablon, rozpoznany, 'zastap', opcjeWstawienia)) : ''),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- podgląd tylko dla nowego wyniku
-    [rozpoznany],
+  // Podgląd: rozpoznane pola na tej stronie (jak po „Zastąp”); okno modalne – strona się nie zmienia.
+  const wynik = useMemo(
+    () =>
+      rozpoznany &&
+      wstawUkladAi(szablon, rozpoznany, 'zastap', {
+        bezKlucza: bezDanych,
+        zajete: zajeteKlucze(),
+      }),
+    [rozpoznany, szablon, bezDanych, zajeteKlucze],
   );
+  const svg = useMemo(() => (wynik ? podglad(wynik) : ''), [wynik, podglad]);
 
   const wybierzPlik = async (f: File) => {
     const nr = ++numerWyboru.current;
@@ -266,7 +271,7 @@ export function OknoUkladuZeZdjecia({
         )}
         {rozpoznany && (
           <section className="ai-wynik" aria-labelledby={`${id}-wynik`}>
-            <h3 id={`${id}-wynik`}>{tn('ai.podgladTytul', rozpoznany.korzen.dzieci.length)}</h3>
+            <h3 id={`${id}-wynik`}>{tn('ai.podgladTytul', wynik?.korzen.dzieci.length ?? 0)}</h3>
             <p className="podpis">{maElementy ? t('ai.maElementy') : t('ai.podgladOpis')}</p>
             <div className="wiersz-pol">
               {maElementy ? (

@@ -14,7 +14,7 @@ import type {
   Szablon,
   WariantCzcionki,
 } from '../model/szablon';
-import { czyKontener, wszystkieWezly, type Wezel } from '../model/szablon';
+import { czyKontener, wszystkieWezly, wymiaryKarty, type Wezel } from '../model/szablon';
 import { unikalneId } from './czcionki';
 import { BladDanych } from './schemat';
 import { kluczeSzablonu, kluczZNazwy } from './szablon';
@@ -363,8 +363,25 @@ export function wstawUkladAi(
   tryb: TrybWstawieniaAi,
   opcje: { zajete?: Iterable<string>; bezKlucza?: boolean } = {},
 ): Szablon {
-  const podstawa: Szablon =
-    tryb === 'zastap' ? { ...cel, korzen: { ...cel.korzen, dzieci: [] } } : cel;
+  // Pola AI mają położenie w mm – potrzebny korzeń swobodny. „Zastąp” czyści też warianty układu
+  // (inaczej karty w innym rozmiarze slotu nadal pokazywałyby stary układ).
+  let podstawa: Szablon;
+  if (tryb === 'zastap') {
+    podstawa = { ...cel, korzen: { ...cel.korzen, typ: 'swobodny', dzieci: [] } };
+    delete podstawa.warianty;
+  } else if (cel.korzen.typ !== 'swobodny') {
+    // „Dodaj obok” przy korzeniu w strumieniu: dotychczasowy układ jako kontener na całą kartę.
+    const { szer, wys } = wymiaryKarty(cel);
+    const ids = new Set(wszystkieWezly(cel).map((w) => w.id));
+    const stary: Wezel = {
+      ...cel.korzen,
+      id: unikalneId(`${cel.korzen.id}-uklad`, ids),
+      pozycja: { x: 0, y: 0 },
+      szerokosc: { mm: szer },
+      wysokosc: { mm: wys },
+    };
+    podstawa = { ...cel, korzen: { id: cel.korzen.id, typ: 'swobodny', dzieci: [stary] } };
+  } else podstawa = cel;
   const przyklad: Record<string, string> = tryb === 'zastap' ? {} : { ...(cel.przyklad ?? {}) };
   const ids = new Set(wszystkieWezly(podstawa).map((w) => w.id));
   const klucze = new Set([...kluczeSzablonu(podstawa), ...(opcje.zajete ?? [])]);
@@ -389,6 +406,12 @@ export function wstawUkladAi(
       pole.kolumny = pole.kolumny.map((k) => {
         const klucz = kluczZNazwy(k.klucz, klucze);
         klucze.add(klucz);
+        // Dane przykładowe kolumny: `klucz` (1. wiersz) i `klucz.N` (kolejne wiersze).
+        for (const [kp, v] of Object.entries(ai.przyklad ?? {})) {
+          if (kp === k.klucz) przyklad[klucz] = v;
+          else if (kp.startsWith(`${k.klucz}.`))
+            przyklad[`${klucz}${kp.slice(k.klucz.length)}`] = v;
+        }
         return { ...k, klucz };
       });
     nowe.push(pole);

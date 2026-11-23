@@ -25,8 +25,13 @@ Zrzut: `docs/obrazy/n7-biblioteki.png`.
 ## Decyzje
 
 - „Zastąp” i „Dodaj obok” nie zmieniają rozmiaru, tła, ramki ani rogów strony – AI dostarcza tylko
-  pola. „Zastąp” czyści też przykładowe dane szablonu; „Dodaj obok” dokłada pola na koniec
-  korzenia (zawsze kontener swobodny) z nowymi id i kluczami (bez kolizji z danymi kart).
+  pola (z położeniem w mm). „Zastąp” zmienia korzeń na swobodny, czyści przykładowe dane i warianty
+  układu (`warianty` dla innych rozmiarów slotu). „Dodaj obok” dokłada pola z nowymi id i kluczami
+  (bez kolizji z danymi kart); gdy korzeń jest w strumieniu (kolumna, wiersz, warstwy), dawny
+  układ trafia do kontenera na całą kartę w nowym korzeniu swobodnym. Tabela zachowuje dane
+  przykładowe kolumn pod nowymi kluczami.
+- Podkład ze zdjęcia jest domyślnie zaznaczony tylko wtedy, gdy strona nie ma jeszcze podkładu.
+  Wstawienie pól i podkład to dwa kroki „Cofnij”.
 - Rewers: pola stałe (tekst z przykładu AI), bez kluczy; tabele są pomijane (bez danych nic by nie
   pokazały). Podkład ze zdjęcia – tylko awers (rewers nie ma podkładu).
 - Podgląd w oknie AI rysuje silnik edytora (czcionki projektu), jak po „Zastąp”.
@@ -40,6 +45,9 @@ Zrzut: `docs/obrazy/n7-biblioteki.png`.
   „Zarządzaj w Bibliotekach”. Strona ozdobników projektu (edycja rodzaju, ramki 9-slice) zostaje.
 - SVG dodany wprost do „Bibliotek” dostaje rodzaj rozpoznany przy imporcie i kolor jednolity; PNG –
   ramkę 9-slice z wcięciami po trzecim. Zmiana rodzaju / wcięć – po „Użyj” w projekcie.
+- Wpis nieczytelny da się usunąć (bez „Cofnij”). „Cofnij” z paska czeka w kolejce na trwającą
+  operację (nie przepada). Duplikaty nazw: obrazy i czcionki – jak dotąd zastępowane przy
+  wgrywaniu; ozdobniki i „Cofnij” mogą dać dwa wpisy o tej samej nazwie (dług, do decyzji).
 - „Cofnij” zapisuje wpis z tym samym id i bajtami; nowe usunięcie zastępuje poprzedni pasek,
   zmiana zakładki go zamyka. Jedna operacja na bazie naraz (jak w N6).
 - Wyszukiwarka – ta sama normalizacja co w N6 (`doSzukania`); lista posortowana po nazwie.
