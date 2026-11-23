@@ -132,7 +132,7 @@ export function useProjekt(id: string, opcje: { autozapis?: boolean } = {}): Sta
       b.brudny = false;
       b.zasobyBrudne = false;
       try {
-        const mapy = await baza().zapisz(projekt, zZasobami ? dane : undefined);
+        const mapy = await baza().zapisz(projekt, zZasobami ? dane : undefined, { dane });
         // Wgrany plik był już w bibliotece (ten sam skrót) – odwołania wskazują istniejący wpis.
         if (mapy && (mapy.obrazy.size > 0 || mapy.elementy.size > 0) && biezacy.current === b) {
           b.projekt = przepiszZasobyProjektu(b.projekt, mapy.obrazy, mapy.elementy);

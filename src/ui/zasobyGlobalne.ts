@@ -51,22 +51,16 @@ export function wyczyscPamiecCzcionekGlobalnych(): void {
   pamiecMetaCzcionek.clear();
 }
 
-/** Zastępuje w bibliotece globalnej wcześniejszy wpis tego samego rodzaju i nazwy, unikając duplikatów. */
+/**
+ * Zapisuje plik w bibliotece użytkownika. Ten sam plik (skrót) albo czcionka o tej samej rodzinie
+ * i wariancie to istniejący wpis – nic nie jest usuwane ani dublowane. Zwraca id wpisu.
+ */
 async function zapiszUnikalnyWBibliotece(
   rodzaj: 'czcionka' | 'obraz',
   nazwa: string,
   dane: Uint8Array,
 ): Promise<string> {
-  const istniejace = await baza().bibliotekaGlobalna(rodzaj);
-  for (const w of istniejace) {
-    if (w.nazwa === nazwa) {
-      await baza().usunZBiblioteki(w.id);
-      pamiecMetaCzcionek.delete(w.id);
-    }
-  }
-  const id = crypto.randomUUID();
-  await baza().zapiszWBibliotece(rodzaj, nazwa, dane, id);
-  return id;
+  return baza().zapiszWBibliotece(rodzaj, nazwa, dane);
 }
 
 /**

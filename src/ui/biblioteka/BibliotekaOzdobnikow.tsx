@@ -123,7 +123,8 @@ function Podglad({
  */
 export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
   const { projekt, zmien } = edycja;
-  const wlasne = elementyProjektu(projekt);
+  const biblioteka = projekt.biblioteka;
+  const wlasne = useMemo(() => elementyProjektu({ biblioteka }), [biblioteka]);
   const plik = useRef<HTMLInputElement>(null);
   const plikPng = useRef<HTMLInputElement>(null);
   const [wczytany, ustawWczytany] = useState<Wczytany>();
@@ -135,23 +136,25 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
   const czcionki = edycja.zasoby.zasoby.czcionki;
   const element = wlasne.find((e) => e.id === wybrany);
 
-  // Elementy należą do biblioteki użytkownika (N8): zmiany i usunięcia trafiają do niej od razu
-  // (przed autozapisem projektu), nowe elementy dodaje zapis projektu.
-  const poprzednie = useRef(new Map(wlasne.map((e) => [e.id, e])));
+  // Elementy należą do biblioteki użytkownika (N8): zmiany trafiają do niej od razu (przed
+  // autozapisem projektu), nowe elementy dodaje zapis projektu, usuwa tylko przycisk „Usuń”.
+  const poprzednie = useRef({
+    projekt: projekt.id,
+    elementy: new Map(wlasne.map((e) => [e.id, e])),
+  });
   useEffect(() => {
-    const przed = poprzednie.current;
+    const przed =
+      poprzednie.current.projekt === projekt.id ? poprzednie.current.elementy : new Map();
     const teraz = new Map(wlasne.map((e) => [e.id, e]));
-    poprzednie.current = teraz;
+    poprzednie.current = { projekt: projekt.id, elementy: teraz };
     void (async () => {
       for (const [id, e] of teraz) {
         const s = przed.get(id);
         if (s && s !== e && stabilnyJson(s) !== stabilnyJson(e))
           await baza().zmienElementBibliotekiUzytkownika(e);
       }
-      for (const id of przed.keys())
-        if (!teraz.has(id)) await baza().usunZBibliotekiUzytkownika(id);
     })().catch((e: unknown) => ustawBlad(String(e instanceof Error ? e.message : e)));
-  }, [wlasne]);
+  }, [wlasne, projekt.id]);
 
   const zapiszGlobalnie = async (id: string) => {
     ustawBlad(undefined);
@@ -560,6 +563,9 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
                       return;
                     }
                     zmien((p) => usunElementZBiblioteki(p, element.id));
+                    void baza()
+                      .usunZBibliotekiUzytkownika(element.id)
+                      .catch((e: unknown) => ustawBlad(String(e instanceof Error ? e.message : e)));
                     ustawWybrany(undefined);
                     ustawUsuwanie(false);
                   }}

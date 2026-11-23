@@ -7,7 +7,7 @@ import type { DaneZasobow, OpisObrazu, Projekt } from '../model/projekt';
 import { czyKontener } from '../model/szablon';
 import { importujSvg } from '../ozdobniki';
 import { pakietMausritter } from '../pakiety/mausritter';
-import { spakujOzdobnik } from './archiwum';
+import { projektDoEksportu, spakujOzdobnik } from './archiwum';
 import { BazaProjektow } from './baza';
 import { dodajElementDoBiblioteki } from './biblioteka';
 import { przepiszZasobyProjektu } from './bibliotekaUzytkownika';
@@ -117,6 +117,66 @@ describe('biblioteka użytkownika: zapis i widok projektu', () => {
   });
 });
 
+describe('biblioteka użytkownika: usuwanie i eksport', () => {
+  it('obraz usunięty z biblioteki (np. w innej karcie) nie blokuje zapisu i nie wraca', async () => {
+    const baza = new BazaProjektow('n8-usuniety');
+    const { projekt, zasoby } = projektZIkona('pA');
+    zasoby.set('obraz-luzny', PNG2);
+    const zLuznym: Projekt = {
+      ...projekt,
+      zasoby: [
+        ...projekt.zasoby,
+        {
+          rodzaj: 'obraz',
+          id: 'obraz-luzny',
+          nazwa: 'luzny.png',
+          format: 'png',
+          szerokosc: 1,
+          wysokosc: 1,
+        },
+      ],
+    };
+    await baza.zapisz(zLuznym, zasoby);
+    const widok = await baza.wczytaj('pA');
+    expect(widok.projekt.zasoby.some((z) => z.id === 'obraz-luzny')).toBe(true);
+    await baza.usunZBiblioteki('obraz-luzny');
+    // Edytor trzyma stary widok z bajtami w pamięci – zwykły zapis dokumentu.
+    await baza.zapisz(widok.projekt, undefined, { dane: widok.zasoby });
+    expect((await baza.wpisyBiblioteki('obraz')).map((w) => w.id)).not.toContain('obraz-luzny');
+    // „Cofnij” na stronie biblioteki przywraca ten sam wpis (to samo id).
+    expect(await baza.zapiszWBibliotece('obraz', 'luzny.png', PNG2, 'obraz-luzny')).toBe(
+      'obraz-luzny',
+    );
+    expect((await baza.wpisyBiblioteki('obraz')).map((w) => w.id)).toContain('obraz-luzny');
+    baza.zamknij();
+  });
+
+  it('eksport projektu bierze z widoku tylko użyte zasoby i ozdobniki', async () => {
+    const baza = new BazaProjektow('n8-eksport');
+    const { projekt, zasoby } = projektZIkona('pA');
+    await baza.zapisz(projekt, zasoby);
+    const pusty = { ...structuredClone(wzor), id: 'pP' };
+    pusty.szablony = pusty.szablony.map((s) => ({ ...s, korzen: { ...s.korzen, dzieci: [] } }));
+    pusty.talie = pusty.talie.map((t) => ({ ...t, karty: [], grupy: undefined }));
+    pusty.arkusze = pusty.arkusze.map((a) => ({
+      ...a,
+      kolejnosc: undefined,
+      przypiete: undefined,
+    }));
+    pusty.zasoby = pusty.zasoby.filter((z) => z.rodzaj === 'czcionka');
+    await baza.zapisz(pusty, wzorZasoby);
+    const widokPusty = await baza.wczytaj('pP');
+    expect(widokPusty.projekt.zasoby.some((z) => z.rodzaj === 'obraz')).toBe(true);
+    const doPliku = projektDoEksportu(widokPusty.projekt);
+    expect(doPliku.zasoby.some((z) => z.rodzaj === 'obraz')).toBe(false);
+    expect(doPliku.biblioteka).toBeUndefined();
+    const doPlikuA = projektDoEksportu((await baza.wczytaj('pA')).projekt);
+    expect(doPlikuA.zasoby.some((z) => z.rodzaj === 'obraz')).toBe(true);
+    expect(doPlikuA.biblioteka?.ozdobniki).toHaveLength(1);
+    baza.zamknij();
+  });
+});
+
 describe('migracja do biblioteki użytkownika (baza w wersji 4)', () => {
   /** Stara baza: dwa projekty i wpis ozdobnika w bibliotece globalnej. */
   async function przygotujStaraBaze(nazwa: string) {
@@ -148,6 +208,9 @@ describe('migracja do biblioteki użytkownika (baza w wersji 4)', () => {
       .table('bibliotekaGlobalna')
       .add({ id: 'g2', rodzaj: 'obraz', nazwa: 'zastepczy.png' });
     await stara.table('paczkiBiblioteki').add({ id: 'g2', dane: PNG });
+    // Uszkodzony plik czcionki – nie da się go przenieść, więc zostaje w starych tabelach.
+    await stara.table('bibliotekaGlobalna').add({ id: 'g4', rodzaj: 'czcionka', nazwa: 'zla.ttf' });
+    await stara.table('paczkiBiblioteki').add({ id: 'g4', dane: new Uint8Array([1, 2, 3]) });
     await stara.table('bibliotekaGlobalna').add({ id: 'g3', rodzaj: 'szablon', nazwa: 'Szablon' });
     await stara.table('paczkiBiblioteki').add({ id: 'g3', dane: new Uint8Array([1]) });
     stara.close();
@@ -177,6 +240,7 @@ describe('migracja do biblioteki użytkownika (baza w wersji 4)', () => {
       expect(m.projekt.projekt.biblioteka).toBeUndefined();
       expect(m.zasoby.every((z) => m.projekt.projekt.zasoby.some((o) => o.id === z.id))).toBe(true);
     }
+    expect(await baza.odczytajZBiblioteki('g4')).toEqual(new Uint8Array([1, 2, 3]));
     // Wpis szablonu w bibliotece globalnej zostaje bez zmian.
     expect((await baza.bibliotekaGlobalna('szablon')).map((w) => w.id)).toEqual(['g3']);
   }

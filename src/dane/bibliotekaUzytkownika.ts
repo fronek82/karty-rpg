@@ -1,7 +1,13 @@
 import type { OpisCzcionki, OpisObrazu, OpisZasobu, Projekt } from '../model/projekt';
 import { czyKontener, type Szablon, wszystkieWezly } from '../model/szablon';
 import type { ElementOzdobny } from '../ozdobniki/typy';
-import { przepiszOdwolania, stabilnyJson, zasobyElementow } from './biblioteka';
+import {
+  odwolaniaDoElementow,
+  przepiszOdwolania,
+  stabilnyJson,
+  zasobyElementow,
+} from './biblioteka';
+import { zasobySzablonu } from './schemat';
 
 /**
  * Jedna biblioteka zasobów użytkownika (N8): obrazy, czcionki i ozdobniki wspólne dla wszystkich
@@ -143,3 +149,33 @@ export function przepiszZasobyProjektu(
 /** Id obrazów, które są obrazami ramek 9-slice podanych elementów. */
 export const obrazyRamek = (elementy: readonly ElementOzdobny[]): Set<string> =>
   new Set(zasobyElementow(elementy));
+
+/**
+ * Obrazy, których używa sam dokument projektu: stałe obrazy i tekstury szablonów i rewersów,
+ * podkłady, wartości pól obrazu w kartach (bez obrazów ramek 9-slice).
+ */
+export function obrazyUzyteWDokumencie(p: Projekt): Set<string> {
+  const wynik = new Set<string>();
+  for (const s of [...p.szablony, ...(p.rewersy ?? [])])
+    for (const id of zasobySzablonu(s)) wynik.add(id);
+  for (const s of p.szablony) if (s.podklad) wynik.add(s.podklad.zasob);
+  const klucze = new Map(
+    p.szablony.map((s) => [
+      s.id,
+      wszystkieWezly(s).flatMap((w) =>
+        !czyKontener(w) && w.typ === 'obraz' && w.klucz ? [w.klucz] : [],
+      ),
+    ]),
+  );
+  for (const tl of p.talie)
+    for (const k of tl.karty)
+      for (const klucz of klucze.get(k.szablonId) ?? []) {
+        const v = k.dane[klucz];
+        if (v) wynik.add(v);
+      }
+  return wynik;
+}
+
+/** Id elementów ozdobnych używanych w szablonach i rewersach projektu. */
+export const elementyUzyteWDokumencie = (p: Projekt): Set<string> =>
+  new Set([...p.szablony, ...(p.rewersy ?? [])].flatMap(odwolaniaDoElementow));

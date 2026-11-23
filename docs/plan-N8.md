@@ -66,3 +66,15 @@ dla tych rodzajów i widoku biblioteki projektu; teksty, instrukcja, SPEC.
   w obrębie bazy). Leniwe wczytywanie obrazów – w N8c, gdy wybory przejdą na hooki biblioteki.
 - Zapis z projektu nigdy nie usuwa niczego z biblioteki (np. sprzątanie obrazów usuniętego
   projektu) – usuwa się tylko na stronie biblioteki.
+- Eksport projektu bierze z widoku tylko użyte zasoby (`projektDoEksportu`) już w N8a – inaczej
+  każdy plik `.kartyrpg` niósłby całą bibliotekę.
+- Zapis zwykły (bez zmiany zasobów) przenosi do biblioteki tylko to, czego dokument używa:
+  obraz lub ozdobnik usunięty na stronie biblioteki w innej karcie nie wraca i nie blokuje zapisu.
+  Zapis po zmianie zasobów (wgranie pliku) przenosi wszystko, także jeszcze nieużyte.
+- „Cofnij” po usunięciu z biblioteki przywraca ten sam wpis (id, opis, bajty) z kosza sesji.
+- Migracja usuwa ze starych tabel tylko to, co przeniosła: wpis globalny, którego nie da się
+  odczytać, zostaje (czytany jak dotąd), projekt, którego nie da się przenieść, zachowuje
+  własne zasoby; dokument nie jest podmieniany, jeśli zmienił się od zrobienia kopii.
+- Zastępczy rysunek: obraz (pole, tekstura), ikona – prostokąt z przekątnymi; motyw i ramka
+  9-slice – linia przerywana. Brakujący własny kształt wartości rysuje się jak dotąd zwykłym
+  prostokątem, nieznany narożnik nie rysuje się (kostki motywu zostają).

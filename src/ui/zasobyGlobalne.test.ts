@@ -25,12 +25,16 @@ vi.mock('./bazaUI', () => ({
       dane: Uint8Array,
       id = `${rodzaj}-${magazyn.size + 1}-${nazwa}`,
     ) => {
+      // Jak biblioteka użytkownika (N8): ten sam plik to istniejący wpis.
+      for (const [klucz, v] of magazyn)
+        if (v.wpis.rodzaj === rodzaj && v.dane.join() === dane.join()) return klucz;
       const wpis: WpisBibliotekiGlobalnej = {
         id,
         rodzaj,
         nazwa,
       };
       magazyn.set(id, { wpis, dane });
+      return id;
     },
     usunZBiblioteki: async (id: string) => {
       magazyn.delete(id);
@@ -139,7 +143,7 @@ describe('zasobyGlobalne', () => {
     const wgrane = await wgrajCzcionkiGlobalnie([plikCzcionki]);
     expect(wgrane).toHaveLength(1);
     expect(wgrane[0]).toContain('Cinzel Decorative');
-    // Ponowne wgranie tego samego pliku zastępuje wpis bez tworzenia duplikatu w IndexedDB.
+    // Ponowne wgranie tego samego pliku nie tworzy duplikatu w IndexedDB.
     await wgrajCzcionkiGlobalnie([plikCzcionki]);
     expect([...magazyn.values()].filter((v) => v.wpis.rodzaj === 'czcionka')).toHaveLength(1);
 

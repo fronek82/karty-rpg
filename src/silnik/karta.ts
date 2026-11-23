@@ -421,7 +421,8 @@ export function renderujKarte(
     const info = ctx.obraz?.(zasob);
     if (!info || info.szerokosc <= 0 || info.wysokosc <= 0) {
       ostrzezenia.push({ pole, komunikat: 'brak-obrazu', szczegoly: zasob });
-      elementy.push(...zastepczyProstokat(r));
+      // Tekstura ukryta (krycie 0) nie rysuje nic – także zastępczego prostokąta.
+      if (krycie === undefined || krycie > 0) elementy.push(...zastepczyProstokat(r));
       return;
     }
     if (!(r.szer > 0 && r.wys > 0)) return;

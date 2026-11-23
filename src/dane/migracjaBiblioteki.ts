@@ -47,7 +47,7 @@ export async function dodajPaczkeDoBiblioteki(
     const { opis, dane } = wgrajCzcionke(nazwa, bajty, {
       zrodlo: czyPlikGoogle(nazwa) ? 'google' : 'wlasna',
     });
-    return baza.dodajZasobDoBiblioteki(opis, dane);
+    return baza.dodajZasobDoBiblioteki({ ...opis, nazwa }, dane);
   }
   const { element, zasoby, dane } = importujOzdobnik(bajty);
   const mapa = new Map<string, string>();
@@ -55,7 +55,10 @@ export async function dodajPaczkeDoBiblioteki(
     const id = await baza.dodajZasobDoBiblioteki(opis, dane.get(opis.id)!, { wewnetrzny: true });
     if (id !== opis.id) mapa.set(opis.id, id);
   }
-  return baza.dodajElementDoBibliotekiUzytkownika(przepiszObrazElementu(element, mapa));
+  return baza.dodajElementDoBibliotekiUzytkownika({
+    ...przepiszObrazElementu(element, mapa),
+    nazwa,
+  });
 }
 
 /** Wpis biblioteki w postaci dawnej paczki (plik obrazu/czcionki albo `.kartyrpg-ozdobnik`). */
@@ -96,26 +99,41 @@ export async function migrujDoBiblioteki(db: BazaDexie, baza: BazaProjektow): Pr
     });
   }
 
+  // Wpisy globalne: usuwane są tylko te, które udało się przenieść (reszta zostaje w starych
+  // tabelach – `odczytajZBiblioteki` czyta je dalej).
   const globalne = (await db.bibliotekaGlobalna.toArray()).filter((w) => RODZAJE.has(w.rodzaj));
+  const przeniesione: string[] = [];
   for (const w of globalne) {
     try {
       const paczka = await db.paczkiBiblioteki.get(w.id);
       if (!paczka) continue;
       const bajty = await migrujBajtyBazy(paczka.dane);
       await dodajPaczkeDoBiblioteki(baza, w.rodzaj as RodzajWpisuBiblioteki, w.nazwa, bajty);
+      przeniesione.push(w.id);
     } catch (e) {
       console.warn(`Migracja biblioteki: pominięto wpis „${w.nazwa}”`, e);
     }
   }
 
+  // Projekty: dokument podmieniany tylko wtedy, gdy nikt go nie zmienił od zrobienia kopii
+  // (np. druga karta po zakończonej migracji); bajty sprząta się tylko w przeniesionych.
+  const zmigrowane: string[] = [];
   for (const kopia of await db.kopiaMigracji.toArray()) {
     try {
       const projekt = przygotujProjekt(kopia.projekt);
       const wiersze = await db.zasoby.where('projektId').equals(kopia.id).toArray();
       const dane: DaneZasobow = new Map();
       for (const w of wiersze) dane.set(w.id, await migrujBajtyBazy(w.dane));
-      const { projekt: dokument } = await baza.przeniesDoBiblioteki(projekt, (id) => dane.get(id));
-      await db.projekty.put({ ...kopia, projekt: dokument });
+      const { projekt: dokument } = await baza.przeniesDoBiblioteki(projekt, (id) => dane.get(id), {
+        nowe: true,
+      });
+      const podmieniony = await db.transaction('rw', db.projekty, async () => {
+        const obecny = await db.projekty.get(kopia.id);
+        if (!obecny || obecny.zmieniono !== kopia.zmieniono) return false;
+        await db.projekty.put({ ...obecny, projekt: dokument });
+        return true;
+      });
+      if (podmieniony) zmigrowane.push(kopia.id);
     } catch (e) {
       console.warn(`Migracja biblioteki: projekt „${kopia.id}” zostaje bez zmian`, e);
     }
@@ -125,17 +143,18 @@ export async function migrujDoBiblioteki(db: BazaDexie, baza: BazaProjektow): Pr
     'rw',
     [db.projekty, db.zasoby, db.bibliotekaGlobalna, db.paczkiBiblioteki, db.kopiaMigracji, db.meta],
     async () => {
-      for (const w of await db.projekty.toArray()) {
-        const opisane = new Set((w.projekt.zasoby ?? []).map((z) => z.id));
+      for (const id of zmigrowane) {
+        const w = await db.projekty.get(id);
+        if (!w) continue;
+        const opisane = new Set(w.projekt.zasoby.map((z) => z.id));
         await db.zasoby
           .where('projektId')
-          .equals(w.id)
+          .equals(id)
           .filter((z) => !opisane.has(z.id))
           .delete();
       }
-      const ids = globalne.map((w) => w.id);
-      await db.bibliotekaGlobalna.bulkDelete(ids);
-      await db.paczkiBiblioteki.bulkDelete(ids);
+      await db.bibliotekaGlobalna.bulkDelete(przeniesione);
+      await db.paczkiBiblioteki.bulkDelete(przeniesione);
       await db.kopiaMigracji.clear();
       await db.meta.put({ klucz: ZNACZNIK_MIGRACJI, wartosc: 'gotowa' });
     },
