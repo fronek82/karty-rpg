@@ -118,6 +118,9 @@ export function StronaBiblioteki({
   }>();
   const trwa = useRef(false);
   const plik = useRef<HTMLInputElement>(null);
+  const plikiDodatkowe = useRef<Record<string, HTMLInputElement | null>>({});
+  /** Zmiana nazwy anulowana Escape – `onBlur` odmontowywanego pola nie zapisuje. */
+  const anulowano = useRef(false);
   const naglowek = useRef<HTMLHeadingElement>(null);
   const { pasek, pokaz, ukryj } = usePasekKomunikatu();
   const miejsce = useOstrzezenieMiejsca(wszystkie);
@@ -180,6 +183,10 @@ export function StronaBiblioteki({
     });
 
   const zapiszNazwe = () => {
+    if (anulowano.current) {
+      anulowano.current = false;
+      return;
+    }
     const z = zmieniany;
     ustawZmieniany(undefined);
     const nazwa = z?.nazwa.trim();
@@ -251,9 +258,18 @@ export function StronaBiblioteki({
           }}
         />
         {dodatkoweDodaj?.map((d) => (
-          <label key={d.testId} className="przycisk" aria-disabled={zajeta}>
-            {d.tekst}
+          <span key={d.testId}>
+            <button
+              type="button"
+              aria-disabled={zajeta}
+              onClick={() => !trwa.current && plikiDodatkowe.current[d.testId]?.click()}
+            >
+              {d.tekst}
+            </button>
             <input
+              ref={(el) => {
+                plikiDodatkowe.current[d.testId] = el;
+              }}
               type="file"
               multiple
               hidden
@@ -268,7 +284,7 @@ export function StronaBiblioteki({
                 }
               }}
             />
-          </label>
+          </span>
         ))}
         {narzedzia}
         <input
@@ -350,7 +366,10 @@ export function StronaBiblioteki({
                     onBlur={zapiszNazwe}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') zapiszNazwe();
-                      if (e.key === 'Escape') ustawZmieniany(undefined);
+                      if (e.key === 'Escape') {
+                        anulowano.current = true;
+                        ustawZmieniany(undefined);
+                      }
                     }}
                   />
                 ) : (
@@ -363,7 +382,10 @@ export function StronaBiblioteki({
                     type="button"
                     aria-disabled={zajeta}
                     aria-label={t('biblioteki.zmienNazweEtykieta', { nazwa: w.nazwa })}
-                    onClick={() => ustawZmieniany({ id: w.id, nazwa: w.nazwa })}
+                    onClick={() => {
+                      anulowano.current = false;
+                      ustawZmieniany({ id: w.id, nazwa: w.nazwa });
+                    }}
                   >
                     {t('biblioteki.zmienNazwe')}
                   </button>

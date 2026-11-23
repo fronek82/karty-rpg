@@ -674,6 +674,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   const obrazy = projekt.zasoby.flatMap((z) =>
     z.rodzaj === 'obraz' && !obrazyRamek.has(z.id) ? [{ wartosc: z.id, tekst: z.nazwa }] : [],
   );
+  const adresOzdobnikow = adresBiblioteki('ozdobniki', biezacyAdres());
   // Ozdobniki do wyborów: z widoku projektu i z biblioteki na żywo (dodane po otwarciu).
   const elementyWyboru = polaczElementy(projekt.biblioteka?.ozdobniki ?? [], zyweElementy);
   const podklad = u.podklad;
@@ -682,7 +683,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     <ElementyWlasneKontekst.Provider
       value={{
         elementy: elementyWyboru,
-        adresBiblioteki: adresBiblioteki('ozdobniki', biezacyAdres()),
+        adresBiblioteki: adresOzdobnikow,
         adresObrazu: (x) => zasoby.obrazy.get(x)?.adres,
         sprawdzWyjscie,
       }}
@@ -772,8 +773,8 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             </button>
             <a
               className="przycisk"
-              href={adresBiblioteki('ozdobniki', biezacyAdres())}
-              onClick={(e) => sprawdzWyjscie(e, adresBiblioteki('ozdobniki', biezacyAdres()))}
+              href={adresOzdobnikow}
+              onClick={(e) => sprawdzWyjscie(e, adresOzdobnikow)}
               aria-label={t('biblioteka.tytul')}
               title={t('biblioteka.tytul')}
             >

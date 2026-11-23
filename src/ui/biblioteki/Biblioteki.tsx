@@ -285,7 +285,9 @@ function Ozdobniki({ powrot }: { powrot: string | undefined }) {
         ustawBladImportu(undefined);
         ustawWybrany(w?.id);
       }}
-      szczegoly={(w) => <EdytorOzdobnika key={w.id} wpis={w} zasoby={zasoby} />}
+      szczegoly={(w) =>
+        w.element ? <EdytorOzdobnika key={w.id} wpis={w} zasoby={zasoby} /> : null
+      }
     />
   );
 }

@@ -313,6 +313,7 @@ export class BazaProjektow {
         : [];
     const wynik: { id: string; nazwa: string }[] = [];
     for (const w of await this.db.projekty.toArray()) {
+      if (w.tylkoSzablony) continue;
       const p = w.projekt;
       let uzywa = false;
       if (wpis.rodzaj === 'obraz') {
@@ -530,6 +531,8 @@ export class BazaProjektow {
     });
     for (const x of ids) this.pamiecBajtow.delete(x);
     this.kosz.set(id, doKosza);
+    // „Cofnij” dotyczy ostatnich usunięć – starsze wpisy kosza (z bajtami) nie zajmują pamięci.
+    while (this.kosz.size > 20) this.kosz.delete(this.kosz.keys().next().value!);
   }
 
   /**
@@ -758,6 +761,7 @@ export class BazaProjektow {
     if (RODZAJE_BIBLIOTEKI.has(rodzaj)) {
       // „Cofnij” po usunięciu: ten sam wpis (to samo id, opis, bajty) wraca z kosza.
       const zKosza = this.kosz.get(id);
+      if (!zKosza && bajty.length === 0) throw new BladDanych(t('globalna.brakWpisu'));
       if (zKosza) {
         for (const { wpis, dane } of zKosza) await this.przywrocWpisBiblioteki(wpis, dane);
         this.kosz.delete(id);

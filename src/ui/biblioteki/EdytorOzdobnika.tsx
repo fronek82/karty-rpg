@@ -102,12 +102,16 @@ export function EdytorOzdobnika({
 }) {
   // Stan lokalny: zmiany widać od razu (np. seria strzałek przy wcięciach), a zapisy do biblioteki
   // idą po kolei w tle. Panel jest montowany na nowo dla każdego wpisu (`key`).
+  // Nazwa zawsze z biblioteki (zmienia się też na kafelku) – stan lokalny trzyma resztę.
   const [lokalny, ustawLokalny] = useState<ElementOzdobny>();
-  const element = lokalny ?? elementZWpisu(wpis)!;
+  const element = lokalny ? { ...lokalny, nazwa: wpis.nazwa } : elementZWpisu(wpis)!;
   const kolejka = useRef(Promise.resolve());
-  // Nazwa w trakcie edycji (undefined – pokazuje nazwę z biblioteki).
+  // Nazwa w trakcie edycji (undefined – pokazuje nazwę z biblioteki); `zatwierdzona` – nazwa
+  // wysłana do zapisu, pokazywana, dopóki biblioteka nie odda nowej.
   const [edytowana, ustawNazwe] = useState<string>();
-  const nazwa = edytowana ?? wpis.nazwa;
+  const [zatwierdzona, ustawZatwierdzona] = useState<{ z: string; na: string }>();
+  const nazwa =
+    edytowana ?? (zatwierdzona && wpis.nazwa === zatwierdzona.z ? zatwierdzona.na : wpis.nazwa);
   const [blad, ustawBlad] = useState<string>();
   const [uzywajace, ustawUzywajace] = useState<{ id: string; nazwa: string }[]>();
   useEffect(() => {
@@ -123,18 +127,22 @@ export function EdytorOzdobnika({
   const zapisz = (e: ElementOzdobny) => {
     ustawBlad(undefined);
     ustawLokalny(e);
+    // Bez nazwy – zapis zachowuje nazwę z biblioteki (mogła się zmienić na kafelku).
+    const { nazwa: _n, ...bezNazwy } = e;
+    void _n;
     kolejka.current = kolejka.current
-      .then(() => baza().zmienElementBibliotekiUzytkownika(e))
+      .then(() => baza().zmienElementBibliotekiUzytkownika(bezNazwy as ElementOzdobny))
       .catch((x: unknown) => ustawBlad(opisBleduImportu(x)));
   };
   const zmien = (z: ZmianaElementu) => zapisz(zmienionyElement(element, z));
   const zapiszNazwe = () => {
-    const n = nazwa.trim();
+    const n = nazwa.trim().slice(0, 200);
     ustawNazwe(undefined);
     if (!n || n === wpis.nazwa) return;
-    if (lokalny) ustawLokalny({ ...lokalny, nazwa: n.slice(0, 200) });
-    void baza()
-      .zmienNazweWBibliotece(wpis.id, n.slice(0, 200))
+    ustawZatwierdzona({ z: wpis.nazwa, na: n });
+    // Ta sama kolejka co zmiany elementu – kolejność zapisów zachowana.
+    kolejka.current = kolejka.current
+      .then(() => baza().zmienNazweWBibliotece(wpis.id, n))
       .catch((x: unknown) => ustawBlad(opisBleduImportu(x)));
   };
   // Ramka z obrazu PNG nie ma konturów: ani rodzaju do wyboru, ani koloru.

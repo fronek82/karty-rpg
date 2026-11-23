@@ -51,10 +51,10 @@ export function ImportSvg({
 }) {
   const roboczy = elementZImportu(wczytany, [], 'wl:import');
   return (
-    <section className="panel-importu panel-ozdobnika" aria-live="polite">
+    <section className="panel-importu panel-ozdobnika">
       <h2>{t('biblioteka.import.tytul', { plik: wczytany.plik })}</h2>
       <PodgladElementu element={roboczy} zasoby={zasoby} prefiks="bi-" />
-      <p className="raport-ok" data-testid="raport-import">
+      <p className="raport-ok" data-testid="raport-import" aria-live="polite">
         ✓{' '}
         {t('biblioteka.import.podsumowanie', {
           sciezki: wczytany.wynik.liczbaSciezek,

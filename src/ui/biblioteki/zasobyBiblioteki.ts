@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { opisZWpisu, type WpisBiblioteki } from '../../dane/bibliotekaUzytkownika';
 import { zasobyElementow } from '../../dane/biblioteka';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../../model/projekt';
@@ -19,11 +19,14 @@ export function useZasobyBiblioteki(
   czcionki: readonly WpisBiblioteki[] | undefined,
 ): ZasobyPakietu | undefined {
   const [zasoby, ustawZasoby] = useState<ZasobyPakietu>();
+  // Adresy `blob:` poprzedniego zestawu zwalniane dopiero po podmianie (miniatury się nie psują
+  // na czas wczytywania nowego) i przy odmontowaniu.
+  const zwolnijPoprzednie = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => () => zwolnijPoprzednie.current?.(), []);
   const kluczObrazow = zasobyElementow(elementy).join('\0');
   const kluczCzcionek = (czcionki ?? []).map((w) => w.id).join('\0');
   useEffect(() => {
     let aktywny = true;
-    let zwolnij: (() => void) | undefined;
     void (async () => {
       const ids = kluczObrazow ? kluczObrazow.split('\0') : [];
       const wpisy = [
@@ -64,13 +67,13 @@ export function useZasobyBiblioteki(
         szablony: [],
       } as unknown as Projekt;
       const z = zasobyProjektu(pseudo, dane);
-      zwolnij = z.zwolnij;
+      zwolnijPoprzednie.current?.();
+      zwolnijPoprzednie.current = z.zwolnij;
       ustawZasoby(z.zasoby);
     })().catch((e: unknown) => console.warn('Biblioteka: zasoby podglądu', e));
     return () => {
       aktywny = false;
-      zwolnij?.();
     };
   }, [kluczObrazow, kluczCzcionek]);
-  return zasoby && { ...zasoby, elementy };
+  return useMemo(() => zasoby && { ...zasoby, elementy }, [zasoby, elementy]);
 }

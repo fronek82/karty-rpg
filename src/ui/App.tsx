@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { t } from '../i18n';
 import { useJezyk } from '../i18n/react';
 import { GranicaBledu } from './GranicaBledu';
+import { adresBiblioteki } from './biblioteki/adresy';
 import { useTrasa } from './useTrasa';
 import { NaglowekAplikacji } from './NaglowekAplikacji';
 import './tokeny.css';
@@ -106,6 +107,12 @@ export function App() {
   useEffect(() => {
     if (dawna) window.location.replace('#/');
   }, [dawna]);
+  // Dawna biblioteka ozdobników projektu (N8): jedna biblioteka użytkownika na stronie Biblioteki.
+  const dawnaBiblioteka = !!projekt && podtrasa === 'biblioteka';
+  useEffect(() => {
+    if (dawnaBiblioteka && projekt)
+      window.location.replace(adresBiblioteki('ozdobniki', `#/projekt/${projekt}`));
+  }, [dawnaBiblioteka, projekt]);
 
   // Ekrany z lewym menu (start, gra, własne karty, kreator, AI) mają szeroką treść z jedną linią menu.
   // `/wlasne/ai` – dawny ekran „Układ ze zdjęcia” (teraz w edytorze szablonu).
@@ -118,6 +125,7 @@ export function App() {
     trasa === '/wlasne/nowy' ||
     trasa === '/wlasne/nowy/awers';
 
+  if (dawnaBiblioteka) return null;
   if (projekt) {
     // Edytor kartki zajmuje cały ekran (własny pasek górny).
     return (
