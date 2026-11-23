@@ -1,32 +1,33 @@
 import type { Mm } from '../model/jednostki';
 import {
   czyKontener,
-  korzenKarty,
-  type NapisSzablonu,
-  rozwinOdstepy,
-  wymiaryKarty,
-  type Karta,
   type DopasowanieObrazu,
-  type Obramowanie,
-  type Pole,
-  type PoleObraz,
+  type Karta,
   kluczeTabeli,
   kluczKomorki,
+  type Kolor,
+  korzenKarty,
+  type NapisSzablonu,
+  type Narozniki,
+  type Obramowanie,
+  type Ozdoba,
+  type OzdobaRamka9,
+  polaDrzewa,
+  type Pole,
+  type PoleObraz,
   type PoleTabela,
   type PoleTekst,
   type PoleWartosc,
-  type Kolor,
-  type Narozniki,
-  type Ozdoba,
-  type OzdobaRamka9,
   type RamkaKarty,
+  type Rewers,
+  rozwinOdstepy,
   type StylLinii,
   type StylTekstu,
   type Szablon,
-  type Rewers,
   type TrybTla,
   type UstawieniaObrazu,
   type Wezel,
+  wymiaryKarty,
   type ZabarwienieTla,
 } from '../model/szablon';
 import type { RejestrCzcionek } from './czcionki';
@@ -973,11 +974,6 @@ export function renderujKarte(
 
 const normalizujNazwePola = (nazwa: string): string => nazwa.trim().toLowerCase();
 
-function* polaWezlaSzablonu(w: Wezel): Generator<Pole> {
-  if (czyKontener(w)) for (const d of w.dzieci) yield* polaWezlaSzablonu(d);
-  else yield w;
-}
-
 const sygnaturaTabeli = (p: PoleTabela): string =>
   `${Math.max(1, Math.floor(p.wiersze ?? 1))}|${p.kolumny.map((k) => `${normalizujNazwePola(k.naglowek ?? '')}:${k.klucz}`).join(',')}`;
 
@@ -992,7 +988,7 @@ function indeksujPolaAwersu(szablon: Szablon): IndeksPolAwersu {
   const pola = new Map<string, string | null>();
   const tabele = new Map<string, PoleTabela | null>();
   for (const korzen of [szablon.korzen, ...(szablon.warianty ?? []).map((w) => w.korzen)]) {
-    for (const pole of polaWezlaSzablonu(korzen)) {
+    for (const pole of polaDrzewa(korzen)) {
       if (pole.typ === 'tabela') {
         const nazwa = pole.nazwa ? normalizujNazwePola(pole.nazwa) : '';
         if (!nazwa) continue;
@@ -1045,7 +1041,7 @@ function dopasujKolumnyTabeli(rewersTabela: PoleTabela, awersTabela: PoleTabela)
 export function wspolneKluczeRewersu(szablon: Szablon, rewers: Rewers): Set<string> {
   const indeks = indeksujPolaAwersu(szablon);
   const wynik = new Set<string>();
-  for (const pole of polaWezlaSzablonu(rewers.korzen)) {
+  for (const pole of polaDrzewa(rewers.korzen)) {
     const nazwa = pole.nazwa ? normalizujNazwePola(pole.nazwa) : '';
     if (!nazwa) continue;
     if (pole.typ === 'tabela') {

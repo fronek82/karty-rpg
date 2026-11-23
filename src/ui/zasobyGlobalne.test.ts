@@ -10,7 +10,7 @@ import type { ProjektWEdycji } from './useProjekt';
 const magazyn = new Map<string, { wpis: WpisBibliotekiGlobalnej; dane: Uint8Array }>();
 const projektyWBazie = new Map<string, { projekt: Projekt; zasoby: DaneZasobow }>();
 
-vi.mock('./baza', () => ({
+vi.mock('./bazaUI', () => ({
   baza: () => ({
     bibliotekaGlobalna: async (rodzaj?: WpisBibliotekiGlobalnej['rodzaj']) =>
       [...magazyn.values()].map((v) => v.wpis).filter((w) => (rodzaj ? w.rodzaj === rodzaj : true)),
@@ -61,7 +61,7 @@ vi.mock('./baza', () => ({
   }),
 }));
 
-vi.mock('./obrazy', () => ({
+vi.mock('./obrazyUI', () => ({
   przygotujObraz: async (dane: Uint8Array) => ({
     dane,
     szerokosc: 64,

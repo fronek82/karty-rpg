@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { importujProjekt, jakoKopia, LIMITY_ARCHIWUM } from '../../dane/archiwum';
 import { formatujLiczbe, t } from '../../i18n';
 import type { Projekt } from '../../model/projekt';
-import { baza } from '../baza';
+import { baza } from '../bazaUI';
 import { ACCEPT_IMPORTU, jestZip, rodzajPoNazwie, rozpoznajRodzaj } from './importPlikow';
 import { adresProjektu, importujPlikSzablonu, opisBleduImportu } from './importSzablonu';
 

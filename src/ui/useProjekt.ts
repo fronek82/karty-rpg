@@ -5,7 +5,7 @@ import { rejestrZProjektu } from '../dane/pakiet';
 import { czyKartkaZnormalizowana, normalizujKartki } from '../druk/normalizacja';
 import { t } from '../i18n';
 import type { DaneZasobow, Projekt } from '../model/projekt';
-import { baza } from './baza';
+import { baza } from './bazaUI';
 import { zasobyProjektu, type ZasobyProjektu } from './zasobyProjektu';
 
 export type StanZapisu =

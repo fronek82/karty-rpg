@@ -5,7 +5,7 @@ import { RejestrCzcionek, wczytajCzcionke } from '../silnik/czcionki';
 import { renderujKarte, renderujRewers } from '../silnik/karta';
 import type { Scena } from '../silnik/scena';
 import { scenaDoSvg } from '../silnik/svg';
-import { baza } from './baza';
+import { baza } from './bazaUI';
 
 const MAKS_BAJTOW_OBRAZU_W_MINIATURZE = 1_500_000;
 const MAKS_LACZNIE_BAJTOW_OBRAZOW = 2_000_000;

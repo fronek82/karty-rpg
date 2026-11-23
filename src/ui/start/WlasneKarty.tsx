@@ -4,7 +4,7 @@ import { formatujLiczbe, t } from '../../i18n';
 import { rozpoznajRodzaj } from './importPlikow';
 import { KAFELKI_SZABLONOW } from '../../przyklady';
 import type { OpisPrzykladu } from '../../przyklady/typy';
-import { nowyProjektZPrzykladu } from '../baza';
+import { zapiszProjektZPrzykladu } from '../bazaUI';
 import { BibliotekaGlobalna } from '../biblioteka/BibliotekaGlobalna';
 import { GaleriaOnline } from './GaleriaOnline';
 import { adresProjektu, importujPlikSzablonu, opisBleduImportu } from './importSzablonu';
@@ -133,7 +133,7 @@ export function WlasneKarty() {
   const utworz = (opis: OpisPrzykladu, el: HTMLElement) =>
     void wykonaj(async () => {
       try {
-        return { id: await nowyProjektZPrzykladu(await opis.laduj()) };
+        return { id: await zapiszProjektZPrzykladu(await opis.laduj()) };
       } catch (e) {
         return { blad: opisBleduImportu(e) };
       }

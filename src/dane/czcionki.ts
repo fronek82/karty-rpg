@@ -3,6 +3,7 @@ import type { OpisCzcionki, ZrodloCzcionki } from '../model/projekt';
 import type { WariantCzcionki } from '../model/szablon';
 import { BladKolekcjiCzcionek, Czcionka, wczytajCzcionke } from '../silnik/czcionki';
 import { BladDanych } from './schemat';
+import { bezZnakowDiakrytycznych } from '../model/nazwy';
 
 export const FORMATY_CZCIONEK = ['ttf', 'otf', 'woff', 'woff2'] as const;
 export type FormatCzcionki = (typeof FORMATY_CZCIONEK)[number];
@@ -31,11 +32,7 @@ export function wariantCzcionki(grubosc: number, kursywa: boolean): WariantCzcio
 
 /** Bezpieczny identyfikator zasobu z nazwy (litery, cyfry, `_`, `-`, `.`). */
 export function identyfikatorZNazwy(nazwa: string, przedrostek: string): string {
-  const baza = nazwa
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/ł/g, 'l')
-    .replace(/Ł/g, 'L')
+  const baza = bezZnakowDiakrytycznych(nazwa)
     .replace(/[^\w.-]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);

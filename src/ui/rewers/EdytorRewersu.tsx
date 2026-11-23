@@ -20,7 +20,6 @@ import {
   usunWezly,
   wklejStyl,
   wstawWezel,
-  wszystkieWezly,
   wyzej,
   zmienKolejnoscRysowania,
   zmienTypKontenera,
@@ -35,22 +34,23 @@ import { czcionkiSzablonu } from '../../dane/archiwum';
 import { czyProjektWlasny } from '../../dane/wlasneKarty';
 import { t, tJesliJest } from '../../i18n';
 import {
+  czyKontener,
   DOMYSLNE_TLO_KARTY,
   DOMYSLNY_KOLOR_TEKSTU,
-  czyKontener,
-  rozwinOdstepy,
   type Kontener,
   type Pole,
   type Rewers,
+  rozwinOdstepy,
   type Szablon,
   type TrybTla,
   type Wezel,
+  wszystkieWezly,
 } from '../../model/szablon';
 import { renderujRewers } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
 import { PoleLiczby } from '../kartka/PoleLiczby';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
-import { przygotujPlikObrazu } from '../obrazy';
+import { przygotujPlikObrazu } from '../obrazyUI';
 import { tekstOstrzezenia } from '../ostrzezenia';
 import { useCzcionkiGlobalne, useSynchronizujCzcionkiGlobalne } from '../zasobyGlobalne';
 import { DrzewoSzablonu, nazwaWezla } from '../szablon/DrzewoSzablonu';

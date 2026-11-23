@@ -5,20 +5,12 @@ import {
   type UmieszczonaWPasie,
   type WynikPasow,
 } from './pasy';
-
-interface Prostokat {
-  x: number;
-  y: number;
-  szer: number;
-  wys: number;
-}
+import { przecinajaSie, type Prostokat } from '../model/geometria';
 
 const E = 1e-6;
 const prawo = (r: Prostokat) => r.x + r.szer;
 const dol = (r: Prostokat) => r.y + r.wys;
 const porownajPozycje = (a: Prostokat, b: Prostokat) => a.y - b.y || a.x - b.x;
-const przecinajaSie = (a: Prostokat, b: Prostokat) =>
-  a.x < prawo(b) - E && b.x < prawo(a) - E && a.y < dol(b) - E && b.y < dol(a) - E;
 const zawiera = (a: Prostokat, b: Prostokat) =>
   a.x <= b.x + E && a.y <= b.y + E && prawo(a) >= prawo(b) - E && dol(a) >= dol(b) - E;
 

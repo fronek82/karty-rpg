@@ -646,6 +646,27 @@ export function czyKontener(wezel: Wezel): wezel is Kontener {
   );
 }
 
+/** Węzeł i wszyscy jego potomkowie (w głąb, zaczynając od węzła). */
+export function* wezlyDrzewa(w: Wezel): Generator<Wezel> {
+  yield w;
+  if (czyKontener(w)) for (const d of w.dzieci) yield* wezlyDrzewa(d);
+}
+
+/** Pola (liście) drzewa węzła – bez kontenerów. */
+export function* polaDrzewa(w: Wezel): Generator<Pole> {
+  for (const x of wezlyDrzewa(w)) if (!czyKontener(x)) yield x;
+}
+
+/** Korzenie szablonu lub rewersu: główny i korzenie wariantów układu. */
+export const korzenieSzablonu = (s: Pick<Szablon, 'korzen' | 'warianty'>): Kontener[] => [
+  s.korzen,
+  ...(s.warianty ?? []).map((w) => w.korzen),
+];
+
+/** Wszystkie węzły szablonu lub rewersu (korzeń i warianty układu). */
+export const wszystkieWezly = (s: Pick<Szablon, 'korzen' | 'warianty'>): Wezel[] =>
+  korzenieSzablonu(s).flatMap((k) => [...wezlyDrzewa(k)]);
+
 /** Wymiary karty w mm. */
 export function wymiaryKarty(
   szablon: Szablon,

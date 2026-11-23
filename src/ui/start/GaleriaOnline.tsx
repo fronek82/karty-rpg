@@ -10,7 +10,7 @@ import {
 } from '../../dane/galeriaOnline';
 import { danePodgladu } from '../../dane/szablon';
 import { formatujLiczbe, jezyk as aktualnyJezyk, t } from '../../i18n';
-import { baza } from '../baza';
+import { baza } from '../bazaUI';
 import { opisBleduImportu } from './importSzablonu';
 
 interface PodgladSvgWpisu {

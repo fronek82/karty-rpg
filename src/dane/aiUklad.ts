@@ -16,6 +16,7 @@ import type {
 } from '../model/szablon';
 import { BladDanych } from './schemat';
 import { kluczZNazwy } from './szablon';
+import { zaokraglij } from '../model/geometria';
 
 /** Klucz w `localStorage` – klucz API żyje wyłącznie lokalnie w tej przeglądarce. */
 export const KLUCZ_STORAGE_AI = 'karty-rpg:claude-api-klucz';
@@ -109,7 +110,7 @@ export function usunKluczAi(magazyn: MagazynKlucza | undefined = domyslnyMagazyn
   }
 }
 
-const zaokrMm = (v: number): Mm => Math.round(v * 10) / 10;
+const zaokrMm = (v: number): Mm => zaokraglij(v, 1);
 const przytnij = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
 /** Wydobywa obiekt JSON z odpowiedzi tekstowej modelu (obsługuje bloki ```json i tekst wokół). */

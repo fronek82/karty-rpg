@@ -1,5 +1,5 @@
 import { t } from '../../i18n';
-import { nowyProjektZSzablonuKreatora } from '../baza';
+import { nowyProjektZSzablonuKreatora } from '../bazaUI';
 import { Kreator } from '../szablon/Kreator';
 import { szablonZKreatora } from '../szablon/nowySzablonUI';
 

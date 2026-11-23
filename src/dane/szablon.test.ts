@@ -3,13 +3,14 @@ import type { Projekt } from '../model/projekt';
 import {
   czyKontener,
   kluczeTabeli,
+  type Kontener,
   korzenKarty,
   maStylTekstu,
-  stylPola,
-  type Kontener,
   type PoleSeparator,
+  stylPola,
   type Szablon,
   type Wezel,
+  wszystkieWezly,
 } from '../model/szablon';
 import { znajdzElement } from '../ozdobniki';
 import { ZESTAWY_STYLOW } from '../ozdobniki/zestawyStylow';
@@ -34,7 +35,6 @@ import {
   wyzej,
   skopiujStyl,
   wklejStyl,
-  wszystkieWezly,
   zastosujZestawStylu,
   przypiszGrupeStylu,
   utworzGrupeStylu,

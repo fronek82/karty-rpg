@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { t } from '../../i18n';
-import { nowyProjektZRewersem } from '../baza';
+import { nowyProjektZRewersem } from '../bazaUI';
 
 /**
  * Pośredni ekran „Nowy szablon od zera”: po lewej dwa przyciski kroku 3 – „Awers” (otwiera

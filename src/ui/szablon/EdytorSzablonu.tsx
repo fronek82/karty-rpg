@@ -21,7 +21,6 @@ import {
   zmienTypPola,
   type SkopiowanyStyl,
   wstawWezel,
-  wszystkieWezly,
   wyzej,
   zastosujZestawStylu,
   zmienSzablon,
@@ -30,7 +29,7 @@ import {
   type RodzajNowego,
 } from '../../dane/szablon';
 import { czyProjektWlasny, kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty';
-import { rozwinOdstepy, wymiaryKarty } from '../../model/szablon';
+import { rozwinOdstepy, wszystkieWezly, wymiaryKarty } from '../../model/szablon';
 import { roleProjektu, ustawStalyObraz } from '../../dane/edycja';
 import { ElementyWlasneKontekst } from './elementyWlasne';
 import { t, tJesliJest } from '../../i18n';
@@ -61,7 +60,7 @@ import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWyrownania } from './PanelWyrownania';
 import { czcionkiSzablonu } from '../../dane/archiwum';
 import { useCzcionkiGlobalne, useSynchronizujCzcionkiGlobalne } from '../zasobyGlobalne';
-import { przygotujPlikObrazu } from '../obrazy';
+import { przygotujPlikObrazu } from '../obrazyUI';
 import {
   budujCele,
   celSkalowania,

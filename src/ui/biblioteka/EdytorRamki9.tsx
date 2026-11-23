@@ -11,6 +11,7 @@ import { konturNaD } from '../../silnik/svg';
 import { Liczba } from '../szablon/Kontrolki';
 import type { ProjektWEdycji } from '../useProjekt';
 import { KOLOR_PODGLADU, podgladElementu } from './podgladElementu';
+import { zaokraglij } from '../../model/geometria';
 
 type Strona = keyof UstawieniaRamki9['wciecia'];
 const STRONY: Strona[] = ['gora', 'prawo', 'dol', 'lewo'];
@@ -41,8 +42,7 @@ export const maksWciecie = (
   );
 
 /** Wartość wcięcia: piksele PNG – całkowite, jednostki SVG – do 0,01 (jak z myszy). */
-const zaokraglij = (v: number, calkowite: boolean) =>
-  calkowite ? Math.round(v) : Math.round(v * 100) / 100;
+const zaokraglijWciecie = (v: number, calkowite: boolean) => zaokraglij(v, calkowite ? 0 : 2);
 
 /**
  * Linia wcięcia na podglądzie źródła: przeciągana myszą, sterowana klawiaturą (strzałki ±1,
@@ -77,7 +77,10 @@ function LiniaWciecia({
     const p = pionowa
       ? ((clientX - r.left) / r.width) * rozmiar
       : ((clientY - r.top) / r.height) * rozmiar;
-    ustaw(strona, zaokraglij(strona === 'lewo' || strona === 'gora' ? p : rozmiar - p, calkowite));
+    ustaw(
+      strona,
+      zaokraglijWciecie(strona === 'lewo' || strona === 'gora' ? p : rozmiar - p, calkowite),
+    );
   };
   const nazwa = t('biblioteka.ramka9.liniaWciecia', { strona: t(`biblioteka.ramka9.${strona}`) });
   return (
@@ -88,7 +91,7 @@ function LiniaWciecia({
       aria-label={nazwa}
       aria-orientation={pionowa ? 'horizontal' : 'vertical'}
       aria-valuemin={0}
-      aria-valuemax={zaokraglij(max, calkowite)}
+      aria-valuemax={zaokraglijWciecie(max, calkowite)}
       aria-valuenow={wartosc}
       aria-valuetext={`${wartosc} ${jednostka}`}
       data-testid={`linia-${strona}`}
@@ -127,14 +130,14 @@ function LiniaWciecia({
                   : 0;
         if (e.key === 'Home' || e.key === 'End') {
           e.preventDefault();
-          ustaw(strona, e.key === 'Home' ? 0 : zaokraglij(max, calkowite));
+          ustaw(strona, e.key === 'Home' ? 0 : zaokraglijWciecie(max, calkowite));
           return;
         }
         if (!znak) return;
         e.preventDefault();
         const przyrost = (odwrotnie && Math.abs(znak) === 1 ? -znak : znak) * krok;
         const mnoznik = e.shiftKey && Math.abs(znak) === 1 ? 10 : 1;
-        ustaw(strona, zaokraglij(Math.max(0, wartosc + przyrost * mnoznik), calkowite));
+        ustaw(strona, zaokraglijWciecie(Math.max(0, wartosc + przyrost * mnoznik), calkowite));
       }}
     />
   );

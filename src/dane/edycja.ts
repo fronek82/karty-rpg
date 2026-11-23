@@ -1,11 +1,11 @@
 import type { Arkusz, UstawieniaArkusza } from '../model/arkusz';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
 import {
-  czyKontener,
-  kluczKomorki,
-  stylePola,
   type Karta,
+  kluczKomorki,
+  polaDrzewa,
   type Pole,
+  stylePola,
   type Szablon,
   type Talia,
   type UstawieniaObrazu,
@@ -45,11 +45,6 @@ export interface KolumnaDanych {
   domyslnie?: string;
 }
 
-function* polaWezla(w: Wezel): Generator<Pole> {
-  if (czyKontener(w)) for (const d of w.dzieci) yield* polaWezla(d);
-  else yield w;
-}
-
 function nazwaKlucza(klucz: string): string {
   return klucz.charAt(0).toUpperCase() + klucz.slice(1);
 }
@@ -58,7 +53,7 @@ function nazwaKlucza(klucz: string): string {
 export function kolumnySzablonu(s: Szablon): KolumnaDanych[] {
   const wynik = new Map<string, KolumnaDanych>();
   for (const korzen of [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)]) {
-    for (const pole of polaWezla(korzen)) {
+    for (const pole of polaDrzewa(korzen)) {
       if (pole.typ === 'tabela') {
         // Każda komórka wartości tabeli to osobna kolumna danych (nazwa = nagłówek, przy kilku
         // wierszach – z numerem wiersza).
@@ -144,7 +139,7 @@ export function roleProjektu(p: Projekt): string[] {
   const rodziny = new Set(p.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : [])));
   const role = new Set(Object.keys(p.role));
   const style = (w: Wezel) => {
-    for (const x of polaWezla(w)) {
+    for (const x of polaDrzewa(w)) {
       const nazwy = stylePola(x).map((st) => st.czcionka);
       for (const n of nazwy) if (n && !rodziny.has(n)) role.add(n);
     }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { eksportujSzablon, importujSzablon } from '../dane/archiwum';
 import type { WpisAwersuZProjektu } from '../dane/baza';
 import { kluczTresciSzablonu, type Szablon } from '../model/szablon';
-import { baza } from './baza';
+import { baza } from './bazaUI';
 
 export const PRZEDROSTEK_AWERSU_INNEGO = '__inny_awers__:';
 

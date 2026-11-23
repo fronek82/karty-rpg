@@ -4,6 +4,7 @@ import type { DefinicjaSymbolu, ElementSceny } from '../silnik/scena';
 import { znajdzElement } from './katalog';
 import { symbolZElementu } from './narozniki';
 import type { ElementOzdobny, UstawieniaRamki9 } from './typy';
+import { type Prostokat } from '../model/geometria';
 
 /**
  * Ramka 9-slice (SPEC 5 pkt 4): dziewięć kawałków źródła (PNG albo rysunek SVG) – cztery rogi
@@ -15,13 +16,6 @@ import type { ElementOzdobny, UstawieniaRamki9 } from './typy';
 export const NAKLADKA_KAWALKOW: Mm = 0.05;
 /** Najmniejsza rozdzielczość rogów PNG bez ostrzeżenia (SPEC 10). */
 export const MIN_DPI_RAMKI = 300;
-
-interface Prostokat {
-  x: number;
-  y: number;
-  szer: number;
-  wys: number;
-}
 
 export type RolaKawalka = 'srodek' | 'gora' | 'prawy' | 'dol' | 'lewy' | 'naroznik';
 

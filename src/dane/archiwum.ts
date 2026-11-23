@@ -5,11 +5,12 @@ import {
   czyKontener,
   kluczTresciSzablonu,
   maStylTekstu,
+  type Rewers,
   stylePola,
   stylPola,
-  type Rewers,
   type Szablon,
-  type Wezel,
+  wezlyDrzewa,
+  wszystkieWezly,
 } from '../model/szablon';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { BladKolekcjiCzcionek, wczytajCzcionke } from '../silnik/czcionki';
@@ -220,15 +221,6 @@ export function jakoKopia(
 // ---------------------------------------------------------------------------------------------
 // Pojedynczy szablon
 
-function* wezly(w: Wezel): Generator<Wezel> {
-  yield w;
-  if ('dzieci' in w) for (const d of w.dzieci) yield* wezly(d);
-}
-
-function wszystkieWezly(s: Szablon): Wezel[] {
-  return [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)].flatMap((k) => [...wezly(k)]);
-}
-
 /** Nazwy czcionek (role lub rodziny) użyte w stylach szablonu. */
 export function czcionkiSzablonu(s: Szablon): string[] {
   const nazwy = new Set((s.grupyStylow ?? []).map((g) => g.styl.czcionka));
@@ -273,7 +265,7 @@ function sprawdzRewersPaczki(
 function sprawdzRewers(rewers: Rewers, zasoby: OpisZasobu[], biblioteka?: ElementOzdobny[]) {
   const gdzie = t('dane.gdzie.rewers', { id: rewers.id });
   const widziane = new Set<string>();
-  for (const w of wezly(rewers.korzen)) {
+  for (const w of wezlyDrzewa(rewers.korzen)) {
     if (widziane.has(w.id)) throw new BladDanych(t('dane.powtorzonyId', { id: w.id, gdzie }));
     widziane.add(w.id);
   }
@@ -447,7 +439,7 @@ export function rewersZSzablonu(s: Szablon): Rewers {
           wysokosc: s.rozmiar.slot.wysokosc * s.rozmiar.rzedy,
         };
   const korzen = structuredClone(s.korzen);
-  for (const w of wezly(korzen)) {
+  for (const w of wezlyDrzewa(korzen)) {
     if (maStylTekstu(w) && w.grupaStyluId !== undefined) {
       w.styl = stylPola(s, w);
       delete w.grupaStyluId;
@@ -457,7 +449,7 @@ export function rewersZSzablonu(s: Szablon): Rewers {
   if (korzen.typ === 'swobodny') {
     korzenSwobodny = { ...korzen, typ: 'swobodny' };
   } else {
-    const zajete = new Set([...wezly(korzen)].map((w) => w.id));
+    const zajete = new Set([...wezlyDrzewa(korzen)].map((w) => w.id));
     korzenSwobodny = {
       id: unikalneId('rewers', zajete),
       nazwa: s.nazwa,

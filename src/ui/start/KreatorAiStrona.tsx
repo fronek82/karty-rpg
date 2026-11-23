@@ -15,7 +15,7 @@ import type { Szablon } from '../../model/szablon';
 import { RejestrCzcionek, wczytajCzcionke } from '../../silnik/czcionki';
 import { renderujKarte } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
-import { nowyProjektZSzablonuKreatora } from '../baza';
+import { nowyProjektZSzablonuKreatora } from '../bazaUI';
 
 const MAKS_BOK_AI_PX = 1568;
 const zaokr = (x: number) => formatujLiczbe(x, 1);

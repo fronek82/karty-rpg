@@ -15,7 +15,7 @@ import {
 } from '../../dane/biblioteka';
 import { formatujLiczbe, t, tn, type KluczTekstu } from '../../i18n';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
-import { zapiszOzdobnikWBibliotece } from '../baza';
+import { zapiszOzdobnikWBibliotece } from '../bazaUI';
 import { opisBleduImportu } from '../start/importSzablonu';
 import {
   ELEMENTY_WBUDOWANE,
@@ -32,7 +32,7 @@ import { Liczba } from '../szablon/Kontrolki';
 import { MiniaturaOzdobnika } from '../szablon/MiniaturaOzdobnika';
 import { nazwaElementu } from '../szablon/PanelWygladu';
 import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
-import { przygotujObraz } from '../obrazy';
+import { przygotujObraz } from '../obrazyUI';
 import { EdytorRamki9 } from './EdytorRamki9';
 import { BibliotekaGlobalna } from './BibliotekaGlobalna';
 import { KOLOR_PODGLADU, podgladElementu } from './podgladElementu';

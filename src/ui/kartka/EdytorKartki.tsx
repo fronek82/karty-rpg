@@ -80,7 +80,7 @@ import {
   useAwersyZProjektow,
   wczytajPaczkeAwersuBezRewersu,
 } from '../awersyZProjektow';
-import { baza } from '../baza';
+import { baza } from '../bazaUI';
 import { komunikatyBrakujacychWariantow, tekstOstrzezeniaArkusza } from '../ostrzezenia';
 import { pdfWWatku } from '../pdfWWatku';
 import {
@@ -117,11 +117,12 @@ import { ImportDanych } from './ImportDanych';
 import { MenuPobierz } from './MenuPobierz';
 import { MenuRewersu } from './MenuRewersu';
 import { MenuTypu } from './MenuTypu';
-import { skalaZKolka, zaokr, zmienObrazKarty } from './obrazKarty';
+import { skalaZKolka, zmienObrazKarty } from './obrazKarty';
 import { PanelKart, typDlaSzablonu } from './PanelKart';
 import { PanelNaglowka } from './PanelNaglowka';
 import { PanelRewersuIAwersu } from './PanelRewersuIAwersu';
 import { PanelUstawien } from './PanelUstawien';
+import { zaokraglij } from '../../model/geometria';
 
 type Zaznaczenie =
   | { rodzaj: 'karty'; arkuszId: string; ids: string[] }
@@ -863,8 +864,8 @@ export function EdytorKartki({
           zmienObrazKarty(p, g.taliaId, g.kartaId, g.poleId, (u) => ({
             ...u,
             przesuniecie: {
-              x: zaokr((u.przesuniecie?.x ?? 0) + dx),
-              y: zaokr((u.przesuniecie?.y ?? 0) + dy),
+              x: zaokraglij((u.przesuniecie?.x ?? 0) + dx),
+              y: zaokraglij((u.przesuniecie?.y ?? 0) + dy),
             },
           })),
         { klucz: `obraz:${g.kartaId}:przesun` },

@@ -10,7 +10,7 @@ import {
 import type { WpisBibliotekiGlobalnej } from '../../dane/baza';
 import { BladDanych } from '../../dane/schemat';
 import { t } from '../../i18n';
-import { baza, zapiszOzdobnikWBibliotece } from '../baza';
+import { baza, zapiszOzdobnikWBibliotece } from '../bazaUI';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import { opisBleduImportu } from '../start/importSzablonu';
 

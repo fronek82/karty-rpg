@@ -6,8 +6,9 @@ import {
   type Kontener,
   type Wezel,
 } from '../../model/szablon';
-import type { Prostokat } from '../../silnik/uklad';
+import type { Prostokat } from '../../model/geometria';
 import type { Prowadnica, WezlyKarty } from './swobodnyMysz';
+import { zaokraglij } from '../../model/geometria';
 
 type Punkt = { x: number; y: number };
 
@@ -81,7 +82,7 @@ export function upuscWezel(s: Szablon, cel: CelUpuszczenia): Szablon {
   const nowy = przeniesWezel(s, cel.id, cel.rodzicId, cel.indeks);
   const pozycja = cel.pozycja;
   if (nowy === s || !pozycja) return nowy;
-  const zaokr = (v: number) => Math.round(v * 1000) / 1000;
+  const zaokr = (v: number) => zaokraglij(v, 3);
   return zmienWezel(nowy, cel.id, (w) => ({
     ...w,
     pozycja: {

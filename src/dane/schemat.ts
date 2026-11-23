@@ -2,7 +2,14 @@ import { z } from 'zod';
 import { t } from '../i18n';
 import { PAPIERY } from '../model/arkusz';
 import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
-import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
+import {
+  czyKontener,
+  type Kontener,
+  korzenieSzablonu,
+  type Szablon,
+  type Wezel,
+  wezlyDrzewa,
+} from '../model/szablon';
 import { znajdzElement } from '../ozdobniki/katalog';
 import { LIMITY_SVG } from '../ozdobniki/svgImport';
 import { MAKS_ELEMENTOW_BIBLIOTEKI, odwolaniaDoElementow } from './biblioteka';
@@ -867,19 +874,10 @@ function powtorzenie(ids: Iterable<string>): string | undefined {
   return undefined;
 }
 
-function* wezly(w: Wezel): Generator<Wezel> {
-  yield w;
-  if ('dzieci' in w) for (const d of w.dzieci) yield* wezly(d);
-}
-
-function drzewa(s: Szablon): Kontener[] {
-  return [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)];
-}
-
 export function teksturySzablonu(s: Szablon): string[] {
   const wynik: string[] = s.teksturaTla ? [s.teksturaTla] : [];
-  for (const k of drzewa(s))
-    for (const w of wezly(k)) if (czyKontener(w) && w.teksturaTla) wynik.push(w.teksturaTla);
+  for (const k of korzenieSzablonu(s))
+    for (const w of wezlyDrzewa(k)) if (czyKontener(w) && w.teksturaTla) wynik.push(w.teksturaTla);
   return wynik;
 }
 
@@ -887,8 +885,8 @@ export function teksturySzablonu(s: Szablon): string[] {
 export function zasobySzablonu(s: Szablon): string[] {
   return [
     ...teksturySzablonu(s),
-    ...drzewa(s).flatMap((k) =>
-      [...wezly(k)].flatMap((w) => (w.typ === 'obraz' && w.zasob ? [w.zasob] : [])),
+    ...korzenieSzablonu(s).flatMap((k) =>
+      [...wezlyDrzewa(k)].flatMap((w) => (w.typ === 'obraz' && w.zasob ? [w.zasob] : [])),
     ),
   ];
 }
@@ -940,13 +938,13 @@ export function sprawdzSpojnosc(p: Projekt): void {
   }
   for (const r of p.rewersy ?? [])
     powtorzony(
-      [...wezly(r.korzen)].map((w) => w.id),
+      [...wezlyDrzewa(r.korzen)].map((w) => w.id),
       t('dane.gdzie.rewers', { id: r.id }),
     );
   for (const s of p.szablony) {
-    for (const k of drzewa(s)) {
+    for (const k of korzenieSzablonu(s)) {
       powtorzony(
-        [...wezly(k)].map((w) => w.id),
+        [...wezlyDrzewa(k)].map((w) => w.id),
         t('dane.gdzie.szablon', { id: s.id }),
       );
     }
@@ -1075,7 +1073,7 @@ export function ostrzezeniaProjektu(p: Projekt): string[] {
     for (const k of talia.karty) {
       const s = szablony.get(k.szablonId);
       if (!s) continue;
-      for (const w of drzewa(s).flatMap((d) => [...wezly(d)])) {
+      for (const w of korzenieSzablonu(s).flatMap((d) => [...wezlyDrzewa(d)])) {
         if (w.typ !== 'obraz' || !w.klucz) continue;
         const id = k.dane[w.klucz];
         if (id && !zasoby.has(id) && !zgloszone.has(id)) {

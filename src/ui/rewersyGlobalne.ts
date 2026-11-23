@@ -7,7 +7,7 @@ import {
 } from '../dane/archiwum';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import { kluczTresciSzablonu } from '../model/szablon';
-import { baza } from './baza';
+import { baza } from './bazaUI';
 import type { ProjektWEdycji } from './useProjekt';
 
 const PRZEDROSTEK_KLUCZA = 'rewers:';

@@ -18,7 +18,7 @@ import {
   type UkladArkusza,
 } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
-import { baza } from '../baza';
+import { baza } from '../bazaUI';
 import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
 import { kolorSceny } from '../../silnik/scena';
 import { PoleKoloru } from '../szablon/Kontrolki';

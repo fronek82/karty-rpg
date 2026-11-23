@@ -26,7 +26,7 @@ import {
   nowyProjektZAwersuZProjektu,
   nowyProjektZRewersem,
   nowyProjektZRewersuZProjektu,
-} from './baza';
+} from './bazaUI';
 
 const staraFetch = globalThis.fetch;
 

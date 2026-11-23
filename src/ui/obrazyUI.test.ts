@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { wspolczynnikSkali } from './obrazy';
+import { wspolczynnikSkali } from './obrazyUI';
 
 describe('limit powierzchni obrazu', () => {
   it('obraz w limicie zostaje, zbyt duży (PNG / JPEG bez EXIF też) jest zmniejszany do limitu', () => {

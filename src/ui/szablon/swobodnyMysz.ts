@@ -20,7 +20,8 @@ import {
 } from '../../model/szablon';
 import type { Mm } from '../../model/jednostki';
 import type { WyrenderowanaKarta } from '../../silnik/karta';
-import { obrocWektor, prostokatPoObrocie, type Prostokat } from '../../silnik/uklad';
+import { obrocWektor, prostokatPoObrocie } from '../../silnik/uklad';
+import { type Prostokat, zaokraglij } from '../../model/geometria';
 
 export type WezlyKarty = WyrenderowanaKarta['wezly'];
 
@@ -34,7 +35,7 @@ export const PROG_PRZYCIAGANIA_PX = 6;
 /** Domyślny krok siatki (mm). */
 export const SIATKA_DOMYSLNA = 0.5;
 
-const zaokr = (v: number) => Math.round(v * 1000) / 1000;
+const zaokr = (v: number) => zaokraglij(v, 3);
 
 /** mm → piksele ekranu. */
 export const mmNaPx = (mm: Mm, szerokoscPx: number, szerokoscMm: Mm): number =>

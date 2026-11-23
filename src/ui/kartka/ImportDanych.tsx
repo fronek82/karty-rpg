@@ -12,20 +12,13 @@ import { t } from '../../i18n';
 import type { OpisZasobu } from '../../model/projekt';
 import type { Rewers, Szablon } from '../../model/szablon';
 import { wspolneKluczeRewersu } from '../../silnik/karta';
-
-const normalizuj = (s: string) =>
-  s
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/ł/g, 'l');
+import { normalizujNazwe } from '../../model/nazwy';
 
 function domyslneMapowanie(
   tabela: TabelaImportu,
   pola: ReturnType<typeof kolumnySzablonu>,
 ): MapowanieImportu {
-  const naglowki = tabela.naglowki.map(normalizuj);
+  const naglowki = tabela.naglowki.map(normalizujNazwe);
   const znajdz = (nazwy: string[]) => {
     const pasujace = naglowki.flatMap((n, i) => (nazwy.includes(n) ? [i] : []));
     return pasujace.length === 1 ? pasujace[0] : undefined;
@@ -33,7 +26,7 @@ function domyslneMapowanie(
   const ilosc = znajdz(['ilosc', 'quantity']);
   const wynik = new Map<string, number>();
   for (const p of pola) {
-    const i = znajdz([normalizuj(p.nazwa), normalizuj(p.klucz)]);
+    const i = znajdz([normalizujNazwe(p.nazwa), normalizujNazwe(p.klucz)]);
     if (i !== undefined) wynik.set(p.klucz, i);
   }
   return { pola: wynik, ...(ilosc !== undefined ? { ilosc } : {}) };

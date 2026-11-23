@@ -3,9 +3,9 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KAFELKI_SZABLONOW, PRZYKLADY } from '../../przyklady';
 
-const nowyProjektZPrzykladu = vi.fn();
-vi.mock('../baza', () => ({
-  nowyProjektZPrzykladu: (...a: unknown[]) => nowyProjektZPrzykladu(...a),
+const zapiszProjektZPrzykladu = vi.fn();
+vi.mock('../bazaUI', () => ({
+  zapiszProjektZPrzykladu: (...a: unknown[]) => zapiszProjektZPrzykladu(...a),
   nowyProjektZSzablonu: vi.fn(),
 }));
 vi.mock('./ladujPrzyklady', () => ({
@@ -21,7 +21,7 @@ vi.mock('./GaleriaOnline', () => ({
 import { WlasneKarty } from './WlasneKarty';
 
 beforeEach(() => {
-  nowyProjektZPrzykladu.mockReset();
+  zapiszProjektZPrzykladu.mockReset();
   window.location.hash = '';
 });
 afterEach(cleanup);
@@ -40,18 +40,18 @@ describe('WlasneKarty', () => {
 
   it('klik tworzy projekt z przykładu i otwiera edytor; podwójny klik – jeden projekt', async () => {
     let koniec!: (id: string) => void;
-    nowyProjektZPrzykladu.mockReturnValue(new Promise<string>((r) => (koniec = r)));
+    zapiszProjektZPrzykladu.mockReturnValue(new Promise<string>((r) => (koniec = r)));
     render(<WlasneKarty />);
     const kafelek = screen.getByRole('button', { name: 'Karta z opisem' });
     fireEvent.click(kafelek);
     fireEvent.click(kafelek);
-    await waitFor(() => expect(nowyProjektZPrzykladu).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(zapiszProjektZPrzykladu).toHaveBeenCalledTimes(1));
     await act(async () => koniec('p1'));
     await waitFor(() => expect(window.location.hash).toBe('#/projekt/p1'));
   });
 
   it('błąd tworzenia: komunikat, kafelki znów działają', async () => {
-    nowyProjektZPrzykladu.mockRejectedValueOnce(new Error('brak miejsca'));
+    zapiszProjektZPrzykladu.mockRejectedValueOnce(new Error('brak miejsca'));
     render(<WlasneKarty />);
     const kafelek = screen.getByRole('button', { name: 'Blok statystyk' });
     fireEvent.click(kafelek);
@@ -63,10 +63,10 @@ describe('WlasneKarty', () => {
 
   it('odmontowanie w trakcie tworzenia: bez nawigacji po zakończeniu', async () => {
     let koniec!: (id: string) => void;
-    nowyProjektZPrzykladu.mockReturnValue(new Promise<string>((r) => (koniec = r)));
+    zapiszProjektZPrzykladu.mockReturnValue(new Promise<string>((r) => (koniec = r)));
     const { unmount } = render(<WlasneKarty />);
     fireEvent.click(screen.getByRole('button', { name: 'Karta ozdobna' }));
-    await waitFor(() => expect(nowyProjektZPrzykladu).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(zapiszProjektZPrzykladu).toHaveBeenCalledTimes(1));
     unmount();
     await act(async () => koniec('p3'));
     expect(window.location.hash).toBe('');
