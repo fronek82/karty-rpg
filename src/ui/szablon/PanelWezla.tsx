@@ -8,6 +8,7 @@ import {
   maStylTekstu,
   stylPola,
   kluczeTabeli,
+  POZYCJE_ETYKIETY_WARTOSCI,
   znajdzGrupeStylu,
   type Kontener,
   type Pole,
@@ -460,7 +461,7 @@ export function PanelWezla({
                 etykieta={t('szablon.pozycjaEtykiety')}
                 opcje={(zEtykieta.typ === 'tekst'
                   ? (['nad', 'przed', 'pod'] as const)
-                  : (['nad', 'pod'] as const)
+                  : POZYCJE_ETYKIETY_WARTOSCI
                 ).map((p) => ({ wartosc: p, tekst: t(`szablon.pozycja.${p}`) }))}
                 wartosc={etykieta.pozycja}
                 zmien={(p) =>

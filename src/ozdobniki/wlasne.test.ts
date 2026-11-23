@@ -130,13 +130,14 @@ describe('własne elementy w silniku', () => {
     const sciezki = w.scena.elementy.filter((x) => x.typ === 'sciezka');
     expect(sciezki.some((s) => s.typ === 'sciezka' && s.wypelnienie === '#ffeecc')).toBe(true);
     expect(sciezki.some((s) => s.typ === 'sciezka' && s.obrys?.kolor === '#112233')).toBe(true);
-    // Kontur dopasowany do pola: trójkąt o wierzchołku w środku górnej krawędzi pola.
+    // Kontur z proporcjami rysunku (2 : 1), wyśrodkowany w polu: wierzchołek w środku szerokości,
+    // nad nim połowa wolnego miejsca w pionie.
     const pole = w.wezly.find((x) => x.id === 'w')!;
     const tlo = sciezki.find((s) => s.typ === 'sciezka' && s.wypelnienie === '#ffeecc')!;
     if (tlo.typ !== 'sciezka') throw new Error();
     const [m, l] = tlo.kontur;
     expect(m![1]).toBeCloseTo(pole.x + pole.szer / 2, 6);
-    expect(m![2]).toBeCloseTo(pole.y, 6);
+    expect(m![2]).toBeCloseTo(pole.y + (pole.wys - pole.szer / 2) / 2, 6);
     expect(l![0]).toBe('L');
     // Pole musi być większe niż sam tekst: treść = 50 % × 50 % kształtu.
     expect(pole.szer).toBeGreaterThanOrEqual(20);

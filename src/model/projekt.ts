@@ -29,8 +29,9 @@ import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 25 – M4-3: tekst po łuku (`PoleTekst.luk`), krycie warstwy (`krycie`) oraz krycie i zabarwienie tekstury tła rewersu.
  * 26 – M4-4: ustawienia druku dwustronnego arkusza (`UstawieniaArkusza.dwustronny`).
  * 27 – M4-5: ustawienia trybu drukarni arkusza (`UstawieniaArkusza.drukarnia`: spad, znaczniki cięcia, układ).
+ * 28 – N4: wartość w kształcie – `zachowajProporcje`, `ramiona`, nowe figury, etykieta obok kształtu.
  */
-export const WERSJA_SCHEMATU = 27;
+export const WERSJA_SCHEMATU = 28;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

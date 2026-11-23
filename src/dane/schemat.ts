@@ -6,6 +6,9 @@ import {
   czyKontener,
   type Kontener,
   korzenieSzablonu,
+  KSZTALTY_WARTOSCI,
+  POZYCJE_ETYKIETY_WARTOSCI,
+  RAMIONA_GWIAZDY,
   type Szablon,
   type Wezel,
   wezlyDrzewa,
@@ -195,21 +198,14 @@ const pole = z.discriminatedUnion('typ', [
     styl: stylTekstu,
     grupaStyluId: opc(identyfikator),
     tekst: opc(napis),
-    ksztalt: z.enum([
-      'prostokat',
-      'kwadrat',
-      'kolo',
-      'sciety',
-      'romb',
-      'tarcza',
-      'szesciokat',
-      'wlasny',
-    ]),
+    ksztalt: z.enum(KSZTALTY_WARTOSCI),
     ksztaltElement: opc(identyfikator),
+    ramiona: opc(calkowita.min(RAMIONA_GWIAZDY.min).max(RAMIONA_GWIAZDY.max)),
+    zachowajProporcje: opc(z.boolean()),
     etykieta: opc(
       obj({
         tekst: napis,
-        pozycja: z.enum(['nad', 'pod']),
+        pozycja: z.enum(POZYCJE_ETYKIETY_WARTOSCI),
         styl: opc(stylCzesciowy),
         odstep: opc(nieujemna),
         kolorZDanych: opc(kolorZDanych),
@@ -746,6 +742,32 @@ export async function migrujBajtyBazy(dane: BajtyWBazie): Promise<Uint8Array> {
   return dane instanceof Blob ? new Uint8Array(await dane.arrayBuffer()) : dane;
 }
 
+/** Kształty, które przed schematem 28 rozciągały się do pola (koło i kwadrat były równoboczne). */
+const KSZTALTY_ROZCIAGANE = new Set(['romb', 'tarcza', 'szesciokat', 'wlasny']);
+
+/**
+ * 27→28: pola wartości z kształtem rozciąganym dostają `zachowajProporcje: false`. Przechodzi całe
+ * drzewo danych (szablony, rewersy, biblioteka) – węzeł wartości rozpoznaje po `typ` i `ksztalt`.
+ */
+function rozciagnieteKsztalty(d: Record<string, unknown>): Record<string, unknown> {
+  const przejdz = (x: unknown): unknown => {
+    if (Array.isArray(x)) return x.map(przejdz);
+    if (typeof x !== 'object' || x === null) return x;
+    const o = x as Record<string, unknown>;
+    const wynik: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(o)) wynik[k] = przejdz(v);
+    if (
+      o.typ === 'wartosc' &&
+      typeof o.ksztalt === 'string' &&
+      KSZTALTY_ROZCIAGANE.has(o.ksztalt) &&
+      o.zachowajProporcje === undefined
+    )
+      wynik.zachowajProporcje = false;
+    return wynik;
+  };
+  return przejdz(d) as Record<string, unknown>;
+}
+
 /**
  * Migracje: klucz `n` zamienia dane ze schematu `n` na `n + 1`. Projekt i plik szablonu mają
  * osobne kroki (inny kształt), ale wspólny numer wersji.
@@ -775,6 +797,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 19→20: kontynuacja jest opcjonalnym ustawieniem pola i nie zmienia starszego tekstu.
   // 20→21: dodatkowe, opcjonalne ustawienia rysowania nie zmieniają starszych scen.
   // 21→22: dotychczasowe kąty i domyślne pakowanie w pasy zachowują znaczenie.
+  // 27→28: kształty wartości domyślnie zachowują proporcje – istniejące romby, tarcze, sześciokąty
+  // i własne kształty dostają `zachowajProporcje: false` (wyglądają jak dotąd).
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -807,6 +831,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     25: (d) => d,
     // 26→27: ustawienia trybu drukarni arkusza są opcjonalne (domyślnie druk domowy).
     26: (d) => d,
+    27: rozciagnieteKsztalty,
   },
   szablon: {
     1: (d) => d,
@@ -840,6 +865,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     25: (d) => d,
     // 26→27: ustawienia trybu drukarni arkusza są opcjonalne.
     26: (d) => d,
+    27: rozciagnieteKsztalty,
   },
 };
 

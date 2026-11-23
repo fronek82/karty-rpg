@@ -532,8 +532,7 @@ export function PanelWygladu({
   const wyr = wezel.wyrownanie ?? {};
   // Kształty wartości: promień i wybór krawędzi dotyczą tylko prostokątów (ścięte – wielkość ścięcia).
   const ksztalt = wezel.typ === 'wartosc' ? wezel.ksztalt : undefined;
-  const ksztaltSciezki =
-    !!ksztalt && ['kolo', 'romb', 'tarcza', 'szesciokat', 'sciety'].includes(ksztalt);
+  const ksztaltSciezki = !!ksztalt && !['prostokat', 'kwadrat'].includes(ksztalt);
   const sciety = ksztalt === 'sciety';
   const bezPromienia = ksztaltSciezki && !sciety;
   const ustawWyr = (os: 'poziomo' | 'pionowo', v: WyrownanieOsi | 'rozciagnij') =>

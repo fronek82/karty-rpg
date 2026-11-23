@@ -4,6 +4,8 @@ import { t } from '../../i18n';
 import { MAKS_ZNACZNIKOW } from '../../silnik/karta';
 import {
   kluczeTabeli,
+  KSZTALTY_WARTOSCI,
+  RAMIONA_GWIAZDY,
   type KolumnaTabeli,
   type NazwaIkony,
   znajdzGrupeStylu,
@@ -27,15 +29,9 @@ import { elementyRodzaju, useAdresBiblioteki, useElementyWlasne } from './elemen
 type Zmiana = (f: (w: Wezel) => Wezel, klucz?: string) => void;
 type Opcje = readonly { wartosc: string; tekst: string }[];
 
-const KSZTALTY = [
-  'prostokat',
-  'kwadrat',
-  'kolo',
-  'sciety',
-  'romb',
-  'tarcza',
-  'szesciokat',
-] as const;
+const KSZTALTY = KSZTALTY_WARTOSCI.filter((k) => k !== 'wlasny');
+/** Kształty wypełniające pole albo zawsze równoboczne – bez opcji „Zachowaj proporcje”. */
+const BEZ_PROPORCJI = new Set(['prostokat', 'sciety', 'kwadrat', 'kolo']);
 const IKONY: NazwaIkony[] = ['gwiazdka', 'nozyczki'];
 
 /**
@@ -189,6 +185,25 @@ export function PanelTypu({
               )
             }
           />
+          {pole.ksztalt === 'gwiazda' && (
+            <Liczba
+              etykieta={t('wlasciwosci.ramiona')}
+              wartosc={pole.ramiona ?? RAMIONA_GWIAZDY.domyslnie}
+              min={RAMIONA_GWIAZDY.min}
+              max={RAMIONA_GWIAZDY.max}
+              krok={1}
+              zmien={(v) =>
+                ustaw({ ramiona: v === RAMIONA_GWIAZDY.domyslnie ? undefined : v }, `ramiona:${id}`)
+              }
+            />
+          )}
+          {!BEZ_PROPORCJI.has(pole.ksztalt) && (
+            <Wybor
+              etykieta={t('wlasciwosci.zachowajProporcje')}
+              wartosc={pole.zachowajProporcje !== false}
+              zmien={(v) => ustaw({ zachowajProporcje: v ? undefined : false })}
+            />
+          )}
           {pole.ksztalt === 'wlasny' && (
             <div className="pole-panelu">
               <span id={`ksztalt-el-${id}`}>{t('ksztalt.wlasnyElement')}</span>
