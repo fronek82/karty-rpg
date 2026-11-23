@@ -574,24 +574,34 @@
           </ul>
           <h3 id="pl-ai-i-galeria">Układ ze zdjęcia i galeria szablonów</h3>
           <p>
-            Nowy szablon możesz zacząć także od zdjęcia istniejącej karty albo pobrać gotowy
-            neutralny szablon z galerii online.
+            Układ istniejącej karty możesz rozpoznać ze zdjęcia prosto w edytorze, a gotowy
+            neutralny szablon pobrać z galerii online.
           </p>
           <ul>
             <li>
-              Na ekranie „Stwórz własne karty” kliknij „Układ ze zdjęcia (AI)”. Wpisz własny „Klucz
-              Claude API”, wskaż plik zdjęcia i kliknij „Rozpoznaj układ”. Po zaznaczeniu
-              „Zapamiętaj klucz w tej przeglądarce” klucz zostaje lokalnie i nigdy nie trafia do
-              eksportowanych plików; usuniesz go przyciskiem „Usuń zapisany klucz”.
+              W Edytorze szablonu albo w Edytorze rewersu kliknij „Układ ze zdjęcia” w górnym pasku.
+              Wpisz własny „Klucz Claude API”, kliknij „Wybierz zdjęcie karty…” i „Rozpoznaj układ”.
+              Po zaznaczeniu „Zapamiętaj klucz w tej przeglądarce” klucz zostaje lokalnie i nigdy
+              nie trafia do eksportowanych plików; usuniesz go przyciskiem „Usuń zapisany klucz”.
             </li>
             <li>
-              Model zwraca wyłącznie strukturę i proporcje pól bez kopiowania grafik ani treści. Po
-              sprawdzeniu podglądu kliknij „Otwórz w edytorze szablonu”, aby dopracować układ.
+              Rozpoznane pola trafiają na stronę, którą właśnie edytujesz (awers albo rewers), w jej
+              rozmiarze. Gdy strona ma już elementy, okno pyta, co z nimi zrobić: „Zastąp elementy”
+              albo „Dodaj obok”. Na pustej stronie wystarczy „Wstaw układ”. Rozmiar, tło i ramka
+              strony zostają, a wstawienie cofniesz przyciskiem „Cofnij”.
             </li>
             <li>
-              Na tym samym ekranie „Galeria szablonów online” pozwala wyszukiwać i filtrować
-              neutralne szablony oraz rewersy. Przycisk „Użyj szablonu” tworzy projekt, a szablon
-              trafia do zakładki „Moje szablony”.
+              Na awersie „Dołącz zdjęcie jako podkład (nie jest drukowany)” kładzie zdjęcie pod
+              podglądem i pomaga dopasować pola. Na rewersie pola są stałe (bez danych kart).
+            </li>
+            <li>
+              Model zwraca wyłącznie strukturę i proporcje pól bez kopiowania grafik ani treści.
+              Szczegóły dopracujesz zwykłymi narzędziami edytora.
+            </li>
+            <li>
+              Na ekranie „Stwórz własne karty” „Galeria szablonów online” pozwala wyszukiwać i
+              filtrować neutralne szablony oraz rewersy. Przycisk „Użyj szablonu” tworzy projekt, a
+              szablon trafia do zakładki „Moje szablony”.
             </li>
             <li>
               „Importuj szablon z linku (URL)” pobiera paczkę <code>.kartyrpg-szablon</code> z
@@ -891,9 +901,10 @@
           <h3 id="pl-czcionki-i-pdf">Katalog czcionek i wyszukiwanie w PDF</h3>
           <ul>
             <li>
-              W „Opcje druku i arkusza” oraz w oknie „Wgrywanie czcionek” sekcja „Katalog Google
-              Fonts” pozwala przeglądać kroje z polskimi znakami i dodawać je przyciskiem „Pobierz”.
-              Pobrana czcionka zapisuje się w projekcie i działa później bez dostępu do sieci.
+              W „Opcje druku i arkusza” oraz w „Biblioteki” (zakładka „Czcionki”) sekcja „Katalog
+              Google Fonts” pozwala przeglądać kroje z polskimi znakami i dodawać je przyciskiem
+              „Pobierz”. Pobrana czcionka zapisuje się w projekcie i działa później bez dostępu do
+              sieci.
             </li>
             <li>
               W sekcji „Opcje PDF” przełącznik „Niewidoczna warstwa tekstowa w PDF (wyszukiwanie i
@@ -996,16 +1007,30 @@
               projektu, nie da się usunąć. Usuń najpierw projekt.
             </li>
           </ul>
-          <h3 id="pl-biblioteka-globalna">Biblioteka ozdobników w przeglądarce</h3>
+          <h3 id="pl-biblioteki">Biblioteki: obrazy, czcionki i ozdobniki</h3>
+          <p>
+            Link „Biblioteki” w górnym pasku (obok menu „Ustawienia”) otwiera zasoby zapisane w tej
+            przeglądarce, wspólne dla wszystkich projektów. Zakładki „Obrazy”, „Czcionki” i
+            „Ozdobniki” mają ten sam układ: przycisk „Dodaj…”, pole wyszukiwania po nazwie i
+            podglądy na środku strony.
+          </p>
           <ul>
+            <li>„Obrazy” to pliki PNG i JPG. Każdy nowy projekt dostaje je od razu w zasobach.</li>
             <li>
-              „Globalna biblioteka ozdobników” (w „Biblioteka ozdobników”) przechowuje kopie
-              ozdobników dostępne we wszystkich projektach w tej przeglądarce.
+              „Czcionki” pokazują próbkę tekstu każdym krojem. Dodasz pliki TTF, OTF i WOFF albo
+              krój z „Katalog Google Fonts”. Czcionki z biblioteki są na listach czcionek we
+              wszystkich projektach.
             </li>
             <li>
-              Kliknij „Zapisz w bibliotece globalnej”, aby zachować ozdobnik do późniejszego użycia,
-              „Użyj”, aby dodać kopię do innego projektu, albo „Importuj do biblioteki…”, aby
-              wczytać plik paczki bez tworzenia nowego projektu.
+              „Ozdobniki” to ozdobniki i ramki: plik SVG, PNG (ramka 9-slice z wcięciami po trzecim)
+              albo paczka <code>.kartyrpg-ozdobnik</code>. „Eksportuj” zapisuje paczkę do pliku. Do
+              projektu ozdobnik wstawisz w bibliotece ozdobników projektu: rozwiń „Globalna
+              biblioteka ozdobników” i kliknij „Użyj”. Tam też „Zapisz w bibliotece globalnej”
+              zachowuje ozdobnik projektu na później.
+            </li>
+            <li>
+              „Usuń” działa od razu, bez pytania. Na dole ekranu pojawia się pasek z przyciskiem
+              „Cofnij”, który przywraca wpis. Kopie dodane już do projektów zostają.
             </li>
           </ul>
           <p>
@@ -1014,9 +1039,10 @@
           </p>
           <h2 id="pl-jezyk-motyw">Język i motyw</h2>
           <p>
-            Po prawej stronie górnego paska aplikacji jest rozwijane menu „Ustawienia”. Zawiera
-            przełącznik motywu („Motyw jasny” i „Motyw ciemny”), przełącznik języka („PL” i „EN”),
-            okna „Wgrywanie czcionek” i „Wgrywanie obrazów” oraz link „Instrukcja”.
+            Po prawej stronie górnego paska aplikacji są link „Biblioteki” i rozwijane menu
+            „Ustawienia”. Menu zawiera tylko konfigurację: przełącznik motywu („Motyw jasny” i
+            „Motyw ciemny”), przełącznik języka („PL” i „EN”), okno „Kolory przycisków” oraz link
+            „Instrukcja”.
           </p>
           <ul>
             <li>
@@ -1037,8 +1063,8 @@
               kolory pochodzą z szablonu.
             </li>
             <li>
-              „Wgrywanie czcionek” i „Wgrywanie obrazów” zapisują pliki globalnie w przeglądarce i
-              dołączają je do nowych projektów, a link „Instrukcja” otwiera tę stronę w nowym oknie.
+              Link „Instrukcja” otwiera tę stronę w nowym oknie. Czcionki i obrazy zapisane w
+              przeglądarce są w „Biblioteki”.
             </li>
           </ul>
           <h2 id="pl-problemy">Najczęstsze problemy</h2>
@@ -1072,7 +1098,7 @@
             </li>
             <li>
               <strong>Karta ma brakujące znaki albo inną czcionkę.</strong> Sprawdź czcionki w
-              „Opcje druku i arkusza” albo otwórz „Wgrywanie czcionek” w menu „Ustawienia”. Własną
+              „Opcje druku i arkusza” albo otwórz „Biblioteki” i zakładkę „Czcionki”. Własną
               czcionkę dodasz też przyciskiem „Wgraj własną czcionkę…”.
             </li>
           </ul>
@@ -1431,24 +1457,35 @@
           </ul>
           <h3 id="en-ai-i-galeria">Layout from photo and template gallery</h3>
           <p>
-            You can also start a new template from a photo of an existing card, or grab a neutral
-            template from the online gallery.
+            You can detect the layout of an existing card from a photo right in the editor, or grab
+            a neutral template from the online gallery.
           </p>
           <ul>
             <li>
-              On the “Create your own cards” screen, click “Layout from photo (AI)”. Enter your own
-              “Claude API key”, pick a photo file and click “Detect layout”. If you check “Remember
-              key in this browser”, the key stays local and never goes into exported files; you can
-              clear it with “Remove saved key”.
+              In the template editor or the card back editor, click “Layout from photo” in the top
+              bar. Enter your own “Claude API key”, click “Choose card photo…” and “Detect layout”.
+              If you check “Remember key in this browser”, the key stays local and never goes into
+              exported files; you can clear it with “Remove saved key”.
+            </li>
+            <li>
+              The detected fields go onto the side you are editing (front or back), at its size. If
+              the side already has elements, the dialog asks what to do with them: “Replace
+              elements” or “Add alongside”. On an empty side, just click “Insert layout”. The size,
+              background and frame of the side stay, and “Undo” takes the insertion back.
+            </li>
+            <li>
+              On the front, “Attach the photo as a reference image (not printed)” puts the photo
+              under the preview, which helps you line up the fields. On the back, fields are fixed
+              (no card data).
             </li>
             <li>
               The model returns only field structure and proportions without copying artwork or
-              text. Check the preview and click “Open in template editor” to adjust the layout.
+              text. You refine the details with the usual editor tools.
             </li>
             <li>
-              On the same screen, “Online template gallery” lets you search and filter neutral
-              templates and card backs. “Use template” starts a project, and the template appears in
-              the “My templates” tab.
+              On the “Create your own cards” screen, “Online template gallery” lets you search and
+              filter neutral templates and card backs. “Use template” starts a project, and the
+              template appears in the “My templates” tab.
             </li>
             <li>
               “Import template from URL” downloads a <code>.kartyrpg-szablon</code> package from a
@@ -1744,7 +1781,7 @@
           <h3 id="en-czcionki-i-pdf">Font catalog and searchable PDF</h3>
           <ul>
             <li>
-              In “Print &amp; sheet options” and in the “Upload fonts” dialog, “Google Fonts
+              In “Print &amp; sheet options” and in “Libraries” (the “Fonts” tab), “Google Fonts
               catalog” lists typefaces with Polish glyphs that you can add with “Download”. A
               downloaded typeface stays inside the project and works offline.
             </li>
@@ -1850,16 +1887,30 @@
               cannot be deleted. Delete the project first.
             </li>
           </ul>
-          <h3 id="en-biblioteka-globalna">Ornament library in the browser</h3>
+          <h3 id="en-biblioteki">Libraries: images, fonts and ornaments</h3>
+          <p>
+            The “Libraries” link in the top bar (next to the “Settings” menu) opens the resources
+            saved in this browser, shared by all projects. The “Images”, “Fonts” and “Ornaments”
+            tabs share the same layout: an “Add…” button, a search box by name and previews in the
+            middle of the page.
+          </p>
           <ul>
+            <li>“Images” are PNG and JPG files. Every new project gets them in its resources.</li>
             <li>
-              The “Global ornament library” (in “Ornament library”) keeps copies of ornaments
-              available across every project in this browser.
+              “Fonts” show a text sample in each typeface. Add TTF, OTF and WOFF files or a typeface
+              from the “Google Fonts catalog”. Library fonts appear in the font lists of all
+              projects.
             </li>
             <li>
-              Click “Save to global library” to keep an ornament for reuse, “Use” to add a copy to
-              another project, or “Import into library…” to load a package file without creating a
-              new project.
+              “Ornaments” are ornaments and frames: an SVG file, a PNG (a 9-slice frame with insets
+              at one third) or a <code>.kartyrpg-ozdobnik</code> package. “Export” saves the package
+              to a file. To put an ornament into a project, open the project’s ornament library,
+              expand “Global ornament library” and click “Use”. “Save to global library” there keeps
+              a project ornament for later.
+            </li>
+            <li>
+              “Delete” works at once, without asking. A bar with an “Undo” button appears at the
+              bottom of the screen and brings the entry back. Copies already added to projects stay.
             </li>
           </ul>
           <p>
@@ -1868,9 +1919,10 @@
           </p>
           <h2 id="en-jezyk-motyw">Language and theme</h2>
           <p>
-            On the right side of the app’s top bar there is the “Settings” dropdown menu. It holds
-            the theme switch (“Light theme” and “Dark theme”), the language switch (“PL” and “EN”),
-            the “Upload fonts” and “Upload images” dialogs and the “Guide” link.
+            On the right side of the app’s top bar there are the “Libraries” link and the “Settings”
+            dropdown menu. The menu holds configuration only: the theme switch (“Light theme” and
+            “Dark theme”), the language switch (“PL” and “EN”), the “Button colors” dialog and the
+            “Guide” link.
           </p>
           <ul>
             <li>
@@ -1891,8 +1943,8 @@
               white, and the colors come from the template.
             </li>
             <li>
-              “Upload fonts” and “Upload images” store files globally in the browser and attach them
-              to new projects, and the “Guide” link opens this page in a new window.
+              The “Guide” link opens this page in a new window. Fonts and images saved in the
+              browser are in “Libraries”.
             </li>
           </ul>
           <h2 id="en-problemy">Common problems</h2>
@@ -1925,7 +1977,7 @@
             </li>
             <li>
               <strong>A card has missing characters or the wrong font.</strong> Check the fonts in
-              “Print &amp; sheet options” or open “Upload fonts” in “Settings”. You can also add
+              “Print &amp; sheet options” or open the “Fonts” tab in “Libraries”. You can also add
               your own font with “Upload your own font…”.
             </li>
           </ul>

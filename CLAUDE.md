@@ -13,8 +13,9 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   eksport/import szablonu w edytorze, przeciąganie na gładziku, paski, zapis ręczny w edytorze szablonu),
   blok „wartość w kształcie” N4 (`docs/plan-N4.md`: proporcje kształtu, etykieta obok, nowe kształty),
   strona startowa i listy N6 (`docs/plan-N6.md`: Moje szablony na „Stwórz własne karty”, bez
-  biblioteki globalnej szablonów, usuwanie z paskiem „Cofnij”, szukanie/sortowanie, „Duplikuj”).
-- Kolejne etapy (N7…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
+  biblioteki globalnej szablonów, usuwanie z paskiem „Cofnij”, szukanie/sortowanie, „Duplikuj”),
+  układ ze zdjęcia w edytorze i menu „Biblioteki” N7 (`docs/plan-N7.md`).
+- Kolejne etapy (N8…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 28` (`src/model/projekt.ts`), baza Dexie w wersji 4.
 
 ## Gdzie co jest
@@ -62,9 +63,12 @@ model  →  ozdobniki / silnik  →  druk  →  dane  →  ui
     w `mojeSzablony.ts`), kreatory,
     import, galeria online.
   - `szablon/` – Edytor szablonu (awers): drzewo, panele właściwości, tryb swobodny (mysz);
-    `EdytorDrzewa.tsx` – część wspólna z Edytorem rewersu (zmiany edytora robi się tam).
+    `EdytorDrzewa.tsx` – część wspólna z Edytorem rewersu (zmiany edytora robi się tam), okno
+    „Układ ze zdjęcia” (`OknoUkladuZeZdjecia.tsx`).
+  - `biblioteki/` – ekran „Biblioteki” (`#/biblioteki/…`: obrazy, czcionki, ozdobniki w przeglądarce;
+    wspólny `StronaBiblioteki.tsx`).
   - `rewers/` – Edytor rewersu (nakładka na `EdytorDrzewa`). `kartka/` – Edytor kart (dane kart, układ kartki, druk, pobieranie).
-  - `biblioteka/` – biblioteka globalna szablonów/ozdobników, edytor ramki 9-slice.
+  - `biblioteka/` – biblioteka ozdobników projektu (z panelem globalnych), edytor ramki 9-slice.
   - Style: `tokeny.css` (zmienne motywów), `App.css`, `edytory.css`, `pasek.css`.
 - `testy/` – Playwright (`*.spec.ts`, wzorce `*-snapshots/`, pomocniki `*UI.ts`, `pomoc.ts`).
 - `narzedzia/`, `scripts/` – generatory galerii, obrazów testowych, katalogu Google Fonts.

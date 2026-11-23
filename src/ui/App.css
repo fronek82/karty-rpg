@@ -3610,6 +3610,7 @@ button.maly {
 }
 
 .narzedzia-biblioteki {
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -3619,6 +3620,8 @@ button.maly {
 
 .szukaj-biblioteki {
   width: min(20rem, 100%);
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.35rem;
 }
 
 .katalog-biblioteki {
