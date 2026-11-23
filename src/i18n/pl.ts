@@ -1037,6 +1037,8 @@ export const pl = {
   'lista.zaznaczEtykieta': 'Zaznacz „{nazwa}”',
   'lista.zaznaczono': 'Zaznaczono: {n}',
   'lista.usunZaznaczone': 'Usuń zaznaczone',
+  'lista.pominietoUzywane':
+    'Nie usunięto: {nazwy} – używają tego karty projektu. Usuń najpierw projekt (szablon zostanie w „Moich szablonach”) albo zmień szablon kart.',
   'pasek.usunieto': 'Usunięto: {nazwa}',
   'pasek.przywrocono': 'Przywrócono „{nazwa}”.',
   'pasek.cofnij': 'Cofnij',

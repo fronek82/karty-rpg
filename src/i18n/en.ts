@@ -1044,6 +1044,8 @@ export const en: Slownik = {
   'lista.zaznaczEtykieta': 'Select “{nazwa}”',
   'lista.zaznaczono': 'Selected: {n}',
   'lista.usunZaznaczone': 'Delete selected',
+  'lista.pominietoUzywane':
+    'Not deleted: {nazwy} – cards of a project use it. Delete the project first (the template stays in “My templates”) or change the cards’ template.',
   'pasek.usunieto': 'Deleted: {nazwa}',
   'pasek.przywrocono': 'Restored “{nazwa}”.',
   'pasek.cofnij': 'Undo',

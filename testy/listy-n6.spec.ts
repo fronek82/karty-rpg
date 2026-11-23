@@ -65,34 +65,57 @@ test('Moje szablony: sekcja na ekranie własnych kart, szukanie, sortowanie, dup
     page.locator('.kafelek-projektu .nazwa', { hasText: `${az[0]} (kopia)` }),
   ).toHaveCount(1);
 
-  // Zaznacz wszystkie → jedno usunięcie, jeden pasek, Cofnij przywraca wszystkie.
+  // Szablonu używanego przez karty projektu nie da się usunąć (projekt by się zepsuł).
+  await page.getByRole('button', { name: `Usuń projekt ${az[0]}`, exact: true }).click();
+  await expect(page.locator('.lista-projektow [role=alert]')).toContainText(
+    `Nie usunięto: ${az[0]}`,
+  );
+  await expect(kafelki).toHaveCount(3);
+  const pasek = page.getByTestId('pasek-komunikatu');
+  await expect(pasek).toHaveCount(0);
+
+  // Moje projekty: zaznacz wszystkie → jeden pasek, Cofnij przywraca oba projekty.
+  await page.getByRole('tab', { name: 'Moje projekty' }).click();
+  await expect(kafelki).toHaveCount(2);
   await page.getByRole('button', { name: 'Zaznacz…' }).click();
   await page.getByRole('checkbox', { name: 'Zaznacz wszystkie' }).check();
-  await expect(page.getByText('Zaznaczono: 3')).toBeVisible();
+  await expect(page.getByText('Zaznaczono: 2')).toBeVisible();
   await page.getByRole('button', { name: 'Usuń zaznaczone' }).click();
   await expect(kafelki).toHaveCount(0);
-  const pasek = page.getByTestId('pasek-komunikatu');
   await expect(pasek).toHaveCount(1);
-  await expect(pasek).toContainText('Usunięto 3 elementy');
-  // Kursor nad paskiem – pasek nie znika.
+  await expect(pasek).toContainText('Usunięto 2 elementy');
+  // Kursor nad paskiem – pasek nie znika po 8 s.
   await pasek.hover();
   await page.waitForTimeout(9000);
   await expect(pasek).toBeVisible();
+  await pasek.getByRole('button', { name: 'Cofnij' }).click();
+  await expect(pasek).toHaveCount(0);
+  await expect(kafelki).toHaveCount(2);
+  await expect(page.locator('.kafelek-projektu .miniatura img').first()).toBeVisible();
+
+  // Pojedyncze usunięcie projektu – szablony zostają w „Moich szablonach”.
+  await page
+    .getByRole('button', { name: /^Usuń projekt / })
+    .first()
+    .click();
+  await expect(pasek).toContainText(/^Usunięto: /);
+  await page
+    .getByRole('button', { name: /^Usuń projekt / })
+    .first()
+    .click();
+  await expect(kafelki).toHaveCount(0);
+
+  // Moje szablony: wszystkie da się teraz usunąć naraz i przywrócić z miniaturami.
+  await page.getByRole('tab', { name: 'Moje szablony' }).click();
+  await expect(kafelki).toHaveCount(3);
+  await page.getByRole('button', { name: 'Zaznacz…' }).click();
+  await page.getByRole('checkbox', { name: 'Zaznacz wszystkie' }).check();
+  await page.getByRole('button', { name: 'Usuń zaznaczone' }).click();
+  await expect(kafelki).toHaveCount(0);
+  await expect(pasek).toContainText('Usunięto 3 elementy');
   await pasek.getByRole('button', { name: 'Cofnij' }).click();
   await expect(kafelki).toHaveCount(3);
   await expect(page.locator('.kafelek-projektu .miniatura img')).toHaveCount(3, {
     timeout: 15000,
   });
-
-  // Pojedyncze usunięcie projektu w „Moich projektach” i Cofnij.
-  await page.getByRole('tab', { name: 'Moje projekty' }).click();
-  await expect(kafelki).toHaveCount(2);
-  await page
-    .getByRole('button', { name: /^Usuń projekt / })
-    .first()
-    .click();
-  await expect(kafelki).toHaveCount(1);
-  await expect(pasek).toContainText(/^Usunięto: /);
-  await pasek.getByRole('button', { name: 'Cofnij' }).click();
-  await expect(kafelki).toHaveCount(2);
 });

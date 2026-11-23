@@ -202,7 +202,7 @@ test.describe('angielski', () => {
     ];
     for (let i = 0; i < nazwy.length; i++)
       await expect(kafelki.nth(i).locator('b')).toHaveText(nazwy[i]!);
-    await expect(page.getByRole('link', { name: /New template from scratch/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: /My templates/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Import a template/ })).toBeVisible();
     await expect(page.getByText('Click to start from this template').first()).toBeVisible();
     await page.getByRole('button', { name: 'Card with a description' }).click();

@@ -123,32 +123,34 @@ export const projektCelu = (cel: CelUsuniecia) =>
 
 /**
  * Usuwa projekt (jego szablony i rewersy zostają w „Moich szablonach”) albo jeden szablon/rewers
- * (samodzielny projekt szablonu znika w całości).
+ * (samodzielny projekt szablonu znika w całości). Szablonu awersu, którego używają karty projektu,
+ * nie usuwa (projekt by się zepsuł) – zwraca wtedy `false`.
  */
-export async function usunCel(cel: CelUsuniecia): Promise<void> {
+export async function usunCel(cel: CelUsuniecia): Promise<boolean> {
   if (cel.rodzaj === 'projekt') {
     await baza().usunProjekt(cel.projekt.id);
-    return;
+    return true;
   }
   const poz = cel.pozycja;
   if (poz.rodzaj === 'rewers') {
     const { projekt, zasoby } = await baza().wczytaj(poz.rewers.projektId);
     if (poz.rewers.projektRewersowy && (projekt.rewersy?.length ?? 0) <= 1) {
       await baza().usun(poz.rewers.projektId);
-      return;
+      return true;
     }
     await baza().zapisz(usunRewers(projekt, poz.rewers.rewersId), zasoby);
     await baza()
       .usunMiniature(poz.klucz)
       .catch(() => undefined);
     await baza().usunPustySchowek(poz.rewers.projektId);
-    return;
+    return true;
   }
   const { projekt, zasoby } = await baza().wczytaj(poz.awers.projektId);
-  const maKarty = projekt.talie.some((tl) => tl.karty.length > 0);
-  if (projekt.szablony.length <= 1 && (projekt.rewersy?.length ?? 0) === 0 && !maKarty) {
+  const karty = projekt.talie.flatMap((tl) => tl.karty);
+  if (karty.some((k) => k.szablonId === poz.awers.szablonId)) return false;
+  if (projekt.szablony.length <= 1 && (projekt.rewersy?.length ?? 0) === 0 && !karty.length) {
     await baza().usun(poz.awers.projektId);
-    return;
+    return true;
   }
   const reszta = projekt.szablony.filter((s) => s.id !== poz.awers.szablonId);
   await baza().zapisz(
@@ -159,24 +161,30 @@ export async function usunCel(cel: CelUsuniecia): Promise<void> {
     .usunMiniature(poz.klucz)
     .catch(() => undefined);
   await baza().usunPustySchowek(poz.awers.projektId);
+  return true;
 }
 
 /**
  * Usuwa elementy po kolei i zwraca migawkę stanu sprzed usunięcia – `przywroc` odtwarza wszystkie
  * naraz (z miniaturami, rewersami i powiązaniami). Po błędzie w trakcie przywraca to, co usunięto.
+ * `usuniete` / `pominiete` – elementy usunięte i pominięte (szablony używane przez karty).
  */
-export async function usunZCofaniem(
-  cele: readonly CelUsuniecia[],
-): Promise<{ przywroc: () => Promise<void> }> {
+export async function usunZCofaniem(cele: readonly CelUsuniecia[]): Promise<{
+  przywroc: () => Promise<void>;
+  usuniete: CelUsuniecia[];
+  pominiete: CelUsuniecia[];
+}> {
   const migawka = await baza().migawka(cele.map(projektCelu));
   const przywroc = () => baza().przywroc(migawka);
+  const usuniete: CelUsuniecia[] = [];
+  const pominiete: CelUsuniecia[] = [];
   try {
-    for (const cel of cele) await usunCel(cel);
+    for (const cel of cele) ((await usunCel(cel)) ? usuniete : pominiete).push(cel);
   } catch (e) {
     await przywroc().catch(() => undefined);
     throw e;
   }
-  return { przywroc };
+  return { przywroc, usuniete, pominiete };
 }
 
 const sufiksKopii = (n: number) => (n === 1 ? t('szablon.kopia') : t('szablon.kopiaNumer', { n }));

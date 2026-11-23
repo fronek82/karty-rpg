@@ -310,23 +310,26 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
     // Przycisk „Usuń” zaraz zniknie – fokus na nagłówek listy.
     naglowek.current?.focus();
     void wykonaj(async () => {
-      const { przywroc } = await usunZCofaniem(cele);
+      const { przywroc, usuniete, pominiete } = await usunZCofaniem(cele);
       ustawStatus('');
       zakonczZaznaczanie();
+      if (pominiete.length)
+        ustawBlad(t('lista.pominietoUzywane', { nazwy: pominiete.map(nazwaCelu).join(', ') }));
+      if (!usuniete.length) return;
+      const jeden = usuniete.length === 1 ? nazwaCelu(usuniete[0]!) : undefined;
       pokaz({
-        tekst:
-          cele.length === 1
-            ? t('pasek.usunieto', { nazwa: nazwaCelu(cele[0]!) })
-            : tn('pasek.usunietoWiele', cele.length),
+        tekst: jeden
+          ? t('pasek.usunieto', { nazwa: jeden })
+          : tn('pasek.usunietoWiele', usuniete.length),
         akcja: {
           etykieta: t('pasek.cofnij'),
           wykonaj: () => {
             naglowek.current?.focus();
             void wykonaj(async () => {
               await przywroc();
-              return cele.length === 1
-                ? t('pasek.przywrocono', { nazwa: nazwaCelu(cele[0]!) })
-                : tn('pasek.przywroconoWiele', cele.length);
+              return jeden
+                ? t('pasek.przywrocono', { nazwa: jeden })
+                : tn('pasek.przywroconoWiele', usuniete.length);
             });
           },
         },
