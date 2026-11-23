@@ -157,7 +157,7 @@ export const pl = {
   'projekty.potwierdzUsuniecie':
     'Usunąć projekt „{nazwa}” z tej przeglądarki? Tej operacji nie można cofnąć (chyba że masz plik eksportu).',
   'projekty.potwierdzUsuniecieProjektu':
-    'Usunąć projekt „{nazwa}” z tej przeglądarki? Karty znikną, a jego szablony awersów i rewersy zostaną w Moich szablonach. Tej operacji nie można cofnąć (chyba że masz plik eksportu).',
+    'Usunąć projekt „{nazwa}” z tej przeglądarki? Karty znikną; szablony i rewersy z tego projektu, które widać w Moich szablonach, tam zostaną. Tej operacji nie można cofnąć (chyba że masz plik eksportu).',
   'projekty.potwierdzUsuniecieRewersu':
     'Usunąć rewers „{nazwa}” z projektu „{projekt}”? Tej operacji nie można cofnąć.',
   'projekty.stronaAwers': 'Awers',

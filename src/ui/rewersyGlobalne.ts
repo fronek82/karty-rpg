@@ -188,14 +188,13 @@ export function useRewersyGlobalne(projekt: Projekt) {
 
   useEffect(() => {
     let aktywny = true;
-    const nazwy = new Set((projekt.rewersy ?? []).map((r) => r.nazwa));
-    void listaRewersowGlobalnych(projekt.id, nazwy).then((wynik) => {
+    const tresci = new Set(JSON.parse(podpisRewersow) as string[]);
+    void listaRewersowGlobalnych(projekt.id, tresci).then((wynik) => {
       if (aktywny) ustawListe(wynik);
     });
     return () => {
       aktywny = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- odświeżamy przy zmianie projektu lub jego rewersów
   }, [projekt.id, podpisRewersow]);
 
   const usunGlobalny = useCallback(

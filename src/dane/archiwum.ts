@@ -361,6 +361,7 @@ function odczytajDawnyPlikRewersu(bajty: Uint8Array): TrescPlikuSzablonu {
     PaczkaRewersu,
     'dane'
   >;
+  sprawdzBibliotekePaczki(plik.biblioteka, plik.zasoby);
   sprawdzRewers(plik.rewers, plik.zasoby, plik.biblioteka);
   const { wersja: _wersja, ...reszta } = plik as typeof plik & { wersja?: number };
   void _wersja;
@@ -388,25 +389,30 @@ function odczytajPlikSzablonu(bajty: Uint8Array): TrescPlikuSzablonu {
     void _podklad;
     plik.szablon = reszta;
   }
-  const ids = (plik.biblioteka ?? []).map((e) => e.id);
-  const powtorzony = ids.find((id, i) => ids.indexOf(id) !== i);
-  if (powtorzony !== undefined)
-    throw new BladDanych(
-      t('dane.powtorzonyId', { id: powtorzony, gdzie: t('dane.gdzie.biblioteka') }),
-    );
+  sprawdzBibliotekePaczki(plik.biblioteka, plik.zasoby);
   if (plik.szablon) {
     sprawdzTeksturyPaczki(plik.szablon, plik.zasoby);
     sprawdzRewersPaczki({ ...plik, szablon: plik.szablon });
   } else if (plik.rewers) {
     sprawdzRewers(plik.rewers, plik.zasoby, plik.biblioteka);
   }
+  return { ...plik, dane: zbierzZasoby(pliki, PLIK_SZABLONU, plik.zasoby) };
+}
+
+/** Biblioteka ozdobników z paczki: unikalne id i obrazy ramek 9-slice obecne w paczce. */
+function sprawdzBibliotekePaczki(biblioteka: ElementOzdobny[] | undefined, zasoby: OpisZasobu[]) {
+  const ids = (biblioteka ?? []).map((e) => e.id);
+  const powtorzony = ids.find((id, i) => ids.indexOf(id) !== i);
+  if (powtorzony !== undefined)
+    throw new BladDanych(
+      t('dane.powtorzonyId', { id: powtorzony, gdzie: t('dane.gdzie.biblioteka') }),
+    );
   // Ramka 9-slice z PNG musi mieć obraz w paczce (inaczej szablon wskazywałby cudzy zasób).
-  for (const e of plik.biblioteka ?? []) {
+  for (const e of biblioteka ?? []) {
     const z = e.ramka9?.zrodlo;
-    if (z?.typ === 'obraz' && !plik.zasoby.some((o) => o.id === z.zasob))
+    if (z?.typ === 'obraz' && !zasoby.some((o) => o.id === z.zasob))
       throw new BladDanych(t('dane.ramka9BezObrazu', { id: e.id, zasob: z.zasob }));
   }
-  return { ...plik, dane: zbierzZasoby(pliki, PLIK_SZABLONU, plik.zasoby) };
 }
 
 /**
@@ -723,6 +729,9 @@ export function eksportujRewers(projekt: Projekt, dane: DaneZasobow, rewersId: s
   const biblioteka = [
     ...new Map(elementyUzyteWSzablonie(projekt, rewers).map((o) => [o.id, o])).values(),
   ];
+  // Te same kontrole co przy imporcie – plik, którego import by się nie udał, nie powstaje.
+  sprawdzBibliotekePaczki(biblioteka, uzyte);
+  sprawdzRewers(rewers, uzyte, biblioteka);
   return spakuj(
     {
       wersja: projekt.wersja,

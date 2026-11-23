@@ -160,7 +160,7 @@ export const en: Slownik = {
   'projekty.potwierdzUsuniecie':
     'Delete the project “{nazwa}” from this browser? This cannot be undone (unless you have an export file).',
   'projekty.potwierdzUsuniecieProjektu':
-    'Delete the project “{nazwa}” from this browser? Its cards will be removed, but its front templates and card backs stay in My templates. This cannot be undone (unless you have an export file).',
+    'Delete the project “{nazwa}” from this browser? Its cards will be removed; templates and card backs from this project shown in My templates stay there. This cannot be undone (unless you have an export file).',
   'projekty.potwierdzUsuniecieRewersu':
     'Delete the back “{nazwa}” from “{projekt}”? This cannot be undone.',
   'projekty.stronaAwers': 'Front',

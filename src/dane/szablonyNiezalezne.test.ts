@@ -111,7 +111,12 @@ describe('usunięcie projektu zachowuje szablony i rewersy', () => {
     const { projekt: poUsunieciu, zasoby: zasobyPo } = await baza.wczytaj('u1');
     expect(poUsunieciu.talie.every((tl) => tl.karty.length === 0)).toBe(true);
     expect(poUsunieciu.szablony).toEqual(p.szablony);
-    expect(zasobyPo.size).toBe(zasoby.size);
+    // Czcionki zostają; obrazy – tylko używane przez szablony, rewersy i ozdobniki.
+    const czcionki = (pr: Projekt) => pr.zasoby.filter((z) => z.rodzaj === 'czcionka').length;
+    expect(czcionki(poUsunieciu)).toBe(czcionki(p));
+    expect([...zasobyPo.keys()].every((k) => zasoby.has(k))).toBe(true);
+    expect(zasobyPo.size).toBe(poUsunieciu.zasoby.length);
+    expect(await baza.czyTylkoSzablony('u1')).toBe(true);
     const miniatury = await baza.miniatury();
     expect(miniatury.has('u1')).toBe(false);
     expect(miniatury.has(kluczMiniaturySzablonu('u1', sz.id))).toBe(true);
@@ -120,8 +125,9 @@ describe('usunięcie projektu zachowuje szablony i rewersy', () => {
     await baza.zapisz({ ...poUsunieciu, nazwa: 'Po edycji szablonu' });
     expect(await baza.lista()).toEqual([]);
     // …a projekt z kartami – wraca do Moich projektów.
-    await baza.zapisz(p);
+    await baza.zapisz(p, zasoby);
     expect((await baza.lista()).map((x) => x.id)).toEqual(['u1']);
+    expect(await baza.czyTylkoSzablony('u1')).toBe(false);
   });
 
   it('projekt bez szablonów do zachowania jest usuwany w całości; pusty schowek też', async () => {

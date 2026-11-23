@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { formatujLiczbe, t } from '../i18n';
-import { importujSzablon, LIMITY_ARCHIWUM, type PaczkaSzablonu } from './archiwum';
+import {
+  importujSzablon,
+  LIMITY_ARCHIWUM,
+  ROZSZERZENIE_SZABLONU,
+  type PaczkaSzablonu,
+} from './archiwum';
 import { BladDanych } from './schemat';
 
 /**
@@ -28,7 +33,10 @@ const bezpiecznyPlik = z
   .min(1)
   .max(200)
   .refine(
-    (s) => !s.includes('..') && /^[a-z0-9][a-z0-9._-]*\.(kartyrpg-szablon|zip)$/i.test(s),
+    (s) =>
+      !s.includes('..') &&
+      /^[a-z0-9][a-z0-9._-]*$/i.test(s) &&
+      [ROZSZERZENIE_SZABLONU, '.zip'].some((r) => s.toLowerCase().endsWith(r)),
     'niebezpieczna ścieżka pliku szablonu',
   );
 

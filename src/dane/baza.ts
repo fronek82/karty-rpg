@@ -3,6 +3,7 @@ import { t } from '../i18n';
 import type { PresetUkladu } from '../model/arkusz';
 import type { DaneZasobow, Projekt, ZrodloCzcionki } from '../model/projekt';
 import { kluczTresciSzablonu, type WariantCzcionki } from '../model/szablon';
+import { elementyProjektu, zasobyElementow, zasobyObrazowSzablonu } from './biblioteka';
 import {
   BladDanych,
   migrujBajtyBazy,
@@ -35,6 +36,20 @@ function maSzablonyDoZachowania(p: Projekt): boolean {
   return (
     (p.rewersy?.length ?? 0) > 0 || (wlasny && p.szablony.some((s) => s.korzen.dzieci.length > 0))
   );
+}
+
+/**
+ * Bez obrazów, których nie używa żaden szablon, rewers, podkład ani ozdobnik projektu (np. ilustracje
+ * usuniętych kart). Czcionki zostają.
+ */
+function bezNieuzywanychObrazow(p: Projekt): Projekt {
+  const elementy = elementyProjektu(p);
+  const uzyte = new Set([
+    ...zasobyElementow(elementy),
+    ...[...p.szablony, ...(p.rewersy ?? [])].flatMap((s) => zasobyObrazowSzablonu(s, elementy)),
+    ...p.szablony.flatMap((s) => (s.podklad ? [s.podklad.zasob] : [])),
+  ]);
+  return { ...p, zasoby: p.zasoby.filter((z) => z.rodzaj !== 'obraz' || uzyte.has(z.id)) };
 }
 
 /** Projekt bez kart (talie puste, kartki bez przypięć i kolejności) – zostają szablony i rewersy. */
@@ -386,6 +401,11 @@ export class BazaProjektow {
     return (await this.db.projekty.where('id').equals(id).count()) > 0;
   }
 
+  /** Czy wpis to usunięty projekt, który przechowuje już tylko szablony i rewersy. */
+  async czyTylkoSzablony(id: string): Promise<boolean> {
+    return (await this.db.projekty.get(id))?.tylkoSzablony === true;
+  }
+
   /**
    * Zapisuje projekt (po walidacji – do bazy nie trafi projekt, którego nie da się otworzyć).
    * Z `zasoby` – zastępuje wszystkie zasoby projektu (każdy opisany zasób musi mieć bajty);
@@ -475,7 +495,13 @@ export class BazaProjektow {
       await this.usun(id);
       return;
     }
-    await this.zapisz(bezKart(projekt), undefined, { tylkoSzablony: true });
+    const bez = bezKart(projekt);
+    try {
+      await this.zapisz(bezNieuzywanychObrazow(bez), undefined, { tylkoSzablony: true });
+    } catch {
+      // Obraz jest jeszcze gdzieś używany (walidacja odrzuciła zapis) – zostawiamy wszystkie.
+      await this.zapisz(bez, undefined, { tylkoSzablony: true });
+    }
     await this.db.miniatury.delete(id);
   }
 

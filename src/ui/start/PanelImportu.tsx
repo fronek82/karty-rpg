@@ -112,7 +112,10 @@ export function PanelImportu({ onZmiana }: { onZmiana: () => void }) {
 
     const wynik = importujProjekt(bajty);
     let projekt = wynik.projekt;
-    if (await baza().istnieje(projekt.id)) {
+    // Ten sam id ma usunięty projekt, którego szablony zostały w „Moich szablonach” – import
+    // dostaje nowe id (bez pytania o kolizję z niewidocznym projektem i bez nadpisania szablonów).
+    if (await baza().czyTylkoSzablony(projekt.id)) projekt = jakoKopia(projekt);
+    else if (await baza().istnieje(projekt.id)) {
       const wybor = await zapytajOKolizje(projekt);
       if (wybor === 'anuluj') {
         return {

@@ -410,7 +410,9 @@ export function EdytorKartki({
     const rewersyMapa = new Map((rewersy ?? []).map((r) => [r.id, r] as const));
     return arkusze.map((arkusz) => {
       const talia = talie.find((x) => x.id === arkusz.taliaId)!;
-      const dwustronny = czyDwustronnyWlaczony(arkusz, talia, zasoby.szablony, rewersyMapa);
+      // Gry z kartami jednostronnymi: bez stron rewersów, nawet gdy dane mają przypisania.
+      const dwustronny =
+        !bezRewersow && czyDwustronnyWlaczony(arkusz, talia, zasoby.szablony, rewersyMapa);
       const z = pamiecKartek.get(arkusz.id);
       if (
         z &&
@@ -506,6 +508,7 @@ export function EdytorKartki({
     rewersy,
     projektRewersowy,
     pierwszySzablonId,
+    bezRewersow,
     zasoby,
     pamiecKart,
     pamiecKartek,
@@ -1956,6 +1959,7 @@ export function EdytorKartki({
               key={k.arkusz.id}
               podgladDruku={druk}
               tylkoRewers={czyProjektRewersowy(projekt)}
+              bezRewersow={bezRewersow}
               onWybierzKartke={
                 druk && aktualneKartki.length > 1
                   ? () => {
@@ -2101,6 +2105,7 @@ export function EdytorKartki({
 function WidokKartki({
   podgladDruku = false,
   tylkoRewers = false,
+  bezRewersow = false,
   onWybierzKartke,
   szablony,
   importujDane,
@@ -2135,6 +2140,8 @@ function WidokKartki({
 }: {
   podgladDruku?: boolean;
   tylkoRewers?: boolean;
+  /** Gra z kartami jednostronnymi – bez warstwy rewersów na kartce. */
+  bezRewersow?: boolean;
   onWybierzKartke?: () => void;
   szablony: ReadonlyMap<string, Szablon> | undefined;
   importujDane: (() => void) | undefined;
@@ -2590,7 +2597,8 @@ function WidokKartki({
           </div>
         );
         const warstwaRewersu = (() => {
-          if (podgladDruku || drukarniaAktywna || !szerStrony || !wysStrony) return null;
+          if (bezRewersow || podgladDruku || drukarniaAktywna || !szerStrony || !wysStrony)
+            return null;
           const krawedz = k.arkusz.ustawienia.dwustronny?.krawedz ?? 'dluga';
           const stronaWym = { szer: szerStrony, wys: wysStrony };
           const os = osOdwracania(stronaWym, krawedz);

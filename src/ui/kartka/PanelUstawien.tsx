@@ -350,84 +350,85 @@ export function PanelUstawien({
         {...(przelaczRozmiary ? { przelaczRozmiary } : {})}
         {...(naKartce ? { naKartce } : {})}
       />
-      {(() => {
-        const rewersyMapa = new Map((projekt.rewersy ?? []).map((r) => [r.id, r] as const));
-        const szablonyMapa = new Map(projekt.szablony.map((s) => [s.id, s] as const));
-        const dwu = u.dwustronny ?? {
-          ...DWUSTRONNY_DOMYSLNY,
-          wlaczony: czyDwustronnyWlaczony(arkusz, talia, szablonyMapa, rewersyMapa),
-        };
-        const os = osOdwracania(wymiaryStrony(u), dwu.krawedz);
-        const zmienDwu = (z: Partial<typeof dwu>, klucz?: string) =>
-          zmien(
-            (p) => ustawUstawieniaArkusza(p, A, { dwustronny: { ...dwu, ...z } }),
-            klucz ? { klucz: `dwustronny:${A}:${klucz}` } : {},
-          );
-        return (
-          <fieldset className="sekcja-dwustronny">
-            <legend>{t('dwustronny.tytul')}</legend>
-            <label className="wybor">
-              <input
-                type="checkbox"
-                checked={dwu.wlaczony}
-                onChange={(e) => zmienDwu({ wlaczony: e.target.checked })}
-              />
-              <span>{t('dwustronny.wlacz')}</span>
-            </label>
-            {dwu.wlaczony && (
-              <>
-                <div className="pole-panelu">
-                  <span id={`krawedz-${A}`}>{t('dwustronny.krawedz')}</span>
-                  <div
-                    className="przelacznik-segmentowy"
-                    role="group"
-                    aria-labelledby={`krawedz-${A}`}
-                  >
-                    {(['dluga', 'krotka'] as const).map((k: KrawedzOdwracania) => (
-                      <button
-                        key={k}
-                        type="button"
-                        aria-pressed={dwu.krawedz === k}
-                        onClick={() => zmienDwu({ krawedz: k }, 'krawedz')}
-                      >
-                        {t(`dwustronny.${k}`)}
-                      </button>
-                    ))}
+      {!bezRewersow &&
+        (() => {
+          const rewersyMapa = new Map((projekt.rewersy ?? []).map((r) => [r.id, r] as const));
+          const szablonyMapa = new Map(projekt.szablony.map((s) => [s.id, s] as const));
+          const dwu = u.dwustronny ?? {
+            ...DWUSTRONNY_DOMYSLNY,
+            wlaczony: czyDwustronnyWlaczony(arkusz, talia, szablonyMapa, rewersyMapa),
+          };
+          const os = osOdwracania(wymiaryStrony(u), dwu.krawedz);
+          const zmienDwu = (z: Partial<typeof dwu>, klucz?: string) =>
+            zmien(
+              (p) => ustawUstawieniaArkusza(p, A, { dwustronny: { ...dwu, ...z } }),
+              klucz ? { klucz: `dwustronny:${A}:${klucz}` } : {},
+            );
+          return (
+            <fieldset className="sekcja-dwustronny">
+              <legend>{t('dwustronny.tytul')}</legend>
+              <label className="wybor">
+                <input
+                  type="checkbox"
+                  checked={dwu.wlaczony}
+                  onChange={(e) => zmienDwu({ wlaczony: e.target.checked })}
+                />
+                <span>{t('dwustronny.wlacz')}</span>
+              </label>
+              {dwu.wlaczony && (
+                <>
+                  <div className="pole-panelu">
+                    <span id={`krawedz-${A}`}>{t('dwustronny.krawedz')}</span>
+                    <div
+                      className="przelacznik-segmentowy"
+                      role="group"
+                      aria-labelledby={`krawedz-${A}`}
+                    >
+                      {(['dluga', 'krotka'] as const).map((k: KrawedzOdwracania) => (
+                        <button
+                          key={k}
+                          type="button"
+                          aria-pressed={dwu.krawedz === k}
+                          onClick={() => zmienDwu({ krawedz: k }, 'krawedz')}
+                        >
+                          {t(`dwustronny.${k}`)}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="podpis">
+                      {os === 'pionowa' ? t('dwustronny.osPionowa') : t('dwustronny.osPozioma')}
+                    </p>
                   </div>
-                  <p className="podpis">
-                    {os === 'pionowa' ? t('dwustronny.osPionowa') : t('dwustronny.osPozioma')}
-                  </p>
-                </div>
-                <p className="podpis">{t('dwustronny.korektaOpis')}</p>
-                <div className="pole-panelu dwa-pola">
-                  <PoleLiczby
-                    id="kalibracja-rewers-x"
-                    etykieta={t('dwustronny.korektaX')}
-                    wartosc={kalibracjaRewersu.x}
-                    min={-MAKS_PRZESUNIECIA}
-                    max={MAKS_PRZESUNIECIA}
-                    krok={0.1}
-                    zmien={(v) => zmienKalibracjeRewersu({ ...kalibracjaRewersu, x: v })}
-                  />
-                  <PoleLiczby
-                    id="kalibracja-rewers-y"
-                    etykieta={t('dwustronny.korektaY')}
-                    wartosc={kalibracjaRewersu.y}
-                    min={-MAKS_PRZESUNIECIA}
-                    max={MAKS_PRZESUNIECIA}
-                    krok={0.1}
-                    zmien={(v) => zmienKalibracjeRewersu({ ...kalibracjaRewersu, y: v })}
-                  />
-                </div>
-                <button type="button" onClick={wydrukTestowyDwustronny}>
-                  {t('dwustronny.wydrukProbny')}
-                </button>
-                <p className="podpis">{t('dwustronny.wydrukProbnyOpis')}</p>
-              </>
-            )}
-          </fieldset>
-        );
-      })()}
+                  <p className="podpis">{t('dwustronny.korektaOpis')}</p>
+                  <div className="pole-panelu dwa-pola">
+                    <PoleLiczby
+                      id="kalibracja-rewers-x"
+                      etykieta={t('dwustronny.korektaX')}
+                      wartosc={kalibracjaRewersu.x}
+                      min={-MAKS_PRZESUNIECIA}
+                      max={MAKS_PRZESUNIECIA}
+                      krok={0.1}
+                      zmien={(v) => zmienKalibracjeRewersu({ ...kalibracjaRewersu, x: v })}
+                    />
+                    <PoleLiczby
+                      id="kalibracja-rewers-y"
+                      etykieta={t('dwustronny.korektaY')}
+                      wartosc={kalibracjaRewersu.y}
+                      min={-MAKS_PRZESUNIECIA}
+                      max={MAKS_PRZESUNIECIA}
+                      krok={0.1}
+                      zmien={(v) => zmienKalibracjeRewersu({ ...kalibracjaRewersu, y: v })}
+                    />
+                  </div>
+                  <button type="button" onClick={wydrukTestowyDwustronny}>
+                    {t('dwustronny.wydrukProbny')}
+                  </button>
+                  <p className="podpis">{t('dwustronny.wydrukProbnyOpis')}</p>
+                </>
+              )}
+            </fieldset>
+          );
+        })()}
       {(() => {
         const druk = u.drukarnia ?? DRUKARNIA_DOMYSLNA;
         const zmienDruk = (z: Partial<typeof druk>, klucz?: string) =>
