@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { dodajOzdobnikZPaczki, eksportujOzdobnik } from '../../dane/archiwum';
 import { dodajZasoby } from '../../dane/edycja';
 import { MAKS_BAJTOW_OBRAZU, opisObrazu } from '../../dane/obrazy';
@@ -10,12 +10,13 @@ import {
   elementyProjektu,
   noweIdElementu,
   szablonyUzywajace,
+  stabilnyJson,
   usunElementZBiblioteki,
   zmienElementBiblioteki,
 } from '../../dane/biblioteka';
 import { formatujLiczbe, t, tn } from '../../i18n';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
-import { zapiszOzdobnikWBibliotece } from '../bazaUI';
+import { baza, zapiszOzdobnikWBibliotece } from '../bazaUI';
 import { opisBleduImportu } from '../start/importSzablonu';
 import {
   ELEMENTY_WBUDOWANE,
@@ -133,6 +134,24 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
   const idProjektu = encodeURIComponent(projekt.id);
   const czcionki = edycja.zasoby.zasoby.czcionki;
   const element = wlasne.find((e) => e.id === wybrany);
+
+  // Elementy należą do biblioteki użytkownika (N8): zmiany i usunięcia trafiają do niej od razu
+  // (przed autozapisem projektu), nowe elementy dodaje zapis projektu.
+  const poprzednie = useRef(new Map(wlasne.map((e) => [e.id, e])));
+  useEffect(() => {
+    const przed = poprzednie.current;
+    const teraz = new Map(wlasne.map((e) => [e.id, e]));
+    poprzednie.current = teraz;
+    void (async () => {
+      for (const [id, e] of teraz) {
+        const s = przed.get(id);
+        if (s && s !== e && stabilnyJson(s) !== stabilnyJson(e))
+          await baza().zmienElementBibliotekiUzytkownika(e);
+      }
+      for (const id of przed.keys())
+        if (!teraz.has(id)) await baza().usunZBibliotekiUzytkownika(id);
+    })().catch((e: unknown) => ustawBlad(String(e instanceof Error ? e.message : e)));
+  }, [wlasne]);
 
   const zapiszGlobalnie = async (id: string) => {
     ustawBlad(undefined);

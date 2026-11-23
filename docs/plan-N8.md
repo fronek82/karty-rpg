@@ -1,0 +1,68 @@
+# Plan N8 – jedna biblioteka zasobów użytkownika
+
+Cel: jedna biblioteka w przeglądarce, wspólna dla wszystkich projektów, obejmująca ozdobniki
+(z ikonami SVG i ramkami 9-slice), obrazy i czcionki. Znika biblioteka projektu
+(`Projekt.biblioteka`, zasoby obrazów i czcionek w projekcie) i przycisk „Użyj”.
+
+Zasady dla każdego rodzaju:
+
+- źródłem prawdy jest biblioteka w bazie; projekt, szablon i rewers trzymają tylko odwołania po id
+  (obrazy – id zasobu, ozdobniki – id elementu, czcionki – rodzina i wariant);
+- każde dodanie (edytor, dane kart, biblioteka, import) liczy skrót treści – ten sam plik to jeden
+  wpis w bibliotece;
+- eksport projektu/szablonu/rewersu dołącza kopie użytych zasobów (format plików bez zmian), import
+  dodaje je do biblioteki z deduplikacją (id, potem skrót) i przemapowaniem odwołań;
+- w wyborach edytora dwie grupy: „Systemowe” i „Moja biblioteka”.
+
+## Pod-etapy
+
+### N8a – baza, migracja, render
+
+1. Dexie w wersji 5: tabela `biblioteka` (`id, rodzaj, hash`) z metadanymi (opis obrazu/czcionki
+   albo `ElementOzdobny`) i osobna `bajtyBiblioteki` (lista nie ładuje bajtów), `meta` (znacznik
+   migracji), `kopiaMigracji` (kopia zapasowa wpisów projektów na czas migracji).
+2. Migracja danych po otwarciu bazy (`db.on('ready')`, nie w `upgrade()`): kopia zapasowa →
+   wpisy biblioteki globalnej (ozdobnik/obraz/czcionka) → zasoby i ozdobniki każdego projektu
+   (z deduplikacją i przepisaniem odwołań) → sprzątanie i znacznik. Idempotentna: źródłem jest
+   kopia zapasowa, bajty projektów są usuwane dopiero na końcu, dodawanie deduplikuje po skrócie.
+3. Projekt w bazie trzyma tylko czcionki wbudowane (pakiet). `wczytaj` składa widok: zasoby
+   projektu + wszystkie obrazy i czcionki biblioteki + ozdobniki biblioteki jako
+   `biblioteka.ozdobniki`. Dzięki temu silnik, PDF, miniatury i dotychczasowe UI działają bez
+   zmian, a wszystko z biblioteki jest od razu dostępne w każdym projekcie.
+4. `zapisz` synchronizuje: nowe zasoby i elementy trafiają do biblioteki (deduplikacja – przy
+   trafieniu w istniejący wpis odwołania są przepisywane, a mapa wraca do `useProjekt`), zmienione
+   elementy są aktualizowane; dokument w bazie jest „odchudzony”.
+5. Zgodność: `bibliotekaGlobalna/odczytajZBiblioteki/zapiszWBibliotece/usunZBiblioteki` dla
+   rodzajów ozdobnik/obraz/czcionka działają na nowej tabeli (do czasu nowego UI w N8c).
+6. Silnik: brakujący obraz, ikona lub kształt → szary prostokąt z przerywanym obrysem
+   i przekątnymi; brakująca ramka, motyw, narożnik → przerywana linia. Brakująca czcionka →
+   zapasowa (jak dotąd) z ostrzeżeniem.
+
+### N8b – eksport i import
+
+Eksport bierze z widoku tylko użyte zasoby; import dodaje dołączone kopie do biblioteki
+z deduplikacją i przemapowaniem; testy na „czystej” bazie i podwójnego importu.
+
+### N8c – UI biblioteki i wyborów
+
+Strona Biblioteki z zakładkami Ozdobniki / Obrazy / Czcionki (pełne zarządzanie, ostrzeżenie
+o projektach przy usuwaniu), hooki `useBiblioteka(rodzaj)`, grupy „Systemowe” / „Moja biblioteka”
+we wszystkich wyborach, linki z edytora z `?powrot=`, usunięcie „Użyj”, `BibliotekaGlobalna.tsx`
+dla tych rodzajów i widoku biblioteki projektu; teksty, instrukcja, SPEC.
+
+## Decyzje
+
+- Migracja danych nie w `upgrade()` (skróty `crypto.subtle` i rozpakowanie zamykają transakcję
+  Dexie), tylko w `db.on('ready')` – inne operacje na bazie czekają na jej koniec.
+- `WERSJA_SCHEMATU` bez zmian (29): kształt projektu się nie zmienia – w bazie po prostu nie ma
+  w nim zasobów obrazów/czcionek ani `biblioteka`; pliki eksportu mają je jak dotąd.
+- Czcionki identyfikuje rodzina i wariant (tak odwołuje się do nich szablon). Przy dodaniu czcionki
+  o innym pliku, ale tej samej rodzinie i wariancie, zostaje wpis już obecny w bibliotece.
+- Obraz ramki 9-slice z PNG jest zwykłym wpisem obrazu, oznaczonym `wewnetrzny` (ukryty na liście
+  obrazów); usunięcie ramki usuwa też jej obraz.
+- Bez limitu liczby wpisów (technicznie 5000); ostrzeżenie o miejscu przez
+  `navigator.storage.estimate` w N8c.
+- Widok projektu w N8a wczytuje bajty wszystkich obrazów i czcionek biblioteki (pamięć podręczna
+  w obrębie bazy). Leniwe wczytywanie obrazów – w N8c, gdy wybory przejdą na hooki biblioteki.
+- Zapis z projektu nigdy nie usuwa niczego z biblioteki (np. sprzątanie obrazów usuniętego
+  projektu) – usuwa się tylko na stronie biblioteki.

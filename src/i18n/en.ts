@@ -1206,6 +1206,8 @@ export const en: Slownik = {
   'globalna.opis': 'Saved copies are available in every project in this browser.',
   'globalna.pusta': 'The library is empty.',
   'globalna.brakWpisu': 'This entry is missing from the library.',
+  'dane.zaDuzoWpisowBiblioteki':
+    'The library already has {limit} entries – remove unused ones before adding more.',
   'globalna.brakObrazu': 'Frame package “{id}” is missing image “{zasob}”.',
   'globalna.zlyObraz': 'Image “{id}” is unreadable or does not match the frame dimensions.',
   'globalna.zapisz': 'Save to global library',

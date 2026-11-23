@@ -142,6 +142,22 @@ describe('renderujKarte', () => {
     });
   });
 
+  it('brakujący obraz rysuje szary prostokąt zastępczy z przerywanym obrysem i przekątnymi', () => {
+    const { scena } = renderujKarte(szablonBroni, { dane: { nazwa: 'X', obraz: 'brak.png' } }, ctx);
+    const plaskie = (e: (typeof scena.elementy)[number]): (typeof scena.elementy)[number][] =>
+      e.typ === 'grupa' ? e.elementy.flatMap(plaskie) : [e];
+    const zastepcze = scena.elementy
+      .flatMap(plaskie)
+      .flatMap((e) =>
+        (e.typ === 'prostokat' || e.typ === 'linia') && e.obrys?.kolor === '#9e9e9e'
+          ? [{ typ: e.typ, kreska: e.obrys.kreska }]
+          : [],
+      );
+    expect(zastepcze.filter((e) => e.typ === 'prostokat')).toHaveLength(1);
+    expect(zastepcze.filter((e) => e.typ === 'linia')).toHaveLength(2);
+    expect(zastepcze.every((e) => e.kreska?.length)).toBe(true);
+  });
+
   it('zawija długi ciąg w polu i przycina treść po wyczerpaniu wysokości', () => {
     const pole = {
       typ: 'tekst' as const,

@@ -236,7 +236,7 @@ describe('walidacja i migracja (schemat 13)', () => {
   });
 
   it('limit liczby elementów biblioteki jest stały i rozsądny', () => {
-    expect(MAKS_ELEMENTOW_BIBLIOTEKI).toBe(200);
+    expect(MAKS_ELEMENTOW_BIBLIOTEKI).toBe(5000);
   });
 
   it('plik szablonu z uszkodzonym elementem jest odrzucany', () => {
@@ -267,19 +267,20 @@ describe('poprawki po przeglądzie (paczka, limity, walidacja)', () => {
     expect(() => dolaczElementy(baza, [e, e])).toThrow(/powtórzony/);
   });
 
-  it('limit 200 elementów w projekcie i w paczce (schemat) oraz po dołączeniu', () => {
+  it('limit elementów (MAKS_ELEMENTOW_BIBLIOTEKI) w projekcie i w paczce (schemat) oraz po dołączeniu', () => {
     const { p } = projektZElementami();
+    const N = MAKS_ELEMENTOW_BIBLIOTEKI;
     const e = p.biblioteka!.ozdobniki[0]!;
     const wiele = (n: number): ElementOzdobny[] =>
       Array.from({ length: n }, (_, i) => ({ ...e, id: `wl:e${i}` }));
-    expect(() => przygotujProjekt({ ...p, biblioteka: { ozdobniki: wiele(200) } })).not.toThrow();
-    expect(() => przygotujProjekt({ ...p, biblioteka: { ozdobniki: wiele(201) } })).toThrow();
+    expect(() => przygotujProjekt({ ...p, biblioteka: { ozdobniki: wiele(N) } })).not.toThrow();
+    expect(() => przygotujProjekt({ ...p, biblioteka: { ozdobniki: wiele(N + 1) } })).toThrow();
     // Po dołączeniu do pełnej biblioteki limit też obowiązuje.
-    const pelny: Projekt = { ...baza, biblioteka: { ozdobniki: wiele(200) } };
+    const pelny: Projekt = { ...baza, biblioteka: { ozdobniki: wiele(N) } };
     expect(() => dolaczElementy(pelny, [{ ...e, id: 'wl:nowy' }])).toThrow(/limit/);
     const pliki = unzipSync(eksportujSzablon(p, zasoby, 'ozdobny').bajty);
     const j = JSON.parse(strFromU8(pliki['szablon.json']!));
-    j.biblioteka = wiele(201);
+    j.biblioteka = wiele(N + 1);
     expect(() =>
       importujSzablon(zipSync({ ...pliki, 'szablon.json': strToU8(JSON.stringify(j)) })),
     ).toThrow();
