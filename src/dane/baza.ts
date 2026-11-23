@@ -353,8 +353,13 @@ export class BazaProjektow {
     const rodzaj = opis.rodzaj;
     const { biblioteka, bajtyBiblioteki } = this.db;
     const id = await this.db.transaction('rw', biblioteka, bajtyBiblioteki, async () => {
+      // Czcionka: ten sam plik pod inną rodziną lub wariantem (np. nazwa z katalogu Google Fonts)
+      // to osobny wpis – szablony odwołują się do czcionek po rodzinie i wariancie.
       const istniejacy = (await biblioteka.where('hash').equals(hash).toArray()).find(
-        (w) => w.rodzaj === rodzaj,
+        (w) =>
+          w.rodzaj === rodzaj &&
+          (opis.rodzaj !== 'czcionka' ||
+            (w.opis?.rodzaj === 'czcionka' && kluczCzcionki(w.opis) === kluczCzcionki(opis))),
       );
       if (istniejacy) {
         if (istniejacy.wewnetrzny && !opcje.wewnetrzny)

@@ -72,7 +72,8 @@ export async function zapiszCzcionkiGlobalnie(
 ): Promise<void> {
   if (wgrane.length === 0) return;
   for (const w of wgrane) {
-    const id = await zapiszUnikalnyWBibliotece('czcionka', w.opis.nazwa, w.dane);
+    // Z pełnym opisem (rodzina i źródło z katalogu Google Fonts, nie z odczytu pliku).
+    const id = await baza().dodajZasobDoBiblioteki(w.opis, w.dane);
     pamiecMetaCzcionek.set(id, {
       rodzina: w.opis.rodzina,
       wariant: w.opis.wariant,
@@ -99,8 +100,8 @@ export async function wgrajCzcionkiGlobalnie(
     nazwa,
     wgrana: wgrajCzcionke(nazwa, bajty),
   }));
-  for (const { nazwa, wgrana } of zwalidowane) {
-    const id = await zapiszUnikalnyWBibliotece('czcionka', nazwa, wgrana.dane);
+  for (const { wgrana } of zwalidowane) {
+    const id = await baza().dodajZasobDoBiblioteki(wgrana.opis, wgrana.dane);
     pamiecMetaCzcionek.set(id, {
       rodzina: wgrana.opis.rodzina,
       wariant: wgrana.opis.wariant,

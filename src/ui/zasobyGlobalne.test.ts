@@ -36,6 +36,16 @@ vi.mock('./bazaUI', () => ({
       magazyn.set(id, { wpis, dane });
       return id;
     },
+    dodajZasobDoBiblioteki: async (
+      opis: { rodzaj: 'czcionka' | 'obraz'; nazwa: string },
+      dane: Uint8Array,
+    ) => {
+      for (const [klucz, v] of magazyn)
+        if (v.wpis.rodzaj === opis.rodzaj && v.dane.join() === dane.join()) return klucz;
+      const id = `${opis.rodzaj}-${magazyn.size + 1}-${opis.nazwa}`;
+      magazyn.set(id, { wpis: { id, rodzaj: opis.rodzaj, nazwa: opis.nazwa }, dane });
+      return id;
+    },
     usunZBiblioteki: async (id: string) => {
       magazyn.delete(id);
     },
