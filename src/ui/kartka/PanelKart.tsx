@@ -83,7 +83,10 @@ export function PanelKart({
   edytujSzablon,
   zamknij,
   ostrzezenia = [],
+  bezRewersu = false,
 }: {
+  /** Gra z kartami jednostronnymi – bez wyboru rewersu karty. */
+  bezRewersu?: boolean;
   /** Ostrzeżenia silnika dla zaznaczonych kart (np. tekst się nie mieści). */
   ostrzezenia?: string[];
   edycja: ProjektWEdycji;
@@ -361,125 +364,127 @@ export function PanelKart({
           {t('kartka.usun')}
         </button>
       </div>
-      {(() => {
-        const rewersyLista = projekt.rewersy ?? [];
-        const rewersyMapa = new Map(rewersyLista.map((r) => [r.id, r] as const));
-        const talia = projekt.talie.find((x) => x.id === arkusz.taliaId);
-        const bezposrednie = new Set(karty.map((k) => k.karta.rewersId));
-        const wspolnyDirect = bezposrednie.size === 1 ? [...bezposrednie][0] : '__rozne__';
-        const wartoscSelect =
-          wspolnyDirect === '__rozne__'
-            ? '__rozne__'
-            : wspolnyDirect === undefined
-              ? ''
-              : wspolnyDirect === null
-                ? '__brak__'
-                : wspolnyDirect;
-        const zrodloDziedziczenia = (() => {
-          if (szablon) {
-            if (szablon.rewersId === null) return t('rewers.bezRewersu');
-            if (typeof szablon.rewersId === 'string') {
-              const r = rewersyMapa.get(szablon.rewersId);
-              if (r) return t('rewers.zrodloSzablon', { nazwa: r.nazwa });
-            }
-          }
-          if (typeof talia?.rewersId === 'string') {
-            const r = rewersyMapa.get(talia.rewersId);
-            if (r) return t('rewers.zrodloTalia', { nazwa: r.nazwa });
-          }
-          return t('rewers.zrodloBrak');
-        })();
-        const rozstrzygniete = karty.map((k) => {
-          const s = ctx.szablony.get(k.karta.szablonId);
-          return s ? rewersKarty(rewersyMapa, k.karta, s, talia ?? {}) : undefined;
-        });
-        const pierwszyRozstrzygniety = rozstrzygniete[0];
-        const tenSamRozstrzygniety =
-          pierwszyRozstrzygniety && rozstrzygniete.every((r) => r?.id === pierwszyRozstrzygniety.id)
-            ? pierwszyRozstrzygniety
-            : undefined;
-        const jedyneZrodlo =
-          jedna && szablon
-            ? zrodloRewersuKarty(rewersyMapa, jedna.karta, szablon, talia ?? {})
-            : undefined;
-        const docelowy =
-          jedna && szablon
-            ? {
-                ...wymiaryKarty(szablon, jedna.karta),
-                ...(szablon.promienRogow !== undefined
-                  ? { promienRogow: szablon.promienRogow }
-                  : {}),
+      {!bezRewersu &&
+        (() => {
+          const rewersyLista = projekt.rewersy ?? [];
+          const rewersyMapa = new Map(rewersyLista.map((r) => [r.id, r] as const));
+          const talia = projekt.talie.find((x) => x.id === arkusz.taliaId);
+          const bezposrednie = new Set(karty.map((k) => k.karta.rewersId));
+          const wspolnyDirect = bezposrednie.size === 1 ? [...bezposrednie][0] : '__rozne__';
+          const wartoscSelect =
+            wspolnyDirect === '__rozne__'
+              ? '__rozne__'
+              : wspolnyDirect === undefined
+                ? ''
+                : wspolnyDirect === null
+                  ? '__brak__'
+                  : wspolnyDirect;
+          const zrodloDziedziczenia = (() => {
+            if (szablon) {
+              if (szablon.rewersId === null) return t('rewers.bezRewersu');
+              if (typeof szablon.rewersId === 'string') {
+                const r = rewersyMapa.get(szablon.rewersId);
+                if (r) return t('rewers.zrodloSzablon', { nazwa: r.nazwa });
               }
-            : szablon
+            }
+            if (typeof talia?.rewersId === 'string') {
+              const r = rewersyMapa.get(talia.rewersId);
+              if (r) return t('rewers.zrodloTalia', { nazwa: r.nazwa });
+            }
+            return t('rewers.zrodloBrak');
+          })();
+          const rozstrzygniete = karty.map((k) => {
+            const s = ctx.szablony.get(k.karta.szablonId);
+            return s ? rewersKarty(rewersyMapa, k.karta, s, talia ?? {}) : undefined;
+          });
+          const pierwszyRozstrzygniety = rozstrzygniete[0];
+          const tenSamRozstrzygniety =
+            pierwszyRozstrzygniety &&
+            rozstrzygniete.every((r) => r?.id === pierwszyRozstrzygniety.id)
+              ? pierwszyRozstrzygniety
+              : undefined;
+          const jedyneZrodlo =
+            jedna && szablon
+              ? zrodloRewersuKarty(rewersyMapa, jedna.karta, szablon, talia ?? {})
+              : undefined;
+          const docelowy =
+            jedna && szablon
               ? {
-                  ...wymiaryKarty(szablon),
+                  ...wymiaryKarty(szablon, jedna.karta),
                   ...(szablon.promienRogow !== undefined
                     ? { promienRogow: szablon.promienRogow }
                     : {}),
                 }
-              : undefined;
-        return (
-          <div className="pole-panelu">
-            <label htmlFor="karta-rewers">{t('rewers.przypisanieKarta')}</label>
-            <select
-              id="karta-rewers"
-              aria-label={t('rewers.przypisanieKarta')}
-              value={wartoscSelect}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === '__rozne__') return;
-                if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
-                  const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
-                  const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
-                  if (wpis) {
-                    void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
-                      przypiszRewersKartom(p, arkusz.taliaId, ids, rid),
-                    ).catch(() => undefined);
+              : szablon
+                ? {
+                    ...wymiaryKarty(szablon),
+                    ...(szablon.promienRogow !== undefined
+                      ? { promienRogow: szablon.promienRogow }
+                      : {}),
                   }
-                  return;
-                }
-                const nowy = v === '' ? undefined : v === '__brak__' ? null : v;
-                zmien((p) => przypiszRewersKartom(p, arkusz.taliaId, ids, nowy));
-              }}
-            >
-              {wspolnyDirect === '__rozne__' && (
-                <option value="__rozne__" disabled>
-                  {t('rewers.roznePrzypisania')}
-                </option>
+                : undefined;
+          return (
+            <div className="pole-panelu">
+              <label htmlFor="karta-rewers">{t('rewers.przypisanieKarta')}</label>
+              <select
+                id="karta-rewers"
+                aria-label={t('rewers.przypisanieKarta')}
+                value={wartoscSelect}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '__rozne__') return;
+                  if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
+                    const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
+                    const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
+                    if (wpis) {
+                      void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
+                        przypiszRewersKartom(p, arkusz.taliaId, ids, rid),
+                      ).catch(() => undefined);
+                    }
+                    return;
+                  }
+                  const nowy = v === '' ? undefined : v === '__brak__' ? null : v;
+                  zmien((p) => przypiszRewersKartom(p, arkusz.taliaId, ids, nowy));
+                }}
+              >
+                {wspolnyDirect === '__rozne__' && (
+                  <option value="__rozne__" disabled>
+                    {t('rewers.roznePrzypisania')}
+                  </option>
+                )}
+                <option value="">{t('rewers.dziedzicz', { zrodlo: zrodloDziedziczenia })}</option>
+                <option value="__brak__">{t('rewers.bezRewersu')}</option>
+                {rewersyLista.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.nazwa}
+                  </option>
+                ))}
+                {rewersyGlobalne.length > 0 && (
+                  <optgroup label={t('rewersy.globalneGrupa')}>
+                    {rewersyGlobalne.map((w) => (
+                      <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
+                        {w.nazwa}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+              {(jedna || tenSamRozstrzygniety) && (
+                <PodgladRewersu
+                  rewers={tenSamRozstrzygniety}
+                  {...(docelowy ? { docelowy } : {})}
+                  {...(jedna && szablon ? { awers: { szablon, dane: jedna.karta.dane } } : {})}
+                  zasoby={edycja.zasoby.zasoby}
+                  komunikatBraku={
+                    jedyneZrodlo?.wylaczony
+                      ? t('rewers.rozstrzygnietyWylaczony')
+                      : t('rewers.rozstrzygnietyBrak')
+                  }
+                />
               )}
-              <option value="">{t('rewers.dziedzicz', { zrodlo: zrodloDziedziczenia })}</option>
-              <option value="__brak__">{t('rewers.bezRewersu')}</option>
-              {rewersyLista.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.nazwa}
-                </option>
-              ))}
-              {rewersyGlobalne.length > 0 && (
-                <optgroup label={t('rewersy.globalneGrupa')}>
-                  {rewersyGlobalne.map((w) => (
-                    <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
-                      {w.nazwa}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-            {(jedna || tenSamRozstrzygniety) && (
-              <PodgladRewersu
-                rewers={tenSamRozstrzygniety}
-                {...(docelowy ? { docelowy } : {})}
-                {...(jedna && szablon ? { awers: { szablon, dane: jedna.karta.dane } } : {})}
-                zasoby={edycja.zasoby.zasoby}
-                komunikatBraku={
-                  jedyneZrodlo?.wylaczony
-                    ? t('rewers.rozstrzygnietyWylaczony')
-                    : t('rewers.rozstrzygnietyBrak')
-                }
-              />
-            )}
-          </div>
-        );
-      })()}
+            </div>
+          );
+        })()}
       {dodajNaglowek && (
         <p>
           <button type="button" onClick={dodajNaglowek}>

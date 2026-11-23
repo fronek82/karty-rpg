@@ -2,7 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 import { t } from '../i18n';
 import type { PresetUkladu } from '../model/arkusz';
 import type { DaneZasobow, Projekt, ZrodloCzcionki } from '../model/projekt';
-import type { WariantCzcionki } from '../model/szablon';
+import { kluczTresciSzablonu, type WariantCzcionki } from '../model/szablon';
 import {
   BladDanych,
   migrujBajtyBazy,
@@ -22,6 +22,37 @@ interface WpisProjektu {
   zmieniono: string;
   /** Projekt jako obiekt. Bajty zasobów są w osobnej tabeli. */
   projekt: Projekt;
+  /**
+   * Projekt usunięty z „Moich projektów”, który przechowuje już tylko swoje szablony awersów
+   * i rewersy (widoczne dalej w „Moich szablonach”). Bez kart i niewidoczny na liście projektów.
+   */
+  tylkoSzablony?: boolean;
+}
+
+/** Czy projekt ma szablony widoczne w „Moich szablonach” (niepuste awersy własne lub rewersy). */
+function maSzablonyDoZachowania(p: Projekt): boolean {
+  const wlasny = !p.pakiet || p.pakiet === 'wlasne';
+  return (
+    (p.rewersy?.length ?? 0) > 0 || (wlasny && p.szablony.some((s) => s.korzen.dzieci.length > 0))
+  );
+}
+
+/** Projekt bez kart (talie puste, kartki bez przypięć i kolejności) – zostają szablony i rewersy. */
+function bezKart(p: Projekt): Projekt {
+  return {
+    ...p,
+    zmieniono: new Date().toISOString(),
+    talie: p.talie.map(({ grupy: _grupy, ...tl }) => {
+      void _grupy;
+      return { ...tl, karty: [] };
+    }),
+    arkusze: p.arkusze.map(
+      ({ kolejnosc: _k, przypiete: _p, naglowki: _n, liczbaStron: _l, ...a }) => {
+        void [_k, _p, _n, _l];
+        return a;
+      },
+    ),
+  };
 }
 
 export interface PodsumowanieProjektu {
@@ -83,6 +114,8 @@ export interface WpisRewersuZProjektu {
   zmieniono?: string;
   rewersId: string;
   nazwa: string;
+  /** Klucz treści (`kluczTresciSzablonu`) – identyczne kopie mają ten sam. */
+  kluczTresci: string;
   projektRewersowy?: boolean;
 }
 
@@ -92,6 +125,8 @@ export interface WpisAwersuZProjektu {
   zmieniono?: string;
   szablonId: string;
   szablonNazwa: string;
+  /** Klucz treści (`kluczTresciSzablonu`) – identyczne kopie mają ten sam. */
+  kluczTresci: string;
 }
 
 export interface WpisCzcionkiZProjektu {
@@ -146,7 +181,9 @@ export class BazaProjektow {
   }
 
   async lista(): Promise<PodsumowanieProjektu[]> {
-    const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
+    const wpisy = (await this.db.projekty.orderBy('zmieniono').reverse().toArray()).filter(
+      (w) => !w.tylkoSzablony,
+    );
     return wpisy.map((w) => {
       const rewersowy = czyProjektRewersowy(w.projekt);
       const pierwszyRewers = rewersowy ? w.projekt.rewersy?.[0] : undefined;
@@ -269,6 +306,7 @@ export class BazaProjektow {
           zmieniono: w.zmieniono,
           rewersId: r.id,
           nazwa: r.nazwa,
+          kluczTresci: kluczTresciSzablonu(r),
           projektRewersowy,
         });
       }
@@ -276,29 +314,33 @@ export class BazaProjektow {
     return wynik;
   }
 
-  /** Lista szablonów awersów z projektów własnych w tej przeglądarce (bez duplikatów po nazwie). */
+  /**
+   * Lista szablonów awersów z projektów własnych w tej przeglądarce. Pomija tylko identyczne kopie
+   * (ten sam klucz treści) – szablony o tej samej nazwie, ale innej treści, zostają.
+   */
   async szablonyAwersowZProjektow(
     pomijajProjektId?: string,
-    pominNazwy?: ReadonlySet<string>,
+    pominTresci?: ReadonlySet<string>,
   ): Promise<WpisAwersuZProjektu[]> {
     const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
     const wynik: WpisAwersuZProjektu[] = [];
-    const widzianeNazwy = new Set<string>();
+    const widzianeTresci = new Set<string>();
     for (const w of wpisy) {
       if (pomijajProjektId && w.id === pomijajProjektId) continue;
       if (w.projekt.pakiet && w.projekt.pakiet !== 'wlasne') continue;
       if (czyProjektRewersowy(w.projekt)) continue;
       for (const s of w.projekt.szablony) {
         if (s.korzen.dzieci.length === 0) continue;
-        const norm = s.nazwa.trim().toLowerCase();
-        if (pominNazwy?.has(norm) || widzianeNazwy.has(norm)) continue;
-        widzianeNazwy.add(norm);
+        const kluczTresci = kluczTresciSzablonu(s);
+        if (pominTresci?.has(kluczTresci) || widzianeTresci.has(kluczTresci)) continue;
+        widzianeTresci.add(kluczTresci);
         wynik.push({
           projektId: w.id,
           projektNazwa: w.projekt.nazwa,
           zmieniono: w.zmieniono,
           szablonId: s.id,
           szablonNazwa: s.nazwa,
+          kluczTresci,
         });
       }
     }
@@ -350,7 +392,15 @@ export class BazaProjektow {
    * bez – zmienia tylko dokument projektu (np. edycja karty), a każdy opisany zasób musi już
    * być w bazie. Nieużywane zasoby są usuwane.
    */
-  async zapisz(projekt: Projekt, zasoby?: DaneZasobow): Promise<void> {
+  /**
+   * Zapis projektu. Wpis „tylko szablony” (po usunięciu projektu) zachowuje ten stan, dopóki
+   * projekt nie dostanie znowu kart – wtedy wraca do „Moich projektów”.
+   */
+  async zapisz(
+    projekt: Projekt,
+    zasoby?: DaneZasobow,
+    opcje: { tylkoSzablony?: boolean } = {},
+  ): Promise<void> {
     przygotujProjekt(projekt);
     const opisane = new Set(projekt.zasoby.map((z) => z.id));
     if (zasoby) {
@@ -380,7 +430,15 @@ export class BazaProjektow {
           osierocone.map((id) => [projekt.id, id] as [string, string]),
         );
       }
-      await this.db.projekty.put({ id: projekt.id, zmieniono: projekt.zmieniono, projekt });
+      const poprzedni = await this.db.projekty.get(projekt.id);
+      const maKarty = projekt.talie.some((tl) => tl.karty.length > 0);
+      const tylkoSzablony = opcje.tylkoSzablony ?? (poprzedni?.tylkoSzablony === true && !maKarty);
+      await this.db.projekty.put({
+        id: projekt.id,
+        zmieniono: projekt.zmieniono,
+        projekt,
+        ...(tylkoSzablony ? { tylkoSzablony } : {}),
+      });
     });
   }
 
@@ -406,6 +464,30 @@ export class BazaProjektow {
     return { projekt, zasoby };
   }
 
+  /**
+   * Usuwa projekt z „Moich projektów” bez usuwania jego szablonów awersów i rewersów (także tych,
+   * które w nim powstały) – zostają w „Moich szablonach”. Znikają karty, ich rozmieszczenie
+   * i miniatura projektu; projekt bez szablonów do zachowania jest usuwany w całości.
+   */
+  async usunProjekt(id: string): Promise<void> {
+    const { projekt } = await this.wczytaj(id);
+    if (!maSzablonyDoZachowania(projekt)) {
+      await this.usun(id);
+      return;
+    }
+    await this.zapisz(bezKart(projekt), undefined, { tylkoSzablony: true });
+    await this.db.miniatury.delete(id);
+  }
+
+  /** Usuwa wpis „tylko szablony”, z którego usunięto już ostatni szablon i rewers. */
+  async usunPustySchowek(id: string): Promise<void> {
+    const wpis = await this.db.projekty.get(id);
+    if (!wpis?.tylkoSzablony) return;
+    const { projekt } = await this.wczytaj(id);
+    if (!maSzablonyDoZachowania(projekt)) await this.usun(id);
+  }
+
+  /** Usuwa projekt w całości (z szablonami, zasobami i miniaturami). */
   async usun(id: string): Promise<void> {
     await this.db.transaction(
       'rw',

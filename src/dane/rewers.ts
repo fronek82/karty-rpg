@@ -8,6 +8,7 @@ import {
   type Szablon,
   type Talia,
 } from '../model/szablon';
+import { t } from '../i18n';
 import { dodajZasoby } from './edycja';
 import { unikalneId } from './czcionki';
 import { opisObrazu } from './obrazy';
@@ -85,12 +86,29 @@ export function dodajRewers(p: Projekt, rewers: Rewers): { projekt: Projekt; id:
   };
 }
 
+/**
+ * Nazwa niezajęta (bez względu na wielkość liter i skrajne spacje): `baza`, a gdy zajęta –
+ * `baza 2`, `baza 3`…
+ */
+export function unikalnaNazwa(baza: string, zajete: Iterable<string>): string {
+  const norm = (n: string) => n.trim().toLowerCase();
+  const zbior = new Set([...zajete].map(norm));
+  let nazwa = baza;
+  for (let n = 2; zbior.has(norm(nazwa)); n++) nazwa = `${baza} ${n}`;
+  return nazwa;
+}
+
+/**
+ * Nowy pusty rewers. Nazwa (domyślnie z i18n) jest unikalna wśród rewersów projektu
+ * i nazw z `zajeteNazwy` (np. rewersów z innych projektów w przeglądarce).
+ */
 export function nowyRewers(
   p: Projekt,
   opcje: {
     nazwa?: string;
     nazwaKorzenia?: string;
     rozmiar?: { szerokosc: number; wysokosc: number };
+    zajeteNazwy?: Iterable<string>;
   } = {},
 ): { projekt: Projekt; id: string } {
   const pierwszyMm = p.szablony.find((s) => s.rozmiar.tryb === 'mm');
@@ -99,10 +117,10 @@ export function nowyRewers(
       ? { szerokosc: pierwszyMm.rozmiar.szerokosc, wysokosc: pierwszyMm.rozmiar.wysokosc }
       : { szerokosc: 63, wysokosc: 88 };
   const rozm = opcje.rozmiar ?? domyslny;
-  const istniejace = new Set((p.rewersy ?? []).map((r) => r.nazwa));
-  const baza = opcje.nazwa ?? 'Rewers';
-  let nazwa = baza;
-  for (let n = 2; istniejace.has(nazwa); n++) nazwa = `${baza} ${n}`;
+  const nazwa = unikalnaNazwa(opcje.nazwa ?? t('wlasne.rewersNazwa'), [
+    ...(p.rewersy ?? []).map((r) => r.nazwa),
+    ...(opcje.zajeteNazwy ?? []),
+  ]);
   return dodajRewers(p, {
     id: 'rewers',
     nazwa,

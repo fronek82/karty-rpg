@@ -710,3 +710,30 @@ export function kluczeTabeli(t: PoleTabela): string[] {
   const n = Math.max(1, Math.floor(t.wiersze ?? 1));
   return Array.from({ length: n }, (_, r) => t.kolumny.map((k) => kluczKomorki(k, r))).flat();
 }
+
+/**
+ * Klucz treści szablonu awersu lub rewersu – wszystko poza identyfikatorem, przypisaniem rewersu
+ * i podkładem, z nazwą bez wielkości liter i skrajnych spacji. Równe klucze = identyczne kopie
+ * (np. ten sam szablon dołączony do kilku projektów); inne elementy o tej samej nazwie się różnią.
+ */
+export function kluczTresciSzablonu(s: Szablon | Rewers): string {
+  const kopia: Record<string, unknown> = { ...s, nazwa: s.nazwa.trim().toLowerCase() };
+  delete kopia.id;
+  delete kopia.rewersId;
+  delete kopia.podklad;
+  return stabilnyJson(kopia);
+}
+
+/** JSON z kluczami obiektów w stałej kolejności (walidacja i kopiowanie mogą ją zmieniać). */
+function stabilnyJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stabilnyJson).join(',')}]`;
+  if (typeof v === 'object' && v !== null) {
+    const o = v as Record<string, unknown>;
+    const pary = Object.keys(o)
+      .filter((k) => o[k] !== undefined)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${stabilnyJson(o[k])}`);
+    return `{${pary.join(',')}}`;
+  }
+  return JSON.stringify(v) ?? 'null';
+}

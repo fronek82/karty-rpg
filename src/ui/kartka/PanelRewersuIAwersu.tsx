@@ -4,11 +4,10 @@ import { czyProjektRewersowy } from '../../dane/baza';
 import { przypiszRewers } from '../../dane/rewers';
 import { slotSzablonu } from '../../dane/wlasneKarty';
 import { t } from '../../i18n';
-import type { Talia } from '../../model/szablon';
+import { kluczTresciSzablonu, type Talia } from '../../model/szablon';
 import {
   etykietaAwersuZProjektu,
   kluczAwersuZProjektu,
-  normalizujNazweSzablonu,
   PRZEDROSTEK_AWERSU_INNEGO,
   useAwersyZProjektow,
   wczytajPaczkeAwersuBezRewersu,
@@ -29,9 +28,12 @@ import type { ProjektWEdycji } from '../useProjekt';
 export function PanelRewersuIAwersu({
   edycja,
   talia,
+  bezRewersu = false,
 }: {
   edycja: ProjektWEdycji;
   talia: Talia | undefined;
+  /** Gra z kartami jednostronnymi – bez wyboru rewersu. */
+  bezRewersu?: boolean;
 }) {
   const { projekt, zmien } = edycja;
   const projektRewersowy = czyProjektRewersowy(projekt);
@@ -47,13 +49,14 @@ export function PanelRewersuIAwersu({
   const kandydatAwersu = unikalneAwersy.size === 1 ? [...unikalneAwersy][0]! : '';
   const lokalneAwersy = (() => {
     const niepuste = projekt.szablony.filter((s) => s.korzen.dzieci.length > 0);
-    const wgNazwy = new Map<string, (typeof niepuste)[number]>();
+    // Identyczne kopie (ten sam klucz treści) pokazujemy raz; inne o tej samej nazwie – osobno.
+    const wgTresci = new Map<string, (typeof niepuste)[number]>();
     for (const s of niepuste) {
-      const k = normalizujNazweSzablonu(s.nazwa);
-      const obecny = wgNazwy.get(k);
-      if (!obecny || s.id === kandydatAwersu) wgNazwy.set(k, s);
+      const k = kluczTresciSzablonu(s);
+      const obecny = wgTresci.get(k);
+      if (!obecny || s.id === kandydatAwersu) wgTresci.set(k, s);
     }
-    return [...wgNazwy.values()];
+    return [...wgTresci.values()];
   })();
   const lokalneIds = new Set(lokalneAwersy.map((s) => s.id));
   const wspolnyAwersId =
@@ -86,9 +89,7 @@ export function PanelRewersuIAwersu({
     const wpis = awersyInne.find((a) => kluczAwersuZProjektu(a) === klucz);
     if (!wpis) return;
     const istniejacy = projekt.szablony.find(
-      (s) =>
-        s.korzen.dzieci.length > 0 &&
-        normalizujNazweSzablonu(s.nazwa) === normalizujNazweSzablonu(wpis.szablonNazwa),
+      (s) => s.korzen.dzieci.length > 0 && kluczTresciSzablonu(s) === wpis.kluczTresci,
     );
     if (istniejacy) {
       await ustawAwersDlaWszystkich(istniejacy.id);
@@ -200,7 +201,7 @@ export function PanelRewersuIAwersu({
           {blad}
         </p>
       )}
-      {talia && (
+      {talia && !bezRewersu && (
         <div className="pole-panelu">
           <label htmlFor={idRewersu}>{t('kartka.rewersWszystkich')}</label>
           <select

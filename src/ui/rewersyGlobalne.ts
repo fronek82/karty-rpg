@@ -1,6 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
-import { dodajRewersZPaczki, eksportujRewers, importujRewers } from '../dane/archiwum';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  dodajRewersZPaczki,
+  eksportujRewers,
+  importujRewers,
+  kluczTresciRewersuWPaczce,
+} from '../dane/archiwum';
 import type { DaneZasobow, Projekt } from '../model/projekt';
+import { kluczTresciSzablonu } from '../model/szablon';
 import { baza } from './baza';
 import type { ProjektWEdycji } from './useProjekt';
 
@@ -64,12 +70,13 @@ export async function zapiszRewersGlobalnie(
 /**
  * Zwraca listę rewersów dostępnych globalnie w przeglądarce (z biblioteki globalnej oraz z innych
  * projektów – dzięki czemu także wcześniej zaprojektowane rewersy są od razu dostępne).
- * Pomija rewersy należące już do bieżącego projektu oraz powtórzone kopie z projektów, które
- * jedynie zaimportowały ten sam rewers.
+ * Pomija rewersy należące już do bieżącego projektu oraz identyczne kopie (ten sam klucz treści,
+ * np. z projektów, które jedynie zaimportowały ten sam rewers). Rewersy o tej samej nazwie,
+ * ale innej treści, zostają na liście.
  */
 export async function listaRewersowGlobalnych(
   biezacyProjektId?: string,
-  nazwyWProjekcie?: ReadonlySet<string>,
+  tresciWProjekcie?: ReadonlySet<string>,
 ): Promise<ZapisanyRewersGlobalny[]> {
   let zBiblioteki: Awaited<ReturnType<ReturnType<typeof baza>['bibliotekaGlobalna']>>;
   let zProjektow: Awaited<ReturnType<ReturnType<typeof baza>['rewersyZProjektow']>>;
@@ -83,7 +90,20 @@ export async function listaRewersowGlobalnych(
   }
   const wynik: ZapisanyRewersGlobalny[] = [];
   const widzianeKlucze = new Set<string>();
-  const widzianeNazwy = new Set<string>();
+  const widzianeTresci = new Set<string>();
+  const trescWProjekcie = new Map(
+    zProjektow.map((p) => [kluczRewersuGlobalnego(p.projektId, p.rewersId), p.kluczTresci]),
+  );
+  // Treść wpisu biblioteki: z projektu, który go zapisał, a gdy go nie ma – z samej paczki.
+  const trescWpisu = async (id: string): Promise<string | undefined> => {
+    const zProjektu = trescWProjekcie.get(id);
+    if (zProjektu !== undefined) return zProjektu;
+    try {
+      return kluczTresciRewersuWPaczce(await baza().odczytajZBiblioteki(id));
+    } catch {
+      return undefined;
+    }
+  };
   const ukryte = wczytajUkryte();
   const przedrostekBiezacego = biezacyProjektId
     ? `${PRZEDROSTEK_KLUCZA}${biezacyProjektId}:`
@@ -91,18 +111,21 @@ export async function listaRewersowGlobalnych(
 
   for (const w of zBiblioteki) {
     if (przedrostekBiezacego && w.id.startsWith(przedrostekBiezacego)) continue;
-    if (nazwyWProjekcie?.has(w.nazwa)) continue;
+    const tresc = await trescWpisu(w.id);
+    if (tresc !== undefined) {
+      if (tresciWProjekcie?.has(tresc) || widzianeTresci.has(tresc)) continue;
+      widzianeTresci.add(tresc);
+    }
     widzianeKlucze.add(w.id);
-    widzianeNazwy.add(w.nazwa);
     wynik.push({ klucz: w.id, nazwa: w.nazwa, zrodlo: 'biblioteka', wpisId: w.id });
   }
 
   for (const p of zProjektow) {
     const klucz = kluczRewersuGlobalnego(p.projektId, p.rewersId);
     if (widzianeKlucze.has(klucz) || ukryte.has(klucz)) continue;
-    if (nazwyWProjekcie?.has(p.nazwa) || widzianeNazwy.has(p.nazwa)) continue;
+    if (tresciWProjekcie?.has(p.kluczTresci) || widzianeTresci.has(p.kluczTresci)) continue;
     widzianeKlucze.add(klucz);
-    widzianeNazwy.add(p.nazwa);
+    widzianeTresci.add(p.kluczTresci);
     wynik.push({
       klucz,
       nazwa: p.nazwa,
@@ -152,13 +175,15 @@ export async function dolaczRewersGlobalnyDoProjektu(
 /** Hook wczytujący listę zapisanych rewersów spoza bieżącego projektu. */
 export function useRewersyGlobalne(projekt: Projekt) {
   const [lista, ustawListe] = useState<ZapisanyRewersGlobalny[]>([]);
-  const podpisRewersow = (projekt.rewersy ?? []).map((r) => `${r.id}:${r.nazwa}`).join('|');
+  const podpisRewersow = useMemo(
+    () => JSON.stringify((projekt.rewersy ?? []).map(kluczTresciSzablonu)),
+    [projekt.rewersy],
+  );
 
   const odswiez = useCallback(async () => {
-    const nazwy = new Set((projekt.rewersy ?? []).map((r) => r.nazwa));
-    const wynik = await listaRewersowGlobalnych(projekt.id, nazwy);
+    const tresci = new Set(JSON.parse(podpisRewersow) as string[]);
+    const wynik = await listaRewersowGlobalnych(projekt.id, tresci);
     ustawListe(wynik);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- odświeżamy przy zmianie projektu lub jego rewersów
   }, [projekt.id, podpisRewersow]);
 
   useEffect(() => {

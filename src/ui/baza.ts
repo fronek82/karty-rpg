@@ -127,7 +127,7 @@ export async function nowyProjektZRewersem(
 ): Promise<{ id: string; rewersId: string }> {
   const [
     { nowyProjektWlasny },
-    { nowyRewers, przypiszRewers },
+    { nowyRewers, przypiszRewers, unikalnaNazwa },
     { DOMYSLNE_TLO_KARTY },
     { szablonZKreatora },
   ] = await Promise.all([
@@ -148,7 +148,12 @@ export async function nowyProjektZRewersem(
     { szablon, role: {}, zasoby: [], dane: new Map() },
     (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  const nazwaRewersu = t('wlasne.rewersNazwa');
+  // Nazwa unikalna wśród rewersów w przeglądarce („Rewers”, „Rewers 2”…) – rozróżnia je w Moich szablonach.
+  const zajete = await Promise.resolve()
+    .then(() => baza().rewersyZProjektow())
+    .then((l) => l.map((r) => r.nazwa))
+    .catch(() => [] as string[]);
+  const nazwaRewersu = unikalnaNazwa(t('wlasne.rewersNazwa'), zajete);
   const { projekt: zRewersem, id: rewersId } = nowyRewers(
     { ...bazowy, nazwa: nazwaRewersu },
     {

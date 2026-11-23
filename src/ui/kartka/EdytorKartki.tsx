@@ -58,6 +58,7 @@ import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
 import {
   czyKontener,
+  kluczTresciSzablonu,
   korzenKarty,
   wymiaryKarty,
   type Karta,
@@ -68,7 +69,7 @@ import {
   type Talia,
   type Wezel,
 } from '../../model/szablon';
-import { gry } from '../../pakiety/gry';
+import { graPakietu, gry } from '../../pakiety/gry';
 import type { Pakiet, TypKarty } from '../../pakiety/typy';
 import type { Ostrzezenie } from '../../silnik/karta';
 import type { Scena } from '../../silnik/scena';
@@ -76,7 +77,6 @@ import { scenaDoSvg } from '../../silnik/svg';
 import {
   etykietaAwersuZProjektu,
   kluczAwersuZProjektu,
-  normalizujNazweSzablonu,
   useAwersyZProjektow,
   wczytajPaczkeAwersuBezRewersu,
 } from '../awersyZProjektow';
@@ -271,6 +271,10 @@ export function EdytorKartki({
   }, [pokazKartke]);
   const idPakietu = pakietProjektu(projekt);
   const pakietGry = usePakiet(idPakietu);
+  // Gry z kartami jednostronnymi (np. Mausritter): bez rewersów i bez importu CSV/XLSX.
+  const gra = graPakietu(idPakietu);
+  const bezRewersow = gra?.bezRewersow === true;
+  const bezImportuTabeli = gra?.bezImportuTabeli === true;
   // Projekt bez pakietu gry (własne karty): typy kart z szablonów projektu.
   const bezGry = idPakietu === undefined || idPakietu === PAKIET_WLASNY;
   const szablonyProjektu = projekt.szablony;
@@ -1178,9 +1182,7 @@ export function EdytorKartki({
       let dodanaKartaId: string | undefined;
       await edycja.zmienZZasobami((p, d) => {
         const istniejacy = p.szablony.find(
-          (s) =>
-            s.korzen.dzieci.length > 0 &&
-            normalizujNazweSzablonu(s.nazwa) === normalizujNazweSzablonu(wpis.szablonNazwa),
+          (s) => s.korzen.dzieci.length > 0 && kluczTresciSzablonu(s) === wpis.kluczTresci,
         );
         const dodany = istniejacy
           ? { projekt: p, szablonId: istniejacy.id, zasoby: d }
@@ -1490,6 +1492,7 @@ export function EdytorKartki({
       panel = (
         <PanelUstawien
           staly
+          bezRewersow={bezRewersow}
           kalibracja={kalibracja}
           zmienKalibracje={zmienKalibracje}
           kalibracjaRewersu={kalibracjaRewersu}
@@ -1541,6 +1544,7 @@ export function EdytorKartki({
     panel = (
       <PanelKart
         key={aktywne.ids.join(',')}
+        bezRewersu={bezRewersow}
         edycja={edycja}
         arkusz={arkuszZazn}
         karty={zaznaczoneKarty}
@@ -1634,12 +1638,12 @@ export function EdytorKartki({
   panel ??= (
     <aside className="panel-edytora" aria-label={t('kartka.pomoc')}>
       <h2>{t('kartka.nicNieZaznaczono')}</h2>
-      <PanelRewersuIAwersu edycja={edycja} talia={taliaDomyslna} />
+      <PanelRewersuIAwersu edycja={edycja} talia={taliaDomyslna} bezRewersu={bezRewersow} />
       <p className="podpis">{t('kartka.pomocDodawanie')}</p>
       <p className="podpis">{t('kartka.pomocZaznaczanie')}</p>
       <p className="podpis">{t('kartka.pomocSkroty')}</p>
       <p className="podpis">{t('kartka.pomocDruk')}</p>
-      <EksportCsvSzablonu szablony={szablonyCsvProjektu} />
+      {!bezImportuTabeli && <EksportCsvSzablonu szablony={szablonyCsvProjektu} />}
     </aside>
   );
 
@@ -1871,7 +1875,7 @@ export function EdytorKartki({
           </div>
         </OknoModalne>
       )}
-      {!druk && kartkaImportu && (
+      {!druk && !bezImportuTabeli && kartkaImportu && (
         <ImportDanych
           key={kartkaImportu.id}
           nazwaKartki={kartkaImportu.nazwa}
@@ -1962,7 +1966,7 @@ export function EdytorKartki({
               }
               szablony={zasoby?.szablony}
               importujDane={
-                !druk && k.wynik && szablonyDoImportu(k.arkusz).length
+                !druk && !bezImportuTabeli && k.wynik && szablonyDoImportu(k.arkusz).length
                   ? () => ustawImportTabeli(k.arkusz.id)
                   : undefined
               }

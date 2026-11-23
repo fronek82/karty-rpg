@@ -4,7 +4,7 @@ import type { WpisBibliotekiGlobalnej, WpisRewersuZProjektu } from '../dane/baza
 import { dodajRewersZPaczki, eksportujRewers, importujRewers } from '../dane/archiwum';
 import { przypiszRewers } from '../dane/rewers';
 import { WERSJA_SCHEMATU, type DaneZasobow, type Projekt } from '../model/projekt';
-import type { Rewers } from '../model/szablon';
+import { kluczTresciSzablonu, type Rewers } from '../model/szablon';
 import type { ProjektWEdycji } from './useProjekt';
 
 const biblioteka = new Map<string, { wpis: WpisBibliotekiGlobalnej; dane: Uint8Array }>();
@@ -35,7 +35,12 @@ vi.mock('./baza', () => ({
       for (const [pid, { projekt }] of projektyWBazie) {
         if (pid === pomijajProjektId) continue;
         for (const r of projekt.rewersy ?? []) {
-          wynik.push({ projektId: pid, rewersId: r.id, nazwa: r.nazwa });
+          wynik.push({
+            projektId: pid,
+            rewersId: r.id,
+            nazwa: r.nazwa,
+            kluczTresci: kluczTresciSzablonu(r),
+          });
         }
       }
       return wynik;
@@ -181,7 +186,7 @@ describe('rewersyGlobalne i paczka rewersu', () => {
     // Po dodaniu do projektu ten sam rewers nie dubluje się już w grupie zapisanych.
     const poDodaniu = await listaRewersowGlobalnych(
       'proj-awers',
-      new Set((stanProj.rewersy ?? []).map((r) => r.nazwa)),
+      new Set((stanProj.rewersy ?? []).map(kluczTresciSzablonu)),
     );
     expect(poDodaniu.map((x) => x.nazwa)).toEqual(['Stary rewers']);
 
@@ -189,5 +194,21 @@ describe('rewersyGlobalne i paczka rewersu', () => {
     projektyWBazie.set('proj-awers', { projekt: stanProj, zasoby: stanDane });
     const wTrzecim = await listaRewersowGlobalnych('proj-trzeci', new Set());
     expect(wTrzecim.map((x) => x.nazwa)).toEqual(['Rewers Warlock', 'Stary rewers']);
+  });
+
+  it('rewersy o tej samej nazwie, ale innej treści, są na liście osobno', async () => {
+    const inny = { ...przykladowyRewers('r2', 'Tył'), tlo: '#ffffff' };
+    projektyWBazie.set('pa', {
+      projekt: projektZ('pa', [przykladowyRewers('r1', 'Tył')]),
+      zasoby: new Map(),
+    });
+    projektyWBazie.set('pb', { projekt: projektZ('pb', [inny]), zasoby: new Map() });
+    // Identyczna kopia pierwszego (inne id) – pomijana.
+    projektyWBazie.set('pc', {
+      projekt: projektZ('pc', [przykladowyRewers('r9', 'Tył')]),
+      zasoby: new Map(),
+    });
+    const lista = await listaRewersowGlobalnych('inny', new Set());
+    expect(lista.map((x) => `${x.projektId}:${x.rewersId}`).sort()).toEqual(['pa:r1', 'pb:r2']);
   });
 });

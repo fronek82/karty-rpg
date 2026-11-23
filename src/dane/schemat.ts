@@ -666,9 +666,10 @@ export const schematPaczkiRewersu = obj({
   biblioteka: opc(z.array(elementOzdobny).max(MAKS_ELEMENTOW_BIBLIOTEKI)),
 });
 
+/** Wspólny plik szablonu: awers (z opcjonalnym rewersem) albo sam rewers. */
 export const schematPlikuSzablonu = obj({
   wersja: calkowita,
-  szablon,
+  szablon: opc(szablon),
   rewers: opc(schematRewersu),
   role: z.record(z.string(), z.string()),
   zasoby: z.array(opisZasobu),

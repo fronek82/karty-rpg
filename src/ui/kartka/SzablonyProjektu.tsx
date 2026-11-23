@@ -1,5 +1,10 @@
 import { useRef, useState } from 'react';
-import { eksportujSzablon, importujSzablon, ROZSZERZENIE_SZABLONU } from '../../dane/archiwum';
+import {
+  ACCEPT_PLIKU_SZABLONU,
+  eksportujSzablon,
+  importujSzablon,
+  ROZSZERZENIE_SZABLONU,
+} from '../../dane/archiwum';
 import { duplikujSzablonWProjekcie } from '../../dane/szablon';
 import { BladDanych } from '../../dane/schemat';
 import {
@@ -162,7 +167,7 @@ export function SzablonyProjektu({
       <input
         ref={plik}
         type="file"
-        accept={`${ROZSZERZENIE_SZABLONU},.zip`}
+        accept={ACCEPT_PLIKU_SZABLONU}
         hidden
         data-testid="plik-szablonu"
         onChange={(e) => {

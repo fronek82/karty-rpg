@@ -8,9 +8,9 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
 
 - Ukończone: M1–M5, M2b, M2c, przebudowa UI (UI-1…UI-9), poprawki UX i „UI etap 1–4” (PR #71–#77),
   rewersy globalne, Google Fonts, kolory przycisków, awers/rewers wszystkich kart (PR #78–#86),
-  porządek projektów P1–P3 (PR #87–#89, `docs/plan-porzadek-projektow.md`).
-- Kolejny etap nie jest zaplanowany – przed nowymi zmianami ustal zakres z właścicielem i zapisz
-  plan w `docs/plan-<nazwa>.md`.
+  porządek projektów P1–P3 (PR #87–#89, `docs/plan-porzadek-projektow.md`), poprawki danych N1
+  (`docs/plan-N1.md`).
+- Kolejne etapy (N2, N3…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 27` (`src/model/projekt.ts`), baza Dexie w wersji 4.
 
 ## Gdzie co jest
@@ -39,7 +39,7 @@ model  →  ozdobniki / silnik  →  druk  →  dane  →  ui
   druk dwustronny, tryb drukarni, PDF (`pdf.ts`, `budowaPdf.ts`, `pdf.worker.ts` – w wątku).
 - `src/dane/` – operacje na dokumencie (`szablon.ts`, `kartka.ts`, `rewers.ts`, `edycja.ts`),
   schemat zod i migracje (`schemat.ts`), IndexedDB/Dexie (`baza.ts`), archiwa ZIP
-  (`archiwum.ts`: `.kartyrpg`, `.kartyrpg-szablon`, `.kartyrpg-ozdobnik`), import CSV/XLSX,
+  (`archiwum.ts`: `.kartyrpg`, `.kartyrpg-szablon` – awers lub rewers, `.kartyrpg-ozdobnik`), import CSV/XLSX,
   Google Fonts, AI-układ, galeria online.
 - `src/pakiety/` – pakiety gier (obecnie Mausritter, zgodnie z SPEC M1); `src/przyklady/` –
   neutralne przykłady szablonów.

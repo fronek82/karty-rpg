@@ -96,6 +96,7 @@ export const en: Slownik = {
     '{gdzie}: ornament “{id}” does not exist in the library (the ornament will be skipped).',
   'dane.gdzie.rewersy': 'card backs',
   'dane.gdzie.rewers': 'card back {id}',
+  'dane.pustyPlikSzablonu': 'the template file contains neither a front nor a back',
   'dane.nieznanyRewers': 'the assignment uses an unknown card back “{id}”',
   'dane.gdzie.szablony': 'templates',
   'dane.gdzie.talie': 'decks',
@@ -158,6 +159,8 @@ export const en: Slownik = {
   'projekty.usunietoRewers': 'Deleted the back “{nazwa}”.',
   'projekty.potwierdzUsuniecie':
     'Delete the project “{nazwa}” from this browser? This cannot be undone (unless you have an export file).',
+  'projekty.potwierdzUsuniecieProjektu':
+    'Delete the project “{nazwa}” from this browser? Its cards will be removed, but its front templates and card backs stay in My templates. This cannot be undone (unless you have an export file).',
   'projekty.potwierdzUsuniecieRewersu':
     'Delete the back “{nazwa}” from “{projekt}”? This cannot be undone.',
   'projekty.stronaAwers': 'Front',

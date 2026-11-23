@@ -102,7 +102,10 @@ export function PanelUstawien({
   zmienKalibracjeRewersu,
   warstwaTekstowaPdf,
   zmienWarstweTekstowaPdf,
+  bezRewersow = false,
 }: {
+  /** Gra z kartami jednostronnymi – bez rewersu talii i listy rewersów projektu. */
+  bezRewersow?: boolean;
   przelaczRozmiary?: (tryb: 'jeden' | 'mieszane') => void;
   naKartce?: ComponentProps<typeof PanelUkladu>['naKartce'];
   kalibracja: ComponentProps<typeof PanelUkladu>['kalibracja'];
@@ -584,7 +587,7 @@ export function PanelUstawien({
           </p>
         )}
       </fieldset>
-      {talia && (
+      {talia && !bezRewersow && (
         <fieldset className="sekcja-szablonow">
           <legend>{t('rewers.przypisanieTalia')}</legend>
           <div className="pole-panelu">
@@ -634,7 +637,7 @@ export function PanelUstawien({
       {kartkaDlaSzablonu && (
         <SzablonyProjektu edycja={edycja} kartkaDlaSzablonu={kartkaDlaSzablonu} />
       )}
-      <RewersyProjektu edycja={edycja} />
+      {!bezRewersow && <RewersyProjektu edycja={edycja} />}
       {nowaKartka && (
         <p>
           <button type="button" onClick={nowaKartka}>

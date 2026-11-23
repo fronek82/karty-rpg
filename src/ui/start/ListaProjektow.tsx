@@ -139,11 +139,11 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
         szablonPodglad: { projektId: a.projektId, szablonId: a.szablonId },
       });
     }
+    // Pomijamy tylko identyczne kopie; rewersy o tej samej nazwie i innej treści zostają.
     const widzianeRewersy = new Set<string>();
     for (const r of rewersy) {
-      const norm = r.nazwa.trim().toLowerCase();
-      if (widzianeRewersy.has(norm)) continue;
-      widzianeRewersy.add(norm);
+      if (widzianeRewersy.has(r.kluczTresci)) continue;
+      widzianeRewersy.add(r.kluczTresci);
       wynik.push({
         klucz: kluczMiniaturyRewersu(r.projektId, r.rewersId),
         rodzaj: 'rewers',
@@ -300,7 +300,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
         zapiszPlik(
           eksportujRewers(projekt, zasoby, poz.rewers.rewersId),
           'application/zip',
-          nazwaPliku(poz.rewers.nazwa, '.kartyrpg-rewers'),
+          nazwaPliku(poz.rewers.nazwa, ROZSZERZENIE_SZABLONU),
         );
         return t('projekty.wyeksportowanoRewers', { nazwa: poz.rewers.nazwa });
       }
@@ -348,20 +348,22 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
       ustawDoUsuniecia(undefined);
       naglowek.current?.focus();
       if (cel.rodzaj === 'projekt') {
-        await baza().usun(cel.projekt.id);
+        // Szablony i rewersy projektu zostają w „Moich szablonach”.
+        await baza().usunProjekt(cel.projekt.id);
         return t('projekty.usunieto', { nazwa: cel.projekt.nazwa });
       }
       const poz = cel.pozycja;
       if (poz.rodzaj === 'rewers') {
-        if (poz.rewers.projektRewersowy) {
+        const { projekt, zasoby } = await baza().wczytaj(poz.rewers.projektId);
+        if (poz.rewers.projektRewersowy && (projekt.rewersy?.length ?? 0) <= 1) {
           await baza().usun(poz.rewers.projektId);
         } else {
-          const { projekt, zasoby } = await baza().wczytaj(poz.rewers.projektId);
           const poUsunieciu = usunRewers(projekt, poz.rewers.rewersId);
           await baza().zapisz(poUsunieciu, zasoby);
           await baza()
             .usunMiniature(kluczMiniaturyRewersu(poz.rewers.projektId, poz.rewers.rewersId))
             .catch(() => undefined);
+          await baza().usunPustySchowek(poz.rewers.projektId);
         }
         return t('projekty.usunietoRewers', { nazwa: poz.rewers.nazwa });
       }
@@ -380,6 +382,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
         await baza()
           .usunMiniature(kluczMiniaturySzablonu(poz.awers.projektId, poz.awers.szablonId))
           .catch(() => undefined);
+        await baza().usunPustySchowek(poz.awers.projektId);
       }
       return t('projekty.usunieto', { nazwa: poz.awers.szablonNazwa });
     });
@@ -447,7 +450,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
         >
           <p id="usun-tytul">
             {doUsuniecia.rodzaj === 'projekt'
-              ? t('projekty.potwierdzUsuniecie', { nazwa: doUsuniecia.projekt.nazwa })
+              ? t('projekty.potwierdzUsuniecieProjektu', { nazwa: doUsuniecia.projekt.nazwa })
               : doUsuniecia.pozycja.rodzaj === 'rewers' &&
                   !doUsuniecia.pozycja.rewers.projektRewersowy
                 ? t('projekty.potwierdzUsuniecieRewersu', {
