@@ -30,8 +30,9 @@ import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 26 – M4-4: ustawienia druku dwustronnego arkusza (`UstawieniaArkusza.dwustronny`).
  * 27 – M4-5: ustawienia trybu drukarni arkusza (`UstawieniaArkusza.drukarnia`: spad, znaczniki cięcia, układ).
  * 28 – N4: wartość w kształcie – `zachowajProporcje`, `ramiona`, nowe figury, etykieta obok kształtu.
+ * 29 – N5: wzór tła karty (`wzorTla` awersu i rewersu: linie, kratka, romby, kropki).
  */
-export const WERSJA_SCHEMATU = 28;
+export const WERSJA_SCHEMATU = 29;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

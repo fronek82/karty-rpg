@@ -321,6 +321,17 @@ const rozmiarKarty = z.discriminatedUnion('tryb', [
   obj({ tryb: z.literal('mm'), szerokosc: dodatnia, wysokosc: dodatnia }),
 ]);
 
+const wzorTla = obj({
+  rodzaj: z.enum(['pionowe', 'poziome', 'kratka', 'romby', 'ukosne', 'kropki']),
+  grubosc: liczba.min(0.05).max(50),
+  odstep: liczba.min(0.5).max(200),
+  kolor: z.string(),
+  krycie: opc(liczba.min(0).max(1)),
+  obrot: opc(liczba),
+  przesuniecie: opc(xy),
+  podTekstura: opc(z.boolean()),
+});
+
 const przypisanieRewersu = opc(z.union([identyfikator, z.null()]));
 
 const szablon = obj({
@@ -332,6 +343,7 @@ const szablon = obj({
   tlo: opc(z.string()),
   tloZDanych: opc(kolorZDanych),
   teksturaTla: opc(identyfikator),
+  wzorTla: opc(wzorTla),
   postrzepienie: opc(postrzepienie),
   grupyStylow: opc(
     z
@@ -365,7 +377,14 @@ const szablon = obj({
 });
 
 export const schematRewersu = z.strictObject({
-  ...szablon.pick({ id: true, nazwa: true, tlo: true, teksturaTla: true, ramka: true }).shape,
+  ...szablon.pick({
+    id: true,
+    nazwa: true,
+    tlo: true,
+    teksturaTla: true,
+    wzorTla: true,
+    ramka: true,
+  }).shape,
   teksturaTryb: opc(z.enum(['wypelnij', 'dopasuj', 'rozciagnij', 'kafelki'])),
   teksturaKrycie: opc(liczba.min(0).max(1)),
   teksturaZabarwienie: opc(obj({ kolor: z.string(), krycie: liczba.min(0).max(1) })),
@@ -799,6 +818,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 21→22: dotychczasowe kąty i domyślne pakowanie w pasy zachowują znaczenie.
   // 27→28: kształty wartości domyślnie zachowują proporcje – istniejące romby, tarcze, sześciokąty
   // i własne kształty dostają `zachowajProporcje: false` (wyglądają jak dotąd).
+  // 28→29: opcjonalny wzór tła karty (`wzorTla` awersu i rewersu) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -832,6 +852,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     // 26→27: ustawienia trybu drukarni arkusza są opcjonalne (domyślnie druk domowy).
     26: (d) => d,
     27: rozciagnieteKsztalty,
+    28: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -866,6 +887,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     // 26→27: ustawienia trybu drukarni arkusza są opcjonalne.
     26: (d) => d,
     27: rozciagnieteKsztalty,
+    28: (d) => d,
   },
 };
 

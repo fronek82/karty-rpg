@@ -41,9 +41,14 @@ test('tekstura i postrzępiona krawędź trafiają na kartę, do PDF i pozostaj�
   await page.goto(adresSzablonu);
   await karta(page);
 
-  const tlo = await sekcja(page, 'Tekstura i krawędź');
+  const tlo = await sekcja(page, 'Tło karty');
+  await tlo
+    .getByRole('group', { name: 'Rodzaj tła' })
+    .getByRole('button', { name: 'Obraz' })
+    .click();
   await tlo.getByLabel('Obraz tekstury').selectOption({ label: 'faktura.png' });
-  await tlo.getByRole('checkbox', { name: 'Postrzępiona krawędź' }).check();
+  const postrzep = await sekcja(page, 'Postrzępiona krawędź');
+  await postrzep.getByRole('checkbox', { name: 'Postrzępiona krawędź' }).check();
   const svg = page.locator('.karta-podgladu svg');
   await expect(svg.locator('clipPath path')).toHaveCount(1);
   await expect(svg.locator('image')).toHaveCount(1);

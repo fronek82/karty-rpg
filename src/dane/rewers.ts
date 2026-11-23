@@ -154,6 +154,7 @@ export function rewersJakoSzablon(r: Rewers): Szablon {
     korzen: r.korzen,
     ...(r.tlo !== undefined ? { tlo: r.tlo } : {}),
     ...(r.teksturaTla !== undefined ? { teksturaTla: r.teksturaTla } : {}),
+    ...(r.wzorTla ? { wzorTla: structuredClone(r.wzorTla) } : {}),
     ...(r.ramka !== undefined ? { ramka: r.ramka } : {}),
   };
 }
@@ -170,6 +171,7 @@ export function szablonDoRewersu(oryginal: Rewers, s: Szablon): Rewers {
   };
   if (s.tlo !== undefined) wynik.tlo = s.tlo;
   if (s.teksturaTla !== undefined) wynik.teksturaTla = s.teksturaTla;
+  if (s.wzorTla !== undefined) wynik.wzorTla = structuredClone(s.wzorTla);
   const usunietoTeksture = oryginal.teksturaTla !== undefined && s.teksturaTla === undefined;
   if (!usunietoTeksture) {
     if (oryginal.teksturaTryb !== undefined) wynik.teksturaTryb = oryginal.teksturaTryb;

@@ -573,6 +573,29 @@ export interface ZabarwienieTla {
   krycie: number;
 }
 
+/** Rodzaj wzoru tła: linie (pionowe, poziome, ukośne), kratka, romby (dwa zestawy ukośnych), kropki. */
+export type RodzajWzoruTla = 'pionowe' | 'poziome' | 'kratka' | 'romby' | 'ukosne' | 'kropki';
+
+/**
+ * Wzór tła karty rysowany wektorowo (sięga spadu). Kolor pod wzorem to `tlo` karty. Początek
+ * wzoru to lewy górny róg karty netto przesunięty o `przesuniecie`; obrót wokół tego punktu.
+ */
+export interface WzorTla {
+  rodzaj: RodzajWzoruTla;
+  /** Grubość linii albo średnica kropki (mm). */
+  grubosc: Mm;
+  /** Odstęp między liniami / kropkami (mm). */
+  odstep: Mm;
+  kolor: Kolor;
+  /** Krycie wzoru 0–1 (domyślnie 1). */
+  krycie?: number;
+  /** Obrót wzoru w stopniach (zgodnie z ruchem wskazówek zegara). */
+  obrot?: number;
+  przesuniecie?: { x: Mm; y: Mm };
+  /** Kolejność względem tekstury tła: domyślnie wzór nad teksturą. */
+  podTekstura?: boolean;
+}
+
 /** Samodzielny układ graficzny rewersu. Wymiary są formatem odniesienia warstw. */
 export interface Rewers {
   id: string;
@@ -586,6 +609,7 @@ export interface Rewers {
   teksturaKrycie?: number;
   /** Zabarwienie tekstury tła na wybrany kolor. */
   teksturaZabarwienie?: ZabarwienieTla;
+  wzorTla?: WzorTla;
   ramka?: RamkaKarty;
 }
 
@@ -603,6 +627,8 @@ export interface Szablon {
   tlo?: Kolor;
   tloZDanych?: KolorZDanych;
   teksturaTla?: string;
+  /** Wzór tła karty (linie, kratka, kropki…) – patrz `WzorTla`. */
+  wzorTla?: WzorTla;
   postrzepienie?: Postrzepienie;
   grupyStylow?: GrupaStylu[];
   /** Dane przykładowe do podglądu w edytorze szablonu (klucz pola → wartość). */

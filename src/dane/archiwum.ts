@@ -419,6 +419,7 @@ export function szablonZRewersu(r: Rewers): Szablon {
     korzen: structuredClone(r.korzen),
     ...(r.tlo !== undefined ? { tlo: r.tlo } : {}),
     ...(r.teksturaTla !== undefined ? { teksturaTla: r.teksturaTla } : {}),
+    ...(r.wzorTla ? { wzorTla: structuredClone(r.wzorTla) } : {}),
     ...(r.ramka ? { ramka: structuredClone(r.ramka) } : {}),
   };
 }
@@ -471,6 +472,7 @@ export function rewersZSzablonu(s: Szablon): Rewers {
     korzen: korzenSwobodny,
     ...(s.tlo !== undefined ? { tlo: s.tlo } : {}),
     ...(s.teksturaTla !== undefined ? { teksturaTla: s.teksturaTla } : {}),
+    ...(s.wzorTla ? { wzorTla: structuredClone(s.wzorTla) } : {}),
     ...(s.ramka ? { ramka: structuredClone(s.ramka) } : {}),
   };
 }

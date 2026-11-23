@@ -47,6 +47,7 @@ import type { ElementOzdobny } from '../ozdobniki/typy';
 import { ramkaZMotywu } from '../ozdobniki/motyw';
 import { konturPostrzepiony, szkicujElementy } from '../ozdobniki/dekoracje';
 import { konturProstokata } from './konturyFigur';
+import { elementyWzoruTla } from './wzorTla';
 import { MIN_DPI_RAMKI, ramka9ZElementu, type WynikRamki9 } from '../ozdobniki/ramka9';
 import { rysujSeparatorOzdobny, wysokoscOzdobySeparatora } from '../ozdobniki/separator';
 import {
@@ -581,16 +582,43 @@ export function renderujKarte(
       wypelnienie: tlo,
     });
   }
+  const promienTla = spad > 0 || poszarpanaKarta ? 0 : szablon.promienRogow;
+  const wzorTla = () => {
+    const wzor = szablon.wzorTla;
+    if (!wzor || (wzor.krycie !== undefined && wzor.krycie <= 0)) return;
+    const tresc = elementyWzoruTla(wzor, ramkaBrutto);
+    if (!tresc.length) return;
+    elementy.push({
+      typ: 'grupa',
+      x: 0,
+      y: 0,
+      ...(promienTla
+        ? {
+            przyciecieKonturem: konturProstokata(
+              ramkaBrutto.x,
+              ramkaBrutto.y,
+              ramkaBrutto.szer,
+              ramkaBrutto.wys,
+              promienTla,
+            ),
+          }
+        : { przyciecie: { ...ramkaBrutto } }),
+      ...(wzor.krycie !== undefined && wzor.krycie < 1 ? { krycie: wzor.krycie } : {}),
+      elementy: tresc,
+    });
+  };
+  if (szablon.wzorTla?.podTekstura) wzorTla();
   if (szablon.teksturaTla)
     teksturaTla(
       szablon.teksturaTla,
       ramkaBrutto,
-      spad > 0 || poszarpanaKarta ? 0 : szablon.promienRogow,
+      promienTla,
       'tlo-karty',
       opcje?.teksturaTryb,
       opcje?.teksturaKrycie,
       opcje?.teksturaZabarwienie,
     );
+  if (!szablon.wzorTla?.podTekstura) wzorTla();
   if (szablon.ramka?.ozdoba?.rodzaj === 'ramka9') {
     const o = szablon.ramka.odsuniecie ?? 0;
     przygotujRamke9(
@@ -1163,6 +1191,7 @@ export function renderujRewers(
     ...(docelowy?.promienRogow ? { promienRogow: docelowy.promienRogow } : {}),
     ...(rewers.tlo !== undefined ? { tlo: rewers.tlo } : {}),
     ...(rewers.teksturaTla !== undefined ? { teksturaTla: rewers.teksturaTla } : {}),
+    ...(rewers.wzorTla !== undefined ? { wzorTla: rewers.wzorTla } : {}),
     ...(rewers.ramka !== undefined ? { ramka: rewers.ramka } : {}),
     korzen: podstawione ? podstawione.korzen : rewers.korzen,
   };
