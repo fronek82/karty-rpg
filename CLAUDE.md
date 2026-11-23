@@ -14,9 +14,10 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   blok „wartość w kształcie” N4 (`docs/plan-N4.md`: proporcje kształtu, etykieta obok, nowe kształty),
   strona startowa i listy N6 (`docs/plan-N6.md`: Moje szablony na „Stwórz własne karty”, bez
   biblioteki globalnej szablonów, usuwanie z paskiem „Cofnij”, szukanie/sortowanie, „Duplikuj”),
-  układ ze zdjęcia w edytorze i menu „Biblioteki” N7 (`docs/plan-N7.md`).
+  układ ze zdjęcia w edytorze i menu „Biblioteki” N7 (`docs/plan-N7.md`), wzory tła kart N5
+  (`docs/plan-N5.md`: sekcja „Tło karty”, `wzorTla`, `src/silnik/wzorTla.ts`).
 - Kolejne etapy (N8…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 28` (`src/model/projekt.ts`), baza Dexie w wersji 4.
+- Schemat projektu: `WERSJA_SCHEMATU = 29` (`src/model/projekt.ts`), baza Dexie w wersji 4.
 
 ## Gdzie co jest
 
