@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { ADRES_CLAUDE_API, KLUCZ_STORAGE_AI } from '../src/dane/aiUklad';
 import { otworzUstawieniaAplikacji } from './pomoc';
+import { drzewo, kreator } from './szablonUI';
 
 /**
- * M5-2: rozpoznawanie układu karty ze zdjęcia przez Claude API (zapisana odpowiedź offline):
- * obsługa błędu 401, lokalny zapis/usunięcie klucza w localStorage, podgląd SVG, otwarcie w edytorze
- * z rozpoznanymi polami i podkładem oraz PL/EN + ciemny motyw.
+ * M5-2 / N7: układ ze zdjęcia przez Claude API (zapisana odpowiedź offline) w Edytorze szablonu:
+ * błąd 401, lokalny zapis/usunięcie klucza w localStorage, podgląd SVG, „Dodaj obok” / „Zastąp
+ * elementy”, podkład ze zdjęcia oraz EN.
  */
 
 const ODPOWIEDZ_AI = {
@@ -32,15 +33,13 @@ const ODPOWIEDZ_AI = {
   ],
 };
 
-test('układ ze zdjęcia (AI): błąd klucza, rozpoznanie z zapisanej odpowiedzi, podgląd SVG, edytor i PL/EN + ciemny motyw', async ({
+test('układ ze zdjęcia (AI) w edytorze szablonu: błąd klucza, podgląd, zastąp / dodaj obok, podkład i EN', async ({
   page,
 }) => {
+  test.setTimeout(60_000);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto('./#/wlasne');
-  await page.getByRole('link', { name: /Układ ze zdjęcia \(AI\)/ }).click();
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Układ karty ze zdjęcia (AI)' }),
-  ).toBeVisible();
+  await kreator(page, { nazwa: 'Karta AI', format: 'Standard / Poker', uklad: 'Tytuł i opis' });
+  const liczbaPrzed = await drzewo(page).getByRole('treeitem').count();
 
   let statusApi = 401;
   await page.route(ADRES_CLAUDE_API, async (route) => {
@@ -59,41 +58,51 @@ test('układ ze zdjęcia (AI): błąd klucza, rozpoznanie z zapisanej odpowiedzi
     });
   });
 
-  // Wpisz klucz (zapis lokalny), wgraj zdjęcie testowe i przetestuj błąd 401.
-  await page.getByLabel('Klucz Claude API').fill('sk-ant-test-local');
-  await page.getByLabel('Zapamiętaj klucz w tej przeglądarce').check();
-  await page.getByTestId('plik-zdjecia-ai').setInputFiles('testy/zasoby/podklad-testowy.png');
-  await page.getByRole('button', { name: 'Rozpoznaj układ' }).click();
-  await expect(page.getByRole('alert')).toContainText(/401\/403/);
+  // Przycisk w górnym pasku edytora otwiera okno.
+  await page.getByRole('button', { name: 'Układ ze zdjęcia', exact: true }).click();
+  const okno = page.getByRole('dialog', { name: 'Układ ze zdjęcia (AI)' });
+  await expect(okno).toBeVisible();
+  await okno.getByLabel('Klucz Claude API').fill('sk-ant-test-local');
+  await okno.getByLabel('Zapamiętaj klucz w tej przeglądarce').check();
+  await okno.getByTestId('plik-zdjecia-ai').setInputFiles('testy/zasoby/podklad-testowy.png');
+  await expect(okno.locator('.ai-miniatura-zdjecia img')).toBeVisible();
+  await okno.getByRole('button', { name: 'Rozpoznaj układ' }).click();
+  await expect(okno.getByRole('alert')).toContainText(/401\/403/);
   expect(await page.evaluate((k) => localStorage.getItem(k), KLUCZ_STORAGE_AI)).toBe(
     'sk-ant-test-local',
   );
 
-  // Poprawna odpowiedź AI → podgląd SVG z 4 rozpoznanymi polami.
+  // Poprawna odpowiedź → podgląd i pytanie (strona ma już elementy): „Dodaj obok”.
   statusApi = 200;
-  await page.getByRole('button', { name: 'Rozpoznaj układ' }).click();
-  await expect(page.getByRole('heading', { name: 'Rozpoznany układ (4 pola)' })).toBeVisible();
-  await expect(page.getByTestId('podglad-szablonu-ai').locator('svg')).toBeVisible();
+  await okno.getByRole('button', { name: 'Rozpoznaj układ' }).click();
+  await expect(okno.getByRole('heading', { name: 'Rozpoznany układ (4 pola)' })).toBeVisible();
+  await expect(okno.getByTestId('podglad-szablonu-ai').locator('svg')).toBeVisible();
+  await expect(okno.getByText('Ta strona ma już elementy.', { exact: false })).toBeVisible();
+  await okno.getByRole('button', { name: 'Dodaj obok' }).click();
+  await expect(okno).toBeHidden();
+  await expect(drzewo(page).getByRole('treeitem', { name: /^Ilustracja/ })).toBeVisible();
+  // Korzeń „Tytuł i opis” to kolumna: dawny układ trafia do kontenera na całą kartę (+1) obok 4 pól.
+  await expect(drzewo(page).getByRole('treeitem')).toHaveCount(liczbaPrzed + 5);
+  // Zdjęcie jako podkład (domyślnie zaznaczone).
+  await expect(page.getByTestId('podklad-podgladu')).toBeVisible();
 
-  // EN + ciemny motyw przed otwarciem edytora oraz usunięcie zapisanego klucza.
+  // „Zastąp elementy”: zostają tylko rozpoznane pola (korzeń + 4).
+  await page.getByRole('button', { name: 'Układ ze zdjęcia', exact: true }).click();
+  await okno.getByTestId('plik-zdjecia-ai').setInputFiles('testy/zasoby/podklad-testowy.png');
+  await okno.getByRole('button', { name: 'Rozpoznaj układ' }).click();
+  await okno.getByRole('button', { name: 'Zastąp elementy' }).click();
+  await expect(drzewo(page).getByRole('treeitem')).toHaveCount(5);
+  await expect(drzewo(page).getByRole('treeitem', { name: /^Opis/ })).toBeVisible();
+
+  // EN: przycisk i okno po angielsku, usunięcie zapisanego klucza.
   const menuUst = await otworzUstawieniaAplikacji(page);
   await menuUst
     .getByRole('group', { name: /^(Język|Language)$/ })
     .getByRole('button', { name: 'EN', exact: true })
     .click();
-  await menuUst.getByRole('button', { name: /Dark theme|Motyw ciemny/ }).click();
   await page.keyboard.press('Escape');
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Card layout from photo (AI)' }),
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'Remove saved key' }).click();
+  await page.getByRole('button', { name: 'Layout from photo', exact: true }).click();
+  const oknoEn = page.getByRole('dialog', { name: 'Layout from photo (AI)' });
+  await oknoEn.getByRole('button', { name: 'Remove saved key' }).click();
   expect(await page.evaluate((k) => localStorage.getItem(k), KLUCZ_STORAGE_AI)).toBeNull();
-
-  // Otwórz rozpoznany układ w edytorze szablonu – pola są widoczne w drzewie i edytowalne.
-  await page.getByRole('button', { name: 'Open in template editor' }).click();
-  const drzewo = page.getByRole('tree', { name: 'Card structure' });
-  await expect(drzewo).toBeVisible({ timeout: 15000 });
-  await expect(drzewo.getByRole('treeitem', { name: /^Tytuł/ })).toBeVisible();
-  await expect(drzewo.getByRole('treeitem', { name: /^Ilustracja/ })).toBeVisible();
-  await expect(drzewo.getByRole('treeitem', { name: /^Opis/ })).toBeVisible();
 });

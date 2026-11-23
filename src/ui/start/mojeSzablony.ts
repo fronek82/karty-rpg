@@ -89,7 +89,7 @@ export const SORTOWANIA: readonly Sortowanie[] = [
 ];
 
 /** Normalizacja do wyszukiwania: małe litery, bez znaków diakrytycznych (ł → l). */
-const doSzukania = (s: string) =>
+export const doSzukania = (s: string) =>
   s.toLocaleLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/ł/g, 'l');
 
 /** Filtr po fragmencie nazwy i sortowanie (nazwa według języka, data zmiany). */

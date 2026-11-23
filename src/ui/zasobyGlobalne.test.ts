@@ -70,8 +70,6 @@ vi.mock('./obrazyUI', () => ({
 }));
 
 import {
-  dodajGlobalnaCzcionkeDoProjektu,
-  dodajGlobalnyObrazDoProjektu,
   dolaczRodzineGlobalnaDoProjektu,
   dolaczZasobyGlobalne,
   listaRodzinCzcionekGlobalnych,
@@ -180,24 +178,6 @@ describe('zasobyGlobalne', () => {
     Object.defineProperty(zaDuzy, 'size', { value: MAKS_BAJTOW_OBRAZU + 1 });
     await expect(wgrajObrazyGlobalnie([zaDuzy])).rejects.toBeInstanceOf(BladDanych);
     expect(magazyn.size).toBe(0);
-  });
-
-  it('dodajGlobalnaCzcionkeDoProjektu i dodajGlobalnyObrazDoProjektu kopiują zasoby do aktywnego projektu', async () => {
-    const ttf = new Uint8Array(readFileSync('public/czcionki/CinzelDecorative-Bold.ttf'));
-    const png = new Uint8Array(readFileSync('testy/zasoby/litera-f.png'));
-    await wgrajCzcionkiGlobalnie([new File([ttf], 'CinzelDecorative-Bold.ttf')]);
-    await wgrajObrazyGlobalnie([new File([png], 'litera-f.png', { type: 'image/png' })]);
-
-    const wpisCz = [...magazyn.values()].find((v) => v.wpis.rodzaj === 'czcionka')!.wpis;
-    const wpisOb = [...magazyn.values()].find((v) => v.wpis.rodzaj === 'obraz')!.wpis;
-    const { edycja, stan } = atrapaEdycji(pustyProjekt());
-
-    const etykietaCz = await dodajGlobalnaCzcionkeDoProjektu(wpisCz, edycja);
-    const nazwaOb = await dodajGlobalnyObrazDoProjektu(wpisOb, edycja);
-    expect(etykietaCz).toContain('Cinzel Decorative');
-    expect(nazwaOb).toBe('litera-f.png');
-    expect(stan().projekt.zasoby.some((z) => z.rodzaj === 'czcionka')).toBe(true);
-    expect(stan().projekt.zasoby.some((z) => z.rodzaj === 'obraz')).toBe(true);
   });
 
   it('zapiszCzcionkiGlobalnie i czcionki z innych projektów są dostępne i automatycznie dołączane do innego projektu', async () => {

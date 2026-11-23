@@ -189,50 +189,8 @@ export async function wgrajObrazyGlobalnie(
   return przygotowane.map((o) => o.nazwa);
 }
 
-/** Kopiuje zapisaną w przeglądarce czcionkę do aktywnego projektu. */
-export async function dodajGlobalnaCzcionkeDoProjektu(
-  wpis: WpisBibliotekiGlobalnej,
-  edycja: ProjektWEdycji,
-): Promise<string> {
-  const [{ unikalneId, wgrajCzcionke }, bajty] = await Promise.all([
-    import('../dane/czcionki'),
-    baza().odczytajZBiblioteki(wpis.id),
-  ]);
-  const metaKatalogu = mapaKataloguGoogle.get(wpis.nazwa.toLowerCase());
-  const w = wgrajCzcionke(wpis.nazwa, bajty, {
-    zrodlo: metaKatalogu?.zrodlo ?? 'wlasna',
-  });
-  const opis: OpisCzcionki = metaKatalogu
-    ? { ...w.opis, rodzina: metaKatalogu.rodzina, wariant: metaKatalogu.wariant, zrodlo: 'google' }
-    : w.opis;
-  const etykieta = `${opis.rodzina} (${t(`wariant.${opis.wariant}`)})`;
-  await edycja.zmienZZasobami((p, d) => {
-    const zajete = new Set([...p.zasoby.map((z) => z.id), ...d.keys()]);
-    const id = unikalneId(opis.id, zajete);
-    return dodajZasoby(p, d, [{ opis: { ...opis, id }, dane: w.dane }]);
-  });
-  return etykieta;
-}
-
-/** Kopiuje zapisany w przeglądarce obraz do aktywnego projektu. */
-export async function dodajGlobalnyObrazDoProjektu(
-  wpis: WpisBibliotekiGlobalnej,
-  edycja: ProjektWEdycji,
-): Promise<string> {
-  const [{ przygotujObraz }, bajty] = await Promise.all([
-    import('./obrazyUI'),
-    baza().odczytajZBiblioteki(wpis.id),
-  ]);
-  const wynik = await przygotujObraz(bajty);
-  await edycja.zmienZZasobami((p, d) => {
-    const zajete = new Set([...p.zasoby.map((z) => z.id), ...d.keys()]);
-    const opis = opisObrazu(wpis.nazwa, wynik.dane, wynik, zajete);
-    return dodajZasoby(p, d, [{ opis, dane: wynik.dane }]);
-  });
-  return wpis.nazwa;
-}
-
-async function metaWpisuCzcionki(
+/** Rodzina i wariant czcionki zapisanej w przeglądarce (z pamięci, katalogu Google Fonts albo pliku). */
+export async function metaWpisuCzcionki(
   wpis: WpisBibliotekiGlobalnej,
 ): Promise<MetaCzcionkiGlobalnej | undefined> {
   const zPamieci = pamiecMetaCzcionek.get(wpis.id);

@@ -9,8 +9,9 @@ import { nazwaPliku, zapiszPlik } from '../pliki';
 import { opisBleduImportu } from '../start/importSzablonu';
 
 /**
- * Globalna biblioteka ozdobników: zapisane kopie są wspólne dla projektów w tej przeglądarce.
- * (Szablony nie mają osobnej biblioteki – jedynym źródłem są „Moje szablony”.)
+ * Globalna biblioteka ozdobników w bibliotece projektu: „Użyj” dodaje kopię do projektu.
+ * Zapisane kopie są wspólne dla projektów w tej przeglądarce; podglądy i usuwanie –
+ * w „Bibliotekach” (`#/biblioteki/ozdobniki`, N7).
  */
 export function BibliotekaGlobalna({
   dodaj,
@@ -25,7 +26,6 @@ export function BibliotekaGlobalna({
   const [bladOdczytu, ustawBladOdczytu] = useState('');
   const [blad, ustawBlad] = useState('');
   const [status, ustawStatus] = useState('');
-  const naglowek = useRef<HTMLElement>(null);
   const plik = useRef<HTMLInputElement>(null);
   const trwa = useRef(false);
   const rodzaj = 'ozdobnik';
@@ -67,8 +67,10 @@ export function BibliotekaGlobalna({
 
   return (
     <details className="biblioteka-globalna" onToggle={(e) => ustawOtwarta(e.currentTarget.open)}>
-      <summary ref={naglowek}>{t('globalna.ozdobnik')}</summary>
-      <p className="podpis">{t('globalna.opis')}</p>
+      <summary>{t('globalna.ozdobnik')}</summary>
+      <p className="podpis">
+        {t('globalna.opis')} <a href="#/biblioteki/ozdobniki">{t('biblioteki.zarzadzaj')}</a>
+      </p>
       <button
         type="button"
         aria-disabled={zajeta || zablokowana}
@@ -133,22 +135,6 @@ export function BibliotekaGlobalna({
                   }
                 >
                   {t('szablony.eksportuj')}
-                </button>
-                <button
-                  type="button"
-                  aria-disabled={zajeta || zablokowana}
-                  aria-label={t('globalna.usunEtykieta', { nazwa })}
-                  onClick={() => {
-                    if (trwa.current || zablokowana) return;
-                    if (!window.confirm(t('globalna.potwierdz', { nazwa }))) return;
-                    naglowek.current?.focus();
-                    void wykonaj(async () => {
-                      await baza().usunZBiblioteki(id);
-                      return t('globalna.usunieto', { nazwa });
-                    });
-                  }}
-                >
-                  {t('projekty.usun')}
                 </button>
               </span>
             </li>

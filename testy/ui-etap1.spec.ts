@@ -3,7 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 /**
  * Etap 1 przebudowy UI:
  * - gradacja kolorów menu (jasny = jaśnieją, ciemny = ciemnieją) z kontrastem AA,
- * - przyciski akcji po lewej stronie w „Nowy szablon karty” i „Układ ze zdjęcia (AI)”
+ * - przyciski akcji po lewej stronie w „Nowy szablon karty”
  *   (główny w kolorze kroku, Anuluj w kolorze tła, szerokość jak w poprzednim menu),
  * - filtrowanie środka na ekranie Mausrittera (tylko Pusta kartka albo tylko Gotowe układy).
  */
@@ -53,7 +53,7 @@ async function tloStrony(page: Page): Promise<string> {
 }
 
 for (const motyw of ['light', 'dark'] as const) {
-  test(`jednolite kolory kroków menu, Awers/Rewers i układ kreatora/AI (${motyw})`, async ({
+  test(`jednolite kolory kroków menu, Awers/Rewers i układ kreatora (${motyw})`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 900 });
@@ -91,15 +91,13 @@ for (const motyw of ['light', 'dark'] as const) {
     // 3) Własne karty: krok 2 ma ten sam kolor co krok 1 i stałą szerokość kafelków menu.
     await page.goto('./#/wlasne');
     await page.mouse.move(0, 0);
-    const linkAi = page.getByRole('link', { name: /Układ ze zdjęcia \(AI\)/ });
     const btnImport = page.getByRole('button', { name: /Importuj szablon/ });
-    const kWlasne2 = await kolory(linkAi);
-    expect(kWlasne2.tlo).toBe((await kolory(btnImport)).tlo);
+    const kWlasne2 = await kolory(btnImport);
     expect(kWlasne2.tlo).toBe(kWlasne1.tlo);
     if (motyw === 'dark') {
       expect(kontrastRgb(kWlasne2.tekst, kWlasne2.tlo)).toBeGreaterThanOrEqual(4.5);
     }
-    const szerMenu = (await linkAi.boundingBox())!.width;
+    const szerMenu = (await btnImport.boundingBox())!.width;
 
     // 4) Wybór strony (Awers / Rewers) – odrębne kolory.
     await page.goto('./#/wlasne/nowy');
@@ -136,28 +134,6 @@ for (const motyw of ['light', 'dark'] as const) {
     const kAnuluj = await kolory(anuluj);
     expect(kAnuluj.tlo).toBe(await tloStrony(page));
     expect(kontrastRgb(kAnuluj.tekst, kAnuluj.tlo)).toBeGreaterThanOrEqual(4.5);
-
-    // 6) Układ ze zdjęcia (AI): Rozpoznaj i Anuluj w lewym menu, te same kolory i szerokość.
-    await page.goto('./#/wlasne/ai');
-    const rozpoznaj = page.getByRole('button', { name: 'Rozpoznaj układ', exact: true });
-    const anulujAi = page.getByRole('link', { name: 'Anuluj', exact: true });
-    const formAi = page.locator('.kreator-formularz');
-    const bRozp = (await rozpoznaj.boundingBox())!;
-    const bAnulujAi = (await anulujAi.boundingBox())!;
-    const bFormAi = (await formAi.boundingBox())!;
-    expect(bRozp.x + bRozp.width).toBeLessThan(bFormAi.x);
-    expect(Math.abs(bRozp.width - szerMenu)).toBeLessThanOrEqual(2);
-    expect(Math.abs(bAnulujAi.width - szerMenu)).toBeLessThanOrEqual(2);
-
-    expect((await kolory(rozpoznaj)).tlo).toBe(kWlasne4.tlo);
-    expect((await kolory(anulujAi)).tlo).toBe(await tloStrony(page));
-
-    // Hover na kolorowym przycisku nie wprowadza niebieskiego obrysu (i zachowuje AA w motywie ciemnym).
-    await rozpoznaj.hover();
-    const kHover = await kolory(rozpoznaj);
-    if (motyw === 'dark') expect(kontrastRgb(kHover.tekst, kHover.tlo)).toBeGreaterThanOrEqual(4.5);
-    const obrysHover = await rozpoznaj.evaluate((e) => getComputedStyle(e).borderTopColor);
-    expect(obrysHover).not.toBe('rgb(27, 127, 168)');
   });
 }
 

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { otworzDruk, otworzUstawieniaAplikacji, panelDruku, slot, zapisano } from './pomoc';
+import { otworzDruk, panelDruku, slot, zapisano } from './pomoc';
 
 /**
  * Etap 3 przebudowy UI + poprawki wizualne:
@@ -105,66 +105,7 @@ test('przepływ Szablon → Edytor kart → Drukuj karty oraz przycisk ← Powr�
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible();
 });
 
-test('menu Ustawienia w pasku górnym wgrywa globalne czcionki i obrazy dziedziczone przez nowe projekty', async ({
-  page,
-}) => {
-  await page.goto('./#/');
-
-  // Menu „Ustawienia” zawiera przełącznik motywu, języka, wgrywanie czcionek, obrazów i instrukcję.
-  const menu = await otworzUstawieniaAplikacji(page);
-  await expect(menu.getByRole('button', { name: 'Motyw jasny' })).toBeVisible();
-  await expect(menu.getByRole('button', { name: 'Motyw ciemny' })).toBeVisible();
-  await expect(menu.getByRole('button', { name: 'PL', exact: true })).toBeVisible();
-  await expect(menu.getByRole('button', { name: 'EN', exact: true })).toBeVisible();
-  await expect(menu.getByRole('button', { name: 'Wgrywanie czcionek' })).toBeVisible();
-  await expect(menu.getByRole('button', { name: 'Wgrywanie obrazów' })).toBeVisible();
-  await expect(menu.getByRole('link', { name: /Instrukcja/ })).toBeVisible();
-
-  // Wgranie czcionki z ekranu startowego.
-  await menu.getByRole('button', { name: 'Wgrywanie czcionek' }).click();
-  const oknoCzcionek = page.getByRole('dialog', { name: 'Wgrywanie czcionek' });
-  await expect(oknoCzcionek).toBeVisible();
-  await oknoCzcionek
-    .getByTestId('plik-czcionki-globalny')
-    .setInputFiles('public/czcionki/CinzelDecorative-Bold.ttf');
-  await expect(oknoCzcionek.getByText('CinzelDecorative-Bold.ttf', { exact: true })).toBeVisible({
-    timeout: 15000,
-  });
-  await oknoCzcionek.getByRole('button', { name: 'Zamknij' }).click();
-  await expect(oknoCzcionek).toHaveCount(0);
-
-  // Wgranie obrazu z ekranu startowego.
-  const menu2 = await otworzUstawieniaAplikacji(page);
-  await menu2.getByRole('button', { name: 'Wgrywanie obrazów' }).click();
-  const oknoObrazow = page.getByRole('dialog', { name: 'Wgrywanie obrazów' });
-  await expect(oknoObrazow).toBeVisible();
-  await oknoObrazow.getByTestId('plik-obrazu-globalny').setInputFiles('testy/zasoby/litera-f.png');
-  await expect(oknoObrazow.getByText('litera-f.png', { exact: true })).toBeVisible({
-    timeout: 15000,
-  });
-  await oknoObrazow.getByRole('button', { name: 'Zamknij' }).click();
-  await expect(oknoObrazow).toHaveCount(0);
-
-  // Nowy projekt automatycznie dziedziczy zapisane globalnie czcionki i obrazy.
-  await page.goto('./#/wlasne/nowy/awers');
-  await page.getByLabel('Nazwa szablonu').fill('Karta z zasobami');
-  await page.getByText('Pusta karta').click();
-  await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
-  await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
-
-  // Sprawdzenie w oknach zasobów wewnątrz projektu, że oba zasoby są już w projekcie.
-  const menuProj1 = await otworzUstawieniaAplikacji(page);
-  await menuProj1.getByRole('button', { name: 'Wgrywanie czcionek' }).click();
-  const dialogCz = page.getByRole('dialog', { name: 'Wgrywanie czcionek' });
-  await expect(dialogCz.getByText(/Cinzel Decorative/)).toBeVisible();
-  await dialogCz.getByRole('button', { name: 'Zamknij' }).click();
-
-  const menuProj2 = await otworzUstawieniaAplikacji(page);
-  await menuProj2.getByRole('button', { name: 'Wgrywanie obrazów' }).click();
-  const dialogOb = page.getByRole('dialog', { name: 'Wgrywanie obrazów' });
-  await expect(dialogOb.getByText(/litera-f\.png \(/)).toBeVisible();
-  await dialogOb.getByRole('button', { name: 'Zamknij' }).click();
-});
+// Wgrywanie globalnych czcionek i obrazów: testy/biblioteki.spec.ts (menu „Biblioteki”, N7).
 
 test('projekt gry (Mausritter): karty jednostronne – bez rewersów i druku dwustronnego', async ({
   page,

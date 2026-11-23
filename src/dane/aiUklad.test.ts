@@ -7,6 +7,7 @@ import {
   rozpoznajUkladZeZdjecia,
   szablonZOdpowiedziAi,
   usunKluczAi,
+  wstawUkladAi,
   wczytajKluczAi,
   wyodrebnijJsonAi,
   zapiszKluczAi,
@@ -15,6 +16,7 @@ import {
 } from './aiUklad';
 import { eksportujProjekt } from './archiwum';
 import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
+import type { Szablon } from '../model/szablon';
 import { BladDanych, przygotujProjekt, sprawdzSpojnosc } from './schemat';
 
 const ODPOWIEDZ_PRZYKLADOWA: OdpowiedzAi = {
@@ -290,5 +292,85 @@ describe('rozpoznawanie układu karty ze zdjęcia AI (M5-2)', () => {
     expect(mapa.get(KLUCZ_STORAGE_AI)).toBe('sk-ant-demo');
     usunKluczAi(magazyn);
     expect(wczytajKluczAi(magazyn)).toBe('');
+  });
+});
+
+describe('wstawianie układu ze zdjęcia do edytowanej strony (N7)', () => {
+  const odp: OdpowiedzAi = parsujOdpowiedzAi({
+    pola: [
+      { typ: 'tekst', nazwa: 'Tytuł', xPct: 5, yPct: 5, szerPct: 90, wysPct: 10 },
+      { typ: 'wartosc', nazwa: 'Siła', xPct: 5, yPct: 20, szerPct: 20, wysPct: 10 },
+      { typ: 'tabela', nazwa: 'Tabela', xPct: 5, yPct: 40, szerPct: 90, wysPct: 30 },
+    ],
+  });
+  const ai = szablonZOdpowiedziAi(odp, { szer: 63, wys: 88, nazwa: 'AI' });
+  const cel = (): Szablon => ({
+    ...szablonZOdpowiedziAi(
+      parsujOdpowiedzAi({
+        pola: [{ typ: 'tekst', nazwa: 'Tytuł', xPct: 0, yPct: 0, szerPct: 50, wysPct: 10 }],
+      }),
+      { szer: 70, wys: 120, nazwa: 'Moja' },
+    ),
+    tlo: '#123456',
+  });
+
+  it('„zastąp” usuwa dotychczasowe elementy, ale zostawia rozmiar i tło strony', () => {
+    const w = wstawUkladAi(cel(), ai, 'zastap');
+    expect(w.korzen.dzieci.map((d) => d.id)).toEqual(ai.korzen.dzieci.map((d) => d.id));
+    expect(w.rozmiar).toEqual(cel().rozmiar);
+    expect(w.tlo).toBe('#123456');
+    expect(w.nazwa).toBe('Moja');
+    expect(Object.keys(w.przyklad ?? {})).toContain('tytul');
+  });
+
+  it('„dodaj obok” dokłada pola z nowymi id i kluczami (bez kolizji z istniejącymi i danymi kart)', () => {
+    const w = wstawUkladAi(cel(), ai, 'dodaj', { zajete: ['sila'] });
+    expect(w.korzen.dzieci).toHaveLength(1 + ai.korzen.dzieci.length);
+    const ids = w.korzen.dzieci.map((d) => d.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const klucze = w.korzen.dzieci.flatMap((d) => ('klucz' in d && d.klucz ? [d.klucz] : []));
+    expect(new Set(klucze).size).toBe(klucze.length);
+    expect(klucze).not.toContain('sila');
+    expect(w.przyklad?.tytul).toBe(cel().przyklad?.tytul);
+    expect(w.przyklad?.tytul_2).toBe(ai.przyklad?.tytul);
+  });
+
+  it('rewers (bez danych): pola stałe z tekstem przykładu, bez tabel', () => {
+    const w = wstawUkladAi(cel(), ai, 'zastap', { bezKlucza: true });
+    expect(w.korzen.dzieci.map((d) => d.typ)).toEqual(['tekst', 'wartosc']);
+    for (const d of w.korzen.dzieci) expect('klucz' in d && d.klucz).toBeFalsy();
+    const tytul = w.korzen.dzieci[0];
+    expect(tytul?.typ === 'tekst' && tytul.tekst).toBe(ai.przyklad?.tytul);
+    expect(w.przyklad).toBeUndefined();
+  });
+
+  it('tabela zachowuje dane przykładowe kolumn pod nowymi kluczami', () => {
+    const w = wstawUkladAi(cel(), ai, 'dodaj');
+    const tabela = w.korzen.dzieci.find((d) => d.typ === 'tabela');
+    expect(tabela?.typ).toBe('tabela');
+    if (tabela?.typ !== 'tabela') return;
+    const zrodlo = ai.korzen.dzieci.find((d) => d.typ === 'tabela');
+    if (zrodlo?.typ !== 'tabela') throw new Error('brak tabeli AI');
+    const k0 = zrodlo.kolumny[0]!.klucz;
+    expect(w.przyklad?.[tabela.kolumny[0]!.klucz]).toBe(ai.przyklad?.[k0]);
+    expect(w.przyklad?.[`${tabela.kolumny[0]!.klucz}.2`]).toBe(ai.przyklad?.[`${k0}.2`]);
+  });
+
+  it('korzeń w strumieniu: „Zastąp” zmienia go na swobodny i czyści warianty, „Dodaj obok” opakowuje stary układ', () => {
+    const wKolumnie: Szablon = {
+      ...cel(),
+      korzen: { id: 'korzen', typ: 'kolumna', dzieci: [...cel().korzen.dzieci] },
+      warianty: [{ kolumny: 2, rzedy: 1, korzen: { id: 'w', typ: 'kolumna', dzieci: [] } }],
+    };
+    const z = wstawUkladAi(wKolumnie, ai, 'zastap');
+    expect(z.korzen.typ).toBe('swobodny');
+    expect(z.warianty).toBeUndefined();
+    const d = wstawUkladAi(wKolumnie, ai, 'dodaj');
+    expect(d.korzen.typ).toBe('swobodny');
+    expect(d.korzen.id).toBe('korzen');
+    const stary = d.korzen.dzieci[0]!;
+    expect(stary.typ).toBe('kolumna');
+    expect(stary.pozycja).toEqual({ x: 0, y: 0 });
+    expect(d.korzen.dzieci).toHaveLength(1 + ai.korzen.dzieci.length);
   });
 });

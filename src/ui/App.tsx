@@ -20,8 +20,8 @@ const WybierzStroneSzablonu = lazy(() =>
 const KreatorStrona = lazy(() =>
   import('./start/KreatorStrona').then((m) => ({ default: m.KreatorStrona })),
 );
-const KreatorAiStrona = lazy(() =>
-  import('./start/KreatorAiStrona').then((m) => ({ default: m.KreatorAiStrona })),
+const Biblioteki = lazy(() =>
+  import('./biblioteki/Biblioteki').then((m) => ({ default: m.Biblioteki })),
 );
 const EdytorStrona = lazy(() =>
   import('./EdytorStrona').then((m) => ({ default: m.EdytorStrona })),
@@ -99,6 +99,8 @@ export function App() {
   const projekt = dopasowanie?.[1];
   const podtrasa = dopasowanie?.[2] ?? '';
   const gra = /^\/gra\/([^/]+)$/.exec(trasa)?.[1];
+  // „Biblioteki” (N7): `#/biblioteki` = pierwsza zakładka (Obrazy).
+  const biblioteka = /^\/biblioteki(?:\/([^/]*))?$/.exec(trasa);
   // Dawne trasy (lista projektów, arkusze pakietu) – teraz wszystko jest na starcie.
   const dawna = trasa === '/projekty' || trasa === '/arkusze';
   useEffect(() => {
@@ -106,15 +108,15 @@ export function App() {
   }, [dawna]);
 
   // Ekrany z lewym menu (start, gra, własne karty, kreator, AI) mają szeroką treść z jedną linią menu.
-  const wlasne = trasa === '/wlasne' || trasa === '/gry/inne';
+  // `/wlasne/ai` – dawny ekran „Układ ze zdjęcia” (teraz w edytorze szablonu).
+  const wlasne = trasa === '/wlasne' || trasa === '/gry/inne' || trasa === '/wlasne/ai';
   const szerokaTresc =
     trasa === '/' ||
     dawna ||
     !!gra ||
     wlasne ||
     trasa === '/wlasne/nowy' ||
-    trasa === '/wlasne/nowy/awers' ||
-    trasa === '/wlasne/ai';
+    trasa === '/wlasne/nowy/awers';
 
   if (projekt) {
     // Edytor kartki zajmuje cały ekran (własny pasek górny).
@@ -156,9 +158,9 @@ export function App() {
           <Leniwa>
             <KreatorStrona />
           </Leniwa>
-        ) : trasa === '/wlasne/ai' ? (
+        ) : biblioteka ? (
           <Leniwa>
-            <KreatorAiStrona />
+            <Biblioteki zakladka={biblioteka[1] ?? 'obrazy'} />
           </Leniwa>
         ) : wlasne ? (
           <Leniwa>

@@ -556,6 +556,21 @@ export function eksportujOzdobnik(projekt: Projekt, dane: DaneZasobow, id: strin
   );
 }
 
+/**
+ * Paczka pojedynczego ozdobnika (z obrazem ramki 9-slice, jeśli go ma) – np. z pliku SVG lub PNG
+ * dodanego wprost do biblioteki w przeglądarce, bez projektu.
+ */
+export function spakujOzdobnik(
+  element: ElementOzdobny,
+  obraz?: { opis: OpisZasobu; dane: Uint8Array },
+): Uint8Array {
+  return spakuj(
+    { wersja: 1, element, zasoby: obraz ? [obraz.opis] : [] },
+    PLIK_OZDOBNIKA,
+    obraz ? [[obraz.opis, obraz.dane]] : [],
+  );
+}
+
 export function importujOzdobnik(bajty: Uint8Array) {
   const pliki = rozpakuj(bajty, PLIK_OZDOBNIKA);
   const { element, zasoby } = sprawdz(schematPaczkiOzdobnika, odczytajJson(pliki, PLIK_OZDOBNIKA));

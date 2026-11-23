@@ -14,8 +14,10 @@ import type {
   Szablon,
   WariantCzcionki,
 } from '../model/szablon';
+import { czyKontener, wszystkieWezly, wymiaryKarty, type Wezel } from '../model/szablon';
+import { unikalneId } from './czcionki';
 import { BladDanych } from './schemat';
-import { kluczZNazwy } from './szablon';
+import { kluczeSzablonu, kluczZNazwy } from './szablon';
 import { zaokraglij } from '../model/geometria';
 
 /** Klucz w `localStorage` – klucz API żyje wyłącznie lokalnie w tej przeglądarce. */
@@ -344,6 +346,83 @@ export function szablonZOdpowiedziAi(
       dzieci,
     },
   };
+}
+
+/** `zastap` – rozpoznane pola zamiast dotychczasowych elementów strony; `dodaj` – obok nich. */
+export type TrybWstawieniaAi = 'zastap' | 'dodaj';
+
+/**
+ * Wstawia pola rozpoznane ze zdjęcia do edytowanej strony (awersu albo rewersu w postaci szablonu).
+ * Rozmiar, tło, ramka, rogi i style strony zostają bez zmian. Pola dostają wolne identyfikatory
+ * i klucze danych (z przykładową treścią); `bezKlucza` (rewers) – pola stałe: tekst z przykładu,
+ * bez tabel. `zajete` – klucze zajęte poza szablonem (np. dane kart).
+ */
+export function wstawUkladAi(
+  cel: Szablon,
+  ai: Pick<Szablon, 'korzen' | 'przyklad'>,
+  tryb: TrybWstawieniaAi,
+  opcje: { zajete?: Iterable<string>; bezKlucza?: boolean } = {},
+): Szablon {
+  // Pola AI mają położenie w mm – potrzebny korzeń swobodny. „Zastąp” czyści też warianty układu
+  // (inaczej karty w innym rozmiarze slotu nadal pokazywałyby stary układ).
+  let podstawa: Szablon;
+  if (tryb === 'zastap') {
+    podstawa = { ...cel, korzen: { ...cel.korzen, typ: 'swobodny', dzieci: [] } };
+    delete podstawa.warianty;
+  } else if (cel.korzen.typ !== 'swobodny') {
+    // „Dodaj obok” przy korzeniu w strumieniu: dotychczasowy układ jako kontener na całą kartę.
+    const { szer, wys } = wymiaryKarty(cel);
+    const ids = new Set(wszystkieWezly(cel).map((w) => w.id));
+    const stary: Wezel = {
+      ...cel.korzen,
+      id: unikalneId(`${cel.korzen.id}-uklad`, ids),
+      pozycja: { x: 0, y: 0 },
+      szerokosc: { mm: szer },
+      wysokosc: { mm: wys },
+    };
+    podstawa = { ...cel, korzen: { id: cel.korzen.id, typ: 'swobodny', dzieci: [stary] } };
+  } else podstawa = cel;
+  const przyklad: Record<string, string> = tryb === 'zastap' ? {} : { ...(cel.przyklad ?? {}) };
+  const ids = new Set(wszystkieWezly(podstawa).map((w) => w.id));
+  const klucze = new Set([...kluczeSzablonu(podstawa), ...(opcje.zajete ?? [])]);
+  const nowe: Wezel[] = [];
+  for (const zrodlo of ai.korzen.dzieci) {
+    if (czyKontener(zrodlo)) continue;
+    if (opcje.bezKlucza && zrodlo.typ === 'tabela') continue;
+    const pole = structuredClone(zrodlo);
+    pole.id = unikalneId(zrodlo.id, ids);
+    ids.add(pole.id);
+    const stary = pole.klucz;
+    const wartosc = stary ? ai.przyklad?.[stary] : undefined;
+    if (stary && opcje.bezKlucza) {
+      delete pole.klucz;
+      if (pole.typ === 'tekst' || pole.typ === 'wartosc') pole.tekst = wartosc ?? pole.nazwa ?? '';
+    } else if (stary) {
+      pole.klucz = kluczZNazwy(pole.nazwa ?? stary, klucze);
+      klucze.add(pole.klucz);
+      if (wartosc !== undefined) przyklad[pole.klucz] = wartosc;
+    }
+    if (pole.typ === 'tabela')
+      pole.kolumny = pole.kolumny.map((k) => {
+        const klucz = kluczZNazwy(k.klucz, klucze);
+        klucze.add(klucz);
+        // Dane przykładowe kolumny: `klucz` (1. wiersz) i `klucz.N` (kolejne wiersze).
+        for (const [kp, v] of Object.entries(ai.przyklad ?? {})) {
+          if (kp === k.klucz) przyklad[klucz] = v;
+          else if (kp.startsWith(`${k.klucz}.`))
+            przyklad[`${klucz}${kp.slice(k.klucz.length)}`] = v;
+        }
+        return { ...k, klucz };
+      });
+    nowe.push(pole);
+  }
+  const wynik: Szablon = {
+    ...podstawa,
+    korzen: { ...podstawa.korzen, dzieci: [...podstawa.korzen.dzieci, ...nowe] },
+  };
+  if (Object.keys(przyklad).length) wynik.przyklad = przyklad;
+  else delete wynik.przyklad;
+  return wynik;
 }
 
 /** Treść promptu wymuszająca zwrot wyłącznie geometrii i struktury pól (bez treści ani grafik). */

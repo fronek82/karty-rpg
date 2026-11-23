@@ -25,8 +25,11 @@ const otworzMenu = (nazwa = /Ustawienia/) => {
 };
 
 describe('NarzedziaPaska', () => {
-  it('pokazuje przycisk Ustawienia, a po rozwinięciu motyw, język, wgrywanie czcionek, obrazów i instrukcję', () => {
+  it('pokazuje link Biblioteki i przycisk Ustawienia, a po rozwinięciu tylko konfigurację i instrukcję', () => {
     render(<NarzedziaPaska />);
+    expect(screen.getByRole('link', { name: 'Biblioteki' }).getAttribute('href')).toBe(
+      '#/biblioteki',
+    );
     const przycisk = screen.getByRole('button', { name: /Ustawienia/ });
     expect(przycisk.getAttribute('aria-expanded')).toBe('false');
     expect(screen.queryByRole('link', { name: /Instrukcja/ })).toBeNull();
@@ -38,8 +41,9 @@ describe('NarzedziaPaska', () => {
     expect(screen.getByRole('button', { name: 'Motyw ciemny' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'PL' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'EN' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Wgrywanie czcionek' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Wgrywanie obrazów' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Kolory przycisków' })).toBeTruthy();
+    // N7: biblioteki (czcionki, obrazy) nie są już w Ustawieniach.
+    expect(screen.queryByRole('button', { name: /Wgrywanie/ })).toBeNull();
     const link = screen.getByRole('link', { name: /Instrukcja/ });
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toContain('noopener');
@@ -80,8 +84,7 @@ describe('NarzedziaPaska', () => {
       'instrukcja/?lang=en',
     );
     expect(screen.getByRole('button', { name: 'Light theme' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Upload fonts' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Upload images' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Libraries' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'PL' }));
     expect(document.documentElement.lang).toBe('pl');
     expect(localStorage.getItem('karty.jezyk')).toBe('pl');
@@ -117,37 +120,17 @@ describe('NarzedziaPaska', () => {
     expect(document.documentElement.dataset.theme).toBe('light');
   });
 
-  it('otwiera okna wgrywania czcionek i obrazów z menu Ustawienia w portalu z pułapką fokusu', async () => {
-    const { container } = render(<NaglowekAplikacji />);
-    otworzMenu();
-    fireEvent.click(screen.getByRole('button', { name: 'Wgrywanie czcionek' }));
-    const dialog = await screen.findByRole(
-      'dialog',
-      { name: 'Wgrywanie czcionek' },
-      { timeout: 5000 },
+  it('link Biblioteki przechodzi przez straż wyjścia edytora', () => {
+    const adresy: string[] = [];
+    render(
+      <NarzedziaPaska sprawdzWyjscie={(e, adres) => (e.preventDefault(), adresy.push(adres))} />,
     );
-    expect(dialog).toBeTruthy();
-    // Dialog renderowany przez portal w document.body (poza <header>, bez dziedziczenia białego fokusu paska).
-    expect(container.querySelector('header')!.contains(dialog)).toBe(false);
-    expect(document.body.contains(dialog)).toBe(true);
+    fireEvent.click(screen.getByRole('link', { name: 'Biblioteki' }));
+    expect(adresy).toEqual(['#/biblioteki']);
+  });
 
-    // Fokus startuje na przycisku zamykania; Shift+Tab zatrzymuje fokus wewnątrz dialogu.
-    const zamknij = screen.getByRole('button', { name: 'Zamknij okno' });
-    expect(document.activeElement).toBe(zamknij);
-    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
-    expect(dialog.contains(document.activeElement)).toBe(true);
-
-    fireEvent.click(zamknij);
-    expect(screen.queryByRole('dialog')).toBeNull();
-
-    otworzMenu();
-    fireEvent.click(screen.getByRole('button', { name: 'Wgrywanie obrazów' }));
-    expect(
-      await screen.findByRole('dialog', { name: 'Wgrywanie obrazów' }, { timeout: 5000 }),
-    ).toBeTruthy();
-    fireEvent.keyDown(window, { key: 'Escape' });
-    expect(screen.queryByRole('dialog')).toBeNull();
-
+  it('okno kolorów przycisków z menu Ustawienia w portalu z pułapką fokusu', async () => {
+    const { container } = render(<NaglowekAplikacji />);
     otworzMenu();
     fireEvent.click(screen.getByRole('button', { name: 'Kolory przycisków' }));
     const dialogKolorow = await screen.findByRole(
@@ -155,6 +138,12 @@ describe('NarzedziaPaska', () => {
       { name: 'Kolory przycisków' },
       { timeout: 5000 },
     );
+    // Dialog renderowany przez portal w document.body (poza <header>).
+    expect(container.querySelector('header')!.contains(dialogKolorow)).toBe(false);
+    const zamknij = screen.getByRole('button', { name: 'Zamknij okno' });
+    expect(document.activeElement).toBe(zamknij);
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(dialogKolorow.contains(document.activeElement)).toBe(true);
     expect(dialogKolorow).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Mausritter: Żywy cyjan (#1eabb8)' }));
     expect(document.documentElement.style.getPropertyValue('--krok-gra-1')).toBe('#1eabb8');
