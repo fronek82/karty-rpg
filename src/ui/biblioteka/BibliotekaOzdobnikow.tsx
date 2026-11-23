@@ -379,7 +379,7 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
             ))}
           </ul>
           <p className="podpis">{t('biblioteka.objasnienie')}</p>
-          <BibliotekaGlobalna rodzaj="ozdobnik" dodaj={dodajGlobalnie} />
+          <BibliotekaGlobalna dodaj={dodajGlobalnie} />
         </aside>
         <section className="panel-importu" aria-live="polite">
           {blad && (

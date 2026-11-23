@@ -91,20 +91,18 @@ for (const motyw of ['light', 'dark'] as const) {
     // 3) Własne karty: krok 2 ma ten sam kolor co krok 1 i stałą szerokość kafelków menu.
     await page.goto('./#/wlasne');
     await page.mouse.move(0, 0);
-    const linkNowy = page.getByRole('link', { name: /Nowy szablon od zera/ });
     const linkAi = page.getByRole('link', { name: /Układ ze zdjęcia \(AI\)/ });
     const btnImport = page.getByRole('button', { name: /Importuj szablon/ });
-    const kWlasne2 = await kolory(linkNowy);
-    expect(kWlasne2.tlo).toBe((await kolory(linkAi)).tlo);
+    const kWlasne2 = await kolory(linkAi);
     expect(kWlasne2.tlo).toBe((await kolory(btnImport)).tlo);
     expect(kWlasne2.tlo).toBe(kWlasne1.tlo);
     if (motyw === 'dark') {
       expect(kontrastRgb(kWlasne2.tekst, kWlasne2.tlo)).toBeGreaterThanOrEqual(4.5);
     }
-    const szerMenu = (await linkNowy.boundingBox())!.width;
+    const szerMenu = (await linkAi.boundingBox())!.width;
 
-    // 4) Wybór strony (Awers / Rewers) po kliknięciu „Nowy szablon od zera” – odrębne kolory.
-    await linkNowy.click();
+    // 4) Wybór strony (Awers / Rewers) – odrębne kolory.
+    await page.goto('./#/wlasne/nowy');
     await page.mouse.move(0, 0);
     const linkAwers = page.getByRole('link', { name: /^Awers/ });
     const btnRewers = page.getByRole('button', { name: /^Rewers/ });

@@ -11,9 +11,7 @@ import { kliknijPobierzPdf, nowaPustaKartka, otworzDruk, otworzUstawieniaAplikac
 test('Nowy szablon od zera: krok Awers / Rewers (PL i EN), Rewers otwiera od razu edytor rewersu', async ({
   page,
 }) => {
-  await page.goto('./#/wlasne');
-  await page.getByRole('link', { name: /Nowy szablon od zera/ }).click();
-  await expect(page).toHaveURL(/#\/wlasne\/nowy$/);
+  await page.goto('./#/wlasne/nowy');
 
   const menu = page.getByRole('navigation', { name: 'Strona karty' });
   const linkAwers = menu.getByRole('link', { name: /^Awers/ });

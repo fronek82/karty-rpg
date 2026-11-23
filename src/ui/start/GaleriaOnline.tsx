@@ -10,7 +10,6 @@ import {
 } from '../../dane/galeriaOnline';
 import { danePodgladu } from '../../dane/szablon';
 import { formatujLiczbe, jezyk as aktualnyJezyk, t } from '../../i18n';
-import { baza } from '../bazaUI';
 import { opisBleduImportu } from './importSzablonu';
 
 interface PodgladSvgWpisu {
@@ -80,7 +79,6 @@ export function GaleriaOnline({
 
   const [urlWejscie, ustawUrlWejscie] = useState('');
   const [pobieranieId, ustawPobieranieId] = useState<string>();
-  const [komunikat, ustawKomunikat] = useState<string>();
   const [bladAkcji, ustawBladAkcji] = useState<string>();
   const [podglady, ustawPodglady] = useState<Record<string, PodgladSvgWpisu>>({});
   const [otwartyPodglad, ustawOtwartyPodglad] = useState<string>();
@@ -150,7 +148,6 @@ export function GaleriaOnline({
     akcjaCtrl.current = kontroler;
     ustawPobieranieId(idZadania);
     ustawBladAkcji(undefined);
-    ustawKomunikat(undefined);
     try {
       const { bajty, paczka } = await pobierzSzablonZUrl(adres, {
         wymagajHttp,
@@ -177,20 +174,6 @@ export function GaleriaOnline({
       false,
       async (bajty) => {
         await uzyjSzablonu(bajty, przycisk);
-      },
-    );
-
-  const zapiszWBibliotece = (wpis: WpisGaleriiOnline) =>
-    void pobierzIWykonaj(
-      `bib:${wpis.id}`,
-      adresPlikuGalerii(import.meta.env.BASE_URL, wpis.plik),
-      false,
-      async (bajty) => {
-        const nazwa = wpis.nazwa[jezyk];
-        await baza().zapiszWBibliotece('szablon', nazwa, bajty);
-        if (zamontowany.current) {
-          ustawKomunikat(t('galeria.zapisanoWBibliotece', { nazwa }));
-        }
       },
     );
 
@@ -388,9 +371,6 @@ export function GaleriaOnline({
                   >
                     {pobieranieId === `uzyj:${wpis.id}` ? t('galeria.pobieram') : t('galeria.uzyj')}
                   </button>
-                  <button type="button" disabled={zajete} onClick={() => zapiszWBibliotece(wpis)}>
-                    {t('galeria.zapiszBiblioteka')}
-                  </button>
                   <button
                     type="button"
                     aria-expanded={otwarty}
@@ -424,11 +404,6 @@ export function GaleriaOnline({
         </div>
       </form>
 
-      {komunikat && (
-        <p role="status" aria-live="polite" className="status">
-          {komunikat}
-        </p>
-      )}
       {bladAkcji && (
         <p role="alert" className="uwaga">
           {bladAkcji}

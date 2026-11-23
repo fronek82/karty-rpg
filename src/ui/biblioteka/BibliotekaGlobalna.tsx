@@ -1,12 +1,6 @@
 import { liveQuery } from 'dexie';
 import { useEffect, useRef, useState } from 'react';
-import {
-  importujSzablon,
-  LIMITY_ARCHIWUM,
-  ROZSZERZENIE_OZDOBNIKA,
-  ROZSZERZENIE_SZABLONU,
-  ACCEPT_PLIKU_SZABLONU,
-} from '../../dane/archiwum';
+import { LIMITY_ARCHIWUM, ROZSZERZENIE_OZDOBNIKA } from '../../dane/archiwum';
 import type { WpisBibliotekiGlobalnej } from '../../dane/baza';
 import { BladDanych } from '../../dane/schemat';
 import { t } from '../../i18n';
@@ -14,13 +8,14 @@ import { baza, zapiszOzdobnikWBibliotece } from '../bazaUI';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import { opisBleduImportu } from '../start/importSzablonu';
 
-/** Zapisane kopie zasobów są wspólne dla projektów w tej przeglądarce. */
+/**
+ * Globalna biblioteka ozdobników: zapisane kopie są wspólne dla projektów w tej przeglądarce.
+ * (Szablony nie mają osobnej biblioteki – jedynym źródłem są „Moje szablony”.)
+ */
 export function BibliotekaGlobalna({
-  rodzaj,
   dodaj,
   zablokowana = false,
 }: {
-  rodzaj: 'szablon' | 'ozdobnik';
   dodaj: (bajty: Uint8Array, przycisk: HTMLButtonElement) => Promise<void | boolean>;
   zablokowana?: boolean;
 }) {
@@ -33,8 +28,8 @@ export function BibliotekaGlobalna({
   const naglowek = useRef<HTMLElement>(null);
   const plik = useRef<HTMLInputElement>(null);
   const trwa = useRef(false);
-  const szablony = rodzaj === 'szablon';
-  const rozszerzenie = szablony ? ROZSZERZENIE_SZABLONU : ROZSZERZENIE_OZDOBNIKA;
+  const rodzaj = 'ozdobnik';
+  const rozszerzenie = ROZSZERZENIE_OZDOBNIKA;
   useEffect(() => {
     if (!otwarta) return;
     const subskrypcja = liveQuery(() => baza().bibliotekaGlobalna(rodzaj)).subscribe({
@@ -42,7 +37,7 @@ export function BibliotekaGlobalna({
       error: (e) => ustawBladOdczytu(opisBleduImportu(e)),
     });
     return () => subskrypcja.unsubscribe();
-  }, [otwarta, rodzaj]);
+  }, [otwarta]);
 
   const wykonaj = async (f: () => Promise<string | undefined>) => {
     if (trwa.current || zablokowana) return;
@@ -67,17 +62,13 @@ export function BibliotekaGlobalna({
       );
     }
     const bajty = new Uint8Array(await f.arrayBuffer());
-    if (!szablony) return t('globalna.zapisano', { nazwa: await zapiszOzdobnikWBibliotece(bajty) });
-    const { nazwa } = importujSzablon(bajty).szablon;
-    await baza().zapiszWBibliotece('szablon', nazwa, bajty);
-    return t('globalna.zapisano', { nazwa });
+    return t('globalna.zapisano', { nazwa: await zapiszOzdobnikWBibliotece(bajty) });
   };
 
   return (
     <details className="biblioteka-globalna" onToggle={(e) => ustawOtwarta(e.currentTarget.open)}>
-      <summary ref={naglowek}>{t(`globalna.${rodzaj}`)}</summary>
+      <summary ref={naglowek}>{t('globalna.ozdobnik')}</summary>
       <p className="podpis">{t('globalna.opis')}</p>
-      {szablony && <p className="podpis">{t('globalna.czcionki')}</p>}
       <button
         type="button"
         aria-disabled={zajeta || zablokowana}
@@ -91,7 +82,7 @@ export function BibliotekaGlobalna({
         ref={plik}
         type="file"
         hidden
-        accept={szablony ? ACCEPT_PLIKU_SZABLONU : `${rozszerzenie},.zip`}
+        accept={`${rozszerzenie},.zip`}
         data-testid={`globalna-import-${rodzaj}`}
         onChange={(e) => {
           const plik = e.currentTarget.files?.[0];

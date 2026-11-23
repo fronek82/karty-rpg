@@ -14,8 +14,6 @@ import {
   opisRozmiaruSzablonu,
 } from '../../dane/wlasneKarty';
 import { t } from '../../i18n';
-import { baza } from '../bazaUI';
-import { BibliotekaGlobalna } from '../biblioteka/BibliotekaGlobalna';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import type { ProjektWEdycji } from '../useProjekt';
 
@@ -68,18 +66,6 @@ export function SzablonyProjektu({
     } catch (e) {
       ustawBlad(t('szablony.bladImportu', { szczegoly: komunikat(e) }));
       return false;
-    }
-  };
-
-  const zapiszGlobalnie = async (id: string, nazwa: string) => {
-    ustawBlad(undefined);
-    ustawStatus('');
-    try {
-      const { bajty, ostrzezenia } = eksportujSzablon(projekt, edycja.dane, id);
-      await baza().zapiszWBibliotece('szablon', nazwa, bajty);
-      ustawStatus([t('globalna.zapisano', { nazwa }), ...ostrzezenia].join(' '));
-    } catch (e) {
-      ustawBlad(komunikat(e));
     }
   };
 
@@ -137,13 +123,6 @@ export function SzablonyProjektu({
               </button>
               <button
                 type="button"
-                aria-label={t('globalna.zapiszEtykieta', { nazwa: s.nazwa })}
-                onClick={() => void zapiszGlobalnie(s.id, s.nazwa)}
-              >
-                {t('globalna.zapisz')}
-              </button>
-              <button
-                type="button"
                 aria-label={t('szablony.kartkaEtykieta', { nazwa: s.nazwa })}
                 onClick={() => kartkaDlaSzablonu(s.id)}
               >
@@ -184,7 +163,6 @@ export function SzablonyProjektu({
           {blad}
         </p>
       )}
-      <BibliotekaGlobalna rodzaj="szablon" dodaj={(bajty) => importuj(async () => bajty)} />
     </fieldset>
   );
 }

@@ -1,12 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
+import { kluczMiniaturySzablonu } from '../../dane/baza';
 import { ACCEPT_PLIKU_SZABLONU, LIMITY_ARCHIWUM } from '../../dane/archiwum';
 import { formatujLiczbe, t } from '../../i18n';
 import { rozpoznajRodzaj } from './importPlikow';
 import { KAFELKI_SZABLONOW } from '../../przyklady';
 import type { OpisPrzykladu } from '../../przyklady/typy';
-import { zapiszProjektZPrzykladu } from '../bazaUI';
-import { BibliotekaGlobalna } from '../biblioteka/BibliotekaGlobalna';
+import {
+  baza,
+  nowyProjektZAwersuZProjektu,
+  nowyProjektZRewersuZProjektu,
+  zapiszProjektZPrzykladu,
+} from '../bazaUI';
+import { poOstatnimZapisie } from '../useProjekt';
 import { GaleriaOnline } from './GaleriaOnline';
+import { pokazMojeSzablony } from './ListaProjektow';
+import {
+  adresMiniatury,
+  brakujacaDlaPozycji,
+  dorysujMiniatury,
+  wczytajPozycjeSzablonow,
+  type PozycjaSzablonu,
+} from './mojeSzablony';
 import { adresProjektu, importujPlikSzablonu, opisBleduImportu } from './importSzablonu';
 import {
   ponowPodgladyPrzykladow,
@@ -17,6 +31,126 @@ import {
 import { PodgladKartki } from './PodgladKartki';
 
 const MB = 1024 * 1024;
+
+/** Ile ostatnio zmienionych „Moich szablonów” pokazuje ekran (reszta – „Pokaż wszystkie”). */
+export const LIMIT_OSTATNICH = 8;
+
+/**
+ * „Moje szablony” na ekranie „Stwórz własne karty”: ostatnio zmienione szablony awersów i rewersy
+ * z miniaturą. Kliknięcie tworzy nowy projekt z kopią szablonu (oryginał zostaje bez zmian).
+ */
+function OstatnieSzablony({
+  wylaczony,
+  uzyj,
+}: {
+  wylaczony: boolean;
+  uzyj: (poz: PozycjaSzablonu, el: HTMLElement) => void;
+}) {
+  const [pozycje, ustawPozycje] = useState<PozycjaSzablonu[]>();
+  const [miniatury, ustawMiniatury] = useState<Map<string, string>>(new Map());
+  const [blad, ustawBlad] = useState<string>();
+
+  useEffect(() => {
+    let aktywny = true;
+    void (async () => {
+      try {
+        await poOstatnimZapisie();
+        const [wszystkie, zapisane] = await Promise.all([
+          wczytajPozycjeSzablonow(),
+          baza().miniatury(),
+        ]);
+        if (!aktywny) return;
+        const ostatnie = wszystkie.slice(0, LIMIT_OSTATNICH);
+        ustawPozycje(ostatnie);
+        ustawMiniatury(zapisane);
+        const brakujace = ostatnie.filter((p) => !zapisane.has(p.klucz)).map(brakujacaDlaPozycji);
+        if (!brakujace.length) return;
+        const nowe = await dorysujMiniatury(
+          brakujace,
+          () => aktywny,
+          () => undefined,
+        );
+        if (aktywny && nowe.size) ustawMiniatury((m) => new Map([...m, ...nowe]));
+      } catch (e) {
+        if (aktywny) ustawBlad(opisBleduImportu(e));
+      }
+    })();
+    return () => {
+      aktywny = false;
+    };
+  }, []);
+
+  return (
+    <section className="grupa-podgladow moje-szablony" aria-labelledby="wlasne-moje">
+      <div className="naglowek-moich">
+        <h2 id="wlasne-moje">
+          {t('start.mojeSzablony')} <small>{t('wlasne.mojePodpis')}</small>
+        </h2>
+        {pozycje && pozycje.length > 0 && (
+          <button type="button" className="pokaz-wszystkie" onClick={pokazMojeSzablony}>
+            {t('wlasne.pokazWszystkie')}
+          </button>
+        )}
+      </div>
+      {blad ? (
+        <p role="alert" className="uwaga">
+          {blad}
+        </p>
+      ) : !pozycje ? (
+        <p className="podpis">{t('projekty.wczytywanie')}</p>
+      ) : pozycje.length === 0 ? (
+        <p className="podpis">{t('wlasne.brakMoich')}</p>
+      ) : (
+        <div className="siatka-szablonow">
+          {pozycje.map((poz) => {
+            const svg =
+              miniatury.get(poz.klucz) ??
+              (poz.rodzaj === 'awers'
+                ? miniatury.get(kluczMiniaturySzablonu(poz.awers.projektId, poz.awers.szablonId))
+                : undefined);
+            return (
+              <button
+                key={poz.klucz}
+                type="button"
+                className="kafelek-podgladu"
+                data-moj-szablon={poz.klucz}
+                disabled={wylaczony}
+                aria-describedby="wlasne-moje-podpowiedz"
+                onClick={(e) => uzyj(poz, e.currentTarget)}
+              >
+                <span className="miniatura-podgladu miniatura-karty">
+                  {svg ? (
+                    <img className="miniatura-wlasna" alt="" src={adresMiniatury(svg)} />
+                  ) : (
+                    <span className="bez-miniatury" aria-hidden="true">
+                      🂠
+                    </span>
+                  )}
+                </span>
+                <span className="opis-podgladu">
+                  <b>
+                    {poz.nazwa}{' '}
+                    <span className={`znacznik-strony-karty znacznik-strony-karty-${poz.rodzaj}`}>
+                      {poz.rodzaj === 'rewers'
+                        ? t('projekty.stronaRewers')
+                        : t('projekty.stronaAwers')}
+                    </span>
+                  </b>
+                  <span className="podpowiedz" aria-hidden="true">
+                    {t('wlasne.kliknijMoj')}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <p id="wlasne-moje-podpowiedz" className="ukryte">
+        {t('wlasne.kliknijMoj')}
+      </p>
+    </section>
+  );
+}
 
 /** Kafelek przykładu: sam subskrybuje swój podgląd, więc gotowy podgląd nie przerysowuje ekranu. */
 function KafelekSzablonu({
@@ -69,10 +203,10 @@ function KafelekSzablonu({
 }
 
 /**
- * „Stwórz własne karty”: lewe menu („Nowy szablon od zera”, „Importuj szablon”) i w środku
- * kafelki z podglądem karty – pusta karta i przykładowe szablony z `src/przyklady/`. Podglądy
- * liczy silnik (ten sam SVG co w PDF); kliknięcie kafelka tworzy projekt z szablonem i jedną kartą
- * z danymi przykładowymi i otwiera edytor kartki.
+ * „Stwórz własne karty”: lewe menu (AI, „Importuj szablon”), a w środku od góry: „Moje szablony”
+ * (ostatnie), przykładowe szablony z `src/przyklady/` (podglądy liczy silnik – ten sam SVG co
+ * w PDF) i galeria online. Kliknięcie kafelka tworzy projekt z szablonem i otwiera edytor kartki.
+ * „Nowy szablon od zera” jest na stronie głównej.
  */
 export function WlasneKarty() {
   const plik = useRef<HTMLInputElement>(null);
@@ -139,6 +273,20 @@ export function WlasneKarty() {
       }
     }, el);
 
+  const uzyjMojego = (poz: PozycjaSzablonu, el: HTMLElement) =>
+    void wykonaj(async () => {
+      try {
+        return {
+          id:
+            poz.rodzaj === 'rewers'
+              ? await nowyProjektZRewersuZProjektu(poz.rewers.projektId, poz.rewers.rewersId)
+              : await nowyProjektZAwersuZProjektu(poz.awers.projektId, poz.awers.szablonId),
+        };
+      } catch (e) {
+        return { blad: opisBleduImportu(e) };
+      }
+    }, el);
+
   const importuj = (f: File) =>
     void wykonaj(async () => {
       if (f.size > LIMITY_ARCHIWUM.suma)
@@ -172,10 +320,6 @@ export function WlasneKarty() {
           <p id="wlasne-menu" className="etykieta-sekcji">
             {t('wlasne.menu')}
           </p>
-          <a href="#/wlasne/nowy" className="pasek-menu pasek-wlasne-2">
-            <b>{t('wlasne.nowyNazwa')}</b>
-            <span>{t('wlasne.nowyOpis')}</span>
-          </a>
           <a href="#/wlasne/ai" className="pasek-menu pasek-wlasne-2">
             <b>{t('wlasne.aiNazwa')}</b>
             <span>{t('wlasne.aiOpis')}</span>
@@ -202,34 +346,32 @@ export function WlasneKarty() {
               if (f) importuj(f);
             }}
           />
-          <BibliotekaGlobalna
-            rodzaj="szablon"
-            zablokowana={trwa}
-            dodaj={(bajty, przycisk) => wykonaj(() => importujPlikSzablonu(bajty), przycisk)}
-          />
         </nav>
 
-        <section
-          className="grupa-podgladow"
-          aria-labelledby="wlasne-przyklady"
-          aria-describedby="wlasne-podpowiedz"
-        >
-          <h2 id="wlasne-przyklady">
-            {t('wlasne.przyklady')} <small>{t('wlasne.przykladyPodpis')}</small>
-          </h2>
-          <p id="wlasne-podpowiedz" className="ukryte">
-            {t('wlasne.kliknij')}
-          </p>
-          <div className="siatka-szablonow">
-            {KAFELKI_SZABLONOW.map((o) => (
-              <KafelekSzablonu key={o.id} opis={o} wylaczony={trwa} utworz={utworz} />
-            ))}
-          </div>
+        <div className="grupy-podgladow">
+          <OstatnieSzablony wylaczony={trwa} uzyj={uzyjMojego} />
+          <section
+            className="grupa-podgladow"
+            aria-labelledby="wlasne-przyklady"
+            aria-describedby="wlasne-podpowiedz"
+          >
+            <h2 id="wlasne-przyklady">
+              {t('wlasne.przyklady')} <small>{t('wlasne.przykladyPodpis')}</small>
+            </h2>
+            <p id="wlasne-podpowiedz" className="ukryte">
+              {t('wlasne.kliknij')}
+            </p>
+            <div className="siatka-szablonow">
+              {KAFELKI_SZABLONOW.map((o) => (
+                <KafelekSzablonu key={o.id} opis={o} wylaczony={trwa} utworz={utworz} />
+              ))}
+            </div>
+          </section>
           <GaleriaOnline
             zablokowana={trwa}
             uzyjSzablonu={(bajty, zrodlo) => wykonaj(() => importujPlikSzablonu(bajty), zrodlo)}
           />
-        </section>
+        </div>
       </div>
       <p role="status" aria-live="polite" className="status">
         {trwa ? t('start.tworze') : ''}

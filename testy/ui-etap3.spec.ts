@@ -25,7 +25,7 @@ test('ekran wyboru strony Awers / Rewers ma opisy na środku bez SVG i wyrównan
   // Górny odstęp menu + etykieta sekcji obniżają pierwszy przycisk poniżej górnej krawędzi sekcji.
   expect(przyciskWlasne.y - kolWlasne.y).toBeGreaterThanOrEqual(40);
 
-  await page.getByRole('link', { name: /Nowy szablon od zera/ }).click();
+  await page.goto('./#/wlasne/nowy');
   await expect(page.getByRole('heading', { level: 1, name: 'Wybierz stronę karty' })).toBeVisible();
   const kolStrona = (await page.locator('.wybor-kolumny').boundingBox())!;
   const przyciskStrona = (await page
