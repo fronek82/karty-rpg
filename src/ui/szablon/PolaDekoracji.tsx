@@ -64,38 +64,51 @@ export function TloDekoracyjne({
         zmien={(v) => zmienTeksture(v || undefined)}
       />
       {obrazy.length === 0 && <p className="podpis">{t('dekoracje.obrazy')}</p>}
+      <PolePostrzepienia wartosc={postrzepienie} zmien={zmienPostrzepienie} />
+    </Sekcja>
+  );
+}
+
+/** Postrzępiona krawędź (karta albo kontener): włącznik i parametry. */
+export function PolePostrzepienia({
+  wartosc,
+  zmien,
+}: {
+  wartosc: Postrzepienie | undefined;
+  zmien: (v: Postrzepienie | undefined) => void;
+}) {
+  return (
+    <>
       <Wybor
         etykieta={t('dekoracje.postrzepienie')}
-        wartosc={!!postrzepienie}
-        zmien={(v) =>
-          zmienPostrzepienie(v ? { sila: 0.8, ziarnistosc: 2.5, ziarno: 1 } : undefined)
-        }
+        wartosc={!!wartosc}
+        zmien={(v) => zmien(v ? { sila: 0.8, ziarnistosc: 2.5, ziarno: 1 } : undefined)}
       />
-      {postrzepienie && (
+      {wartosc && (
         <>
           <Liczba
             etykieta={t('dekoracje.sila')}
-            wartosc={postrzepienie.sila}
+            wartosc={wartosc.sila}
             max={3}
             krok={0.05}
-            zmien={(sila) => zmienPostrzepienie({ ...postrzepienie, sila })}
+            zmien={(sila) => zmien({ ...wartosc, sila })}
           />
           <Liczba
             etykieta={t('dekoracje.ziarnistosc')}
-            wartosc={postrzepienie.ziarnistosc}
+            wartosc={wartosc.ziarnistosc}
             min={0.5}
             max={30}
             krok={0.5}
-            zmien={(ziarnistosc) => zmienPostrzepienie({ ...postrzepienie, ziarnistosc })}
+            zmien={(ziarnistosc) => zmien({ ...wartosc, ziarnistosc })}
           />
           <Liczba
             etykieta={t('dekoracje.ziarno')}
-            wartosc={postrzepienie.ziarno}
+            wartosc={wartosc.ziarno}
             max={4294967295}
-            zmien={(v) => zmienPostrzepienie({ ...postrzepienie, ziarno: Math.round(v) })}
+            zmien={(v) => zmien({ ...wartosc, ziarno: Math.round(v) })}
           />
         </>
       )}
-    </Sekcja>
+    </>
   );
 }

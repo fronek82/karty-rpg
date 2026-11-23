@@ -43,7 +43,8 @@ import { GrupyStylow } from './GrupyStylow';
 import { KolorZDanych } from './KolorZDanych';
 import { Liczba, Sekcja } from './Kontrolki';
 import { PanelWezla } from './PanelWezla';
-import { TloDekoracyjne } from './PolaDekoracji';
+import { PolePostrzepienia } from './PolaDekoracji';
+import { SekcjaTlaKarty } from './SekcjaTlaKarty';
 import { PoleRamki } from './PanelWygladu';
 
 /** Podgląd awersu: karta z danymi przykładowymi (silnik jak na kartce i w PDF). */
@@ -299,52 +300,54 @@ function PanelKarty({
           krok={0.5}
           zmien={(v) => zmienSz((s) => ({ ...s, promienRogow: v }), 'promien')}
         />
-        <label>
-          {t('kreator.kolor')}
-          <input
-            type="color"
-            value={szablon.tlo ?? '#ffffff'}
-            onChange={(e) => zmienSz((s) => ({ ...s, tlo: e.target.value }), 'tlo')}
-          />
-        </label>
       </div>
-      <TloDekoracyjne
+      <SekcjaTlaKarty
+        stan={szablon}
         obrazy={obrazy}
-        {...(szablon.teksturaTla ? { tekstura: szablon.teksturaTla } : {})}
-        {...(szablon.postrzepienie ? { postrzepienie: szablon.postrzepienie } : {})}
-        zmienTeksture={(v) =>
-          zmienSz((s) => {
-            const x = { ...s };
-            if (v) x.teksturaTla = v;
-            else delete x.teksturaTla;
-            return x;
-          })
-        }
-        zmienPostrzepienie={(v) =>
-          zmienSz((s) => {
-            const x = { ...s };
-            if (v) x.postrzepienie = v;
-            else delete x.postrzepienie;
-            return x;
-          }, 'postrzepienie-karty')
-        }
-      />
-      <KolorZDanych
-        szablon={szablon}
-        {...(szablon.tloZDanych ? { regula: szablon.tloZDanych } : {})}
-        kolor={szablon.tlo ?? '#ffffff'}
-        zmien={(v, klucz) =>
+        zmien={(f, klucz) =>
           zmienSz(
             (s) => {
-              const x = { ...s };
-              if (v) x.tloZDanych = v;
-              else delete x.tloZDanych;
-              return x;
+              const { tlo: _t, teksturaTla: _x, wzorTla: _w, ...reszta } = s;
+              void _t;
+              void _x;
+              void _w;
+              return { ...reszta, ...f(s) };
             },
-            klucz && `kolor-karty:${klucz}`,
+            klucz && `tlo-karty:${klucz}`,
           )
         }
+        dodatkiKoloru={
+          <KolorZDanych
+            szablon={szablon}
+            {...(szablon.tloZDanych ? { regula: szablon.tloZDanych } : {})}
+            kolor={szablon.tlo ?? '#ffffff'}
+            zmien={(v, klucz) =>
+              zmienSz(
+                (s) => {
+                  const x = { ...s };
+                  if (v) x.tloZDanych = v;
+                  else delete x.tloZDanych;
+                  return x;
+                },
+                klucz && `kolor-karty:${klucz}`,
+              )
+            }
+          />
+        }
       />
+      <Sekcja tytul={t('dekoracje.postrzepienie')}>
+        <PolePostrzepienia
+          wartosc={szablon.postrzepienie}
+          zmien={(v) =>
+            zmienSz((s) => {
+              const x = { ...s };
+              if (v) x.postrzepienie = v;
+              else delete x.postrzepienie;
+              return x;
+            }, 'postrzepienie-karty')
+          }
+        />
+      </Sekcja>
       <Sekcja tytul={t('zestawy.tytul')}>
         <p className="podpis">{t('zestawy.opis')}</p>
         <div className="dwa-pola">

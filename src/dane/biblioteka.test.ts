@@ -370,3 +370,55 @@ describe('poprawki po przeglądzie (paczka, limity, walidacja)', () => {
     expect(() => przygotujProjekt(p)).not.toThrow();
   });
 });
+
+describe('wzór tła karty (schemat 29, N5)', () => {
+  const wzor = {
+    rodzaj: 'romby' as const,
+    grubosc: 0.25,
+    odstep: 4,
+    kolor: '#884422',
+    krycie: 0.5,
+    obrot: 15,
+    przesuniecie: { x: 1, y: -2 },
+    podTekstura: true,
+  };
+
+  it('migracja 28→29 nie zmienia danych', () => {
+    expect(migruj({ wersja: 28, a: 1 }, 'projekt', 29)).toEqual({ wersja: 29, a: 1 });
+    expect(migruj({ wersja: 28, a: 1 }, 'szablon', 29)).toEqual({ wersja: 29, a: 1 });
+  });
+
+  it('wzór awersu i rewersu przechodzi eksport i import szablonu oraz projektu', () => {
+    const szablon: Szablon = { ...baza.szablony[0]!, wzorTla: wzor, rewersId: 'rw' };
+    const p: Projekt = {
+      ...baza,
+      szablony: [szablon, ...baza.szablony.slice(1)],
+      rewersy: [
+        {
+          id: 'rw',
+          nazwa: 'Rewers',
+          rozmiar: { tryb: 'mm', szerokosc: 63, wysokosc: 88 },
+          tlo: '#ffffff',
+          wzorTla: { ...wzor, rodzaj: 'kropki' },
+          korzen: { id: 'k', typ: 'swobodny', dzieci: [] },
+        },
+      ],
+    };
+    const paczka = importujSzablon(eksportujSzablon(p, zasoby, szablon.id).bajty);
+    expect(paczka.szablon.wzorTla).toEqual(wzor);
+    expect(paczka.rewers?.wzorTla).toEqual({ ...wzor, rodzaj: 'kropki' });
+    const projekt = importujProjekt(eksportujProjekt(p, zasoby)).projekt;
+    expect(projekt.szablony[0]!.wzorTla).toEqual(wzor);
+    expect(projekt.rewersy![0]!.wzorTla?.rodzaj).toBe('kropki');
+  });
+
+  it('schemat odrzuca nieznany rodzaj wzoru i zerowy odstęp', () => {
+    for (const zly of [
+      { ...wzor, rodzaj: 'fale' },
+      { ...wzor, odstep: 0 },
+    ]) {
+      const p = { ...baza, szablony: [{ ...baza.szablony[0]!, wzorTla: zly }] };
+      expect(() => przygotujProjekt(JSON.parse(JSON.stringify(p)))).toThrow();
+    }
+  });
+});

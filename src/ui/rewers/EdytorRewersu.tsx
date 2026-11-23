@@ -11,7 +11,6 @@ import { zmienWezel, znajdzWezel } from '../../dane/szablon';
 import { czyProjektWlasny } from '../../dane/wlasneKarty';
 import { t } from '../../i18n';
 import {
-  DOMYSLNE_TLO_KARTY,
   DOMYSLNY_KOLOR_TEKSTU,
   type Rewers,
   type Szablon,
@@ -31,6 +30,7 @@ import { nazwaPliku } from '../pliki';
 import { EdytorDrzewa, type KontekstPaneluKarty, type RysujPodglad } from '../szablon/EdytorDrzewa';
 import { Liczba, Lista, Sekcja, Wybor } from '../szablon/Kontrolki';
 import { PanelWezla } from '../szablon/PanelWezla';
+import { SekcjaTlaKarty } from '../szablon/SekcjaTlaKarty';
 import { PoleRamki } from '../szablon/PanelWygladu';
 import { RODZAJE_REWERSU } from '../szablon/PozycjeMenuDodaj';
 import type { ProjektWEdycji } from '../useProjekt';
@@ -217,12 +217,6 @@ function PanelTlaRewersu({
 }) {
   const plikTekstury = useRef<HTMLInputElement>(null);
   const { szer, wys } = { szer: rewers.rozmiar.szerokosc, wys: rewers.rozmiar.wysokosc };
-  const opcjeObrazyTla = [{ wartosc: '', tekst: t('dekoracje.brakTekstury') }, ...obrazy];
-  if (rewers.teksturaTla && !opcjeObrazyTla.some((o) => o.wartosc === rewers.teksturaTla))
-    opcjeObrazyTla.push({
-      wartosc: rewers.teksturaTla,
-      tekst: t('dekoracje.brakZasobu', { id: rewers.teksturaTla }),
-    });
   return (
     <>
       <h2>{t('rewers.tloIRamka')}</h2>
@@ -249,57 +243,54 @@ function PanelTlaRewersu({
           zmien={(v) => zmienRev((r) => ({ ...r, rozmiar: { ...r.rozmiar, wysokosc: v } }), 'wys')}
         />
       </div>
-      <div className="pole-panelu">
-        <label htmlFor="rewers-tlo-kolor">{t('kreator.kolor')}</label>
-        <input
-          id="rewers-tlo-kolor"
-          type="color"
-          value={rewers.tlo ?? DOMYSLNE_TLO_KARTY}
-          onChange={(e) => zmienRev((r) => ({ ...r, tlo: e.target.value }), 'tlo')}
-        />
-      </div>
-      <Sekcja tytul={t('dekoracje.tlo')} otwarta>
-        <Lista
-          etykieta={t('dekoracje.tekstura')}
-          opcje={opcjeObrazyTla}
-          wartosc={rewers.teksturaTla ?? ''}
-          zmien={(v) =>
-            zmienRev((r) => {
-              const x = { ...r };
-              if (v) x.teksturaTla = v;
-              else {
-                delete x.teksturaTla;
+      <SekcjaTlaKarty
+        stan={rewers}
+        obrazy={obrazy}
+        zmien={(f, klucz) =>
+          zmienRev(
+            (r) => {
+              const { tlo: _t, teksturaTla: _x, wzorTla: _w, ...reszta } = r;
+              void _t;
+              void _x;
+              void _w;
+              const x: Rewers = { ...reszta, ...f(r) };
+              if (!x.teksturaTla) {
                 delete x.teksturaTryb;
                 delete x.teksturaKrycie;
                 delete x.teksturaZabarwienie;
               }
               return x;
-            })
-          }
-        />
-        <div className="wiersz-przyciskow">
-          <button type="button" onClick={() => plikTekstury.current?.click()}>
-            {t('dekoracje.wgrajTeksture')}
-          </button>
-          <input
-            ref={plikTekstury}
-            type="file"
-            accept="image/png,image/jpeg"
-            hidden
-            data-testid="plik-tekstury-rewersu"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = '';
-              if (f) wgrajTeksture(f);
-            }}
-          />
-        </div>
-        {bladTekstury && (
-          <p role="alert" className="blad-pola">
-            {bladTekstury}
-          </p>
-        )}
-        {rewers.teksturaTla && (
+            },
+            klucz && `tlo-karty:${klucz}`,
+          )
+        }
+        wgrywanieObrazu={
+          <>
+            <div className="wiersz-przyciskow">
+              <button type="button" onClick={() => plikTekstury.current?.click()}>
+                {t('dekoracje.wgrajTeksture')}
+              </button>
+              <input
+                ref={plikTekstury}
+                type="file"
+                accept="image/png,image/jpeg"
+                hidden
+                data-testid="plik-tekstury-rewersu"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = '';
+                  if (f) wgrajTeksture(f);
+                }}
+              />
+            </div>
+            {bladTekstury && (
+              <p role="alert" className="blad-pola">
+                {bladTekstury}
+              </p>
+            )}
+          </>
+        }
+        dodatkiObrazu={
           <>
             <Lista
               etykieta={t('dekoracje.trybTla')}
@@ -396,8 +387,8 @@ function PanelTlaRewersu({
               </div>
             )}
           </>
-        )}
-      </Sekcja>
+        }
+      />
       <Sekcja tytul={t('wlasciwosci.ramkaKarty')} otwarta={!!rewers.ramka}>
         <PoleRamki
           etykieta={t('wlasciwosci.ramkaKarty')}
