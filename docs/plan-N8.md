@@ -40,8 +40,12 @@ Zasady dla każdego rodzaju:
 
 ### N8b – eksport i import
 
-Eksport bierze z widoku tylko użyte zasoby; import dodaje dołączone kopie do biblioteki
-z deduplikacją i przemapowaniem; testy na „czystej” bazie i podwójnego importu.
+Eksport bierze z widoku tylko użyte zasoby (projekt: `projektDoEksportu` – już w N8a; szablon
+i rewers – jak dotąd). Import projektu, szablonu, rewersu i paczki ozdobnika kończy się zapisem
+(`BazaProjektow.zapisz` z bajtami albo `zapiszWBibliotece`), który dodaje dołączone kopie do
+biblioteki z deduplikacją (id i treść, potem skrót) i przemapowaniem odwołań – bez osobnej ścieżki
+importu. Testy: `src/dane/importBiblioteki.test.ts` (czysta baza, podwójny import, kolizja id
+elementu o innej treści, szablon dodany dwa razy).
 
 ### N8c – UI biblioteki i wyborów
 
