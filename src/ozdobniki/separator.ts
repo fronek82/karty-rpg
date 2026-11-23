@@ -50,10 +50,6 @@ export function wysokoscOzdobySeparatora(
   return Math.max(...r.filter((v) => Number.isFinite(v) && v > 0), 0);
 }
 
-/** Czy separator ma jakąkolwiek ozdobę (do rozróżnienia od zwykłej linii). */
-export const maOzdobySeparatora = (pole: PoleSeparator) =>
-  !!pole.zakonczenia || !!pole.srodek || (!!pole.rysunek && pole.rysunek !== 'linia');
-
 /** Długość rysunku wzdłuż separatora w dostępnym miejscu: mm albo % (przycięta do miejsca). */
 export function dlugoscSeparatora(pole: PoleSeparator, dostepna: Mm): Mm {
   const d = pole.dlugosc;

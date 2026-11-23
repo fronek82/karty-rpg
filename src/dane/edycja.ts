@@ -9,7 +9,6 @@ import {
   type Szablon,
   type Talia,
   type UstawieniaObrazu,
-  type WariantCzcionki,
   type Wezel,
 } from '../model/szablon';
 
@@ -171,27 +170,6 @@ export function ustawRole(p: Projekt, rola: string, rodzina: string): Projekt {
   if (rodzina) role[rola] = rodzina;
   else delete role[rola];
   return { ...p, role, zmieniono: teraz() };
-}
-
-/** Zmienia nazwę rodziny we wszystkich jej czcionkach i w rolach, które na nią wskazują. */
-export function zmienNazweRodziny(p: Projekt, stara: string, nowa: string): Projekt {
-  if (!nowa || stara === nowa) return p;
-  return {
-    ...p,
-    zmieniono: teraz(),
-    zasoby: p.zasoby.map((z) =>
-      z.rodzaj === 'czcionka' && z.rodzina === stara ? { ...z, rodzina: nowa } : z,
-    ),
-    role: Object.fromEntries(Object.entries(p.role).map(([r, f]) => [r, f === stara ? nowa : f])),
-  };
-}
-
-export function ustawWariantCzcionki(p: Projekt, id: string, wariant: WariantCzcionki): Projekt {
-  return {
-    ...p,
-    zmieniono: teraz(),
-    zasoby: p.zasoby.map((z) => (z.rodzaj === 'czcionka' && z.id === id ? { ...z, wariant } : z)),
-  };
 }
 
 /** Dodaje zasoby do biblioteki (opisy i bajty). */

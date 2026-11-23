@@ -5,7 +5,6 @@ import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
 import {
   czyKontener,
   type Kontener,
-  type Rewers,
   type Szablon,
   type Wezel,
 } from '../model/szablon';
@@ -677,17 +676,6 @@ export const schematPlikuSzablonu = obj({
   biblioteka: opc(z.array(elementOzdobny).max(MAKS_ELEMENTOW_BIBLIOTEKI)),
 });
 
-/**
- * Kontrola w czasie kompilacji: dane po walidacji muszą pasować do typów modelu.
- * Rozjazd schematu i interfejsów (np. nowe wymagane pole w modelu) to błąd typów.
- */
-type _Zgodnosc = [
-  z.infer<typeof schematProjektu> extends Projekt ? true : never,
-  z.infer<typeof szablon> extends Szablon ? true : never,
-  z.infer<typeof schematRewersu> extends Rewers ? true : never,
-];
-export const _zgodnosc: _Zgodnosc = [true, true, true];
-
 function sciezka(p: PropertyKey[]): string {
   return p.length ? p.map(String).join('.') : '(korzeń)';
 }
@@ -1115,7 +1103,9 @@ export function ostrzezeniaProjektu(p: Projekt): string[] {
 
 /** Migruje, sprawdza kształt i twardą spójność – wspólne wejście dla pliku i bazy. */
 export function przygotujProjekt(surowe: unknown): Projekt {
-  const projekt = sprawdz(schematProjektu, migruj(surowe, 'projekt')) as Projekt;
+  // Bez rzutowania: rozjazd schematu i typów modelu (także szablonów i rewersów w projekcie)
+  // to błąd kompilacji.
+  const projekt: Projekt = sprawdz(schematProjektu, migruj(surowe, 'projekt'));
   sprawdzSpojnosc(projekt);
   return projekt;
 }

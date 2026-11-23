@@ -68,7 +68,6 @@ export const schematOdpowiedziAi = z.object({
   pola: z.array(schematPolaAi).min(1).max(40),
 });
 
-export type PoleAi = z.infer<typeof schematPolaAi>;
 export type OdpowiedzAi = z.infer<typeof schematOdpowiedziAi>;
 
 export type MagazynKlucza = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;

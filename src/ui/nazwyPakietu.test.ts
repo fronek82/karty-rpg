@@ -7,7 +7,6 @@ import {
   nazwaUkladu,
   nazwaWariantu,
   nazwaGryDo,
-  opisGry,
 } from './nazwyPakietu';
 import { gry } from '../pakiety/gry';
 
@@ -23,10 +22,7 @@ describe('nazwy pakietu w obu językach', () => {
       for (const r of typ.rozmiary) expect(nazwaRozmiaru(r)).toBe(r.nazwa);
     }
     for (const u of pakietMausritter.gotoweUklady) expect(nazwaUkladu(u)).toBe(u.nazwa);
-    for (const g of gry) {
-      expect(nazwaGryDo(g)).toBe(g.nazwaDo);
-      expect(opisGry(g)).toBe(g.opis);
-    }
+    for (const g of gry) expect(nazwaGryDo(g)).toBe(g.nazwaDo);
   });
 
   it('każda nazwa ma tłumaczenie angielskie (inne niż polskie albo identyczne z założenia)', () => {

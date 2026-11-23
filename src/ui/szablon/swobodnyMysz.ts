@@ -36,9 +36,6 @@ export const SIATKA_DOMYSLNA = 0.5;
 
 const zaokr = (v: number) => Math.round(v * 1000) / 1000;
 
-/** Piksele ekranu → mm przy danej szerokości podglądu karty (px) i szerokości karty (mm). */
-export const pxNaMm = (px: number, szerokoscPx: number, szerokoscMm: Mm): Mm =>
-  (px * szerokoscMm) / szerokoscPx;
 /** mm → piksele ekranu. */
 export const mmNaPx = (mm: Mm, szerokoscPx: number, szerokoscMm: Mm): number =>
   (mm * szerokoscPx) / szerokoscMm;

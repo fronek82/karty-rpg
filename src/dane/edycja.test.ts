@@ -12,9 +12,7 @@ import {
   ustawRole,
   ustawTytulArkusza,
   ustawUstawieniaArkusza,
-  ustawWariantCzcionki,
   usunZasob,
-  zmienNazweRodziny,
 } from './edycja';
 import { szablonStatystyk } from '../silnik/__testy__/przyklady';
 import { projektZPakietu } from './pakiet';
@@ -90,19 +88,13 @@ describe('biblioteka czcionek i role', () => {
     expect(roleProjektu(p).sort()).toEqual(['tresc', 'tytul']);
   });
 
-  it('zmiana nazwy rodziny przenosi role; usunięcie przypisania roli', () => {
-    let x = zmienNazweRodziny(p, 'EB Garamond', 'Garamond');
-    expect(x.role.tresc).toBe('Garamond');
-    expect(ostrzezeniaProjektu(x)).toEqual([]);
-    x = ustawRole(x, 'tresc', '');
+  it('usunięcie przypisania roli', () => {
+    const x = ustawRole(p, 'tresc', '');
     expect(x.role.tresc).toBeUndefined();
     expect(roleProjektu(x)).toContain('tresc');
   });
 
-  it('wariant i usunięcie czcionki (z ostrzeżeniem, nie błędem)', () => {
-    const c = p.zasoby.find((z) => z.rodzaj === 'czcionka' && z.wariant === 'kursywa')!;
-    const x = ustawWariantCzcionki(p, c.id, 'pogrubiony');
-    expect(ostrzezeniaProjektu(x).join()).toMatch(/dwie czcionki/);
+  it('usunięcie czcionki (z ostrzeżeniem, nie błędem)', () => {
     const grenze = p.zasoby.filter(
       (z) => z.rodzaj === 'czcionka' && z.rodzina === 'Grenze Gotisch',
     );
