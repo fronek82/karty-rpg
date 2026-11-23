@@ -21,7 +21,7 @@ const KIERUNKI: Record<Exclude<RodzajWzoruTla, 'kropki'>, number[]> = {
 /** Najwięcej kropek na karcie – przy gęstszym wzorze odstęp jest powiększany (wydajność PDF). */
 export const MAX_KROPEK = 20000;
 const K_LUKU = 0.5522847498;
-const zaokr = (v: number) => Math.round(v * 1e4) / 1e4;
+const zaokr = (v: number) => Math.round(v * 1e4) / 1e4 + 0;
 
 function rzuty(o: Obszar, px: number, py: number, ux: number, uy: number): [number, number] {
   let min = Infinity;

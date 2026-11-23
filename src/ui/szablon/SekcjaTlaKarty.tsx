@@ -23,6 +23,15 @@ const RODZAJE: readonly RodzajWzoruTla[] = [
 ];
 const BIALY = '#ffffff';
 
+/** Czy dwa stany tła są takie same (bez zmiany – bez wpisu „Cofnij” i zapisu). */
+export function tenSamStanTla(a: StanTla, b: StanTla): boolean {
+  return (
+    a.tlo === b.tlo &&
+    a.teksturaTla === b.teksturaTla &&
+    JSON.stringify(a.wzorTla) === JSON.stringify(b.wzorTla)
+  );
+}
+
 export function trybTla(s: StanTla): TrybTlaKarty {
   if (s.wzorTla) return 'wzor';
   if (s.teksturaTla) return 'obraz';
@@ -92,14 +101,20 @@ export function SekcjaTlaKarty({
         etykieta={tryb === 'wzor' ? t('tloKarty.teksturaPodWzorem') : t('dekoracje.tekstura')}
         opcje={opcjeObrazow}
         wartosc={stan.teksturaTla ?? ''}
-        zmien={(v) =>
+        zmien={(v) => {
+          const x = { ...stan };
+          if (v) x.teksturaTla = v;
+          else delete x.teksturaTla;
+          // Bez tekstury w trybie „Obraz” zostajemy w nim (lista nie znika).
+          const po = trybTla(x);
+          ustawWymuszony(po === tryb ? undefined : { tryb, przy: po });
           zmien((s) => {
-            const x = { ...s };
-            if (v) x.teksturaTla = v;
-            else delete x.teksturaTla;
-            return x;
-          })
-        }
+            const y = { ...s };
+            if (v) y.teksturaTla = v;
+            else delete y.teksturaTla;
+            return y;
+          });
+        }}
       />
       {obrazy.length === 0 && !wgrywanieObrazu && <p className="podpis">{t('dekoracje.obrazy')}</p>}
       {wgrywanieObrazu}
@@ -119,7 +134,7 @@ export function SekcjaTlaKarty({
           const wynik = zmienTrybTla(stan, nowy, obrazy[0]?.wartosc);
           const po = trybTla(wynik);
           ustawWymuszony(po === nowy ? undefined : { tryb: nowy, przy: po });
-          zmien((s) => zmienTrybTla(s, nowy, obrazy[0]?.wartosc), 'tryb-tla');
+          zmien((s) => zmienTrybTla(s, nowy, obrazy[0]?.wartosc));
         }}
       />
       {tryb !== 'brak' && (

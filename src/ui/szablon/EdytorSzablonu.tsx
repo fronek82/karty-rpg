@@ -44,7 +44,7 @@ import { KolorZDanych } from './KolorZDanych';
 import { Liczba, Sekcja } from './Kontrolki';
 import { PanelWezla } from './PanelWezla';
 import { PolePostrzepienia } from './PolaDekoracji';
-import { SekcjaTlaKarty } from './SekcjaTlaKarty';
+import { SekcjaTlaKarty, tenSamStanTla } from './SekcjaTlaKarty';
 import { PoleRamki } from './PanelWygladu';
 
 /** Podgląd awersu: karta z danymi przykładowymi (silnik jak na kartce i w PDF). */
@@ -311,7 +311,9 @@ function PanelKarty({
               void _t;
               void _x;
               void _w;
-              return { ...reszta, ...f(s) };
+              const nowy = f(s);
+              if (tenSamStanTla(s, nowy)) return s;
+              return { ...reszta, ...nowy };
             },
             klucz && `tlo-karty:${klucz}`,
           )

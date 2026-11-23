@@ -30,7 +30,7 @@ import { nazwaPliku } from '../pliki';
 import { EdytorDrzewa, type KontekstPaneluKarty, type RysujPodglad } from '../szablon/EdytorDrzewa';
 import { Liczba, Lista, Sekcja, Wybor } from '../szablon/Kontrolki';
 import { PanelWezla } from '../szablon/PanelWezla';
-import { SekcjaTlaKarty } from '../szablon/SekcjaTlaKarty';
+import { SekcjaTlaKarty, tenSamStanTla } from '../szablon/SekcjaTlaKarty';
 import { PoleRamki } from '../szablon/PanelWygladu';
 import { RODZAJE_REWERSU } from '../szablon/PozycjeMenuDodaj';
 import type { ProjektWEdycji } from '../useProjekt';
@@ -254,7 +254,9 @@ function PanelTlaRewersu({
               void _t;
               void _x;
               void _w;
-              const x: Rewers = { ...reszta, ...f(r) };
+              const nowy = f(r);
+              if (tenSamStanTla(r, nowy)) return r;
+              const x: Rewers = { ...reszta, ...nowy };
               if (!x.teksturaTla) {
                 delete x.teksturaTryb;
                 delete x.teksturaKrycie;

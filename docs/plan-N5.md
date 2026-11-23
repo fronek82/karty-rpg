@@ -32,3 +32,5 @@ Zrzut: `docs/obrazy/n5-wzory-tla.png`.
 - Gęste kropki: najwyżej `MAX_KROPEK` (20 000) – przy gęstszym ustawieniu odstęp jest powiększany
   (rozmiar PDF). Odstęp ≥ 0,5 mm, grubość 0,05–50 mm (schemat).
 - „Tło do krawędzi slotu” (druk domowy) nadal rozciąga tylko kolor – bez wzoru i tekstury, jak dotąd.
+- „Brak” nie usuwa reguły „Kolor z danych” (awers) – reguła działa niezależnie od trybu tła, jak
+  przed N5. Przełączenie trybu bez zmiany danych nie tworzy wpisu „Cofnij”.
