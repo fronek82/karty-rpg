@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { roleProjektu } from '../../dane/edycja';
 import {
   doPoprzedniegoKontenera,
@@ -65,6 +65,11 @@ import {
 } from './swobodnyMysz';
 import { upuscWezel } from './upuszczanie';
 import { useGestSwobodny } from './useGestSwobodny';
+
+// Okno AI ładowane dopiero po kliknięciu „Układ ze zdjęcia”.
+const OknoUkladuZeZdjecia = lazy(() =>
+  import('./OknoUkladuZeZdjecia').then((m) => ({ default: m.OknoUkladuZeZdjecia })),
+);
 
 /*
  * Wspólny edytor drzewa elementów karty – awersu (Edytor szablonu) i rewersu (Edytor rewersu):
@@ -338,6 +343,8 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   useSkrotZapisu(edycja.zapiszTeraz);
   const { sprawdzWyjscie, okno: oknoWyjscia } = useStrazWyjscia(edycja);
   const plikImportu = useRef<HTMLInputElement>(null);
+  const [oknoAi, ustawOknoAi] = useState(false);
+  const przyciskAi = useRef<HTMLButtonElement>(null);
   // Komunikat eksportu/importu pliku szablonu (z linkiem do zaimportowanego) albo błąd.
   const [komunikatPliku, ustawKomunikatPliku] = useState<{
     tekst: string;
@@ -700,6 +707,14 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
           </span>
           <span className="grupa-paska">
             <button
+              ref={przyciskAi}
+              type="button"
+              title={t('ai.przyciskOpis')}
+              onClick={() => ustawOknoAi(true)}
+            >
+              {t('ai.przycisk')}
+            </button>
+            <button
               type="button"
               aria-label={t('szablon.eksportujPlik')}
               title={t('szablon.eksportujPlik')}
@@ -757,6 +772,36 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
           <NarzedziaPaska />
         </header>
         {oknoWyjscia}
+        {oknoAi && (
+          <Suspense fallback={null}>
+            <OknoUkladuZeZdjecia
+              szablon={szablon}
+              bezDanych={bezDanych}
+              zajeteKlucze={zajeteKlucze}
+              podglad={(s) => {
+                try {
+                  const w = u.rysuj(u.kluczRysunku(s), {
+                    czcionki: zasoby.czcionki,
+                    obraz: (x) => zasoby.obrazy.get(x)?.info,
+                    ...(zasoby.elementy ? { elementy: zasoby.elementy } : {}),
+                  });
+                  return scenaDoSvg(w.scena, {
+                    adresObrazu: (x) => zasoby.obrazy.get(x)?.adres,
+                    przedrostekId: `ai-${u.przedrostekSvg}`,
+                  });
+                } catch {
+                  return undefined;
+                }
+              }}
+              wstaw={(f) => zmienSz(f)}
+              {...(podklad ? { dolaczPodklad: podklad.wczytaj } : {})}
+              zamknij={() => {
+                ustawOknoAi(false);
+                przyciskAi.current?.focus();
+              }}
+            />
+          </Suspense>
+        )}
         <h1 className="tylko-czytnik">{u.teksty.tytul}</h1>
         <div role="status">
           {u.kopia && <a href={u.kopia.adres}>{u.kopia.tekst}</a>}

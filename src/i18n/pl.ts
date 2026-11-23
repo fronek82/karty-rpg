@@ -1509,9 +1509,10 @@ export const pl = {
   'csvSzablon.przycisk': 'Eksportuj szablon CSV',
   'csvSzablon.opis':
     'Pobiera gotowy plik CSV z nazwami pól do uzupełnienia w arkuszu i ponownego importu.',
-  'wlasne.aiNazwa': 'Układ ze zdjęcia (AI)',
-  'wlasne.aiOpis': 'Wyślij zdjęcie karty z własnym kluczem Claude API – otrzymasz strukturę pól.',
-  'ai.tytul': 'Układ karty ze zdjęcia (AI)',
+  'ai.przycisk': 'Układ ze zdjęcia',
+  'ai.przyciskOpis':
+    'Układ ze zdjęcia (AI): rozpoznaj elementy karty ze zdjęcia i wstaw je na tę stronę',
+  'ai.tytul': 'Układ ze zdjęcia (AI)',
   'ai.opis':
     'Model zwraca wyłącznie układ i typy pól (bez kopiowania grafik i treści). Zdjęcie jest wysyłane bezpośrednio z przeglądarki do Claude API.',
   'ai.kluczEtykieta': 'Klucz Claude API',
@@ -1522,13 +1523,15 @@ export const pl = {
   'ai.kluczUsuniety': 'Usunięto zapisany klucz API z tej przeglądarki.',
   'ai.zdjecieEtykieta': 'Zdjęcie lub skan karty (PNG, JPG, WebP)',
   'ai.wybierzZdjecie': 'Wybierz zdjęcie karty…',
-  'ai.dolaczPodklad': 'Dołącz zdjęcie jako podkład w edytorze szablonu (nie jest drukowany)',
+  'ai.dolaczPodklad': 'Dołącz zdjęcie jako podkład (nie jest drukowany)',
   'ai.rozpoznaj': 'Rozpoznaj układ',
   'ai.analizuje': 'Rozpoznaję układ…',
   'ai.anulujAnalize': 'Przerwij',
-  'ai.podgladOpis':
-    'Sprawdź rozmieszczenie pól i otwórz szablon w edytorze, żeby dopracować szczegóły.',
-  'ai.otworzEdytor': 'Otwórz w edytorze szablonu',
+  'ai.podgladOpis': 'Rozmieszczenie pól na tej stronie. Szczegóły dopracujesz w edytorze.',
+  'ai.maElementy': 'Ta strona ma już elementy. Co zrobić z rozpoznanym układem?',
+  'ai.zastap': 'Zastąp elementy',
+  'ai.dodajObok': 'Dodaj obok',
+  'ai.wstaw': 'Wstaw układ',
   'ai.nazwaDomyslna': 'Szablon ze zdjęcia',
   'ai.brakKlucza': 'Podaj klucz Claude API przed uruchomieniem rozpoznawania.',
   'ai.brakObrazu': 'Wybierz zdjęcie lub skan karty (PNG, JPG lub WebP).',

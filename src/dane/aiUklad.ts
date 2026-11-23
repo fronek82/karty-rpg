@@ -14,8 +14,10 @@ import type {
   Szablon,
   WariantCzcionki,
 } from '../model/szablon';
+import { czyKontener, wszystkieWezly, type Wezel } from '../model/szablon';
+import { unikalneId } from './czcionki';
 import { BladDanych } from './schemat';
-import { kluczZNazwy } from './szablon';
+import { kluczeSzablonu, kluczZNazwy } from './szablon';
 import { zaokraglij } from '../model/geometria';
 
 /** Klucz w `localStorage` – klucz API żyje wyłącznie lokalnie w tej przeglądarce. */
@@ -344,6 +346,60 @@ export function szablonZOdpowiedziAi(
       dzieci,
     },
   };
+}
+
+/** `zastap` – rozpoznane pola zamiast dotychczasowych elementów strony; `dodaj` – obok nich. */
+export type TrybWstawieniaAi = 'zastap' | 'dodaj';
+
+/**
+ * Wstawia pola rozpoznane ze zdjęcia do edytowanej strony (awersu albo rewersu w postaci szablonu).
+ * Rozmiar, tło, ramka, rogi i style strony zostają bez zmian. Pola dostają wolne identyfikatory
+ * i klucze danych (z przykładową treścią); `bezKlucza` (rewers) – pola stałe: tekst z przykładu,
+ * bez tabel. `zajete` – klucze zajęte poza szablonem (np. dane kart).
+ */
+export function wstawUkladAi(
+  cel: Szablon,
+  ai: Pick<Szablon, 'korzen' | 'przyklad'>,
+  tryb: TrybWstawieniaAi,
+  opcje: { zajete?: Iterable<string>; bezKlucza?: boolean } = {},
+): Szablon {
+  const podstawa: Szablon =
+    tryb === 'zastap' ? { ...cel, korzen: { ...cel.korzen, dzieci: [] } } : cel;
+  const przyklad: Record<string, string> = tryb === 'zastap' ? {} : { ...(cel.przyklad ?? {}) };
+  const ids = new Set(wszystkieWezly(podstawa).map((w) => w.id));
+  const klucze = new Set([...kluczeSzablonu(podstawa), ...(opcje.zajete ?? [])]);
+  const nowe: Wezel[] = [];
+  for (const zrodlo of ai.korzen.dzieci) {
+    if (czyKontener(zrodlo)) continue;
+    if (opcje.bezKlucza && zrodlo.typ === 'tabela') continue;
+    const pole = structuredClone(zrodlo);
+    pole.id = unikalneId(zrodlo.id, ids);
+    ids.add(pole.id);
+    const stary = pole.klucz;
+    const wartosc = stary ? ai.przyklad?.[stary] : undefined;
+    if (stary && opcje.bezKlucza) {
+      delete pole.klucz;
+      if (pole.typ === 'tekst' || pole.typ === 'wartosc') pole.tekst = wartosc ?? pole.nazwa ?? '';
+    } else if (stary) {
+      pole.klucz = kluczZNazwy(pole.nazwa ?? stary, klucze);
+      klucze.add(pole.klucz);
+      if (wartosc !== undefined) przyklad[pole.klucz] = wartosc;
+    }
+    if (pole.typ === 'tabela')
+      pole.kolumny = pole.kolumny.map((k) => {
+        const klucz = kluczZNazwy(k.klucz, klucze);
+        klucze.add(klucz);
+        return { ...k, klucz };
+      });
+    nowe.push(pole);
+  }
+  const wynik: Szablon = {
+    ...podstawa,
+    korzen: { ...podstawa.korzen, dzieci: [...podstawa.korzen.dzieci, ...nowe] },
+  };
+  if (Object.keys(przyklad).length) wynik.przyklad = przyklad;
+  else delete wynik.przyklad;
+  return wynik;
 }
 
 /** Treść promptu wymuszająca zwrot wyłącznie geometrii i struktury pól (bez treści ani grafik). */
