@@ -9,8 +9,9 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
 - Ukończone: M1–M5, M2b, M2c, przebudowa UI (UI-1…UI-9), poprawki UX i „UI etap 1–4” (PR #71–#77),
   rewersy globalne, Google Fonts, kolory przycisków, awers/rewers wszystkich kart (PR #78–#86),
   porządek projektów P1–P3 (PR #87–#89, `docs/plan-porzadek-projektow.md`), poprawki danych N1
-  (`docs/plan-N1.md`), porządki w kodzie N2 (`docs/plan-N2.md`).
-- Kolejne etapy (N3…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
+  (`docs/plan-N1.md`), porządki w kodzie N2 (`docs/plan-N2.md`), edytor i UI N3 (`docs/plan-N3.md`:
+  eksport/import szablonu w edytorze, przeciąganie na gładziku, paski, zapis ręczny w edytorze szablonu).
+- Kolejne etapy (N4…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 27` (`src/model/projekt.ts`), baza Dexie w wersji 4.
 
 ## Gdzie co jest
