@@ -1,6 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import { t } from '../../i18n';
-import type { Kolor, RodzajWzoruTla, WzorTla } from '../../model/szablon';
+import {
+  DOMYSLNE_TLO_KARTY,
+  type Kolor,
+  type RodzajWzoruTla,
+  type WzorTla,
+} from '../../model/szablon';
 import { DOMYSLNY_WZOR_TLA } from '../../silnik/wzorTla';
 import { Liczba, Lista, PoleKoloru, Przelacznik, Sekcja, Wybor } from './Kontrolki';
 
@@ -21,7 +26,7 @@ const RODZAJE: readonly RodzajWzoruTla[] = [
   'ukosne',
   'kropki',
 ];
-const BIALY = '#ffffff';
+const BIALY = DOMYSLNE_TLO_KARTY;
 
 /** Czy dwa stany tła są takie same (bez zmiany – bez wpisu „Cofnij” i zapisu). */
 export function tenSamStanTla(a: StanTla, b: StanTla): boolean {
