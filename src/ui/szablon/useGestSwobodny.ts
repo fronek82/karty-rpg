@@ -252,12 +252,14 @@ export function useGestSwobodny({
   };
   /**
    * Gest bez `pointerup` (przycisk puszczony tam, gdzie zdarzenie nie dotarło): nowy pointerdown
-   * tego samego wskaźnika najpierw kończy poprzedni gest z zapisem.
+   * tego samego wskaźnika kończy poprzedni gest z zapisem i sam gestu nie zaczyna (szablon z tego
+   * renderu nie zawiera jeszcze zapisanej zmiany). Zwraca, czy domknięto gest.
    */
-  const domknijZgubiony = (e: PointerReact) => {
+  const domknijZgubiony = (e: PointerReact): boolean => {
     const a = aktywny.current;
-    if (a && a.pointerId === e.pointerId)
-      zakoncz({ pointerId: a.pointerId, shiftKey: false }, false);
+    if (!a || a.pointerId !== e.pointerId) return false;
+    zakoncz({ pointerId: a.pointerId, shiftKey: false }, false);
+    return true;
   };
   // Safari: Force Click na gładziku (podgląd słownika) przerywa przeciąganie – blokujemy go na karcie.
   useEffect(() => {
@@ -282,7 +284,7 @@ export function useGestSwobodny({
       return true;
     },
     onPointerDown: (e: PointerReact) => {
-      domknijZgubiony(e);
+      if (domknijZgubiony(e)) return;
       // Trwający gest (np. drugi palec) i nie-główne wskaźniki nie zaczynają nowego.
       if (e.button !== 0 || !e.isPrimary || aktywny.current || !szablon || !wezly) return;
       const m = pomiar(e);
@@ -341,7 +343,7 @@ export function useGestSwobodny({
     },
     onUchwytDown: (uchwyt: Uchwyt, e: PointerReact) => {
       e.stopPropagation();
-      domknijZgubiony(e);
+      if (domknijZgubiony(e)) return;
       if (e.button !== 0 || !e.isPrimary || aktywny.current || !szablon || !wezly) return;
       const cele = budujCele(szablon, wezly, zaznaczone);
       const cel = cele.length === zaznaczone.length ? celSkalowania(cele) : undefined;

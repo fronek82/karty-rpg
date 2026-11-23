@@ -69,3 +69,11 @@ Cofnięcie gestu – tylko Escape. Testy: `useGestSwobodny.test.tsx` (zdarzenia)
   przerwaniem); do sprawdzenia ręcznie na Macu.
 - N3-8: Zrzuty instrukcji (`public/instrukcja-zrzuty/`) nie zostały odświeżone – pasek wygląda
   nieco inaczej niż na zrzucie „Edytor szablonu”; do odświeżenia przy najbliższym etapie ze zrzutami.
+- N3-9: Straż wyjścia (jak w Edytorze kart przed N3) obsługuje kliknięcia linków paska; przycisk
+  „Wstecz” przeglądarki i ręczna zmiana adresu poza projekt nie pytają o zapis (zamknięcie karty –
+  ostrzeżenie przeglądarki). Do rozważenia w kolejnym etapie (blokada w `useTrasa`).
+- N3-10: Przejście z Edytora szablonu/rewersu do biblioteki ozdobników projektu (autozapis) zapisuje
+  niezapisane zmiany – biblioteka nie ma przycisku „Zapisz”, a jej zmiany muszą trafić do bazy.
+  Rewers zapisany w ten sposób trafi do biblioteki globalnej przy następnym zapisie w jego edytorze.
+- N3-11: Zgubione `pointerup` (nowy `pointerdown` tego samego wskaźnika w trakcie gestu) zapisuje
+  poprzedni gest, a nowy nie startuje – następny klik działa już na zapisanym szablonie.

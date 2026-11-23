@@ -1331,7 +1331,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   text-decoration: underline;
 }
 
-:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > button.ikonowy {
+:is(.pasek-gorny, .grupa-paska) > button.ikonowy {
   font-size: 1.15rem;
   padding: 0 0.6rem;
 }

@@ -155,6 +155,7 @@ describe('useGestSwobodny', () => {
     act(() => w.result.current.onPointerDown(zd(mm(40, 40))));
     expect(zatwierdz).toHaveBeenCalledTimes(1);
     expect([...zatwierdz.mock.calls[0]![0].values()][0].pozycja.x).toBe(13);
+    expect(w.result.current.aktywny()).toBe(false);
   });
 
   it('pointerdown rozpoczynający gest blokuje domyślną akcję (zaznaczanie, natywne przeciąganie)', () => {

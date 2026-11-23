@@ -56,7 +56,7 @@
 }
 
 .przycisk-kontur,
-:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk),
+:is(.pasek-gorny, .grupa-paska) > :is(button, a.przycisk),
 .pasek-gorny .menu-pobierz > button {
   display: inline-flex;
   align-items: center;
@@ -72,20 +72,20 @@
 }
 
 .przycisk-kontur:hover,
-:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk):hover:not(:disabled),
+:is(.pasek-gorny, .grupa-paska) > :is(button, a.przycisk):hover:not(:disabled),
 .pasek-gorny .menu-pobierz > button:hover:not(:disabled) {
   background: color-mix(in srgb, black 22%, var(--pasek));
   border-color: var(--pasek-tekst);
   color: var(--pasek-tekst);
 }
 
-:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk)[aria-pressed='true'],
+:is(.pasek-gorny, .grupa-paska) > :is(button, a.przycisk)[aria-pressed='true'],
 .pasek-gorny .menu-pobierz > button[aria-expanded='true'] {
   background: color-mix(in srgb, black 32%, var(--pasek));
 }
 
 /* Przycisk główny na pasku (także przycisk menu „Pobierz”): pełne białe tło, tekst w kolorze paska. */
-:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk).glowny,
+:is(.pasek-gorny, .grupa-paska) > :is(button, a.przycisk).glowny,
 .pasek-gorny .menu-pobierz > button.glowny {
   background: var(--pasek-tekst);
   border-color: var(--pasek-tekst);
@@ -93,8 +93,7 @@
   font-weight: 600;
 }
 
-:is(.pasek-gorny, .pasek-gorny > .grupa-paska)
-  > :is(button, a.przycisk).glowny:hover:not(:disabled),
+:is(.pasek-gorny, .grupa-paska) > :is(button, a.przycisk).glowny:hover:not(:disabled),
 .pasek-gorny .menu-pobierz > button.glowny:hover:not(:disabled),
 .pasek-gorny .menu-pobierz > button.glowny[aria-expanded='true'] {
   background: var(--pasek-tekst);
@@ -138,7 +137,7 @@
 }
 
 /* Wyłączone na pasku: pełny biały napis (kontrast), stan pokazuje przerywany obrys. */
-:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk):disabled,
+:is(.pasek-gorny, .grupa-paska) > :is(button, a.przycisk):disabled,
 .pasek-gorny .menu-pobierz > button:disabled {
   color: var(--pasek-tekst);
   background: transparent;
@@ -160,7 +159,7 @@
 
 /* Fokus na pasku: biały obrys, widoczny w obu motywach. */
 .naglowek :is(a, button):focus-visible,
-:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(a, button, input):focus-visible,
+:is(.pasek-gorny, .grupa-paska) > :is(a, button, input):focus-visible,
 .pasek-gorny .menu-pobierz > button:focus-visible,
 .pasek-gorny .przycisk-menu-ustawien:focus-visible {
   outline: 3px solid var(--pasek-tekst);
