@@ -9,8 +9,8 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
 - Ukończone: M1–M5, M2b, M2c, przebudowa UI (UI-1…UI-9), poprawki UX i „UI etap 1–4” (PR #71–#77),
   rewersy globalne, Google Fonts, kolory przycisków, awers/rewers wszystkich kart (PR #78–#86),
   porządek projektów P1–P3 (PR #87–#89, `docs/plan-porzadek-projektow.md`), poprawki danych N1
-  (`docs/plan-N1.md`).
-- Kolejne etapy (N2, N3…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
+  (`docs/plan-N1.md`), porządki w kodzie N2 (`docs/plan-N2.md`).
+- Kolejne etapy (N3…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 27` (`src/model/projekt.ts`), baza Dexie w wersji 4.
 
 ## Gdzie co jest
@@ -30,7 +30,9 @@ Warstwy (importy tylko „w dół”; `ui` może używać wszystkiego, odwrotnie
 model  →  ozdobniki / silnik  →  druk  →  dane  →  ui
 ```
 
-- `src/model/` – typy dokumentu (projekt, szablon, arkusz/kartka), jednostki (mm).
+- `src/model/` – typy dokumentu (projekt, szablon, arkusz/kartka), jednostki (mm), przechodzenie
+  drzewa węzłów (`wszystkieWezly`, `wezlyDrzewa`…), geometria i zaokrąglanie (`geometria.ts`),
+  przekształcenia nazw (`nazwy.ts`).
 - `src/silnik/` – układ szablonu (`uklad.ts`), tekst i łamanie (`tekst.ts`, fontkit), czcionki,
   budowa **sceny** karty (`karta.ts`) i SVG. Scena (lista elementów w mm) to jedno źródło dla
   podglądu SVG i PDF.
@@ -48,11 +50,14 @@ model  →  ozdobniki / silnik  →  druk  →  dane  →  ui
 - `src/instrukcja/` – skrypt statycznej strony instrukcji (osobne wejście Vite, bez Reacta).
 - `src/ui/` – React:
   - `App.tsx`, `useTrasa.ts` (routing hash), `useProjekt.ts` (stan projektu, historia, zapis;
-    `autozapis: false` w Edytorze kart), `baza.ts` (fasada nad `dane/baza.ts` z leniwymi importami).
+    `autozapis: false` w Edytorze kart), `bazaUI.ts` (fasada nad `dane/baza.ts` z leniwymi
+    importami), `obrazyUI.ts` (przygotowanie obrazów w przeglądarce), `zrodloOpcji.tsx` (źródło
+    pozycji list wyboru).
   - `start/` – ekran startowy, Moje projekty / Moje szablony (`ListaProjektow.tsx`), kreatory,
     import, galeria online.
-  - `szablon/` – Edytor szablonu (awers): drzewo, panele właściwości, tryb swobodny (mysz).
-  - `rewers/` – Edytor rewersu. `kartka/` – Edytor kart (dane kart, układ kartki, druk, pobieranie).
+  - `szablon/` – Edytor szablonu (awers): drzewo, panele właściwości, tryb swobodny (mysz);
+    `EdytorDrzewa.tsx` – część wspólna z Edytorem rewersu (zmiany edytora robi się tam).
+  - `rewers/` – Edytor rewersu (nakładka na `EdytorDrzewa`). `kartka/` – Edytor kart (dane kart, układ kartki, druk, pobieranie).
   - `biblioteka/` – biblioteka globalna szablonów/ozdobników, edytor ramki 9-slice.
   - Style: `tokeny.css` (zmienne motywów), `App.css`, `edytory.css`, `pasek.css`.
 - `testy/` – Playwright (`*.spec.ts`, wzorce `*-snapshots/`, pomocniki `*UI.ts`, `pomoc.ts`).
