@@ -166,7 +166,7 @@ test('menu Ustawienia w pasku górnym wgrywa globalne czcionki i obrazy dziedzic
   await dialogOb.getByRole('button', { name: 'Zamknij' }).click();
 });
 
-test('projekt gry (Mausritter): ← Powrót z edytora rewersu wraca do opcji druku, nie do własnych kart', async ({
+test('projekt gry (Mausritter): karty jednostronne – bez rewersów i druku dwustronnego', async ({
   page,
 }) => {
   await page.goto('./#/gra/mausritter');
@@ -174,13 +174,7 @@ test('projekt gry (Mausritter): ← Powrót z edytora rewersu wraca do opcji dru
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   const panel = await otworzDruk(page);
-  await panel.getByRole('button', { name: /Nowy rewers/ }).click();
-  await expect(page).toHaveURL(/#\/projekt\/.+\/rewers\//);
-  await expect(page.getByRole('complementary', { name: 'Warstwy' })).toBeVisible({
-    timeout: 15000,
-  });
-
-  await page.getByRole('link', { name: '← Powrót', exact: true }).click();
-  await expect(page).toHaveURL(/#\/projekt\/.+\/drukuj/);
-  await expect(panelDruku(page)).toBeVisible();
+  await expect(panel.getByRole('button', { name: /Nowy rewers/ })).toHaveCount(0);
+  await expect(panel.getByLabel('Domyślny rewers talii')).toHaveCount(0);
+  await expect(page.locator('.warstwa-rewersu')).toHaveCount(0);
 });

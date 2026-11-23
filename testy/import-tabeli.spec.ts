@@ -81,7 +81,9 @@ test('XLSX: wybór drugiego arkusza, ilość i dane trafiają na kartkę', async
   await expect(page.getByRole('button', { name: /Przystań/ })).toHaveCount(2);
 });
 
-test('kartka pakietu oferuje tylko szablony dopuszczone w menu dodawania', async ({ page }) => {
+test('projekt Mausrittera nie oferuje importu CSV/XLSX, także na kartce własnego szablonu', async ({
+  page,
+}) => {
   await nowaPustaKartka(page);
   const kartki = page.locator('.kartka');
   await expect(kartki).toHaveCount(1);
@@ -104,26 +106,7 @@ test('kartka pakietu oferuje tylko szablony dopuszczone w menu dodawania', async
   });
   await expect(kartki).toHaveCount(2);
   await page.getByRole('link', { name: '← Powrót' }).click();
-  await kartki.last().getByRole('button', { name: 'Importuj CSV lub XLSX' }).click();
-  const wlasna = page.getByRole('dialog');
-  await expect(
-    wlasna.getByRole('combobox', { name: 'Szablon nowych kart' }).locator('option'),
-  ).toHaveCount(1);
-  await expect(wlasna.getByRole('combobox', { name: 'Szablon nowych kart' })).toHaveValue('pomiar');
-  await wlasna.getByRole('button', { name: 'Anuluj' }).click();
-  await kartki.first().getByRole('button', { name: 'Importuj CSV lub XLSX' }).click();
-  const okno = page.getByRole('dialog');
-  const szablon = okno.getByRole('combobox', { name: 'Szablon nowych kart' });
-  const bron = szablon.locator('option[value="mausritter-bron"]');
-  await expect(bron).toHaveCount(1);
-  await expect(szablon.locator('option[value="pomiar"]')).toHaveCount(0);
-  await szablon.selectOption('mausritter-bron');
-  await okno.getByLabel('Plik CSV lub XLSX').setInputFiles({
-    name: 'karty.csv',
-    mimeType: 'text/csv',
-    buffer: Buffer.from('Nazwa,Ilość\nPróba,1'),
-  });
-  await expect(okno.getByRole('table')).toContainText('Próba');
-  await okno.getByRole('button', { name: 'Dodaj karty' }).click();
-  await expect(kartki.first().locator('[data-karta]')).toHaveCount(1);
+  // Projekt Mausrittera: karty wypełnia się w edytorze – bez importu CSV/XLSX na żadnej kartce (N1).
+  await expect(kartki.first().locator('[data-karta]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Importuj CSV lub XLSX' })).toHaveCount(0);
 });
