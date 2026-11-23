@@ -523,7 +523,7 @@ describe('baza IndexedDB', () => {
     await expect(baza.wczytaj('p1')).rejects.toThrow(/Nie ma projektu/);
   });
 
-  it('lista() wyznacza aktywnySzablonId i aktywnyRewersId, a szablonyAwersowZProjektow deduplikuje po nazwie', async () => {
+  it('lista() wyznacza aktywnySzablonId i aktywnyRewersId, a szablonyAwersowZProjektow pomija identyczne kopie', async () => {
     baza = new BazaProjektow('test-lista-dedup');
     const rev = {
       id: 'r1',
@@ -552,13 +552,13 @@ describe('baza IndexedDB', () => {
     expect(w1.aktywnySzablonId).toBeTruthy();
     expect(w1.aktywnyRewersId).toBe('r1');
     const wszystkie = await baza.szablonyAwersowZProjektow();
-    const znormalizowane = wszystkie.map((s) => s.szablonNazwa.trim().toLowerCase());
-    expect(new Set(znormalizowane).size).toBe(znormalizowane.length);
-    const pierwszaNazwa = znormalizowane[0]!;
-    const bezPierwszej = await baza.szablonyAwersowZProjektow(undefined, new Set([pierwszaNazwa]));
-    expect(bezPierwszej.some((s) => s.szablonNazwa.trim().toLowerCase() === pierwszaNazwa)).toBe(
-      false,
-    );
+    const tresci = wszystkie.map((s) => s.kluczTresci);
+    expect(new Set(tresci).size).toBe(tresci.length);
+    // pw2 to kopia pw1 – jego szablony są identyczne, więc na liście są tylko z pw1.
+    expect(wszystkie.every((s) => s.projektId === 'pw1')).toBe(true);
+    const pierwsza = tresci[0]!;
+    const bezPierwszej = await baza.szablonyAwersowZProjektow(undefined, new Set([pierwsza]));
+    expect(bezPierwszej.some((s) => s.kluczTresci === pierwsza)).toBe(false);
   });
 
   it('zapis samego dokumentu: nowy opis bez Bloba odrzucony atomowo; istnieje()', async () => {

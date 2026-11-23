@@ -13,6 +13,10 @@ export interface Gra {
   opis: string;
   /** Pakiet ładowany przy wyborze gry (osobny fragment kodu). */
   pakiet: () => Promise<Pakiet>;
+  /** Karty gry są jednostronne – Edytor kart nie pokazuje wyboru ani listy rewersów. */
+  bezRewersow?: boolean;
+  /** Karty gry wypełnia się w edytorze – bez importu danych z CSV/XLSX. */
+  bezImportuTabeli?: boolean;
 }
 
 export const gry: Gra[] = [
@@ -22,5 +26,12 @@ export const gry: Gra[] = [
     nazwaDo: 'Mausrittera',
     opis: 'Karty ekwipunku i stanów w siatce slotów – broń, zbroje, przedmioty, zaklęcia, stany.',
     pakiet: () => import('./mausritter').then((m) => m.pakietMausritter),
+    bezRewersow: true,
+    bezImportuTabeli: true,
   },
 ];
+
+/** Gra z rejestru o danym id pakietu (projekty własne i nieznane pakiety – `undefined`). */
+export function graPakietu(idPakietu: string | undefined): Gra | undefined {
+  return idPakietu === undefined ? undefined : gry.find((g) => g.id === idPakietu);
+}

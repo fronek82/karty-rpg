@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { LIMITY_ARCHIWUM, ROZSZERZENIE_SZABLONU } from '../../dane/archiwum';
+import { ACCEPT_PLIKU_SZABLONU, LIMITY_ARCHIWUM } from '../../dane/archiwum';
 import { formatujLiczbe, t } from '../../i18n';
 import { rozpoznajRodzaj } from './importPlikow';
 import { KAFELKI_SZABLONOW } from '../../przyklady';
@@ -193,7 +193,7 @@ export function WlasneKarty() {
           <input
             ref={plik}
             type="file"
-            accept={`${ROZSZERZENIE_SZABLONU},.zip`}
+            accept={ACCEPT_PLIKU_SZABLONU}
             hidden
             data-testid="plik-szablonu-start"
             onChange={(e) => {

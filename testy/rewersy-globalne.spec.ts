@@ -5,7 +5,8 @@ import { otworzDruk, panelDruku, slot, zapisano } from './pomoc';
  * Globalna biblioteka rewersów + wyrównanie lewego menu na ekranie startowym:
  * - lewe menu na ekranie startowym jest obniżone i wyrównane z kartami projektów,
  * - rewers zaprojektowany przez „Nowy szablon od zera → Rewers” trafia do zapisanych rewersów,
- * - w innym projekcie (własnym i Mausrittera) można go wybrać przy dowolnej karcie lub talii.
+ * - w innym projekcie własnym można go wybrać przy dowolnej karcie lub talii; projekt Mausrittera
+ *   (karty jednostronne) nie pokazuje rewersów.
  */
 
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -64,16 +65,11 @@ test('zaprojektowany rewers jest dostępny do wybrania przy dowolnej karcie w os
   const druk = panelDruku(page);
   await expect(druk.locator('strong', { hasText: 'Rewers Warlock' })).toBeVisible();
 
-  // 5) Ten sam rewers można też wybrać w zupełnie innym projekcie (np. Mausritter → Domyślny rewers talii).
+  // 5) Projekt Mausrittera ma karty jednostronne – bez wyboru rewersów (etap N1).
   await page.goto('./#/gra/mausritter');
   await page.getByRole('button', { name: /Pusta kartka A4/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   const drukMaus = await otworzDruk(page);
-  const wyborTalii = drukMaus.getByLabel('Domyślny rewers talii');
-  await expect(wyborTalii.locator('optgroup[label="Zapisane rewersy"] option')).toHaveText([
-    'Rewers Warlock',
-  ]);
-  await wyborTalii.selectOption({ label: 'Rewers Warlock' });
-  await zapisano(page);
-  await expect(wyborTalii).toHaveValue('rewers');
+  await expect(drukMaus.getByLabel('Domyślny rewers talii')).toHaveCount(0);
+  await expect(drukMaus.getByRole('button', { name: /Nowy rewers/ })).toHaveCount(0);
 });

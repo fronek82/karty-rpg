@@ -5,6 +5,7 @@ import {
   LIMITY_ARCHIWUM,
   ROZSZERZENIE_OZDOBNIKA,
   ROZSZERZENIE_SZABLONU,
+  ACCEPT_PLIKU_SZABLONU,
 } from '../../dane/archiwum';
 import type { WpisBibliotekiGlobalnej } from '../../dane/baza';
 import { BladDanych } from '../../dane/schemat';
@@ -90,7 +91,7 @@ export function BibliotekaGlobalna({
         ref={plik}
         type="file"
         hidden
-        accept={`${rozszerzenie},.zip`}
+        accept={szablony ? ACCEPT_PLIKU_SZABLONU : `${rozszerzenie},.zip`}
         data-testid={`globalna-import-${rodzaj}`}
         onChange={(e) => {
           const plik = e.currentTarget.files?.[0];

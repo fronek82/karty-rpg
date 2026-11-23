@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { eksportujSzablon, importujSzablon } from '../dane/archiwum';
 import type { WpisAwersuZProjektu } from '../dane/baza';
-import type { Szablon } from '../model/szablon';
+import { kluczTresciSzablonu, type Szablon } from '../model/szablon';
 import { baza } from './baza';
 
 export const PRZEDROSTEK_AWERSU_INNEGO = '__inny_awers__:';
-
-export const normalizujNazweSzablonu = (nazwa: string): string => nazwa.trim().toLowerCase();
 
 export const kluczAwersuZProjektu = (a: Pick<WpisAwersuZProjektu, 'projektId' | 'szablonId'>) =>
   `${a.projektId}:${a.szablonId}`;
@@ -15,29 +13,31 @@ export const etykietaAwersuZProjektu = (a: WpisAwersuZProjektu): string =>
   a.projektNazwa === a.szablonNazwa ? a.projektNazwa : `${a.projektNazwa} — ${a.szablonNazwa}`;
 
 /**
- * Lista szablonów awersów dostępnych w innych projektach zapisanych w przeglądarce,
- * bez duplikatów po nazwie i z pominięciem nazw już obecnych w bieżącym projekcie.
+ * Lista szablonów awersów dostępnych w innych projektach zapisanych w przeglądarce, bez
+ * identycznych kopii i z pominięciem tych, których identyczna kopia jest już w bieżącym projekcie.
+ * Szablony o tej samej nazwie, ale innej treści, zostają na liście.
  */
 export function useAwersyZProjektow(
   projektId: string,
   szablonyWProjekcie: readonly Szablon[],
 ): WpisAwersuZProjektu[] {
   const [awersy, ustawAwersy] = useState<WpisAwersuZProjektu[]>([]);
-  const podpisNazw = useMemo(
+  const podpisTresci = useMemo(
     () =>
-      szablonyWProjekcie
-        .filter((s) => s.korzen.dzieci.length > 0)
-        .map((s) => normalizujNazweSzablonu(s.nazwa))
-        .sort()
-        .join('\0'),
+      JSON.stringify(
+        szablonyWProjekcie
+          .filter((s) => s.korzen.dzieci.length > 0)
+          .map(kluczTresciSzablonu)
+          .sort(),
+      ),
     [szablonyWProjekcie],
   );
 
   useEffect(() => {
-    const nazwyWProjekcie = new Set(podpisNazw ? podpisNazw.split('\0') : []);
+    const tresciWProjekcie = new Set(JSON.parse(podpisTresci) as string[]);
     let aktywny = true;
     void baza()
-      .szablonyAwersowZProjektow(projektId, nazwyWProjekcie)
+      .szablonyAwersowZProjektow(projektId, tresciWProjekcie)
       .then((lista) => {
         if (aktywny) ustawAwersy(lista);
       })
@@ -45,7 +45,7 @@ export function useAwersyZProjektow(
     return () => {
       aktywny = false;
     };
-  }, [projektId, podpisNazw]);
+  }, [projektId, podpisTresci]);
 
   return awersy;
 }

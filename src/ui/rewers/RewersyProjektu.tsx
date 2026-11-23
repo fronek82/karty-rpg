@@ -32,6 +32,7 @@ export function RewersyProjektu({ edycja }: { edycja: ProjektWEdycji }) {
       const w = nowyRewers(p, {
         nazwa: t('rewersy.nowy'),
         nazwaKorzenia: t('rewers.tytulEdytora'),
+        zajeteNazwy: rewersyGlobalne.map((r) => r.nazwa),
       });
       noweId = w.id;
       return w.projekt;

@@ -1,7 +1,16 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { formatujLiczbe, t } from '../i18n';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
-import { czyKontener, stylePola, type Rewers, type Szablon, type Wezel } from '../model/szablon';
+import {
+  czyKontener,
+  kluczTresciSzablonu,
+  maStylTekstu,
+  stylePola,
+  stylPola,
+  type Rewers,
+  type Szablon,
+  type Wezel,
+} from '../model/szablon';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import { BladKolekcjiCzcionek, wczytajCzcionke } from '../silnik/czcionki';
 import { MAKS_BAJTOW_CZCIONKI, formatObrazu, unikalneId } from './czcionki';
@@ -37,11 +46,18 @@ import {
 
 /** Rozszerzenie pliku projektu i szablonu (ZIP z JSON-em i zasobami). */
 export const ROZSZERZENIE_PROJEKTU = '.kartyrpg';
+/** Wspólny plik szablonu awersu i rewersu – każdy można wczytać jako awers albo jako rewers. */
 export const ROZSZERZENIE_SZABLONU = '.kartyrpg-szablon';
+/** Dawny plik samego rewersu (`rewers.json`) – już nie zapisywany, nadal importowany. */
+export const ROZSZERZENIE_REWERSU_DAWNE = '.kartyrpg-rewers';
 export const ROZSZERZENIE_OZDOBNIKA = '.kartyrpg-ozdobnik';
+/** Atrybut `accept` pola wyboru pliku szablonu (wspólny plik, dawny plik rewersu, ZIP). */
+export const ACCEPT_PLIKU_SZABLONU = `${ROZSZERZENIE_SZABLONU},${ROZSZERZENIE_REWERSU_DAWNE},.zip`;
 
 export const PLIK_PROJEKTU = 'projekt.json';
 export const PLIK_SZABLONU = 'szablon.json';
+/** JSON dawnego pliku rewersu (`.kartyrpg-rewers`). */
+export const PLIK_REWERSU_DAWNY = 'rewers.json';
 const KATALOG_ZASOBOW = 'zasoby/';
 const MB = 1024 * 1024;
 /** Limity rozpakowania (ochrona przed „bombą ZIP”): wpis, suma, liczba wpisów. */
@@ -89,6 +105,26 @@ function rozpakuj(bajty: Uint8Array, plikJson: string): Record<string, Uint8Arra
     if (e instanceof BladDanych) throw e;
     throw new BladDanych(t('dane.nieArchiwum'));
   }
+}
+
+/**
+ * Nazwy wpisów archiwum ZIP bez rozpakowywania zawartości (filtr odrzuca każdy wpis).
+ * Gdy bajty nie są poprawnym ZIP-em albo wpisów jest za dużo – `undefined`.
+ */
+export function nazwyWpisowArchiwum(bajty: Uint8Array): string[] | undefined {
+  const nazwy: string[] = [];
+  try {
+    unzipSync(bajty, {
+      filter: (plik) => {
+        if (nazwy.length >= LIMITY_ARCHIWUM.wpisy) throw new Error('za dużo wpisów');
+        nazwy.push(plik.name);
+        return false;
+      },
+    });
+  } catch {
+    return undefined;
+  }
+  return nazwy;
 }
 
 function odczytajJson(pliki: Record<string, Uint8Array>, plik: string): unknown {
@@ -230,18 +266,22 @@ function sprawdzRewersPaczki(
   const id = p.szablon.rewersId;
   if (p.rewers?.id !== (typeof id === 'string' ? id : undefined))
     throw new BladDanych(t('dane.nieznanyRewers', { id: id ?? p.rewers?.id ?? '' }));
-  if (!p.rewers) return;
-  const gdzie = t('dane.gdzie.rewers', { id: p.rewers.id });
+  if (p.rewers) sprawdzRewers(p.rewers, p.zasoby, p.biblioteka);
+}
+
+/** Unikalne id węzłów rewersu, jego obrazy w paczce i ozdobniki (z obrazami ramek 9-slice). */
+function sprawdzRewers(rewers: Rewers, zasoby: OpisZasobu[], biblioteka?: ElementOzdobny[]) {
+  const gdzie = t('dane.gdzie.rewers', { id: rewers.id });
   const widziane = new Set<string>();
-  for (const w of wszystkieWezly(p.rewers)) {
+  for (const w of wezly(rewers.korzen)) {
     if (widziane.has(w.id)) throw new BladDanych(t('dane.powtorzonyId', { id: w.id, gdzie }));
     widziane.add(w.id);
   }
-  const obraz = new Set(p.zasoby.filter((o) => o.rodzaj === 'obraz').map((o) => o.id));
-  for (const id of zasobySzablonu(p.rewers))
+  const obraz = new Set(zasoby.filter((o) => o.rodzaj === 'obraz').map((o) => o.id));
+  for (const id of zasobySzablonu(rewers))
     if (!obraz.has(id)) throw new BladDanych(t('dane.nieznanyZasob', { gdzie, id }));
-  for (const id of odwolaniaDoElementow(p.rewers)) {
-    const element = znajdzElement(id, p.biblioteka);
+  for (const id of odwolaniaDoElementow(rewers)) {
+    const element = znajdzElement(id, biblioteka);
     if (!element) throw new BladDanych(t('dane.nieznanyElement', { gdzie, id }));
     const z = element.ramka9?.zrodlo;
     if (z?.typ === 'obraz' && !obraz.has(z.zasob))
@@ -309,31 +349,148 @@ export function eksportujSzablon(
   };
 }
 
-export function importujSzablon(bajty: Uint8Array): PaczkaSzablonu {
+/** Treść wspólnego pliku szablonu: awers (z opcjonalnym rewersem) albo sam rewers. */
+interface TrescPlikuSzablonu extends Omit<PaczkaSzablonu, 'szablon'> {
+  szablon?: Szablon;
+}
+
+/** Dawny plik `.kartyrpg-rewers` (`rewers.json`) jako treść wspólnego pliku szablonu. */
+function odczytajDawnyPlikRewersu(bajty: Uint8Array): TrescPlikuSzablonu {
+  const pliki = rozpakuj(bajty, PLIK_REWERSU_DAWNY);
+  const plik = sprawdz(schematPaczkiRewersu, odczytajJson(pliki, PLIK_REWERSU_DAWNY)) as Omit<
+    PaczkaRewersu,
+    'dane'
+  >;
+  sprawdzBibliotekePaczki(plik.biblioteka, plik.zasoby);
+  sprawdzRewers(plik.rewers, plik.zasoby, plik.biblioteka);
+  const { wersja: _wersja, ...reszta } = plik as typeof plik & { wersja?: number };
+  void _wersja;
+  return { ...reszta, dane: zbierzZasoby(pliki, PLIK_REWERSU_DAWNY, plik.zasoby) };
+}
+
+/**
+ * Odczyt i walidacja pliku szablonu w obu postaciach (`szablon.json` z awersem i/lub rewersem
+ * oraz dawny `rewers.json`). Rozpoznaje je po wpisach archiwum, nie po rozszerzeniu.
+ */
+function odczytajPlikSzablonu(bajty: Uint8Array): TrescPlikuSzablonu {
+  const nazwy = nazwyWpisowArchiwum(bajty);
+  if (nazwy?.includes(PLIK_REWERSU_DAWNY) && !nazwy.includes(PLIK_SZABLONU))
+    return odczytajDawnyPlikRewersu(bajty);
   const pliki = rozpakuj(bajty, PLIK_SZABLONU);
   const zmigrowane = migruj(odczytajJson(pliki, PLIK_SZABLONU), 'szablon');
-  const plik = sprawdz(schematPlikuSzablonu, zmigrowane) as Omit<PaczkaSzablonu, 'dane'>;
+  const plik = sprawdz(schematPlikuSzablonu, zmigrowane) as Omit<TrescPlikuSzablonu, 'dane'> & {
+    wersja?: number;
+  };
+  delete plik.wersja;
+  if (!plik.szablon && !plik.rewers) throw new BladDanych(t('dane.pustyPlikSzablonu'));
   // Plik szablonu nie niesie podkładu (obcy plik mógłby wskazywać cudzy zasób) – szablon bez podkładu.
-  if (plik.szablon.podklad) {
+  if (plik.szablon?.podklad) {
     const { podklad: _podklad, ...reszta } = plik.szablon;
     void _podklad;
     plik.szablon = reszta;
   }
-  const ids = (plik.biblioteka ?? []).map((e) => e.id);
+  sprawdzBibliotekePaczki(plik.biblioteka, plik.zasoby);
+  if (plik.szablon) {
+    sprawdzTeksturyPaczki(plik.szablon, plik.zasoby);
+    sprawdzRewersPaczki({ ...plik, szablon: plik.szablon });
+  } else if (plik.rewers) {
+    sprawdzRewers(plik.rewers, plik.zasoby, plik.biblioteka);
+  }
+  return { ...plik, dane: zbierzZasoby(pliki, PLIK_SZABLONU, plik.zasoby) };
+}
+
+/** Biblioteka ozdobników z paczki: unikalne id i obrazy ramek 9-slice obecne w paczce. */
+function sprawdzBibliotekePaczki(biblioteka: ElementOzdobny[] | undefined, zasoby: OpisZasobu[]) {
+  const ids = (biblioteka ?? []).map((e) => e.id);
   const powtorzony = ids.find((id, i) => ids.indexOf(id) !== i);
   if (powtorzony !== undefined)
     throw new BladDanych(
       t('dane.powtorzonyId', { id: powtorzony, gdzie: t('dane.gdzie.biblioteka') }),
     );
-  sprawdzTeksturyPaczki(plik.szablon, plik.zasoby);
-  sprawdzRewersPaczki(plik);
   // Ramka 9-slice z PNG musi mieć obraz w paczce (inaczej szablon wskazywałby cudzy zasób).
-  for (const e of plik.biblioteka ?? []) {
+  for (const e of biblioteka ?? []) {
     const z = e.ramka9?.zrodlo;
-    if (z?.typ === 'obraz' && !plik.zasoby.some((o) => o.id === z.zasob))
+    if (z?.typ === 'obraz' && !zasoby.some((o) => o.id === z.zasob))
       throw new BladDanych(t('dane.ramka9BezObrazu', { id: e.id, zasob: z.zasob }));
   }
-  return { ...plik, dane: zbierzZasoby(pliki, PLIK_SZABLONU, plik.zasoby) };
+}
+
+/**
+ * Szablon awersu z rewersu (plik samego rewersu wczytywany jako awers). Tryb, krycie
+ * i zabarwienie tekstury tła rewersu nie mają odpowiednika w szablonie – pomijane.
+ */
+export function szablonZRewersu(r: Rewers): Szablon {
+  return {
+    id: r.id,
+    nazwa: r.nazwa,
+    rozmiar: { ...r.rozmiar },
+    korzen: structuredClone(r.korzen),
+    ...(r.tlo !== undefined ? { tlo: r.tlo } : {}),
+    ...(r.teksturaTla !== undefined ? { teksturaTla: r.teksturaTla } : {}),
+    ...(r.ramka ? { ramka: structuredClone(r.ramka) } : {}),
+  };
+}
+
+/**
+ * Rewers z szablonu awersu (plik awersu wczytywany jako rewers). Rewers ma rozmiar w mm
+ * i korzeń swobodny: sloty dają rozmiar domyślny, a inny korzeń trafia do swobodnego
+ * opakowania na całą kartę. Grupy stylów są rozwijane w style pól; parametry, warianty,
+ * kolor tła z danych i postrzępienie (cechy kart z danymi) – pomijane.
+ */
+export function rewersZSzablonu(s: Szablon): Rewers {
+  const rozmiar =
+    s.rozmiar.tryb === 'mm'
+      ? { tryb: 'mm' as const, szerokosc: s.rozmiar.szerokosc, wysokosc: s.rozmiar.wysokosc }
+      : {
+          tryb: 'mm' as const,
+          szerokosc: s.rozmiar.slot.szerokosc * s.rozmiar.kolumny,
+          wysokosc: s.rozmiar.slot.wysokosc * s.rozmiar.rzedy,
+        };
+  const korzen = structuredClone(s.korzen);
+  for (const w of wezly(korzen)) {
+    if (maStylTekstu(w) && w.grupaStyluId !== undefined) {
+      w.styl = stylPola(s, w);
+      delete w.grupaStyluId;
+    }
+  }
+  let korzenSwobodny: Rewers['korzen'];
+  if (korzen.typ === 'swobodny') {
+    korzenSwobodny = { ...korzen, typ: 'swobodny' };
+  } else {
+    const zajete = new Set([...wezly(korzen)].map((w) => w.id));
+    korzenSwobodny = {
+      id: unikalneId('rewers', zajete),
+      nazwa: s.nazwa,
+      typ: 'swobodny',
+      dzieci: [
+        {
+          ...korzen,
+          szerokosc: { mm: rozmiar.szerokosc },
+          wysokosc: { mm: rozmiar.wysokosc },
+          pozycja: { x: 0, y: 0 },
+        },
+      ],
+    };
+  }
+  return {
+    id: s.id,
+    nazwa: s.nazwa,
+    rozmiar,
+    korzen: korzenSwobodny,
+    ...(s.tlo !== undefined ? { tlo: s.tlo } : {}),
+    ...(s.teksturaTla !== undefined ? { teksturaTla: s.teksturaTla } : {}),
+    ...(s.ramka ? { ramka: structuredClone(s.ramka) } : {}),
+  };
+}
+
+/**
+ * Plik szablonu wczytany jako awers. Plik samego rewersu (także dawny `.kartyrpg-rewers`)
+ * daje awers o wyglądzie tego rewersu.
+ */
+export function importujSzablon(bajty: Uint8Array): PaczkaSzablonu {
+  const { szablon, rewers, ...reszta } = odczytajPlikSzablonu(bajty);
+  if (szablon) return { ...reszta, szablon, ...(rewers ? { rewers } : {}) };
+  return { ...reszta, szablon: szablonZRewersu(rewers!) };
 }
 
 const takieSame = (a: Uint8Array, b: Uint8Array) =>
@@ -543,8 +700,6 @@ export function dodajSzablon(
 // ---------------------------------------------------------------------------------------------
 // Pojedynczy rewers (paczka do biblioteki globalnej rewersów w przeglądarce)
 
-const PLIK_REWERSU = 'rewers.json';
-
 export interface PaczkaRewersu {
   rewers: Rewers;
   role: Record<string, string>;
@@ -553,7 +708,10 @@ export interface PaczkaRewersu {
   biblioteka?: ElementOzdobny[];
 }
 
-/** Pakuje rewers wraz z użytymi czcionkami, obrazami i ozdobnikami do samodzielnego archiwum ZIP. */
+/**
+ * Pakuje rewers wraz z użytymi czcionkami, obrazami i ozdobnikami do wspólnego pliku szablonu
+ * (`szablon.json` z samym rewersem) – ten sam format co plik awersu.
+ */
 export function eksportujRewers(projekt: Projekt, dane: DaneZasobow, rewersId: string): Uint8Array {
   const rewers = projekt.rewersy?.find((r) => r.id === rewersId);
   if (!rewers) throw new BladDanych(t('dane.nieznanyRewers', { id: rewersId }));
@@ -571,43 +729,53 @@ export function eksportujRewers(projekt: Projekt, dane: DaneZasobow, rewersId: s
   const biblioteka = [
     ...new Map(elementyUzyteWSzablonie(projekt, rewers).map((o) => [o.id, o])).values(),
   ];
+  // Te same kontrole co przy imporcie – plik, którego import by się nie udał, nie powstaje.
+  sprawdzBibliotekePaczki(biblioteka, uzyte);
+  sprawdzRewers(rewers, uzyte, biblioteka);
   return spakuj(
     {
-      wersja: 1,
+      wersja: projekt.wersja,
       rewers,
       role,
       zasoby: uzyte,
       ...(biblioteka.length > 0 ? { biblioteka } : {}),
     },
-    PLIK_REWERSU,
+    PLIK_SZABLONU,
     uzyte.map((o) => [o, bajtyZasobu(dane, o.id)]),
   );
 }
 
-/** Rozpakowuje i waliduje samodzielną paczkę rewersu. */
+/**
+ * Klucz treści (`kluczTresciSzablonu`) rewersu zapisanego w paczce – bez walidacji i bez
+ * rozpakowywania zasobów (tylko JSON), do wykrywania identycznych kopii na listach.
+ * Uszkodzona paczka albo plik awersu – `undefined`.
+ */
+export function kluczTresciRewersuWPaczce(bajty: Uint8Array): string | undefined {
+  try {
+    const pliki = unzipSync(bajty, {
+      filter: (p) =>
+        (p.name === PLIK_SZABLONU || p.name === PLIK_REWERSU_DAWNY) &&
+        p.originalSize <= LIMITY_ARCHIWUM.plik,
+    });
+    const json = pliki[PLIK_SZABLONU] ?? pliki[PLIK_REWERSU_DAWNY];
+    if (!json) return undefined;
+    const plik = JSON.parse(strFromU8(json)) as { szablon?: unknown; rewers?: unknown };
+    const r = plik.rewers as Rewers | undefined;
+    if (plik.szablon || typeof r !== 'object' || r === null || typeof r.nazwa !== 'string')
+      return undefined;
+    return kluczTresciSzablonu(r);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Plik szablonu wczytany jako rewers (także dawny `.kartyrpg-rewers`). Plik awersu daje rewers
+ * o wyglądzie tego awersu (dołączony do niego rewers jest wtedy pomijany).
+ */
 export function importujRewers(bajty: Uint8Array): PaczkaRewersu {
-  const pliki = rozpakuj(bajty, PLIK_REWERSU);
-  const plik = sprawdz(schematPaczkiRewersu, odczytajJson(pliki, PLIK_REWERSU)) as Omit<
-    PaczkaRewersu,
-    'dane'
-  >;
-  const gdzie = t('dane.gdzie.rewers', { id: plik.rewers.id });
-  const widziane = new Set<string>();
-  for (const w of wszystkieWezly(plik.rewers)) {
-    if (widziane.has(w.id)) throw new BladDanych(t('dane.powtorzonyId', { id: w.id, gdzie }));
-    widziane.add(w.id);
-  }
-  const obraz = new Set(plik.zasoby.filter((o) => o.rodzaj === 'obraz').map((o) => o.id));
-  for (const id of zasobySzablonu(plik.rewers))
-    if (!obraz.has(id)) throw new BladDanych(t('dane.nieznanyZasob', { gdzie, id }));
-  for (const id of odwolaniaDoElementow(plik.rewers)) {
-    const element = znajdzElement(id, plik.biblioteka);
-    if (!element) throw new BladDanych(t('dane.nieznanyElement', { gdzie, id }));
-    const z = element.ramka9?.zrodlo;
-    if (z?.typ === 'obraz' && !obraz.has(z.zasob))
-      throw new BladDanych(t('dane.ramka9BezObrazu', { id, zasob: z.zasob }));
-  }
-  return { ...plik, dane: zbierzZasoby(pliki, PLIK_REWERSU, plik.zasoby) };
+  const { szablon, rewers, ...reszta } = odczytajPlikSzablonu(bajty);
+  return { ...reszta, rewers: szablon ? rewersZSzablonu(szablon) : rewers! };
 }
 
 /**

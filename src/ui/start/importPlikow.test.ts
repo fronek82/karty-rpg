@@ -83,7 +83,18 @@ describe('rozpoznajRodzaj', () => {
     expect(rozpoznajRodzaj('a.kartyrpg', zip('x.txt'))).toBe('projekt');
   });
 
-  it('accept pola plików zawiera oba rozszerzenia i zip', () => {
-    expect(ACCEPT_IMPORTU.split(',')).toEqual(['.kartyrpg', '.kartyrpg-szablon', '.zip']);
+  it('accept pola plików zawiera projekt, szablon, dawny rewers i zip', () => {
+    expect(ACCEPT_IMPORTU.split(',')).toEqual([
+      '.kartyrpg',
+      '.kartyrpg-szablon',
+      '.kartyrpg-rewers',
+      '.zip',
+    ]);
+  });
+
+  it('dawny plik rewersu (.kartyrpg-rewers, rewers.json) importuje się jako szablon', () => {
+    expect(rodzajPoNazwie('tyl.kartyrpg-rewers')).toBe('szablon');
+    expect(rodzajPoZawartosci(zip('rewers.json'))).toBe('szablon');
+    expect(rozpoznajRodzaj('tyl.zip', zip('rewers.json', 'zasoby/a.png'))).toBe('szablon');
   });
 });

@@ -92,6 +92,7 @@ export const pl = {
     '{gdzie}: element ozdobny „{id}” nie istnieje w bibliotece (ozdoba zostanie pominięta).',
   'dane.gdzie.rewersy': 'rewersy',
   'dane.gdzie.rewers': 'rewers {id}',
+  'dane.pustyPlikSzablonu': 'plik szablonu nie zawiera ani awersu, ani rewersu',
   'dane.nieznanyRewers': 'przypisanie wskazuje nieznany rewers „{id}”',
   'dane.gdzie.szablony': 'szablony',
   'dane.gdzie.talie': 'talie',
@@ -155,6 +156,8 @@ export const pl = {
   'projekty.usunietoRewers': 'Usunięto rewers „{nazwa}”.',
   'projekty.potwierdzUsuniecie':
     'Usunąć projekt „{nazwa}” z tej przeglądarki? Tej operacji nie można cofnąć (chyba że masz plik eksportu).',
+  'projekty.potwierdzUsuniecieProjektu':
+    'Usunąć projekt „{nazwa}” z tej przeglądarki? Karty znikną; szablony i rewersy z tego projektu, które widać w Moich szablonach, tam zostaną. Tej operacji nie można cofnąć (chyba że masz plik eksportu).',
   'projekty.potwierdzUsuniecieRewersu':
     'Usunąć rewers „{nazwa}” z projektu „{projekt}”? Tej operacji nie można cofnąć.',
   'projekty.stronaAwers': 'Awers',
