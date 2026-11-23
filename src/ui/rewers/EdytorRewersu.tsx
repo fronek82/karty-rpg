@@ -245,6 +245,7 @@ function PanelTlaRewersu({
       </div>
       <SekcjaTlaKarty
         stan={rewers}
+        idKoloru="rewers-tlo-kolor"
         obrazy={obrazy}
         zmien={(f, klucz) =>
           zmienRev(

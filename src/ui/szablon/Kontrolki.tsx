@@ -113,14 +113,17 @@ export function PoleKoloru({
   zmien,
   moznaBrak = true,
   domyslny = '#000000',
+  id: wlasneId,
 }: {
   etykieta: string;
   wartosc: string | undefined;
   zmien: (v: string | undefined) => void;
   moznaBrak?: boolean;
   domyslny?: string;
+  id?: string;
 }) {
-  const id = useId();
+  const autoId = useId();
+  const id = wlasneId ?? autoId;
   return (
     <div className="pole-panelu pole-koloru">
       <label htmlFor={id}>{etykieta}</label>

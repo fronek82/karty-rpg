@@ -62,6 +62,7 @@ export function SekcjaTlaKarty({
   dodatkiObrazu,
   dodatkiKoloru,
   wgrywanieObrazu,
+  idKoloru,
 }: {
   stan: StanTla;
   obrazy: readonly { wartosc: string; tekst: string }[];
@@ -70,6 +71,7 @@ export function SekcjaTlaKarty({
   dodatkiKoloru?: ReactNode;
   /** Przycisk wgrania nowego obrazu tła (rewers) – widoczny także bez wybranej tekstury. */
   wgrywanieObrazu?: ReactNode;
+  idKoloru?: string;
 }) {
   const pochodny = trybTla(stan);
   // „Obraz” bez obrazów w projekcie nie zmienia modelu – zapamiętujemy wybór, póki model ten sam.
@@ -125,6 +127,7 @@ export function SekcjaTlaKarty({
           etykieta={tryb === 'kolor' ? t('kreator.kolor') : t('tloKarty.kolorTla')}
           wartosc={stan.tlo}
           domyslny={BIALY}
+          {...(idKoloru ? { id: idKoloru } : {})}
           moznaBrak={tryb !== 'kolor'}
           zmien={(v) =>
             zmien((s) => {
@@ -136,7 +139,7 @@ export function SekcjaTlaKarty({
           }
         />
       )}
-      {tryb !== 'brak' && dodatkiKoloru}
+      {dodatkiKoloru}
       {tryb === 'obraz' && wyborTekstury}
       {tryb === 'wzor' && wzor && (
         <>

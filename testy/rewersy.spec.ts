@@ -52,6 +52,10 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
 
   // Kolor tła, tekstura i 4 tryby dopasowania obrazu tła.
   await page.locator('#rewers-tlo-kolor').fill('#1e293b');
+  await page
+    .getByRole('group', { name: 'Rodzaj tła' })
+    .getByRole('button', { name: 'Obraz' })
+    .click();
   await page.getByTestId('plik-tekstury-rewersu').setInputFiles('testy/zasoby/litera-f.png');
   const wyborTrybu = page.getByLabel('Dopasowanie obrazu tła');
   await expect(wyborTrybu).toBeVisible();
