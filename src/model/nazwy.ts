@@ -2,7 +2,11 @@
 
 /** Usuwa znaki diakrytyczne (rozkład NFD) i zamienia ł/Ł na l/L – baza identyfikatorów. */
 export const bezZnakowDiakrytycznych = (s: string): string =>
-  s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/Ł/g, 'L');
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ł/g, 'l')
+    .replace(/Ł/g, 'L');
 
 /**
  * Nazwa do porównań bez względu na wielkość liter i znaki diakrytyczne (np. nagłówki kolumn
