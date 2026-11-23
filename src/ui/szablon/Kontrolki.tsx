@@ -62,11 +62,24 @@ export function Lista<T extends string>({
   zmien,
 }: {
   etykieta: string;
-  opcje: readonly { wartosc: T; tekst: string; wylaczona?: boolean }[];
+  /** `grupa` – opcje z tą samą grupą (kolejne) trafiają do jednego `<optgroup>`. */
+  opcje: readonly { wartosc: T; tekst: string; wylaczona?: boolean; grupa?: string }[];
   wartosc: T;
   zmien: (v: T) => void;
 }) {
   const id = useId();
+  const opcja = (o: (typeof opcje)[number]) => (
+    <option key={o.wartosc} value={o.wartosc} disabled={o.wylaczona}>
+      {o.tekst}
+    </option>
+  );
+  // Kolejne opcje bez grupy albo z tą samą grupą – jeden blok.
+  const bloki: { grupa?: string; opcje: (typeof opcje)[number][] }[] = [];
+  for (const o of opcje) {
+    const ostatni = bloki[bloki.length - 1];
+    if (ostatni && ostatni.grupa === o.grupa) ostatni.opcje.push(o);
+    else bloki.push({ ...(o.grupa ? { grupa: o.grupa } : {}), opcje: [o] });
+  }
   return (
     <div className="pole-panelu">
       <label htmlFor={id}>{etykieta}</label>
@@ -78,11 +91,15 @@ export function Lista<T extends string>({
           if (wybrana && !wybrana.wylaczona) zmien(wybrana.wartosc);
         }}
       >
-        {opcje.map((o) => (
-          <option key={o.wartosc} value={o.wartosc} disabled={o.wylaczona}>
-            {o.tekst}
-          </option>
-        ))}
+        {bloki.map((b, i) =>
+          b.grupa ? (
+            <optgroup key={`${i}-${b.grupa}`} label={b.grupa}>
+              {b.opcje.map(opcja)}
+            </optgroup>
+          ) : (
+            b.opcje.map(opcja)
+          ),
+        )}
       </select>
     </div>
   );

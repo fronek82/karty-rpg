@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * N7: menu „Biblioteki” – trzy podstrony o tym samym układzie (Obrazy, Czcionki, Ozdobniki):
- * „Dodaj”, wyszukiwarka, siatka podglądów na środku, usuwanie bez potwierdzenia z „Cofnij”.
+ * N7, N8: menu „Biblioteki” – trzy podstrony o tym samym układzie (Obrazy, Czcionki, Ozdobniki):
+ * „Dodaj”, wyszukiwarka, siatka podglądów na środku, zmiana nazwy, pobieranie, usuwanie
+ * nieużywanego wpisu bez potwierdzenia z „Cofnij”.
  */
 
 test('Biblioteki: obrazy, czcionki (próbka kroju) i ozdobniki – dodawanie, szukanie, usuwanie z „Cofnij”', async ({
@@ -68,9 +69,13 @@ test('Biblioteki: obrazy, czcionki (próbka kroju) i ozdobniki – dodawanie, sz
     .setInputFiles(['testy/zasoby/gwiazdka.svg', 'testy/zasoby/ramka-testowa.png']);
   await expect(kafelki).toHaveCount(2, { timeout: 15000 });
   await expect(siatka.locator('svg.miniatura-ozdobnika')).toHaveCount(2);
-  await expect(
-    page.getByRole('button', { name: 'Pobierz „gwiazdka” z biblioteki globalnej' }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pobierz „gwiazdka”' })).toBeVisible();
+
+  // Zmiana nazwy w kafelku.
+  await page.getByRole('button', { name: 'Zmień nazwę „gwiazdka”' }).click();
+  await page.getByRole('textbox', { name: 'Nowa nazwa „gwiazdka”' }).fill('Gwiazda');
+  await page.keyboard.press('Enter');
+  await expect(siatka).toContainText('Gwiazda');
 
   if (process.env.ZRZUTY) await page.screenshot({ path: 'docs/obrazy/n7-biblioteki.png' });
 

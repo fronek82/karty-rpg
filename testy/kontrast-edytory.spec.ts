@@ -1,7 +1,15 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { kontrastObrysu, kontrastTekstu, pomiarFokusu, trybKlawiatury } from './kontrastUI';
 import { gotowyUklad, karta, nowaPustaKartka, otworzDruk } from './pomoc';
-import { dodaj, drzewo, kreator, panel, sekcja, zaznacz } from './szablonUI';
+import {
+  doBibliotekiOzdobnikow,
+  dodaj,
+  drzewo,
+  kreator,
+  panel,
+  sekcja,
+  zaznacz,
+} from './szablonUI';
 
 /**
  * UI-7: kontrast wybranych elementów edytorów (kartki i szablonu) w obu motywach, liczony
@@ -255,8 +263,7 @@ for (const motyw of MOTYWY) {
       format: 'Standard / Poker',
       uklad: 'Pusta karta',
     });
-    await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
-    await expect(page.getByTestId('lista-wlasnych')).toBeAttached();
+    await doBibliotekiOzdobnikow(page);
     await page.getByTestId('plik-svg').setInputFiles('testy/zasoby/gwiazdka.svg');
     await expect(page.getByTestId('podglad-elementu')).toBeVisible();
     await page.getByLabel('Nazwa', { exact: true }).fill('Gwiazdka');
@@ -272,18 +279,22 @@ for (const motyw of MOTYWY) {
     );
     await page.getByRole('button', { name: 'Dodaj do biblioteki' }).click();
 
-    const pasek = page.locator('.pasek-gorny');
-    await tekst(pasek.locator('.okruszek'), 'okruszek na pasku');
-    await tekst(pasek.locator('.status-zapisu'), 'status zapisu na pasku');
-    const panelB = page.locator('.panel-biblioteki');
-    await tekst(panelB.locator('h2'), 'nagłówek biblioteki');
-    await tekst(panelB.locator('h3').first(), 'podtytuł listy');
-    const lista = page.getByTestId('lista-wlasnych');
-    await tekst(lista.getByRole('button').first(), 'pozycja listy (zaznaczona)');
-    const o = await pomiarFokusu(lista.getByRole('button').first());
-    expect(o.kontrast, `obrys zaznaczonej pozycji ${o.tekst} na ${o.tlo}`).toBeGreaterThanOrEqual(
+    // Strona Biblioteki (N8): nagłówek, zakładki, kafelek zaznaczony, „Gotowe”, pole nazwy.
+    await tekst(page.getByRole('heading', { level: 1, name: 'Biblioteki' }), 'nagłówek biblioteki');
+    await tekst(
+      page.getByRole('navigation', { name: 'Rodzaje bibliotek' }).getByRole('link').first(),
+      'zakładka biblioteki',
+    );
+    await tekst(page.getByTestId('biblioteka-gotowe'), 'przycisk „Gotowe”');
+    const kafelek = page
+      .getByTestId('siatka-biblioteki')
+      .getByRole('button', { name: 'Gwiazdka', exact: true });
+    await expect(kafelek).toHaveAttribute('aria-pressed', 'true');
+    const o = await pomiarFokusu(kafelek);
+    expect(o.kontrast, `obrys zaznaczonego kafelka ${o.tekst} na ${o.tlo}`).toBeGreaterThanOrEqual(
       1,
     );
+    await tekst(page.locator('.nazwa-biblioteki').first(), 'nazwa w kafelku');
     const nazwa = page.getByLabel('Nazwa', { exact: true });
     await tekst(nazwa, 'tekst w polu nazwy');
     await obrys(nazwa, 'obrys pola nazwy');

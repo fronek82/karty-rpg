@@ -16,10 +16,11 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   biblioteki globalnej szablonów, usuwanie z paskiem „Cofnij”, szukanie/sortowanie, „Duplikuj”),
   układ ze zdjęcia w edytorze i menu „Biblioteki” N7 (`docs/plan-N7.md`), wzory tła kart N5
   (`docs/plan-N5.md`: sekcja „Tło karty”, `wzorTla`, `src/silnik/wzorTla.ts`).
-- W toku: N8 – jedna biblioteka zasobów użytkownika (`docs/plan-N8.md`; N8a baza, migracja
-  i render, N8b eksport/import, N8c UI). Obrazy, czcionki (poza wbudowanymi) i ozdobniki są
-  w tabeli `biblioteka` (`src/dane/bibliotekaUzytkownika.ts`, migracja
-  `src/dane/migracjaBiblioteki.ts`); `BazaProjektow.wczytaj` składa widok projektu z biblioteką.
+- Ukończone N8 (PR #98–#100, `docs/plan-N8.md`): jedna biblioteka zasobów użytkownika – obrazy,
+  czcionki (poza wbudowanymi) i ozdobniki w tabeli `biblioteka` (`src/dane/bibliotekaUzytkownika.ts`,
+  migracja `src/dane/migracjaBiblioteki.ts`); `BazaProjektow.wczytaj` składa widok projektu
+  z biblioteką, `zapisz` przenosi nowe zasoby do biblioteki (deduplikacja po skrócie); zarządzanie
+  tylko na stronie Biblioteki, w wyborach grupy „Systemowe” / „Moja biblioteka”.
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 29` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
@@ -70,10 +71,11 @@ model  →  ozdobniki / silnik  →  druk  →  dane  →  ui
   - `szablon/` – Edytor szablonu (awers): drzewo, panele właściwości, tryb swobodny (mysz);
     `EdytorDrzewa.tsx` – część wspólna z Edytorem rewersu (zmiany edytora robi się tam), okno
     „Układ ze zdjęcia” (`OknoUkladuZeZdjecia.tsx`).
-  - `biblioteki/` – ekran „Biblioteki” (`#/biblioteki/…`: obrazy, czcionki, ozdobniki w przeglądarce;
-    wspólny `StronaBiblioteki.tsx`).
+  - `biblioteki/` – ekran „Biblioteki” (`#/biblioteki/<zakładka>?powrot=…`: jedna biblioteka
+    użytkownika – obrazy, czcionki, ozdobniki; wspólny `StronaBiblioteki.tsx`, szczegóły ozdobnika
+    `EdytorOzdobnika.tsx`, import SVG `ImportSvg.tsx`). Hooki `useBiblioteka.ts` (`liveQuery`).
   - `rewers/` – Edytor rewersu (nakładka na `EdytorDrzewa`). `kartka/` – Edytor kart (dane kart, układ kartki, druk, pobieranie).
-  - `biblioteka/` – biblioteka ozdobników projektu (z panelem globalnych), edytor ramki 9-slice.
+  - `biblioteka/` – edytor ramki 9-slice i podglądy elementów (`podgladElementu.ts`).
   - Style: `tokeny.css` (zmienne motywów), `App.css`, `edytory.css`, `pasek.css`.
 - `testy/` – Playwright (`*.spec.ts`, wzorce `*-snapshots/`, pomocniki `*UI.ts`, `pomoc.ts`).
 - `narzedzia/`, `scripts/` – generatory galerii, obrazów testowych, katalogu Google Fonts.

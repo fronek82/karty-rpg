@@ -1,7 +1,6 @@
 import { czyProjektWlasny, dodajSzablonZKartka } from '../dane/wlasneKarty';
 import { t } from '../i18n';
 import { AktywnyProjektKontekst } from './AktywnyProjektKontekst';
-import { BibliotekaOzdobnikow } from './biblioteka/BibliotekaOzdobnikow';
 import { EdytorKartki } from './kartka/EdytorKartki';
 import { EdytorRewersu } from './rewers/EdytorRewersu';
 import { EdytorSzablonu } from './szablon/EdytorSzablonu';
@@ -39,7 +38,6 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
   const zGry = !czyProjektWlasny(stan.projekt);
 
   const zawartosc = (() => {
-    if (podtrasa === 'biblioteka') return <BibliotekaOzdobnikow edycja={stan} />;
     const rewersDop = /^rewers\/(.+)$/.exec(podtrasa)?.[1];
     if (rewersDop) {
       const rewersId = decodeURIComponent(rewersDop);

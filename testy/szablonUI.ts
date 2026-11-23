@@ -204,3 +204,26 @@ export async function kartaNaKartce(page: Page, szablon: string, dane: Record<st
     await p.getByLabel(pole, { exact: true }).fill(wartosc);
   return p;
 }
+
+/**
+ * Z edytora szablonu do Biblioteki → Ozdobniki (N8: jedna biblioteka użytkownika). Niezapisane
+ * zmiany edytora – „Zapisz i wyjdź” w oknie straży wyjścia.
+ */
+export async function doBibliotekiOzdobnikow(page: Page) {
+  await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
+  const zapisz = page.getByRole('button', { name: 'Zapisz i wyjdź' });
+  await expect(
+    page
+      .getByTestId('siatka-biblioteki')
+      .or(page.getByText('Nie ma jeszcze zapisanych ozdobników.'))
+      .or(zapisz),
+  ).toBeVisible();
+  if (await zapisz.isVisible()) await zapisz.click();
+  await expect(page).toHaveURL(/#\/biblioteki\/ozdobniki\?powrot=/);
+}
+
+/** Z Biblioteki z powrotem do edytora („Gotowe”). */
+export async function zBiblioteki(page: Page) {
+  await page.getByTestId('biblioteka-gotowe').click();
+  await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
+}

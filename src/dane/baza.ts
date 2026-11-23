@@ -296,6 +296,46 @@ export class BazaProjektow {
     return lista.sort((a, b) => a.nazwa.localeCompare(b.nazwa));
   }
 
+  /**
+   * Projekty (bez wpisów „tylko szablony”, z nazwą) używające wpisu biblioteki: obraz – w dokumencie
+   * albo jako obraz ramki 9-slice użytego ozdobnika; ozdobnik – w szablonie lub rewersie;
+   * czcionka – rodzina w rolach albo w stylach szablonów. Do ostrzeżenia przy usuwaniu.
+   */
+  async projektyUzywajace(id: string): Promise<{ id: string; nazwa: string }[]> {
+    const wpis = await this.db.biblioteka.get(id);
+    if (!wpis) return [];
+    const { czcionkiSzablonu } = await import('./archiwum');
+    const ozdobniki =
+      wpis.rodzaj === 'obraz'
+        ? (await this.db.biblioteka.where('rodzaj').equals('ozdobnik').toArray()).filter(
+            (w) => w.element && obrazyRamek([w.element]).has(id),
+          )
+        : [];
+    const wynik: { id: string; nazwa: string }[] = [];
+    for (const w of await this.db.projekty.toArray()) {
+      if (w.tylkoSzablony) continue;
+      const p = w.projekt;
+      let uzywa = false;
+      if (wpis.rodzaj === 'obraz') {
+        const elementy = elementyUzyteWDokumencie(p);
+        uzywa = obrazyUzyteWDokumencie(p).has(id) || ozdobniki.some((o) => elementy.has(o.id));
+      } else if (wpis.rodzaj === 'ozdobnik') uzywa = elementyUzyteWDokumencie(p).has(id);
+      else if (wpis.opis?.rodzaj === 'czcionka') {
+        const rodzina = wpis.opis.rodzina;
+        const nazwy = [...p.szablony, ...(p.rewersy ?? [])].flatMap(czcionkiSzablonu);
+        uzywa =
+          Object.values(p.role).includes(rodzina) ||
+          nazwy.some((n) => (p.role[n] ?? n) === rodzina);
+      }
+      if (uzywa)
+        wynik.push({
+          id: w.id,
+          nazwa: p.rewersy?.[0]?.nazwa && czyProjektRewersowy(p) ? p.rewersy[0].nazwa : p.nazwa,
+        });
+    }
+    return wynik;
+  }
+
   /** Wpisy biblioteki o podanych id (brakujące pominięte). */
   async wpisyBibliotekiPoId(ids: readonly string[]): Promise<WpisBiblioteki[]> {
     return (await this.db.biblioteka.bulkGet([...ids])).filter(
@@ -491,6 +531,8 @@ export class BazaProjektow {
     });
     for (const x of ids) this.pamiecBajtow.delete(x);
     this.kosz.set(id, doKosza);
+    // „Cofnij” dotyczy ostatnich usunięć – starsze wpisy kosza (z bajtami) nie zajmują pamięci.
+    while (this.kosz.size > 20) this.kosz.delete(this.kosz.keys().next().value!);
   }
 
   /**
@@ -719,6 +761,7 @@ export class BazaProjektow {
     if (RODZAJE_BIBLIOTEKI.has(rodzaj)) {
       // „Cofnij” po usunięciu: ten sam wpis (to samo id, opis, bajty) wraca z kosza.
       const zKosza = this.kosz.get(id);
+      if (!zKosza && bajty.length === 0) throw new BladDanych(t('globalna.brakWpisu'));
       if (zKosza) {
         for (const { wpis, dane } of zKosza) await this.przywrocWpisBiblioteki(wpis, dane);
         this.kosz.delete(id);

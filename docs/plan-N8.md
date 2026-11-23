@@ -82,3 +82,16 @@ dla tych rodzajów i widoku biblioteki projektu; teksty, instrukcja, SPEC.
 - Zastępczy rysunek: obraz (pole, tekstura), ikona – prostokąt z przekątnymi; motyw i ramka
   9-slice – linia przerywana. Brakujący własny kształt wartości rysuje się jak dotąd zwykłym
   prostokątem, nieznany narożnik nie rysuje się (kostki motywu zostają).
+- N8c: strona Biblioteki to jedyne miejsce zarządzania (dawna trasa `#/projekt/<id>/biblioteka`
+  przekierowuje na Biblioteki → Ozdobniki z `?powrot=`). Linki z edytora przechodzą przez straż
+  wyjścia: przy niezapisanych zmianach (zapis ręczny) okno „Zapisz i wyjdź / Wyjdź bez zapisu /
+  Zostań”, bo edytor jest odmontowywany.
+- N8c: wybory ozdobników biorą elementy z widoku projektu i z biblioteki na żywo (`liveQuery`) –
+  ozdobnik dodany w innej karcie jest od razu w wyborze i w podglądzie. Wybory obrazów i czcionek
+  korzystają z widoku projektu (to już cała biblioteka); czcionki w `<optgroup>` „Systemowe”
+  (wbudowane) / „Moja biblioteka”, obrazy bez obrazów ramek 9-slice.
+- N8c: w Edytorze kart (zapis ręczny) wgrany plik trafia do biblioteki od razu, nie przy zapisie.
+- N8c: podglądy na stronie Biblioteki (bez projektu) używają czcionek biblioteki i czcionki
+  domyślnej aplikacji (EB Garamond z `public/czcionki`).
+- N8c: dodatkowo naprawione angielskie „Gotowe” („Ready-made” → „Done”).
+- Czcionki: ten sam plik pod inną rodziną lub wariantem to osobny wpis (poprawka po CI N8a).

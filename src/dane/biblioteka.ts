@@ -203,27 +203,33 @@ export function przytnijTresc(
   return { x: ogranicz(t.x, 0, 1 - szer), y: ogranicz(t.y, 0, 1 - wys), szer, wys };
 }
 
+/**
+ * Element po zmianie nazwy, rodzaju, kolorowania, prostokąta treści albo ustawień ramki 9-slice
+ * (z poprawkami: ramka z obrazu zostaje ramką, rodzaj „ramka9” dostaje ustawienia, wcięcia
+ * i treść w granicach rysunku).
+ */
+export function zmienionyElement(e: ElementOzdobny, zmiana: ZmianaElementu): ElementOzdobny {
+  if (zmiana.nazwa !== undefined) zmiana = { ...zmiana, nazwa: zmiana.nazwa.slice(0, MAKS_NAZWA) };
+  if (zmiana.tresc) zmiana = { ...zmiana, tresc: przytnijTresc(zmiana.tresc) };
+  const n: ElementOzdobny = { ...e, ...zmiana };
+  // Ramka z obrazu nie ma konturów – nie da się jej użyć w innym rodzaju.
+  if (n.ramka9?.zrodlo.typ === 'obraz') n.rodzaj = 'ramka9';
+  // Rodzaj „ramka 9-slice” wymaga ustawień (dla SVG – domyślne wcięcia); inne rodzaje ich nie mają.
+  if (n.rodzaj === 'ramka9') {
+    if (!n.ramka9) n.ramka9 = ramka9Domyslna({ typ: 'svg' }, n.szer, n.wys);
+    n.ramka9 = { ...n.ramka9, wciecia: przytnijWciecia(n.ramka9.wciecia, n.szer, n.wys) };
+  } else if (n.ramka9?.zrodlo.typ === 'svg') delete n.ramka9;
+  return n;
+}
+
 /** Zmienia nazwę, rodzaj, kolorowanie albo prostokąt treści własnego elementu. */
 export function zmienElementBiblioteki(p: Projekt, id: string, zmiana: ZmianaElementu): Projekt {
   const lista = elementyProjektu(p);
   if (!lista.some((e) => e.id === id)) return p;
-  if (zmiana.nazwa !== undefined) zmiana = { ...zmiana, nazwa: zmiana.nazwa.slice(0, MAKS_NAZWA) };
-  if (zmiana.tresc) zmiana = { ...zmiana, tresc: przytnijTresc(zmiana.tresc) };
   return {
     ...p,
     biblioteka: {
-      ozdobniki: lista.map((e) => {
-        if (e.id !== id) return e;
-        const n: ElementOzdobny = { ...e, ...zmiana };
-        // Ramka z obrazu nie ma konturów – nie da się jej użyć w innym rodzaju.
-        if (n.ramka9?.zrodlo.typ === 'obraz') n.rodzaj = 'ramka9';
-        // Rodzaj „ramka 9-slice” wymaga ustawień (dla SVG – domyślne wcięcia); inne rodzaje ich nie mają.
-        if (n.rodzaj === 'ramka9') {
-          if (!n.ramka9) n.ramka9 = ramka9Domyslna({ typ: 'svg' }, n.szer, n.wys);
-          n.ramka9 = { ...n.ramka9, wciecia: przytnijWciecia(n.ramka9.wciecia, n.szer, n.wys) };
-        } else if (n.ramka9?.zrodlo.typ === 'svg') delete n.ramka9;
-        return n;
-      }),
+      ozdobniki: lista.map((e) => (e.id === id ? zmienionyElement(e, zmiana) : e)),
     },
     zmieniono: new Date().toISOString(),
   };

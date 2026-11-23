@@ -155,8 +155,10 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
       await zapisz(page, 'edytor-szablonu');
       if (galeria) {
         await page.getByRole('link', { name: t('biblioteka.tytul'), exact: true }).click();
+        const zapiszIWyjdz = page.getByRole('button', { name: t('projekt.zapiszIWyjdz') });
+        if (await zapiszIWyjdz.isVisible().catch(() => false)) await zapiszIWyjdz.click();
         await expect(
-          page.getByRole('heading', { level: 2, name: t('biblioteka.tytul') }),
+          page.getByRole('heading', { level: 1, name: t('biblioteki.tytul') }),
         ).toBeVisible();
         await zapisz(page, 'biblioteka');
       }

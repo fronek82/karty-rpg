@@ -4,14 +4,14 @@
  * tokeny.css, żadnych literałów kolorów. Zmienia wygląd kontrolek oraz ramkę i odstępy sekcji
  * paneli (pasek znacznika, padding); poza tym układ ekranów zostaje.
  *
- * Skróty selektorów (zakres warstwy): .edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow,
+ * Skróty selektorów (zakres warstwy): .edytor-kartki, .edytor-szablonu, .panel-ozdobnika,
  * .kreator – ekrany edycji; ekrany startowe mają własne style z UI-2…UI-5.
  */
 
 /* ---------- Pola formularzy ---------- */
 
 /* Pola tekstowe, liczbowe, listy: wspólny wygląd; obrys >= 3:1 względem pola i panelu. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   :is(
     input:not(
       [type='checkbox'],
@@ -31,13 +31,13 @@
 }
 
 /* Zero specyficzności: dopełnia tylko kontrolki bez własnych odstępów (np. „Skala”, „Obrót”). */
-:where(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:where(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   :where(input[type='number'], input[type='text'], select, textarea) {
   font: inherit;
   padding: 0.3rem 0.5rem;
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   :is(input, select, textarea):disabled {
   color: var(--tekst-przygaszony);
   background: var(--tlo-panelu);
@@ -45,18 +45,18 @@
   cursor: not-allowed;
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   :is(input::placeholder, textarea::placeholder) {
   color: var(--tekst-przygaszony);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   :is(input[type='checkbox'], input[type='radio']) {
   accent-color: var(--akcent);
 }
 
 /* Próbnik koloru ma obrys jak inne pola. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   input[type='color'] {
   background: var(--pole);
   border: 1px solid var(--obramowanie-pola);
@@ -66,25 +66,25 @@
 /* ---------- Przyciski w edytorach ---------- */
 
 /* Przyciski segmentowe: zaznaczony – morski z białym tekstem; hover tylko na niezaznaczonych. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   .przelacznik-segmentowy {
   border-color: var(--obramowanie-pola);
   background: var(--tlo-panelu);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   .przelacznik-segmentowy
   button {
   border-right-color: var(--obramowanie-pola);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   .przelacznik-segmentowy
   button:hover:not(:disabled, [aria-pressed='true']) {
   background: var(--zaznaczenie-tlo);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   .przelacznik-segmentowy
   button:focus-visible {
   outline-offset: -4px;
@@ -96,16 +96,16 @@
 }
 
 /* Główny przycisk w panelach i dialogach: morski z białym tekstem (jak na pasku). */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   button.glowny:hover:not(:disabled),
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   a.przycisk.glowny:hover {
   background: color-mix(in srgb, black 18%, var(--akcent));
   border-color: color-mix(in srgb, black 18%, var(--akcent));
 }
 
 /* Przycisk zwykły w panelu: obrys wyraźniejszy niż linia podziału. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator, .okno-zasobow)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator, .okno-zasobow)
   :is(.panel-edytora, .panel-drzewa, .panel-biblioteki, .kreator-formularz)
   :is(button, a.przycisk):not(.glowny, .niebezpieczny, :disabled) {
   border-color: var(--obramowanie-pola);
@@ -247,10 +247,8 @@ fieldset:is(
 }
 
 /* Nagłówki sekcji: summary i legend wyglądają tak samo. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
-  details.sekcja-panelu
-  > summary,
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) details.sekcja-panelu > summary,
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   :is(
     fieldset.sekcja-ukladu,
     fieldset.sekcja-dwustronny,
@@ -272,24 +270,22 @@ fieldset:is(
   color: var(--tekst);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) fieldset > legend {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) fieldset > legend {
   padding: 0 0.3rem;
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
-  details.sekcja-panelu
-  > summary {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) details.sekcja-panelu > summary {
   border-radius: 0.3rem;
   padding-inline: 0.2rem;
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   details.sekcja-panelu
   > summary:hover {
   background: var(--zaznaczenie-tlo);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   details.sekcja-panelu
   > summary:focus-visible {
   outline: 3px solid var(--zaznaczenie);
@@ -297,7 +293,7 @@ fieldset:is(
 }
 
 /* Podpisy w legendach bez zmiany układu: opisy pod nagłówkiem sekcji. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   :is(fieldset, details.sekcja-panelu)
   > .podpis {
   margin-block: 0.25rem;
@@ -305,30 +301,30 @@ fieldset:is(
 
 /* ---------- Ostrzeżenia i komunikaty ---------- */
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .uwaga {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) .uwaga {
   border-color: var(--obramowanie-pola);
   color: var(--tekst);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .uwaga[role='alert'],
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .uwaga.blad {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) .uwaga[role='alert'],
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) .uwaga.blad {
   border-color: var(--zle);
   border-left-width: 4px;
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .ostrzezenia-karty {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) .ostrzezenia-karty {
   padding-left: 1.1rem;
 }
 
 /* ---------- Drzewo szablonu ---------- */
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   .wezel-drzewa
   > .wezel-etykieta:hover {
   background: var(--zaznaczenie-tlo);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   .wezel-drzewa.wybrany
   > .wezel-etykieta {
   background: var(--zaznaczenie-tlo);
@@ -336,7 +332,7 @@ fieldset:is(
   outline-offset: -2px;
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   .wezel-drzewa:focus-visible
   > .wezel-etykieta {
   outline: 3px solid var(--zaznaczenie);
@@ -344,14 +340,14 @@ fieldset:is(
 }
 
 /* Lista pozycji w bibliotece: zaznaczona ma tło i obrys w kolorze zaznaczenia. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   .lista-biblioteki
   li
   > button:hover:not([aria-pressed='true']) {
   background: var(--zaznaczenie-tlo);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   .lista-biblioteki
   li
   > button[aria-pressed='true'] {
@@ -360,22 +356,21 @@ fieldset:is(
 
 /* ---------- Kreator: kafelki formatów i układów ---------- */
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) :is(.format, .uklad):hover {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) :is(.format, .uklad):hover {
   border-color: var(--obramowanie-pola);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
-  :is(.format, .uklad).wybrany {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) :is(.format, .uklad).wybrany {
   background: var(--zaznaczenie-tlo);
 }
 
 /* Wybór narożnika ramki: obrys przycisków jak przy innych kontrolkach. */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .wybor-narozniki button {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) .wybor-narozniki button {
   border-color: var(--obramowanie-pola);
   color: var(--tekst);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   .wybor-narozniki
   button:hover:not([aria-pressed='true']) {
   background: var(--zaznaczenie-tlo);
@@ -383,11 +378,11 @@ fieldset:is(
 
 /* ---------- Siatka kotwic (tryb swobodny) ---------- */
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .siatka-kotwic button {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) .siatka-kotwic button {
   border-color: var(--obramowanie-pola);
 }
 
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
   .siatka-kotwic
   button:hover:not([aria-checked='true']) {
   background: var(--zaznaczenie-tlo);
@@ -414,7 +409,7 @@ fieldset:is(
  * (kolor papieru to dane karty, nie motyw): rysunki w kolorze stałym (import SVG) są czytelne
  * także w ciemnym motywie, a rysunki kolorowalne (currentColor) dostają ciemny grafit.
  */
-:is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator) .miniatura-ozdobnika {
+:is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) .miniatura-ozdobnika {
   background: var(--papier-ozdobnika);
   color: var(--na-jasnym);
   border-radius: 3px;
@@ -427,10 +422,10 @@ fieldset:is(
  * obrys Highlight i, tam gdzie tło było jedynym znacznikiem, pełne Highlight z HighlightText.
  */
 @media (forced-colors: active) {
-  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
     .przelacznik-segmentowy
     button[aria-pressed='true'],
-  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
     .siatka-kotwic
     button[aria-checked='true'] {
     forced-color-adjust: none;
@@ -439,7 +434,7 @@ fieldset:is(
     border-color: HighlightText;
   }
 
-  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
     :is(
       .wybor-narozniki button[aria-pressed='true'],
       .lista-biblioteki li > button[aria-pressed='true']
@@ -448,12 +443,11 @@ fieldset:is(
     outline-offset: -3px;
   }
 
-  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
-    :is(.format, .uklad).wybrany {
+  :is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator) :is(.format, .uklad).wybrany {
     outline: 4px solid Highlight;
   }
 
-  :is(.edytor-kartki, .edytor-szablonu, .biblioteka-ozdobnikow, .kreator)
+  :is(.edytor-kartki, .edytor-szablonu, .panel-ozdobnika, .kreator)
     .wezel-drzewa.wybrany
     > .wezel-etykieta {
     forced-color-adjust: none;

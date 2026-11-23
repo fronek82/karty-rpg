@@ -49,6 +49,9 @@ import { PrzyciskZapisu, useSkrotZapisu, useStrazWyjscia } from '../zapisReczny'
 import { useCzcionkiGlobalne, useSynchronizujCzcionkiGlobalne } from '../zasobyGlobalne';
 import { DrzewoSzablonu, nazwaWezla } from './DrzewoSzablonu';
 import { ElementyWlasneKontekst } from './elementyWlasne';
+import { adresBiblioteki, biezacyAdres } from '../biblioteki/adresy';
+import { polaczElementy, useElementyOzdobne } from '../useBiblioteka';
+import { zasobyElementow } from '../../dane/biblioteka';
 import { Liczba, Sekcja } from './Kontrolki';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWezla } from './PanelWezla';
@@ -331,6 +334,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   const { edycja, szablon, zmienSz, bezDanych, id } = u;
   const { projekt } = edycja;
   const { rodzinyGlobalne } = useCzcionkiGlobalne(projekt);
+  const zyweElementy = useElementyOzdobne().wlasne;
   useSynchronizujCzcionkiGlobalne(edycja, rodzinyGlobalne, u.czcionkiUzyte);
   const [zazn, ustawZazn] = useState<string[]>([]);
   const [schowek, ustawSchowek] = useState<SkopiowanyStyl>();
@@ -647,24 +651,41 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
       ...rodzinyGlobalne,
     ]),
   ];
+  // Czcionki w dwóch grupach: „Systemowe” (wbudowane w aplikację) i „Moja biblioteka”.
+  const wbudowane = new Set(
+    projekt.zasoby.flatMap((z) =>
+      z.rodzaj === 'czcionka' && z.zrodlo === 'wbudowana' ? [z.rodzina] : [],
+    ),
+  );
   const czcionki = [
     ...roleProjektu(projekt).map((r) => ({
       wartosc: r,
       tekst: t('wlasciwosci.rola', { rola: tJesliJest(`rola.${r}`) ?? r }),
     })),
-    ...rodziny.map((r) => ({ wartosc: r, tekst: r })),
+    ...rodziny
+      .filter((r) => wbudowane.has(r))
+      .map((r) => ({ wartosc: r, tekst: r, grupa: t('biblioteka.zrodlo.systemowe') })),
+    ...rodziny
+      .filter((r) => !wbudowane.has(r))
+      .map((r) => ({ wartosc: r, tekst: r, grupa: t('biblioteka.zrodlo.moja') })),
   ];
+  // Obrazy biblioteki bez obrazów ramek 9-slice (te wybiera się jako ozdobnik, nie obraz).
+  const obrazyRamek = new Set(zasobyElementow(projekt.biblioteka?.ozdobniki ?? []));
   const obrazy = projekt.zasoby.flatMap((z) =>
-    z.rodzaj === 'obraz' ? [{ wartosc: z.id, tekst: z.nazwa }] : [],
+    z.rodzaj === 'obraz' && !obrazyRamek.has(z.id) ? [{ wartosc: z.id, tekst: z.nazwa }] : [],
   );
+  const adresOzdobnikow = adresBiblioteki('ozdobniki', biezacyAdres());
+  // Ozdobniki do wyborów: z widoku projektu i z biblioteki na żywo (dodane po otwarciu).
+  const elementyWyboru = polaczElementy(projekt.biblioteka?.ozdobniki ?? [], zyweElementy);
   const podklad = u.podklad;
 
   return (
     <ElementyWlasneKontekst.Provider
       value={{
-        elementy: projekt.biblioteka?.ozdobniki ?? [],
-        adresBiblioteki: `#/projekt/${idProjektu}/biblioteka`,
+        elementy: elementyWyboru,
+        adresBiblioteki: adresOzdobnikow,
         adresObrazu: (x) => zasoby.obrazy.get(x)?.adres,
+        sprawdzWyjscie,
       }}
     >
       <div className="edytor-szablonu">
@@ -752,7 +773,8 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             </button>
             <a
               className="przycisk"
-              href={`#/projekt/${idProjektu}/biblioteka`}
+              href={adresOzdobnikow}
+              onClick={(e) => sprawdzWyjscie(e, adresOzdobnikow)}
               aria-label={t('biblioteka.tytul')}
               title={t('biblioteka.tytul')}
             >

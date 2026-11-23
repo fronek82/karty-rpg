@@ -32,6 +32,7 @@ import {
 } from '../src/silnik/__testy__/przyklady';
 import type { Szablon, Wezel } from '../src/model/szablon';
 import {
+  doBibliotekiOzdobnikow,
   dodaj,
   drzewo,
   etykieta,
@@ -45,6 +46,7 @@ import {
   sekcja,
   styl,
   wyglad,
+  zBiblioteki,
   zaznacz,
 } from './szablonUI';
 
@@ -509,7 +511,7 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   await w.getByLabel('Kolor linii').fill('#5b3a1e');
 
   // Biblioteka: własny SVG (kształt wartości) i ramka 9-slice z PNG – wgrane przez interfejs.
-  await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
+  await doBibliotekiOzdobnikow(page);
   await page.getByTestId('plik-svg').setInputFiles('testy/zasoby/gwiazdka.svg');
   await page
     .getByRole('group', { name: 'Użyj jako' })
@@ -523,8 +525,7 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   for (const s of ['Góra', 'Prawo', 'Dół', 'Lewo'])
     await edytor.getByLabel(s, { exact: true }).fill('30');
   await expect(edytor.getByTestId('dpi-ramki')).toContainText('305 dpi');
-  await page.goBack();
-  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+  await zBiblioteki(page);
 
   // Wartość w kształcie z własnego SVG.
   await karta(page);
