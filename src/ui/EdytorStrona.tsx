@@ -20,7 +20,10 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
     podtrasa === 'drukuj' ||
     podtrasa.startsWith('drukuj/') ||
     podtrasa.startsWith('kartka/');
-  const stan = useProjekt(id, { autozapis: !czyEdytorKart });
+  // Zapis ręczny (przycisk „Zapisz”, Ctrl+S) w Edytorze kart oraz Edytorze szablonu i rewersu.
+  const zapisReczny =
+    czyEdytorKart || podtrasa.startsWith('szablon/') || podtrasa.startsWith('rewers/');
+  const stan = useProjekt(id, { autozapis: !zapisReczny });
   if (stan.stan === 'wczytywanie') return <p className="tresc">{t('projekty.wczytywanie')}</p>;
   if (stan.stan === 'blad')
     return (

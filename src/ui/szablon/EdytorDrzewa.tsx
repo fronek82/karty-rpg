@@ -42,7 +42,10 @@ import { scenaDoSvg } from '../../silnik/svg';
 import { PoleLiczby } from '../kartka/PoleLiczby';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
 import { tekstOstrzezenia } from '../ostrzezenia';
-import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
+import { ACCEPT_PLIKU_SZABLONU } from '../../dane/archiwum';
+import { zapiszPlik } from '../pliki';
+import type { ProjektWEdycji } from '../useProjekt';
+import { PrzyciskZapisu, useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
 import { useCzcionkiGlobalne, useSynchronizujCzcionkiGlobalne } from '../zasobyGlobalne';
 import { DrzewoSzablonu, nazwaWezla } from './DrzewoSzablonu';
 import { ElementyWlasneKontekst } from './elementyWlasne';
@@ -98,6 +101,13 @@ export interface PodkladEdytora {
   usun: () => void;
 }
 
+export interface PlikSzablonuEdytora {
+  /** Bajty pliku, nazwa pliku i ostrzeżenia (np. licencje czcionek). */
+  eksportuj: () => { bajty: Uint8Array; nazwa: string; ostrzezenia: string[] };
+  /** Dodaje szablon z pliku do projektu; zwraca link do niego i ostrzeżenia. */
+  importuj: (bajty: Uint8Array) => Promise<{ adres: string; tekst: string; ostrzezenia: string[] }>;
+}
+
 export interface UstawieniaEdytoraDrzewa {
   edycja: ProjektWEdycji;
   /** Id edytowanego szablonu lub rewersu (miniatura, efekty przy zmianie). */
@@ -134,6 +144,8 @@ export interface UstawieniaEdytoraDrzewa {
   adresPowrotu: string;
   /** Główna akcja paska („Zrób karty”). */
   akcjaGlowna: ReactNode;
+  /** Plik szablonu (format wspólny dla awersu i rewersu): eksport edytowanego, import jako nowy. */
+  plikSzablonu: PlikSzablonuEdytora;
   wgrajStalyObraz: (poleId: string, plik: File, sygnal: AbortSignal) => Promise<void>;
   podklad?: PodkladEdytora | undefined;
   panelKarty: (k: KontekstPaneluKarty) => ReactNode;
@@ -323,6 +335,37 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   const [tmp, ustawTmp] = useState<Map<string, ZmianaPola> | undefined>();
   const [przyciaganie, ustawPrzyciaganie] = useState({ siatka: SIATKA_DOMYSLNA, obiekty: true });
   const idProjektu = encodeURIComponent(projekt.id);
+  useSkrotZapisu(edycja.zapiszTeraz);
+  const { sprawdzWyjscie, okno: oknoWyjscia } = useStrazWyjscia(edycja);
+  const plikImportu = useRef<HTMLInputElement>(null);
+  // Komunikat eksportu/importu pliku szablonu (z linkiem do zaimportowanego) albo błąd.
+  const [komunikatPliku, ustawKomunikatPliku] = useState<{
+    tekst: string;
+    link?: { adres: string; tekst: string };
+    blad?: boolean;
+  }>();
+  const opisBledu = (e: unknown) => (e instanceof Error ? e.message : String(e));
+  const eksportujPlik = () => {
+    try {
+      const { bajty, nazwa, ostrzezenia } = u.plikSzablonu.eksportuj();
+      zapiszPlik(bajty, 'application/zip', nazwa);
+      ustawKomunikatPliku(ostrzezenia.length ? { tekst: ostrzezenia.join(' ') } : undefined);
+    } catch (e) {
+      ustawKomunikatPliku({ tekst: opisBledu(e), blad: true });
+    }
+  };
+  const importujPlik = async (plik: File) => {
+    ustawKomunikatPliku(undefined);
+    try {
+      const w = await u.plikSzablonu.importuj(new Uint8Array(await plik.arrayBuffer()));
+      ustawKomunikatPliku({ tekst: w.ostrzezenia.join(' '), link: w });
+    } catch (e) {
+      ustawKomunikatPliku({
+        tekst: t('szablony.bladImportu', { szczegoly: opisBledu(e) }),
+        blad: true,
+      });
+    }
+  };
 
   // Zaznaczenie bez usuniętych węzłów (np. po „Cofnij”).
   const aktywne = szablon ? zazn.filter((x) => znajdzWezel(szablon, x)) : [];
@@ -619,50 +662,118 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     >
       <div className="edytor-szablonu">
         <header className="pasek-gorny" role="banner">
-          <a href="#/" className="logo">
+          <a href="#/" className="logo" onClick={(e) => sprawdzWyjscie(e, '#/')}>
             {t('aplikacja.nazwa')}
           </a>
-          <input
-            className="nazwa-projektu"
-            title={szablon.nazwa}
-            aria-label={u.teksty.nazwa}
-            value={szablon.nazwa}
-            onChange={(e) => u.zmienNazwe(e.target.value)}
-          />
-          <span className="status-zapisu" role="status">
-            {tekstZapisu(edycja.zapis)}
+          <span className="grupa-paska">
+            <input
+              className="nazwa-projektu"
+              title={szablon.nazwa}
+              aria-label={u.teksty.nazwa}
+              value={szablon.nazwa}
+              onChange={(e) => u.zmienNazwe(e.target.value)}
+            />
+            <PrzyciskZapisu edycja={edycja} />
           </span>
           <span className="odstep" />
-          <a className="przycisk" href={`#/projekt/${idProjektu}/biblioteka`}>
-            {t('biblioteka.tytul')}
-          </a>
-          <button
-            type="button"
-            aria-label={t('kartka.cofnij')}
-            disabled={!edycja.mozeCofnac}
-            onClick={edycja.cofnij}
-          >
-            ↶
-          </button>
-          <button
-            type="button"
-            aria-label={t('kartka.ponow')}
-            disabled={!edycja.mozePonowic}
-            onClick={edycja.ponow}
-          >
-            ↷
-          </button>
-          <button type="button" onClick={u.duplikuj}>
-            {t('szablony.duplikuj')}
-          </button>
-          <a className="przycisk" href={u.adresPowrotu}>
-            {t('pasek.powrot')}
-          </a>
-          {u.akcjaGlowna}
+          <span className="grupa-paska">
+            <button
+              type="button"
+              className="ikonowy"
+              aria-label={t('kartka.cofnij')}
+              title={t('kartka.cofnij')}
+              disabled={!edycja.mozeCofnac}
+              onClick={edycja.cofnij}
+            >
+              ↶
+            </button>
+            <button
+              type="button"
+              className="ikonowy"
+              aria-label={t('kartka.ponow')}
+              title={t('kartka.ponow')}
+              disabled={!edycja.mozePonowic}
+              onClick={edycja.ponow}
+            >
+              ↷
+            </button>
+          </span>
+          <span className="grupa-paska">
+            <button
+              type="button"
+              aria-label={t('szablon.eksportujPlik')}
+              title={t('szablon.eksportujPlik')}
+              onClick={eksportujPlik}
+            >
+              {t('szablon.eksportujKrotko')}
+            </button>
+            <button
+              type="button"
+              aria-label={t('szablon.importujPlik')}
+              title={t('szablon.importujPlik')}
+              onClick={() => plikImportu.current?.click()}
+            >
+              {t('szablon.importujKrotko')}
+            </button>
+            <input
+              ref={plikImportu}
+              type="file"
+              hidden
+              accept={ACCEPT_PLIKU_SZABLONU}
+              aria-label={t('szablon.importujPlik')}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (f) void importujPlik(f);
+              }}
+            />
+            <button
+              type="button"
+              aria-label={t('szablony.duplikuj')}
+              title={t('szablony.duplikuj')}
+              onClick={u.duplikuj}
+            >
+              {t('szablon.duplikujKrotko')}
+            </button>
+            <a
+              className="przycisk"
+              href={`#/projekt/${idProjektu}/biblioteka`}
+              aria-label={t('biblioteka.tytul')}
+              title={t('biblioteka.tytul')}
+            >
+              {t('szablon.bibliotekaKrotko')}
+            </a>
+          </span>
+          <span className="grupa-paska">
+            <a
+              className="przycisk"
+              href={u.adresPowrotu}
+              onClick={(e) => sprawdzWyjscie(e, u.adresPowrotu)}
+            >
+              {t('pasek.powrot')}
+            </a>
+            {u.akcjaGlowna}
+          </span>
           <NarzedziaPaska />
         </header>
+        {oknoWyjscia}
         <h1 className="tylko-czytnik">{u.teksty.tytul}</h1>
-        <div role="status">{u.kopia && <a href={u.kopia.adres}>{u.kopia.tekst}</a>}</div>
+        <div role="status">
+          {u.kopia && <a href={u.kopia.adres}>{u.kopia.tekst}</a>}
+          {komunikatPliku && !komunikatPliku.blad && (
+            <>
+              {komunikatPliku.link && (
+                <a href={komunikatPliku.link.adres}>{komunikatPliku.link.tekst}</a>
+              )}{' '}
+              {komunikatPliku.tekst}
+            </>
+          )}
+        </div>
+        {komunikatPliku?.blad && (
+          <p role="alert" className="uwaga">
+            {komunikatPliku.tekst}
+          </p>
+        )}
         <div className="uklad-szablonu">
           <aside className="panel-drzewa" aria-label={u.teksty.drzewo}>
             <h2>{u.teksty.drzewo}</h2>

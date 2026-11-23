@@ -183,6 +183,30 @@ describe('wspólny plik szablonu awersu i rewersu', () => {
     expect(dodany.projekt.rewersy?.map((x) => x.nazwa)).toContain(sz.nazwa);
   });
 
+  it('plik awersu z rewersem wczytany jako rewers nie wnosi zasobów pominiętego rewersu', () => {
+    const sz = niepusty();
+    const obrazRewersu = bazowy.zasoby.find((z) => z.rodzaj === 'obraz')!;
+    const p = wlasny('f5', {
+      rewersy: [{ ...rewers('rt', 'Tył z teksturą'), teksturaTla: obrazRewersu.id }],
+      szablony: bazowy.szablony.map((s) =>
+        s.id === sz.id ? { ...s, rewersId: 'rt', teksturaTla: undefined } : s,
+      ),
+    });
+    const plik = eksportujSzablon(p, zasoby, sz.id).bajty;
+    // Wczytany jako awers – z rewersem i jego teksturą.
+    expect(importujSzablon(plik).zasoby.some((z) => z.id === obrazRewersu.id)).toBe(true);
+    const paczka = importujRewers(plik);
+    const json = JSON.stringify(paczka.rewers);
+    // Tylko zasoby, do których odwołuje się powstały rewers (obrazy po id, czcionki przez role).
+    for (const z of paczka.zasoby) {
+      if (z.rodzaj === 'obraz') expect(json).toContain(`"${z.id}"`);
+      expect(paczka.dane.has(z.id)).toBe(true);
+    }
+    expect([...paczka.dane.keys()].sort()).toEqual(paczka.zasoby.map((z) => z.id).sort());
+    expect(json).not.toContain(`"${obrazRewersu.id}"`);
+    expect(paczka.zasoby.some((z) => z.id === obrazRewersu.id)).toBe(false);
+  });
+
   it('dawny plik .kartyrpg-rewers (rewers.json) nadal się importuje', () => {
     const r = rewers('stary', 'Stary tył');
     const bajty = zipSync(

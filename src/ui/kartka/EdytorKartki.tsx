@@ -53,7 +53,7 @@ import { t, tJesliJest, tn } from '../../i18n';
 import type { WyrenderowanaKarta } from '../../silnik/karta';
 import { useJezyk } from '../../i18n/react';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
-import { OknoModalne } from '../OknoModalne';
+import { PrzyciskZapisu, useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
 import type { Arkusz } from '../../model/arkusz';
 import type { Projekt } from '../../model/projekt';
 import {
@@ -101,7 +101,7 @@ import {
   type ZapisanyRewersGlobalny,
 } from '../rewersyGlobalne';
 import { useZSzarymiObrazami } from '../szareObrazy';
-import { tekstZapisu, type ProjektWEdycji } from '../useProjekt';
+import type { ProjektWEdycji } from '../useProjekt';
 import type { ZasobyPakietu } from '../zasoby';
 import {
   celKolejnosci,
@@ -246,18 +246,8 @@ export function EdytorKartki({
   const jezykUi = useJezyk();
   const awersyInne = useAwersyZProjektow(projekt.id, projekt.szablony);
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
-  const [celWyjscia, ustawCelWyjscia] = useState<string>();
-  const zapiszTeraz = edycja.zapiszTeraz;
-  useEffect(() => {
-    const naZapis = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        void zapiszTeraz().catch(() => undefined);
-      }
-    };
-    window.addEventListener('keydown', naZapis);
-    return () => window.removeEventListener('keydown', naZapis);
-  }, [zapiszTeraz]);
+  useSkrotZapisu(edycja.zapiszTeraz);
+  const { sprawdzWyjscie, okno: oknoWyjscia } = useStrazWyjscia(edycja);
   // Po wejściu z edytora szablonu – przewiń do kartki dla jego rozmiaru.
   useEffect(() => {
     if (!pokazKartke) return;
@@ -1743,71 +1733,50 @@ export function EdytorKartki({
     ? `#/projekt/${idProjektuUrl}/drukuj/${encodeURIComponent(pokazKartke)}`
     : `#/projekt/${idProjektuUrl}/drukuj`;
 
-  const sprawdzWyjscie = (e: React.MouseEvent, cel: string) => {
-    if (!edycja.niezapisane) return;
-    if (cel.startsWith(`#/projekt/${idProjektuUrl}`)) return;
-    e.preventDefault();
-    ustawCelWyjscia(cel);
-  };
-
   const naglowekProjektu = (
     <header className="pasek-gorny" role="banner">
       <a href="#/" className="logo" onClick={(e) => sprawdzWyjscie(e, '#/')}>
         {t('aplikacja.nazwa')}
       </a>
-      <input
-        className="nazwa-projektu"
-        title={projekt.nazwa}
-        aria-label={t('kartka.nazwaProjektu')}
-        value={projekt.nazwa}
-        onChange={(e) =>
-          zmien((p) => ({ ...p, nazwa: e.target.value, zmieniono: new Date().toISOString() }), {
-            klucz: 'nazwa',
-          })
-        }
-      />
-      <button
-        type="button"
-        className={edycja.niezapisane ? 'glowny przycisk-zapisz' : 'przycisk-zapisz'}
-        disabled={!edycja.niezapisane || edycja.zapis.stan === 'zapisywanie'}
-        title={t('projekt.zapiszPodpowiedz')}
-        onClick={() => void edycja.zapiszTeraz().catch(() => undefined)}
-      >
-        {t('projekt.zapisz')}
-      </button>
-      <span
-        role="status"
-        aria-live="polite"
-        className={`status-zapisu ${edycja.zapis.stan === 'blad' ? 'blad' : ''}`}
-      >
-        {tekstZapisu(edycja.zapis)}
+      <span className="grupa-paska">
+        <input
+          className="nazwa-projektu"
+          title={projekt.nazwa}
+          aria-label={t('kartka.nazwaProjektu')}
+          value={projekt.nazwa}
+          onChange={(e) =>
+            zmien((p) => ({ ...p, nazwa: e.target.value, zmieniono: new Date().toISOString() }), {
+              klucz: 'nazwa',
+            })
+          }
+        />
+        <PrzyciskZapisu edycja={edycja} />
       </span>
       <span className="odstep" />
-      <button
-        type="button"
-        className="ikonowy"
-        aria-label={t('kartka.cofnij')}
-        title={t('kartka.cofnij')}
-        disabled={!edycja.mozeCofnac}
-        onClick={edycja.cofnij}
-      >
-        ↶
-      </button>
-      <button
-        type="button"
-        className="ikonowy"
-        aria-label={t('kartka.ponow')}
-        title={t('kartka.ponow')}
-        disabled={!edycja.mozePonowic}
-        onClick={edycja.ponow}
-      >
-        ↷
-      </button>
-      <a className="przycisk" href={adresPowrotu} onClick={(e) => sprawdzWyjscie(e, adresPowrotu)}>
-        {t('pasek.powrot')}
-      </a>
-      {druk ? (
-        <>
+      <span className="grupa-paska">
+        <button
+          type="button"
+          className="ikonowy"
+          aria-label={t('kartka.cofnij')}
+          title={t('kartka.cofnij')}
+          disabled={!edycja.mozeCofnac}
+          onClick={edycja.cofnij}
+        >
+          ↶
+        </button>
+        <button
+          type="button"
+          className="ikonowy"
+          aria-label={t('kartka.ponow')}
+          title={t('kartka.ponow')}
+          disabled={!edycja.mozePonowic}
+          onClick={edycja.ponow}
+        >
+          ↷
+        </button>
+      </span>
+      {druk && (
+        <span className="grupa-paska">
           <button
             type="button"
             onClick={() =>
@@ -1820,21 +1789,32 @@ export function EdytorKartki({
           >
             ⤓ {t('projekty.eksportuj')}
           </button>
+          <span role="status" aria-live="polite" className="status-pdf">
+            {statusPdf}
+          </span>
+        </span>
+      )}
+      <span className="grupa-paska">
+        <a
+          className="przycisk"
+          href={adresPowrotu}
+          onClick={(e) => sprawdzWyjscie(e, adresPowrotu)}
+        >
+          {t('pasek.powrot')}
+        </a>
+        {druk ? (
           <MenuPobierz
             wylaczone={!zasoby || zajete}
             pobierz={(co) =>
               wTle(() => (co.rodzaj === 'pdf' ? pobierzPdf() : pobierzObrazy(co.rodzaj, co.format)))
             }
           />
-          <span role="status" aria-live="polite" className="status-pdf">
-            {statusPdf}
-          </span>
-        </>
-      ) : (
-        <a className="przycisk glowny" href={adresDruku}>
-          {t('kartka.drukujKarty')}
-        </a>
-      )}
+        ) : (
+          <a className="przycisk glowny" href={adresDruku}>
+            {t('kartka.drukujKarty')}
+          </a>
+        )}
+      </span>
       <NarzedziaPaska />
     </header>
   );
@@ -1842,43 +1822,7 @@ export function EdytorKartki({
   return (
     <div className="edytor-kartki">
       {naglowekProjektu}
-      {celWyjscia && (
-        <OknoModalne tytul={t('projekt.wyjscieTytul')} zamknij={() => ustawCelWyjscia(undefined)}>
-          <p>{t('projekt.wyjscieOpis')}</p>
-          <div className="okno-wyjscia-akcje">
-            <button
-              type="button"
-              className="glowny"
-              onClick={() => {
-                const cel = celWyjscia;
-                void edycja
-                  .zapiszTeraz()
-                  .then(() => {
-                    ustawCelWyjscia(undefined);
-                    window.location.hash = cel;
-                  })
-                  .catch(() => ustawCelWyjscia(undefined));
-              }}
-            >
-              {t('projekt.zapiszIWyjdz')}
-            </button>
-            <button
-              type="button"
-              className="niebezpieczny"
-              onClick={() => {
-                const cel = celWyjscia;
-                ustawCelWyjscia(undefined);
-                window.location.hash = cel;
-              }}
-            >
-              {t('projekt.wyjdzBezZapisu')}
-            </button>
-            <button type="button" autoFocus onClick={() => ustawCelWyjscia(undefined)}>
-              {t('projekt.zostan')}
-            </button>
-          </div>
-        </OknoModalne>
-      )}
+      {oknoWyjscia}
       {!druk && !bezImportuTabeli && kartkaImportu && (
         <ImportDanych
           key={kartkaImportu.id}

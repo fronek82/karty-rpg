@@ -141,3 +141,15 @@
   --cien: 0 2px 10px rgb(0 0 0 / 45%);
   --cien-paska: 0 1px 3px rgb(0 0 0 / 40%);
 }
+
+/*
+ * Wymiary pasków przycisków (pasek górny edytorów) – wspólne dla obu motywów.
+ * Przyciski, pole nazwy i przełączniki paska mają tę samą wysokość; odstęp w grupie jest mniejszy
+ * niż między grupami (nazwa i zapis | historia | plik i narzędzia | nawigacja | ustawienia).
+ */
+:root {
+  --pasek-wysokosc: 2.1rem;
+  --pasek-promien: 0.4rem;
+  --pasek-odstep: 0.6rem;
+  --pasek-odstep-grupy: 0.9rem;
+}

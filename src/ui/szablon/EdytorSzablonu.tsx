@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { czcionkiSzablonu } from '../../dane/archiwum';
+import {
+  czcionkiSzablonu,
+  eksportujSzablon,
+  importujSzablon,
+  ROZSZERZENIE_SZABLONU,
+} from '../../dane/archiwum';
 import { ustawStalyObraz } from '../../dane/edycja';
 import { opisObrazu } from '../../dane/obrazy';
 import { ustawPodklad, usunPodklad } from '../../dane/podklad';
@@ -13,7 +18,13 @@ import {
   zmienWezel,
   znajdzWezel,
 } from '../../dane/szablon';
-import { czyProjektWlasny, kartkaDlaSzablonu, zmienRozmiarSzablonu } from '../../dane/wlasneKarty';
+import {
+  czyProjektWlasny,
+  dodajSzablonZKartka,
+  kartkaDlaSzablonu,
+  zmienRozmiarSzablonu,
+} from '../../dane/wlasneKarty';
+import { nazwaPliku } from '../pliki';
 import { t } from '../../i18n';
 import {
   czyKontener,
@@ -143,6 +154,34 @@ export function EdytorSzablonu({
         }
       }
       adresPowrotu={czyProjektWlasny(projekt) ? '#/wlasne' : `#/projekt/${idProjektu}`}
+      plikSzablonu={{
+        eksportuj: () => {
+          const { bajty, ostrzezenia } = eksportujSzablon(projekt, edycja.dane, szablonId);
+          return {
+            bajty,
+            ostrzezenia,
+            nazwa: nazwaPliku(szablon?.nazwa ?? '', ROZSZERZENIE_SZABLONU),
+          };
+        },
+        importuj: async (bajty) => {
+          // Każdy plik szablonu (także sam rewers) wczytuje się jako nowy awers projektu.
+          const paczka = importujSzablon(bajty);
+          let w: ReturnType<typeof dodajSzablonZKartka> | undefined;
+          await edycja.zmienZZasobami((p, d) => {
+            w = dodajSzablonZKartka(p, d, paczka);
+            return { projekt: w.projekt, dane: w.zasoby };
+          });
+          const nowy = w!.projekt.szablony.find((s) => s.id === w!.szablonId);
+          return {
+            adres: `#/projekt/${idProjektu}/szablon/${encodeURIComponent(w!.szablonId)}`,
+            tekst: t('szablon.zaimportowano', { nazwa: nowy?.nazwa ?? '' }),
+            ostrzezenia: [
+              ...(w!.nowaKartka ? [t('szablony.dodanoKartke')] : []),
+              ...w!.ostrzezenia,
+            ],
+          };
+        },
+      }}
       akcjaGlowna={
         <button type="button" className="glowny" onClick={robKarty}>
           {t('szablon.robKarty')}

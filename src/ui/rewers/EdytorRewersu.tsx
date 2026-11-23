@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { czcionkiSzablonu } from '../../dane/archiwum';
 import {
   duplikujRewersWProjekcie,
   rewersJakoSzablon,
@@ -21,6 +20,14 @@ import {
 import { renderujRewers } from '../../silnik/karta';
 import { PoleLiczby } from '../kartka/PoleLiczby';
 import { przygotujPlikObrazu } from '../obrazyUI';
+import {
+  czcionkiSzablonu,
+  dodajRewersZPaczki,
+  eksportujRewers,
+  importujRewers,
+  ROZSZERZENIE_SZABLONU,
+} from '../../dane/archiwum';
+import { nazwaPliku } from '../pliki';
 import { EdytorDrzewa, type KontekstPaneluKarty, type RysujPodglad } from '../szablon/EdytorDrzewa';
 import { Liczba, Lista, Sekcja, Wybor } from '../szablon/Kontrolki';
 import { PanelWezla } from '../szablon/PanelWezla';
@@ -43,13 +50,15 @@ export function EdytorRewersu({ edycja, rewersId }: { edycja: ProjektWEdycji; re
   const idProjektu = encodeURIComponent(projekt.id);
 
   // Każdy zaprojektowany w edytorze rewers trafia automatycznie do biblioteki rewersów
-  // (po zapisaniu oraz przy opuszczeniu edytora), żeby można go było wybrać przy dowolnej karcie.
+  // (po zapisaniu oraz przy opuszczeniu edytora bez niezapisanych zmian), żeby można go było wybrać przy dowolnej karcie.
   const aktualnyDoZapisu = useRef<
     { projekt: typeof projekt; dane: typeof edycja.dane } | undefined
   >(undefined);
+  // Zapis ręczny: przy wyjściu do biblioteki trafia tylko stan zapisany w projekcie.
   useEffect(() => {
-    aktualnyDoZapisu.current = rewers ? { projekt, dane: edycja.dane } : undefined;
-  }, [projekt, edycja.dane, rewers]);
+    aktualnyDoZapisu.current =
+      rewers && !edycja.niezapisane ? { projekt, dane: edycja.dane } : undefined;
+  }, [projekt, edycja.dane, edycja.niezapisane, rewers]);
   useEffect(() => {
     if (!rewers || edycja.zapis.stan !== 'zapisano') return;
     void import('../rewersyGlobalne')
@@ -139,6 +148,28 @@ export function EdytorRewersu({ edycja, rewersId }: { edycja: ProjektWEdycji; re
           tekst: t('rewers.otworzKopie', { nazwa: kopia.nazwa }),
         }
       }
+      plikSzablonu={{
+        eksportuj: () => ({
+          bajty: eksportujRewers(projekt, edycja.dane, rewersId),
+          ostrzezenia: [],
+          nazwa: nazwaPliku(rewers?.nazwa ?? '', ROZSZERZENIE_SZABLONU),
+        }),
+        importuj: async (bajty) => {
+          // Każdy plik szablonu (także awers) wczytuje się jako nowy rewers projektu.
+          const paczka = importujRewers(bajty);
+          let w: ReturnType<typeof dodajRewersZPaczki> | undefined;
+          await edycja.zmienZZasobami((p, d) => {
+            w = dodajRewersZPaczki(p, d, paczka);
+            return { projekt: w.projekt, dane: w.dane };
+          });
+          const nowy = w!.projekt.rewersy?.find((r) => r.id === w!.rewersId);
+          return {
+            adres: `#/projekt/${idProjektu}/rewers/${encodeURIComponent(w!.rewersId)}`,
+            tekst: t('rewers.zaimportowano', { nazwa: nowy?.nazwa ?? '' }),
+            ostrzezenia: [],
+          };
+        },
+      }}
       adresPowrotu={
         rewers &&
         czyProjektWlasny(projekt) &&

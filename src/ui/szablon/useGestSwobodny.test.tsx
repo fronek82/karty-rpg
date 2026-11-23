@@ -45,6 +45,7 @@ const zd = (o: Partial<Record<string, unknown>> = {}) =>
     altKey: false,
     shiftKey: false,
     stopPropagation: () => undefined,
+    preventDefault: () => undefined,
     ...o,
   }) as unknown as PointerReact;
 const mm = (x: number, y: number) => ({ clientX: x * 8, clientY: y * 8 });
@@ -64,6 +65,8 @@ function uchwyt(zaznaczone: string[] = ['a']) {
     focus: vi.fn(),
     setPointerCapture: vi.fn(),
     releasePointerCapture: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   };
   const ustawTmp = vi.fn();
   const zatwierdz = vi.fn();
@@ -108,22 +111,75 @@ describe('useGestSwobodny', () => {
     expect(zatwierdz).not.toHaveBeenCalled();
   });
 
-  it('pointercancel, utrata przechwytu i ruch bez wciśniętego przycisku anulują gest bez zapisu', () => {
+  it('pointercancel i utrata przechwytu (gładzik Maca) zostawiają element w miejscu upuszczenia', () => {
     for (const przerwij of [
-      (h: ReturnType<typeof uchwyt>['w']) => h.result.current.onPointerCancel(zd()),
-      (h: ReturnType<typeof uchwyt>['w']) => h.result.current.onLostPointerCapture(zd()),
-      (h: ReturnType<typeof uchwyt>['w']) => h.result.current.onPointerMove(zd({ buttons: 0 })),
+      (h: ReturnType<typeof uchwyt>['w']) => h.result.current.onPointerCancel(zd({ clientX: 0 })),
+      (h: ReturnType<typeof uchwyt>['w']) =>
+        h.result.current.onLostPointerCapture(zd({ clientX: 0 })),
     ]) {
       const { w, ustawTmp, zatwierdz } = uchwyt();
       act(() => w.result.current.onPointerDown(zd(mm(8, 8))));
       act(() => w.result.current.onPointerMove(zd(mm(18, 8))));
       klatka();
+      // Ostatni ruch jeszcze czeka na klatkę – też się liczy.
+      act(() => w.result.current.onPointerMove(zd(mm(20, 8))));
       act(() => przerwij(w));
       expect(w.result.current.aktywny()).toBe(false);
       expect(ustawTmp).toHaveBeenLastCalledWith(undefined);
-      act(() => w.result.current.onPointerUp(zd(mm(18, 8))));
-      expect(zatwierdz).not.toHaveBeenCalled();
+      expect(zatwierdz).toHaveBeenCalledTimes(1);
+      // Współrzędne zdarzenia przerwania (0) są pomijane.
+      expect([...zatwierdz.mock.calls[0]![0].values()][0].pozycja.x).toBe(15);
+      // Spóźnione pointerup i lostpointercapture po zakończeniu nic już nie robią.
+      act(() => w.result.current.onPointerUp(zd(mm(30, 8))));
+      act(() => w.result.current.onLostPointerCapture(zd()));
+      expect(zatwierdz).toHaveBeenCalledTimes(1);
     }
+  });
+
+  it('ruch z buttons = 0 (Safari, gładzik) nie przerywa przeciągania', () => {
+    const { w, zatwierdz } = uchwyt();
+    act(() => w.result.current.onPointerDown(zd(mm(8, 8))));
+    act(() => w.result.current.onPointerMove(zd({ ...mm(14, 8), buttons: 0 })));
+    klatka();
+    expect(w.result.current.aktywny()).toBe(true);
+    act(() => w.result.current.onPointerMove(zd({ ...mm(18, 8), buttons: 0 })));
+    act(() => w.result.current.onPointerUp(zd(mm(18, 8))));
+    expect([...zatwierdz.mock.calls[0]![0].values()][0].pozycja.x).toBe(13);
+  });
+
+  it('zgubione pointerup: następny pointerdown tego wskaźnika zapisuje poprzedni gest', () => {
+    const { w, zatwierdz } = uchwyt();
+    act(() => w.result.current.onPointerDown(zd(mm(8, 8))));
+    act(() => w.result.current.onPointerMove(zd(mm(18, 8))));
+    klatka();
+    act(() => w.result.current.onPointerDown(zd(mm(40, 40))));
+    expect(zatwierdz).toHaveBeenCalledTimes(1);
+    expect([...zatwierdz.mock.calls[0]![0].values()][0].pozycja.x).toBe(13);
+    expect(w.result.current.aktywny()).toBe(false);
+  });
+
+  it('pointerdown rozpoczynający gest blokuje domyślną akcję (zaznaczanie, natywne przeciąganie)', () => {
+    const { w } = uchwyt();
+    const preventDefault = vi.fn();
+    act(() => w.result.current.onPointerDown(zd({ ...mm(8, 8), preventDefault })));
+    expect(preventDefault).toHaveBeenCalled();
+  });
+
+  it('Safari: Force Click na karcie jest blokowany (nie przerywa przeciągania)', () => {
+    const { el } = uchwyt();
+    const zdarzenia = el.addEventListener.mock.calls.map((c) => c[0]);
+    expect(zdarzenia).toContain('webkitmouseforcewillbegin');
+  });
+
+  it('Escape (anuluj) cofa gest bez zapisu', () => {
+    const { w, ustawTmp, zatwierdz } = uchwyt();
+    act(() => w.result.current.onPointerDown(zd(mm(8, 8))));
+    act(() => w.result.current.onPointerMove(zd(mm(18, 8))));
+    klatka();
+    act(() => void w.result.current.anuluj());
+    expect(ustawTmp).toHaveBeenLastCalledWith(undefined);
+    act(() => w.result.current.onPointerUp(zd(mm(18, 8))));
+    expect(zatwierdz).not.toHaveBeenCalled();
   });
 
   it('anuluj() zwalnia przechwyt; nowy pointerdown w trakcie gestu jest ignorowany', () => {

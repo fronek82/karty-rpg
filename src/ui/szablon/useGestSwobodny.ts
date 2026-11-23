@@ -89,7 +89,8 @@ const jestPotomkiem = (szablon: Szablon, id: string, przodek: string): boolean =
 /**
  * Gesty myszy i strzałek w podglądzie karty: przeciąganie pól kontenera swobodnego, uchwyty rozmiaru,
  * przyciąganie i prowadnice. W trakcie gestu zmiany są stanem tymczasowym (`ustawTmp`) – niczego nie
- * zapisują; dopiero `pointerup` wywołuje `zatwierdz` (jeden krok „Cofnij” na gest).
+ * zapisują; dopiero koniec gestu (`pointerup`, także przerwanie przez przeglądarkę) wywołuje
+ * `zatwierdz` (jeden krok „Cofnij” na gest). Tylko Escape cofa gest.
  */
 export function useGestSwobodny({
   szablon,
@@ -225,22 +226,53 @@ export function useGestSwobodny({
     ustawTmp(undefined);
     ustawStan(undefined);
   };
-  const zakoncz = (e: PointerReact, zapisz: boolean) => {
+  /**
+   * Koniec gestu. `puszczenie` – zwykłe `pointerup` (współrzędne zdarzenia są wiarygodne, klik bez
+   * ruchu zmienia zaznaczenie). Bez puszczenia (pointercancel, utrata przechwytu, nowy pointerdown
+   * po zgubionym `pointerup`) element zostaje tam, gdzie był ostatnio pokazany – na gładziku Maca
+   * przeglądarka potrafi przerwać gest (Force Click, gest systemu), choć użytkownik już upuścił
+   * element. Cofnięcie gestu tylko przez Escape (`anuluj`).
+   */
+  const zakoncz = (e: { pointerId: number; shiftKey: boolean }, puszczenie: boolean) => {
     const a = aktywny.current;
     if (!a || a.pointerId !== e.pointerId) return;
+    if (oczekujacy.current) ruch(oczekujacy.current);
     // Przy zmianie kontenera o celu decyduje miejsce puszczenia wskaźnika.
-    if (zapisz && a.rodzaj === 'przesun' && a.celPodKursorem) ruch(e);
-    else if (zapisz && oczekujacy.current) ruch(oczekujacy.current);
+    if (puszczenie && a.rodzaj === 'przesun' && a.celPodKursorem)
+      ruch(e as unknown as NonNullable<typeof oczekujacy.current>);
     const ostatnie = a.ostatnie;
     const ruszono = a.ruszono;
     sprzatnij();
-    if (zapisz && a.rodzaj === 'przesun' && a.upuszczenie) upusc?.(a.upuszczenie);
-    else if (zapisz && ruszono && ostatnie) zatwierdz(ostatnie);
-    else if (zapisz && !ruszono && a.rodzaj === 'przesun') {
+    if (a.rodzaj === 'przesun' && a.upuszczenie) upusc?.(a.upuszczenie);
+    else if (ruszono && ostatnie) zatwierdz(ostatnie);
+    else if (puszczenie && !ruszono && a.rodzaj === 'przesun') {
       if (a.zwezDo) ustawZazn([a.zwezDo]);
       else if (a.tlo && !e.shiftKey) ustawZazn([]);
     }
   };
+  /**
+   * Gest bez `pointerup` (przycisk puszczony tam, gdzie zdarzenie nie dotarło): nowy pointerdown
+   * tego samego wskaźnika kończy poprzedni gest z zapisem i sam gestu nie zaczyna (szablon z tego
+   * renderu nie zawiera jeszcze zapisanej zmiany). Zwraca, czy domknięto gest.
+   */
+  const domknijZgubiony = (e: PointerReact): boolean => {
+    const a = aktywny.current;
+    if (!a || a.pointerId !== e.pointerId) return false;
+    zakoncz({ pointerId: a.pointerId, shiftKey: false }, false);
+    return true;
+  };
+  // Safari: Force Click na gładziku (podgląd słownika) przerywa przeciąganie – blokujemy go na karcie.
+  useEffect(() => {
+    const el = karta.current;
+    if (!el) return;
+    const blokuj = (e: Event) => e.preventDefault();
+    el.addEventListener('webkitmouseforcewillbegin', blokuj);
+    el.addEventListener('webkitmouseforcedown', blokuj);
+    return () => {
+      el.removeEventListener('webkitmouseforcewillbegin', blokuj);
+      el.removeEventListener('webkitmouseforcedown', blokuj);
+    };
+  });
 
   return {
     stan,
@@ -252,6 +284,7 @@ export function useGestSwobodny({
       return true;
     },
     onPointerDown: (e: PointerReact) => {
+      if (domknijZgubiony(e)) return;
       // Trwający gest (np. drugi palec) i nie-główne wskaźniki nie zaczynają nowego.
       if (e.button !== 0 || !e.isPrimary || aktywny.current || !szablon || !wezly) return;
       const m = pomiar(e);
@@ -303,10 +336,14 @@ export function useGestSwobodny({
           : {}),
         tlo: !id,
       };
+      // Bez domyślnej akcji: zaznaczanie tekstu i natywne przeciąganie obrazów SVG kończyłyby się
+      // zdarzeniem pointercancel (fokus karty ustawiamy sami).
+      e.preventDefault();
       karta.current?.setPointerCapture?.(e.pointerId);
     },
     onUchwytDown: (uchwyt: Uchwyt, e: PointerReact) => {
       e.stopPropagation();
+      if (domknijZgubiony(e)) return;
       if (e.button !== 0 || !e.isPrimary || aktywny.current || !szablon || !wezly) return;
       const cele = budujCele(szablon, wezly, zaznaczone);
       const cel = cele.length === zaznaczone.length ? celSkalowania(cele) : undefined;
@@ -323,16 +360,13 @@ export function useGestSwobodny({
         uchwyt,
         ruszono: false,
       };
+      e.preventDefault();
       karta.current?.setPointerCapture?.(e.pointerId);
     },
     onPointerMove: (e: PointerReact) => {
       const a = aktywny.current;
+      // `buttons` nie przerywa gestu: Safari na gładziku potrafi podawać 0 w trakcie przeciągania.
       if (!a || a.pointerId !== e.pointerId) return;
-      // Przycisk puszczony poza oknem / utracony: gest się kończy bez zapisu.
-      if (e.buttons === 0 && e.pointerType === 'mouse') {
-        sprzatnij();
-        return;
-      }
       oczekujacy.current = {
         pointerId: e.pointerId,
         clientX: e.clientX,
@@ -349,11 +383,10 @@ export function useGestSwobodny({
         });
     },
     onPointerUp: (e: PointerReact) => zakoncz(e, true),
+    /** Przerwanie przez przeglądarkę: element zostaje w ostatnio pokazanym miejscu. */
     onPointerCancel: (e: PointerReact) => zakoncz(e, false),
-    /** Utrata przechwytu wskaźnika (inny element, zmiana karty) – anuluje gest bez zapisu. */
-    onLostPointerCapture: (e: PointerReact) => {
-      if (aktywny.current?.pointerId === e.pointerId) sprzatnij();
-    },
+    /** Utrata przechwytu (w Safari bywa przed `pointerup`): jak wyżej – z zapisem. */
+    onLostPointerCapture: (e: PointerReact) => zakoncz(e, false),
     /**
      * Strzałki w podglądzie: zaznaczone pola swobodne o 0,5 mm (Shift – 5 mm). Zwraca, czy obsłużono.
      * Kolejne naciśnięcia scalają się w jeden krok „Cofnij” (klucz zależny od zaznaczenia).
