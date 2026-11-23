@@ -28,11 +28,7 @@ import { czyDwustronnyWlaczony, przypiszRewers } from '../../dane/rewers';
 import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
 import { RewersyProjektu } from '../rewers/RewersyProjektu';
-import {
-  dolaczRewersGlobalnyDoProjektu,
-  PRZEDROSTEK_OPCJI_GLOBALNEJ,
-  useRewersyGlobalne,
-} from '../rewersyGlobalne';
+import { dolaczRewersGlobalnyDoProjektu, useRewersyGlobalne } from '../rewersyGlobalne';
 import {
   dolaczRodzineGlobalnaDoProjektu,
   useCzcionkiGlobalne,
@@ -44,6 +40,7 @@ import { PoleLiczby } from './PoleLiczby';
 import { SzablonyProjektu } from './SzablonyProjektu';
 import type { Projekt } from '../../model/projekt';
 import type { ProjektWEdycji } from '../useProjekt';
+import { OpcjeRewersowGlobalnych, wybranaOpcja } from '../zrodloOpcji';
 
 /** Granice własnego papieru (mm) – jak w schemacie zapisu. */
 const MIN_PAPIER = 20;
@@ -596,10 +593,9 @@ export function PanelUstawien({
               aria-label={t('rewers.przypisanieTalia')}
               value={typeof talia.rewersId === 'string' ? talia.rewersId : ''}
               onChange={(e) => {
-                const v = e.target.value;
-                if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
-                  const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
-                  const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
+                const { id: v, zrodlo } = wybranaOpcja(e);
+                if (zrodlo === 'globalny') {
+                  const wpis = rewersyGlobalne.find((w) => w.klucz === v);
                   if (wpis) {
                     void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
                       przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, rid),
@@ -616,15 +612,7 @@ export function PanelUstawien({
                   {r.nazwa}
                 </option>
               ))}
-              {rewersyGlobalne.length > 0 && (
-                <optgroup label={t('rewersy.globalneGrupa')}>
-                  {rewersyGlobalne.map((w) => (
-                    <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
-                      {w.nazwa}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
+              <OpcjeRewersowGlobalnych lista={rewersyGlobalne} />
             </select>
           </div>
           <PodgladRewersu

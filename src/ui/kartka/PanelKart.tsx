@@ -27,16 +27,13 @@ import {
 } from '../../model/szablon';
 import type { Pakiet, TypKarty } from '../../pakiety/typy';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
-import {
-  dolaczRewersGlobalnyDoProjektu,
-  PRZEDROSTEK_OPCJI_GLOBALNEJ,
-  useRewersyGlobalne,
-} from '../rewersyGlobalne';
+import { dolaczRewersGlobalnyDoProjektu, useRewersyGlobalne } from '../rewersyGlobalne';
 import { PoleWielowierszowe } from '../PoleWielowierszowe';
 import type { ProjektWEdycji } from '../useProjekt';
 import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
 import { EksportCsvSzablonu } from './EksportCsvSzablonu';
 import { SekcjaObrazu } from './SekcjaObrazu';
+import { OpcjeRewersowGlobalnych, wybranaOpcja } from '../zrodloOpcji';
 
 /** Pola szablonu według klucza (wszystkie warianty układu). */
 function polaSzablonu(s: Szablon): Map<string, Pole> {
@@ -426,11 +423,10 @@ export function PanelKart({
                 aria-label={t('rewers.przypisanieKarta')}
                 value={wartoscSelect}
                 onChange={(e) => {
-                  const v = e.target.value;
+                  const { id: v, zrodlo } = wybranaOpcja(e);
                   if (v === '__rozne__') return;
-                  if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
-                    const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
-                    const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
+                  if (zrodlo === 'globalny') {
+                    const wpis = rewersyGlobalne.find((w) => w.klucz === v);
                     if (wpis) {
                       void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
                         przypiszRewersKartom(p, arkusz.taliaId, ids, rid),
@@ -454,15 +450,7 @@ export function PanelKart({
                     {r.nazwa}
                   </option>
                 ))}
-                {rewersyGlobalne.length > 0 && (
-                  <optgroup label={t('rewersy.globalneGrupa')}>
-                    {rewersyGlobalne.map((w) => (
-                      <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
-                        {w.nazwa}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
+                <OpcjeRewersowGlobalnych lista={rewersyGlobalne} />
               </select>
               {(jedna || tenSamRozstrzygniety) && (
                 <PodgladRewersu

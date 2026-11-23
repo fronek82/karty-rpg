@@ -17,8 +17,6 @@ const KLUCZ_UKRYTYCH = 'karty-rpg:ukryte-rewersy';
 export const kluczRewersuGlobalnego = (projektId: string, rewersId: string): string =>
   `${PRZEDROSTEK_KLUCZA}${projektId}:${rewersId}`;
 
-export const PRZEDROSTEK_OPCJI_GLOBALNEJ = '__globalny__:';
-
 function wczytajUkryte(): Set<string> {
   try {
     if (typeof localStorage === 'undefined') return new Set();

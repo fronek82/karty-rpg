@@ -8,17 +8,18 @@ import { kluczTresciSzablonu, type Talia } from '../../model/szablon';
 import {
   etykietaAwersuZProjektu,
   kluczAwersuZProjektu,
-  PRZEDROSTEK_AWERSU_INNEGO,
   useAwersyZProjektow,
   wczytajPaczkeAwersuBezRewersu,
 } from '../awersyZProjektow';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
-import {
-  dolaczRewersGlobalnyDoProjektu,
-  PRZEDROSTEK_OPCJI_GLOBALNEJ,
-  useRewersyGlobalne,
-} from '../rewersyGlobalne';
+import { dolaczRewersGlobalnyDoProjektu, useRewersyGlobalne } from '../rewersyGlobalne';
 import type { ProjektWEdycji } from '../useProjekt';
+import {
+  atrybutyZrodla,
+  OpcjeRewersowGlobalnych,
+  wybranaOpcja,
+  type ZrodloOpcji,
+} from '../zrodloOpcji';
 
 /**
  * Sekcja w prawym panelu Edytora kart (gdy żadna karta nie jest zaznaczona):
@@ -62,11 +63,11 @@ export function PanelRewersuIAwersu({
   const wspolnyAwersId =
     unikalneAwersy.size > 1 ? '__rozne__' : lokalneIds.has(kandydatAwersu) ? kandydatAwersu : '';
 
-  const ustawAwersDlaWszystkich = async (wartosc: string) => {
+  const ustawAwersDlaWszystkich = async (wartosc: string, zrodlo: ZrodloOpcji = 'projekt') => {
     if (!wartosc || !talia || trwa) return;
     ustawStatus('');
     ustawBlad('');
-    if (!wartosc.startsWith(PRZEDROSTEK_AWERSU_INNEGO)) {
+    if (zrodlo !== 'inny-projekt') {
       const sz = projekt.szablony.find((s) => s.id === wartosc);
       if (!sz) return;
       zmien((p) => {
@@ -85,8 +86,7 @@ export function PanelRewersuIAwersu({
       return;
     }
 
-    const klucz = wartosc.slice(PRZEDROSTEK_AWERSU_INNEGO.length);
-    const wpis = awersyInne.find((a) => kluczAwersuZProjektu(a) === klucz);
+    const wpis = awersyInne.find((a) => kluczAwersuZProjektu(a) === wartosc);
     if (!wpis) return;
     const istniejacy = projekt.szablony.find(
       (s) => s.korzen.dzieci.length > 0 && kluczTresciSzablonu(s) === wpis.kluczTresci,
@@ -162,7 +162,10 @@ export function PanelRewersuIAwersu({
               aria-label={t('kartka.awersWszystkich')}
               value={wspolnyAwersId}
               disabled={trwa}
-              onChange={(e) => void ustawAwersDlaWszystkich(e.target.value)}
+              onChange={(e) => {
+                const { id, zrodlo } = wybranaOpcja(e);
+                void ustawAwersDlaWszystkich(id, zrodlo);
+              }}
             >
               {wspolnyAwersId === '' && <option value="">{t('kartka.wybierzAwersOpcja')}</option>}
               {wspolnyAwersId === '__rozne__' && (
@@ -180,7 +183,7 @@ export function PanelRewersuIAwersu({
                   {awersyInne.map((a) => {
                     const klucz = kluczAwersuZProjektu(a);
                     return (
-                      <option key={klucz} value={`${PRZEDROSTEK_AWERSU_INNEGO}${klucz}`}>
+                      <option key={klucz} value={klucz} {...atrybutyZrodla('inny-projekt')}>
                         {etykietaAwersuZProjektu(a)}
                       </option>
                     );
@@ -209,10 +212,9 @@ export function PanelRewersuIAwersu({
             aria-label={t('kartka.rewersWszystkich')}
             value={typeof talia.rewersId === 'string' ? talia.rewersId : ''}
             onChange={(e) => {
-              const v = e.target.value;
-              if (v.startsWith(PRZEDROSTEK_OPCJI_GLOBALNEJ)) {
-                const klucz = v.slice(PRZEDROSTEK_OPCJI_GLOBALNEJ.length);
-                const wpis = rewersyGlobalne.find((w) => w.klucz === klucz);
+              const { id: v, zrodlo } = wybranaOpcja(e);
+              if (zrodlo === 'globalny') {
+                const wpis = rewersyGlobalne.find((w) => w.klucz === v);
                 if (wpis) {
                   void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
                     przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, rid),
@@ -229,15 +231,7 @@ export function PanelRewersuIAwersu({
                 {r.nazwa}
               </option>
             ))}
-            {rewersyGlobalne.length > 0 && (
-              <optgroup label={t('rewersy.globalneGrupa')}>
-                {rewersyGlobalne.map((w) => (
-                  <option key={w.klucz} value={`${PRZEDROSTEK_OPCJI_GLOBALNEJ}${w.klucz}`}>
-                    {w.nazwa}
-                  </option>
-                ))}
-              </optgroup>
-            )}
+            <OpcjeRewersowGlobalnych lista={rewersyGlobalne} />
           </select>
           {rewersTalii && (
             <PodgladRewersu

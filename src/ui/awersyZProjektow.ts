@@ -4,8 +4,6 @@ import type { WpisAwersuZProjektu } from '../dane/baza';
 import { kluczTresciSzablonu, type Szablon } from '../model/szablon';
 import { baza } from './bazaUI';
 
-export const PRZEDROSTEK_AWERSU_INNEGO = '__inny_awers__:';
-
 export const kluczAwersuZProjektu = (a: Pick<WpisAwersuZProjektu, 'projektId' | 'szablonId'>) =>
   `${a.projektId}:${a.szablonId}`;
 
