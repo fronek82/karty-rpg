@@ -33,8 +33,7 @@ test('kreator domyślnie tworzy kartę swobodną, a pusty układ jest ostatni', 
 test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i powrót', async ({
   page,
 }) => {
-  await page.goto('./#/wlasne');
-  await page.getByRole('link', { name: /Nowy szablon od zera/ }).click();
+  await page.goto('./#/wlasne/nowy');
   await page.getByRole('link', { name: /^Awers/ }).click();
   await page.getByLabel('Nazwa szablonu').fill('Karta testowa');
   await page.getByText('Mini Euro').click();

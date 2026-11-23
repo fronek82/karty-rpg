@@ -784,6 +784,34 @@ button.pasek-menu[aria-current='true']:focus-visible {
   pointer-events: none;
 }
 
+/* „Moje szablony” na ekranie „Stwórz własne karty”: nagłówek z „Pokaż wszystkie” i miniatury z bazy. */
+.naglowek-moich {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.naglowek-moich h2 {
+  margin: 0;
+}
+
+.miniatura-karty > img.miniatura-wlasna {
+  max-width: 100%;
+  max-height: var(--wysokosc-karty);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  box-shadow: var(--cien);
+}
+
+.miniatura-karty > .bez-miniatury {
+  font-size: 3rem;
+  color: var(--tekst-przygaszony);
+}
+
 /* Kafelek podglądu – jeden przycisk: kartka z silnika, nazwa i podpowiedź. */
 button.kafelek-podgladu {
   display: flex;
@@ -1075,6 +1103,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 }
 
 .kafelek-projektu {
+  position: relative;
   border: 2px solid var(--obramowanie-karty);
   border-bottom: 5px solid var(--bordo);
   border-radius: 8px;
@@ -1180,6 +1209,105 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   border-color: var(--zaznaczenie);
   color: var(--tekst);
   font-weight: 600;
+}
+
+.narzedzia-listy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.narzedzia-listy input[type='search'] {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 20rem;
+}
+
+.narzedzia-listy label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pasek-zaznaczenia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.45rem 0.7rem;
+  background: var(--zaznaczenie-tlo);
+  border: 1px solid var(--zaznaczenie);
+  border-radius: 0.5rem;
+}
+
+.pasek-zaznaczenia label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.kafelek-projektu.zaznaczony {
+  border-color: var(--zaznaczenie);
+  outline: 2px solid var(--zaznaczenie);
+}
+
+.kafelek-projektu .wybor-kafelka {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: flex;
+  padding: 0.3rem;
+  background: var(--tlo-panelu);
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.35rem;
+}
+
+.kafelek-projektu .wybor-kafelka input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+}
+
+.pasek-komunikatu {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.6rem 0.6rem 0.6rem 1rem;
+  background: var(--tlo-podpowiedzi);
+  color: var(--tekst-podpowiedzi);
+  border-radius: 0.6rem;
+  box-shadow: var(--cien);
+  overflow-wrap: anywhere;
+}
+
+.pasek-komunikatu button {
+  background: transparent;
+  border: 0;
+  color: var(--link-na-ciemnym);
+  font-weight: 700;
+  padding: 0.2rem 0.45rem;
+  white-space: nowrap;
+}
+
+.pasek-komunikatu .zamknij-pasek {
+  color: var(--tekst-podpowiedzi);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.pasek-komunikatu button:focus-visible {
+  outline: 2px solid var(--link-na-ciemnym);
+  outline-offset: 1px;
 }
 
 .kafelek-projektu .bez-miniatury {

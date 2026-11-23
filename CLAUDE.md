@@ -11,8 +11,10 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   porządek projektów P1–P3 (PR #87–#89, `docs/plan-porzadek-projektow.md`), poprawki danych N1
   (`docs/plan-N1.md`), porządki w kodzie N2 (`docs/plan-N2.md`), edytor i UI N3 (`docs/plan-N3.md`:
   eksport/import szablonu w edytorze, przeciąganie na gładziku, paski, zapis ręczny w edytorze szablonu),
-  blok „wartość w kształcie” N4 (`docs/plan-N4.md`: proporcje kształtu, etykieta obok, nowe kształty).
-- Kolejne etapy (N5…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
+  blok „wartość w kształcie” N4 (`docs/plan-N4.md`: proporcje kształtu, etykieta obok, nowe kształty),
+  strona startowa i listy N6 (`docs/plan-N6.md`: Moje szablony na „Stwórz własne karty”, bez
+  biblioteki globalnej szablonów, usuwanie z paskiem „Cofnij”, szukanie/sortowanie, „Duplikuj”).
+- Kolejne etapy (N7…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 28` (`src/model/projekt.ts`), baza Dexie w wersji 4.
 
 ## Gdzie co jest
@@ -52,10 +54,12 @@ model  →  ozdobniki / silnik  →  druk  →  dane  →  ui
 - `src/instrukcja/` – skrypt statycznej strony instrukcji (osobne wejście Vite, bez Reacta).
 - `src/ui/` – React:
   - `App.tsx`, `useTrasa.ts` (routing hash), `useProjekt.ts` (stan projektu, historia, zapis;
-    `autozapis: false` w Edytorze kart), `bazaUI.ts` (fasada nad `dane/baza.ts` z leniwymi
+    `autozapis: false` w Edytorze kart), `PasekKomunikatu.tsx` (wspólny pasek „… — Cofnij” na dole
+    ekranu), `bazaUI.ts` (fasada nad `dane/baza.ts` z leniwymi
     importami), `obrazyUI.ts` (przygotowanie obrazów w przeglądarce), `zrodloOpcji.tsx` (źródło
     pozycji list wyboru).
-  - `start/` – ekran startowy, Moje projekty / Moje szablony (`ListaProjektow.tsx`), kreatory,
+  - `start/` – ekran startowy, Moje projekty / Moje szablony (`ListaProjektow.tsx`, logika
+    w `mojeSzablony.ts`), kreatory,
     import, galeria online.
   - `szablon/` – Edytor szablonu (awers): drzewo, panele właściwości, tryb swobodny (mysz);
     `EdytorDrzewa.tsx` – część wspólna z Edytorem rewersu (zmiany edytora robi się tam).

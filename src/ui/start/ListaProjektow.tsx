@@ -13,12 +13,27 @@ import {
   type WpisAwersuZProjektu,
   type WpisRewersuZProjektu,
 } from '../../dane/baza';
-import { usunRewers } from '../../dane/rewers';
 import { BladDanych } from '../../dane/schemat';
-import { formatujDate, t } from '../../i18n';
+import { formatujDate, t, tn } from '../../i18n';
 import { baza, nowyProjektZAwersuZProjektu, nowyProjektZRewersuZProjektu } from '../bazaUI';
+import { usePasekKomunikatu } from '../PasekKomunikatu';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import { poOstatnimZapisie } from '../useProjekt';
+import {
+  adresMiniatury,
+  brakujacaDlaPozycji,
+  dorysujMiniatury,
+  duplikujPozycje,
+  filtrujISortuj,
+  nazwaCelu,
+  pozycjeSzablonow,
+  SORTOWANIA,
+  usunZCofaniem,
+  type BrakujacaMiniatura,
+  type CelUsuniecia,
+  type PozycjaSzablonu,
+  type Sortowanie,
+} from './mojeSzablony';
 
 type Zakladka = 'projekty' | 'szablony';
 type FiltrSzablonow = 'wszystkie' | 'awers' | 'rewers';
@@ -33,6 +48,20 @@ function odczytajZakladke(): Zakladka {
   }
 }
 
+function zapiszZakladke(z: Zakladka) {
+  try {
+    sessionStorage.setItem(KLUCZ_ZAKLADKI, z);
+  } catch {
+    // Tryb prywatny – pomijamy zapis w sessionStorage.
+  }
+}
+
+/** Otwiera ekran startowy na zakładce „Moje szablony” (np. „Pokaż wszystkie”). */
+export function pokazMojeSzablony() {
+  zapiszZakladke('szablony');
+  window.location.hash = '#/';
+}
+
 const komunikat = (e: unknown) =>
   e instanceof BladDanych
     ? e.message
@@ -42,38 +71,20 @@ const przejdzDoProjektu = (id: string) => {
   window.location.hash = `#/projekt/${encodeURIComponent(id)}`;
 };
 
-type PozycjaSzablonu =
-  | {
-      klucz: string;
-      rodzaj: 'awers';
-      nazwa: string;
-      zmieniono: string;
-      href: string;
-      awers: WpisAwersuZProjektu;
-      szablonPodglad: { projektId: string; szablonId: string };
-    }
-  | {
-      klucz: string;
-      rodzaj: 'rewers';
-      nazwa: string;
-      zmieniono: string;
-      href: string;
-      rewers: WpisRewersuZProjektu;
-      rewersPodglad: { projektId: string; rewersId: string };
-    };
-
-type DoUsuniecia =
-  | { rodzaj: 'projekt'; projekt: PodsumowanieProjektu }
-  | { rodzaj: 'szablon'; pozycja: PozycjaSzablonu };
-
 /**
  * Środkowa kolumna ekranu startowego z dwiema zakładkami:
  * - „Moje projekty”: gotowe talie/arkusze kart (podgląd Awers + Rewers obok siebie, jeśli oba są);
  * - „Moje szablony”: pojedyncze wzory awersów i rewersów z filtrem i plakietką strony.
+ * Obie mają wyszukiwarkę po nazwie, sortowanie i tryb zaznaczania wielu elementów. Usuwanie jest
+ * natychmiastowe – pasek na dole ekranu pozwala je cofnąć.
  */
 export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   const [zakladka, ustawZakladkeStan] = useState<Zakladka>(odczytajZakladke);
   const [filtr, ustawFiltr] = useState<FiltrSzablonow>('wszystkie');
+  const [fraza, ustawFraze] = useState('');
+  const [sortowanie, ustawSortowanie] = useState<Sortowanie>('zmiana-nowe');
+  const [zaznaczanie, ustawZaznaczanie] = useState(false);
+  const [zaznaczone, ustawZaznaczone] = useState<ReadonlySet<string>>(new Set());
   const [lista, ustawListe] = useState<PodsumowanieProjektu[]>();
   const [awersy, ustawAwersy] = useState<WpisAwersuZProjektu[]>([]);
   const [rewersy, ustawRewersy] = useState<WpisRewersuZProjektu[]>([]);
@@ -81,25 +92,24 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   const [blad, ustawBlad] = useState<string>();
   const [status, ustawStatus] = useState('');
   const [trwa, ustawTrwa] = useState(false);
-  const [doUsuniecia, ustawDoUsuniecia] = useState<DoUsuniecia>();
+  const { pasek, pokaz, ukryj } = usePasekKomunikatu();
+  // Jedna operacja na bazie naraz (także „Cofnij” z paska – nie może wejść w trwające usuwanie).
+  const wToku = useRef(false);
 
   const odczyt = useRef(0);
   const naglowek = useRef<HTMLHeadingElement>(null);
-  const otwierajacy = useRef<HTMLButtonElement>(null);
   const wyrenderowaneKarty = useRef<Set<string>>(new Set());
+
+  const zakonczZaznaczanie = () => {
+    ustawZaznaczanie(false);
+    ustawZaznaczone(new Set());
+  };
 
   const ustawZakladke = (z: Zakladka) => {
     ustawZakladkeStan(z);
-    try {
-      sessionStorage.setItem(KLUCZ_ZAKLADKI, z);
-    } catch {
-      // Tryb prywatny – pomijamy zapis w sessionStorage.
-    }
-  };
-
-  const anulujUsuniecie = () => {
-    ustawDoUsuniecia(undefined);
-    otwierajacy.current?.focus();
+    ustawFraze('');
+    zakonczZaznaczanie();
+    zapiszZakladke(z);
   };
 
   const odswiez = useCallback(() => {
@@ -126,58 +136,51 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   }, []);
   useEffect(odswiez, [odswiez, odswiezenie]);
 
-  const pozycjeSzablonow = useMemo<PozycjaSzablonu[]>(() => {
-    const wynik: PozycjaSzablonu[] = [];
-    for (const a of awersy) {
-      wynik.push({
-        klucz: kluczMiniaturySzablonu(a.projektId, a.szablonId),
-        rodzaj: 'awers',
-        nazwa: a.szablonNazwa,
-        zmieniono: a.zmieniono ?? '',
-        href: `#/projekt/${encodeURIComponent(a.projektId)}/szablon/${encodeURIComponent(a.szablonId)}`,
-        awers: a,
-        szablonPodglad: { projektId: a.projektId, szablonId: a.szablonId },
-      });
-    }
-    // Pomijamy tylko identyczne kopie; rewersy o tej samej nazwie i innej treści zostają.
-    const widzianeRewersy = new Set<string>();
-    for (const r of rewersy) {
-      if (widzianeRewersy.has(r.kluczTresci)) continue;
-      widzianeRewersy.add(r.kluczTresci);
-      wynik.push({
-        klucz: kluczMiniaturyRewersu(r.projektId, r.rewersId),
-        rodzaj: 'rewers',
-        nazwa: r.nazwa,
-        zmieniono: r.zmieniono ?? '',
-        href: `#/projekt/${encodeURIComponent(r.projektId)}/rewers/${encodeURIComponent(r.rewersId)}`,
-        rewers: r,
-        rewersPodglad: { projektId: r.projektId, rewersId: r.rewersId },
-      });
-    }
-    return wynik.sort((a, b) => b.zmieniono.localeCompare(a.zmieniono));
-  }, [awersy, rewersy]);
+  const pozycje = useMemo(() => pozycjeSzablonow(awersy, rewersy), [awersy, rewersy]);
 
   const widoczneSzablony = useMemo(
     () =>
-      filtr === 'wszystkie' ? pozycjeSzablonow : pozycjeSzablonow.filter((p) => p.rodzaj === filtr),
-    [pozycjeSzablonow, filtr],
+      filtrujISortuj(
+        filtr === 'wszystkie' ? pozycje : pozycje.filter((p) => p.rodzaj === filtr),
+        fraza,
+        sortowanie,
+      ),
+    [pozycje, filtr, fraza, sortowanie],
   );
+
+  const widoczneProjekty = useMemo(
+    () => (lista ? filtrujISortuj(lista, fraza, sortowanie) : undefined),
+    [lista, fraza, sortowanie],
+  );
+
+  /** Elementy bieżącej zakładki (po filtrze) z kluczem zaznaczenia. */
+  const celeWidoczne = useMemo<{ klucz: string; cel: CelUsuniecia }[]>(
+    () =>
+      zakladka === 'projekty'
+        ? (widoczneProjekty ?? []).map((p) => ({
+            klucz: p.id,
+            cel: { rodzaj: 'projekt', projekt: p },
+          }))
+        : widoczneSzablony.map((poz) => ({
+            klucz: poz.klucz,
+            cel: { rodzaj: 'szablon', pozycja: poz },
+          })),
+    [zakladka, widoczneProjekty, widoczneSzablony],
+  );
+  const zaznaczoneWidoczne = celeWidoczne.filter((c) => zaznaczone.has(c.klucz));
+  const wszystkieZaznaczone =
+    celeWidoczne.length > 0 && zaznaczoneWidoczne.length === celeWidoczne.length;
 
   const miniaturyUrl = useMemo(() => {
     const mapa = new Map<string, string>();
-    for (const [k, svg] of miniatury) {
-      mapa.set(k, `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
-    }
+    for (const [k, svg] of miniatury) mapa.set(k, adresMiniatury(svg));
     return mapa;
   }, [miniatury]);
 
   // Generowanie brakujących miniatur kart (awersów i rewersów) na żądanie.
   useEffect(() => {
-    type Brakujaca =
-      | { rodzaj: 'rewers'; klucz: string; projektId: string; rewersId: string }
-      | { rodzaj: 'szablon'; klucz: string; projektId: string; szablonId: string };
-    const brakujace: Brakujaca[] = [];
-    const dodajJesliBrak = (b: Brakujaca) => {
+    const brakujace: BrakujacaMiniatura[] = [];
+    const dodajJesliBrak = (b: BrakujacaMiniatura) => {
       if (
         !miniatury.has(b.klucz) &&
         !wyrenderowaneKarty.current.has(b.klucz) &&
@@ -187,8 +190,8 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
       }
     };
 
-    if (zakladka === 'projekty' && lista) {
-      for (const p of lista) {
+    if (zakladka === 'projekty' && widoczneProjekty) {
+      for (const p of widoczneProjekty) {
         if (p.aktywnySzablonId && (!p.pakiet || p.pakiet === 'wlasne')) {
           dodajJesliBrak({
             rodzaj: 'szablon',
@@ -207,68 +210,27 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
         }
       }
     } else if (zakladka === 'szablony') {
-      for (const poz of widoczneSzablony) {
-        if (poz.rodzaj === 'rewers') {
-          dodajJesliBrak({
-            rodzaj: 'rewers',
-            klucz: poz.klucz,
-            ...poz.rewersPodglad,
-          });
-        } else {
-          dodajJesliBrak({
-            rodzaj: 'szablon',
-            klucz: poz.klucz,
-            ...poz.szablonPodglad,
-          });
-        }
-      }
+      for (const poz of widoczneSzablony) dodajJesliBrak(brakujacaDlaPozycji(poz));
     }
     if (brakujace.length === 0) return;
 
     let aktywny = true;
-
-    void import('../miniaturaRewersu').then(
-      async ({ zapiszMiniatureRewersu, zapiszMiniatureSzablonu }) => {
-        const nowe = new Map<string, string>();
-        const projektyCache = new Map<
-          string,
-          Awaited<ReturnType<ReturnType<typeof baza>['wczytaj']>>
-        >();
-        for (const b of brakujace) {
-          if (!aktywny) return;
-          try {
-            let wczytany = projektyCache.get(b.projektId);
-            if (!wczytany) {
-              wczytany = await baza().wczytaj(b.projektId);
-              projektyCache.set(b.projektId, wczytany);
-            }
-            if (!aktywny) return;
-            const svg =
-              b.rodzaj === 'rewers'
-                ? await zapiszMiniatureRewersu(wczytany.projekt, wczytany.zasoby, b.rewersId)
-                : await zapiszMiniatureSzablonu(wczytany.projekt, wczytany.zasoby, b.szablonId);
-            if (svg) nowe.set(b.klucz, svg);
-            wyrenderowaneKarty.current.add(b.klucz);
-          } catch {
-            wyrenderowaneKarty.current.add(b.klucz);
-          }
-        }
-        if (aktywny && nowe.size > 0) {
-          ustawMiniatury((pop) => {
-            const nast = new Map(pop);
-            for (const [k, v] of nowe) nast.set(k, v);
-            return nast;
-          });
-        }
-      },
-    );
-
+    void dorysujMiniatury(
+      brakujace,
+      () => aktywny,
+      (k) => wyrenderowaneKarty.current.add(k),
+    ).then((nowe) => {
+      if (!aktywny || nowe.size === 0) return;
+      ustawMiniatury((pop) => new Map([...pop, ...nowe]));
+    });
     return () => {
       aktywny = false;
     };
-  }, [zakladka, lista, widoczneSzablony, miniatury]);
+  }, [zakladka, widoczneProjekty, widoczneSzablony, miniatury]);
 
   const wykonaj = async (zadanie: () => Promise<string | void>) => {
+    if (wToku.current) return;
+    wToku.current = true;
     ustawTrwa(true);
     ustawBlad(undefined);
     try {
@@ -278,6 +240,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
     } catch (e) {
       ustawBlad(komunikat(e));
     } finally {
+      wToku.current = false;
       ustawTrwa(false);
     }
   };
@@ -314,8 +277,14 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
       return t('projekty.wyeksportowano', { nazwa: poz.awers.szablonNazwa });
     });
 
+  const duplikuj = (poz: PozycjaSzablonu) =>
+    wykonaj(async () => {
+      // Nowa zmiana w bazie – „Cofnij” z migawki sprzed niej by ją nadpisał.
+      ukryj();
+      return t('projekty.zduplikowano', { nazwa: await duplikujPozycje(poz) });
+    });
+
   const zamontowany = useRef(true);
-  const wToku = useRef(false);
   useEffect(() => {
     zamontowany.current = true;
     return () => {
@@ -326,6 +295,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
   const uzyjWProjekcie = async (poz: PozycjaSzablonu) => {
     if (wToku.current) return;
     wToku.current = true;
+    ukryj();
     ustawTrwa(true);
     ustawBlad(undefined);
     try {
@@ -343,49 +313,66 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
     }
   };
 
-  const usun = (cel: DoUsuniecia) =>
-    wykonaj(async () => {
-      ustawDoUsuniecia(undefined);
-      naglowek.current?.focus();
-      if (cel.rodzaj === 'projekt') {
-        // Szablony i rewersy projektu zostają w „Moich szablonach”.
-        await baza().usunProjekt(cel.projekt.id);
-        return t('projekty.usunieto', { nazwa: cel.projekt.nazwa });
-      }
-      const poz = cel.pozycja;
-      if (poz.rodzaj === 'rewers') {
-        const { projekt, zasoby } = await baza().wczytaj(poz.rewers.projektId);
-        if (poz.rewers.projektRewersowy && (projekt.rewersy?.length ?? 0) <= 1) {
-          await baza().usun(poz.rewers.projektId);
-        } else {
-          const poUsunieciu = usunRewers(projekt, poz.rewers.rewersId);
-          await baza().zapisz(poUsunieciu, zasoby);
-          await baza()
-            .usunMiniature(kluczMiniaturyRewersu(poz.rewers.projektId, poz.rewers.rewersId))
-            .catch(() => undefined);
-          await baza().usunPustySchowek(poz.rewers.projektId);
-        }
-        return t('projekty.usunietoRewers', { nazwa: poz.rewers.nazwa });
-      }
-      const { projekt, zasoby } = await baza().wczytaj(poz.awers.projektId);
-      const maKarty = projekt.talie.some((tl) => tl.karty.length > 0);
-      const samodzielnySzablon =
-        projekt.szablony.length <= 1 && (projekt.rewersy?.length ?? 0) === 0 && !maKarty;
-      if (samodzielnySzablon) {
-        await baza().usun(poz.awers.projektId);
-      } else {
-        const reszta = projekt.szablony.filter((s) => s.id !== poz.awers.szablonId);
-        await baza().zapisz(
-          { ...projekt, zmieniono: new Date().toISOString(), szablony: reszta },
-          zasoby,
-        );
-        await baza()
-          .usunMiniature(kluczMiniaturySzablonu(poz.awers.projektId, poz.awers.szablonId))
-          .catch(() => undefined);
-        await baza().usunPustySchowek(poz.awers.projektId);
-      }
-      return t('projekty.usunieto', { nazwa: poz.awers.szablonNazwa });
+  /** Usuwa od razu (bez pytania); pasek „Cofnij” przywraca wszystkie usunięte elementy naraz. */
+  const usun = (cele: CelUsuniecia[]) => {
+    if (cele.length === 0) return;
+    // Przycisk „Usuń” zaraz zniknie – fokus na nagłówek listy.
+    naglowek.current?.focus();
+    void wykonaj(async () => {
+      const { przywroc, usuniete, pominiete } = await usunZCofaniem(cele);
+      ustawStatus('');
+      zakonczZaznaczanie();
+      if (pominiete.length)
+        ustawBlad(t('lista.pominietoUzywane', { nazwy: pominiete.map(nazwaCelu).join(', ') }));
+      if (!usuniete.length) return;
+      const jeden = usuniete.length === 1 ? nazwaCelu(usuniete[0]!) : undefined;
+      pokaz({
+        tekst: jeden
+          ? t('pasek.usunieto', { nazwa: jeden })
+          : tn('pasek.usunietoWiele', usuniete.length),
+        akcja: {
+          etykieta: t('pasek.cofnij'),
+          wykonaj: () => {
+            naglowek.current?.focus();
+            void wykonaj(async () => {
+              await przywroc();
+              // Miniatury z migawki wracają z bazy; brakujące można dorysować ponownie.
+              wyrenderowaneKarty.current.clear();
+              return jeden
+                ? t('pasek.przywrocono', { nazwa: jeden })
+                : tn('pasek.przywroconoWiele', usuniete.length);
+            });
+          },
+        },
+      });
     });
+  };
+
+  const przelaczZaznaczenie = (klucz: string) =>
+    ustawZaznaczone((z) => {
+      const nowe = new Set(z);
+      if (!nowe.delete(klucz)) nowe.add(klucz);
+      return nowe;
+    });
+
+  const poleWyboru = (klucz: string, nazwa: string) =>
+    zaznaczanie && (
+      <label className="wybor-kafelka">
+        <input
+          type="checkbox"
+          checked={zaznaczone.has(klucz)}
+          onChange={() => przelaczZaznaczenie(klucz)}
+          aria-label={t('lista.zaznaczEtykieta', { nazwa })}
+        />
+      </label>
+    );
+
+  const klasaKafelka = (klucz: string) =>
+    zaznaczanie && zaznaczone.has(klucz) ? 'kafelek-projektu zaznaczony' : 'kafelek-projektu';
+
+  const brakWynikow = fraza.trim() !== '' && (
+    <p className="podpis">{t('lista.brakWynikow', { fraza: fraza.trim() })}</p>
+  );
 
   return (
     <section className="lista-projektow" aria-labelledby="moje-projekty">
@@ -417,6 +404,70 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           {trwa ? t('projekty.trwa') : status}
         </p>
       </div>
+      <div className="narzedzia-listy">
+        <input
+          type="search"
+          value={fraza}
+          onChange={(e) => ustawFraze(e.target.value)}
+          placeholder={t('lista.szukaj')}
+          aria-label={
+            zakladka === 'projekty' ? t('lista.szukajProjektow') : t('lista.szukajSzablonow')
+          }
+        />
+        <label>
+          {t('lista.sortuj')}
+          <select
+            value={sortowanie}
+            onChange={(e) => ustawSortowanie(e.target.value as Sortowanie)}
+          >
+            {SORTOWANIA.map((s) => (
+              <option key={s} value={s}>
+                {t(`lista.sort.${s}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        {!zaznaczanie && (
+          <button
+            type="button"
+            disabled={trwa || celeWidoczne.length === 0}
+            onClick={() => ustawZaznaczanie(true)}
+          >
+            {t('lista.zaznacz')}
+          </button>
+        )}
+      </div>
+      {zaznaczanie && (
+        <div className="pasek-zaznaczenia" role="group" aria-label={t('lista.zaznaczanie')}>
+          <label>
+            <input
+              type="checkbox"
+              checked={wszystkieZaznaczone}
+              ref={(el) => {
+                if (el) el.indeterminate = zaznaczoneWidoczne.length > 0 && !wszystkieZaznaczone;
+              }}
+              onChange={() =>
+                ustawZaznaczone(
+                  wszystkieZaznaczone ? new Set() : new Set(celeWidoczne.map((c) => c.klucz)),
+                )
+              }
+            />
+            {t('lista.zaznaczWszystkie')}
+          </label>
+          <span>{t('lista.zaznaczono', { n: zaznaczoneWidoczne.length })}</span>
+          <button
+            type="button"
+            className="niebezpieczny"
+            disabled={trwa || zaznaczoneWidoczne.length === 0}
+            onClick={() => usun(zaznaczoneWidoczne.map((c) => c.cel))}
+          >
+            {t('lista.usunZaznaczone')}
+          </button>
+          <button type="button" onClick={zakonczZaznaczanie}>
+            {t('projekty.anuluj')}
+          </button>
+        </div>
+      )}
       {zakladka === 'szablony' && (
         <div className="filtr-szablonow" role="group" aria-label={t('start.mojeSzablony')}>
           {(['wszystkie', 'awers', 'rewers'] as const).map((f) => (
@@ -441,42 +492,18 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           {blad}
         </p>
       )}
-      {doUsuniecia && (
-        <div
-          role="alertdialog"
-          aria-labelledby="usun-tytul"
-          className="uwaga"
-          onKeyDown={(e) => e.key === 'Escape' && anulujUsuniecie()}
-        >
-          <p id="usun-tytul">
-            {doUsuniecia.rodzaj === 'projekt'
-              ? t('projekty.potwierdzUsuniecieProjektu', { nazwa: doUsuniecia.projekt.nazwa })
-              : doUsuniecia.pozycja.rodzaj === 'rewers' &&
-                  !doUsuniecia.pozycja.rewers.projektRewersowy
-                ? t('projekty.potwierdzUsuniecieRewersu', {
-                    nazwa: doUsuniecia.pozycja.rewers.nazwa,
-                    projekt: doUsuniecia.pozycja.rewers.projektNazwa ?? '',
-                  })
-                : t('projekty.potwierdzUsuniecie', { nazwa: doUsuniecia.pozycja.nazwa })}
-          </p>
-          <button type="button" onClick={() => void usun(doUsuniecia)}>
-            {t('projekty.usun')}
-          </button>{' '}
-          <button type="button" autoFocus onClick={anulujUsuniecie}>
-            {t('projekty.anuluj')}
-          </button>
-        </div>
-      )}
-      {lista === undefined ? (
+      {widoczneProjekty === undefined ? (
         <p>{t('projekty.wczytywanie')}</p>
       ) : zakladka === 'projekty' ? (
-        lista.length === 0 ? (
-          <p className="podpis">
-            {t('projekty.brak')} {t('start.pustaPodpowiedz')}
-          </p>
+        widoczneProjekty.length === 0 ? (
+          brakWynikow || (
+            <p className="podpis">
+              {t('projekty.brak')} {t('start.pustaPodpowiedz')}
+            </p>
+          )
         ) : (
           <ul className="kafelki-projektow">
-            {lista.map((p) => {
+            {widoczneProjekty.map((p) => {
               const czyWlasny = !p.pakiet || p.pakiet === 'wlasne';
               const czyRewersowy = p.typStrony === 'rewers';
               const urlAwersu = czyRewersowy
@@ -495,7 +522,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
               );
               const href = `#/projekt/${encodeURIComponent(p.id)}`;
               return (
-                <li key={p.id} className="kafelek-projektu">
+                <li key={p.id} className={klasaKafelka(p.id)}>
                   <a
                     href={href}
                     className={
@@ -519,6 +546,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                       <span className="bez-miniatury">🂠</span>
                     )}
                   </a>
+                  {poleWyboru(p.id, p.nazwa)}
                   <div className="opis-projektu">
                     <div className="naglowek-kafelka-projektu">
                       <a href={href} className="nazwa">
@@ -547,10 +575,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                         type="button"
                         disabled={trwa}
                         aria-label={t('start.usunProjekt', { nazwa: p.nazwa })}
-                        onClick={(e) => {
-                          otwierajacy.current = e.currentTarget;
-                          ustawDoUsuniecia({ rodzaj: 'projekt', projekt: p });
-                        }}
+                        onClick={() => usun([{ rodzaj: 'projekt', projekt: p }])}
                       >
                         {t('projekty.usun')}
                       </button>
@@ -562,14 +587,14 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           </ul>
         )
       ) : widoczneSzablony.length === 0 ? (
-        <p className="podpis">{t('projekty.brakSzablonow')}</p>
+        brakWynikow || <p className="podpis">{t('projekty.brakSzablonow')}</p>
       ) : (
         <ul className="kafelki-projektow">
           {widoczneSzablony.map((poz) => {
             const urlMiniatury = miniaturyUrl.get(poz.klucz);
             const czyRewers = poz.rodzaj === 'rewers';
             return (
-              <li key={poz.klucz} className="kafelek-projektu">
+              <li key={poz.klucz} className={klasaKafelka(poz.klucz)}>
                 <a
                   href={poz.href}
                   className="miniatura miniatura-rewersu"
@@ -582,6 +607,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                     <span className="bez-miniatury">🂠</span>
                   )}
                 </a>
+                {poleWyboru(poz.klucz, poz.nazwa)}
                 <div className="opis-projektu">
                   <div className="naglowek-kafelka-projektu">
                     <a href={poz.href} className="nazwa">
@@ -606,6 +632,14 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                     <button
                       type="button"
                       disabled={trwa}
+                      aria-label={t('projekty.duplikujEtykieta', { nazwa: poz.nazwa })}
+                      onClick={() => void duplikuj(poz)}
+                    >
+                      {t('projekty.duplikuj')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={trwa}
                       onClick={() => void eksportujSzablonKafelka(poz)}
                     >
                       {t('projekty.eksportuj')}
@@ -618,10 +652,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                           ? t('projekty.usunRewersEtykieta', { nazwa: poz.nazwa })
                           : t('start.usunProjekt', { nazwa: poz.nazwa })
                       }
-                      onClick={(e) => {
-                        otwierajacy.current = e.currentTarget;
-                        ustawDoUsuniecia({ rodzaj: 'szablon', pozycja: poz });
-                      }}
+                      onClick={() => usun([{ rodzaj: 'szablon', pozycja: poz }])}
                     >
                       {t('projekty.usun')}
                     </button>
@@ -632,6 +663,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           })}
         </ul>
       )}
+      {pasek}
     </section>
   );
 }

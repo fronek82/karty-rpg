@@ -241,3 +241,44 @@ describe('domyślna nazwa nowego rewersu', () => {
     expect(unikalnaNazwa('Tył', [])).toBe('Tył');
   });
 });
+
+describe('Migawka do „Cofnij” po usunięciu', () => {
+  let baza: BazaProjektow;
+  afterEach(() => baza?.zamknij());
+
+  it('przywraca projekt w całości: dokument, zasoby i miniatury szablonów/rewersów', async () => {
+    baza = new BazaProjektow('n6-migawka');
+    const p = wlasny('m1', { rewersy: [rewers('r1', 'Rewers')] });
+    await baza.zapisz(p, zasoby);
+    const sz = p.szablony[0]!.id;
+    await baza.zapiszMiniature('m1', '<svg>p</svg>');
+    await baza.zapiszMiniature(kluczMiniaturySzablonu('m1', sz), '<svg>s</svg>');
+    await baza.zapiszMiniature('rewers:m1:r1', '<svg>r</svg>');
+    await baza.zapiszMiniature('rewers:m10:r1', '<svg>inny</svg>');
+
+    const migawka = await baza.migawka(['m1', 'brak']);
+    expect(migawka).toHaveLength(1);
+    await baza.usun('m1');
+    expect(await baza.istnieje('m1')).toBe(false);
+
+    await baza.przywroc(migawka);
+    const { projekt, zasoby: z } = await baza.wczytaj('m1');
+    expect(projekt.rewersy?.[0]?.id).toBe('r1');
+    expect([...z.keys()].sort()).toEqual([...zasoby.keys()].sort());
+    const m = await baza.miniatury();
+    expect(m.get('m1')).toBe('<svg>p</svg>');
+    expect(m.get(kluczMiniaturySzablonu('m1', sz))).toBe('<svg>s</svg>');
+    expect(m.get('rewers:m1:r1')).toBe('<svg>r</svg>');
+    expect(m.get('rewers:m10:r1')).toBe('<svg>inny</svg>');
+  });
+
+  it('cofa usunięcie projektu do „tylko szablony” – projekt wraca na listę', async () => {
+    baza = new BazaProjektow('n6-migawka-2');
+    await baza.zapisz(wlasny('m2'), zasoby);
+    const migawka = await baza.migawka(['m2']);
+    await baza.usunProjekt('m2');
+    expect((await baza.lista()).some((x) => x.id === 'm2')).toBe(false);
+    await baza.przywroc(migawka);
+    expect((await baza.lista()).some((x) => x.id === 'm2')).toBe(true);
+  });
+});

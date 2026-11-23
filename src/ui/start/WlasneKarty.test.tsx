@@ -4,9 +4,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KAFELKI_SZABLONOW, PRZYKLADY } from '../../przyklady';
 
 const zapiszProjektZPrzykladu = vi.fn();
+const nowyProjektZAwersuZProjektu = vi.fn();
+const pozycje = vi.fn();
 vi.mock('../bazaUI', () => ({
   zapiszProjektZPrzykladu: (...a: unknown[]) => zapiszProjektZPrzykladu(...a),
   nowyProjektZSzablonu: vi.fn(),
+  nowyProjektZAwersuZProjektu: (...a: unknown[]) => nowyProjektZAwersuZProjektu(...a),
+  nowyProjektZRewersuZProjektu: vi.fn(),
+  baza: () => ({ miniatury: async () => new Map([['szablon:p:s0', '<svg/>']]) }),
+}));
+vi.mock('../useProjekt', () => ({ poOstatnimZapisie: () => Promise.resolve() }));
+vi.mock('./mojeSzablony', async (oryginal) => ({
+  ...(await oryginal<typeof import('./mojeSzablony')>()),
+  wczytajPozycjeSzablonow: () => pozycje(),
+  dorysujMiniatury: async () => new Map(),
 }));
 vi.mock('./ladujPrzyklady', () => ({
   useUruchomPodgladyPrzykladow: () => {},
@@ -20,22 +31,62 @@ vi.mock('./GaleriaOnline', () => ({
 
 import { WlasneKarty } from './WlasneKarty';
 
+const awers = (i: number) => ({
+  klucz: `szablon:p:s${i}`,
+  rodzaj: 'awers' as const,
+  nazwa: `Mój ${i}`,
+  zmieniono: `2026-11-${String(20 - i).padStart(2, '0')}`,
+  href: '',
+  awers: {
+    projektId: 'p',
+    projektNazwa: 'P',
+    szablonId: `s${i}`,
+    szablonNazwa: `Mój ${i}`,
+    kluczTresci: `k${i}`,
+  },
+  szablonPodglad: { projektId: 'p', szablonId: `s${i}` },
+});
+
 beforeEach(() => {
   zapiszProjektZPrzykladu.mockReset();
+  nowyProjektZAwersuZProjektu.mockReset();
+  pozycje.mockReset();
+  pozycje.mockResolvedValue([]);
   window.location.hash = '';
 });
 afterEach(cleanup);
 
 describe('WlasneKarty', () => {
-  it('kafelki: pusta karta i wszystkie przykłady, menu z dwiema pozycjami', () => {
+  it('kafelki: pusta karta i wszystkie przykłady; bez „Nowy szablon od zera” i biblioteki globalnej', async () => {
     render(<WlasneKarty />);
     expect(document.querySelectorAll('[data-podglad]')).toHaveLength(1 + PRZYKLADY.length);
     expect(KAFELKI_SZABLONOW).toHaveLength(1 + PRZYKLADY.length);
-    expect(screen.getByRole('link', { name: /Nowy szablon od zera/ }).getAttribute('href')).toBe(
-      '#/wlasne/nowy',
-    );
+    expect(screen.queryByRole('link', { name: /Nowy szablon od zera/ })).toBeNull();
+    expect(screen.queryByText(/Globalna biblioteka/)).toBeNull();
     expect(screen.getByRole('button', { name: /Importuj szablon/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Pusta karta' })).toBeTruthy();
+    expect(await screen.findByText(/Nie masz jeszcze własnych szablonów/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Pokaż wszystkie' })).toBeNull();
+  });
+
+  it('„Moje szablony” są przed przykładami: najwyżej 8 ostatnich, „Pokaż wszystkie”, klik tworzy projekt', async () => {
+    pozycje.mockResolvedValue(Array.from({ length: 10 }, (_, i) => awers(i)));
+    nowyProjektZAwersuZProjektu.mockResolvedValue('nowy');
+    render(<WlasneKarty />);
+    const moje = await screen.findByRole('region', { name: /Moje szablony/ });
+    await waitFor(() => expect(moje.querySelectorAll('[data-moj-szablon]')).toHaveLength(8));
+    const przyklady = screen.getByRole('region', { name: /Przykładowe szablony/ });
+    expect(moje.compareDocumentPosition(przyklady) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(moje.querySelector('img.miniatura-wlasna')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /Mój 3/ }));
+    await waitFor(() => expect(nowyProjektZAwersuZProjektu).toHaveBeenCalledWith('p', 's3'));
+    await waitFor(() => expect(window.location.hash).toBe('#/projekt/nowy'));
+
+    sessionStorage.clear();
+    fireEvent.click(screen.getByRole('button', { name: 'Pokaż wszystkie' }));
+    expect(sessionStorage.getItem('karty.zakladkaStart')).toBe('szablony');
+    expect(window.location.hash).toBe('#/');
   });
 
   it('klik tworzy projekt z przykładu i otwiera edytor; podwójny klik – jeden projekt', async () => {

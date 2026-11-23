@@ -1,10 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Download, type Locator, type Page } from '@playwright/test';
-import { strToU8, unzipSync, zipSync } from 'fflate';
-import { WERSJA_SCHEMATU } from '../src/model/projekt';
-import { nowaPustaKartka, otworzDruk, zapisano } from './pomoc';
+import { unzipSync, zipSync } from 'fflate';
+import { nowaPustaKartka, otworzDruk } from './pomoc';
 
-const nazwa = 'Karta geometryczna';
 const ramka = 'ramka-testowa';
 
 async function zPliku(pobranie: Download) {
@@ -19,138 +17,6 @@ async function pobierz(page: Page, przycisk: Locator) {
   const [pobranie] = await Promise.all([page.waitForEvent('download'), przycisk.click()]);
   return zPliku(pobranie);
 }
-
-async function otworzSzablony(page: Page) {
-  await page.getByText('Globalna biblioteka szablonów', { exact: true }).click();
-  return page.locator('details.biblioteka-globalna');
-}
-
-test('globalny szablon trafia na własną kartkę projektu pakietowego i można odtworzyć go z pliku', async ({
-  page,
-  browser,
-}) => {
-  await page.goto('./#/wlasne');
-  const katalog = await otworzSzablony(page);
-  const dane = {
-    wersja: WERSJA_SCHEMATU,
-    szablon: {
-      id: 'geometria',
-      nazwa,
-      rozmiar: { tryb: 'mm', szerokosc: 25.75, wysokosc: 25.75 },
-      korzen: { id: 'karta', typ: 'kolumna', dzieci: [] },
-    },
-    role: {},
-    zasoby: [],
-  };
-  await katalog.getByTestId('globalna-import-szablon').setInputFiles({
-    name: 'geometria.kartyrpg-szablon',
-    mimeType: 'application/zip',
-    buffer: Buffer.from(zipSync({ 'szablon.json': strToU8(JSON.stringify(dane)) })),
-  });
-  const plik = await pobierz(
-    page,
-    katalog.getByRole('button', { name: /Pobierz „Karta geometryczna”/ }),
-  );
-  expect(plik.name).toMatch(/\.kartyrpg-szablon$/);
-  const czysta = await browser.newContext({
-    locale: 'pl-PL',
-    baseURL: new URL('.', page.url()).href,
-  });
-  try {
-    const nowa = await czysta.newPage();
-    await nowa.goto('./#/wlasne');
-    const docelowy = await otworzSzablony(nowa);
-    await expect(docelowy.getByText('Biblioteka jest pusta.')).toBeVisible();
-    await docelowy.getByTestId('globalna-import-szablon').setInputFiles(plik);
-    await docelowy.getByRole('button', { name: /Użyj „Karta geometryczna”/ }).click();
-    await expect(nowa.locator('.strona-kartki')).toBeVisible();
-  } finally {
-    await czysta.close();
-  }
-
-  await nowaPustaKartka(page);
-  const kartki = page.locator('.kartka');
-  expect(await kartki.count()).toBe(1);
-  await otworzDruk(page);
-  const ustawienia = await otworzSzablony(page);
-  await ustawienia.getByRole('button', { name: /Użyj „Karta geometryczna”/ }).click();
-  await expect(kartki).toHaveCount(2);
-  await page.getByRole('button', { name: 'Cofnij', exact: true }).click();
-  await expect(kartki).toHaveCount(1);
-  await ustawienia.getByRole('button', { name: /Użyj „Karta geometryczna”/ }).click();
-  await expect(kartki).toHaveCount(2);
-  await zapisano(page);
-  await page.reload();
-  await expect(kartki).toHaveCount(2);
-  await page.getByRole('link', { name: '← Powrót' }).click();
-  await kartki
-    .first()
-    .getByRole('button', { name: /Pusty slot.*kolumna 1, rząd 1\./ })
-    .click();
-  await expect(page.getByRole('menuitem', { name: /Broń/ })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: /Karta geometryczna/ })).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  const slot = kartki.last().getByRole('button', { name: /Pusty slot.*kolumna 1, rząd 1\./ });
-  const ustawieniaWlasnejKartki = async () => {
-    await otworzDruk(page);
-    await page.getByRole('button', { name: 'Nowa kartka dla szablonu Karta geometryczna' }).click();
-  };
-  await ustawieniaWlasnejKartki();
-  await page.getByLabel('Układ kart na kartce').selectOption('wlasny');
-  const szerokoscSlotu = page.getByLabel('Szerokość karty (mm)', { exact: true });
-  await szerokoscSlotu.fill('30');
-  await page.getByRole('link', { name: '← Powrót' }).click();
-  await slot.click();
-  const wlasnyTyp = page.getByRole('menuitem', { name: /Karta geometryczna/ });
-  await expect(wlasnyTyp).toHaveAttribute('aria-disabled', 'true');
-  await expect(wlasnyTyp).toContainText('Inny rozmiar karty');
-  await page.keyboard.press('Escape');
-  await ustawieniaWlasnejKartki();
-  await szerokoscSlotu.fill('25.75');
-  await page.getByRole('link', { name: '← Powrót' }).click();
-  await slot.click();
-  await expect(page.getByRole('menuitem', { name: /Broń/ })).toHaveCount(0);
-  await wlasnyTyp.click();
-  await expect(kartki.last().locator('[data-karta]')).toHaveCount(1);
-  await page.getByRole('link', { name: /Edytuj szablon/ }).click();
-  await expect(page.getByLabel('Nazwa szablonu')).toHaveValue(nazwa);
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
-  await expect(kartki).toHaveCount(2);
-  await otworzDruk(page);
-  const projekt = await pobierz(page, page.getByRole('button', { name: /^⤓ Eksportuj$/ }));
-  const pustaBaza = await browser.newContext({
-    locale: 'pl-PL',
-    baseURL: new URL('.', page.url()).href,
-  });
-  try {
-    const nowa = await pustaBaza.newPage();
-    await nowa.goto('./#/');
-    await nowa.getByTestId('plik-importu').setInputFiles(projekt);
-    await nowa.locator('.kafelek-projektu').first().click();
-    await expect(nowa.locator('.kartka')).toHaveCount(2);
-    await expect(nowa.locator('.kartka').last().locator('[data-karta]')).toHaveCount(1);
-    await nowa.goto(`${nowa.url()}/szablon/mausritter-bron`);
-    await expect(nowa.getByRole('alert')).toContainText('Szablony z pakietu gry');
-  } finally {
-    await pustaBaza.close();
-  }
-
-  await otworzDruk(page);
-  const biblioteka = await otworzSzablony(page);
-  page.once('dialog', (dialog) => void dialog.accept());
-  await biblioteka.getByRole('button', { name: /Usuń „Karta geometryczna”/ }).click();
-  await expect(biblioteka.getByText('Biblioteka jest pusta.')).toBeVisible();
-  await page
-    .getByRole('button', { name: /Zapisz „Karta geometryczna” w bibliotece globalnej/ })
-    .click();
-  await expect(
-    page.getByText('Zapisano „Karta geometryczna” w bibliotece globalnej.', { exact: true }),
-  ).toBeVisible();
-  if (process.env.ZRZUTY) {
-    await page.locator('.biblioteka-globalna').scrollIntoViewIfNeeded();
-    await page.screenshot({ path: 'docs/obrazy/m2c-1-biblioteka-szablonow.png' });
-  }
-});
 
 test('globalna ramka z PNG przechodzi między przeglądarkami i zachowuje lokalną kopię po usunięciu wpisu', async ({
   page,

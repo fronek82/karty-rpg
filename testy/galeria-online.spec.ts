@@ -37,14 +37,8 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
   await expect(przedmiot).toContainText('Awers');
   await expect(przedmiot).toContainText('Rewers');
 
-  // Zapis do lokalnej biblioteki szablonów aktualizuje listę na żywo.
-  await przedmiot.getByRole('button', { name: 'Do biblioteki' }).click();
-  await expect(sekcja.getByRole('status')).toContainText(
-    'Zapisano „Karta przedmiotu (z rewersem)”',
-  );
-  const biblioteka = page.locator('.biblioteka-globalna');
-  await biblioteka.locator('summary').click();
-  await expect(biblioteka).toContainText('Karta przedmiotu (z rewersem)');
+  // Bez osobnej biblioteki szablonów – szablon trafia do „Moich szablonów” przez „Użyj szablonu”.
+  await expect(przedmiot.getByRole('button', { name: 'Do biblioteki' })).toHaveCount(0);
 
   // Filtrowanie po frazie i przełączniku „Tylko z rewersem”.
   await sekcja.getByLabel('Szukaj szablonu').fill('tarot');

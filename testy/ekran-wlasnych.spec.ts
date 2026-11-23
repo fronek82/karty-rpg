@@ -32,7 +32,8 @@ test('wejście: okruszki, menu, sześć kafelków z podglądem z silnika', async
   await expect(okruszki).toContainText('Start');
   await expect(okruszki.locator('[aria-current="page"]')).toHaveText('Stwórz własne karty');
   const menu = page.getByRole('navigation', { name: 'Własny szablon' });
-  await expect(menu.getByRole('link', { name: /Nowy szablon od zera/ })).toBeVisible();
+  // „Nowy szablon od zera” jest tylko na stronie głównej (N6).
+  await expect(page.getByRole('link', { name: /Nowy szablon od zera/ })).toHaveCount(0);
   await expect(menu.getByRole('button', { name: /Importuj szablon/ })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: /Przykładowe szablony/ })).toBeVisible();
   const kafelki = page.locator('[data-podglad]');
@@ -104,9 +105,7 @@ test('podwójne kliknięcie tworzy jeden projekt', async ({ page }) => {
 test('„Nowy szablon od zera” otwiera wybór Awers / Rewers, a Awers otwiera kreator', async ({
   page,
 }) => {
-  await wejdz(page);
-  await page.getByRole('link', { name: /Nowy szablon od zera/ }).click();
-  await expect(page).toHaveURL(/#\/wlasne\/nowy$/);
+  await page.goto('./#/wlasne/nowy');
   await expect(page.getByRole('link', { name: /^Awers/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^Rewers/ })).toBeVisible();
   await page.getByRole('link', { name: /^Awers/ }).click();
@@ -203,7 +202,7 @@ test.describe('angielski', () => {
     ];
     for (let i = 0; i < nazwy.length; i++)
       await expect(kafelki.nth(i).locator('b')).toHaveText(nazwy[i]!);
-    await expect(page.getByRole('link', { name: /New template from scratch/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: /My templates/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Import a template/ })).toBeVisible();
     await expect(page.getByText('Click to start from this template').first()).toBeVisible();
     await page.getByRole('button', { name: 'Card with a description' }).click();

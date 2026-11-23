@@ -21,7 +21,7 @@ test('własne karty: menu z nowym szablonem i importem, kafelki przykładów, be
   await expect(page).toHaveURL(/#\/wlasne$/);
   const naglowek = page.getByRole('heading', { level: 1, name: 'Stwórz własne karty' });
   await expect(naglowek).toBeVisible();
-  await expect(page.getByRole('link', { name: /Nowy szablon od zera/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Nowy szablon od zera/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Importuj szablon/ })).toBeVisible();
   await expect(page.locator('[data-podglad]')).toHaveCount(6);
   for (const gra of ['Dungeons & Dragons', 'Warhammer', 'Jedyny Pierścień'])

@@ -111,6 +111,23 @@ export function czyProjektRewersowy(projekt: Projekt): boolean {
   );
 }
 
+/** Kopia wpisów projektów z bazy (`BazaProjektow.migawka`) – nieprzezroczysta dla UI. */
+export type MigawkaProjektow = {
+  id: string;
+  projekt: WpisProjektu;
+  zasoby: WpisZasobu[];
+  miniatury: WpisMiniatury[];
+}[];
+
+/** Miniatura należy do projektu: sam projekt albo jego szablon/rewers (`szablon:<id>:…`). */
+function czyMiniaturaProjektu(klucz: string, projektId: string): boolean {
+  return (
+    klucz === projektId ||
+    klucz.startsWith(`rewers:${projektId}:`) ||
+    klucz.startsWith(`szablon:${projektId}:`)
+  );
+}
+
 interface WpisMiniatury {
   id: string;
   /** SVG pierwszej strony (bez obrazów rastrowych – adresy blob: nie przeżywają sesji). */
@@ -524,6 +541,51 @@ export class BazaProjektow {
         await this.db.miniatury.delete(id);
         await this.db.miniatury.where('id').startsWith(`rewers:${id}:`).delete();
         await this.db.miniatury.where('id').startsWith(`szablon:${id}:`).delete();
+      },
+    );
+  }
+
+  /**
+   * Surowa kopia wpisów projektów (dokument, bajty zasobów, miniatury projektu, szablonów
+   * i rewersów) – do „Cofnij” po usunięciu. Projekty, których nie ma w bazie, są pomijane.
+   */
+  async migawka(ids: Iterable<string>): Promise<MigawkaProjektow> {
+    const lista = [...new Set(ids)];
+    return this.db.transaction(
+      'r',
+      [this.db.projekty, this.db.zasoby, this.db.miniatury],
+      async () => {
+        const wynik: MigawkaProjektow = [];
+        for (const id of lista) {
+          const projekt = await this.db.projekty.get(id);
+          if (!projekt) continue;
+          wynik.push({
+            id,
+            projekt,
+            zasoby: await this.db.zasoby.where('projektId').equals(id).toArray(),
+            miniatury: await this.db.miniatury
+              .filter((m) => czyMiniaturaProjektu(m.id, id))
+              .toArray(),
+          });
+        }
+        return wynik;
+      },
+    );
+  }
+
+  /** Przywraca projekty z migawki dokładnie w stanie z chwili jej zrobienia. */
+  async przywroc(migawka: MigawkaProjektow): Promise<void> {
+    await this.db.transaction(
+      'rw',
+      [this.db.projekty, this.db.zasoby, this.db.miniatury],
+      async () => {
+        for (const m of migawka) {
+          await this.db.zasoby.where('projektId').equals(m.id).delete();
+          await this.db.miniatury.filter((x) => czyMiniaturaProjektu(x.id, m.id)).delete();
+          await this.db.projekty.put(m.projekt);
+          await this.db.zasoby.bulkPut(m.zasoby);
+          await this.db.miniatury.bulkPut(m.miniatury);
+        }
       },
     );
   }
