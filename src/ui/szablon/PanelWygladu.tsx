@@ -13,9 +13,11 @@ import { MOTYWY_WBUDOWANE, type ElementOzdobny } from '../../ozdobniki';
 import {
   elementyRodzaju,
   useAdresBiblioteki,
+  useWyjscieDoBiblioteki,
   useAdresObrazu,
   useElementyWlasne,
 } from './elementyWlasne';
+import { GrupyOzdobnikow } from './GrupyOzdobnikow';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { PoleSzkicu } from './PolaDekoracji';
 import { Liczba, Lista, PoleKoloru, PoleOdstepow, Sekcja, Wybor } from './Kontrolki';
@@ -67,6 +69,7 @@ export function PoleRamki<R extends Obramowanie>({
 }) {
   const zmienRamke = (f: (r: R) => R) => zmien((r) => (r ? f(r) : r));
   const adresBiblioteki = useAdresBiblioteki();
+  const wyjdzDoBiblioteki = useWyjscieDoBiblioteki();
   const ramki9 = elementyRodzaju('ramka9', useElementyWlasne());
   const rodzajOzdoby = ozdoba?.wartosc?.rodzaj;
   return (
@@ -134,7 +137,10 @@ export function PoleRamki<R extends Obramowanie>({
           />
           {ramki9.length === 0 && (
             <p className="podpis">
-              {t('ramka.brakRamek9')} <a href={adresBiblioteki}>{t('biblioteka.otworz')}</a>
+              {t('ramka.brakRamek9')}{' '}
+              <a href={adresBiblioteki} onClick={wyjdzDoBiblioteki}>
+                {t('biblioteka.otworz')}
+              </a>
             </p>
           )}
         </>
@@ -297,6 +303,7 @@ function WyborRamki9({
 }) {
   const idEtykiety = useId();
   const adresBiblioteki = useAdresBiblioteki();
+  const wyjdzDoBiblioteki = useWyjscieDoBiblioteki();
   const adresObrazu = useAdresObrazu();
   const ustaw = (z: Partial<OzdobaRamka9>) => zmien({ ...ozdoba, ...z });
   const aktualny = ramki.find((e) => e.id === ozdoba.element);
@@ -305,24 +312,27 @@ function WyborRamki9({
     <div className="pole-panelu">
       <span id={idEtykiety}>{t('ramka9.tytul')}</span>
       <div className="wybor-narozniki" role="group" aria-labelledby={idEtykiety}>
-        {ramki.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            aria-pressed={ozdoba.element === e.id}
-            aria-label={nazwaElementu(e)}
-            style={{ color: ozdoba.kolor ?? '#000000' }}
-            onClick={() => ustaw({ element: e.id })}
-          >
-            <MiniaturaOzdobnika
-              element={e}
-              {...(e.ramka9?.zrodlo.typ === 'obraz'
-                ? { adres: adresObrazu?.(e.ramka9.zrodlo.zasob) }
-                : {})}
-            />
-            <small>{nazwaElementu(e)}</small>
-          </button>
-        ))}
+        <GrupyOzdobnikow
+          elementy={ramki}
+          render={(e) => (
+            <button
+              key={e.id}
+              type="button"
+              aria-pressed={ozdoba.element === e.id}
+              aria-label={nazwaElementu(e)}
+              style={{ color: ozdoba.kolor ?? '#000000' }}
+              onClick={() => ustaw({ element: e.id })}
+            >
+              <MiniaturaOzdobnika
+                element={e}
+                {...(e.ramka9?.zrodlo.typ === 'obraz'
+                  ? { adres: adresObrazu?.(e.ramka9.zrodlo.zasob) }
+                  : {})}
+              />
+              <small>{nazwaElementu(e)}</small>
+            </button>
+          )}
+        />
       </div>
       <div className="dwa-pola">
         <Liczba
@@ -352,7 +362,9 @@ function WyborRamki9({
         )}
       </div>
       <p className="podpis">
-        <a href={adresBiblioteki}>{t('ramka9.edytujWBibliotece')}</a>
+        <a href={adresBiblioteki} onClick={wyjdzDoBiblioteki}>
+          {t('ramka9.edytujWBibliotece')}
+        </a>
       </p>
     </div>
   );
@@ -377,19 +389,22 @@ function WyborMotywu({
     <div className="pole-panelu">
       <span id={idEtykiety}>{t('motywy.tytul')}</span>
       <div className="wybor-narozniki" role="group" aria-labelledby={idEtykiety}>
-        {motywy.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            aria-pressed={ozdoba.element === e.id}
-            aria-label={nazwaElementu(e)}
-            style={{ color: ozdoba.kolor }}
-            onClick={() => ustaw({ element: e.id })}
-          >
-            <MiniaturaOzdobnika element={e} />
-            <small>{nazwaElementu(e)}</small>
-          </button>
-        ))}
+        <GrupyOzdobnikow
+          elementy={motywy}
+          render={(e) => (
+            <button
+              key={e.id}
+              type="button"
+              aria-pressed={ozdoba.element === e.id}
+              aria-label={nazwaElementu(e)}
+              style={{ color: ozdoba.kolor }}
+              onClick={() => ustaw({ element: e.id })}
+            >
+              <MiniaturaOzdobnika element={e} />
+              <small>{nazwaElementu(e)}</small>
+            </button>
+          )}
+        />
       </div>
       <div className="dwa-pola">
         <Liczba
@@ -469,25 +484,28 @@ function WyborNarozniki({
           <span aria-hidden="true">–</span>
           <small>{t('narozniki.brak')}</small>
         </button>
-        {narozniki.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            aria-pressed={wartosc?.element === e.id}
-            aria-label={nazwaElementu(e)}
-            style={{ color: wartosc?.kolor ?? kolorLinii }}
-            onClick={() =>
-              zmien(
-                wartosc
-                  ? { ...wartosc, element: e.id }
-                  : { element: e.id, rozmiar: domyslnyRozmiar },
-              )
-            }
-          >
-            <MiniaturaOzdobnika element={e} />
-            <small>{nazwaElementu(e)}</small>
-          </button>
-        ))}
+        <GrupyOzdobnikow
+          elementy={narozniki}
+          render={(e) => (
+            <button
+              key={e.id}
+              type="button"
+              aria-pressed={wartosc?.element === e.id}
+              aria-label={nazwaElementu(e)}
+              style={{ color: wartosc?.kolor ?? kolorLinii }}
+              onClick={() =>
+                zmien(
+                  wartosc
+                    ? { ...wartosc, element: e.id }
+                    : { element: e.id, rozmiar: domyslnyRozmiar },
+                )
+              }
+            >
+              <MiniaturaOzdobnika element={e} />
+              <small>{nazwaElementu(e)}</small>
+            </button>
+          )}
+        />
       </div>
       {wartosc && (
         <div className="dwa-pola">

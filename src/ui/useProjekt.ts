@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cofnij, ponow, pustaHistoria, zapamietaj, type Historia } from '../dane/historia';
-import { przepiszZasobyProjektu } from '../dane/bibliotekaUzytkownika';
+import {
+  czyZasobProjektu,
+  przepiszObrazElementu,
+  przepiszZasobyProjektu,
+} from '../dane/bibliotekaUzytkownika';
 import { BladDanych, ostrzezeniaProjektu } from '../dane/schemat';
 import { rejestrZProjektu } from '../dane/pakiet';
 import { czyKartkaZnormalizowana, normalizujKartki } from '../druk/normalizacja';
 import { t } from '../i18n';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import { baza } from './bazaUI';
+import { polaczElementy, useElementyOzdobne } from './useBiblioteka';
 import { zasobyProjektu, type ZasobyProjektu } from './zasobyProjektu';
 
 export type StanZapisu =
@@ -66,6 +71,33 @@ function normalizujWczytany(p: Projekt, dane: DaneZasobow): Projekt {
     p.zasoby.flatMap((z) => (z.rodzaj === 'obraz' ? [[z.id, z] as const] : [])),
   );
   return normalizujKartki(p, { czcionki: rejestr, obraz: (id) => obrazy.get(id) }).projekt;
+}
+
+/** Nowe zasoby i elementy widoku (wgrane w edytorze) – od razu do biblioteki użytkownika. */
+async function dodajNoweDoBiblioteki(
+  przed: Projekt,
+  po: Projekt,
+  dane: DaneZasobow,
+): Promise<{ obrazy: Map<string, string>; elementy: Map<string, string> }> {
+  const obrazy = new Map<string, string>();
+  const elementy = new Map<string, string>();
+  const byly = new Set(przed.zasoby.map((o) => o.id));
+  const byloEl = new Set((przed.biblioteka?.ozdobniki ?? []).map((e) => e.id));
+  const noweEl = (po.biblioteka?.ozdobniki ?? []).filter((e) => !byloEl.has(e.id));
+  const ramki = new Set(
+    noweEl.flatMap((e) => (e.ramka9?.zrodlo.typ === 'obraz' ? [e.ramka9.zrodlo.zasob] : [])),
+  );
+  for (const o of po.zasoby) {
+    const d = dane.get(o.id);
+    if (byly.has(o.id) || czyZasobProjektu(o) || !d) continue;
+    const id = await baza().dodajZasobDoBiblioteki(o, d, { wewnetrzny: ramki.has(o.id) });
+    if (id !== o.id && o.rodzaj === 'obraz') obrazy.set(o.id, id);
+  }
+  for (const e of noweEl) {
+    const id = await baza().dodajElementDoBibliotekiUzytkownika(przepiszObrazElementu(e, obrazy));
+    if (id !== e.id) elementy.set(e.id, id);
+  }
+  return { obrazy, elementy };
 }
 
 /** Ostatni zaplanowany zapis dowolnego projektu – lista projektów czeka na niego przed odczytem. */
@@ -269,6 +301,7 @@ export function useProjekt(id: string, opcje: { autozapis?: boolean } = {}): Sta
       historia.current = zapamietaj(historia.current, b.projekt);
       odswiezHistorie();
       ustawWersje((w) => w + 1);
+      const przed = b.projekt;
       b.projekt = wynik.projekt;
       b.dane = new Map([...b.dane, ...wynik.dane]);
       b.brudny = true;
@@ -279,6 +312,17 @@ export function useProjekt(id: string, opcje: { autozapis?: boolean } = {}): Sta
         await zapiszTeraz();
       } else {
         ustawZapis({ stan: 'niezapisane' });
+        // Zapis ręczny (Edytor kart): wgrane pliki trafiają do biblioteki od razu, nie dopiero
+        // przy zapisie projektu – ten sam plik to istniejący wpis (odwołania przepisane).
+        try {
+          const mapy = await dodajNoweDoBiblioteki(przed, b.projekt, b.dane);
+          if ((mapy.obrazy.size > 0 || mapy.elementy.size > 0) && biezacy.current === b) {
+            b.projekt = przepiszZasobyProjektu(b.projekt, mapy.obrazy, mapy.elementy);
+            odswiez();
+          }
+        } catch (e) {
+          console.warn('Biblioteka: dodanie wgranych plików nie powiodło się', e);
+        }
       }
     },
     [zapiszTeraz],
@@ -314,7 +358,13 @@ export function useProjekt(id: string, opcje: { autozapis?: boolean } = {}): Sta
   );
   // Własne elementy ozdobne osobno od zasobów: edycja biblioteki nie odtwarza czcionek, ale
   // dostaje nowy obiekt zasobów (pamięć wyrenderowanych kart kartki jest wtedy unieważniana).
-  const elementy = biblioteka?.ozdobniki;
+  // Elementy biblioteki dodane lub zmienione po otwarciu projektu (np. w innej karcie, na stronie
+  // Biblioteki) – od razu w podglądzie, bez ponownego wczytania projektu.
+  const zywe = useElementyOzdobne().wlasne;
+  const elementy = useMemo(
+    () => polaczElementy(biblioteka?.ozdobniki ?? [], zywe),
+    [biblioteka, zywe],
+  );
   const zasobyZRolami = useMemo(
     () =>
       zasobyBezElementow && elementy && elementy.length > 0

@@ -23,8 +23,14 @@ import { PanelSeparatora } from './PanelSeparatora';
 import { PanelStylu } from './PanelStylu';
 import { PoleRamki, nazwaElementu } from './PanelWygladu';
 import { ELEMENTY_WBUDOWANE } from '../../ozdobniki/katalog';
+import { GrupyOzdobnikow } from './GrupyOzdobnikow';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
-import { elementyRodzaju, useAdresBiblioteki, useElementyWlasne } from './elementyWlasne';
+import {
+  elementyRodzaju,
+  useAdresBiblioteki,
+  useWyjscieDoBiblioteki,
+  useElementyWlasne,
+} from './elementyWlasne';
 
 type Zmiana = (f: (w: Wezel) => Wezel, klucz?: string) => void;
 type Opcje = readonly { wartosc: string; tekst: string }[];
@@ -65,6 +71,7 @@ export function PanelTypu({
 }) {
   const id = pole.id;
   const adresBiblioteki = useAdresBiblioteki();
+  const wyjdzDoBiblioteki = useWyjscieDoBiblioteki();
   const wlasneElementy = useElementyWlasne();
   const wlasneKsztalty = elementyRodzaju('ksztalt', wlasneElementy);
   const grafikiSvg = [...ELEMENTY_WBUDOWANE, ...wlasneElementy].filter((e) => e.kontury.length > 0);
@@ -213,20 +220,25 @@ export function PanelTypu({
                 aria-labelledby={`ksztalt-el-${id}`}
                 data-testid="wybor-ksztaltu"
               >
-                {wlasneKsztalty.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    aria-pressed={pole.ksztaltElement === e.id}
-                    aria-label={nazwaElementu(e)}
-                    onClick={() => ustaw({ ksztaltElement: e.id })}
-                  >
-                    <MiniaturaOzdobnika element={e} />
-                    <small>{nazwaElementu(e)}</small>
-                  </button>
-                ))}
+                <GrupyOzdobnikow
+                  elementy={wlasneKsztalty}
+                  render={(e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      aria-pressed={pole.ksztaltElement === e.id}
+                      aria-label={nazwaElementu(e)}
+                      onClick={() => ustaw({ ksztaltElement: e.id })}
+                    >
+                      <MiniaturaOzdobnika element={e} />
+                      <small>{nazwaElementu(e)}</small>
+                    </button>
+                  )}
+                />
               </div>
-              <a href={adresBiblioteki}>{t('biblioteka.otworz')}</a>
+              <a href={adresBiblioteki} onClick={wyjdzDoBiblioteki}>
+                {t('biblioteka.otworz')}
+              </a>
             </div>
           )}
         </>
@@ -379,20 +391,25 @@ export function PanelTypu({
                 aria-labelledby={`ikona-el-${id}`}
                 data-testid="wybor-ikony-svg"
               >
-                {grafikiSvg.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    aria-pressed={pole.element === e.id}
-                    aria-label={nazwaElementu(e)}
-                    onClick={() => ustaw({ element: e.id })}
-                  >
-                    <MiniaturaOzdobnika element={e} />
-                    <small>{nazwaElementu(e)}</small>
-                  </button>
-                ))}
+                <GrupyOzdobnikow
+                  elementy={grafikiSvg}
+                  render={(e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      aria-pressed={pole.element === e.id}
+                      aria-label={nazwaElementu(e)}
+                      onClick={() => ustaw({ element: e.id })}
+                    >
+                      <MiniaturaOzdobnika element={e} />
+                      <small>{nazwaElementu(e)}</small>
+                    </button>
+                  )}
+                />
               </div>
-              <a href={adresBiblioteki}>{t('biblioteka.otworz')}</a>
+              <a href={adresBiblioteki} onClick={wyjdzDoBiblioteki}>
+                {t('biblioteka.otworz')}
+              </a>
               {wybranySvg?.kolorowanie === 'oryginal' && (
                 <p className="podpis">{t('ikona.kolorWlasnyInfo')}</p>
               )}

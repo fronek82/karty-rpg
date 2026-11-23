@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { gotowyUklad, karta, srodek } from './pomoc';
 import { PODKLAD, obszar, polozenie, przesun, pxNaMm, swobodny, uchwyt } from './swobodnyUI';
-import { dodaj, kreator, panel, sekcja, zaznacz } from './szablonUI';
+import { doBibliotekiOzdobnikow, dodaj, kreator, panel, sekcja, zaznacz } from './szablonUI';
 
 /**
  * UI-7: zrzuty edytorów w nowej palecie do docs/obrazy (tylko przy ZRZUTY=1). Edytory są
@@ -73,8 +73,7 @@ test('biblioteka ozdobników, ciemny', async ({ page }: { page: Page }) => {
     uklad: 'Pusta karta',
   });
   await dodaj(page, 'Wartość w kształcie', 'Siła');
-  await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
-  await expect(page.getByTestId('lista-wlasnych')).toBeAttached();
+  await doBibliotekiOzdobnikow(page);
   await page.getByTestId('plik-svg').setInputFiles('testy/zasoby/gwiazdka.svg');
   await expect(page.getByTestId('podglad-elementu')).toBeVisible();
   await page

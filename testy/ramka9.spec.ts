@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { karta, kreator, panel, sekcja } from './szablonUI';
 
-/** M2b-7: ramka 9-slice – import PNG do biblioteki, edytor wcięć, użycie jako ramka karty. */
+/** M2b-7, N8: ramka 9-slice – import PNG do biblioteki użytkownika, edytor wcięć, użycie jako ramka karty. */
 
 test.use({ viewport: { width: 1440, height: 1250 } });
 
@@ -19,10 +19,12 @@ test('ramka 9-slice z PNG: edytor wcięć, podglądy, dpi i użycie w panelu Ram
   const rodzaj = (await sekcja(page, 'Ramka karty')).getByLabel('Ramka karty', { exact: true });
   await expect(rodzaj.locator('option[value="obraz"]')).toBeDisabled();
 
+  // N8: biblioteka użytkownika – strona Biblioteki → Ozdobniki z powrotem do edytora.
   await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
+  await expect(page).toHaveURL(/#\/biblioteki\/ozdobniki\?powrot=/);
   await page.getByTestId('plik-png').setInputFiles('testy/zasoby/ramka-testowa.png');
-  const lista = page.getByTestId('lista-wlasnych');
-  await expect(lista.getByRole('button', { name: /ramka-testowa/ })).toHaveAttribute(
+  const siatka = page.getByTestId('siatka-biblioteki');
+  await expect(siatka.getByRole('button', { name: 'ramka-testowa', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
@@ -101,8 +103,8 @@ test('ramka 9-slice z PNG: edytor wcięć, podglądy, dpi i użycie w panelu Ram
     await page.screenshot({ path: 'docs/obrazy/m2b-7-ramka-9slice.png' });
   }
 
-  // Użycie: rodzaj „z obrazu” w panelu Ramka karty.
-  await page.goBack();
+  // Użycie: rodzaj „z obrazu” w panelu Ramka karty („Gotowe” wraca do edytora).
+  await page.getByTestId('biblioteka-gotowe').click();
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
   await karta(page);
   const r2 = await sekcja(page, 'Ramka karty');

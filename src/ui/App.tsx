@@ -100,7 +100,7 @@ export function App() {
   const podtrasa = dopasowanie?.[2] ?? '';
   const gra = /^\/gra\/([^/]+)$/.exec(trasa)?.[1];
   // „Biblioteki” (N7): `#/biblioteki` = pierwsza zakładka (Obrazy).
-  const biblioteka = /^\/biblioteki(?:\/([^/]*))?$/.exec(trasa);
+  const biblioteka = /^\/biblioteki(?:\/([^/?]*))?(?:\?(.*))?$/.exec(trasa);
   // Dawne trasy (lista projektów, arkusze pakietu) – teraz wszystko jest na starcie.
   const dawna = trasa === '/projekty' || trasa === '/arkusze';
   useEffect(() => {
@@ -160,7 +160,7 @@ export function App() {
           </Leniwa>
         ) : biblioteka ? (
           <Leniwa>
-            <Biblioteki zakladka={biblioteka[1] ?? 'obrazy'} />
+            <Biblioteki zakladka={biblioteka[1] || 'obrazy'} zapytanie={biblioteka[2]} />
           </Leniwa>
         ) : wlasne ? (
           <Leniwa>

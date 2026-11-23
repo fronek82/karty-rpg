@@ -2605,23 +2605,7 @@ button.maly {
   box-shadow: inset 0 -3px 0 var(--obramowanie-pola);
 }
 
-/* Biblioteka ozdobników projektu (własne SVG). */
-.biblioteka-ozdobnikow {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-.biblioteka-ozdobnikow .pasek-gorny .okruszek {
-  color: var(--pasek-tekst);
-}
-.uklad-biblioteki {
-  display: grid;
-  grid-template-columns: minmax(260px, 340px) minmax(320px, 960px);
-  gap: 1.25rem;
-  padding: 1.25rem;
-  align-items: start;
-}
-.panel-biblioteki,
+/* Panele biblioteki ozdobników (import SVG, szczegóły ozdobnika na stronie Biblioteki). */
 .panel-importu {
   background: var(--tlo-panelu);
   border: 1px solid var(--obramowanie);
@@ -2631,15 +2615,8 @@ button.maly {
   flex-direction: column;
   gap: 0.6rem;
 }
-.panel-biblioteki h2,
-.panel-importu h2,
-.panel-biblioteki h3 {
+.panel-importu h2 {
   margin: 0;
-}
-.panel-biblioteki h3 {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--tekst-przygaszony);
 }
 .lista-biblioteki {
   list-style: none;
@@ -3715,4 +3692,61 @@ button.maly {
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.4rem;
+}
+
+/* N8: podpisy grup „Systemowe” / „Moja biblioteka” w siatkach wyboru ozdobników. */
+.wybor-narozniki .grupa-ozdobnikow {
+  grid-column: 1 / -1;
+  font-size: 0.8em;
+  color: var(--tekst-przygaszony);
+  margin-top: 4px;
+}
+
+/* N8: strona Biblioteki – „Gotowe”, systemowe ozdobniki, siatka z panelem szczegółów. */
+.naglowek-biblioteki {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+}
+.naglowek-biblioteki h1 {
+  margin: 0;
+}
+.narzedzia-biblioteki label.przycisk {
+  cursor: pointer;
+}
+.ozdobniki-systemowe {
+  width: 100%;
+  text-align: left;
+}
+.ozdobniki-systemowe .lista-biblioteki .miniatury {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+button.podglad-biblioteki {
+  border: 1px solid transparent;
+  padding: 0;
+  cursor: pointer;
+}
+button.podglad-biblioteki[aria-pressed='true'] {
+  border-color: var(--zaznaczenie);
+  box-shadow: 0 0 0 1px var(--zaznaczenie);
+}
+.uklad-strony-biblioteki.ze-szczegolami {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+  gap: 1rem;
+  width: 100%;
+  align-items: start;
+  text-align: left;
+}
+.uklad-strony-biblioteki.ze-szczegolami > p {
+  grid-column: 1 / -1;
+}
+@media (max-width: 52rem) {
+  .uklad-strony-biblioteki.ze-szczegolami {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -124,6 +124,21 @@ Parametry: skala, kolor (jednolity), grubość, odstęp od krawędzi.
 ### Zestawy stylów
 Gotowe komplety jednym kliknięciem, np. „Elficki” (pnącza + liście + gwiazdki), „Krasnoludzki” (runy + łańcuch + okucia).
 
+### Biblioteka użytkownika (N8)
+Jedna biblioteka w przeglądarce, wspólna dla wszystkich projektów: ozdobniki (także ikony SVG
+i ramki 9-slice), obrazy i czcionki. Projekt, szablon i rewers trzymają tylko odwołania (id
+elementu i obrazu, rodzina i wariant czcionki); nie ma osobnej biblioteki projektu.
+- **Wybór w edytorze:** dwie grupy – „Systemowe” (wbudowane ozdobniki i czcionki) i „Moja biblioteka”.
+- **Dodawanie:** wgranie pliku w edytorze, w danych kart, na stronie Biblioteki czy przy imporcie
+  liczy skrót treści – ten sam plik to jeden wpis (zwracane jest id istniejącego).
+- **Przenośność:** eksport projektu, szablonu i rewersu dołącza kopie użytych zasobów (format
+  plików bez zmian); import dodaje je do biblioteki z deduplikacją (id, potem skrót)
+  i przemapowaniem odwołań.
+- **Zarządzanie:** strona „Biblioteki” (zakładki Ozdobniki / Obrazy / Czcionki): dodawanie, nazwa,
+  podgląd, pobieranie, usuwanie. Usunięcie wpisu używanego w projektach – najpierw ostrzeżenie
+  z ich nazwami; potem w tych projektach rysuje się zastępczy rysunek (szary prostokąt
+  z przekątnymi; dla ramek i motywów – linia przerywana), a brakująca czcionka – zapasowa.
+
 ---
 
 ## 6. Tworzenie szablonów

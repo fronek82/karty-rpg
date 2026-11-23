@@ -5,6 +5,7 @@ import type { Pole, PoleSeparator } from '../../model/szablon';
 import { ODSTEP_OZDOBY_DOMYSLNY, znajdzElement, type ElementOzdobny } from '../../ozdobniki';
 import { elementyRodzaju, useElementyWlasne } from './elementyWlasne';
 import { Liczba, Lista, PoleKoloru, Przelacznik, Sekcja } from './Kontrolki';
+import { GrupyOzdobnikow } from './GrupyOzdobnikow';
 import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
 import { nazwaElementu } from './PanelWygladu';
 
@@ -38,19 +39,22 @@ function WyborOzdoby({
           <span aria-hidden="true">–</span>
           <small>{t('separator.brak')}</small>
         </button>
-        {elementy.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            aria-pressed={wartosc?.element === e.id}
-            aria-label={nazwaElementu(e)}
-            style={{ color: kolor }}
-            onClick={() => zmien({ element: e.id, rozmiar: wartosc?.rozmiar ?? 2.4 })}
-          >
-            <MiniaturaOzdobnika element={e} />
-            <small>{nazwaElementu(e)}</small>
-          </button>
-        ))}
+        <GrupyOzdobnikow
+          elementy={elementy}
+          render={(e) => (
+            <button
+              key={e.id}
+              type="button"
+              aria-pressed={wartosc?.element === e.id}
+              aria-label={nazwaElementu(e)}
+              style={{ color: kolor }}
+              onClick={() => zmien({ element: e.id, rozmiar: wartosc?.rozmiar ?? 2.4 })}
+            >
+              <MiniaturaOzdobnika element={e} />
+              <small>{nazwaElementu(e)}</small>
+            </button>
+          )}
+        />
       </div>
       {wartosc && (
         <Liczba
@@ -122,19 +126,22 @@ export function PanelSeparatora({
         <div className="pole-panelu">
           <span id={idMotywu}>{t('motywy.tytul')}</span>
           <div className="wybor-narozniki" role="group" aria-labelledby={idMotywu}>
-            {elementyRodzaju('motyw', wlasne).map((e) => (
-              <button
-                key={e.id}
-                type="button"
-                aria-pressed={rysunek.motyw === e.id}
-                aria-label={nazwaElementu(e)}
-                style={{ color: kolor }}
-                onClick={() => ustaw({ rysunek: { ...rysunek, motyw: e.id } })}
-              >
-                <MiniaturaOzdobnika element={e} />
-                <small>{nazwaElementu(e)}</small>
-              </button>
-            ))}
+            <GrupyOzdobnikow
+              elementy={elementyRodzaju('motyw', wlasne)}
+              render={(e) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  aria-pressed={rysunek.motyw === e.id}
+                  aria-label={nazwaElementu(e)}
+                  style={{ color: kolor }}
+                  onClick={() => ustaw({ rysunek: { ...rysunek, motyw: e.id } })}
+                >
+                  <MiniaturaOzdobnika element={e} />
+                  <small>{nazwaElementu(e)}</small>
+                </button>
+              )}
+            />
           </div>
           <Liczba
             etykieta={t('separator.szerokoscMotywu')}

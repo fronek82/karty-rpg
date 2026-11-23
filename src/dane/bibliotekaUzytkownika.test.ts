@@ -3,7 +3,8 @@ import 'fake-indexeddb/auto';
 import { readFileSync } from 'node:fs';
 import Dexie from 'dexie';
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { DaneZasobow, OpisObrazu, Projekt } from '../model/projekt';
+import type { DaneZasobow, OpisCzcionki, OpisObrazu, Projekt } from '../model/projekt';
+import { zbudujPdf, type ZadaniePdf } from '../druk/budowaPdf';
 import { czyKontener } from '../model/szablon';
 import { importujSvg } from '../ozdobniki';
 import { pakietMausritter } from '../pakiety/mausritter';
@@ -279,4 +280,110 @@ describe('migracja do biblioteki użytkownika (baza w wersji 4)', () => {
     await sprawdzWynik(baza);
     baza.zamknij();
   });
+});
+
+describe('czcionki w bibliotece użytkownika', () => {
+  const CINZEL = new Uint8Array(readFileSync('public/czcionki/CinzelDecorative-Bold.ttf'));
+  const opisCzcionki = (id: string): OpisCzcionki => ({
+    rodzaj: 'czcionka',
+    id,
+    nazwa: 'CinzelDecorative-Bold.ttf',
+    rodzina: 'Cinzel Decorative',
+    wariant: 'pogrubiony',
+    format: 'ttf',
+    zrodlo: 'wlasna',
+  });
+
+  it('migracja przenosi czcionki z dwóch projektów bez duplikatów', async () => {
+    const nazwa = 'n8-migracja-czcionek';
+    const stara = new Dexie(nazwa);
+    stara.version(4).stores({
+      projekty: 'id, zmieniono',
+      zasoby: '[projektId+id], projektId',
+      miniatury: 'id',
+      uklady: 'id, nazwa',
+      bibliotekaGlobalna: 'id, rodzaj',
+      paczkiBiblioteki: 'id',
+    });
+    for (const [id, idCzcionki] of [
+      ['pF1', 'czcionka-cinzel'],
+      ['pF2', 'czcionka-cinzel-2'],
+    ] as const) {
+      const p: Projekt = {
+        ...structuredClone(wzor),
+        id,
+        zasoby: [...wzor.zasoby, opisCzcionki(idCzcionki)],
+        role: { ...wzor.role, tytul: 'Cinzel Decorative' },
+      };
+      await stara.table('projekty').add({ id, zmieniono: p.zmieniono, projekt: p });
+      await stara
+        .table('zasoby')
+        .bulkAdd([
+          ...[...wzorZasoby].map(([z, dane]) => ({ projektId: id, id: z, dane })),
+          { projektId: id, id: idCzcionki, dane: CINZEL },
+        ]);
+    }
+    stara.close();
+    const baza = new BazaProjektow(nazwa);
+    const czcionki = await baza.wpisyBiblioteki('czcionka');
+    expect(czcionki).toHaveLength(1);
+    expect(czcionki[0]!.opis).toMatchObject({ rodzina: 'Cinzel Decorative', zrodlo: 'wlasna' });
+    for (const id of ['pF1', 'pF2']) {
+      const { projekt, zasoby } = await baza.wczytaj(id);
+      const f = projekt.zasoby.filter(
+        (z) => z.rodzaj === 'czcionka' && z.rodzina === 'Cinzel Decorative',
+      );
+      expect(f).toHaveLength(1);
+      expect(zasoby.get(f[0]!.id)).toEqual(CINZEL);
+      const dok = (await baza.migawka([id]))[0]!.projekt.projekt;
+      expect(dok.zasoby.every((z) => z.rodzaj === 'czcionka' && z.zrodlo === 'wbudowana')).toBe(
+        true,
+      );
+    }
+    baza.zamknij();
+  });
+
+  it('czcionka z biblioteki działa w PDF innego projektu', async () => {
+    const baza = new BazaProjektow('n8-czcionka-pdf');
+    await baza.dodajZasobDoBiblioteki(opisCzcionki('czcionka-cinzel'), CINZEL);
+    const p: Projekt = {
+      ...structuredClone(wzor),
+      id: 'pPdf',
+      role: { ...wzor.role, tytul: 'Cinzel Decorative' },
+    };
+    await baza.zapisz(p, wzorZasoby);
+    const { projekt, zasoby } = await baza.wczytaj('pPdf');
+    const zadanie = (bezBiblioteki: boolean): ZadaniePdf => ({
+      tytul: 'test',
+      arkusze: projekt.arkusze.slice(0, 1),
+      talie: projekt.talie,
+      szablony: projekt.szablony,
+      czcionki: projekt.zasoby.flatMap((z) =>
+        z.rodzaj === 'czcionka' && !(bezBiblioteki && z.zrodlo !== 'wbudowana')
+          ? [{ id: z.id, rodzina: z.rodzina, wariant: z.wariant, dane: zasoby.get(z.id)! }]
+          : [],
+      ),
+      role: projekt.role,
+      zapasowa: projekt.role.tresc!,
+      obrazy: projekt.zasoby.flatMap((z) =>
+        z.rodzaj === 'obraz'
+          ? [
+              {
+                id: z.id,
+                info: { szerokosc: z.szerokosc, wysokosc: z.wysokosc },
+                dane: zasoby.get(z.id)!,
+                format: z.format,
+              },
+            ]
+          : [],
+      ),
+    });
+    expect(zadanie(false).czcionki.some((c) => c.rodzina === 'Cinzel Decorative')).toBe(true);
+    const zBiblioteka = await zbudujPdf(zadanie(false));
+    const bez = await zbudujPdf(zadanie(true));
+    expect(new TextDecoder().decode(zBiblioteka.subarray(0, 5))).toBe('%PDF-');
+    // Napisy tytułów rysowane krojem z biblioteki – inne glify niż krojem zapasowym.
+    expect(zBiblioteka.length).not.toBe(bez.length);
+    baza.zamknij();
+  }, 30_000);
 });

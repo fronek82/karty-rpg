@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react';
-import { zmienElementBiblioteki } from '../../dane/biblioteka';
 import { formatujLiczbe, t } from '../../i18n';
 import {
   MIN_DPI_RAMKI,
@@ -9,7 +8,7 @@ import {
 } from '../../ozdobniki';
 import { konturNaD } from '../../silnik/svg';
 import { Liczba } from '../szablon/Kontrolki';
-import type { ProjektWEdycji } from '../useProjekt';
+import type { ZasobyPakietu } from '../zasoby';
 import { KOLOR_PODGLADU, podgladElementu } from './podgladElementu';
 import { zaokraglij } from '../../model/geometria';
 
@@ -150,18 +149,20 @@ function LiniaWciecia({
  */
 export function EdytorRamki9({
   element,
-  edycja,
+  zmien,
+  zasoby,
 }: {
   element: ElementOzdobny;
-  edycja: ProjektWEdycji;
+  /** Zapis zmienionego elementu (biblioteka użytkownika); `klucz` – seria zmian jednego pola. */
+  zmien: (e: ElementOzdobny, klucz?: string) => void;
+  /** Czcionki i obrazy do podglądów (obraz ramki z PNG pod id `ramka9.zrodlo.zasob`). */
+  zasoby: Pick<ZasobyPakietu, 'czcionki' | 'obrazy' | 'elementy'>;
 }) {
-  const { zmien } = edycja;
   const u = element.ramka9;
   const pojemnik = useRef<HTMLDivElement>(null);
   const [jednakowe, ustawJednakowe] = useState(false);
   const png = u?.zrodlo.typ === 'obraz';
   const [grubosc, ustawGrubosc] = useState(png ? 2.5 : 4);
-  const zasoby = edycja.zasoby.zasoby;
   const adres = u?.zrodlo.typ === 'obraz' ? zasoby.obrazy.get(u.zrodlo.zasob)?.adres : undefined;
   const jednostka = t(png ? 'biblioteka.ramka9.jednostkaPx' : 'biblioteka.ramka9.jednostkaSvg');
 
@@ -182,10 +183,7 @@ export function EdytorRamki9({
   if (!u) return null;
 
   const zmienUstawienia = (z: Partial<UstawieniaRamki9>, klucz?: string) =>
-    zmien(
-      (p) => zmienElementBiblioteki(p, element.id, { ramka9: { ...u, ...z } }),
-      klucz ? { klucz } : undefined,
-    );
+    zmien({ ...element, ramka9: { ...u, ...z } }, klucz);
   // „Takie same na wszystkich bokach”: samo zaznaczenie niczego nie zmienia (poprzednie wartości
   // zostają, aż do pierwszej zmiany); dopiero zmiana ustawia wszystkie cztery wcięcia naraz.
   const ustawWciecie = (strona: Strona, v: number) => {

@@ -158,11 +158,10 @@ describe('tn() – liczba mnoga', () => {
     expect(k(25)).toContain('25 kart');
   });
 
-  it('polski: biblioteka.limit – własny element / własne elementy / własnych elementów', () => {
-    expect(tn('biblioteka.limit', 1)).toContain('1 własny element');
-    expect(tn('biblioteka.limit', 2)).toContain('2 własne elementy');
-    expect(tn('biblioteka.limit', 5)).toContain('5 własnych elementów');
-    expect(tn('biblioteka.limit', 22)).toContain('22 własne elementy');
+  it('polski: dane.zaDuzoElementow – limit 1 elementu / 5 elementów', () => {
+    expect(tn('dane.zaDuzoElementow', 1)).toContain('limit 1 elementu');
+    expect(tn('dane.zaDuzoElementow', 5)).toContain('limit 5 elementów');
+    expect(tn('dane.zaDuzoElementow', 22)).toContain('limit 22 elementów');
   });
 
   it('angielski: one / other', () => {
@@ -170,8 +169,8 @@ describe('tn() – liczba mnoga', () => {
     const k = (n: number) => tn('mieszane.zajete', n, { numer: 1, liczba: 2, procent: 50 });
     expect(k(1)).toBe('Page 1 of 2 · 1 card · 50% of the card area used');
     expect(k(2)).toBe('Page 1 of 2 · 2 cards · 50% of the card area used');
-    expect(tn('biblioteka.limit', 1)).toContain('1 custom element.');
-    expect(tn('biblioteka.limit', 2)).toContain('2 custom elements.');
+    expect(tn('dane.zaDuzoElementow', 1)).toContain('limit of 1 element.');
+    expect(tn('dane.zaDuzoElementow', 2)).toContain('limit of 2 elements.');
   });
 
   it('parametr {n} jest liczbą w bieżącym języku (separator tysięcy)', () => {

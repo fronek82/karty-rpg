@@ -471,24 +471,26 @@
           </ol>
           <h3 id="pl-wlasne-svg">Własne SVG i biblioteka ozdobników</h3>
           <ol>
-            <li>Na pasku edytora szablonu kliknij link „Biblioteka”.</li>
+            <li>
+              Na pasku edytora szablonu kliknij link „Biblioteka” (albo „Otwórz bibliotekę
+              ozdobników…” w panelu właściwości). Otworzy się zakładka „Ozdobniki” strony
+              „Biblioteki”, a „Gotowe” wraca do edytora.
+            </li>
             <li>
               Kliknij „Importuj SVG…” i wybierz plik. Aplikacja sprawdza plik: usuwa skrypty, obrazy
               i odwołania do zewnętrznych plików. Tekst trzeba zamienić na krzywe, a plik może mieć
-              do 512 KB.
+              do 512 KB. Nowy ozdobnik od razu jest zaznaczony.
             </li>
             <li>
               W „Użyj jako” wskaż, do czego element służy: „motyw”, „narożnik”, „zakończenie”,
-              „środek separatora”, „kształt wartości” albo „ramka 9-slice”.
-            </li>
-            <li>
-              W „Kolor” wybierz „jednolity (kolorowalny)” albo „zachowaj kolory” i kliknij „Dodaj do
-              biblioteki”.
+              „środek separatora”, „kształt wartości” albo „ramka 9-slice”. W „Kolor” wybierz
+              „jednolity (kolorowalny)” albo „zachowaj kolory”. Zmiany zapisują się od razu.
             </li>
           </ol>
           <p>
-            Elementy z biblioteki są częścią projektu. Są zapisane w eksporcie projektu i w pliku
-            szablonu.
+            Ozdobniki z biblioteki są dostępne we wszystkich projektach: w każdym wyborze ozdobnika
+            są dwie grupy, „Systemowe” i „Moja biblioteka”. Eksport projektu i plik szablonu
+            zabierają kopie użytych ozdobników, a import dodaje je do biblioteki bez duplikatów.
           </p>
           <h3 id="pl-ramka-9slice">Ramka 9-slice</h3>
           <p>
@@ -984,8 +986,9 @@
           <ul>
             <li>
               „Eksportuj” na górnym pasku w widoku „Drukuj karty” albo przy projekcie na liście
-              „Moje projekty” zapisuje plik <code>.kartyrpg</code>. Są w nim karty, szablony,
-              biblioteka ozdobników, czcionki i obrazy projektu.
+              „Moje projekty” zapisuje plik <code>.kartyrpg</code>. Są w nim karty, szablony oraz
+              kopie ozdobników, czcionek i obrazów, których projekt używa. Import dodaje je do
+              biblioteki (ten sam plik nie pojawi się w niej drugi raz).
             </li>
             <li>
               Na ekranie startowym kliknij „Importuj pliki…” albo przeciągnij pliki na pole
@@ -1037,12 +1040,16 @@
           <h3 id="pl-biblioteki">Biblioteki: obrazy, czcionki i ozdobniki</h3>
           <p>
             Link „Biblioteki” w górnym pasku (obok menu „Ustawienia”) otwiera zasoby zapisane w tej
-            przeglądarce, wspólne dla wszystkich projektów. Zakładki „Obrazy”, „Czcionki” i
-            „Ozdobniki” mają ten sam układ: przycisk „Dodaj…”, pole wyszukiwania po nazwie i
-            podglądy na środku strony.
+            przeglądarce, wspólne dla wszystkich projektów. To jedna biblioteka: obraz wgrany w
+            edytorze, czcionka dodana w panelu wyglądu i ozdobnik zaimportowany tutaj są od razu
+            dostępne w każdym projekcie. Zakładki „Obrazy”, „Czcionki” i „Ozdobniki” mają ten sam
+            układ: przycisk „Dodaj…”, pole wyszukiwania po nazwie i podglądy. Przy każdym podglądzie
+            są przyciski „Zmień nazwę”, „Pobierz” i „Usuń”.
           </p>
           <ul>
-            <li>„Obrazy” to pliki PNG i JPG. Każdy nowy projekt dostaje je od razu w zasobach.</li>
+            <li>
+              „Obrazy” to pliki PNG i JPG. Ten sam plik wgrany drugi raz nie tworzy nowego wpisu.
+            </li>
             <li>
               „Czcionki” pokazują próbkę tekstu każdym krojem. Dodasz pliki TTF, OTF i WOFF albo
               krój z „Katalog Google Fonts”. Czcionki z biblioteki są na listach czcionek we
@@ -1050,14 +1057,15 @@
             </li>
             <li>
               „Ozdobniki” to ozdobniki i ramki: plik SVG, PNG (ramka 9-slice z wcięciami po trzecim)
-              albo paczka <code>.kartyrpg-ozdobnik</code>. „Eksportuj” zapisuje paczkę do pliku. Do
-              projektu ozdobnik wstawisz w bibliotece ozdobników projektu: rozwiń „Globalna
-              biblioteka ozdobników” i kliknij „Użyj”. Tam też „Zapisz w bibliotece globalnej”
-              zachowuje ozdobnik projektu na później.
+              albo paczka <code>.kartyrpg-ozdobnik</code>. „Pobierz” zapisuje paczkę do pliku.
+              Kliknięcie podglądu otwiera ustawienia ozdobnika: rodzaj, kolor, nazwę, prostokąt na
+              tekst kształtu i wcięcia ramki 9-slice. Ozdobniki systemowe są widoczne do wglądu.
             </li>
             <li>
-              „Usuń” działa od razu, bez pytania. Na dole ekranu pojawia się pasek z przyciskiem
-              „Cofnij”, który przywraca wpis. Kopie dodane już do projektów zostają.
+              „Usuń” wpisu, którego używa jakiś projekt, najpierw pokazuje nazwy tych projektów i
+              przycisk „Usuń mimo to”. Po usunięciu w tych projektach widać szary prostokąt
+              zastępczy. Na dole ekranu pojawia się pasek z przyciskiem „Cofnij”, który przywraca
+              wpis.
             </li>
           </ul>
           <p>
@@ -1381,24 +1389,26 @@
           </ol>
           <h3 id="en-wlasne-svg">Your own SVG and the ornament library</h3>
           <ol>
-            <li>In the template editor bar, click the “Library” link.</li>
+            <li>
+              In the template editor bar, click the “Library” link (or “Open the ornament library…”
+              in the properties panel). The “Ornaments” tab of the “Libraries” page opens, and
+              “Done” takes you back to the editor.
+            </li>
             <li>
               Click “Import SVG…” and choose a file. The app checks the file and removes scripts,
               images and references to external files. Text has to be converted to outlines, and the
-              file can be up to 512 KB.
+              file can be up to 512 KB. The new ornament is selected right away.
             </li>
             <li>
               Under “Use as”, say what the element is for: “pattern”, “corner”, “end cap”, “divider
-              center”, “value shape” or “9-slice frame”.
-            </li>
-            <li>
-              Under “Color”, choose “solid (recolorable)” or “keep the colors”, then click “Add to
-              the library”.
+              center”, “value shape” or “9-slice frame”. Under “Color”, choose “solid (recolorable)”
+              or “keep the colors”. Changes are saved at once.
             </li>
           </ol>
           <p>
-            Library elements belong to the project. They are included in the project export and in
-            the template file.
+            Library ornaments are available in all projects: every ornament picker has two groups,
+            “System” and “My library”. The project export and the template file carry copies of the
+            ornaments they use, and importing adds them to the library without duplicates.
           </p>
           <h3 id="en-ramka-9slice">The 9-slice frame</h3>
           <p>
@@ -1891,8 +1901,9 @@
           <ul>
             <li>
               “Export” in the top bar of “Print cards”, or next to a project in “My projects”, saves
-              a <code>.kartyrpg</code> file. It holds the cards, templates, ornament library, fonts
-              and images of the project.
+              a <code>.kartyrpg</code> file. It holds the cards, templates and copies of the
+              ornaments, fonts and images the project uses. Importing adds them to the library (the
+              same file never appears in it twice).
             </li>
             <li>
               On the start screen click “Import files…” or drop files on the “Drag files here” area.
@@ -1944,12 +1955,16 @@
           <h3 id="en-biblioteki">Libraries: images, fonts and ornaments</h3>
           <p>
             The “Libraries” link in the top bar (next to the “Settings” menu) opens the resources
-            saved in this browser, shared by all projects. The “Images”, “Fonts” and “Ornaments”
-            tabs share the same layout: an “Add…” button, a search box by name and previews in the
-            middle of the page.
+            saved in this browser, shared by all projects. It is a single library: an image uploaded
+            in the editor, a font added in the appearance panel and an ornament imported here are
+            available in every project right away. The “Images”, “Fonts” and “Ornaments” tabs share
+            the same layout: an “Add…” button, a search box by name and previews. Each preview has
+            “Rename”, “Download” and “Delete” buttons.
           </p>
           <ul>
-            <li>“Images” are PNG and JPG files. Every new project gets them in its resources.</li>
+            <li>
+              “Images” are PNG and JPG files. Uploading the same file again adds no new entry.
+            </li>
             <li>
               “Fonts” show a text sample in each typeface. Add TTF, OTF and WOFF files or a typeface
               from the “Google Fonts catalog”. Library fonts appear in the font lists of all
@@ -1957,14 +1972,15 @@
             </li>
             <li>
               “Ornaments” are ornaments and frames: an SVG file, a PNG (a 9-slice frame with insets
-              at one third) or a <code>.kartyrpg-ozdobnik</code> package. “Export” saves the package
-              to a file. To put an ornament into a project, open the project’s ornament library,
-              expand “Global ornament library” and click “Use”. “Save to global library” there keeps
-              a project ornament for later.
+              at one third) or a <code>.kartyrpg-ozdobnik</code> package. “Download” saves the
+              package to a file. Clicking a preview opens the ornament settings: kind, color, name,
+              the text box of a shape and the insets of a 9-slice frame. System ornaments are shown
+              for reference.
             </li>
             <li>
-              “Delete” works at once, without asking. A bar with an “Undo” button appears at the
-              bottom of the screen and brings the entry back. Copies already added to projects stay.
+              “Delete” on an entry used by a project first shows the names of those projects and a
+              “Delete anyway” button. After deleting, those projects show a grey placeholder. A bar
+              with an “Undo” button appears at the bottom of the screen and brings the entry back.
             </li>
           </ul>
           <p>

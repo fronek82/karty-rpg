@@ -23,8 +23,8 @@ export async function zapiszOzdobnikWBibliotece(bajty: Uint8Array) {
       throw new BladDanych(t('globalna.zlyObraz', { id: opis.id }));
   }
   const nazwa = element.nazwa ?? element.id;
-  await baza().zapiszWBibliotece('ozdobnik', nazwa, bajty);
-  return nazwa;
+  const id = await baza().zapiszWBibliotece('ozdobnik', nazwa, bajty);
+  return { id, nazwa };
 }
 
 async function pobierz(adres: string): Promise<Uint8Array> {

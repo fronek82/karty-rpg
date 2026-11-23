@@ -1,7 +1,16 @@
 import { expect, test } from '@playwright/test';
-import { dodaj, kreator, karta, panel, sekcja, wyglad, zaznacz } from './szablonUI';
+import {
+  doBibliotekiOzdobnikow,
+  dodaj,
+  kreator,
+  karta,
+  panel,
+  sekcja,
+  wyglad,
+  zaznacz,
+} from './szablonUI';
 
-/** M2b-6: biblioteka ozdobników projektu – import własnego SVG i użycie w szablonie. */
+/** M2b-6, N8: biblioteka ozdobników użytkownika – import własnego SVG i użycie w szablonie. */
 
 test.use({ viewport: { width: 1440, height: 1000 } });
 
@@ -15,8 +24,7 @@ test('import SVG: raport „co pominięto”, użycie jako kształt wartości i 
     uklad: 'Pusta karta',
   });
   await dodaj(page, 'Wartość w kształcie', 'Siła');
-  await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
-  await expect(page.getByTestId('lista-wlasnych')).toBeAttached();
+  await doBibliotekiOzdobnikow(page);
 
   // 1. Plik testowy: gwiazdka z otworem (evenodd) jako kształt wartości.
   await page.getByTestId('plik-svg').setInputFiles('testy/zasoby/gwiazdka.svg');
@@ -27,8 +35,8 @@ test('import SVG: raport „co pominięto”, użycie jako kształt wartości i 
   await uzyj.getByRole('button', { name: 'kształt wartości' }).click();
   await page.getByLabel('Nazwa', { exact: true }).fill('Gwiazdka');
   await page.getByRole('button', { name: 'Dodaj do biblioteki' }).click();
-  const lista = page.getByTestId('lista-wlasnych');
-  await expect(lista.getByRole('button', { name: /Gwiazdka/ })).toHaveAttribute(
+  const lista = page.getByTestId('siatka-biblioteki');
+  await expect(lista.getByRole('button', { name: 'Gwiazdka', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
@@ -61,11 +69,17 @@ test('import SVG: raport „co pominięto”, użycie jako kształt wartości i 
     await page.screenshot({ path: 'docs/obrazy/m2b-6-biblioteka-ozdobnikow.png' });
   }
   await page.getByRole('button', { name: 'Dodaj do biblioteki' }).click(); // domyślnie: narożnik
-  await expect(lista.getByRole('button')).toHaveCount(2);
-  await expect(lista.getByRole('button', { name: /Pióro/ })).toContainText('narożnik');
+  await expect(lista.getByRole('listitem')).toHaveCount(2);
+  await expect(lista.getByRole('button', { name: 'Pióro', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(
+    page.getByRole('group', { name: 'Użyj jako' }).getByRole('button', { name: 'narożnik' }),
+  ).toHaveAttribute('aria-pressed', 'true');
 
   // 3. Użycie w szablonie: własny kształt wartości i własny narożnik ramki karty.
-  await page.goBack();
+  await page.getByTestId('biblioteka-gotowe').click();
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
   await zaznacz(page, 'Siła');
   await panel(page).getByLabel('Kształt').selectOption('wlasny');
@@ -86,26 +100,28 @@ test('import SVG: raport „co pominięto”, użycie jako kształt wartości i 
   await r.getByLabel('Ramka karty', { exact: true }).selectOption('linia');
   const naroz = r.getByRole('group', { name: 'Narożniki' });
   await expect(naroz.getByRole('button')).toHaveCount(8); // brak + 6 wbudowanych + własny
+  await expect(naroz.getByTestId('grupa-systemowe')).toHaveText('Systemowe');
+  await expect(naroz.getByTestId('grupa-moja')).toHaveText('Moja biblioteka');
   await naroz.getByRole('button', { name: 'Pióro' }).click();
   await expect(podglad.locator('use[color]')).toHaveCount(4);
   await expect(podglad.locator('defs g[id]')).toHaveCount(1);
 
-  // 4. Usuwanie używanego elementu wymaga potwierdzenia; ozdoba znika, edytor ostrzega.
-  await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
-  await page.getByTestId('lista-wlasnych').getByRole('button', { name: /Pióro/ }).click();
+  // 4. Usuwanie używanego elementu wymaga potwierdzenia (nazwy projektów); ozdoba znika.
+  await doBibliotekiOzdobnikow(page);
+  await lista.getByRole('button', { name: 'Pióro', exact: true }).click();
   await expect(page.getByTestId('uzycie-elementu')).toContainText('Własne SVG');
-  await page.getByRole('button', { name: 'Usuń z biblioteki' }).click();
-  await expect(page.getByRole('alert').filter({ hasText: 'jest używany' })).toBeVisible();
+  await page.getByRole('button', { name: 'Usuń „Pióro” z biblioteki' }).click();
+  await expect(page.getByTestId('ostrzezenie-usuwania')).toContainText('Własne SVG');
   await page.getByRole('button', { name: 'Usuń mimo to' }).click();
-  await expect(page.getByTestId('lista-wlasnych').getByRole('button')).toHaveCount(1);
-  await page.goBack();
+  await expect(lista.getByRole('listitem')).toHaveCount(1);
+  await page.getByTestId('biblioteka-gotowe').click();
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
   await expect(page.locator('.karta-podgladu svg use[color]')).toHaveCount(0);
 });
 
 test('uszkodzone i nieobsługiwane pliki są odrzucane z komunikatem', async ({ page }) => {
   await kreator(page, { nazwa: 'Błędy', format: 'Standard / Poker', uklad: 'Pusta karta' });
-  await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
+  await doBibliotekiOzdobnikow(page);
   const wejscie = page.getByTestId('plik-svg');
   await wejscie.setInputFiles({
     name: 'zly.svg',
@@ -125,5 +141,5 @@ test('uszkodzone i nieobsługiwane pliki są odrzucane z komunikatem', async ({ 
     buffer: Buffer.from(`<svg viewBox="0 0 10 10"><!--${'x'.repeat(600 * 1024)}--></svg>`),
   });
   await expect(page.getByTestId('blad-importu')).toContainText('512 KB');
-  await expect(page.getByTestId('lista-wlasnych').getByRole('button')).toHaveCount(0);
+  await expect(page.getByText('Nie ma jeszcze zapisanych ozdobników.')).toBeVisible();
 });
