@@ -67,12 +67,12 @@ test('globalna ramka z PNG przechodzi między przeglądarkami i zachowuje lokaln
       await panel.scrollIntoViewIfNeeded();
       await nowa.screenshot({ path: 'docs/obrazy/m2c-1-biblioteka-ozdobnikow.png' });
     }
-    nowa.once('dialog', (dialog) => void dialog.accept());
-    await panel
-      .getByRole('button', { name: /Usuń „ramka-testowa” z biblioteki globalnej/ })
-      .click();
-    await expect(panel.getByText('Biblioteka jest pusta.')).toBeVisible();
-    await expect(lokalna).toBeVisible();
+    // Usuwanie wpisu – w „Bibliotekach” (N7), bez potwierdzenia; kopia w projekcie zostaje.
+    const adresProjektu = nowa.url();
+    await nowa.goto('./#/biblioteki/ozdobniki');
+    await nowa.getByRole('button', { name: 'Usuń „ramka-testowa” z biblioteki' }).click();
+    await expect(nowa.getByText('Nie ma jeszcze zapisanych ozdobników.')).toBeVisible();
+    await nowa.goto(adresProjektu);
     await nowa.reload();
     await nowa
       .getByTestId('lista-wlasnych')

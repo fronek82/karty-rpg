@@ -3635,8 +3635,8 @@ button.maly {
   margin: 0;
   padding: 0;
   width: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 13rem));
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 0.9rem;
 }
@@ -3650,7 +3650,8 @@ button.maly {
   border: 1px solid var(--obramowanie);
   border-radius: 0.5rem;
   background: var(--tlo-panelu);
-  min-width: 0;
+  width: 12.5rem;
+  max-width: 100%;
 }
 
 .podglad-biblioteki {

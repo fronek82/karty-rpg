@@ -13,8 +13,8 @@ async function pasek(page: Page) {
   await expect(panel.getByRole('group', { name: 'Język' })).toBeVisible();
   await expect(panel.getByRole('button', { name: 'Motyw ciemny' })).toBeVisible();
   await expect(panel.getByRole('button', { name: 'Motyw jasny' })).toBeVisible();
-  await expect(panel.getByRole('button', { name: 'Wgrywanie czcionek' })).toBeVisible();
-  await expect(panel.getByRole('button', { name: 'Wgrywanie obrazów' })).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Kolory przycisków' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Biblioteki', exact: true })).toBeVisible();
   return panel;
 }
 
