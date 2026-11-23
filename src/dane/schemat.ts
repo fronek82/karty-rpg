@@ -2,12 +2,7 @@ import { z } from 'zod';
 import { t } from '../i18n';
 import { PAPIERY } from '../model/arkusz';
 import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
-import {
-  czyKontener,
-  type Kontener,
-  type Szablon,
-  type Wezel,
-} from '../model/szablon';
+import { czyKontener, type Kontener, type Szablon, type Wezel } from '../model/szablon';
 import { znajdzElement } from '../ozdobniki/katalog';
 import { LIMITY_SVG } from '../ozdobniki/svgImport';
 import { MAKS_ELEMENTOW_BIBLIOTEKI, odwolaniaDoElementow } from './biblioteka';

@@ -1,13 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { tJesliJest, ustawJezyk } from '../i18n';
 import { pakietMausritter } from '../pakiety/mausritter';
-import {
-  nazwaRozmiaru,
-  nazwaTypu,
-  nazwaUkladu,
-  nazwaWariantu,
-  nazwaGryDo,
-} from './nazwyPakietu';
+import { nazwaRozmiaru, nazwaTypu, nazwaUkladu, nazwaWariantu, nazwaGryDo } from './nazwyPakietu';
 import { gry } from '../pakiety/gry';
 
 afterEach(() => ustawJezyk('pl'));
