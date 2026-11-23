@@ -119,6 +119,7 @@ describe('parytet słowników pl ↔ en', () => {
       'kreator.format.tarot',
       'rozmiar.tryb.mm',
       'rozmiar.tryb.procent',
+      'szablon.importujKrotko',
       'polozenie.x',
       'polozenie.y',
       'polozenie.obrot.wartosc',

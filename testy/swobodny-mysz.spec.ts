@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { przeciagnij, srodek } from './pomoc';
+import { przeciagnij, srodek, zapisano } from './pomoc';
 import {
   PODKLAD,
   cofnij,
@@ -194,9 +194,7 @@ test('podkład: pokaż / ukryj, przezroczystość, nie łapie kliknięć i nie t
   await expect(podglad(page).locator('svg image')).toHaveCount(0);
 
   // Wraca po przeładowaniu (zasób projektu); usunięcie zdejmuje podkład.
-  await page.waitForFunction(
-    () => document.querySelector('.status-zapisu')?.textContent === 'Zapisano',
-  );
+  await zapisano(page);
   await page.reload();
   await expect(page.getByTestId('podklad-podgladu')).toBeVisible();
   await expect(page.getByTestId('podklad-podgladu')).toHaveCSS('opacity', '0.2');

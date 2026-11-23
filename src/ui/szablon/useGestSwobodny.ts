@@ -256,7 +256,8 @@ export function useGestSwobodny({
    */
   const domknijZgubiony = (e: PointerReact) => {
     const a = aktywny.current;
-    if (a && a.pointerId === e.pointerId) zakoncz({ pointerId: a.pointerId, shiftKey: false }, false);
+    if (a && a.pointerId === e.pointerId)
+      zakoncz({ pointerId: a.pointerId, shiftKey: false }, false);
   };
   // Safari: Force Click na gładziku (podgląd słownika) przerywa przeciąganie – blokujemy go na karcie.
   useEffect(() => {

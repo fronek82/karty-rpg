@@ -767,7 +767,38 @@ export function kluczTresciRewersuWPaczce(bajty: Uint8Array): string | undefined
  */
 export function importujRewers(bajty: Uint8Array): PaczkaRewersu {
   const { szablon, rewers, ...reszta } = odczytajPlikSzablonu(bajty);
-  return { ...reszta, rewers: szablon ? rewersZSzablonu(szablon) : rewers! };
+  if (!szablon) return { ...reszta, rewers: rewers! };
+  // Plik awersu „na krzyż”: do projektu trafiają tylko zasoby użyte przez powstały rewers
+  // (bez zasobów pominiętego rewersu z pliku i cech awersu, których rewers nie ma).
+  const nowy = rewersZSzablonu(szablon);
+  return { ...przytnijDoStrony(reszta, nowy), rewers: nowy };
+}
+
+/** Czcionki, role, obrazy i ozdobniki paczki ograniczone do tych, których używa `strona`. */
+function przytnijDoStrony(
+  paczka: Omit<PaczkaRewersu, 'rewers'>,
+  strona: Szablon | Rewers,
+): Omit<PaczkaRewersu, 'rewers'> {
+  const role: Record<string, string> = {};
+  const rodziny = new Set<string>();
+  for (const nazwa of new Set(czcionkiSzablonu(strona))) {
+    const rodzina = paczka.role[nazwa];
+    if (rodzina !== undefined) role[nazwa] = rodzina;
+    rodziny.add(rodzina ?? nazwa);
+  }
+  const uzyteElementy = new Set(odwolaniaDoElementow(strona));
+  const biblioteka = (paczka.biblioteka ?? []).filter((e) => uzyteElementy.has(e.id));
+  const obrazy = new Set(zasobyObrazowSzablonu(strona, biblioteka));
+  const zasoby = paczka.zasoby.filter((o) =>
+    o.rodzaj === 'czcionka' ? rodziny.has(o.rodzina) : obrazy.has(o.id),
+  );
+  const ids = new Set(zasoby.map((o) => o.id));
+  return {
+    role,
+    zasoby,
+    dane: new Map([...paczka.dane].filter(([id]) => ids.has(id))),
+    ...(biblioteka.length > 0 ? { biblioteka } : {}),
+  };
 }
 
 /**

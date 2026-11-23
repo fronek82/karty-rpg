@@ -40,8 +40,15 @@
   margin-left: auto;
 }
 
-.pasek-gorny > .narzedzia-paska {
-  margin-left: 0.4rem;
+/* Grupa przycisków paska górnego: mniejszy odstęp w grupie, większy między grupami. */
+.pasek-gorny > .grupa-paska {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pasek-odstep);
+}
+
+.pasek-gorny > :is(.grupa-paska, .narzedzia-paska) + :is(.grupa-paska, .narzedzia-paska) {
+  margin-left: calc(var(--pasek-odstep-grupy) - var(--pasek-odstep));
 }
 
 .przycisk-kontur {
@@ -49,36 +56,36 @@
 }
 
 .przycisk-kontur,
-.pasek-gorny > :is(button, a.przycisk),
+:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk),
 .pasek-gorny .menu-pobierz > button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 2.1rem;
+  height: var(--pasek-wysokosc);
   padding: 0 0.85rem;
   font-weight: 500;
   text-decoration: none;
   color: var(--pasek-tekst);
   background: transparent;
   border: 1.5px solid var(--pasek-tekst);
-  border-radius: 0.4rem;
+  border-radius: var(--pasek-promien);
 }
 
 .przycisk-kontur:hover,
-.pasek-gorny > :is(button, a.przycisk):hover:not(:disabled),
+:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk):hover:not(:disabled),
 .pasek-gorny .menu-pobierz > button:hover:not(:disabled) {
   background: color-mix(in srgb, black 22%, var(--pasek));
   border-color: var(--pasek-tekst);
   color: var(--pasek-tekst);
 }
 
-.pasek-gorny > :is(button, a.przycisk)[aria-pressed='true'],
+:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk)[aria-pressed='true'],
 .pasek-gorny .menu-pobierz > button[aria-expanded='true'] {
   background: color-mix(in srgb, black 32%, var(--pasek));
 }
 
 /* Przycisk główny na pasku (także przycisk menu „Pobierz”): pełne białe tło, tekst w kolorze paska. */
-.pasek-gorny > :is(button, a.przycisk).glowny,
+:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk).glowny,
 .pasek-gorny .menu-pobierz > button.glowny {
   background: var(--pasek-tekst);
   border-color: var(--pasek-tekst);
@@ -86,7 +93,8 @@
   font-weight: 600;
 }
 
-.pasek-gorny > :is(button, a.przycisk).glowny:hover:not(:disabled),
+:is(.pasek-gorny, .pasek-gorny > .grupa-paska)
+  > :is(button, a.przycisk).glowny:hover:not(:disabled),
 .pasek-gorny .menu-pobierz > button.glowny:hover:not(:disabled),
 .pasek-gorny .menu-pobierz > button.glowny[aria-expanded='true'] {
   background: var(--pasek-tekst);
@@ -96,10 +104,10 @@
 
 .seg {
   display: inline-flex;
-  height: 2.1rem;
+  height: var(--pasek-wysokosc);
   overflow: hidden;
   border: 1.5px solid var(--pasek-tekst);
-  border-radius: 0.4rem;
+  border-radius: var(--pasek-promien);
 }
 
 .seg button {
@@ -130,7 +138,7 @@
 }
 
 /* Wyłączone na pasku: pełny biały napis (kontrast), stan pokazuje przerywany obrys. */
-.pasek-gorny > :is(button, a.przycisk):disabled,
+:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(button, a.przycisk):disabled,
 .pasek-gorny .menu-pobierz > button:disabled {
   color: var(--pasek-tekst);
   background: transparent;
@@ -152,7 +160,7 @@
 
 /* Fokus na pasku: biały obrys, widoczny w obu motywach. */
 .naglowek :is(a, button):focus-visible,
-.pasek-gorny > :is(a, button, input):focus-visible,
+:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > :is(a, button, input):focus-visible,
 .pasek-gorny .menu-pobierz > button:focus-visible,
 .pasek-gorny .przycisk-menu-ustawien:focus-visible {
   outline: 3px solid var(--pasek-tekst);

@@ -1256,7 +1256,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--pasek-odstep);
   padding: 0.5rem 1rem;
   /* Wysokość jak przed UI-1 (55,78 px = 3,486 rem przy 16 px): wzorce zrzutów kart zależą od pozycji kartki na stronie. */
   min-height: 3.486328125rem;
@@ -1288,12 +1288,20 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
 .pasek-gorny .nazwa-projektu {
   /* Węższe pole, żeby pasek z grupą narzędzi mieścił się w jednym rzędzie przy 1440 px. */
   width: 11rem;
+  box-sizing: border-box;
+  height: var(--pasek-wysokosc);
+  border-radius: var(--pasek-promien);
   min-width: 0;
   text-overflow: ellipsis;
   /* Ciemniejsze tło pola niż pasek: biały napis zachowuje kontrast 4,5:1 w obu motywach. */
   background: color-mix(in srgb, black 22%, var(--pasek));
   border-color: color-mix(in srgb, var(--pasek-tekst) 55%, var(--pasek));
   color: var(--pasek-tekst);
+}
+
+/* Edytor szablonu ma więcej przycisków na pasku – węższe pole nazwy (pełna nazwa w podpowiedzi). */
+.edytor-szablonu .pasek-gorny .nazwa-projektu {
+  width: 8rem;
 }
 
 .nazwa-projektu:hover {
@@ -1323,7 +1331,7 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   text-decoration: underline;
 }
 
-.pasek-gorny > button.ikonowy {
+:is(.pasek-gorny, .pasek-gorny > .grupa-paska) > button.ikonowy {
   font-size: 1.15rem;
   padding: 0 0.6rem;
 }

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { unzipSync } from 'fflate';
+import { zapisano } from './pomoc';
 import { eksportujSzablon } from '../src/dane/archiwum';
 import { projektZPakietu } from '../src/dane/pakiet';
 import { pakietWlasny } from '../src/dane/wlasneKarty';
@@ -124,7 +125,7 @@ test.describe('układ', () => {
     const poleNazwy = page.getByLabel('Nazwa rewersu');
     await expect(poleNazwy).toBeVisible({ timeout: 15000 });
     await poleNazwy.fill('Rewers ze startu');
-    await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+    await zapisano(page);
 
     await page.goto('./');
     await page.getByRole('tab', { name: 'Moje szablony' }).click();

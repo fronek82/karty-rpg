@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { zapisano } from './pomoc';
 import { dodaj, drzewo, karta, kreator, nazwij, panel, sekcja, zaznacz } from './szablonUI';
 
 /**
@@ -217,7 +218,7 @@ test('swobodny korzeń przeżywa przeładowanie; kotwicę zmienia się strzałka
   await expect(siatka.locator('[role=radio][tabindex="0"]')).toHaveCount(1);
   await page.keyboard.press('ArrowLeft');
   await expect(siatka.getByRole('radio', { name: 'lewy górny róg' })).toBeChecked();
-  await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+  await zapisano(page);
 
   await page.reload();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
@@ -260,7 +261,7 @@ test('kąt dziesiętny obraca scenę, obszar wyboru i uchwyty oraz przetrwa pono
     .poll(async () => (await prostokatMm(page, 'Kierunek')).szer)
     .toBeGreaterThan(przed.szer);
   if (process.env.ZRZUTY_M3_6) await page.screenshot({ path: 'docs/obrazy/m3-6-obrot.png' });
-  await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+  await zapisano(page);
   await page.reload();
   await zaznacz(page, 'Kierunek');
   await expect(kat).toHaveValue('37.5');
