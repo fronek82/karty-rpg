@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { dodajOzdobnikZPaczki, eksportujOzdobnik } from '../../dane/archiwum';
 import { dodajZasoby } from '../../dane/edycja';
 import { MAKS_BAJTOW_OBRAZU, opisObrazu } from '../../dane/obrazy';
@@ -10,12 +10,13 @@ import {
   elementyProjektu,
   noweIdElementu,
   szablonyUzywajace,
+  stabilnyJson,
   usunElementZBiblioteki,
   zmienElementBiblioteki,
 } from '../../dane/biblioteka';
 import { formatujLiczbe, t, tn } from '../../i18n';
 import { NarzedziaPaska } from '../NaglowekAplikacji';
-import { zapiszOzdobnikWBibliotece } from '../bazaUI';
+import { baza, zapiszOzdobnikWBibliotece } from '../bazaUI';
 import { opisBleduImportu } from '../start/importSzablonu';
 import {
   ELEMENTY_WBUDOWANE,
@@ -122,7 +123,8 @@ function Podglad({
  */
 export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
   const { projekt, zmien } = edycja;
-  const wlasne = elementyProjektu(projekt);
+  const biblioteka = projekt.biblioteka;
+  const wlasne = useMemo(() => elementyProjektu({ biblioteka }), [biblioteka]);
   const plik = useRef<HTMLInputElement>(null);
   const plikPng = useRef<HTMLInputElement>(null);
   const [wczytany, ustawWczytany] = useState<Wczytany>();
@@ -133,6 +135,26 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
   const idProjektu = encodeURIComponent(projekt.id);
   const czcionki = edycja.zasoby.zasoby.czcionki;
   const element = wlasne.find((e) => e.id === wybrany);
+
+  // Elementy należą do biblioteki użytkownika (N8): zmiany trafiają do niej od razu (przed
+  // autozapisem projektu), nowe elementy dodaje zapis projektu, usuwa tylko przycisk „Usuń”.
+  const poprzednie = useRef({
+    projekt: projekt.id,
+    elementy: new Map(wlasne.map((e) => [e.id, e])),
+  });
+  useEffect(() => {
+    const przed =
+      poprzednie.current.projekt === projekt.id ? poprzednie.current.elementy : new Map();
+    const teraz = new Map(wlasne.map((e) => [e.id, e]));
+    poprzednie.current = { projekt: projekt.id, elementy: teraz };
+    void (async () => {
+      for (const [id, e] of teraz) {
+        const s = przed.get(id);
+        if (s && s !== e && stabilnyJson(s) !== stabilnyJson(e))
+          await baza().zmienElementBibliotekiUzytkownika(e);
+      }
+    })().catch((e: unknown) => ustawBlad(String(e instanceof Error ? e.message : e)));
+  }, [wlasne, projekt.id]);
 
   const zapiszGlobalnie = async (id: string) => {
     ustawBlad(undefined);
@@ -541,6 +563,9 @@ export function BibliotekaOzdobnikow({ edycja }: { edycja: ProjektWEdycji }) {
                       return;
                     }
                     zmien((p) => usunElementZBiblioteki(p, element.id));
+                    void baza()
+                      .usunZBibliotekiUzytkownika(element.id)
+                      .catch((e: unknown) => ustawBlad(String(e instanceof Error ? e.message : e)));
                     ustawWybrany(undefined);
                     ustawUsuwanie(false);
                   }}

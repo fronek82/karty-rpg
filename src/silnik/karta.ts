@@ -158,6 +158,28 @@ export interface WyrenderowanaKarta {
 }
 
 const CZARNY = '#000000';
+/** Kolor zastępczego rysunku brakującego zasobu (obraz, ikona usunięta z biblioteki). */
+const SZARY_ZASTEPCZY = '#9e9e9e';
+/** Wzór kreski zastępczych obrysów (mm). */
+const KRESKA_ZASTEPCZA: Mm[] = [1.2, 0.8];
+
+/**
+ * Zastępczy rysunek brakującego obrazu lub ikony (np. usuniętej z biblioteki): szary prostokąt
+ * z przerywanym obrysem i przekątnymi – karta rysuje się dalej, a brak widać na podglądzie i w PDF.
+ */
+export function zastepczyProstokat(r: Ramka): ElementSceny[] {
+  if (!(r.szer > 0.3 && r.wys > 0.3)) return [];
+  const obrys = { kolor: SZARY_ZASTEPCZY, grubosc: 0.25, kreska: KRESKA_ZASTEPCZA };
+  const x0 = r.x + 0.15;
+  const y0 = r.y + 0.15;
+  const x1 = r.x + r.szer - 0.15;
+  const y1 = r.y + r.wys - 0.15;
+  return [
+    { typ: 'prostokat', x: x0, y: y0, szer: x1 - x0, wys: y1 - y0, obrys },
+    { typ: 'linia', x1: x0, y1: y0, x2: x1, y2: y1, obrys },
+    { typ: 'linia', x1: x0, y1: y1, x2: x1, y2: y0, obrys },
+  ];
+}
 
 /**
  * Dane karty uzupełnione o wartości domyślne parametrów szablonu.
@@ -399,6 +421,8 @@ export function renderujKarte(
     const info = ctx.obraz?.(zasob);
     if (!info || info.szerokosc <= 0 || info.wysokosc <= 0) {
       ostrzezenia.push({ pole, komunikat: 'brak-obrazu', szczegoly: zasob });
+      // Tekstura ukryta (krycie 0) nie rysuje nic – także zastępczego prostokąta.
+      if (krycie === undefined || krycie > 0) elementy.push(...zastepczyProstokat(r));
       return;
     }
     if (!(r.szer > 0 && r.wys > 0)) return;
@@ -477,7 +501,7 @@ export function renderujKarte(
     wypiszNarozniki(rysujNarozniki(n, ramka, kolor, ctx.elementy), id);
 
   /**
-   * Ozdoba (motyw) na prostokącie. Nieznany motyw: ostrzeżenie i cienka linia ciągła w kolorze
+   * Ozdoba (motyw) na prostokącie. Nieznany motyw: ostrzeżenie i cienka linia przerywana w kolorze
    * ozdoby. Własne narożniki zastępują kostki narożne motywu tylko wtedy, gdy coś narysują
    * (nieznany element albo rozmiar 0 zostawia kostki – róg nie zostaje pusty).
    * Narożniki leżą na tym samym prostokącie co pas (po odsunięciu), kolor domyślny = kolor motywu.
@@ -513,14 +537,14 @@ export function renderujKarte(
         y: obszar.y + 0.15,
         szer: Math.max(0, obszar.szer - 0.3),
         wys: Math.max(0, obszar.wys - 0.3),
-        obrys: { kolor: o.kolor, grubosc: 0.3 },
+        obrys: { kolor: o.kolor, grubosc: 0.3, kreska: KRESKA_ZASTEPCZA },
       });
     }
     if (rogi) wypiszNarozniki(rogi, id);
   };
 
   /**
-   * Ramka 9-slice (PNG albo SVG). Brak elementu albo obrazu: ostrzeżenie i cienka linia ciągła.
+   * Ramka 9-slice (PNG albo SVG). Brak elementu albo obrazu: ostrzeżenie i cienka linia przerywana.
    * PNG o rogach poniżej 300 dpi: ostrzeżenie `niska-rozdzielczosc-ramki` (rysujemy mimo to).
    * Własne narożniki rysujemy nad ramką.
    */
@@ -552,7 +576,7 @@ export function renderujKarte(
         y: obszar.y + 0.15,
         szer: Math.max(0, obszar.szer - 0.3),
         wys: Math.max(0, obszar.wys - 0.3),
-        obrys: { kolor: o.kolor ?? CZARNY, grubosc: 0.3 },
+        obrys: { kolor: o.kolor ?? CZARNY, grubosc: 0.3, kreska: KRESKA_ZASTEPCZA },
       });
     }
     if (w.dpi !== undefined && w.dpi < MIN_DPI_RAMKI)
@@ -1763,7 +1787,13 @@ function rysujPole(
             komunikat: 'nieznany-element-ozdobny',
             szczegoly: pole.element,
           });
-          return [];
+          const bok = Math.min(pole.rozmiar, ramka.szer, ramka.wys);
+          return zastepczyProstokat({
+            x: ramka.x + (ramka.szer - bok) / 2,
+            y: ramka.y + (ramka.wys - bok) / 2,
+            szer: bok,
+            wys: bok,
+          });
         }
         const wypelniaj = pole.szerokosc !== undefined && pole.wysokosc !== undefined;
         const maxSzer = wypelniaj ? ramka.szer : Math.min(pole.rozmiar, ramka.szer);
@@ -2085,7 +2115,7 @@ function rysujPoleObrazu(
   const info = ctx.obraz?.(zasob);
   if (!info || info.szerokosc <= 0 || info.wysokosc <= 0) {
     ostrzezenia.push({ pole: pole.id, komunikat: 'brak-obrazu', szczegoly: zasob });
-    return [];
+    return zasob.trim() !== '' ? zastepczyProstokat(ramka) : [];
   }
   const u = normalizujUstawieniaObrazu(ustawienia);
   const dopasowanie = u.dopasowanie ?? pole.dopasowanie;

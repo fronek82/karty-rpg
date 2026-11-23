@@ -609,7 +609,7 @@ describe('baza IndexedDB', () => {
     expect(await baza.lista()).toEqual([]);
   });
 
-  it('wielokrotny zapis z zasobami zastępuje stare zasoby', async () => {
+  it('zapis bez obrazu zmienia dokument, a obraz zostaje w bibliotece użytkownika', async () => {
     baza = new BazaProjektow('test-zastap');
     await baza.zapisz(projekt, zasoby);
     const bezObrazu = {
@@ -625,7 +625,10 @@ describe('baza IndexedDB', () => {
     }));
     const dane = new Map([...zasoby].filter(([id]) => bezObrazu.zasoby.some((z) => z.id === id)));
     await baza.zapisz(bezObrazu, dane);
-    expect((await baza.wczytaj('p1')).zasoby.size).toBe(dane.size);
+    const wczytany = await baza.wczytaj('p1');
+    // Widok projektu zawiera całą bibliotekę – obraz nie znika razem z ostatnim użyciem.
+    expect(wczytany.zasoby.size).toBe(zasoby.size);
+    expect(wczytany.projekt.szablony).toEqual(bezObrazu.szablony);
   });
 });
 

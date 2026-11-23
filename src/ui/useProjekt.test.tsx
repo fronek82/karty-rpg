@@ -56,7 +56,8 @@ const nowyObraz = (n: string) => ({
     szerokosc: 1,
     wysokosc: 1,
   },
-  dane: new Uint8Array(PNG),
+  // Różne bajty dla różnych nazw – biblioteka deduplikuje identyczne pliki (N8).
+  dane: new Uint8Array([...PNG, ...new TextEncoder().encode(n)]),
 });
 
 async function otworz() {

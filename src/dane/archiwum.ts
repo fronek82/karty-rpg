@@ -23,6 +23,7 @@ import {
   wymiaryPoObrocie,
 } from './obrazy';
 import { czyWbudowany, znajdzElement } from '../ozdobniki/katalog';
+import { elementyUzyteWDokumencie, obrazyUzyteWDokumencie } from './bibliotekaUzytkownika';
 import {
   dolaczElementy,
   elementyProjektu,
@@ -188,12 +189,38 @@ function bajtyZasobu(zasoby: DaneZasobow, id: string): Uint8Array {
   return dane;
 }
 
-/** Eksport całego projektu do jednego pliku `.kartyrpg`. */
+/**
+ * Projekt tylko z zasobami i ozdobnikami, których używa (N8: widok projektu zawiera całą
+ * bibliotekę użytkownika). Zostają czcionki wbudowane, czcionki ról i stylów szablonów, obrazy
+ * dokumentu (szablony, rewersy, podkłady, karty) i ramek 9-slice użytych ozdobników.
+ */
+export function projektDoEksportu(projekt: Projekt): Projekt {
+  const strony = [...projekt.szablony, ...(projekt.rewersy ?? [])];
+  const rodziny = new Set(Object.values(projekt.role));
+  for (const nazwa of strony.flatMap(czcionkiSzablonu)) rodziny.add(projekt.role[nazwa] ?? nazwa);
+  const uzyteElementy = elementyUzyteWDokumencie(projekt);
+  const elementy = elementyProjektu(projekt).filter((e) => uzyteElementy.has(e.id));
+  const obrazy = new Set([...obrazyUzyteWDokumencie(projekt), ...zasobyElementow(elementy)]);
+  const { biblioteka: _b, ...bez } = projekt;
+  void _b;
+  return {
+    ...bez,
+    zasoby: projekt.zasoby.filter((o) =>
+      o.rodzaj === 'czcionka'
+        ? o.zrodlo === 'wbudowana' || rodziny.has(o.rodzina)
+        : obrazy.has(o.id),
+    ),
+    ...(elementy.length > 0 ? { biblioteka: { ozdobniki: elementy } } : {}),
+  };
+}
+
+/** Eksport całego projektu (z użytymi zasobami) do jednego pliku `.kartyrpg`. */
 export function eksportujProjekt(projekt: Projekt, zasoby: DaneZasobow): Uint8Array {
+  const doPliku = projektDoEksportu(projekt);
   return spakuj(
-    projekt,
+    doPliku,
     PLIK_PROJEKTU,
-    projekt.zasoby.map((o) => [o, bajtyZasobu(zasoby, o.id)]),
+    doPliku.zasoby.map((o) => [o, bajtyZasobu(zasoby, o.id)]),
   );
 }
 

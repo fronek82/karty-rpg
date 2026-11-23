@@ -18,7 +18,7 @@ async function pobierz(page: Page, przycisk: Locator) {
   return zPliku(pobranie);
 }
 
-test('globalna ramka z PNG przechodzi między przeglądarkami i zachowuje lokalną kopię po usunięciu wpisu', async ({
+test('globalna ramka z PNG przechodzi między przeglądarkami; usunięcie wpisu usuwa ją z biblioteki użytkownika', async ({
   page,
   browser,
 }) => {
@@ -67,18 +67,17 @@ test('globalna ramka z PNG przechodzi między przeglądarkami i zachowuje lokaln
       await panel.scrollIntoViewIfNeeded();
       await nowa.screenshot({ path: 'docs/obrazy/m2c-1-biblioteka-ozdobnikow.png' });
     }
-    // Usuwanie wpisu – w „Bibliotekach” (N7), bez potwierdzenia; kopia w projekcie zostaje.
+    // Usuwanie wpisu – w „Bibliotekach”. N8: jedna biblioteka użytkownika – ozdobnika nie ma już
+    // też w projekcie (szablony rysują w jego miejscu zastępczy rysunek).
     const adresProjektu = nowa.url();
     await nowa.goto('./#/biblioteki/ozdobniki');
     await nowa.getByRole('button', { name: 'Usuń „ramka-testowa” z biblioteki' }).click();
     await expect(nowa.getByText('Nie ma jeszcze zapisanych ozdobników.')).toBeVisible();
     await nowa.goto(adresProjektu);
     await nowa.reload();
-    await nowa
-      .getByTestId('lista-wlasnych')
-      .getByRole('button', { name: new RegExp(ramka) })
-      .click();
-    await expect(nowa.getByTestId('edytor-ramki9')).toContainText('120×120 px');
+    await expect(
+      nowa.getByTestId('lista-wlasnych').getByRole('button', { name: new RegExp(ramka) }),
+    ).toHaveCount(0);
   } finally {
     await czysta.close();
   }

@@ -16,8 +16,12 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   biblioteki globalnej szablonów, usuwanie z paskiem „Cofnij”, szukanie/sortowanie, „Duplikuj”),
   układ ze zdjęcia w edytorze i menu „Biblioteki” N7 (`docs/plan-N7.md`), wzory tła kart N5
   (`docs/plan-N5.md`: sekcja „Tło karty”, `wzorTla`, `src/silnik/wzorTla.ts`).
-- Kolejne etapy (N8…) ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 29` (`src/model/projekt.ts`), baza Dexie w wersji 4.
+- W toku: N8 – jedna biblioteka zasobów użytkownika (`docs/plan-N8.md`; N8a baza, migracja
+  i render, N8b eksport/import, N8c UI). Obrazy, czcionki (poza wbudowanymi) i ozdobniki są
+  w tabeli `biblioteka` (`src/dane/bibliotekaUzytkownika.ts`, migracja
+  `src/dane/migracjaBiblioteki.ts`); `BazaProjektow.wczytaj` składa widok projektu z biblioteką.
+- Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
+- Schemat projektu: `WERSJA_SCHEMATU = 29` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
 ## Gdzie co jest
 

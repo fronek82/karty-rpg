@@ -1201,6 +1201,8 @@ export const pl = {
   'globalna.opis': 'Zapisane kopie są dostępne we wszystkich projektach w tej przeglądarce.',
   'globalna.pusta': 'Biblioteka jest pusta.',
   'globalna.brakWpisu': 'Brak tego wpisu w bibliotece.',
+  'dane.zaDuzoWpisowBiblioteki':
+    'Biblioteka ma już {limit} wpisów – usuń nieużywane, zanim dodasz nowe.',
   'globalna.brakObrazu': 'W paczce ramki „{id}” brakuje obrazu „{zasob}”.',
   'globalna.zlyObraz': 'Obraz „{id}” jest nieczytelny lub nie pasuje do wymiarów ramki.',
   'globalna.zapisz': 'Zapisz w bibliotece globalnej',

@@ -51,22 +51,16 @@ export function wyczyscPamiecCzcionekGlobalnych(): void {
   pamiecMetaCzcionek.clear();
 }
 
-/** Zastępuje w bibliotece globalnej wcześniejszy wpis tego samego rodzaju i nazwy, unikając duplikatów. */
+/**
+ * Zapisuje plik w bibliotece użytkownika. Ten sam plik (skrót) albo czcionka o tej samej rodzinie
+ * i wariancie to istniejący wpis – nic nie jest usuwane ani dublowane. Zwraca id wpisu.
+ */
 async function zapiszUnikalnyWBibliotece(
   rodzaj: 'czcionka' | 'obraz',
   nazwa: string,
   dane: Uint8Array,
 ): Promise<string> {
-  const istniejace = await baza().bibliotekaGlobalna(rodzaj);
-  for (const w of istniejace) {
-    if (w.nazwa === nazwa) {
-      await baza().usunZBiblioteki(w.id);
-      pamiecMetaCzcionek.delete(w.id);
-    }
-  }
-  const id = crypto.randomUUID();
-  await baza().zapiszWBibliotece(rodzaj, nazwa, dane, id);
-  return id;
+  return baza().zapiszWBibliotece(rodzaj, nazwa, dane);
 }
 
 /**
@@ -78,7 +72,8 @@ export async function zapiszCzcionkiGlobalnie(
 ): Promise<void> {
   if (wgrane.length === 0) return;
   for (const w of wgrane) {
-    const id = await zapiszUnikalnyWBibliotece('czcionka', w.opis.nazwa, w.dane);
+    // Z pełnym opisem (rodzina i źródło z katalogu Google Fonts, nie z odczytu pliku).
+    const id = await baza().dodajZasobDoBiblioteki(w.opis, w.dane);
     pamiecMetaCzcionek.set(id, {
       rodzina: w.opis.rodzina,
       wariant: w.opis.wariant,
@@ -105,8 +100,8 @@ export async function wgrajCzcionkiGlobalnie(
     nazwa,
     wgrana: wgrajCzcionke(nazwa, bajty),
   }));
-  for (const { nazwa, wgrana } of zwalidowane) {
-    const id = await zapiszUnikalnyWBibliotece('czcionka', nazwa, wgrana.dane);
+  for (const { wgrana } of zwalidowane) {
+    const id = await baza().dodajZasobDoBiblioteki(wgrana.opis, wgrana.dane);
     pamiecMetaCzcionek.set(id, {
       rodzina: wgrana.opis.rodzina,
       wariant: wgrana.opis.wariant,

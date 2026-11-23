@@ -135,3 +135,18 @@ export function macierzOrientacji(
 
 export const wymiaryPoObrocie = (o: number, szer: number, wys: number) =>
   o >= 5 && o <= 8 ? { szerokosc: wys, wysokosc: szer } : { szerokosc: szer, wysokosc: wys };
+
+/** Wymiary obrazu PNG/JPG z nagłówka pliku (JPEG z orientacją EXIF), bez dekodowania. */
+export function wymiaryPliku(
+  dane: Uint8Array,
+): { szerokosc: number; wysokosc: number } | undefined {
+  const format = formatObrazu(dane);
+  const v = new DataView(dane.buffer, dane.byteOffset, dane.byteLength);
+  if (format === 'png')
+    return v.byteLength >= 33 && v.getUint32(12) === 0x49484452
+      ? { szerokosc: v.getUint32(16), wysokosc: v.getUint32(20) }
+      : undefined;
+  if (format !== 'jpg') return undefined;
+  const surowe = wymiaryJpeg(dane);
+  return surowe && wymiaryPoObrocie(orientacjaExif(dane) ?? 1, surowe.szerokosc, surowe.wysokosc);
+}

@@ -9,8 +9,8 @@ import { przytnijWciecia } from '../ozdobniki/ramka9';
 import type { OpisObrazu } from '../model/projekt';
 import { zaokraglij } from '../model/geometria';
 
-/** Najwięcej własnych elementów w bibliotece projektu (ochrona przed rozdęciem projektu). */
-export const MAKS_ELEMENTOW_BIBLIOTEKI = 200;
+/** Najwięcej elementów ozdobnych (widok projektu zawiera całą bibliotekę użytkownika, N8). */
+export const MAKS_ELEMENTOW_BIBLIOTEKI = 5000;
 
 interface Odwolanie {
   id: string;
@@ -65,7 +65,7 @@ export function przepiszOdwolania(s: Szablon, mapa: ReadonlyMap<string, string>)
 }
 
 /** JSON z posortowanymi kluczami – porównanie treści niezależne od kolejności pól. */
-function stabilnyJson(v: unknown): string {
+export function stabilnyJson(v: unknown): string {
   return JSON.stringify(v, (_k, x: unknown) =>
     x && typeof x === 'object' && !Array.isArray(x)
       ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
@@ -104,7 +104,7 @@ const MAKS_NAZWA = 200;
 const MAKS_DLUGOSC_ID = 103; // `wl:` + 100 znaków (jak w schemacie)
 
 /** `id`, a przy kolizji `id-2`, `id-3`… – z obcięciem tak, by całość mieściła się w limicie. */
-function unikalneIdElementu(id: string, zajete: ReadonlySet<string>): string {
+export function unikalneIdElementu(id: string, zajete: ReadonlySet<string>): string {
   let wynik = id.slice(0, MAKS_DLUGOSC_ID);
   for (let n = 2; zajete.has(wynik); n++) {
     const przyrostek = `-${n}`;

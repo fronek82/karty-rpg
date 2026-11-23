@@ -1,9 +1,32 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { t } from '../i18n';
 import type { PresetUkladu } from '../model/arkusz';
-import type { DaneZasobow, Projekt, ZrodloCzcionki } from '../model/projekt';
+import type { DaneZasobow, OpisZasobu, Projekt, ZrodloCzcionki } from '../model/projekt';
 import { kluczTresciSzablonu, type WariantCzcionki } from '../model/szablon';
-import { elementyProjektu, zasobyElementow, zasobyObrazowSzablonu } from './biblioteka';
+import type { ElementOzdobny } from '../ozdobniki/typy';
+import {
+  elementyProjektu,
+  unikalneIdElementu,
+  zasobyElementow,
+  zasobyObrazowSzablonu,
+} from './biblioteka';
+import {
+  czyZasobProjektu,
+  elementZWpisu,
+  kluczCzcionki,
+  MAKS_WPISOW_BIBLIOTEKI,
+  elementyUzyteWDokumencie,
+  obrazyRamek,
+  obrazyUzyteWDokumencie,
+  opisZWpisu,
+  przepiszObrazElementu,
+  przepiszZasobyProjektu,
+  skrotBajtow,
+  skrotElementu,
+  type RodzajWpisuBiblioteki,
+  type WpisBiblioteki,
+} from './bibliotekaUzytkownika';
+import { unikalneId } from './czcionki';
 import {
   BladDanych,
   migrujBajtyBazy,
@@ -170,7 +193,20 @@ export interface WpisCzcionkiZProjektu {
   zrodlo: ZrodloCzcionki;
 }
 
-class BazaDexie extends Dexie {
+/** Przemapowania odwołań po zapisie (zasób lub element trafił na istniejący wpis biblioteki). */
+export interface MapyZapisu {
+  obrazy: Map<string, string>;
+  elementy: Map<string, string>;
+}
+
+/** Rodzaje biblioteki globalnej obsługiwane przez jedną bibliotekę użytkownika (N8). */
+const RODZAJE_BIBLIOTEKI = new Set<string>(['ozdobnik', 'obraz', 'czcionka']);
+
+export class BazaDexie extends Dexie {
+  biblioteka!: EntityTable<WpisBiblioteki, 'id'>;
+  bajtyBiblioteki!: EntityTable<{ id: string; dane: BajtyWBazie }, 'id'>;
+  meta!: EntityTable<{ klucz: string; wartosc: string }, 'klucz'>;
+  kopiaMigracji!: EntityTable<WpisProjektu, 'id'>;
   bibliotekaGlobalna!: EntityTable<WpisBibliotekiGlobalnej, 'id'>;
   paczkiBiblioteki!: EntityTable<{ id: string; dane: BajtyWBazie }, 'id'>;
   projekty!: EntityTable<WpisProjektu, 'id'>;
@@ -201,15 +237,370 @@ class BazaDexie extends Dexie {
     });
     // Metadane są odczytywane bez ładowania bajtów wszystkich paczek.
     this.version(4).stores({ bibliotekaGlobalna: 'id, rodzaj', paczkiBiblioteki: 'id' });
+    // Wersja 5 (N8): jedna biblioteka zasobów użytkownika. Dane przenosi `migrujDoBiblioteki`
+    // po otwarciu bazy (skróty i rozpakowanie nie mieszczą się w transakcji `upgrade`).
+    this.version(5).stores({
+      biblioteka: 'id, rodzaj, hash',
+      bajtyBiblioteki: 'id',
+      meta: 'klucz',
+      kopiaMigracji: 'id',
+    });
   }
 }
+
+export type { WpisProjektu };
 
 /** Projekty z zasobami i globalne paczki zapisane lokalnie w IndexedDB. */
 export class BazaProjektow {
   private readonly db: BazaDexie;
 
-  constructor(nazwa = 'karty-rpg') {
+  /** Bajty obrazów i czcionek biblioteki już odczytane (wspólne dla otwieranych projektów). */
+  private readonly pamiecBajtow = new Map<string, Uint8Array>();
+
+  /** Wpisy usunięte w tej sesji (z bajtami) – „Cofnij” przywraca je w tej samej postaci. */
+  private readonly kosz = new Map<string, { wpis: WpisBiblioteki; dane?: Uint8Array }[]>();
+
+  /** Skróty elementów z widoku (ten sam obiekt = ta sama treść) – zapis nie liczy ich na nowo. */
+  private readonly skrotyElementow = new WeakMap<ElementOzdobny, string>();
+
+  constructor(nazwa = 'karty-rpg', opcje: { bezMigracji?: boolean } = {}) {
     this.db = new BazaDexie(nazwa);
+    if (opcje.bezMigracji) return;
+    // Jednorazowe przeniesienie danych do biblioteki użytkownika – operacje tego połączenia
+    // czekają na koniec. Migracja idzie przez osobne połączenie: w `on('ready')` operacje po
+    // `await` na obietnice spoza Dexie straciłyby pierwszeństwo i czekały na samo otwarcie.
+    // Błąd migracji nie blokuje aplikacji: stan zostaje „w toku” i migracja rusza przy
+    // następnym otwarciu, a do tego czasu projekty używają własnych zasobów.
+    this.db.on('ready', async () => {
+      const pomocnicza = new BazaProjektow(nazwa, { bezMigracji: true });
+      try {
+        if ((await pomocnicza.db.meta.get('migracjaN8'))?.wartosc === 'gotowa') return;
+        const { migrujDoBiblioteki } = await import('./migracjaBiblioteki');
+        await migrujDoBiblioteki(pomocnicza.db, pomocnicza);
+      } catch (e) {
+        console.error('Migracja do biblioteki użytkownika nie powiodła się', e);
+      } finally {
+        pomocnicza.zamknij();
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // Biblioteka zasobów użytkownika (N8)
+
+  /** Wpisy biblioteki (bez bajtów), opcjonalnie jednego rodzaju, alfabetycznie. */
+  async wpisyBiblioteki(rodzaj?: RodzajWpisuBiblioteki): Promise<WpisBiblioteki[]> {
+    const lista = rodzaj
+      ? await this.db.biblioteka.where('rodzaj').equals(rodzaj).toArray()
+      : await this.db.biblioteka.toArray();
+    return lista.sort((a, b) => a.nazwa.localeCompare(b.nazwa));
+  }
+
+  /** Wpisy biblioteki o podanych id (brakujące pominięte). */
+  async wpisyBibliotekiPoId(ids: readonly string[]): Promise<WpisBiblioteki[]> {
+    return (await this.db.biblioteka.bulkGet([...ids])).filter(
+      (w): w is WpisBiblioteki => w !== undefined,
+    );
+  }
+
+  /** Bajty wpisu biblioteki (obraz, czcionka) albo undefined. */
+  async bajtyBiblioteki(id: string): Promise<Uint8Array | undefined> {
+    const z = this.pamiecBajtow.get(id);
+    if (z) return z;
+    const w = await this.db.bajtyBiblioteki.get(id);
+    if (!w) return undefined;
+    const dane = await migrujBajtyBazy(w.dane);
+    this.pamiecBajtow.set(id, dane);
+    return dane;
+  }
+
+  private async bajtyWielu(ids: readonly string[]): Promise<Map<string, Uint8Array>> {
+    const wynik = new Map<string, Uint8Array>();
+    const brak = ids.filter((id) => {
+      const z = this.pamiecBajtow.get(id);
+      if (z) wynik.set(id, z);
+      return !z;
+    });
+    if (brak.length > 0) {
+      const wpisy = await this.db.bajtyBiblioteki.bulkGet(brak);
+      for (const w of wpisy) {
+        if (!w) continue;
+        const dane = await migrujBajtyBazy(w.dane);
+        this.pamiecBajtow.set(w.id, dane);
+        wynik.set(w.id, dane);
+      }
+    }
+    return wynik;
+  }
+
+  private async sprawdzLimit(): Promise<void> {
+    if ((await this.db.biblioteka.count()) >= MAKS_WPISOW_BIBLIOTEKI)
+      throw new BladDanych(t('dane.zaDuzoWpisowBiblioteki', { limit: MAKS_WPISOW_BIBLIOTEKI }));
+  }
+
+  /**
+   * Dodaje obraz lub czcionkę do biblioteki. Ten sam plik (skrót) – zwraca id istniejącego wpisu;
+   * czcionka o tej samej rodzinie i wariancie – też istniejący wpis. Id zajęte przez inny wpis –
+   * nowe unikalne id. Sprawdzenie i zapis w jednej transakcji (skrót liczony przed nią, bo
+   * `crypto.subtle` zamyka transakcję Dexie). Zwraca id wpisu.
+   */
+  async dodajZasobDoBiblioteki(
+    opis: OpisZasobu,
+    dane: Uint8Array,
+    opcje: { wewnetrzny?: boolean } = {},
+  ): Promise<string> {
+    const hash = await skrotBajtow(dane);
+    const rodzaj = opis.rodzaj;
+    const { biblioteka, bajtyBiblioteki } = this.db;
+    const id = await this.db.transaction('rw', biblioteka, bajtyBiblioteki, async () => {
+      // Czcionka: ten sam plik pod inną rodziną lub wariantem (np. nazwa z katalogu Google Fonts)
+      // to osobny wpis – szablony odwołują się do czcionek po rodzinie i wariancie.
+      const istniejacy = (await biblioteka.where('hash').equals(hash).toArray()).find(
+        (w) =>
+          w.rodzaj === rodzaj &&
+          (opis.rodzaj !== 'czcionka' ||
+            (w.opis?.rodzaj === 'czcionka' && kluczCzcionki(w.opis) === kluczCzcionki(opis))),
+      );
+      if (istniejacy) {
+        if (istniejacy.wewnetrzny && !opcje.wewnetrzny)
+          await biblioteka.update(istniejacy.id, { wewnetrzny: undefined });
+        return istniejacy.id;
+      }
+      if (opis.rodzaj === 'czcionka') {
+        const klucz = kluczCzcionki(opis);
+        const ta = (await biblioteka.where('rodzaj').equals('czcionka').toArray()).find(
+          (w) => w.opis?.rodzaj === 'czcionka' && kluczCzcionki(w.opis) === klucz,
+        );
+        if (ta) {
+          console.info(
+            `Biblioteka: czcionka ${opis.rodzina} (${opis.wariant}) już jest – bez zmian`,
+          );
+          return ta.id;
+        }
+      }
+      await this.sprawdzLimit();
+      const zajete = new Set((await biblioteka.toCollection().primaryKeys()) as string[]);
+      const noweId = unikalneId(opis.id, zajete);
+      await biblioteka.put({
+        id: noweId,
+        rodzaj,
+        nazwa: opis.nazwa,
+        hash,
+        rozmiar: dane.length,
+        dodano: new Date().toISOString(),
+        opis: { ...opis, id: noweId },
+        ...(opcje.wewnetrzny ? { wewnetrzny: true } : {}),
+      });
+      await bajtyBiblioteki.put({ id: noweId, dane });
+      return noweId;
+    });
+    this.pamiecBajtow.set(id, dane);
+    return id;
+  }
+
+  /**
+   * Dodaje element ozdobny (obraz ramki 9-slice musi już być w bibliotece pod kanonicznym id).
+   * Ta sama treść – id istniejącego wpisu; zajęte id – nowe unikalne. Zwraca id wpisu.
+   */
+  async dodajElementDoBibliotekiUzytkownika(e: ElementOzdobny): Promise<string> {
+    const hash = await skrotElementu(e);
+    const { biblioteka } = this.db;
+    return this.db.transaction('rw', biblioteka, async () => {
+      const istniejacy = (await biblioteka.where('hash').equals(hash).toArray()).find(
+        (w) => w.rodzaj === 'ozdobnik',
+      );
+      if (istniejacy) return istniejacy.id;
+      await this.sprawdzLimit();
+      const zajete = new Set((await biblioteka.toCollection().primaryKeys()) as string[]);
+      const id = unikalneIdElementu(e.id, zajete);
+      const nazwa = e.nazwa ?? id;
+      await biblioteka.put({
+        id,
+        rodzaj: 'ozdobnik',
+        nazwa,
+        hash,
+        rozmiar: 0,
+        dodano: new Date().toISOString(),
+        element: { ...e, id, nazwa },
+      });
+      return id;
+    });
+  }
+
+  /**
+   * Przywraca usunięty wpis biblioteki dokładnie w tej samej postaci (to samo id), np. „Cofnij”.
+   * Wpis o tym id już jest – bez zmian.
+   */
+  async przywrocWpisBiblioteki(wpis: WpisBiblioteki, dane?: Uint8Array): Promise<void> {
+    const { biblioteka, bajtyBiblioteki } = this.db;
+    await this.db.transaction('rw', biblioteka, bajtyBiblioteki, async () => {
+      if (await biblioteka.get(wpis.id)) return;
+      await biblioteka.put(wpis);
+      if (dane) await bajtyBiblioteki.put({ id: wpis.id, dane });
+    });
+    if (dane) this.pamiecBajtow.set(wpis.id, dane);
+  }
+
+  /** Zmienia element ozdobny biblioteki (rodzaj, kolorowanie, ramka 9-slice, nazwa…). */
+  async zmienElementBibliotekiUzytkownika(e: ElementOzdobny): Promise<void> {
+    const wpis = await this.db.biblioteka.get(e.id);
+    if (wpis?.rodzaj !== 'ozdobnik') throw new BladDanych(t('globalna.brakWpisu'));
+    const nazwa = e.nazwa ?? wpis.nazwa;
+    await this.db.biblioteka.put({
+      ...wpis,
+      nazwa,
+      hash: await skrotElementu(e),
+      element: { ...e, nazwa },
+    });
+  }
+
+  /** Zmienia nazwę wpisu biblioteki. */
+  async zmienNazweWBibliotece(id: string, nazwa: string): Promise<void> {
+    const wpis = await this.db.biblioteka.get(id);
+    if (!wpis) throw new BladDanych(t('globalna.brakWpisu'));
+    await this.db.biblioteka.put({
+      ...wpis,
+      nazwa,
+      ...(wpis.opis ? { opis: { ...wpis.opis, nazwa } } : {}),
+      ...(wpis.element ? { element: { ...wpis.element, nazwa } } : {}),
+    });
+  }
+
+  /** Usuwa wpis biblioteki (ozdobnik razem z obrazem swojej ramki 9-slice). */
+  async usunZBibliotekiUzytkownika(id: string): Promise<void> {
+    const wpis = await this.db.biblioteka.get(id);
+    if (!wpis) return;
+    const ids = [id];
+    const ramka = wpis.element ? [...obrazyRamek([wpis.element])][0] : undefined;
+    if (ramka !== undefined) {
+      const inne = (await this.db.biblioteka.where('rodzaj').equals('ozdobnik').toArray()).some(
+        (w) => w.id !== id && w.element && obrazyRamek([w.element]).has(ramka),
+      );
+      if (!inne && (await this.db.biblioteka.get(ramka))?.wewnetrzny) ids.push(ramka);
+    }
+    const usuniete = await this.wpisyBibliotekiPoId(ids);
+    const doKosza = await Promise.all(
+      usuniete.map(async (w) => {
+        const dane = await this.bajtyBiblioteki(w.id);
+        return { wpis: w, ...(dane ? { dane } : {}) };
+      }),
+    );
+    await this.db.transaction('rw', this.db.biblioteka, this.db.bajtyBiblioteki, async () => {
+      await this.db.biblioteka.bulkDelete(ids);
+      await this.db.bajtyBiblioteki.bulkDelete(ids);
+    });
+    for (const x of ids) this.pamiecBajtow.delete(x);
+    this.kosz.set(id, doKosza);
+  }
+
+  /**
+   * Przenosi zasoby i elementy z widoku projektu do biblioteki (z deduplikacją) i zwraca dokument
+   * do zapisu: tylko czcionki wbudowane w `zasoby`, bez `biblioteka`, z przepisanymi odwołaniami.
+   * `bajty` – bajty zasobów (np. wszystkie z pamięci edytora). Zasobu, którego nie ma
+   * w bibliotece (np. usuniętego w innej karcie), nie przywraca, jeśli dokument go nie używa
+   * i `nowe` nie jest ustawione (`nowe` – zapis po zmianie zasobów: wgrane pliki trafiają do
+   * biblioteki, zanim zostaną użyte).
+   */
+  async przeniesDoBiblioteki(
+    projekt: Projekt,
+    bajty: (id: string) => Uint8Array | undefined,
+    opcje: { nowe?: boolean } = {},
+  ): Promise<{ projekt: Projekt; mapy: MapyZapisu }> {
+    const mapy: MapyZapisu = { obrazy: new Map(), elementy: new Map() };
+    const wBibliotece = new Map((await this.db.biblioteka.toArray()).map((w) => [w.id, w]));
+    const elementy = elementyProjektu(projekt);
+    const uzyteObrazy = obrazyUzyteWDokumencie(projekt);
+    const uzyteElementy = elementyUzyteWDokumencie(projekt);
+    const ramki = obrazyRamek(elementy.filter((e) => opcje.nowe || uzyteElementy.has(e.id)));
+    for (const opis of projekt.zasoby) {
+      if (czyZasobProjektu(opis)) continue;
+      const w = wBibliotece.get(opis.id);
+      const dane = bajty(opis.id);
+      // To samo id i ta sama treść (bajty z pamięci biblioteki albo ten sam skrót) – bez zmian.
+      if (w && w.rodzaj === opis.rodzaj) {
+        if (!dane || dane === this.pamiecBajtow.get(opis.id)) continue;
+        if ((await skrotBajtow(dane)) === w.hash) continue;
+      }
+      const potrzebny =
+        opcje.nowe || uzyteObrazy.has(opis.id) || ramki.has(opis.id) || opis.rodzaj === 'czcionka';
+      if (!w && !potrzebny) continue;
+      if (!dane) {
+        if (!w && !uzyteObrazy.has(opis.id) && !ramki.has(opis.id)) continue;
+        throw new BladDanych(t('dane.brakZasobu', { id: opis.id }));
+      }
+      const id = await this.dodajZasobDoBiblioteki(opis, dane, {
+        wewnetrzny: opis.rodzaj === 'obraz' && ramki.has(opis.id) && !uzyteObrazy.has(opis.id),
+      });
+      if (id !== opis.id && opis.rodzaj === 'obraz') mapy.obrazy.set(opis.id, id);
+    }
+    // Elementy: to samo id i ta sama treść – bez zmian; inna treść (np. z importu) – nowy wpis
+    // (albo istniejący o tej treści). Edycje elementów idą wprost do biblioteki. Element, którego
+    // nie ma w bibliotece, a dokument go nie używa (usunięty w innej karcie), nie wraca.
+    for (const e0 of elementy) {
+      const e = przepiszObrazElementu(e0, mapy.obrazy);
+      const w = wBibliotece.get(e.id);
+      if (!w && !opcje.nowe && !uzyteElementy.has(e.id)) continue;
+      if (w?.rodzaj === 'ozdobnik') {
+        let skrot = this.skrotyElementow.get(e);
+        if (skrot === undefined) {
+          skrot = await skrotElementu(e);
+          this.skrotyElementow.set(e, skrot);
+        }
+        if (skrot === w.hash) continue;
+      }
+      const id = await this.dodajElementDoBibliotekiUzytkownika(e);
+      if (id !== e.id) mapy.elementy.set(e.id, id);
+    }
+    const przepisany = przepiszZasobyProjektu(projekt, mapy.obrazy, mapy.elementy);
+    const { biblioteka: _b, ...bez } = przepisany;
+    void _b;
+    return { projekt: { ...bez, zasoby: bez.zasoby.filter(czyZasobProjektu) }, mapy };
+  }
+
+  /**
+   * Widok projektu do edycji: zasoby projektu (czcionki wbudowane) + obrazy i czcionki biblioteki,
+   * ozdobniki biblioteki jako `biblioteka.ozdobniki`. Wpisy kolidujące z zasobami projektu
+   * (to samo id albo ta sama rodzina i wariant czcionki) są pomijane.
+   */
+  private async widokProjektu(
+    zapisany: Projekt,
+    dane: DaneZasobow,
+  ): Promise<{ projekt: Projekt; zasoby: DaneZasobow }> {
+    const wpisy = await this.db.biblioteka.toArray();
+    const ids = new Set(zapisany.zasoby.map((z) => z.id));
+    const czcionki = new Set(
+      zapisany.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [kluczCzcionki(z)] : [])),
+    );
+    const opisy: OpisZasobu[] = [];
+    for (const w of wpisy) {
+      const opis = opisZWpisu(w);
+      if (!opis || ids.has(opis.id)) continue;
+      if (opis.rodzaj === 'czcionka' && czcionki.has(kluczCzcionki(opis))) continue;
+      opisy.push(opis);
+    }
+    const bajty = await this.bajtyWielu(opisy.map((o) => o.id));
+    const zasoby: DaneZasobow = new Map(dane);
+    const dostepne = opisy.filter((o) => bajty.has(o.id));
+    for (const o of dostepne) zasoby.set(o.id, bajty.get(o.id)!);
+    const wlasne = elementyProjektu(zapisany);
+    const idWlasnych = new Set(wlasne.map((e) => e.id));
+    const elementy = [
+      ...wlasne,
+      ...wpisy.flatMap((w) => {
+        const e = elementZWpisu(w);
+        if (!e || idWlasnych.has(e.id)) return [];
+        this.skrotyElementow.set(e, w.hash);
+        return [e];
+      }),
+    ];
+    const { biblioteka: _b, ...bez } = zapisany;
+    void _b;
+    const projekt: Projekt = {
+      ...bez,
+      zasoby: [...zapisany.zasoby, ...dostepne],
+      ...(elementy.length > 0 ? { biblioteka: { ozdobniki: elementy } } : {}),
+    };
+    return { projekt, zasoby };
   }
 
   async lista(): Promise<PodsumowanieProjektu[]> {
@@ -305,9 +696,17 @@ export class BazaProjektow {
     await this.db.uklady.delete(id);
   }
 
+  /**
+   * Wpisy biblioteki globalnej. Ozdobniki, obrazy i czcionki pochodzą z biblioteki użytkownika
+   * (N8; do czasu nowego UI ta sama postać co dawne paczki), szablony i rewersy – z paczek.
+   */
   async bibliotekaGlobalna(
     rodzaj: WpisBibliotekiGlobalnej['rodzaj'],
   ): Promise<WpisBibliotekiGlobalnej[]> {
+    if (RODZAJE_BIBLIOTEKI.has(rodzaj))
+      return (await this.wpisyBiblioteki(rodzaj as RodzajWpisuBiblioteki))
+        .filter((w) => !w.wewnetrzny)
+        .map((w) => ({ id: w.id, rodzaj, nazwa: w.nazwa }));
     return this.db.bibliotekaGlobalna.where('rodzaj').equals(rodzaj).sortBy('nazwa');
   }
 
@@ -316,12 +715,24 @@ export class BazaProjektow {
     nazwa: string,
     bajty: Uint8Array,
     id: string = crypto.randomUUID(),
-  ): Promise<void> {
+  ): Promise<string> {
+    if (RODZAJE_BIBLIOTEKI.has(rodzaj)) {
+      // „Cofnij” po usunięciu: ten sam wpis (to samo id, opis, bajty) wraca z kosza.
+      const zKosza = this.kosz.get(id);
+      if (zKosza) {
+        for (const { wpis, dane } of zKosza) await this.przywrocWpisBiblioteki(wpis, dane);
+        this.kosz.delete(id);
+        return id;
+      }
+      const { dodajPaczkeDoBiblioteki } = await import('./migracjaBiblioteki');
+      return dodajPaczkeDoBiblioteki(this, rodzaj as RodzajWpisuBiblioteki, nazwa, bajty);
+    }
     const { bibliotekaGlobalna, paczkiBiblioteki } = this.db;
     await this.db.transaction('rw', bibliotekaGlobalna, paczkiBiblioteki, async () => {
       await bibliotekaGlobalna.put({ id, rodzaj, nazwa });
       await paczkiBiblioteki.put({ id, dane: bajty });
     });
+    return id;
   }
 
   /** Lista rewersów zapisanych w innych projektach w tej przeglądarce (także starszych sprzed biblioteki). */
@@ -401,12 +812,18 @@ export class BazaProjektow {
   }
 
   async odczytajZBiblioteki(id: string): Promise<Uint8Array> {
+    const wpis = await this.db.biblioteka.get(id);
+    if (wpis) {
+      const { paczkaZWpisu } = await import('./migracjaBiblioteki');
+      return paczkaZWpisu(this, wpis);
+    }
     const paczka = await this.db.paczkiBiblioteki.get(id);
     if (!paczka) throw new BladDanych(t('globalna.brakWpisu'));
     return migrujBajtyBazy(paczka.dane);
   }
 
   async usunZBiblioteki(id: string): Promise<void> {
+    if (await this.db.biblioteka.get(id)) return this.usunZBibliotekiUzytkownika(id);
     const { bibliotekaGlobalna, paczkiBiblioteki } = this.db;
     await this.db.transaction('rw', bibliotekaGlobalna, paczkiBiblioteki, async () => {
       await bibliotekaGlobalna.delete(id);
@@ -425,21 +842,27 @@ export class BazaProjektow {
 
   /**
    * Zapisuje projekt (po walidacji – do bazy nie trafi projekt, którego nie da się otworzyć).
-   * Z `zasoby` – zastępuje wszystkie zasoby projektu (każdy opisany zasób musi mieć bajty);
-   * bez – zmienia tylko dokument projektu (np. edycja karty), a każdy opisany zasób musi już
-   * być w bazie. Nieużywane zasoby są usuwane.
-   */
-  /**
-   * Zapis projektu. Wpis „tylko szablony” (po usunięciu projektu) zachowuje ten stan, dopóki
-   * projekt nie dostanie znowu kart – wtedy wraca do „Moich projektów”.
+   * Obrazy, czcionki (poza wbudowanymi) i ozdobniki trafiają do biblioteki użytkownika.
+   * Z `zasoby` – zmiana zasobów: zastępuje bajty zasobów projektu, a wszystkie zasoby widoku
+   * (także jeszcze nieużyte) trafiają do biblioteki; bez – zmienia tylko dokument, a do biblioteki
+   * wraca tylko to, czego dokument używa (`opcje.dane` – bajty z pamięci edytora).
+   * Wpis „tylko szablony” (po usunięciu projektu) zachowuje ten stan, dopóki projekt nie dostanie
+   * znowu kart – wtedy wraca do „Moich projektów”. Zwraca przemapowania odwołań.
    */
   async zapisz(
     projekt: Projekt,
     zasoby?: DaneZasobow,
-    opcje: { tylkoSzablony?: boolean } = {},
-  ): Promise<void> {
+    opcje: { tylkoSzablony?: boolean; dane?: DaneZasobow } = {},
+  ): Promise<MapyZapisu> {
     przygotujProjekt(projekt);
-    const opisane = new Set(projekt.zasoby.map((z) => z.id));
+    // Obrazy, czcionki (poza wbudowanymi) i ozdobniki należą do biblioteki użytkownika (N8).
+    const przeniesiony = await this.przeniesDoBiblioteki(
+      projekt,
+      (id) => zasoby?.get(id) ?? opcje.dane?.get(id),
+      { nowe: zasoby !== undefined },
+    );
+    const dokument = przeniesiony.projekt;
+    const opisane = new Set(dokument.zasoby.map((z) => z.id));
     if (zasoby) {
       for (const id of opisane) {
         if (!zasoby.has(id)) throw new BladDanych(t('dane.brakZasobu', { id }));
@@ -447,12 +870,12 @@ export class BazaProjektow {
     }
     const tabele = [this.db.projekty, this.db.zasoby];
     await this.db.transaction('rw', tabele, async () => {
-      const wProjekcie = this.db.zasoby.where('projektId').equals(projekt.id);
+      const wProjekcie = this.db.zasoby.where('projektId').equals(dokument.id);
       if (zasoby) {
         await wProjekcie.delete();
         await this.db.zasoby.bulkPut(
           [...opisane].map((id) => ({
-            projektId: projekt.id,
+            projektId: dokument.id,
             id,
             dane: zasoby.get(id)!,
           })),
@@ -464,24 +887,27 @@ export class BazaProjektow {
         }
         const osierocone = [...wBazie].filter((id) => !opisane.has(id));
         await this.db.zasoby.bulkDelete(
-          osierocone.map((id) => [projekt.id, id] as [string, string]),
+          osierocone.map((id) => [dokument.id, id] as [string, string]),
         );
       }
-      const poprzedni = await this.db.projekty.get(projekt.id);
-      const maKarty = projekt.talie.some((tl) => tl.karty.length > 0);
+      const poprzedni = await this.db.projekty.get(dokument.id);
+      const maKarty = dokument.talie.some((tl) => tl.karty.length > 0);
       const tylkoSzablony = opcje.tylkoSzablony ?? (poprzedni?.tylkoSzablony === true && !maKarty);
       await this.db.projekty.put({
-        id: projekt.id,
-        zmieniono: projekt.zmieniono,
-        projekt,
+        id: dokument.id,
+        zmieniono: dokument.zmieniono,
+        projekt: dokument,
         ...(tylkoSzablony ? { tylkoSzablony } : {}),
       });
     });
+    return przeniesiony.mapy;
   }
 
   /**
    * Wczytuje projekt z migracją i walidacją (dane w bazie mogą pochodzić ze starszej wersji).
    * Dokument i zasoby czytane w jednej transakcji (spójny stan przy zapisie z innej karty).
+   * Wynik to widok z biblioteką użytkownika: obrazy, czcionki i ozdobniki biblioteki są
+   * w `zasoby` i `biblioteka.ozdobniki` każdego projektu.
    */
   async wczytaj(id: string): Promise<{ projekt: Projekt; zasoby: DaneZasobow }> {
     const [wpis, wpisy] = await this.db.transaction('r', [this.db.projekty, this.db.zasoby], () =>
@@ -498,7 +924,7 @@ export class BazaProjektow {
     for (const opis of projekt.zasoby) {
       if (!zasoby.has(opis.id)) throw new BladDanych(t('dane.brakZasobu', { id: opis.id }));
     }
-    return { projekt, zasoby };
+    return this.widokProjektu(projekt, zasoby);
   }
 
   /**
