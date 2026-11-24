@@ -59,10 +59,11 @@ export function PanelOdmian({
       }
       const nazwa = w.nazwa || t('odmiany.nazwaDomyslna');
       // Wiersz z polami (np. ikona + tekst): cała zawartość to pierwsza odmiana, nie każde pole.
-      if (maPolaWPrzelaczniku(w))
-        w = zawartoscJakoOdmiana(szablon, w, t('odmiany.nazwaOdmiany', { n: 1 }));
+      const k = maPolaWPrzelaczniku(w)
+        ? zawartoscJakoOdmiana(szablon, w, t('odmiany.nazwaOdmiany', { n: 1 }))
+        : w;
       return {
-        ...w,
+        ...k,
         nazwa,
         przelacznik: bezDanych
           ? {}
@@ -70,7 +71,7 @@ export function PanelOdmian({
               klucz: kluczZNazwy(nazwa, new Set([...kluczeSzablonu(szablon), ...zajeteKlucze()])),
             },
         // Numery jawnie – zmiana kolejności dzieci nie zmienia już kart.
-        dzieci: w.dzieci.map((d, i) => ({ ...d, odmiana: wartoscOdmiany(w, i) })),
+        dzieci: k.dzieci.map((d, i) => ({ ...d, odmiana: wartoscOdmiany(k, i) })),
       };
     });
 

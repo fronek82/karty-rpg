@@ -1256,7 +1256,11 @@ export function zawartoscJakoOdmiana(s: Szablon, k: Kontener, nazwa: string): Ko
       return reszta as Wezel;
     }),
   };
-  return { ...k, dzieci: [odmiana] };
+  // Jedyna odmiana to „1” – wcześniejsza odmiana domyślna nie ma już sensu.
+  const przelacznik = k.przelacznik && {
+    ...(k.przelacznik.klucz ? { klucz: k.przelacznik.klucz } : {}),
+  };
+  return { ...k, ...(przelacznik ? { przelacznik } : {}), dzieci: [odmiana] };
 }
 
 /**
