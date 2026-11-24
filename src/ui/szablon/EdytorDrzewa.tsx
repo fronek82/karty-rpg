@@ -241,9 +241,12 @@ function useMiniatura(
 function MenuDodaj({
   rodzaje,
   dodaj,
+  przycisk: wyglad,
 }: {
   rodzaje: readonly RodzajNowego[];
   dodaj: (r: RodzajNowego) => void;
+  /** Inny wygląd przycisku otwierającego (puste stany drzewa i podglądu) – to samo menu. */
+  przycisk?: { tresc: React.ReactNode; className: string; etykieta?: string; testId: string };
 }) {
   const [otwarte, ustawOtwarte] = useState(false);
   const przycisk = useRef<HTMLButtonElement>(null);
@@ -282,15 +285,17 @@ function MenuDodaj({
     }
   };
   return (
-    <div className="menu-dodaj">
+    <div className={`menu-dodaj${wyglad ? ` ${wyglad.className}` : ''}`}>
       <button
         ref={przycisk}
         type="button"
         aria-haspopup="menu"
         aria-expanded={otwarte}
+        {...(wyglad?.etykieta ? { 'aria-label': wyglad.etykieta } : {})}
+        {...(wyglad ? { 'data-testid': wyglad.testId } : {})}
         onClick={() => ustawOtwarte((x) => !x)}
       >
-        {t('szablon.dodaj')}
+        {wyglad ? wyglad.tresc : t('szablon.dodaj')}
       </button>
       {otwarte && (
         <div
@@ -380,6 +385,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
 
   // Zaznaczenie bez usuniętych węzłów (np. po „Cofnij”).
   const aktywne = szablon ? zazn.filter((x) => znajdzWezel(szablon, x)) : [];
+  const pustaKarta = !!szablon && czyKontener(szablon.korzen) && szablon.korzen.dzieci.length === 0;
   const jeden = szablon && aktywne.length === 1 ? znajdzWezel(szablon, aktywne[0]!) : undefined;
 
   const wybierz = (x: string, dodajDo: boolean) =>
@@ -847,6 +853,20 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             <div ref={drzewo}>
               <DrzewoSzablonu korzen={szablon.korzen} zaznaczone={aktywne} wybierz={wybierz} />
             </div>
+            {pustaKarta && (
+              <div className="pusta-lista-drzewa" data-testid="pusty-stan-drzewa">
+                <p className="podpis">{t('szablon.brakElementow')}</p>
+                <MenuDodaj
+                  rodzaje={u.rodzajeDodaj ?? RODZAJE}
+                  dodaj={dodaj}
+                  przycisk={{
+                    tresc: t('szablon.dodajPusta'),
+                    className: 'menu-dodaj-pusta',
+                    testId: 'dodaj-pusty-stan-drzewa',
+                  }}
+                />
+              </div>
+            )}
             <div className="akcje-drzewa">
               <MenuDodaj rodzaje={u.rodzajeDodaj ?? RODZAJE} dodaj={dodaj} />
               <button
@@ -923,6 +943,27 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                       className="svg-opakowanie"
                       dangerouslySetInnerHTML={{ __html: podglad.svg }}
                     />
+                    {/* Pusty stan tylko w edytorze: warstwa HTML nad sceną – nie trafia do SVG,
+                        PDF, PNG ani miniatur (te powstają ze sceny). */}
+                    {pustaKarta && (
+                      <div
+                        className="pusta-karta-podgladu"
+                        data-testid="pusty-stan-karty"
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <p>{t('szablon.pustaKartaPodglad')}</p>
+                        <MenuDodaj
+                          rodzaje={u.rodzajeDodaj ?? RODZAJE}
+                          dodaj={dodaj}
+                          przycisk={{
+                            tresc: '＋',
+                            className: 'menu-dodaj-duzy',
+                            etykieta: t('szablon.dodajElement'),
+                            testId: 'dodaj-pusta-karta',
+                          }}
+                        />
+                      </div>
+                    )}
                     {/* Podkład ze wzoru: nad kartą (tło karty jest kryjące), nie łapie kliknięć. */}
                     {podklad?.podklad?.widoczny && podklad.adres && (
                       <img

@@ -3750,3 +3750,57 @@ button.podglad-biblioteki[aria-pressed='true'] {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Pusty stan edytora (tylko HTML nad podglądem – nie trafia do wydruku, eksportu ani miniatur). */
+.pusta-lista-drzewa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+.pusta-lista-drzewa .podpis {
+  margin: 0;
+}
+.pusta-karta-podgladu {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem;
+  text-align: center;
+  pointer-events: none;
+}
+.pusta-karta-podgladu p {
+  margin: 0;
+  color: #6b6b6b;
+  opacity: 0.85;
+  font-size: 0.95rem;
+}
+.pusta-karta-podgladu .menu-dodaj {
+  width: auto;
+  pointer-events: auto;
+}
+.menu-dodaj-duzy > button {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  line-height: 1;
+  padding: 0;
+  color: #555;
+  background: rgb(255 255 255 / 70%);
+  border: 2px dashed #9a9a9a;
+}
+.menu-dodaj-duzy > button:hover {
+  background: rgb(255 255 255 / 90%);
+  border-color: #6b6b6b;
+}
+.pusta-karta-podgladu .menu-typu {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  text-align: left;
+}

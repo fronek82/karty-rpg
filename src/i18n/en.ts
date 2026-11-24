@@ -673,7 +673,10 @@ export const en: Slownik = {
   'szablon.rozmiarWSlotach': 'The size of this card is in slots (template from a game package).',
   'szablon.warianty':
     'The template has separate layouts for other sizes – you are editing the base layout.',
-  'szablon.pustaKarta': 'The card is empty – add the first element with the “＋ Add” button.',
+  'szablon.pustaKartaPodglad': 'Empty card – click ＋ Add',
+  'szablon.brakElementow': 'No elements',
+  'szablon.dodajPusta': '＋ Add',
+  'szablon.dodajElement': 'Add element',
   'szablon.nazwaElementu': 'Name',
   'szablon.kluczDanych': 'Card data field: {klucz}',
   'szablon.etykieta': 'Label',
