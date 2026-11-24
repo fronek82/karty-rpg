@@ -83,7 +83,8 @@ export function Kreator(props: PropsKreatora) {
     if (!w) return;
     ustawFormat('wlasny');
     ustawWlasny({ szer: w.szer, wys: w.wys });
-    if (w.promien !== undefined) ustawPromien(w.promien);
+    // Tył bez własnych rogów (sprzed schematu 31) – rogi jak przód; kopiujemy 0.
+    ustawPromien(w.promien ?? 0);
   };
 
   const bazowy =

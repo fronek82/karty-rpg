@@ -41,6 +41,11 @@ zgodności rozmiarów przodu i tyłu oraz nazwy „Przód” / „Tył” w inte
   (`KLUCZ_DOPASOWANIA_ZAWARTOSCI`), domyślnie „Przeskaluj”; skalowanie obejmuje położenie
   w kontenerach swobodnych i rozmiary w mm (osobno w poziomie i w pionie; przy obrocie
   90° / 270° osie zamienione). Rozmiary w % i „wypełnij” dopasowują się same.
+- Skalowanie stosuje ten sam współczynnik karty na każdym poziomie drzewa: zagnieżdżony
+  kontener swobodny w mm skaluje się razem z położeniami swoich dzieci (spójnie). Kontener
+  „auto” może po skalowaniu dzieci zmienić rozmiar – przyjęte jako wystarczające.
+- Tył zapisany w bibliotece przeglądarki aktualizuje się po każdym zapisie w edytorze; kopie
+  dołączone wcześniej do innych projektów zostają bez zmian (nie są „powiązane”).
 - Kopia w nowym rozmiarze powstaje w tym samym projekcie, nazwa „<nazwa> (<szer>×<wys>)”
   (zajęta – kolejny numer), bez przypisań, i od razu otwiera się w edytorze.
 - Kontrola przy przypisaniu: przody talii bez własnego tyłu (pusta talia – szablony projektu

@@ -39,6 +39,7 @@ export function PanelKarty({
   wgrywanieObrazu,
   dodatkiObrazu,
   dopasowanieZawartosci,
+  rogiJakPrzod,
 }: {
   k: KontekstPaneluKarty;
   tytul: string;
@@ -53,6 +54,8 @@ export function PanelKarty({
   dodatkiObrazu?: ReactNode;
   /** Wybór sposobu dopasowania zawartości przy zmianie rozmiaru. */
   dopasowanieZawartosci?: ReactNode;
+  /** Tył bez własnych rogów (projekt sprzed schematu 31) – rogi dopasowane do przodu. */
+  rogiJakPrzod?: boolean;
 }) {
   const r = szablon.rozmiar;
   const { szer, wys } = wymiaryKarty(szablon);
@@ -127,6 +130,7 @@ export function PanelKarty({
           zmien={(v) => zmienWymiary({ szer, wys, promien: v })}
         />
       </div>
+      {rogiJakPrzod && <p className="podpis">{t('rewers.rogiJakPrzod')}</p>}
       {dopasowanieZawartosci}
       <SekcjaTlaKarty
         stan={szablon}

@@ -27,7 +27,10 @@ export function przodyDoPrzypisania(
   const karty = kartaIds
     ? talia.karty.filter((k) => kartaIds.includes(k.id))
     : talia.karty.filter((k) => k.rewersId === undefined);
-  if (karty.length === 0) return kartaIds ? [] : p.szablony.filter((s) => s.rewersId === undefined);
+  // Pusta talia – przody, które dostaną karty; wszystkie karty z własnym tyłem – nic się nie zmienia.
+  if (!kartaIds && talia.karty.length === 0)
+    return p.szablony.filter((s) => s.rewersId === undefined);
+  if (karty.length === 0) return [];
   const wynik = new Map<string, Szablon>();
   for (const k of karty) {
     const s = szablony.get(k.szablonId);

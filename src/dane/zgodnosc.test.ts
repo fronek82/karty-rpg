@@ -92,6 +92,29 @@ describe('dopasujZawartosc', () => {
     });
   });
 
+  it('zagnieżdżony kontener swobodny w mm: rozmiar i położenia dzieci skalowane razem', () => {
+    const z = przod('Z', 60, 80, {
+      korzen: {
+        id: 'k',
+        typ: 'swobodny',
+        dzieci: [
+          {
+            id: 'w',
+            typ: 'swobodny',
+            szerokosc: { mm: 40 },
+            wysokosc: { mm: 40 },
+            pozycja: { x: 10, y: 10 },
+            dzieci: [{ id: 'd', typ: 'tekst', tekst: 'x', pozycja: { x: 20, y: 20 } }],
+          },
+        ],
+      },
+    } as Partial<Szablon>);
+    const w = dopasujZawartosc(z, { szer: 60, wys: 80 }, { szer: 30, wys: 40 }, 'skaluj');
+    const wew = w.korzen.dzieci[0] as Szablon['korzen'];
+    expect(wew).toMatchObject({ szerokosc: { mm: 20 }, pozycja: { x: 5, y: 5 } });
+    expect(wew.dzieci[0]).toMatchObject({ pozycja: { x: 10, y: 10 } });
+  });
+
   it('„zostaw” nie zmienia szablonu', () => {
     expect(dopasujZawartosc(s, { szer: 60, wys: 80 }, { szer: 30, wys: 40 }, 'zostaw')).toBe(s);
   });

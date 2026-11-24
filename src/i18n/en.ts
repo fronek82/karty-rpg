@@ -1463,6 +1463,7 @@ export const en: Slownik = {
   'rewers.rozmiarOdniesienia': 'Reference size (mm)',
   'rewers.rozmiarOpis':
     'Layers are positioned relative to this reference size and adapt to the target card.',
+  'rewers.rogiJakPrzod': 'On the sheet this back uses the corners of the front.',
   'rewers.tloIRamka': 'Back background and frame',
   'rewers.warstwy': 'Layers',
   'rewers.pomocPodgladu': 'Click a layer in the preview or tree to edit, move, or rotate it.',

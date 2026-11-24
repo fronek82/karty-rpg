@@ -470,6 +470,7 @@ export function EdytorKarty({
             }
             bladRozmiaru={bladRozmiaru ? t('szablon.rozmiarNieMiesci') : undefined}
             bezDanych={k.bezDanych}
+            rogiJakPrzod={!!rewers && rewers.promienRogow === undefined}
             zajeteKlucze={() => (k.bezDanych ? [] : kluczeDanychKart(projekt, id))}
             {...(rewers
               ? {

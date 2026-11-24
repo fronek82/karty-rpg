@@ -1459,6 +1459,7 @@ export const pl = {
   'rewers.rozmiarOdniesienia': 'Wymiary odniesienia (mm)',
   'rewers.rozmiarOpis':
     'Warstwy pozycjonują się względem tych wymiarów i dopasowują do karty docelowej.',
+  'rewers.rogiJakPrzod': 'Na arkuszu rogi tego tyłu są takie jak rogi przodu.',
   'rewers.tloIRamka': 'Tło i ramka tyłu',
   'rewers.warstwy': 'Warstwy',
   'rewers.pomocPodgladu':
