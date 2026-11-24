@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LIMIT_PAMIECI_UKLADU, RejestrCzcionek, konturZFontkit } from './czcionki';
+import { readFileSync } from 'node:fs';
+import { LIMIT_PAMIECI_UKLADU, RejestrCzcionek, konturZFontkit, wczytajCzcionke } from './czcionki';
 import { czcionkaTestowa, rejestrTestowy } from './__testy__/pomoc';
 
 describe('Czcionka', () => {
@@ -80,5 +81,35 @@ describe('brakujące warianty', () => {
     expect([...r.brakujaceWarianty.values()]).toEqual([{ nazwa: 'tytul', wariant: 'kursywa' }]);
     r.ustawRole({ tytul: 'Grenze Gotisch' });
     expect(r.brakujaceWarianty.size).toBe(0);
+  });
+});
+
+describe('pogrubienie czcionki zmiennej (oś wght)', () => {
+  // Podzbiór Oswald[wght] (200–700, domyślnie 400) – jak pliki zmienne z Google Fonts.
+  const oswald = () =>
+    wczytajCzcionke(
+      'Oswald[wght].ttf',
+      new Uint8Array(
+        readFileSync(new URL('./__testy__/czcionki/Oswald-zmienna-podzbior.ttf', import.meta.url)),
+      ),
+    );
+
+  it('pogrubiony wariant to instancja wght 700 z własnym id i szerszymi glifami', () => {
+    const normalna = oswald();
+    const r = new RejestrCzcionek().dodaj('Oswald', 'normalny', normalna);
+    const pogrubiona = r.pobierz('Oswald', 'pogrubiony');
+    expect(pogrubiona).not.toBe(normalna);
+    expect(pogrubiona.id).toBe('Oswald[wght].ttf#wght700');
+    expect(pogrubiona.szerokosc('Hello')).toBeGreaterThan(normalna.szerokosc('Hello'));
+    expect(r.pobierz('Oswald', 'pogrubiony')).toBe(pogrubiona); // zapamiętana
+    // Pogrubiona kursywa bez kursywy – pogrubienie zamiast zwykłego kroju.
+    expect(r.pobierz('Oswald', 'pogrubiona-kursywa')).toBe(pogrubiona);
+    expect([...r.brakujaceWarianty.values()]).toEqual([
+      { nazwa: 'Oswald', wariant: 'pogrubiona-kursywa' },
+    ]);
+  });
+
+  it('czcionka statyczna nie ma pogrubienia z osi wght', () => {
+    expect(czcionkaTestowa('EBGaramond-Regular.ttf').pogrubiona()).toBeUndefined();
   });
 });

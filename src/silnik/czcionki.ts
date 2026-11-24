@@ -15,6 +15,9 @@ export interface UlozonyGlif {
 /** Najwięcej zapamiętanych układów tekstu na czcionkę – długa edycja nie zjada pamięci. */
 export const LIMIT_PAMIECI_UKLADU = 4000;
 
+/** Grubość (oś `wght`) pogrubienia tworzonego z czcionki zmiennej. */
+const GRUBOSC_POGRUBIENIA = 700;
+
 /**
  * Czcionka wczytana przez fontkit (TTF, OTF/CFF, WOFF, WOFF2). Kształtuje tekst
  * (ligatury, kerning, glify złożone) i zwraca kontury glifów.
@@ -28,6 +31,8 @@ export class Czcionka {
   private readonly pamiecUkladu = new Map<string, UlozonyGlif[]>();
   private cechy: Set<string> | undefined;
   private readonly pamiecKonturow = new Map<number, Kontur>();
+  /** `null` – sprawdzono, czcionki nie da się pogrubić osią `wght`. */
+  private pogrubionaInstancja: Czcionka | null | undefined;
 
   constructor(
     readonly id: string,
@@ -126,6 +131,35 @@ export class Czcionka {
       if (kod !== undefined && !this.font.hasGlyphForCodePoint(kod)) braki.add(znak);
     }
     return [...braki];
+  }
+
+  /**
+   * Pogrubiona instancja czcionki zmiennej (oś `wght`, grubość 700 lub najbliższa dostępna).
+   * Wiele krojów Google Fonts ma tylko pliki zmienne – bez tego pogrubienie nic by nie zmieniało.
+   * `undefined`, gdy czcionka nie jest zmienna albo nie da się jej pogrubić.
+   */
+  pogrubiona(): Czcionka | undefined {
+    if (this.pogrubionaInstancja !== undefined) return this.pogrubionaInstancja ?? undefined;
+    this.pogrubionaInstancja = null;
+    const zmienna = this.font as unknown as {
+      variationAxes?: Record<string, { min: number; default: number; max: number }>;
+      getVariation?: (ustawienia: Record<string, number>) => fontkit.Font;
+    };
+    try {
+      const os = zmienna.variationAxes?.wght;
+      if (os && zmienna.getVariation) {
+        const grubosc = Math.min(GRUBOSC_POGRUBIENIA, os.max);
+        if (grubosc > os.default) {
+          this.pogrubionaInstancja = new Czcionka(
+            `${this.id}#wght${grubosc}`,
+            zmienna.getVariation({ wght: grubosc }),
+          );
+        }
+      }
+    } catch {
+      // Uszkodzone tabele zmienności – zostaje zwykły krój.
+    }
+    return this.pogrubionaInstancja ?? undefined;
   }
 
   /** Kontur glifu (jednostki czcionki, Y w górę), krzywe kwadratowe zamienione na sześcienne. */
@@ -277,25 +311,43 @@ export class RejestrCzcionek {
     const rodzina = this.role.get(nazwa) ?? nazwa;
     const znaleziona = this.znajdz(rodzina, wariant);
     if (znaleziona) {
-      if (!this.rodziny.get(rodzina)?.[wariant])
+      if (!znaleziona.dokladna)
         this.brakujaceWarianty.set(`${nazwa}\u0000${wariant}`, { nazwa, wariant });
-      return znaleziona;
+      return znaleziona.czcionka;
     }
     const zapasowa = this.zapasowa !== undefined ? this.znajdz(this.zapasowa, wariant) : undefined;
     if (zapasowa) {
       this.brakujace.add(nazwa);
       this.sledzone?.add(nazwa);
-      return zapasowa;
+      return zapasowa.czcionka;
     }
     throw new Error(`Brak czcionki „${nazwa}” (${wariant}).`);
   }
 
-  private znajdz(rodzina: string, wariant: WariantCzcionki): Czcionka | undefined {
+  /**
+   * Szuka wariantu: najpierw dokładnego, potem pogrubienia z czcionki zmiennej (oś `wght`
+   * w kroju normalnym lub kursywie), na końcu najbliższego zastępczego.
+   */
+  private znajdz(
+    rodzina: string,
+    wariant: WariantCzcionki,
+  ): { czcionka: Czcionka; dokladna: boolean } | undefined {
     const warianty = this.rodziny.get(rodzina);
     if (!warianty) return undefined;
+    const dokladna = warianty[wariant];
+    if (dokladna) return { czcionka: dokladna, dokladna: true };
+    const baza =
+      wariant === 'pogrubiony'
+        ? warianty.normalny
+        : wariant === 'pogrubiona-kursywa'
+          ? warianty.kursywa
+          : undefined;
+    const pogrubiona = baza?.pogrubiona();
+    if (pogrubiona) return { czcionka: pogrubiona, dokladna: true };
     for (const w of ZAPASOWE[wariant]) {
-      const c = warianty[w];
-      if (c) return c;
+      // Pogrubiona kursywa bez kursywy: lepsze pogrubienie z czcionki zmiennej niż zwykły krój.
+      const c = warianty[w] ?? (w === 'pogrubiony' ? warianty.normalny?.pogrubiona() : undefined);
+      if (c) return { czcionka: c, dokladna: false };
     }
     return undefined;
   }

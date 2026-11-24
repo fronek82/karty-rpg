@@ -856,17 +856,24 @@ export class BazaProjektow {
   /**
    * Wszystkie szablony przodów (w mm, z projektów własnych) i tyłów w przeglądarce z wymiarami –
    * także puste przody; bez pustego przodu projektu samego tyłu i bez identycznych kopii tyłów.
+   * Przód kopiuje tylko wymiary i rogi, więc kopie przodu w wielu projektach (ta sama nazwa,
+   * wymiary i rogi) są pokazywane raz – najnowsza.
    */
   async wymiarySzablonow(): Promise<WpisWymiarowSzablonu[]> {
     const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
     const przody: WpisWymiarowSzablonu[] = [];
     const tyly: WpisWymiarowSzablonu[] = [];
+    const widzianePrzody = new Set<string>();
     const widzianeTyly = new Set<string>();
     for (const w of wpisy) {
       if (w.projekt.pakiet && w.projekt.pakiet !== 'wlasne') continue;
       if (!czyProjektRewersowy(w.projekt))
         for (const s of w.projekt.szablony) {
           if (s.rozmiar.tryb !== 'mm') continue;
+          const promien = s.promienRogow ?? 0;
+          const klucz = JSON.stringify([s.nazwa, s.rozmiar.szerokosc, s.rozmiar.wysokosc, promien]);
+          if (widzianePrzody.has(klucz)) continue;
+          widzianePrzody.add(klucz);
           przody.push({
             strona: 'przod',
             projektId: w.id,
@@ -874,7 +881,7 @@ export class BazaProjektow {
             nazwa: s.nazwa,
             szer: s.rozmiar.szerokosc,
             wys: s.rozmiar.wysokosc,
-            promien: s.promienRogow ?? 0,
+            promien,
           });
         }
       for (const r of w.projekt.rewersy ?? []) {
