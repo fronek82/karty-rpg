@@ -1456,11 +1456,12 @@ export const pl = {
   'rewers.przykladZPrzodu': 'Wartość przykładowa (z przodu „{szablon}”)',
   'rewers.przykladZPrzoduOpis':
     'Na każdej karcie pole pokaże jej wartość „{pole}” z przodu; stały tekst – gdy karta jej nie ma. Wartość przykładowa jest wspólna z przodem i trafia tylko do podglądu.',
+  'rewers.przykladWlasnyOpis':
+    'Tylko do podglądu – na kartach jest stały tekst (ten sam na każdej karcie).',
   'rewers.poleNazwyPrzodu':
-    'Ten sam tekst na każdej karcie. Aby pole brało wartość z danych karty, nadaj mu nazwę pola z przodu: {nazwy}.',
-  'rewers.poleStale': 'Ten sam tekst na każdej karcie.',
+    'Aby każda karta miała tu swoją wartość z danych, nadaj polu nazwę pola z przodu: {nazwy}.',
   'rewers.poleBezPrzodu':
-    'Ten sam tekst na każdej karcie. Gdy ten tył zostanie przypisany do przodu, pole o nazwie pola z przodu przejmie wartość z danych karty.',
+    'Gdy ten tył zostanie przypisany do przodu, pole o nazwie pola z przodu przejmie wartość z danych karty.',
   'rewers.brak': 'Nie znaleziono takiego tyłu w projekcie.',
   'rewers.zaimportowano': 'Dodano tył „{nazwa}” – otwórz.',
   'rewers.nazwa': 'Nazwa tyłu',

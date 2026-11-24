@@ -253,6 +253,12 @@ test('tył: pole o nazwie pola przodu pokazuje i zmienia wartość przykładową
   const adresTylu = page.url();
   await dodaj(page, 'Tekst', 'Napis');
   await expect(panel(page).getByText(/Gdy ten tył zostanie przypisany do przodu/)).toBeVisible();
+  // Własna wartość przykładowa tyłu: tylko podgląd, stały tekst bez zmian.
+  const podgladTylu = page.locator('.karta-podgladu svg');
+  const bezPrzykladu = await podgladTylu.innerHTML();
+  await panel(page).getByLabel('Wartość przykładowa', { exact: true }).fill('Bez przodu');
+  await expect.poll(() => podgladTylu.innerHTML()).not.toBe(bezPrzykladu);
+  await expect(panel(page).getByLabel('Stały tekst')).toHaveValue('Tekst');
   await zapisano(page);
 
   await page.goto(`./#/projekt/${id}/nowy-szablon`);

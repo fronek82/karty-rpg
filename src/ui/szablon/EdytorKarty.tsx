@@ -16,6 +16,7 @@ import {
   przypiszRewers,
   rewersJakoSzablon,
   przodRewersu,
+  rewersZPrzykladami,
   szablonDoRewersu,
   unikalnaNazwa,
   ustawStalyObrazRewersu,
@@ -228,7 +229,7 @@ export const STRONY: Record<StronaKarty, KonfiguracjaStrony> = {
       if (!r) return '';
       const przod = przodRewersu(p, id);
       return JSON.stringify({
-        rewers: { ...szablonDoRewersu(r, w), nazwa: '' },
+        rewers: { ...rewersZPrzykladami(szablonDoRewersu(r, w)), nazwa: '' },
         // Z przodu tylko to, co wpływa na podgląd tyłu: pola (z wariantami) i wartości przykładowe.
         ...(przod
           ? {

@@ -1,12 +1,15 @@
 import type { Arkusz } from '../model/arkusz';
 import type { DaneZasobow, Projekt } from '../model/projekt';
 import {
+  czyKontener,
   DOMYSLNE_TLO_KARTY,
+  wszystkieWezly,
   type Karta,
   type PrzypisanieRewersu,
   type Rewers,
   type Szablon,
   type Talia,
+  type Wezel,
 } from '../model/szablon';
 import { t } from '../i18n';
 import { dodajZasoby } from './edycja';
@@ -225,6 +228,8 @@ export function rewersJakoSzablon(r: Rewers): Szablon {
     ...(r.ramka !== undefined ? { ramka: r.ramka } : {}),
     ...(r.promienRogow !== undefined ? { promienRogow: r.promienRogow } : {}),
     ...(r.postrzepienie !== undefined ? { postrzepienie: structuredClone(r.postrzepienie) } : {}),
+    // Teksty przykładowe tyłu (id pola → tekst) – w widoku szablonu jako `przyklad`.
+    ...(r.przyklad ? { przyklad: { ...r.przyklad } } : {}),
   };
 }
 
@@ -251,7 +256,30 @@ export function szablonDoRewersu(oryginal: Rewers, s: Szablon): Rewers {
   if (s.ramka !== undefined) wynik.ramka = s.ramka;
   if (s.promienRogow !== undefined) wynik.promienRogow = s.promienRogow;
   if (s.postrzepienie !== undefined) wynik.postrzepienie = structuredClone(s.postrzepienie);
+  // Przykłady tylko niepuste i tylko istniejących pól tekstu/wartości (bez martwych wpisów).
+  const ids = new Set(
+    wszystkieWezly(wynik)
+      .filter((w) => w.typ === 'tekst' || w.typ === 'wartosc')
+      .map((w) => w.id),
+  );
+  const przyklad = Object.entries(s.przyklad ?? {}).filter(([id, v]) => v !== '' && ids.has(id));
+  if (przyklad.length) wynik.przyklad = Object.fromEntries(przyklad);
   return wynik;
+}
+
+/**
+ * Tył do podglądu w edytorze: pola z tekstem przykładowym (`przyklad`) pokazują go zamiast stałego
+ * tekstu. Na kartach i w druku przykłady nie biorą udziału.
+ */
+export function rewersZPrzykladami(r: Rewers): Rewers {
+  const { przyklad, ...bez } = r;
+  if (!przyklad) return r;
+  const podmien = (w: Wezel): Wezel => {
+    if (czyKontener(w)) return { ...w, dzieci: w.dzieci.map(podmien) };
+    const v = przyklad[w.id];
+    return v && (w.typ === 'tekst' || w.typ === 'wartosc') ? { ...w, tekst: v } : w;
+  };
+  return { ...bez, korzen: podmien(bez.korzen) as Rewers['korzen'] };
 }
 
 export function duplikujRewersWProjekcie(
@@ -272,7 +300,20 @@ export function duplikujRewersWProjekcie(
     lista.map((x) => x.nazwa),
     sufiks,
   );
-  const skopiowany = szablonDoRewersu(r, duplikujSzablon(rewersJakoSzablon(r), noweId, nazwa));
+  const widok = rewersJakoSzablon(r);
+  const duplikat = duplikujSzablon(widok, noweId, nazwa);
+  // Przykłady tyłu są po id pól – kopia dostaje je pod nowymi id (to samo drzewo, ta sama kolejność).
+  if (r.przyklad) {
+    const stare = wszystkieWezly(widok);
+    const nowe = wszystkieWezly(duplikat);
+    const przyklad: Record<string, string> = {};
+    stare.forEach((w, n) => {
+      const v = r.przyklad![w.id];
+      if (v !== undefined && nowe[n]) przyklad[nowe[n].id] = v;
+    });
+    duplikat.przyklad = przyklad;
+  }
+  const skopiowany = szablonDoRewersu(r, duplikat);
   const kopia: Rewers = { ...skopiowany, id: noweId, nazwa };
   const rewersy = [...lista];
   rewersy.splice(i + 1, 0, kopia);

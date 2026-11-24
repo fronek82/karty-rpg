@@ -202,7 +202,17 @@ export function PanelWezla({
             </div>
           )}
           {bezDanych && (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
-            <PowiazanieZPrzodem pole={pole} przod={przodTylu} />
+            <PrzykladTylu
+              pole={pole}
+              przod={przodTylu}
+              przyklad={szablon.przyklad?.[pole.id] ?? ''}
+              zmienPrzyklad={(v, grupuj) =>
+                zmienSzablon(
+                  (s) => ({ ...s, przyklad: { ...s.przyklad, [pole.id]: v } }),
+                  grupuj ? `przyklad-tylu:${pole.id}` : undefined,
+                )
+              }
+            />
           )}
           {(bezDanych || !pole.klucz) && (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
             <div className="pole-panelu">
@@ -639,50 +649,70 @@ export interface PrzodTylu {
 }
 
 /**
- * Pole tekstowe tyłu a dane kart: pole o nazwie pola przodu pokazuje wartość przykładową przodu
- * (edytowalną tutaj) i na każdej karcie przejmuje jej wartość; inne – podpowiedź z nazwami pól.
+ * „Wartość przykładowa” pola tekstowego tyłu (tylko podgląd). Pole o nazwie pola przodu z danymi
+ * pokazuje i zmienia przykład przodu (na kartach – wartość karty); inne – własny przykład tyłu
+ * (`Rewers.przyklad`, na kartach – stały tekst) i podpowiedź, jak powiązać pole z przodem.
  */
-function PowiazanieZPrzodem({
+function PrzykladTylu({
   pole,
   przod,
+  przyklad,
+  zmienPrzyklad,
 }: {
   pole: PoleTekst | PoleWartosc;
   przod: PrzodTylu | undefined;
+  przyklad: string;
+  zmienPrzyklad: (wartosc: string, grupuj: boolean) => void;
 }) {
-  if (!przod) return <p className="podpis">{t('rewers.poleBezPrzodu')}</p>;
-  const klucz = kluczPolaPrzodu(przod.szablon, pole);
-  if (!klucz) {
-    const nazwy = [
-      ...new Set(
-        wszystkieWezly(przod.szablon)
-          .filter(
-            (w): w is PoleTekst | PoleWartosc =>
-              w.typ === pole.typ && !!(w as PoleTekst | PoleWartosc).klucz,
-          )
-          .map((w) => w.nazwa || w.klucz!),
-      ),
-    ];
-    return (
-      <p className="podpis">
-        {nazwy.length
-          ? t('rewers.poleNazwyPrzodu', { nazwy: nazwy.map((n) => `„${n}”`).join(', ') })
-          : t('rewers.poleStale')}
-      </p>
-    );
-  }
+  const klucz = przod && kluczPolaPrzodu(przod.szablon, pole);
+  const nazwy = przod
+    ? [
+        ...new Set(
+          wszystkieWezly(przod.szablon)
+            .filter(
+              (w): w is PoleTekst | PoleWartosc =>
+                w.typ === pole.typ && !!(w as PoleTekst | PoleWartosc).klucz,
+            )
+            .map((w) => w.nazwa || w.klucz!),
+        ),
+      ]
+    : [];
+  const [etykieta, wartosc, zmien, opis] =
+    przod && klucz
+      ? [
+          t('rewers.przykladZPrzodu', { szablon: przod.szablon.nazwa }),
+          przod.szablon.przyklad?.[klucz] ?? '',
+          (v: string, grupuj: boolean) => przod.zmienPrzyklad(klucz, v, grupuj),
+          t('rewers.przykladZPrzoduOpis', { pole: pole.nazwa ?? '' }),
+        ]
+      : [
+          t('szablon.przyklad'),
+          przyklad,
+          zmienPrzyklad,
+          [
+            t('rewers.przykladWlasnyOpis'),
+            !przod
+              ? t('rewers.poleBezPrzodu')
+              : nazwy.length
+                ? t('rewers.poleNazwyPrzodu', { nazwy: nazwy.map((n) => `„${n}”`).join(', ') })
+                : '',
+          ]
+            .filter(Boolean)
+            .join(' '),
+        ];
   const id = `przyklad-tylu-${pole.id}`;
   return (
     <div className="pole-panelu">
-      <label htmlFor={id}>{t('rewers.przykladZPrzodu', { szablon: przod.szablon.nazwa })}</label>
+      <label htmlFor={id}>{etykieta}</label>
       <PoleWielowierszowe
         kluczRozmiaru={`szablon:przyklad:${pole.typ === 'tekst' ? 'tekst' : 'krotki'}`}
         id={id}
         rows={pole.typ === 'tekst' ? 3 : 1}
-        value={przod.szablon.przyklad?.[klucz] ?? ''}
-        onChange={(e) => przod.zmienPrzyklad(klucz, e.target.value, !czyWklejanieWToku())}
-        onPaste={(e) => obsluzWklejenieZPdf(e, (v) => przod.zmienPrzyklad(klucz, v, false))}
+        value={wartosc}
+        onChange={(e) => zmien(e.target.value, !czyWklejanieWToku())}
+        onPaste={(e) => obsluzWklejenieZPdf(e, (v) => zmien(v, false))}
       />
-      <p className="podpis">{t('rewers.przykladZPrzoduOpis', { pole: pole.nazwa ?? '' })}</p>
+      <p className="podpis">{opis}</p>
     </div>
   );
 }
