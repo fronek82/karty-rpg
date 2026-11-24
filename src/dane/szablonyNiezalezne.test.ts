@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { strToU8, zipSync } from 'fflate';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { DaneZasobow, Projekt } from '../model/projekt';
-import type { Rewers } from '../model/szablon';
+import type { Mm } from '../model/jednostki';
+import type { Rewers, Szablon } from '../model/szablon';
 import { pakietMausritter } from '../pakiety/mausritter';
 import {
   dodajRewersZPaczki,
@@ -92,19 +93,43 @@ describe('wymiarySzablonow (Rozmiar jak w szablonie)', () => {
   let baza: BazaProjektow;
   afterEach(() => baza?.zamknij());
 
-  it('przody w mm z wymiarami i rogami, tyły bez identycznych kopii', async () => {
+  it('przody w mm z wymiarami i rogami, bez kopii przodów i identycznych kopii tyłów', async () => {
     baza = new BazaProjektow('wymiary-szablonow');
     const r = { ...rewers('r1', 'Tył A'), promienRogow: 2 };
-    await baza.zapisz(wlasny('w1', { rewersy: [r] }), zasoby);
-    await baza.zapisz(wlasny('w2', { rewersy: [structuredClone(r)] }), zasoby);
+    const przod = (id: string, nazwa: string, wys: number, tlo?: string): Szablon => ({
+      ...structuredClone(niepusty()),
+      id,
+      nazwa,
+      rozmiar: { tryb: 'mm', szerokosc: 63 as Mm, wysokosc: wys as Mm },
+      promienRogow: 3 as Mm,
+      ...(tlo ? { tlo } : {}),
+    });
+    await baza.zapisz(
+      wlasny('w1', { rewersy: [r], szablony: [...bazowy.szablony, przod('mm-a', 'Karta', 88)] }),
+      zasoby,
+    );
+    // Kopia przodu w innym projekcie (inna treść, ta sama nazwa i rozmiar) – jedna pozycja;
+    // przód o tej samej nazwie i innym rozmiarze – osobna.
+    await baza.zapisz(
+      wlasny('w2', {
+        rewersy: [structuredClone(r)],
+        szablony: [
+          ...bazowy.szablony,
+          przod('mm-a', 'Karta', 88, '#abcdef'),
+          przod('mm-b', 'Karta', 90),
+        ],
+      }),
+      zasoby,
+    );
     const lista = await baza.wymiarySzablonow();
     const tyly = lista.filter((w) => w.strona === 'tyl');
     expect(tyly).toHaveLength(1);
     expect(tyly[0]).toMatchObject({ nazwa: 'Tył A', szer: r.rozmiar.szerokosc, promien: 2 });
     const przody = lista.filter((w) => w.strona === 'przod');
-    const mm = bazowy.szablony.filter((s) => s.rozmiar.tryb === 'mm');
-    expect(przody).toHaveLength(mm.length * 2);
-    expect(przody.every((p) => p.szer > 0 && p.wys > 0)).toBe(true);
+    expect(przody.map((p) => [p.nazwa, p.szer, p.wys, p.promien])).toEqual([
+      ['Karta', 63, 88, 3],
+      ['Karta', 63, 90, 3],
+    ]);
   });
 });
 

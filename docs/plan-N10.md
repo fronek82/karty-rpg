@@ -52,6 +52,8 @@ zgodności rozmiarów przodu i tyłu oraz nazwy „Przód” / „Tył” w inte
   bez przypisania) albo przody wybranych kart; tył z innego projektu jest sprawdzany przed
   dołączeniem (`dolaczRewersGlobalnyDoProjektu(…, sprawdz)`).
 - Druk dwustronny: komunikat w sekcji „Druk dwustronny” i pytanie przed „Pobierz PDF”.
+- „Rozmiar jak w szablonie”: przody o tej samej nazwie, wymiarach i rogach (kopie szablonu
+  w wielu projektach) są na liście raz – z przodu kopiowane są tylko wymiary i rogi.
 - „Edytor kart” w edytorze tyłu jest teraz przyciskiem jak w edytorze przodu (był odnośnikiem).
 - EN: „Unlock” zastąpione „Make editable” (zakazany zwrot w regułach instrukcji).
 
