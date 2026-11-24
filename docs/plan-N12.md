@@ -70,3 +70,9 @@ a użytkownik chciał kilku wersji całego wiersza.
 - „＋ Dodaj odmianę” kopiuje całą ostatnią odmianę (nazwa „Odmiana N”, pierwszy wolny numer) –
   zmienia się w niej ikonę i tekst (`dodajOdmiane`).
 - Domyślna nazwa przełącznika to „Rodzaj” (kolumna `rodzaj` w CSV).
+- W interfejsie „wersja” zamiast „odmiana” (sekcja „Wersje z danych”, „Wersja 1”, „＋ Dodaj
+  wersję”) – na prośbę właściciela; w kodzie i kluczach i18n nazwy `odmiana` / `odmiany.*` bez
+  zmian. Sekcja jest na końcu panelu kontenera.
+- Okno „Załadować ponownie stronę?” przy odświeżaniu z niezapisanymi zmianami to okno
+  przeglądarki (`beforeunload`) – jego przyciski są w języku przeglądarki i aplikacja nie może
+  ich zmienić.

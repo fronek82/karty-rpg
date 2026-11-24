@@ -24,17 +24,17 @@ test('przełącznik odmian: cały wiersz jako odmiana, kopia odmiany, wybór w p
 
   // Włączenie na wierszu z polami: ikona i tekst razem tworzą odmianę 1.
   await zaznacz(page, 'Rodzaj');
-  const s = await sekcja(page, 'Odmiany z danych');
-  await s.getByLabel('Pokazuj jedną odmianę wybraną w danych karty').check();
+  const s = await sekcja(page, 'Wersje z danych');
+  await s.getByLabel('Pokazuj jedną wersję wybraną w danych karty').check();
   await expect(s).toContainText('Pole danych karty: rodzaj');
-  await expect(wDrzewie('Odmiana 1')).toContainText('= 1');
+  await expect(wDrzewie('Wersja 1')).toContainText('= 1');
   await expect(wDrzewie('Ludzik')).not.toContainText('=');
   await expect(obszar('Ludzik')).toHaveCount(1);
   await expect(obszar('Podejrzany')).toHaveCount(1);
 
   // „Dodaj odmianę” – kopia całego wiersza; podgląd dalej pokazuje jedną odmianę.
-  await s.getByRole('button', { name: '＋ Dodaj odmianę' }).click();
-  await expect(wDrzewie('Odmiana 2')).toContainText('= 2');
+  await s.getByRole('button', { name: '＋ Dodaj wersję' }).click();
+  await expect(wDrzewie('Wersja 2')).toContainText('= 2');
   await expect(obszar('Ludzik')).toHaveCount(1);
   await expect(obszar('Ludzik (kopia)')).toHaveCount(0);
 
@@ -49,8 +49,8 @@ test('przełącznik odmian: cały wiersz jako odmiana, kopia odmiany, wybór w p
   const wybor = p.getByLabel('Rodzaj', { exact: true });
   await expect(wybor.locator('option')).toHaveText([
     '— domyślna —',
-    '1 – Odmiana 1',
-    '2 – Odmiana 2',
+    '1 – Wersja 1',
+    '2 – Wersja 2',
   ]);
   await wybor.selectOption('2');
   await expect(wybor).toHaveValue('2');

@@ -313,16 +313,6 @@ export function PanelWezla({
               </p>
             </div>
           )}
-          {!wiele && (
-            <PanelOdmian
-              szablon={szablon}
-              kontener={wezel}
-              zmienWezel={zmienWezel}
-              zmienSzablon={zmienSzablon}
-              bezDanych={bezDanych}
-              zajeteKlucze={zajeteKlucze}
-            />
-          )}
         </>
       )}
 
@@ -645,6 +635,17 @@ export function PanelWezla({
           obrazy={obrazy}
           {...(wgrajStalyObraz ? { wgrajStalyObraz } : {})}
           wiele={wiele}
+          bezDanych={bezDanych}
+          zajeteKlucze={zajeteKlucze}
+        />
+      )}
+      {/* „Wersje z danych” – na końcu panelu kontenera. */}
+      {!wiele && czyKontener(wezel) && (
+        <PanelOdmian
+          szablon={szablon}
+          kontener={wezel}
+          zmienWezel={zmienWezel}
+          zmienSzablon={zmienSzablon}
           bezDanych={bezDanych}
           zajeteKlucze={zajeteKlucze}
         />
