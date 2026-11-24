@@ -130,6 +130,21 @@ export type ElementSceny =
       /** Krycie grupy 0–1 (domyślnie 1); izolowana grupa przezroczystości (SVG opacity, PDF Transparency Group). */
       krycie?: number;
       elementy: ElementSceny[];
+    }
+  | {
+      /**
+       * Wzór kafelkowy wypełniający prostokąt `obszar` (mm, układ sceny). Rysunek jednego okresu
+       * (`elementy`, układ wzoru) powtarza się co `szer` × `wys`; `macierz` przenosi układ wzoru
+       * do układu sceny (początek, obrót). Rysunek może wystawać poza kafelek o mniej niż okres –
+       * każda kopia jest rysowana w całości. SVG: `<pattern patternUnits="userSpaceOnUse">`,
+       * PDF: kopie wektorowe (`rozwinWzor`).
+       */
+      typ: 'wzor';
+      obszar: { x: Mm; y: Mm; szer: Mm; wys: Mm };
+      szer: Mm;
+      wys: Mm;
+      macierz: Macierz;
+      elementy: ElementSceny[];
     };
 
 export interface DefinicjaGlifu {
@@ -192,4 +207,55 @@ export function symboleSceny(...slowniki: (Record<string, DefinicjaSymbolu> | un
 } {
   const symbole = polaczSymbole(...slowniki);
   return Object.keys(symbole).length > 0 ? { symbole } : {};
+}
+
+/** Najwięcej kopii kafelka po rozwinięciu wzoru (zabezpieczenie rozmiaru PDF). */
+export const MAX_KOPII_WZORU = 60000;
+
+/**
+ * Wzór kafelkowy jako zwykła grupa kopii (przycięta do obszaru) – dla wyjść bez wzorów
+ * (PDF). Kopie obejmują obszar także po obrocie i jeden kafelek zapasu (rysunek wystający).
+ */
+export function rozwinWzor(e: Extract<ElementSceny, { typ: 'wzor' }>): ElementSceny {
+  const [a, b, c, d, tx, ty] = e.macierz;
+  const wyz = a * d - b * c;
+  const pusty: ElementSceny = { typ: 'grupa', x: 0, y: 0, elementy: [] };
+  if (!(e.szer > 0 && e.wys > 0) || !wyz || !e.elementy.length) return pusty;
+  // Odwrotność macierzy: narożniki obszaru w układzie wzoru.
+  let u0 = Infinity;
+  let u1 = -Infinity;
+  let v0 = Infinity;
+  let v1 = -Infinity;
+  const o = e.obszar;
+  for (const [x, y] of [
+    [o.x, o.y],
+    [o.x + o.szer, o.y],
+    [o.x, o.y + o.wys],
+    [o.x + o.szer, o.y + o.wys],
+  ] as const) {
+    const dx = x - tx;
+    const dy = y - ty;
+    const u = (d * dx - c * dy) / wyz;
+    const v = (-b * dx + a * dy) / wyz;
+    u0 = Math.min(u0, u);
+    u1 = Math.max(u1, u);
+    v0 = Math.min(v0, v);
+    v1 = Math.max(v1, v);
+  }
+  const i0 = Math.floor(u0 / e.szer) - 1;
+  const i1 = Math.ceil(u1 / e.szer);
+  const j0 = Math.floor(v0 / e.wys) - 1;
+  const j1 = Math.ceil(v1 / e.wys);
+  if ((i1 - i0 + 1) * (j1 - j0 + 1) > MAX_KOPII_WZORU) return pusty;
+  const kopie: ElementSceny[] = [];
+  for (let j = j0; j <= j1; j++)
+    for (let i = i0; i <= i1; i++)
+      kopie.push({ typ: 'grupa', x: i * e.szer, y: j * e.wys, elementy: e.elementy });
+  return {
+    typ: 'grupa',
+    x: 0,
+    y: 0,
+    przyciecie: { ...o },
+    elementy: [{ typ: 'grupa', x: 0, y: 0, macierz: e.macierz, elementy: kopie }],
+  };
 }

@@ -322,7 +322,7 @@ const rozmiarKarty = z.discriminatedUnion('tryb', [
 ]);
 
 const wzorTla = obj({
-  rodzaj: z.enum(['pionowe', 'poziome', 'kratka', 'romby', 'ukosne', 'kropki']),
+  rodzaj: z.enum(['pionowe', 'poziome', 'kratka', 'romby', 'ukosne', 'kropki', 'svg']),
   grubosc: liczba.min(0.05).max(50),
   odstep: liczba.min(0.5).max(200),
   kolor: z.string(),
@@ -330,6 +330,11 @@ const wzorTla = obj({
   obrot: opc(liczba),
   przesuniecie: opc(xy),
   podTekstura: opc(z.boolean()),
+  uklad: opc(z.enum(['siatka', 'cegielka', 'pion'])),
+  element: opc(identyfikator),
+  rozmiar: opc(liczba.min(1).max(200)),
+  odstepX: opc(liczba.min(0).max(200)),
+  odstepY: opc(liczba.min(0).max(200)),
 });
 
 const przypisanieRewersu = opc(z.union([identyfikator, z.null()]));
@@ -819,6 +824,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 27→28: kształty wartości domyślnie zachowują proporcje – istniejące romby, tarcze, sześciokąty
   // i własne kształty dostają `zachowajProporcje: false` (wyglądają jak dotąd).
   // 28→29: opcjonalny wzór tła karty (`wzorTla` awersu i rewersu) – bez zmian danych.
+  // 29→30: wzór tła z biblioteki SVG (`rodzaj: 'svg'`, `element`, `rozmiar`, `odstepX/Y`) i układ
+  // kafelków (`uklad`) – pola opcjonalne, bez zmian danych (wbudowane wzory wyglądają jak dotąd).
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -853,6 +860,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     26: (d) => d,
     27: rozciagnieteKsztalty,
     28: (d) => d,
+    29: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -888,6 +896,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     26: (d) => d,
     27: rozciagnieteKsztalty,
     28: (d) => d,
+    29: (d) => d,
   },
 };
 

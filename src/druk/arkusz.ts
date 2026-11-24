@@ -393,6 +393,7 @@ export function wSkaliSzarosci(elementy: ElementSceny[]): ElementSceny[] {
   return elementy.map((e): ElementSceny => {
     switch (e.typ) {
       case 'grupa':
+      case 'wzor':
         return { ...e, elementy: wSkaliSzarosci(e.elementy) };
       case 'tekst':
         return { ...e, kolor: szary(e.kolor), ...(e.obwodka ? { obwodka: obr(e.obwodka) } : {}) };
@@ -1512,7 +1513,7 @@ export function zSzarymiObrazami(scena: Scena): Scena {
     elementy.map((e) =>
       e.typ === 'obraz'
         ? { ...e, zasob: e.zasob + SUFIKS_SZARY }
-        : e.typ === 'grupa'
+        : e.typ === 'grupa' || e.typ === 'wzor'
           ? { ...e, elementy: zmien(e.elementy) }
           : e,
     );

@@ -27,10 +27,12 @@ function* ref(o: unknown, klucz: string): Generator<Odwolanie> {
 }
 
 /**
- * Wszystkie odwołania szablonu do elementów biblioteki (ozdoba, narożniki, motyw/zakończenia/
- * środek separatora, własny kształt wartości, ramka karty) z możliwością przepisania identyfikatora.
+ * Wszystkie odwołania szablonu do elementów biblioteki (wzór tła karty, ozdoba, narożniki,
+ * motyw/zakończenia/środek separatora, własny kształt wartości, ikona, ramka karty) z możliwością
+ * przepisania identyfikatora.
  */
 function* odwolania(s: Szablon): Generator<Odwolanie> {
+  if (s.wzorTla?.rodzaj === 'svg') yield* ref(s.wzorTla, 'element');
   if (s.ramka) {
     yield* ref(s.ramka.ozdoba, 'element');
     yield* ref(s.ramka.narozniki, 'element');
@@ -49,6 +51,13 @@ function* odwolania(s: Szablon): Generator<Odwolanie> {
       if (!czyKontener(w) && w.typ === 'ikona' && w.element) yield* ref(w, 'element');
     }
   }
+}
+
+/** Liczba szablonów i rewersów projektu, które mają element `id` jako wzór tła karty. */
+export function liczbaTelZElementem(p: Pick<Projekt, 'szablony' | 'rewersy'>, id: string): number {
+  return [...p.szablony, ...(p.rewersy ?? [])].filter(
+    (s) => s.wzorTla?.rodzaj === 'svg' && s.wzorTla.element === id,
+  ).length;
 }
 
 /** Identyfikatory elementów biblioteki użyte w szablonie (z powtórzeniami). */

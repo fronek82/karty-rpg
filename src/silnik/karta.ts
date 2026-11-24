@@ -47,7 +47,7 @@ import type { ElementOzdobny } from '../ozdobniki/typy';
 import { ramkaZMotywu } from '../ozdobniki/motyw';
 import { konturPostrzepiony, szkicujElementy } from '../ozdobniki/dekoracje';
 import { konturProstokata } from './konturyFigur';
-import { elementyWzoruTla } from './wzorTla';
+import { elementyWzoruSvg, elementyWzoruTla } from './wzorTla';
 import { MIN_DPI_RAMKI, ramka9ZElementu, type WynikRamki9 } from '../ozdobniki/ramka9';
 import { rysujSeparatorOzdobny, wysokoscOzdobySeparatora } from '../ozdobniki/separator';
 import {
@@ -610,7 +610,22 @@ export function renderujKarte(
   const wzorTla = () => {
     const wzor = szablon.wzorTla;
     if (!wzor || (wzor.krycie !== undefined && wzor.krycie <= 0)) return;
-    const tresc = elementyWzoruTla(wzor, ramkaBrutto);
+    let tresc: ElementSceny[];
+    if (wzor.rodzaj === 'svg') {
+      // Grafika z biblioteki: brak wpisu – samo tło kolorem i ostrzeżenie (nie błąd).
+      const e = wzor.element ? znajdzElement(wzor.element, ctx.elementy) : undefined;
+      if (!e) {
+        ostrzezenia.push({
+          pole: 'tlo-karty',
+          komunikat: 'nieznany-element-ozdobny',
+          szczegoly: wzor.element ?? '',
+        });
+        return;
+      }
+      const w = elementyWzoruSvg(wzor, ramkaBrutto, e);
+      Object.assign(symbole, w.symbole);
+      tresc = w.elementy;
+    } else tresc = elementyWzoruTla(wzor, ramkaBrutto);
     if (!tresc.length) return;
     elementy.push({
       typ: 'grupa',

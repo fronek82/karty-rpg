@@ -174,6 +174,25 @@ export function scenaDoSvg(scena: Scena, opcje: OpcjeSvg = {}): string {
           );
         return g;
       }
+      case 'wzor': {
+        if (!(e.szer > 0 && e.wys > 0)) return '';
+        const id = `${px}w${licznikPrzyciec++}`;
+        const tresc = e.elementy.map(element).join('');
+        // Rysunek wystający poza kafelek: kopie przesunięte o okres (wzór przycina do kafelka).
+        const kopie = [-1, 0, 1]
+          .flatMap((j) => [-1, 0, 1].map((i) => [i, j] as const))
+          .filter(([i, j]) => i || j)
+          .map(
+            ([i, j]) =>
+              `<use href="#${id}t" transform="translate(${liczba(i * e.szer)} ${liczba(j * e.wys)})"/>`,
+          )
+          .join('');
+        przyciecia.push(
+          `<pattern id="${id}" patternUnits="userSpaceOnUse" x="0" y="0" width="${liczba(e.szer)}" height="${liczba(e.wys)}" patternTransform="${macierzSvg(e.macierz)}"><g id="${id}t">${tresc}</g>${kopie}</pattern>`,
+        );
+        const o = e.obszar;
+        return `<rect x="${liczba(o.x)}" y="${liczba(o.y)}" width="${liczba(o.szer)}" height="${liczba(o.wys)}" fill="url(#${id})"/>`;
+      }
     }
   };
 

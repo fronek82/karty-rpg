@@ -1,6 +1,8 @@
 import type { Mm } from '../model/jednostki';
 import type { RodzajWzoruTla, WzorTla } from '../model/szablon';
-import type { ElementSceny, Kontur } from './scena';
+import { czyJednokolorowy, symbolZElementu } from '../ozdobniki/narozniki';
+import type { ElementOzdobny } from '../ozdobniki/typy';
+import type { DefinicjaSymbolu, ElementSceny, Kontur, Macierz } from './scena';
 
 interface Obszar {
   x: Mm;
@@ -10,7 +12,7 @@ interface Obszar {
 }
 
 /** Kierunki linii (stopnie, przed obrotem wzoru) dla rodzajów liniowych. */
-const KIERUNKI: Record<Exclude<RodzajWzoruTla, 'kropki'>, number[]> = {
+const KIERUNKI: Record<Exclude<RodzajWzoruTla, 'kropki' | 'svg'>, number[]> = {
   pionowe: [90],
   poziome: [0],
   kratka: [0, 90],
@@ -70,10 +72,24 @@ export function elementyWzoruTla(wzor: WzorTla, obszar: Obszar): ElementSceny[] 
     const [minU, maxU] = rzuty(obszar, px, py, ux, uy);
     const [minV, maxV] = rzuty(obszar, px, py, vx, vy);
     const kontur: Kontur = [];
-    for (let i = Math.floor((minU - r) / odstep); i <= Math.ceil((maxU + r) / odstep); i++) {
-      for (let j = Math.floor((minV - r) / odstep); j <= Math.ceil((maxV + r) / odstep); j++) {
-        const cx = px + i * odstep * ux + j * odstep * vx;
-        const cy = py + i * odstep * uy + j * odstep * vy;
+    // Cegiełka: co drugi rząd przesunięty o pół odstępu; pion: co druga kolumna.
+    const cegielka = wzor.uklad === 'cegielka';
+    const pion = wzor.uklad === 'pion';
+    const zapas = cegielka || pion ? 1 : 0;
+    for (
+      let i = Math.floor((minU - r) / odstep) - zapas;
+      i <= Math.ceil((maxU + r) / odstep);
+      i++
+    ) {
+      for (
+        let j = Math.floor((minV - r) / odstep) - zapas;
+        j <= Math.ceil((maxV + r) / odstep);
+        j++
+      ) {
+        const u = (i + (cegielka && j % 2 !== 0 ? 0.5 : 0)) * odstep;
+        const v = (j + (pion && i % 2 !== 0 ? 0.5 : 0)) * odstep;
+        const cx = px + u * ux + v * vx;
+        const cy = py + u * uy + v * vy;
         if (
           cx + r < obszar.x ||
           cx - r > obszar.x + obszar.szer ||
@@ -86,6 +102,7 @@ export function elementyWzoruTla(wzor: WzorTla, obszar: Obszar): ElementSceny[] 
     }
     return kontur.length ? [{ typ: 'sciezka', kontur, wypelnienie: wzor.kolor }] : [];
   }
+  if (wzor.rodzaj === 'svg') return [];
   const kontur: Kontur = [];
   for (const kierunek of KIERUNKI[wzor.rodzaj]) {
     const a = ((kierunek + obrot) * Math.PI) / 180;
@@ -120,3 +137,69 @@ export const DOMYSLNY_WZOR_TLA: WzorTla = {
   odstep: 5,
   kolor: '#9fb3c8',
 };
+
+/** Domyślny dłuższy bok kafelka wzoru z biblioteki SVG (mm). */
+export const DOMYSLNY_ROZMIAR_KAFELKA = 10;
+/** Najwięcej kafelków na karcie – przy gęstszym wzorze kafelki są proporcjonalnie powiększane. */
+export const MAX_KAFELKOW = 20000;
+
+/**
+ * Wzór tła z grafiki biblioteki (element ozdobny SVG) jako wzór kafelkowy sceny (`typ: 'wzor'`):
+ * kafelek o dłuższym boku `rozmiar`, odstępy `odstepX/Y`, układ siatka / cegiełka / pion
+ * (kafelek podwójnej wysokości / szerokości z drugą kopią przesuniętą o pół kafelka). Początek
+ * i obrót jak we wzorach wbudowanych. Jednokolorowy rysunek dostaje kolor wzoru, wielokolorowy –
+ * kolory z pliku. Bez przycięcia do karty – przycina wywołujący.
+ */
+export function elementyWzoruSvg(
+  wzor: WzorTla,
+  obszar: Obszar,
+  e: ElementOzdobny,
+): { elementy: ElementSceny[]; symbole: Record<string, DefinicjaSymbolu> } {
+  const pusto = { elementy: [], symbole: {} };
+  const rozmiar = wzor.rozmiar ?? DOMYSLNY_ROZMIAR_KAFELKA;
+  const bok = Math.max(e.szer, e.wys);
+  if (!(obszar.szer > 0 && obszar.wys > 0) || !(rozmiar > 0) || !(bok > 0) || !e.kontury.length)
+    return pusto;
+  let sk = rozmiar / bok;
+  let okresX = e.szer * sk + Math.max(0, wzor.odstepX ?? 0);
+  let okresY = e.wys * sk + Math.max(0, wzor.odstepY ?? 0);
+  const ile = (obszar.szer * obszar.wys) / (okresX * okresY);
+  if (ile > MAX_KAFELKOW) {
+    const pow = Math.sqrt(ile / MAX_KAFELKOW);
+    sk *= pow;
+    okresX *= pow;
+    okresY *= pow;
+  }
+  const jednolity = czyJednokolorowy(e);
+  const klucz = `wzor-tla:${e.id}${jednolity ? ':kolor' : ''}`;
+  const kopia = (x: Mm, y: Mm): ElementSceny => ({
+    typ: 'symbol',
+    klucz,
+    macierz: [zaokr(sk), 0, 0, zaokr(sk), zaokr(x), zaokr(y)],
+    kolor: jednolity ? wzor.kolor : '#000000',
+  });
+  const uklad = wzor.uklad ?? 'siatka';
+  const [szer, wys, elementy] =
+    uklad === 'cegielka'
+      ? [okresX, 2 * okresY, [kopia(0, 0), kopia(okresX / 2, okresY)]]
+      : uklad === 'pion'
+        ? [2 * okresX, okresY, [kopia(0, 0), kopia(okresX, okresY / 2)]]
+        : [okresX, okresY, [kopia(0, 0)]];
+  const a = ((wzor.obrot ?? 0) * Math.PI) / 180;
+  const c = zaokr(Math.cos(a));
+  const s = zaokr(Math.sin(a));
+  const macierz: Macierz = [c, s, -s, c, wzor.przesuniecie?.x ?? 0, wzor.przesuniecie?.y ?? 0];
+  return {
+    elementy: [
+      {
+        typ: 'wzor',
+        obszar: { x: obszar.x, y: obszar.y, szer: obszar.szer, wys: obszar.wys },
+        szer: zaokr(szer),
+        wys: zaokr(wys),
+        macierz,
+        elementy,
+      },
+    ],
+    symbole: { [klucz]: symbolZElementu(e, jednolity) },
+  };
+}

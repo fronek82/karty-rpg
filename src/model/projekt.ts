@@ -31,8 +31,9 @@ import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 27 – M4-5: ustawienia trybu drukarni arkusza (`UstawieniaArkusza.drukarnia`: spad, znaczniki cięcia, układ).
  * 28 – N4: wartość w kształcie – `zachowajProporcje`, `ramiona`, nowe figury, etykieta obok kształtu.
  * 29 – N5: wzór tła karty (`wzorTla` awersu i rewersu: linie, kratka, romby, kropki).
+ * 30 – N9: wzór tła z biblioteki SVG (`wzorTla.rodzaj: 'svg'`, odwołanie do elementu) i układ kafelków.
  */
-export const WERSJA_SCHEMATU = 29;
+export const WERSJA_SCHEMATU = 30;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

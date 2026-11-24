@@ -1,13 +1,27 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { t } from '../../i18n';
 import {
   DOMYSLNE_TLO_KARTY,
   type Kolor,
   type RodzajWzoruTla,
+  type UkladWzoruTla,
   type WzorTla,
 } from '../../model/szablon';
-import { DOMYSLNY_WZOR_TLA } from '../../silnik/wzorTla';
+import { czyJednokolorowy } from '../../ozdobniki/narozniki';
+import { czyWbudowany } from '../../ozdobniki/katalog';
+import type { ElementOzdobny } from '../../ozdobniki/typy';
+import { konturNaD } from '../../silnik/svg';
+import {
+  DOMYSLNY_ROZMIAR_KAFELKA,
+  DOMYSLNY_WZOR_TLA,
+  elementyWzoruTla,
+} from '../../silnik/wzorTla';
+import { zapiszOzdobnikWBibliotece } from '../bazaUI';
+import { paczkaOzdobnikaZPliku } from '../biblioteki/plikiOzdobnikow';
+import { useAdresBiblioteki, useElementyWlasne, useWyjscieDoBiblioteki } from './elementyWlasne';
 import { Liczba, Lista, PoleKoloru, Przelacznik, Sekcja, Wybor } from './Kontrolki';
+import { MiniaturaOzdobnika } from './MiniaturaOzdobnika';
+import { nazwaElementu } from './PanelWygladu';
 
 /** Część strony (awersu albo rewersu) opisująca tło karty. */
 export interface StanTla {
@@ -18,7 +32,7 @@ export interface StanTla {
 
 export type TrybTlaKarty = 'brak' | 'kolor' | 'obraz' | 'wzor';
 
-const RODZAJE: readonly RodzajWzoruTla[] = [
+const RODZAJE: readonly Exclude<RodzajWzoruTla, 'svg'>[] = [
   'pionowe',
   'poziome',
   'kratka',
@@ -27,6 +41,52 @@ const RODZAJE: readonly RodzajWzoruTla[] = [
   'kropki',
 ];
 const BIALY = DOMYSLNE_TLO_KARTY;
+const UKLADY: readonly UkladWzoruTla[] = ['siatka', 'cegielka', 'pion'];
+
+/** Grafiki biblioteki użytkownika, które mogą być wzorem tła (rysunek SVG, bez wbudowanych). */
+export const grafikiWzoru = (elementy: readonly ElementOzdobny[]) =>
+  elementy.filter((e) => !czyWbudowany(e.id) && e.kontury.length > 0);
+
+/** Miniatura wbudowanego wzoru – ten sam silnik co na karcie (kolor tekstu przycisku). */
+function MiniaturaWzoru({ rodzaj }: { rodzaj: Exclude<RodzajWzoruTla, 'svg'> }) {
+  const kropki = rodzaj === 'kropki';
+  const [e] = elementyWzoruTla(
+    { ...DOMYSLNY_WZOR_TLA, rodzaj, grubosc: kropki ? 1.2 : 0.4, odstep: 3 },
+    { x: 0, y: 0, szer: 12, wys: 12 },
+  );
+  if (e?.typ !== 'sciezka') return null;
+  return (
+    <svg
+      className="miniatura-ozdobnika"
+      viewBox="0 0 12 12"
+      width={32}
+      height={32}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d={konturNaD(e.kontur)}
+        fill={e.wypelnienie ? 'currentColor' : 'none'}
+        stroke={e.obrys ? 'currentColor' : 'none'}
+        strokeWidth={e.obrys?.grubosc}
+      />
+    </svg>
+  );
+}
+
+/** Zmiana pola opcjonalnego wzoru: wartość domyślna usuwa pole (zapis bez zbędnych kluczy). */
+function zPolem<K extends keyof WzorTla>(
+  w: WzorTla,
+  klucz: K,
+  v: WzorTla[K],
+  domyslna: WzorTla[K],
+): WzorTla {
+  const { [klucz]: _stare, ...reszta } = w;
+  void _stare;
+  return v === undefined || v === domyslna
+    ? (reszta as WzorTla)
+    : ({ ...reszta, [klucz]: v } as unknown as WzorTla);
+}
 
 /** Czy dwa stany tła są takie same (bez zmiany – bez wpisu „Cofnij” i zapisu). */
 export function tenSamStanTla(a: StanTla, b: StanTla): boolean {
@@ -163,38 +223,82 @@ export function SekcjaTlaKarty({
       {tryb === 'obraz' && wyborTekstury}
       {tryb === 'wzor' && wzor && (
         <>
-          <Lista
-            etykieta={t('tloKarty.wzor')}
-            opcje={RODZAJE.map((r) => ({ wartosc: r, tekst: t(`tloKarty.wzor.${r}`) }))}
-            wartosc={wzor.rodzaj}
-            zmien={(rodzaj) => zmienWzor((w) => ({ ...w, rodzaj }), 'rodzaj')}
-          />
-          <div className="dwa-pola">
-            <Liczba
-              etykieta={wzor.rodzaj === 'kropki' ? t('tloKarty.srednica') : t('tloKarty.grubosc')}
-              wartosc={wzor.grubosc}
-              min={0.05}
-              max={50}
-              krok={0.05}
-              zmien={(grubosc) => zmienWzor((w) => ({ ...w, grubosc }), 'grubosc')}
-            />
-            <Liczba
-              etykieta={t('tloKarty.odstep')}
-              wartosc={wzor.odstep}
-              min={0.5}
-              max={200}
-              krok={0.5}
-              zmien={(odstep) => zmienWzor((w) => ({ ...w, odstep }), 'odstep')}
-            />
-          </div>
-          <PoleKoloru
-            etykieta={
-              wzor.rodzaj === 'kropki' ? t('tloKarty.kolorKropek') : t('tloKarty.kolorLinii')
+          <WyborWzoru
+            wzor={wzor}
+            wybierzWbudowany={(rodzaj) =>
+              zmienWzor((w) => {
+                const { element: _e, ...reszta } = w;
+                void _e;
+                return { ...reszta, rodzaj };
+              }, 'rodzaj')
             }
-            wartosc={wzor.kolor}
-            moznaBrak={false}
-            zmien={(kolor) => kolor && zmienWzor((w) => ({ ...w, kolor }), 'kolor')}
+            wybierzGrafike={(element) =>
+              zmienWzor(
+                (w) => ({
+                  ...w,
+                  rodzaj: 'svg',
+                  element,
+                  rozmiar: w.rozmiar ?? DOMYSLNY_ROZMIAR_KAFELKA,
+                }),
+                'rodzaj',
+              )
+            }
           />
+          {wzor.rodzaj === 'svg' ? (
+            <>
+              <div className="dwa-pola">
+                <Liczba
+                  etykieta={t('tloKarty.rozmiarKafelka')}
+                  wartosc={wzor.rozmiar ?? DOMYSLNY_ROZMIAR_KAFELKA}
+                  min={1}
+                  max={200}
+                  krok={0.5}
+                  zmien={(rozmiar) => zmienWzor((w) => ({ ...w, rozmiar }), 'rozmiar')}
+                />
+              </div>
+              <div className="dwa-pola">
+                {(['odstepX', 'odstepY'] as const).map((k) => (
+                  <Liczba
+                    key={k}
+                    etykieta={t(`tloKarty.${k}`)}
+                    wartosc={wzor[k] ?? 0}
+                    min={0}
+                    max={200}
+                    krok={0.5}
+                    zmien={(v) => zmienWzor((w) => zPolem(w, k, v, 0), k)}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="dwa-pola">
+              <Liczba
+                etykieta={wzor.rodzaj === 'kropki' ? t('tloKarty.srednica') : t('tloKarty.grubosc')}
+                wartosc={wzor.grubosc}
+                min={0.05}
+                max={50}
+                krok={0.05}
+                zmien={(grubosc) => zmienWzor((w) => ({ ...w, grubosc }), 'grubosc')}
+              />
+              <Liczba
+                etykieta={t('tloKarty.odstep')}
+                wartosc={wzor.odstep}
+                min={0.5}
+                max={200}
+                krok={0.5}
+                zmien={(odstep) => zmienWzor((w) => ({ ...w, odstep }), 'odstep')}
+              />
+            </div>
+          )}
+          {(wzor.rodzaj === 'svg' || wzor.rodzaj === 'kropki') && (
+            <Przelacznik
+              etykieta={t('tloKarty.uklad')}
+              opcje={UKLADY.map((u) => ({ wartosc: u, tekst: t(`tloKarty.uklad.${u}`) }))}
+              wartosc={wzor.uklad ?? 'siatka'}
+              zmien={(uklad) => zmienWzor((w) => zPolem(w, 'uklad', uklad, 'siatka'), 'uklad')}
+            />
+          )}
+          <KolorWzoru wzor={wzor} zmien={(kolor) => zmienWzor((w) => ({ ...w, kolor }), 'kolor')} />
           <div className="dwa-pola">
             <Liczba
               etykieta={t('tloKarty.przezroczystosc')}
@@ -263,5 +367,151 @@ export function SekcjaTlaKarty({
         </>
       )}
     </Sekcja>
+  );
+}
+
+/** Kolor wzoru: dla grafiki z biblioteki tylko jednokolorowej (podmiana wypełnień i obrysów). */
+function KolorWzoru({ wzor, zmien }: { wzor: WzorTla; zmien: (k: Kolor) => void }) {
+  const elementy = useElementyWlasne();
+  const grafika = wzor.rodzaj === 'svg' ? elementy.find((e) => e.id === wzor.element) : undefined;
+  const wielokolorowy = grafika !== undefined && !czyJednokolorowy(grafika);
+  return (
+    <PoleKoloru
+      etykieta={
+        wzor.rodzaj === 'svg'
+          ? t('tloKarty.kolorWzoru')
+          : wzor.rodzaj === 'kropki'
+            ? t('tloKarty.kolorKropek')
+            : t('tloKarty.kolorLinii')
+      }
+      wartosc={wzor.kolor}
+      moznaBrak={false}
+      {...(wielokolorowy ? { wylaczone: { powod: t('tloKarty.tylkoJednokolorowe') } } : {})}
+      zmien={(kolor) => kolor && zmien(kolor)}
+    />
+  );
+}
+
+/**
+ * Wybór wzoru w dwóch grupach: „Wbudowane” (linie, kratka, kropki…) i „Z biblioteki” (grafiki SVG
+ * biblioteki użytkownika, przewijana siatka) z kafelkiem „+”, który dodaje plik .svg do biblioteki
+ * jej zwykłym importem i od razu ustawia go jako wzór. Brak wybranej grafiki – ostrzeżenie.
+ */
+function WyborWzoru({
+  wzor,
+  wybierzWbudowany,
+  wybierzGrafike,
+}: {
+  wzor: WzorTla;
+  wybierzWbudowany: (r: Exclude<RodzajWzoruTla, 'svg'>) => void;
+  wybierzGrafike: (id: string) => void;
+}) {
+  const grafiki = grafikiWzoru(useElementyWlasne());
+  const adresBiblioteki = useAdresBiblioteki();
+  const wyjdzDoBiblioteki = useWyjscieDoBiblioteki();
+  const plik = useRef<HTMLInputElement>(null);
+  const idEtykiety = useId();
+  const [komunikat, ustawKomunikat] = useState<{ tekst: string; blad?: boolean }>();
+  const [dodawany, ustawDodawany] = useState<string>();
+  const brakGrafiki =
+    wzor.rodzaj === 'svg' &&
+    wzor.element !== dodawany &&
+    !grafiki.some((e) => e.id === wzor.element);
+  const dodaj = async (f: File) => {
+    ustawKomunikat(undefined);
+    try {
+      const { id, nazwa } = await zapiszOzdobnikWBibliotece(await paczkaOzdobnikaZPliku(f));
+      // Lista biblioteki odświeża się chwilę później (liveQuery) – do tego czasu bez ostrzeżenia.
+      ustawDodawany(id);
+      wybierzGrafike(id);
+      ustawKomunikat({ tekst: t('tloKarty.dodano', { nazwa }) });
+    } catch (e) {
+      ustawKomunikat({ tekst: e instanceof Error ? e.message : String(e), blad: true });
+    }
+  };
+  return (
+    <div className="pole-panelu">
+      <span id={idEtykiety}>{t('tloKarty.wzor')}</span>
+      <div
+        className="wybor-narozniki"
+        role="group"
+        aria-labelledby={idEtykiety}
+        data-testid="wzory-wbudowane"
+      >
+        <span className="grupa-ozdobnikow">{t('tloKarty.grupaWbudowane')}</span>
+        {RODZAJE.map((r) => (
+          <button
+            key={r}
+            type="button"
+            aria-pressed={wzor.rodzaj === r}
+            aria-label={t(`tloKarty.wzor.${r}`)}
+            onClick={() => wybierzWbudowany(r)}
+          >
+            <MiniaturaWzoru rodzaj={r} />
+            <small>{t(`tloKarty.wzor.${r}`)}</small>
+          </button>
+        ))}
+      </div>
+      <div
+        className="wybor-narozniki wzory-biblioteki"
+        role="group"
+        aria-label={t('tloKarty.grupaBiblioteka')}
+        data-testid="wzory-biblioteki"
+      >
+        <span className="grupa-ozdobnikow">{t('tloKarty.grupaBiblioteka')}</span>
+        {grafiki.map((e) => (
+          <button
+            key={e.id}
+            type="button"
+            aria-pressed={wzor.rodzaj === 'svg' && wzor.element === e.id}
+            aria-label={nazwaElementu(e)}
+            title={nazwaElementu(e)}
+            onClick={() => wybierzGrafike(e.id)}
+          >
+            <MiniaturaOzdobnika element={e} />
+            <small>{nazwaElementu(e)}</small>
+          </button>
+        ))}
+        <button
+          type="button"
+          className="kafelek-dodaj"
+          aria-label={t('tloKarty.dodajSvg')}
+          title={t('tloKarty.dodajSvg')}
+          data-testid="dodaj-wzor-svg"
+          onClick={() => plik.current?.click()}
+        >
+          <span aria-hidden="true">＋</span>
+          <small>SVG</small>
+        </button>
+      </div>
+      <input
+        ref={plik}
+        type="file"
+        accept=".svg,image/svg+xml"
+        hidden
+        data-testid="plik-wzoru-svg"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (f) void dodaj(f);
+        }}
+      />
+      <a href={adresBiblioteki} onClick={wyjdzDoBiblioteki}>
+        {t('biblioteka.otworz')}
+      </a>
+      {komunikat && (
+        <p
+          role={komunikat.blad ? 'alert' : 'status'}
+          className={komunikat.blad ? 'uwaga' : 'podpis'}
+        >
+          {komunikat.tekst}
+        </p>
+      )}
+      {brakGrafiki && (
+        <p role="alert" className="uwaga" data-testid="brak-grafiki-wzoru">
+          {t('tloKarty.brakGrafiki')}
+        </p>
+      )}
+    </div>
   );
 }

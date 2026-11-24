@@ -21,8 +21,11 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   migracja `src/dane/migracjaBiblioteki.ts`); `BazaProjektow.wczytaj` składa widok projektu
   z biblioteką, `zapisz` przenosi nowe zasoby do biblioteki (deduplikacja po skrócie); zarządzanie
   tylko na stronie Biblioteki, w wyborach grupy „Systemowe” / „Moja biblioteka”.
+- Ukończone N9 (`docs/plan-N9.md`): pusty stan karty na podglądzie i w drzewie (zamiast komunikatu
+  w panelu „Karta”), wzory tła z biblioteki SVG (`wzorTla.rodzaj: 'svg'` – odwołanie do elementu
+  ozdobnego, układy siatka/cegiełka/pion, element sceny `wzor`: SVG `<pattern>`, PDF – kopie wektorowe).
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 29` (`src/model/projekt.ts`), baza Dexie w wersji 5.
+- Schemat projektu: `WERSJA_SCHEMATU = 30` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
 ## Gdzie co jest
 

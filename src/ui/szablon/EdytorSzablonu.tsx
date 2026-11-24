@@ -26,13 +26,7 @@ import {
 } from '../../dane/wlasneKarty';
 import { nazwaPliku } from '../pliki';
 import { t } from '../../i18n';
-import {
-  czyKontener,
-  wymiaryKarty,
-  type Kontener,
-  type Szablon,
-  type Wezel,
-} from '../../model/szablon';
+import { wymiaryKarty, type Kontener, type Szablon } from '../../model/szablon';
 import { ZESTAWY_STYLOW } from '../../ozdobniki/zestawyStylow';
 import { renderujKarte } from '../../silnik/karta';
 import { PoleLiczby } from '../kartka/PoleLiczby';
@@ -450,12 +444,6 @@ function PanelKarty({
         )}
       </Sekcja>
       {szablon.warianty?.length ? <p className="podpis">{t('szablon.warianty')}</p> : null}
-      {jedenWezelUwaga(szablon.korzen)}
     </>
   );
 }
-
-const jedenWezelUwaga = (k: Wezel) =>
-  czyKontener(k) && k.dzieci.length === 0 ? (
-    <p className="uwaga">{t('szablon.pustaKarta')}</p>
-  ) : null;

@@ -38,6 +38,7 @@ import type { Kolor } from '../model/szablon';
 import {
   czyObrys,
   kolorSceny,
+  rozwinWzor,
   type DefinicjaSymbolu,
   type ElementSceny,
   type GlifNaScenie,
@@ -618,6 +619,9 @@ class BudowniczyPdf {
           popGraphicsState(),
         ];
       }
+      case 'wzor':
+        // PDF bez wzorów kafelkowych: kopie wektorowe (symbole jako XObject – każdy zapisany raz).
+        return this.element(scena, rozwinWzor(e), zasoby);
       case 'grupa': {
         if (e.krycie !== undefined && e.krycie <= 0) return [];
         const kat = ((e.obrot ?? 0) * Math.PI) / 180;
