@@ -88,6 +88,26 @@ describe('Moje szablony: rozróżnianie po id i treści', () => {
   });
 });
 
+describe('wymiarySzablonow (Rozmiar jak w szablonie)', () => {
+  let baza: BazaProjektow;
+  afterEach(() => baza?.zamknij());
+
+  it('przody w mm z wymiarami i rogami, tyły bez identycznych kopii', async () => {
+    baza = new BazaProjektow('wymiary-szablonow');
+    const r = { ...rewers('r1', 'Tył A'), promienRogow: 2 };
+    await baza.zapisz(wlasny('w1', { rewersy: [r] }), zasoby);
+    await baza.zapisz(wlasny('w2', { rewersy: [structuredClone(r)] }), zasoby);
+    const lista = await baza.wymiarySzablonow();
+    const tyly = lista.filter((w) => w.strona === 'tyl');
+    expect(tyly).toHaveLength(1);
+    expect(tyly[0]).toMatchObject({ nazwa: 'Tył A', szer: r.rozmiar.szerokosc, promien: 2 });
+    const przody = lista.filter((w) => w.strona === 'przod');
+    const mm = bazowy.szablony.filter((s) => s.rozmiar.tryb === 'mm');
+    expect(przody).toHaveLength(mm.length * 2);
+    expect(przody.every((p) => p.szer > 0 && p.wys > 0)).toBe(true);
+  });
+});
+
 describe('usunięcie projektu zachowuje szablony i rewersy', () => {
   let baza: BazaProjektow;
   afterEach(() => baza?.zamknij());

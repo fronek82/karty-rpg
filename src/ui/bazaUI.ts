@@ -1,4 +1,5 @@
 import { BazaProjektow } from '../dane/baza';
+import { dodajRewersZPaczki } from '../dane/archiwum';
 import { BladDanych } from '../dane/schemat';
 import { t } from '../i18n';
 import type { Pakiet } from '../pakiety/typy';
@@ -83,9 +84,10 @@ export async function nowyProjektZSzablonuKreatora(
     zasoby: import('../model/projekt').OpisZasobu[];
     dane: Map<string, Uint8Array>;
   },
+  przypiszTyl?: { projektId: string; rewersId: string },
 ): Promise<string> {
   const { nowyProjektWlasny } = await import('../dane/wlasneKarty');
-  const { projekt, zasoby } = await nowyProjektWlasny(
+  const nowy = await nowyProjektWlasny(
     {
       szablon,
       role: {},
@@ -94,6 +96,13 @@ export async function nowyProjektZSzablonuKreatora(
     },
     (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
   );
+  // Przód z przypisanym tyłem: kopia tyłu (z zasobami) w projekcie przodu, przypisana do szablonu.
+  const { projekt, zasoby } = przypiszTyl
+    ? dolaczTyl(nowy.projekt, nowy.zasoby, await paczkaTyluZProjektu(przypiszTyl), (p, rid) => ({
+        ...p,
+        szablony: p.szablony.map((s, i) => (i === 0 ? { ...s, rewersId: rid } : s)),
+      }))
+    : nowy;
   const id = await zapiszNowyProjekt(projekt, zasoby);
   const pierwszySzablon = projekt.szablony[0]?.id;
   if (pierwszySzablon) {
@@ -121,13 +130,44 @@ export async function zapiszProjektZPrzykladu(
   return id;
 }
 
-/** Nowy projekt własnych kart otwierany od razu w edytorze rewersu – zapisany w bazie. */
-export async function nowyProjektZRewersem(
+/** Paczka tyłu (rewersu) z projektu w bazie – do skopiowania do innego projektu. */
+export async function paczkaTyluZProjektu(zrodlo: {
+  projektId: string;
+  rewersId: string;
+}): Promise<import('../dane/archiwum').PaczkaRewersu> {
+  const { eksportujRewers, importujRewers } = await import('../dane/archiwum');
+  const { projekt, zasoby } = await baza().wczytaj(zrodlo.projektId);
+  return importujRewers(eksportujRewers(projekt, zasoby, zrodlo.rewersId));
+}
+
+/** Dołącza kopię tyłu z paczki do projektu (z rolami czcionek) i przypisuje ją funkcją `przypisz`. */
+export function dolaczTyl(
+  p: import('../model/projekt').Projekt,
+  d: import('../model/projekt').DaneZasobow,
+  paczka: import('../dane/archiwum').PaczkaRewersu,
+  przypisz: (
+    p: import('../model/projekt').Projekt,
+    rewersId: string,
+  ) => import('../model/projekt').Projekt,
+): { projekt: import('../model/projekt').Projekt; zasoby: import('../model/projekt').DaneZasobow } {
+  const w = dodajRewersZPaczki(p, d, paczka);
+  return {
+    projekt: przypisz({ ...w.projekt, role: { ...paczka.role, ...w.projekt.role } }, w.rewersId),
+    zasoby: w.dane,
+  };
+}
+
+/**
+ * Nowy projekt własnych kart z tyłem z kreatora (rozmiar, rogi, kolor, układ startowy), otwierany
+ * w edytorze tyłu – zapisany w bazie.
+ */
+export async function nowyProjektZTylemKreatora(
+  u: import('./szablon/Kreator').UstawieniaNowegoTylu,
   bazaUrl: string = import.meta.env.BASE_URL,
 ): Promise<{ id: string; rewersId: string }> {
   const [
     { nowyProjektWlasny },
-    { nowyRewers, przypiszRewers, unikalnaNazwa },
+    { dodajRewers, nowyTyl, przypiszRewers, unikalnaNazwa },
     { DOMYSLNE_TLO_KARTY },
     { szablonZKreatora },
   ] = await Promise.all([
@@ -136,11 +176,12 @@ export async function nowyProjektZRewersem(
     import('../model/szablon'),
     import('./szablon/nowySzablonUI'),
   ]);
+  // Pusty przód projektu samego tyłu – w rozmiarze tyłu.
   const szablon = szablonZKreatora({
     nazwa: t('kreator.nazwaDomyslna'),
-    szer: 63,
-    wys: 88,
-    promien: 3,
+    szer: u.szer,
+    wys: u.wys,
+    promien: u.promien,
     tlo: DOMYSLNE_TLO_KARTY,
     uklad: 'swobodny',
   });
@@ -148,23 +189,20 @@ export async function nowyProjektZRewersem(
     { szablon, role: {}, zasoby: [], dane: new Map() },
     (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  // Nazwa unikalna wśród rewersów w przeglądarce („Rewers”, „Rewers 2”…) – rozróżnia je w Moich szablonach.
+  // Nazwa unikalna wśród tyłów w przeglądarce („Tył”, „Tył 2”…) – rozróżnia je w Moich szablonach.
   const zajete = await Promise.resolve()
     .then(() => baza().rewersyZProjektow())
     .then((l) => l.map((r) => r.nazwa))
     .catch(() => [] as string[]);
-  const nazwaRewersu = unikalnaNazwa(t('wlasne.rewersNazwa'), zajete);
-  const { projekt: zRewersem, id: rewersId } = nowyRewers(
-    { ...bazowy, nazwa: nazwaRewersu },
-    {
-      nazwa: nazwaRewersu,
-      nazwaKorzenia: nazwaRewersu,
-    },
+  const nazwa = unikalnaNazwa(u.nazwa, zajete);
+  const { projekt: zTylem, id: rewersId } = dodajRewers(
+    { ...bazowy, nazwa },
+    nowyTyl('rewers', { ...u, nazwa }, t('kreator.grafikaTylu')),
   );
-  const taliaId = zRewersem.talie[0]?.id;
+  const taliaId = zTylem.talie[0]?.id;
   const projekt = taliaId
-    ? przypiszRewers(zRewersem, { rodzaj: 'talia', id: taliaId }, rewersId)
-    : zRewersem;
+    ? przypiszRewers(zTylem, { rodzaj: 'talia', id: taliaId }, rewersId)
+    : zTylem;
   const id = await zapiszNowyProjekt(projekt, zasoby);
   const [{ zapiszRewersGlobalnie }, { zapiszMiniatureRewersu }] = await Promise.all([
     import('./rewersyGlobalne'),

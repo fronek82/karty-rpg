@@ -1,51 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
 import { t } from '../../i18n';
-import { nowyProjektZRewersem } from '../bazaUI';
 
 /**
- * Pośredni ekran „Nowy szablon od zera”: po lewej dwa przyciski kroku 3 – „Awers” (otwiera
- * kreator przodu karty) i „Rewers” (od razu tworzy projekt z rewersem i otwiera edytor rewersu).
+ * Pośredni ekran „Nowy szablon od zera”: po lewej dwa odnośniki – przód i tył karty; oba
+ * otwierają kreator (krok 1: nazwa, format, orientacja, rogi, kolor, układ startowy).
  */
 export function WybierzStroneSzablonu() {
-  const przyciskRewersu = useRef<HTMLButtonElement>(null);
-  const przywrocFokus = useRef(false);
-  const zamontowany = useRef(true);
-  const wToku = useRef(false);
-  const [trwa, ustawTrwa] = useState(false);
-  const [blad, ustawBlad] = useState<string>();
-
-  useEffect(() => {
-    zamontowany.current = true;
-    return () => {
-      zamontowany.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!trwa && przywrocFokus.current) {
-      przywrocFokus.current = false;
-      przyciskRewersu.current?.focus();
-    }
-  }, [trwa]);
-
-  const utworzRewers = async () => {
-    if (wToku.current) return;
-    wToku.current = true;
-    ustawTrwa(true);
-    ustawBlad(undefined);
-    try {
-      const { id, rewersId } = await nowyProjektZRewersem();
-      if (!zamontowany.current) return;
-      window.location.hash = `#/projekt/${encodeURIComponent(id)}/rewers/${encodeURIComponent(rewersId)}`;
-    } catch (e) {
-      if (!zamontowany.current) return;
-      przywrocFokus.current = true;
-      ustawBlad(e instanceof Error ? e.message : String(e));
-      wToku.current = false;
-      ustawTrwa(false);
-    }
-  };
-
   return (
     <section className="wybor-gry">
       <nav aria-label={t('projekt.nawigacja')} className="okruszki">
@@ -57,27 +16,14 @@ export function WybierzStroneSzablonu() {
           <p id="wybor-strony-menu" className="etykieta-sekcji">
             {t('wlasne.stronaMenu')}
           </p>
-          <a
-            href="#/wlasne/nowy/awers"
-            className="pasek-menu pasek-awers"
-            aria-disabled={trwa || undefined}
-            onClick={(e) => {
-              if (trwa) e.preventDefault();
-            }}
-          >
+          <a href="#/wlasne/nowy/awers" className="pasek-menu pasek-awers">
             <b>{t('wlasne.awersNazwa')}</b>
             <span>{t('wlasne.awersOpis')}</span>
           </a>
-          <button
-            ref={przyciskRewersu}
-            type="button"
-            className="pasek-menu pasek-rewers"
-            disabled={trwa}
-            onClick={() => void utworzRewers()}
-          >
+          <a href="#/wlasne/nowy/rewers" className="pasek-menu pasek-rewers">
             <b>{t('wlasne.rewersNazwa')}</b>
             <span>{t('wlasne.rewersOpis')}</span>
-          </button>
+          </a>
         </nav>
 
         <div className="grupa-podgladow">
@@ -103,14 +49,6 @@ export function WybierzStroneSzablonu() {
               </ul>
             </section>
           </div>
-          <p role="status" aria-live="polite" className="status">
-            {trwa ? t('start.tworze') : ''}
-          </p>
-          {blad && (
-            <p role="alert" className="uwaga">
-              {blad}
-            </p>
-          )}
         </div>
       </div>
     </section>

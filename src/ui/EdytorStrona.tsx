@@ -1,6 +1,8 @@
+import { przypiszRewers } from '../dane/rewers';
 import { czyProjektWlasny, dodajSzablonZKartka } from '../dane/wlasneKarty';
 import { t } from '../i18n';
 import { AktywnyProjektKontekst } from './AktywnyProjektKontekst';
+import { dolaczTyl, paczkaTyluZProjektu } from './bazaUI';
 import { EdytorKartki } from './kartka/EdytorKartki';
 import { EdytorKarty } from './szablon/EdytorKarty';
 import { Kreator } from './szablon/Kreator';
@@ -63,19 +65,34 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
         <div className="tresc tresc-start kreator-w-projekcie">
           <Kreator
             anuluj={() => (window.location.hash = sciezka)}
-            utworz={(u) => {
+            utworz={async (u) => {
               // Nowy szablon bez zasobów – zwykła zmiana projektu (zapis w tle, jak każda edycja);
-              // id szablonu z wyniku (dodajSzablon nadaje unikalne).
+              // id szablonu z wyniku (dodajSzablon nadaje unikalne). Tył z innego projektu
+              // trafia do tego projektu jako kopia i jest przypisany do nowego szablonu.
+              const zrodlo = u.przypiszTyl;
+              const paczka =
+                zrodlo && zrodlo.projektId !== stan.projekt.id
+                  ? await paczkaTyluZProjektu(zrodlo)
+                  : undefined;
               let szablonId = '';
-              stan.zmien((p) => {
-                const w = dodajSzablonZKartka(p, stan.dane, {
+              await stan.zmienZZasobami((p, d) => {
+                const w = dodajSzablonZKartka(p, d, {
                   szablon: szablonZKreatora(u),
                   role: {},
                   zasoby: [],
                   dane: new Map(),
                 });
                 szablonId = w.szablonId;
-                return w.projekt;
+                const przypisz = (q: typeof p, rewersId: string) =>
+                  przypiszRewers(q, { rodzaj: 'szablon', id: w.szablonId }, rewersId);
+                if (paczka) {
+                  const z = dolaczTyl(w.projekt, w.zasoby, paczka, przypisz);
+                  return { projekt: z.projekt, dane: z.zasoby };
+                }
+                return {
+                  projekt: zrodlo ? przypisz(w.projekt, zrodlo.rewersId) : w.projekt,
+                  dane: w.zasoby,
+                };
               });
               window.location.hash = `${sciezka}/szablon/${encodeURIComponent(szablonId)}`;
             }}

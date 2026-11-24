@@ -185,6 +185,19 @@ export interface WpisAwersuZProjektu {
   kluczTresci: string;
 }
 
+/** Szablon (przód albo tył) z wymiarami – do „Rozmiar jak w szablonie” w kreatorze. */
+export interface WpisWymiarowSzablonu {
+  strona: 'przod' | 'tyl';
+  projektId: string;
+  /** Id szablonu przodu albo rewersu w projekcie. */
+  id: string;
+  nazwa: string;
+  szer: number;
+  wys: number;
+  /** Brak – tył bez własnych rogów (dopasowuje je do przodu). */
+  promien?: number;
+}
+
 export interface WpisCzcionkiZProjektu {
   projektId: string;
   zasobId: string;
@@ -838,6 +851,48 @@ export class BazaProjektow {
       }
     }
     return wynik;
+  }
+
+  /**
+   * Wszystkie szablony przodów (w mm, z projektów własnych) i tyłów w przeglądarce z wymiarami –
+   * także puste przody; bez pustego przodu projektu samego tyłu i bez identycznych kopii tyłów.
+   */
+  async wymiarySzablonow(): Promise<WpisWymiarowSzablonu[]> {
+    const wpisy = await this.db.projekty.orderBy('zmieniono').reverse().toArray();
+    const przody: WpisWymiarowSzablonu[] = [];
+    const tyly: WpisWymiarowSzablonu[] = [];
+    const widzianeTyly = new Set<string>();
+    for (const w of wpisy) {
+      if (w.projekt.pakiet && w.projekt.pakiet !== 'wlasne') continue;
+      if (!czyProjektRewersowy(w.projekt))
+        for (const s of w.projekt.szablony) {
+          if (s.rozmiar.tryb !== 'mm') continue;
+          przody.push({
+            strona: 'przod',
+            projektId: w.id,
+            id: s.id,
+            nazwa: s.nazwa,
+            szer: s.rozmiar.szerokosc,
+            wys: s.rozmiar.wysokosc,
+            promien: s.promienRogow ?? 0,
+          });
+        }
+      for (const r of w.projekt.rewersy ?? []) {
+        const klucz = kluczTresciSzablonu(r);
+        if (widzianeTyly.has(klucz)) continue;
+        widzianeTyly.add(klucz);
+        tyly.push({
+          strona: 'tyl',
+          projektId: w.id,
+          id: r.id,
+          nazwa: r.nazwa,
+          szer: r.rozmiar.szerokosc,
+          wys: r.rozmiar.wysokosc,
+          ...(r.promienRogow !== undefined ? { promien: r.promienRogow } : {}),
+        });
+      }
+    }
+    return [...przody, ...tyly];
   }
 
   /** Lista własnych i pobranych z Google Fonts czcionek zapisanych w innych projektach w przeglądarce. */

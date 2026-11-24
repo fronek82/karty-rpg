@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { t } from '../../i18n';
 import { gry } from '../../pakiety/gry';
-import { nowyProjektZRewersem } from '../bazaUI';
 import { nazwaGryDo } from '../nazwyPakietu';
 import { ListaProjektow } from './ListaProjektow';
 import { PanelImportu } from './PanelImportu';
@@ -45,45 +44,6 @@ function EmblematKart() {
  */
 export function Start() {
   const [odswiezenie, ustawOdswiezenie] = useState(0);
-  const przyciskRewersu = useRef<HTMLButtonElement>(null);
-  const przywrocFokus = useRef(false);
-  const zamontowany = useRef(true);
-  const wToku = useRef(false);
-  const [trwa, ustawTrwa] = useState(false);
-  const [blad, ustawBlad] = useState<string>();
-
-  useEffect(() => {
-    zamontowany.current = true;
-    return () => {
-      zamontowany.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!trwa && przywrocFokus.current) {
-      przywrocFokus.current = false;
-      przyciskRewersu.current?.focus();
-    }
-  }, [trwa]);
-
-  const utworzRewers = async () => {
-    if (wToku.current) return;
-    wToku.current = true;
-    ustawTrwa(true);
-    ustawBlad(undefined);
-    try {
-      const { id, rewersId } = await nowyProjektZRewersem();
-      if (!zamontowany.current) return;
-      window.location.hash = `#/projekt/${encodeURIComponent(id)}/rewers/${encodeURIComponent(rewersId)}`;
-    } catch (e) {
-      if (!zamontowany.current) return;
-      przywrocFokus.current = true;
-      ustawBlad(e instanceof Error ? e.message : String(e));
-      wToku.current = false;
-      ustawTrwa(false);
-    }
-  };
-
   // Plik upuszczony poza strefą importu nie może zostać otwarty przez przeglądarkę
   // (zamiast aplikacji pokazałby się plik): blokujemy domyślną akcję, poza strefą kursor „zakaz”.
   useEffect(() => {
@@ -133,35 +93,14 @@ export function Start() {
           <p id="start-nowy-szablon" className="etykieta-sekcji etykieta-sekcji-odstep">
             {t('start.nowySzablon')}
           </p>
-          <a
-            href="#/wlasne/nowy/awers"
-            className="pasek-menu pasek-awers"
-            aria-disabled={trwa || undefined}
-            onClick={(e) => {
-              if (trwa) e.preventDefault();
-            }}
-          >
+          <a href="#/wlasne/nowy/awers" className="pasek-menu pasek-awers">
             <b>{t('wlasne.awersNazwa')}</b>
             <span>{t('wlasne.awersOpis')}</span>
           </a>
-          <button
-            ref={przyciskRewersu}
-            type="button"
-            className="pasek-menu pasek-rewers"
-            disabled={trwa}
-            onClick={() => void utworzRewers()}
-          >
+          <a href="#/wlasne/nowy/rewers" className="pasek-menu pasek-rewers">
             <b>{t('wlasne.rewersNazwa')}</b>
             <span>{t('wlasne.rewersOpis')}</span>
-          </button>
-          <p role="status" aria-live="polite" className={trwa ? 'status' : 'ukryte'}>
-            {trwa ? t('start.tworze') : ''}
-          </p>
-          {blad && (
-            <p role="alert" className="uwaga">
-              {blad}
-            </p>
-          )}
+          </a>
         </nav>
         <ListaProjektow odswiezenie={odswiezenie} />
         <PanelImportu onZmiana={() => ustawOdswiezenie((n) => n + 1)} />

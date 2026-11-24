@@ -12,7 +12,15 @@ import { t } from '../i18n';
 import { dodajZasoby } from './edycja';
 import { unikalneId } from './czcionki';
 import { opisObrazu } from './obrazy';
-import { duplikujSzablon, nazwaKopiiSzablonu, zmienWezel, znajdzWezel } from './szablon';
+import type { Mm } from '../model/jednostki';
+import { ZESTAWY_STYLOW } from '../ozdobniki/zestawyStylow';
+import {
+  duplikujSzablon,
+  nazwaKopiiSzablonu,
+  zastosujZestawStylu,
+  zmienWezel,
+  znajdzWezel,
+} from './szablon';
 
 export function rewersKarty(
   rewersy: ReadonlyMap<string, Rewers>,
@@ -133,6 +141,65 @@ export function nowyRewers(
       dzieci: [],
     },
   });
+}
+
+/** Gotowe układy tyłu karty w kreatorze („Zacznij od układu”). */
+export const UKLADY_TYLU = ['pusty', 'logo', 'wzor', 'ornament'] as const;
+export type UkladTylu = (typeof UKLADY_TYLU)[number];
+
+/**
+ * Tył karty z kreatora: rozmiar, rogi, kolor i układ startowy – pusta karta, grafika (logo)
+ * na środku, wzór na całą kartę albo ramka z ornamentem. Nazwy elementów z i18n wołającego.
+ */
+export function nowyTyl(
+  id: string,
+  o: { nazwa: string; szer: Mm; wys: Mm; promien: Mm; tlo: string; uklad: UkladTylu },
+  nazwaGrafiki: string,
+): Rewers {
+  const ciemny = jasnosc(o.tlo) < 0.5;
+  const kontrast = ciemny ? '#ffffff' : '#000000';
+  const r: Rewers = {
+    id,
+    nazwa: o.nazwa,
+    rozmiar: { tryb: 'mm', szerokosc: o.szer, wysokosc: o.wys },
+    promienRogow: o.promien,
+    tlo: o.tlo,
+    korzen: { id, nazwa: o.nazwa, typ: 'swobodny', dzieci: [] },
+  };
+  if (o.uklad === 'logo') {
+    const bok = Math.round(Math.min(o.szer, o.wys) * 0.5);
+    r.korzen = {
+      ...r.korzen,
+      dzieci: [
+        {
+          id: `${id}-grafika`,
+          nazwa: nazwaGrafiki,
+          typ: 'obraz',
+          dopasowanie: 'dopasuj',
+          szerokosc: { mm: bok },
+          wysokosc: { mm: bok },
+          pozycja: { x: 0, y: 0, kotwica: 'srodek' },
+        },
+      ],
+    };
+  } else if (o.uklad === 'wzor') {
+    r.wzorTla = { rodzaj: 'romby', grubosc: 0.4, odstep: 6, kolor: kontrast, krycie: 0.25 };
+  } else if (o.uklad === 'ornament') {
+    const ozdobny = szablonDoRewersu(
+      r,
+      zastosujZestawStylu(rewersJakoSzablon(r), ZESTAWY_STYLOW[0]),
+    );
+    return { ...ozdobny, ramka: { ...ozdobny.ramka!, odsuniecie: 3 } };
+  }
+  return r;
+}
+
+/** Względna jasność koloru `#rrggbb` (0 – czarny, 1 – biały). */
+function jasnosc(kolor: string): number {
+  const m = /^#([0-9a-f]{6})$/i.exec(kolor);
+  if (!m) return 1;
+  const n = parseInt(m[1]!, 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
 }
 
 export function zmienRewers(p: Projekt, id: string, f: (r: Rewers) => Rewers): Projekt {
