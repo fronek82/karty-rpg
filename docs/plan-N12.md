@@ -46,3 +46,11 @@ Tył karty wybiera odmianę tak samo, z tej samej kolumny przodu.
   żeby literówka w CSV była widoczna, a karta nie była pusta.
 - W podglądzie edytora zaznaczenie elementu w odmianie pokazuje tę odmianę – bez osobnego
   przełącznika podglądu.
+- Element wstawiany do przełącznika (nowy, kopia, przeniesiony) zachowuje swoją wartość odmiany,
+  jeśli jest wolna, a inaczej dostaje pierwszy wolny numer – żadna odmiana nie zostaje zasłonięta
+  przez powtórzoną wartość. Wyjęty z przełącznika traci wartość odmiany.
+- Zamiana przełącznika na kontener swobodny bierze położenia z bieżącego podglądu, w którym widać
+  jedną odmianę – pozostałe trafiają w lewy górny róg (jak pola „ukryj i zwiń”) i trzeba je ustawić
+  ręcznie po zaznaczeniu (podgląd pokazuje wtedy zaznaczoną odmianę).
+- Ten sam klucz przełącznika w wariantach układu przodu: lista odmian w panelu karty łączy
+  wartości ze wszystkich wariantów.

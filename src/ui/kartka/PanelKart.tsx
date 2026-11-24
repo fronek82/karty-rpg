@@ -18,6 +18,7 @@ import { nazwaRozmiaru, nazwaWariantu } from '../nazwyPakietu';
 import type { Arkusz } from '../../model/arkusz';
 import {
   korzenieSzablonu,
+  normalizujOdmiane,
   polaDrzewa,
   type Pole,
   type PoleObraz,
@@ -243,13 +244,17 @@ export function PanelKart({
           }
           if (kol.opcje) {
             // Przełącznik odmian: wybór z listy; wartość spoza listy (np. literówka z CSV) też widać.
-            const spoza = w && !kol.opcje.some((o) => o.wartosc === w) ? w : undefined;
+            // Wartość pasująca do odmiany (bez wielkości liter i spacji) – jak w silniku – to ta odmiana.
+            const pasujaca = w
+              ? kol.opcje.find((o) => normalizujOdmiane(o.wartosc) === normalizujOdmiane(w))
+              : undefined;
+            const spoza = w && !pasujaca ? w : undefined;
             return (
               <div key={kol.klucz} className="pole-panelu">
                 <label htmlFor={id}>{nazwa}</label>
                 <select
                   id={id}
-                  value={w ?? ROZNE}
+                  value={w === undefined ? ROZNE : (pasujaca?.wartosc ?? w)}
                   onChange={(e) => ustaw(kol.klucz, e.target.value)}
                 >
                   {w === undefined && (

@@ -866,7 +866,8 @@ function stabilnyJson(v: unknown): string {
 
 // --- Przełącznik odmian (N12).
 
-const normalizujOdmiane = (v: string) => v.trim().toLocaleLowerCase('pl');
+/** Postać wartości odmiany do porównań: bez spacji na brzegach i wielkości liter. */
+export const normalizujOdmiane = (v: string) => v.trim().toLocaleLowerCase('pl');
 
 /** Wartość odmiany dziecka przełącznika: wpisana albo numer pozycji (od 1). */
 export const wartoscOdmiany = (k: Kontener, i: number): string =>
@@ -894,4 +895,12 @@ export function wybranaOdmiana(
     wezel: k.dzieci[d >= 0 ? d : 0],
     nieznana: !!wartosc?.trim(),
   };
+}
+
+/** Pierwszy wolny numer odmiany (1, 2, 3…) w przełączniku. */
+export function wolnaOdmiana(k: Kontener): string {
+  const zajete = new Set(k.dzieci.map((_, i) => normalizujOdmiane(wartoscOdmiany(k, i))));
+  let n = 1;
+  while (zajete.has(String(n))) n++;
+  return String(n);
 }

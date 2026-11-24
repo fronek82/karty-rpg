@@ -6,6 +6,9 @@ import {
   kluczeSzablonu,
   opakuj,
   pokazOdmianyZaznaczenia,
+  przeniesWezel,
+  usunWezly,
+  wstawWezel,
   znajdzWezel,
 } from './szablon';
 import { WERSJA_SCHEMATU, type Projekt } from '../model/projekt';
@@ -97,6 +100,16 @@ describe('renderujKarte z przełącznikiem odmian', () => {
     });
   });
 
+  it('pusty przełącznik nic nie pokazuje; powtórzona wartość – pierwsza odmiana', () => {
+    expect(widoczne(szablon(przelacznik({ dzieci: [] })), { rodzaj: '1' }).w.ostrzezenia).toEqual(
+      [],
+    );
+    const dwa = przelacznik({ dzieci: [ikona('a', 5, 'X'), ikona('b', 5, 'x')] });
+    const { ids } = widoczne(szablon(dwa), { rodzaj: 'x' });
+    expect(ids).toContain('a');
+    expect(ids).not.toContain('b');
+  });
+
   it('przełącznik w ukrytej odmianie nie daje ostrzeżeń', () => {
     const wewn = przelacznik({ id: 'wewn', nazwa: 'Wewn', przelacznik: { klucz: 'inny' } });
     const zew = przelacznik({ dzieci: [ikona('a', 5), wewn] });
@@ -130,6 +143,15 @@ describe('przełącznik na tyle karty', () => {
     expect(ids({})).toContain('t1');
     expect(wspolneKluczeRewersu(szablon(), rewers)).toEqual(new Set(['rodzaj']));
   });
+
+  it('dwa przełączniki przodu o tej samej nazwie i różnych kluczach – tył bez danych', () => {
+    const s = szablon();
+    const drugi = przelacznik({ id: 'rodzaj2', przelacznik: { klucz: 'inny' } });
+    const przod: Szablon = { ...s, korzen: { ...s.korzen, dzieci: [...s.korzen.dzieci, drugi] } };
+    const r = renderujRewers(rewers, ctx, { awers: { szablon: przod, dane: { rodzaj: '2' } } });
+    expect(r.wezly.map((w) => w.id)).toContain('t1');
+    expect(wspolneKluczeRewersu(przod, rewers).size).toBe(0);
+  });
 });
 
 describe('dane szablonu z przełącznikiem', () => {
@@ -156,11 +178,32 @@ describe('dane szablonu z przełącznikiem', () => {
     expect(znajdzWezel(o.szablon, o.id)?.odmiana).toBe('Wskazówka');
   });
 
-  it('podgląd pokazuje odmianę z zaznaczonym elementem', () => {
+  it('podgląd pokazuje odmianę z zaznaczonym elementem (także przy powtórzonej wartości)', () => {
     const s = szablon();
     expect(pokazOdmianyZaznaczenia(s, ['stopka'])).toBe(s);
     const p = pokazOdmianyZaznaczenia(s, ['miejsce']);
     expect(widoczne(p, { rodzaj: '1' }).ids).toContain('miejsce');
+    const dwa = szablon(przelacznik({ dzieci: [ikona('a', 5, 'X'), ikona('b', 5, 'X')] }));
+    expect(widoczne(pokazOdmianyZaznaczenia(dwa, ['b']), {}).ids).toContain('b');
+    // Wejście bez zmian.
+    expect((dwa.korzen.dzieci[0] as Kontener).dzieci.map((d) => d.id)).toEqual(['a', 'b']);
+  });
+
+  it('kopia, przeniesienie i nowy element nie zasłaniają istniejących odmian', () => {
+    const odmiany = (s: Szablon) => {
+      const k = znajdzWezel(s, 'rodzaj') as Kontener;
+      return k.dzieci.map((_, i) => wartoscOdmiany(k, i));
+    };
+    // Kopia odmiany „1” dostaje pierwszy wolny numer.
+    const k = duplikujWezel(szablon(), 'podejrzany', 'kopia');
+    expect(znajdzWezel(k.szablon, k.id)?.odmiana).toBe('2');
+    // Po usunięciu środkowej odmiany nowy element nie powtarza „3”.
+    const bezSrodka = usunWezly(przeniesWezel(szablon(), 'miejsce', 'rodzaj', 3), ['wskazowka']);
+    const zNowym = wstawWezel(bezSrodka, 'rodzaj', ikona('nowy', 5));
+    expect(new Set(odmiany(zNowym)).size).toBe(odmiany(zNowym).length);
+    // Wyjęcie z przełącznika usuwa wartość odmiany.
+    const wyjety = przeniesWezel(szablon(), 'wskazowka', 'korzen', 0);
+    expect(znajdzWezel(wyjety, 'wskazowka')?.odmiana).toBeUndefined();
   });
 
   it('schemat przyjmuje przełącznik, a migracja 33→34 nie zmienia danych', () => {

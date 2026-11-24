@@ -14,8 +14,10 @@ import {
   stylPola,
   type StylTekstu,
   type Szablon,
+  normalizujOdmiane,
   ulamkiKotwicy,
   wartoscOdmiany,
+  wolnaOdmiana,
   type Wezel,
   wezlyDrzewa,
   wszystkieWezly,
@@ -397,20 +399,32 @@ export function zmienWezel(s: Szablon, id: string, f: (w: Wezel) => Wezel): Szab
 /** Wstawia węzeł: do zaznaczonego kontenera (na koniec) albo za zaznaczonym polem. */
 export function wstawWezel(s: Szablon, celId: string, nowy: Wezel): Szablon {
   const cel = znajdzWezel(s, celId) ?? s.korzen;
-  if (czyKontener(cel))
-    return zmienWezel(
-      s,
-      cel.id,
-      (k) => ({ ...k, dzieci: [...(k as Kontener).dzieci, nowy] }) as Kontener,
-    );
+  if (czyKontener(cel)) return wstawDo(s, cel.id, cel.dzieci.length, nowy);
   const r = rodzicWezla(s, cel.id)!;
   return wstawDo(s, r.rodzic.id, r.indeks + 1, nowy);
+}
+
+/**
+ * Wartość odmiany elementu wstawianego do kontenera: w przełączniku – własna, jeśli wolna,
+ * inaczej pierwszy wolny numer (kopia, przeniesienie, nowy element nie zasłaniają istniejących
+ * odmian); poza przełącznikiem – bez wartości.
+ */
+function zOdmiana(k: Kontener, w: Wezel): Wezel {
+  if (!k.przelacznik) {
+    if (w.odmiana === undefined) return w;
+    const { odmiana: _o, ...reszta } = w;
+    void _o;
+    return reszta as Wezel;
+  }
+  const zajete = new Set(k.dzieci.map((_, i) => normalizujOdmiane(wartoscOdmiany(k, i))));
+  if (w.odmiana?.trim() && !zajete.has(normalizujOdmiane(w.odmiana))) return w;
+  return { ...w, odmiana: wolnaOdmiana(k) };
 }
 
 function wstawDo(s: Szablon, rodzicId: string, indeks: number, nowy: Wezel): Szablon {
   return zmienWezel(s, rodzicId, (k) => {
     const dzieci = [...(k as Kontener).dzieci];
-    dzieci.splice(indeks, 0, nowy);
+    dzieci.splice(indeks, 0, zOdmiana(k as Kontener, nowy));
     return { ...(k as Kontener), dzieci };
   });
 }
@@ -1188,7 +1202,14 @@ export function pokazOdmianyZaznaczenia(s: Szablon, zaznaczone: readonly string[
     let x: Kontener = dzieci.some((d, i) => d !== w.dzieci[i]) ? { ...w, dzieci } : w;
     if (x.przelacznik && wybrany >= 0) {
       zmieniono = true;
-      x = { ...x, przelacznik: { domyslna: wartoscOdmiany(x, wybrany) } };
+      // Zaznaczone dziecko na początek, przełącznik bez klucza i wartości – widać pierwsze
+      // (także przy powtórzonych wartościach odmian). Widoczne jest jedno, więc kolejność
+      // pozostałych nie zmienia podglądu.
+      x = {
+        ...x,
+        przelacznik: {},
+        dzieci: [dzieci[wybrany]!, ...dzieci.filter((_, i) => i !== wybrany)],
+      };
     }
     return [x, zawiera];
   };

@@ -10,6 +10,7 @@ import {
   type Szablon,
   type Talia,
   type UstawieniaObrazu,
+  normalizujOdmiane,
   type Wezel,
   wartoscOdmiany,
   wezlyDrzewa,
@@ -63,13 +64,21 @@ export function kolumnySzablonu(s: Szablon): KolumnaDanych[] {
   for (const korzen of [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)]) {
     for (const w of wezlyDrzewa(korzen)) {
       const klucz = czyKontener(w) ? w.przelacznik?.klucz : undefined;
-      if (!czyKontener(w) || !klucz || wynik.has(klucz)) continue;
-      wynik.set(klucz, {
+      if (!czyKontener(w) || !klucz) continue;
+      const kol = wynik.get(klucz) ?? {
         klucz,
         nazwa: w.nazwa || nazwaKlucza(klucz),
-        rodzaj: 'pole',
-        opcje: w.dzieci.map((d, i) => ({ wartosc: wartoscOdmiany(w, i), nazwa: d.nazwa ?? '' })),
+        rodzaj: 'pole' as const,
+        opcje: [],
+      };
+      // Opcje bez powtórzeń (porównanie jak w silniku); ten sam klucz w wariantach – scalone.
+      const opcje = kol.opcje ?? [];
+      w.dzieci.forEach((d, i) => {
+        const wartosc = wartoscOdmiany(w, i);
+        if (!opcje.some((o) => normalizujOdmiane(o.wartosc) === normalizujOdmiane(wartosc)))
+          opcje.push({ wartosc, nazwa: d.nazwa ?? '' });
       });
+      wynik.set(klucz, { ...kol, opcje });
     }
     for (const pole of polaDrzewa(korzen)) {
       if (pole.typ === 'tabela') {

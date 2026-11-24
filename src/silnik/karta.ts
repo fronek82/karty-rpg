@@ -220,7 +220,8 @@ export function ukryteOdmianyPrzelacznikow(
     if (w.przelacznik) {
       const wartosc = w.przelacznik.klucz ? dane[w.przelacznik.klucz] : undefined;
       const { wezel, nieznana } = wybranaOdmiana(w, wartosc);
-      if (nieznana)
+      // Pusty przełącznik (bez odmian) nie zgłasza wartości – nie ma czego wybierać.
+      if (nieznana && w.dzieci.length > 0)
         ostrzezenia?.push({
           pole: w.nazwa || w.id,
           komunikat: 'nieznana-odmiana',
