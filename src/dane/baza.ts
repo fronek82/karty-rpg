@@ -6,6 +6,7 @@ import { kluczTresciSzablonu, type WariantCzcionki } from '../model/szablon';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import {
   elementyProjektu,
+  liczbaTelZElementem,
   unikalneIdElementu,
   zasobyElementow,
   zasobyObrazowSzablonu,
@@ -301,7 +302,11 @@ export class BazaProjektow {
    * albo jako obraz ramki 9-slice użytego ozdobnika; ozdobnik – w szablonie lub rewersie;
    * czcionka – rodzina w rolach albo w stylach szablonów. Do ostrzeżenia przy usuwaniu.
    */
-  async projektyUzywajace(id: string): Promise<{ id: string; nazwa: string }[]> {
+  async projektyUzywajace(
+    id: string,
+  ): Promise<
+    { id: string; nazwa: string; /** Szablony z elementem jako wzorem tła. */ tla?: number }[]
+  > {
     const wpis = await this.db.biblioteka.get(id);
     if (!wpis) return [];
     const { czcionkiSzablonu } = await import('./archiwum');
@@ -311,7 +316,7 @@ export class BazaProjektow {
             (w) => w.element && obrazyRamek([w.element]).has(id),
           )
         : [];
-    const wynik: { id: string; nazwa: string }[] = [];
+    const wynik: { id: string; nazwa: string; tla?: number }[] = [];
     for (const w of await this.db.projekty.toArray()) {
       if (w.tylkoSzablony) continue;
       const p = w.projekt;
@@ -327,10 +332,12 @@ export class BazaProjektow {
           Object.values(p.role).includes(rodzina) ||
           nazwy.some((n) => (p.role[n] ?? n) === rodzina);
       }
+      const tla = wpis.rodzaj === 'ozdobnik' ? liczbaTelZElementem(p, id) : 0;
       if (uzywa)
         wynik.push({
           id: w.id,
           nazwa: p.rewersy?.[0]?.nazwa && czyProjektRewersowy(p) ? p.rewersy[0].nazwa : p.nazwa,
+          ...(tla ? { tla } : {}),
         });
     }
     return wynik;

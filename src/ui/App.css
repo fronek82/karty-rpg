@@ -3775,8 +3775,7 @@ button.podglad-biblioteki[aria-pressed='true'] {
 }
 .pusta-karta-podgladu p {
   margin: 0;
-  color: #6b6b6b;
-  opacity: 0.85;
+  color: var(--przygaszony-papier);
   font-size: 0.95rem;
 }
 .pusta-karta-podgladu .menu-dodaj {
@@ -3790,17 +3789,35 @@ button.podglad-biblioteki[aria-pressed='true'] {
   font-size: 1.8rem;
   line-height: 1;
   padding: 0;
-  color: #555;
-  background: rgb(255 255 255 / 70%);
-  border: 2px dashed #9a9a9a;
+  color: var(--przygaszony-papier);
+  background: var(--papier);
+  border: 2px dashed var(--przygaszony-papier);
+  opacity: 0.8;
 }
-.menu-dodaj-duzy > button:hover {
-  background: rgb(255 255 255 / 90%);
-  border-color: #6b6b6b;
+.menu-dodaj-duzy > button:hover,
+.menu-dodaj-duzy > button:focus-visible {
+  opacity: 1;
 }
 .pusta-karta-podgladu .menu-typu {
   left: 50%;
   right: auto;
   transform: translateX(-50%);
   text-align: left;
+}
+
+/* Wzór tła karty: grafiki z biblioteki w przewijanej siatce, kafelek „+” dodaje plik SVG. */
+.wzory-biblioteki {
+  max-height: 14rem;
+  overflow-y: auto;
+  margin-top: 0.4rem;
+}
+.wzory-biblioteki .kafelek-dodaj {
+  border-style: dashed;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.pole-koloru.wylaczone > label,
+.pole-koloru.wylaczone input {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

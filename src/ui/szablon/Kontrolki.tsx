@@ -131,6 +131,7 @@ export function PoleKoloru({
   moznaBrak = true,
   domyslny = '#000000',
   id: wlasneId,
+  wylaczone,
 }: {
   etykieta: string;
   wartosc: string | undefined;
@@ -138,11 +139,16 @@ export function PoleKoloru({
   moznaBrak?: boolean;
   domyslny?: string;
   id?: string;
+  /** Pole wyszarzone z podpowiedzią (dlaczego niedostępne) pod spodem i w `title`. */
+  wylaczone?: { powod: string };
 }) {
   const autoId = useId();
   const id = wlasneId ?? autoId;
   return (
-    <div className="pole-panelu pole-koloru">
+    <div
+      className={`pole-panelu pole-koloru${wylaczone ? ' wylaczone' : ''}`}
+      {...(wylaczone ? { title: wylaczone.powod } : {})}
+    >
       <label htmlFor={id}>{etykieta}</label>
       <span className="wiersz-pola">
         {moznaBrak && (
@@ -157,10 +163,16 @@ export function PoleKoloru({
           id={id}
           type="color"
           value={wartosc ?? domyslny}
-          disabled={moznaBrak && wartosc === undefined}
+          disabled={!!wylaczone || (moznaBrak && wartosc === undefined)}
+          {...(wylaczone ? { 'aria-describedby': `${id}-powod` } : {})}
           onChange={(e) => zmien(e.target.value)}
         />
       </span>
+      {wylaczone && (
+        <small id={`${id}-powod`} className="podpis">
+          {wylaczone.powod}
+        </small>
+      )}
     </div>
   );
 }

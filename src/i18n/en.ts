@@ -943,6 +943,22 @@ export const en: Slownik = {
   'tloKarty.wzor.kratka': 'Grid',
   'tloKarty.wzor.romby': 'Diamonds',
   'tloKarty.wzor.ukosne': 'Diagonal lines',
+  'tloKarty.wzor.svg': 'Graphic from library',
+  'tloKarty.grupaWbudowane': 'Built-in',
+  'tloKarty.grupaBiblioteka': 'From library',
+  'tloKarty.dodajSvg': 'Add an SVG file to the library and use it as the pattern',
+  'tloKarty.dodano': 'Added to the library: {nazwa}.',
+  'tloKarty.brakGrafiki':
+    'The pattern graphic is not in the library (deleted?) – only the background colour is shown. Choose another pattern.',
+  'tloKarty.rozmiarKafelka': 'Tile size (mm)',
+  'tloKarty.odstepX': 'Gap X (mm)',
+  'tloKarty.odstepY': 'Gap Y (mm)',
+  'tloKarty.uklad': 'Layout',
+  'tloKarty.uklad.siatka': 'Grid',
+  'tloKarty.uklad.cegielka': 'Brick',
+  'tloKarty.uklad.pion': 'Column',
+  'tloKarty.kolorWzoru': 'Pattern colour',
+  'tloKarty.tylkoJednokolorowe': 'Available only for single-colour SVGs',
   'tloKarty.wzor.kropki': 'Dots',
   'tloKarty.grubosc': 'Line width (mm)',
   'tloKarty.srednica': 'Dot diameter (mm)',
@@ -1625,5 +1641,10 @@ export const enMnoga: SlownikMnogi = {
   'ai.podgladTytul': {
     one: 'Detected layout ({n} field)',
     other: 'Detected layout ({n} fields)',
+  },
+  'biblioteki.usunUzywanyTla': {
+    one: 'It is the background pattern of {n} card (template) – only the background colour will remain.',
+    other:
+      'It is the background pattern of {n} cards (templates) – only the background colour will remain.',
   },
 };

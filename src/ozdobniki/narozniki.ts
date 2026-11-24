@@ -4,9 +4,33 @@ import type { DefinicjaSymbolu, ElementSceny, Macierz } from '../silnik/scena';
 import { znajdzElement } from './katalog';
 import type { ElementOzdobny } from './typy';
 
-/** Definicja symbolu sceny z elementu biblioteki (klucz = identyfikator elementu). */
-export function symbolZElementu(e: ElementOzdobny): DefinicjaSymbolu {
-  if (e.kolorowanie !== 'jednolity') return { kontury: e.kontury, szer: e.szer, wys: e.wys };
+/**
+ * Kolory rysunku elementu: wypełnienia i obrysy konturów (brak wypełnienia / obrysu – `none` – się
+ * nie liczy; przezroczystych kolorów import nie przenosi). `'kolor'` (`currentColor`) to jeden kolor.
+ */
+export function koloryElementu(e: Pick<ElementOzdobny, 'kontury'>): Set<string> {
+  const kolory = new Set<string>();
+  const dodaj = (k: string) => kolory.add(k === 'kolor' ? k : k.trim().toLowerCase());
+  for (const c of e.kontury) {
+    if (c.wypelnienie !== undefined) dodaj(c.wypelnienie);
+    if (c.obrys && c.obrys.grubosc > 0) dodaj(c.obrys.kolor);
+  }
+  return kolory;
+}
+
+/** Czy rysunek ma najwyżej jeden kolor (można go przekolorować w miejscu użycia, np. wzór tła). */
+export const czyJednokolorowy = (e: Pick<ElementOzdobny, 'kontury'>): boolean =>
+  koloryElementu(e).size <= 1;
+
+/**
+ * Definicja symbolu sceny z elementu biblioteki (klucz = identyfikator elementu). `jednolity` –
+ * wszystkie kolory z miejsca użycia (domyślnie według ustawienia `kolorowanie` elementu).
+ */
+export function symbolZElementu(
+  e: ElementOzdobny,
+  jednolity = e.kolorowanie === 'jednolity',
+): DefinicjaSymbolu {
+  if (!jednolity) return { kontury: e.kontury, szer: e.szer, wys: e.wys };
   // Własny rysunek „jednolity”: wszystkie wypełnienia i obrysy dziedziczą kolor z miejsca użycia.
   const kontury = e.kontury.map((c) => ({
     ...c,

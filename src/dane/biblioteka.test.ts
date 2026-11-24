@@ -4,7 +4,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { WERSJA_SCHEMATU, type DaneZasobow, type Projekt } from '../model/projekt';
 import type { Szablon } from '../model/szablon';
-import { importujSvg, type ElementOzdobny } from '../ozdobniki';
+import { czyJednokolorowy, importujSvg, koloryElementu, type ElementOzdobny } from '../ozdobniki';
 import { pakietMausritter } from '../pakiety/mausritter';
 import {
   dodajSzablon,
@@ -18,6 +18,7 @@ import {
   dodajElementDoBiblioteki,
   dolaczElementy,
   elementyUzyteWSzablonie,
+  liczbaTelZElementem,
   noweIdElementu,
   przytnijTresc,
   odwolaniaDoElementow,
@@ -421,5 +422,74 @@ describe('wzór tła karty (schemat 29, N5)', () => {
       const p = { ...baza, szablony: [{ ...baza.szablony[0]!, wzorTla: zly }] };
       expect(() => przygotujProjekt(JSON.parse(JSON.stringify(p)))).toThrow();
     }
+  });
+});
+
+describe('wzór tła z biblioteki SVG (schemat 30, N9)', () => {
+  it('migracja 29→30 nie zmienia danych; stary wzór wbudowany przechodzi walidację bez zmian', () => {
+    expect(migruj({ wersja: 29, a: 1 }, 'projekt', 30)).toEqual({ wersja: 30, a: 1 });
+    expect(migruj({ wersja: 29, a: 1 }, 'szablon', 30)).toEqual({ wersja: 30, a: 1 });
+    const stary = { rodzaj: 'kratka' as const, grubosc: 0.2, odstep: 5, kolor: '#9fb3c8' };
+    const p = {
+      ...baza,
+      szablony: baza.szablony.map((s, i) => (i ? s : { ...s, wzorTla: stary })),
+    };
+    const wynik = przygotujProjekt({ ...JSON.parse(JSON.stringify(p)), wersja: 29 });
+    expect(wynik.szablony[0]!.wzorTla).toEqual(stary);
+  });
+
+  it('karta trzyma tylko id grafiki: eksport szablonu zabiera element, import przepisuje id', () => {
+    const { projekt: z, id } = dodajElementDoBiblioteki(baza, 'Kafel.svg', nowy('naroznik'));
+    const wzor = {
+      rodzaj: 'svg' as const,
+      grubosc: 0.2,
+      odstep: 5,
+      kolor: '#123456',
+      element: id,
+      rozmiar: 7,
+      odstepX: 1,
+      odstepY: 0.5,
+      uklad: 'cegielka' as const,
+    };
+    const szablon: Szablon = { ...z.szablony[0]!, wzorTla: wzor };
+    const p: Projekt = { ...z, szablony: [szablon, ...z.szablony.slice(1)] };
+    expect(odwolaniaDoElementow(szablon)).toContain(id);
+    expect(elementyUzyteWSzablonie(p, szablon).map((e) => e.id)).toEqual([id]);
+    expect(liczbaTelZElementem(p, id)).toBe(1);
+    expect(ostrzezeniaProjektu(p)).toEqual([]);
+    const paczka = importujSzablon(eksportujSzablon(p, zasoby, szablon.id).bajty);
+    expect(paczka.biblioteka?.map((e) => e.id)).toEqual([id]);
+    expect(paczka.szablon.wzorTla).toEqual(wzor);
+    const s2 = structuredClone(szablon);
+    przepiszOdwolania(s2, new Map([[id, 'wl:Inny']]));
+    expect(s2.wzorTla?.element).toBe('wl:Inny');
+  });
+
+  it('schemat odrzuca zły układ i za mały kafelek; brak grafiki to tylko ostrzeżenie', () => {
+    const wzor = { rodzaj: 'svg', grubosc: 0.2, odstep: 5, kolor: '#000000', element: 'wl:x' };
+    for (const zly of [
+      { ...wzor, uklad: 'spirala' },
+      { ...wzor, rozmiar: 0.2 },
+      { ...wzor, odstepX: -1 },
+    ]) {
+      const p = { ...baza, szablony: [{ ...baza.szablony[0]!, wzorTla: zly }] };
+      expect(() => przygotujProjekt(JSON.parse(JSON.stringify(p)))).toThrow(/wzorTla/);
+    }
+    const p = { ...baza, szablony: [{ ...baza.szablony[0]!, wzorTla: wzor }] } as Projekt;
+    expect(ostrzezeniaProjektu(p).join(' ')).toContain('wl:x');
+  });
+
+  it('jednokolorowość liczona z konturów (currentColor to jeden kolor, brak wypełnienia się nie liczy)', () => {
+    const jeden = importujSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0H5V5Z" fill="#AA0000"/><path d="M1 1H4" fill="none" stroke="#aa0000"/></svg>',
+    ).element;
+    expect(czyJednokolorowy(jeden)).toBe(true);
+    // Bez viewBox i wymiarów: obwiednia geometrii.
+    expect(jeden.szer).toBe(10);
+    const dwa = importujSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M0 0H5V5Z" fill="red"/><circle cx="5" cy="5" r="2" fill="currentColor"/></svg>',
+    ).element;
+    expect(koloryElementu(dwa).size).toBe(2);
+    expect(czyJednokolorowy(dwa)).toBe(false);
   });
 });

@@ -62,6 +62,7 @@
   --zaznaczenie-papier: #1b7fa8;
   --dobrze-papier: #2f8f4e;
   --zle-papier: #b03226;
+  --przygaszony-papier: #6b6b6b;
   /* Świadomy wybór użytkownika dla motywu jasnego: biały napis na pastelowych przyciskach kroków i Awers/Rewers. */
   --krok-tekst: #ffffff;
   --krok-gra-1: #669ca6;
@@ -128,6 +129,7 @@
   --zaznaczenie-papier: #1f6e94;
   --dobrze-papier: #2f8f4e;
   --zle-papier: #b03226;
+  --przygaszony-papier: #6b6b6b;
   --krok-tekst: #1e202c;
   --krok-gra-1: #1eabb8;
   --krok-gra-2: #1eabb8;

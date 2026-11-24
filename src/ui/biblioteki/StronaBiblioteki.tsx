@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { RodzajWpisuBiblioteki, WpisBiblioteki } from '../../dane/bibliotekaUzytkownika';
-import { formatujLiczbe, t } from '../../i18n';
+import { formatujLiczbe, t, tn } from '../../i18n';
 import { baza } from '../bazaUI';
 import { usePasekKomunikatu } from '../PasekKomunikatu';
 import { doSzukania } from '../start/mojeSzablony';
@@ -115,6 +115,8 @@ export function StronaBiblioteki({
   const [potwierdzenie, ustawPotwierdzenie] = useState<{
     wpis: WpisBiblioteki;
     projekty: string[];
+    /** Szablony (karty) z wpisem jako wzorem tła. */
+    tla: number;
   }>();
   const trwa = useRef(false);
   const plik = useRef<HTMLInputElement>(null);
@@ -155,9 +157,11 @@ export function StronaBiblioteki({
   const usun = (w: WpisBiblioteki, mimoTo = false) =>
     wykonaj(async () => {
       if (!mimoTo) {
-        const projekty = (await baza().projektyUzywajace(w.id)).map((p) => p.nazwa);
+        const uzycia = await baza().projektyUzywajace(w.id);
+        const projekty = uzycia.map((p) => p.nazwa);
         if (projekty.length > 0) {
-          ustawPotwierdzenie({ wpis: w, projekty });
+          const tla = uzycia.reduce((n, p) => n + (p.tla ?? 0), 0);
+          ustawPotwierdzenie({ wpis: w, projekty, tla });
           return '';
         }
       }
@@ -315,6 +319,14 @@ export function StronaBiblioteki({
               liczba: potwierdzenie.projekty.length,
               projekty: potwierdzenie.projekty.join(', '),
             })}
+            {potwierdzenie.tla > 0 && (
+              <>
+                {' '}
+                <span data-testid="ostrzezenie-tla">
+                  {tn('biblioteki.usunUzywanyTla', potwierdzenie.tla)}
+                </span>
+              </>
+            )}
           </p>
           <button
             type="button"

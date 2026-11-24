@@ -573,8 +573,18 @@ export interface ZabarwienieTla {
   krycie: number;
 }
 
-/** Rodzaj wzoru tła: linie (pionowe, poziome, ukośne), kratka, romby (dwa zestawy ukośnych), kropki. */
-export type RodzajWzoruTla = 'pionowe' | 'poziome' | 'kratka' | 'romby' | 'ukosne' | 'kropki';
+/**
+ * Rodzaj wzoru tła: linie (pionowe, poziome, ukośne), kratka, romby (dwa zestawy ukośnych), kropki
+ * albo `svg` – grafika z biblioteki użytkownika (element ozdobny) powtarzana kafelkami.
+ */
+export type RodzajWzoruTla =
+  'pionowe' | 'poziome' | 'kratka' | 'romby' | 'ukosne' | 'kropki' | 'svg';
+
+/**
+ * Układ kafelków wzoru: siatka, cegiełka (co drugi rząd przesunięty o pół kafelka) albo pion
+ * (co druga kolumna przesunięta o pół kafelka).
+ */
+export type UkladWzoruTla = 'siatka' | 'cegielka' | 'pion';
 
 /**
  * Wzór tła karty rysowany wektorowo (sięga spadu). Kolor pod wzorem to `tlo` karty. Początek
@@ -594,6 +604,15 @@ export interface WzorTla {
   przesuniecie?: { x: Mm; y: Mm };
   /** Kolejność względem tekstury tła: domyślnie wzór nad teksturą. */
   podTekstura?: boolean;
+  /** Kropki i `svg`: układ kafelków (domyślnie siatka). */
+  uklad?: UkladWzoruTla;
+  /** Tylko `svg`: id elementu ozdobnego z biblioteki użytkownika (odwołanie, nie kopia rysunku). */
+  element?: string;
+  /** Tylko `svg`: dłuższy bok kafelka (mm), rysunek zachowuje proporcje. */
+  rozmiar?: Mm;
+  /** Tylko `svg`: odstęp między kafelkami w poziomie i w pionie (mm, domyślnie 0). */
+  odstepX?: Mm;
+  odstepY?: Mm;
 }
 
 /** Samodzielny układ graficzny rewersu. Wymiary są formatem odniesienia warstw. */
