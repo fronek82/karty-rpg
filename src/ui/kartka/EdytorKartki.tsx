@@ -1,4 +1,12 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { dodajSzablon, eksportujProjekt, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
 import { czyProjektRewersowy } from '../../dane/baza';
 import {
@@ -119,6 +127,13 @@ import { MenuPobierz } from './MenuPobierz';
 import { MenuRewersu } from './MenuRewersu';
 import { MenuTypu } from './MenuTypu';
 import { skalaZKolka, zmienObrazKarty } from './obrazKarty';
+import {
+  kolejnePowiekszenie,
+  MAX_POWIEKSZENIA,
+  MIN_POWIEKSZENIA,
+  wczytajPowiekszenie,
+  zapiszPowiekszenie,
+} from './powiekszenie';
 import { PanelKart, typDlaSzablonu } from './PanelKart';
 import { PanelNaglowka } from './PanelNaglowka';
 import { PanelRewersuIAwersu } from './PanelRewersuIAwersu';
@@ -342,6 +357,44 @@ export function EdytorKartki({
     void f().finally(() => ustawZajete(false));
   };
   const kartkiRef = useRef<HTMLDivElement>(null);
+
+  // --- Powiększenie kartek (przyciski i Ctrl + kółko), zapamiętane w localStorage.
+  const [powiekszenie, ustawPowiekszenieStan] = useState(wczytajPowiekszenie);
+  /** Punkt pod kursorem do utrzymania w miejscu po zmianie powiększenia (px w treści). */
+  const kotwicaRef = useRef<
+    { x: number; y: number; ekranX: number; ekranY: number; s: number } | undefined
+  >(undefined);
+  const zmienPowiekszenie = (nowe: number, punkt?: { clientX: number; clientY: number }) => {
+    if (nowe === powiekszenie) return;
+    const el = kartkiRef.current;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      // Bez kursora (przyciski) – środek widocznej części kartek.
+      const ekranX = punkt ? punkt.clientX - r.left : el.clientWidth / 2;
+      const ekranY = punkt
+        ? punkt.clientY
+        : (Math.max(r.top, 0) + Math.min(r.bottom, window.innerHeight)) / 2;
+      kotwicaRef.current = {
+        x: el.scrollLeft + ekranX,
+        y: ekranY - r.top,
+        ekranX,
+        ekranY,
+        s: nowe / powiekszenie,
+      };
+    }
+    ustawPowiekszenieStan(nowe);
+    zapiszPowiekszenie(nowe);
+  };
+  useLayoutEffect(() => {
+    const k = kotwicaRef.current;
+    const el = kartkiRef.current;
+    kotwicaRef.current = undefined;
+    if (!k || !el) return;
+    el.scrollLeft = k.x * k.s - k.ekranX;
+    // Pionowo przewija się okno: punkt kotwicy (y w kartkach) ma zostać na tej samej wysokości ekranu.
+    const gora = el.getBoundingClientRect().top;
+    window.scrollBy(0, gora + k.y * k.s - k.ekranY);
+  }, [powiekszenie]);
 
   // --- Budowa stron (ta sama scena co w PDF), z pamięcią kart i kartek między renderami.
   // Nowa pamięć kart przy każdej zmianie zasobów (czcionki, obrazy, szablony).
@@ -1092,6 +1145,11 @@ export function EdytorKartki({
   const kolkoRef = useRef<(e: WheelEvent) => void>(() => undefined);
   useEffect(() => {
     kolkoRef.current = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, e.deltaY < 0 ? 1 : -1), e);
+        return;
+      }
       const el = (e.target as HTMLElement).closest<HTMLElement>('[data-karta]');
       if (
         !el ||
@@ -1922,7 +1980,12 @@ export function EdytorKartki({
         </details>
       )}
       <div className="uklad-edytora">
-        <div className="kartki" ref={kartkiRef}>
+        <div
+          className="kartki"
+          ref={kartkiRef}
+          style={{ '--powiekszenie': powiekszenie } as React.CSSProperties}
+          data-powiekszone={powiekszenie > 1 || undefined}
+        >
           {!zasoby && <p>{t('arkusze.wczytywanie')}</p>}
           {zasoby && projekt.arkusze.length === 0 && (
             <p className="uwaga">
@@ -2052,7 +2115,41 @@ export function EdytorKartki({
             />
           ))}
         </div>
-        <div className="kolumna-panelu">{panel}</div>
+        <div className="kolumna-panelu">
+          <div className="pasek-powiekszenia" role="group" aria-label={t('kartka.powiekszenie')}>
+            <button
+              type="button"
+              className="ikonowy"
+              onClick={() => zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, -1))}
+              disabled={powiekszenie <= MIN_POWIEKSZENIA}
+              aria-label={t('kartka.oddal')}
+              title={t('kartka.oddal')}
+            >
+              −
+            </button>
+            <button
+              type="button"
+              className="wartosc-powiekszenia"
+              onClick={() => zmienPowiekszenie(1)}
+              title={t('kartka.dopasujPowiekszenie')}
+              aria-label={t('kartka.dopasujPowiekszenie')}
+            >
+              {Math.round(powiekszenie * 100)}%
+            </button>
+            <button
+              type="button"
+              className="ikonowy"
+              onClick={() => zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, 1))}
+              disabled={powiekszenie >= MAX_POWIEKSZENIA}
+              aria-label={t('kartka.przybliz')}
+              title={t('kartka.przybliz')}
+            >
+              +
+            </button>
+            <span className="podpis">{t('kartka.powiekszenieKolko')}</span>
+          </div>
+          {panel}
+        </div>
       </div>
       {toastAktualny && (
         <div className="toast" role="status">

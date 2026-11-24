@@ -1114,6 +1114,11 @@ export const pl = {
     'Kliknij pusty slot, żeby dodać kartę. Kartę przeciągasz myszą; nie może nachodzić na inną.',
   'kartka.pomocZaznaczanie':
     'Shift + klik dodaje kartę do zaznaczenia; przeciągnięcie po pustym miejscu zaznacza prostokątem. Wiele kart tego samego typu edytujesz naraz.',
+  'kartka.powiekszenie': 'Powiększenie kartek',
+  'kartka.przybliz': 'Przybliż',
+  'kartka.oddal': 'Oddal',
+  'kartka.dopasujPowiekszenie': 'Dopasuj do szerokości (100%)',
+  'kartka.powiekszenieKolko': 'Ctrl + kółko myszy – przybliżanie',
   'kartka.pomocSkroty':
     'Skróty: Delete – usuń, Ctrl+D – duplikuj, Ctrl+Z – cofnij (Ctrl+Shift+Z – ponów), strzałki – przesuń, Escape – odznacz.',
   'kartka.pomocDruk':

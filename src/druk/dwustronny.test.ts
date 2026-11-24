@@ -260,6 +260,33 @@ describe('M4-4: regresje siatki, MaxRects, nakładu, kontynuacji, pustych tyłó
     expect(grupy[0]!.typ === 'grupa' && grupy[0]!.y).toBeCloseTo(oczekiwane.y, 3);
   });
 
+  it('rysuje na tyle lustrzane odbicie linii cięcia przodu', () => {
+    const rev = rewersAsymetryczny('rev1', '#335577');
+    const sz = szablon('s1', 63, 88);
+    const k1: Karta = { id: 'k1', szablonId: 's1', ilosc: 2, dane: { nazwa: 'A' } };
+    const talia: Talia = { id: 't1', nazwa: 'Talia', karty: [k1], rewersId: rev.id };
+    const ctx = { czcionki, szablony: new Map([[sz.id, sz]]) };
+    const linieZ = (sc: Scena) =>
+      sc.elementy
+        .filter((e) => e.typ === 'linia')
+        .map((e) => (e.typ === 'linia' ? [e.x1, e.y1, e.x2, e.y2] : []));
+    for (const krawedz of ['dluga', 'krotka'] as KrawedzOdwracania[]) {
+      const ark = bazowyArkusz({ dwustronny: { wlaczony: true, krawedz } });
+      const przod = zbudujArkusz(ark, talia, ctx);
+      const tyl = zbudujStronyRewersow(ark, talia, przod, {
+        ...ctx,
+        rewersy: new Map([[rev.id, rev]]),
+      });
+      const linieP = linieZ(przod.strony[0]!);
+      expect(linieP.length).toBeGreaterThan(0);
+      const os = osOdwracania({ szer: 210, wys: 297 }, krawedz);
+      const odbite = linieP.map(([x1, y1, x2, y2]) =>
+        os === 'pionowa' ? [210 - x1!, y1, 210 - x2!, y2] : [x1, 297 - y1!, x2, 297 - y2!],
+      );
+      expect(linieZ(tyl.strony[0]!)).toEqual(odbite);
+    }
+  });
+
   it('przypisuje rewers także do dodatkowych części kontynuacji tekstu', () => {
     const rev = rewersAsymetryczny('rev-kont');
     const sz = szablon('s-kont', 50, 35, {
