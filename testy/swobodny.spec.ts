@@ -83,8 +83,9 @@ test('kreator „swobodny”: elementy dostają położenie z panelu (X, Y, kotw
   blisko(rog.y + rog.wys, WYS - 3);
   await expect(drzewo(page).getByRole('treeitem', { name: /^Tytuł – / })).toContainText('-3 · -3');
 
-  // Zmiana rozmiaru karty: element zostaje przy rogu.
+  // Zmiana rozmiaru karty bez skalowania zawartości: element zostaje przy rogu.
   await karta(page);
+  await panel(page).getByLabel('Zostaw elementy w tych samych miejscach').check();
   await page.locator('#karta-szer').fill('70');
   await page.locator('#karta-wys').fill('100');
   await zaznacz(page, 'Tytuł');
