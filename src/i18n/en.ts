@@ -972,13 +972,19 @@ export const en: Slownik = {
   'grupy.opis': 'Style changes apply to all fields in this group.',
   'grupy.usun': 'Delete group and keep field styles',
   'koloryZDanych.tytul': 'Color from data',
-  'odmiany.nazwaDomyslna': 'Variant',
+  'odmiany.nazwaDomyslna': 'Kind',
   'odmiany.wDrzewie': 'variants from data',
   'odmiany.wartoscWDrzewie': 'Variant value in card data',
+  'odmiany.nazwaOdmiany': 'Variant {n}',
+  'odmiany.dodaj': '＋ Add variant',
+  'odmiany.dodajOpis': 'A copy of the last variant – change its icon, text and the rest.',
+  'odmiany.polaOsobno':
+    'Right now each field inside is a separate variant. To make the whole content (e.g. icon with text) one variant, combine it.',
+  'odmiany.zlozWOdmiane': 'Combine content into one variant',
   'odmiany.tytul': 'Variants from data',
   'odmiany.wlacz': 'Show one variant chosen in card data',
   'odmiany.opis':
-    'Each element inside is one variant. A card shows only the one whose value you enter in the “{kolumna}” column (in CSV or in the card panel).',
+    'Each element inside (e.g. a whole row with an icon and text) is one variant. A card shows only the one whose value you enter in the “{kolumna}” column (in CSV or in the card panel).',
   'odmiany.opisTylu':
     'The variant is chosen by the value of the front switch with the same name. Without it – the default variant.',
   'odmiany.wartosc': 'Value of variant “{nazwa}”',

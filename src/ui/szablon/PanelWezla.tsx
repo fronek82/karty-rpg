@@ -318,6 +318,7 @@ export function PanelWezla({
               szablon={szablon}
               kontener={wezel}
               zmienWezel={zmienWezel}
+              zmienSzablon={zmienSzablon}
               bezDanych={bezDanych}
               zajeteKlucze={zajeteKlucze}
             />

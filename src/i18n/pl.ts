@@ -964,13 +964,19 @@ export const pl = {
   'grupy.opis': 'Zmiana stylu obejmuje wszystkie pola w tej grupie.',
   'grupy.usun': 'Usuń grupę i zachowaj wygląd pól',
   'koloryZDanych.tytul': 'Kolor z danych',
-  'odmiany.nazwaDomyslna': 'Odmiana',
+  'odmiany.nazwaDomyslna': 'Rodzaj',
   'odmiany.wDrzewie': 'odmiany z danych',
   'odmiany.wartoscWDrzewie': 'Wartość odmiany w danych karty',
+  'odmiany.nazwaOdmiany': 'Odmiana {n}',
+  'odmiany.dodaj': '＋ Dodaj odmianę',
+  'odmiany.dodajOpis': 'Kopia ostatniej odmiany – zmień w niej ikonę, tekst i resztę.',
+  'odmiany.polaOsobno':
+    'Teraz każde pole w środku jest osobną odmianą. Żeby odmianą była cała zawartość (np. ikona z tekstem), złóż ją w jedną odmianę.',
+  'odmiany.zlozWOdmiane': 'Złóż zawartość w jedną odmianę',
   'odmiany.tytul': 'Odmiany z danych',
   'odmiany.wlacz': 'Pokazuj jedną odmianę wybraną w danych karty',
   'odmiany.opis':
-    'Każdy element w środku to jedna odmiana. Na karcie widać tylko tę, której wartość wpiszesz w kolumnie „{kolumna}” (w CSV albo w panelu karty).',
+    'Każdy element w środku (np. cały wiersz z ikoną i tekstem) to jedna odmiana. Na karcie widać tylko tę, której wartość wpiszesz w kolumnie „{kolumna}” (w CSV albo w panelu karty).',
   'odmiany.opisTylu':
     'Odmianę wybiera wartość przełącznika przodu o tej samej nazwie. Bez niej – odmiana domyślna.',
   'odmiany.wartosc': 'Wartość odmiany „{nazwa}”',
