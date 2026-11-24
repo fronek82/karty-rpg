@@ -313,15 +313,6 @@ export function PanelWezla({
               </p>
             </div>
           )}
-          {!wiele && (
-            <PanelOdmian
-              szablon={szablon}
-              kontener={wezel}
-              zmienWezel={zmienWezel}
-              bezDanych={bezDanych}
-              zajeteKlucze={zajeteKlucze}
-            />
-          )}
         </>
       )}
 
@@ -387,7 +378,7 @@ export function PanelWezla({
         zmien={zmienWezel}
         poWygladzie={
           pole && maStylTekstu(pole) && !znajdzGrupeStylu(szablon, pole.grupaStyluId) ? (
-            <Sekcja tytul={t('wlasciwosci.styl')} otwarta={pole.typ === 'tekst'}>
+            <Sekcja tytul={t('wlasciwosci.styl')}>
               <PanelStylu
                 styl={pole.styl}
                 czcionki={czcionki}
@@ -461,7 +452,7 @@ export function PanelWezla({
       )}
 
       {zEtykieta && (
-        <Sekcja tytul={t('szablon.etykieta')} otwarta={!!etykieta}>
+        <Sekcja tytul={t('szablon.etykieta')}>
           <label className="wiersz-pola">
             <input
               type="checkbox"
@@ -644,6 +635,17 @@ export function PanelWezla({
           obrazy={obrazy}
           {...(wgrajStalyObraz ? { wgrajStalyObraz } : {})}
           wiele={wiele}
+          bezDanych={bezDanych}
+          zajeteKlucze={zajeteKlucze}
+        />
+      )}
+      {/* „Wersje z danych” – na końcu panelu kontenera. */}
+      {!wiele && czyKontener(wezel) && (
+        <PanelOdmian
+          szablon={szablon}
+          kontener={wezel}
+          zmienWezel={zmienWezel}
+          zmienSzablon={zmienSzablon}
           bezDanych={bezDanych}
           zajeteKlucze={zajeteKlucze}
         />

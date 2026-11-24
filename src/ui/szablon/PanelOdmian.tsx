@@ -1,5 +1,11 @@
 import { useId } from 'react';
-import { kluczZNazwy, kluczeSzablonu } from '../../dane/szablon';
+import {
+  dodajOdmiane,
+  kluczZNazwy,
+  kluczeSzablonu,
+  maPolaWPrzelaczniku,
+  zawartoscJakoOdmiana,
+} from '../../dane/szablon';
 import { t } from '../../i18n';
 import {
   czyKontener,
@@ -26,12 +32,14 @@ export function PanelOdmian({
   szablon,
   kontener,
   zmienWezel,
+  zmienSzablon,
   bezDanych,
   zajeteKlucze,
 }: {
   szablon: Szablon;
   kontener: Kontener;
   zmienWezel: (f: (w: Wezel) => Wezel, klucz?: string) => void;
+  zmienSzablon: (f: (s: Szablon) => Szablon, klucz?: string) => void;
   bezDanych: boolean;
   zajeteKlucze: () => Iterable<string>;
 }) {
@@ -50,8 +58,12 @@ export function PanelOdmian({
         return { ...x, dzieci: w.dzieci.map(bezOdmiany) };
       }
       const nazwa = w.nazwa || t('odmiany.nazwaDomyslna');
+      // Wiersz z polami (np. ikona + tekst): cała zawartość to pierwsza odmiana, nie każde pole.
+      const k = maPolaWPrzelaczniku(w)
+        ? zawartoscJakoOdmiana(szablon, w, t('odmiany.nazwaOdmiany', { n: 1 }))
+        : w;
       return {
-        ...w,
+        ...k,
         nazwa,
         przelacznik: bezDanych
           ? {}
@@ -59,7 +71,7 @@ export function PanelOdmian({
               klucz: kluczZNazwy(nazwa, new Set([...kluczeSzablonu(szablon), ...zajeteKlucze()])),
             },
         // Numery jawnie – zmiana kolejności dzieci nie zmienia już kart.
-        dzieci: w.dzieci.map((d, i) => ({ ...d, odmiana: wartoscOdmiany(w, i) })),
+        dzieci: k.dzieci.map((d, i) => ({ ...d, odmiana: wartoscOdmiany(k, i) })),
       };
     });
 
@@ -75,7 +87,7 @@ export function PanelOdmian({
     }, `odmiana:${kontener.id}:${i}`);
 
   return (
-    <Sekcja tytul={t('odmiany.tytul')} otwarta={!!p}>
+    <Sekcja tytul={t('odmiany.tytul')}>
       <label className="wiersz-pola">
         <input type="checkbox" checked={!!p} onChange={(e) => przelacz(e.target.checked)} />
         {t('odmiany.wlacz')}
@@ -131,6 +143,45 @@ export function PanelOdmian({
               }
             />
           )}
+          {maPolaWPrzelaczniku(kontener) && (
+            <div className="pole-panelu">
+              <p className="uwaga">{t('odmiany.polaOsobno')}</p>
+              <button
+                type="button"
+                className="maly"
+                onClick={() =>
+                  zmienWezel((w) =>
+                    czyKontener(w)
+                      ? zawartoscJakoOdmiana(szablon, w, t('odmiany.nazwaOdmiany', { n: 1 }))
+                      : w,
+                  )
+                }
+              >
+                {t('odmiany.zlozWOdmiane')}
+              </button>
+            </div>
+          )}
+          <div className="pole-panelu">
+            <button
+              type="button"
+              className="maly"
+              onClick={() =>
+                zmienSzablon(
+                  (s) =>
+                    dodajOdmiane(
+                      s,
+                      kontener.id,
+                      t('odmiany.nazwaOdmiany', { n: kontener.dzieci.length + 1 }),
+                      t('szablon.kopia'),
+                      zajeteKlucze(),
+                    ).szablon,
+                )
+              }
+            >
+              {t('odmiany.dodaj')}
+            </button>
+            <p className="podpis">{t('odmiany.dodajOpis')}</p>
+          </div>
           <p className="podpis">{t('odmiany.podglad')}</p>
         </>
       )}

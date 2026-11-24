@@ -165,6 +165,7 @@ test('separator ozdobny: trzy wzory z menu, zakończenia, środek, motyw, długo
   await expect(p.getByRole('heading', { name: 'Separator z zakończeniami' })).toBeVisible();
   await expect(podglad.locator('use[color]')).toHaveCount(3);
   await expect(podglad.locator('defs g[id]')).toHaveCount(2);
+  await sekcja(page, 'Separator');
   const zak = p.getByRole('group', { name: /^Zakończenia/ });
   const srodek = p.getByRole('group', { name: 'Środek', exact: true });
   await expect(zak.getByRole('button')).toHaveCount(6); // brak + 5
@@ -199,6 +200,7 @@ test('separator ozdobny: trzy wzory z menu, zakończenia, środek, motyw, długo
   await karta(page);
   await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
   await page.getByRole('menuitem', { name: 'Separator z motywem' }).click();
+  await sekcja(page, 'Separator');
   const motywy = p.getByRole('group', { name: 'Motyw', exact: true });
   await expect(motywy.getByRole('button')).toHaveCount(6);
   await expect(motywy.getByRole('button', { name: 'łańcuch' })).toHaveAttribute(

@@ -43,6 +43,7 @@ test('tabela: kolumny, wiersze, nagłówki, linie; komórki to pola karty', asyn
   await panel(page).getByRole('button', { name: 'Przesuń kolumnę 3 w lewo' }).click();
   await expect(panel(page).getByLabel('Nagłówek kolumny 2')).toHaveValue('Wola');
   // Wiersze, nagłówki, linie.
+  await otworz(page, 'Wiersze');
   await panel(page).getByLabel('Liczba wierszy wartości').fill('2');
   await panel(page).getByLabel('Pokaż wiersz nagłówków').uncheck();
   await panel(page).getByLabel('Pokaż wiersz nagłówków').check();

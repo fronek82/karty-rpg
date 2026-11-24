@@ -1218,3 +1218,87 @@ export function pokazOdmianyZaznaczenia(s: Szablon, zaznaczone: readonly string[
   if (!zmieniono) return s;
   return { ...s, korzen, ...(warianty ? { warianty } : {}) };
 }
+
+/**
+ * Czy zawartość przełącznika trzeba złożyć w jedną odmianę: są w nim pola (np. wiersz „ikona +
+ * tekst”). Wtedy odmianą ma być cały wiersz, a nie każde pole osobno.
+ */
+export const maPolaWPrzelaczniku = (k: Kontener): boolean => k.dzieci.some((d) => !czyKontener(d));
+
+/**
+ * Zawartość kontenera jako jedna odmiana: dzieci trafiają do nowego kontenera tego samego typu
+ * (z odstępem i rozłożeniem), który wypełnia przełącznik. Układ karty się nie zmienia.
+ */
+export function zawartoscJakoOdmiana(s: Szablon, k: Kontener, nazwa: string): Kontener {
+  const typ = k.typ;
+  const wypelnia: Pick<Kontener, 'szerokosc' | 'wysokosc'> =
+    typ === 'wiersz'
+      ? { szerokosc: { wypelnij: 1 } }
+      : typ === 'kolumna'
+        ? { wysokosc: { wypelnij: 1 } }
+        : typ === 'swobodny'
+          ? { szerokosc: { procent: 100 }, wysokosc: { procent: 100 } }
+          : {};
+  const odmiana: Kontener = {
+    id: noweIdWezla(s, typ),
+    nazwa,
+    typ,
+    ...wypelnia,
+    ...(k.odstep !== undefined ? { odstep: k.odstep } : {}),
+    ...(k.rozklad ? { rozklad: k.rozklad } : {}),
+    // W swobodnym przełączniku odmiana leży w lewym górnym rogu i zajmuje całe wnętrze.
+    ...(typ === 'swobodny' ? { pozycja: { x: 0, y: 0 } } : {}),
+    odmiana: '1',
+    dzieci: k.dzieci.map((d) => {
+      if (d.odmiana === undefined) return d;
+      const { odmiana: _o, ...reszta } = d;
+      void _o;
+      return reszta as Wezel;
+    }),
+  };
+  // Jedyna odmiana to „1” – wcześniejsza odmiana domyślna nie ma już sensu.
+  const przelacznik = k.przelacznik && {
+    ...(k.przelacznik.klucz ? { klucz: k.przelacznik.klucz } : {}),
+  };
+  return { ...k, ...(przelacznik ? { przelacznik } : {}), dzieci: [odmiana] };
+}
+
+/**
+ * Nowa odmiana przełącznika: kopia ostatniej (cały wiersz z polami, do zmiany ikony i tekstu)
+ * z pierwszym wolnym numerem; w pustym przełączniku – pusty kontener.
+ */
+export function dodajOdmiane(
+  s: Szablon,
+  id: string,
+  nazwa: string,
+  dopisekKopii: string,
+  zajete: Iterable<string> = [],
+): { szablon: Szablon; id: string } {
+  const k = znajdzWezel(s, id);
+  if (!k || !czyKontener(k)) return { szablon: s, id: '' };
+  const ostatni = k.dzieci[k.dzieci.length - 1];
+  if (!ostatni) {
+    const typ = k.typ === 'warstwy' ? 'wiersz' : k.typ;
+    const nowy: Kontener = {
+      id: noweIdWezla(s, typ),
+      nazwa,
+      typ,
+      dzieci: [],
+      ...(typ === 'swobodny'
+        ? { pozycja: { x: 0, y: 0 }, szerokosc: { procent: 100 }, wysokosc: { procent: 100 } }
+        : {}),
+    };
+    return { szablon: wstawWezel(s, id, nowy), id: nowy.id };
+  }
+  const d = duplikujWezel(s, ostatni.id, dopisekKopii, zajete);
+  if (!d.id) return d;
+  // Kopia w swobodnym przełączniku leży tam, gdzie oryginał (widać i tak tylko jedną odmianę).
+  return {
+    szablon: zmienWezel(d.szablon, d.id, (w) => ({
+      ...w,
+      nazwa,
+      ...(ostatni.pozycja ? { pozycja: { ...ostatni.pozycja } } : {}),
+    })),
+    id: d.id,
+  };
+}

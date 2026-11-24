@@ -580,7 +580,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     gest.stan?.rodzaj !== 'przesun' ? (celUchwytow?.lokalne ?? celUchwytow?.rect) : undefined;
   const rozmiarZaznaczenia =
     celUchwytow && celeZazn.length > 1 ? (
-      <Sekcja tytul={t('nakladka.rozmiarZaznaczenia')} otwarta>
+      <Sekcja tytul={t('nakladka.rozmiarZaznaczenia')}>
         {(['szer', 'wys'] as const).map((os) => (
           <Liczba
             key={os}

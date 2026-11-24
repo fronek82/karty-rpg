@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { kolumnySzablonu } from './edycja';
 import { migruj, przygotujProjekt } from './schemat';
 import {
+  dodajOdmiane,
   duplikujWezel,
+  maPolaWPrzelaczniku,
+  zawartoscJakoOdmiana,
   kluczeSzablonu,
   opakuj,
   pokazOdmianyZaznaczenia,
@@ -222,5 +225,82 @@ describe('dane szablonu z przełącznikiem', () => {
     expect(przygotujProjekt(p).szablony[0]!.korzen.dzieci[0]).toEqual(przelacznik());
     const stary = { ...p, wersja: 33 };
     expect(migruj(stary)).toEqual({ ...stary, wersja: WERSJA_SCHEMATU });
+  });
+});
+
+describe('cały wiersz jako odmiana', () => {
+  /** Wiersz „ikona + ikona” na karcie – jak wiersz z ikoną i tekstem. */
+  const wiersz: Kontener = {
+    id: 'wiersz',
+    nazwa: 'Rodzaj',
+    typ: 'wiersz',
+    odstep: 2,
+    dzieci: [ikona('ludzik', 6), ikona('napis', 10)],
+  };
+  const sz = szablon(wiersz);
+
+  it('zawartość wiersza staje się jedną odmianą – układ karty bez zmian', () => {
+    expect(maPolaWPrzelaczniku(wiersz)).toBe(true);
+    const k = zawartoscJakoOdmiana(sz, wiersz, 'Odmiana 1');
+    expect(k.dzieci).toHaveLength(1);
+    const o = k.dzieci[0] as Kontener;
+    expect(o).toMatchObject({ typ: 'wiersz', nazwa: 'Odmiana 1', odmiana: '1', odstep: 2 });
+    expect(o.dzieci.map((d) => d.id)).toEqual(['ludzik', 'napis']);
+    expect(maPolaWPrzelaczniku(k)).toBe(false);
+    const po = szablon({ ...k, przelacznik: { klucz: 'rodzaj' } });
+    const pozycje = (x: Szablon) =>
+      renderujKarte(x, { dane: {} }, ctx)
+        .wezly.filter((w) => w.id === 'ludzik' || w.id === 'napis' || w.id === 'stopka')
+        .map(({ id, x: px, y, szer, wys }) => ({ id, px, y, szer, wys }));
+    expect(pozycje(po)).toEqual(pozycje(sz));
+  });
+
+  it('„Dodaj odmianę” kopiuje cały ostatni wiersz z kolejnym numerem', () => {
+    const k = { ...zawartoscJakoOdmiana(sz, wiersz, 'Odmiana 1'), przelacznik: { klucz: 'r' } };
+    const s1 = szablon(k);
+    const { szablon: s2, id } = dodajOdmiane(s1, 'wiersz', 'Odmiana 2', 'kopia');
+    const nowa = znajdzWezel(s2, id) as Kontener;
+    expect(nowa).toMatchObject({ nazwa: 'Odmiana 2', odmiana: '2', typ: 'wiersz' });
+    expect(nowa.dzieci).toHaveLength(2);
+    expect(widoczne(s2, { r: '2' }).ids).toContain(nowa.dzieci[0]!.id);
+    expect(widoczne(s2, { r: '2' }).ids).not.toContain('ludzik');
+    // Złożenie usuwa nieaktualną odmianę domyślną, zostawia klucz.
+    const zDomyslna = zawartoscJakoOdmiana(
+      sz,
+      { ...wiersz, przelacznik: { klucz: 'r', domyslna: '2' } },
+      'Odmiana 1',
+    );
+    expect(zDomyslna.przelacznik).toEqual({ klucz: 'r' });
+    // Pusty przełącznik – pusty kontener.
+    const pusty = szablon({ ...wiersz, dzieci: [], przelacznik: {} });
+    const p = dodajOdmiane(pusty, 'wiersz', 'Odmiana 1', 'kopia');
+    expect(znajdzWezel(p.szablon, p.id)).toMatchObject({ typ: 'wiersz', dzieci: [], odmiana: '1' });
+  });
+
+  it('złożona kolumna i swobodny zachowują położenia; kopia w swobodnym leży jak oryginał', () => {
+    for (const typ of ['kolumna', 'swobodny'] as const) {
+      const k: Kontener = {
+        ...wiersz,
+        typ,
+        dzieci:
+          typ === 'swobodny'
+            ? [
+                { ...ikona('ludzik', 6), pozycja: { x: 2, y: 3 } },
+                { ...ikona('napis', 10), pozycja: { x: 12, y: 1 } },
+              ]
+            : wiersz.dzieci,
+      };
+      const przed = szablon(k);
+      const po = szablon({ ...zawartoscJakoOdmiana(przed, k, 'Odmiana 1'), przelacznik: {} });
+      const pozycje = (x: Szablon) =>
+        renderujKarte(x, { dane: {} }, ctx)
+          .wezly.filter((w) => ['ludzik', 'napis', 'stopka'].includes(w.id))
+          .map(({ id, x: px, y }) => ({ id, px, y }));
+      expect(pozycje(po)).toEqual(pozycje(przed));
+      if (typ === 'swobodny') {
+        const d = dodajOdmiane(po, 'wiersz', 'Odmiana 2', 'kopia');
+        expect(znajdzWezel(d.szablon, d.id)?.pozycja).toEqual({ x: 0, y: 0 });
+      }
+    }
   });
 });

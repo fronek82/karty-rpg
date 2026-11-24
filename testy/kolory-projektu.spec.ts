@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { zapisano } from './pomoc';
-import { drzewo } from './szablonUI';
+import { drzewo, sekcja } from './szablonUI';
 
 /*
  * N11: kolory projektu przy polach koloru – kolor tyłu wybrany na przodzie jednym kliknięciem,
@@ -21,6 +21,7 @@ test('kolor tła tyłu wybrany na przodzie z „Kolorów projektu”, zapis i us
   await page.getByRole('button', { name: /Dalej: edytor tyłu/ }).click();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
   const id = /#\/projekt\/([^/]+)\//.exec(page.url())![1]!;
+  await sekcja(page, 'Tło karty');
   await page.locator('#karta-tlo-kolor').fill('#112233');
   await zapisano(page);
 
@@ -31,6 +32,7 @@ test('kolor tła tyłu wybrany na przodzie z „Kolorów projektu”, zapis i us
   await expect(page).toHaveURL(/\/szablon\//, { timeout: 15000 });
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
 
+  await sekcja(page, 'Tło karty');
   const pole = poleTla(page);
   const przycisk = pole.locator('.przycisk-kolorow-projektu');
   await expect(przycisk).toHaveAttribute('aria-expanded', 'false');

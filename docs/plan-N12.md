@@ -54,3 +54,29 @@ Tył karty wybiera odmianę tak samo, z tej samej kolumny przodu.
   ręcznie po zaznaczeniu (podgląd pokazuje wtedy zaznaczoną odmianę).
 - Ten sam klucz przełącznika w wariantach układu przodu: lista odmian w panelu karty łączy
   wartości ze wszystkich wariantów.
+
+## Poprawka po wdrożeniu – cały wiersz jako odmiana
+
+Włączenie przełącznika na wierszu „ikona + tekst” robiło z ikony i tekstu dwie osobne odmiany,
+a użytkownik chciał kilku wersji całego wiersza.
+
+- Włączenie przełącznika na kontenerze, w którym są pola, składa całą jego zawartość w jedną
+  odmianę („Odmiana 1”): nowy kontener tego samego typu, z odstępem i rozłożeniem, wypełniający
+  przełącznik w osi głównej (`zawartoscJakoOdmiana`). Układ karty się nie zmienia. Kontener
+  z samymi kontenerami (np. kolumna z gotowymi wierszami) zostaje jak dotąd – każdy wiersz to
+  odmiana.
+- Przełącznik, w którym już są pola (włączony wcześniej), pokazuje uwagę i przycisk „Złóż
+  zawartość w jedną odmianę”.
+- „＋ Dodaj odmianę” kopiuje całą ostatnią odmianę (nazwa „Odmiana N”, pierwszy wolny numer) –
+  zmienia się w niej ikonę i tekst (`dodajOdmiane`).
+- Domyślna nazwa przełącznika to „Rodzaj” (kolumna `rodzaj` w CSV).
+- W interfejsie „wersja” zamiast „odmiana” (sekcja „Wersje z danych”, „Wersja 1”, „＋ Dodaj
+  wersję”) – na prośbę właściciela; w kodzie i kluczach i18n nazwy `odmiana` / `odmiany.*` bez
+  zmian. Sekcja jest na końcu panelu kontenera.
+- Okno „Załadować ponownie stronę?” przy odświeżaniu z niezapisanymi zmianami to okno
+  przeglądarki (`beforeunload`) – jego przyciski są w języku przeglądarki i aplikacja nie może
+  ich zmienić.
+- Wszystkie sekcje panelu edytora karty (przód i tył) są po wczytaniu i po zmianie zaznaczenia
+  zwinięte – także „Styl tekstu”, „Tło karty”, ustawienia obrazu, ikony, separatora i tabeli
+  (prośba właściciela). Wyjątek: „Położenie i rozmiar” przy zaznaczeniu kilku elementów
+  swobodnych, bo tam są przyciski wyrównania. Testy e2e otwierają sekcje przed użyciem pól.

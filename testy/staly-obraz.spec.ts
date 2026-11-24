@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-import { dodaj, kartaNaKartce, kreator, panel, karta, zaznacz } from './szablonUI';
+import { dodaj, kartaNaKartce, kreator, panel, karta, sekcja, zaznacz } from './szablonUI';
 import { otworzDruk, zapisano } from './pomoc';
 
 test('wgrany stały obraz jest wybrany w polu, widoczny w PNG i cofany w jednym kroku', async ({
@@ -13,6 +13,7 @@ test('wgrany stały obraz jest wybrany w polu, widoczny w PNG i cofany w jednym 
     uklad: 'Pusta karta',
   });
   await dodaj(page, 'Obraz');
+  await sekcja(page, 'Obraz');
   const wgraj = panel(page).getByRole('button', { name: 'Wgraj obraz…', exact: true });
   await expect(wgraj).toHaveCount(0);
   await panel(page).getByLabel('Treść', { exact: true }).selectOption('staly');
