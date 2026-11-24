@@ -221,6 +221,15 @@ test('Edytor szablonu: „Wstecz” przeglądarki przy niezapisanych zmianach py
   await expect(drzewo(page)).toBeVisible();
   await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Karta wstecz 2');
 
+  // Przejście w obrębie projektu (Edytor kart i z powrotem) – bez okna, zmiany zostają w pamięci.
+  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await expect(page).toHaveURL(/#\/projekt\/[^/]+\/kartka\//);
+  await expect(okno).toHaveCount(0);
+  await page.goBack();
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+  await expect(okno).toHaveCount(0);
+  await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Karta wstecz 2');
+
   // „Zapisz i wyjdź” zapisuje i przechodzi tam, dokąd prowadził „Wstecz”.
   await page.goBack();
   await okno.getByRole('button', { name: 'Zapisz i wyjdź' }).click();

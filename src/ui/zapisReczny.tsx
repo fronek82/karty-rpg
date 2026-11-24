@@ -48,6 +48,10 @@ export function PrzyciskZapisu({ edycja }: { edycja: ProjektWEdycji }) {
   );
 }
 
+/** Czy adres (`#/…`) prowadzi do projektu `wProjekcie` (`#/projekt/<id>`) albo jego podstrony. */
+const wProjekcieAdres = (adres: string, wProjekcie: string) =>
+  adres === wProjekcie || adres.startsWith(`${wProjekcie}/`);
+
 /**
  * Straż wyjścia: link poza bieżący projekt przy niezapisanych zmianach otwiera okno z wyborem
  * „Zapisz i wyjdź” / „Wyjdź bez zapisywania” / „Zostań”. Przejścia w obrębie projektu (Edytor kart,
@@ -56,10 +60,9 @@ export function PrzyciskZapisu({ edycja }: { edycja: ProjektWEdycji }) {
 export function useStrazWyjscia(edycja: ProjektWEdycji) {
   const [cel, ustawCel] = useState<string>();
   const wProjekcie = `#/projekt/${encodeURIComponent(edycja.projekt.id)}`;
-  const wewnatrz = (adres: string) => adres === wProjekcie || adres.startsWith(`${wProjekcie}/`);
   const sprawdzWyjscie = (e: MouseEvent, adres: string) => {
     if (!edycja.niezapisane) return;
-    if (wewnatrz(adres)) return;
+    if (wProjekcieAdres(adres, wProjekcie)) return;
     e.preventDefault();
     ustawCel(adres);
   };
@@ -68,18 +71,19 @@ export function useStrazWyjscia(edycja: ProjektWEdycji) {
   // Straż trasy działa przed zmianą widoku: przy niezapisanych zmianach przywraca bieżący adres
   // (`pushState` nie wywołuje kolejnego `hashchange`) i pokazuje to samo okno co przy linku.
   const { niezapisane } = edycja;
-  /** Przejście zatwierdzone w oknie – nie zatrzymujemy go drugi raz. */
-  const zatwierdzone = useRef(false);
+  /**
+   * Adres przejścia zatwierdzonego w oknie – przepuszczany raz. Zerowany przy każdej zmianie adresu,
+   * więc nie przepuści później innego przejścia (np. gdy zatwierdzone nie wywołało `hashchange`).
+   */
+  const zatwierdzony = useRef<string>(undefined);
   useEffect(
     () =>
       ustawStrazTrasy((e) => {
-        if (zatwierdzone.current) {
-          zatwierdzone.current = false;
-          return false;
-        }
-        if (!niezapisane) return false;
         const nowy = new URL(e.newURL).hash || '#/';
-        if (nowy === wProjekcie || nowy.startsWith(`${wProjekcie}/`)) return false;
+        const przepusc = zatwierdzony.current === nowy;
+        zatwierdzony.current = undefined;
+        if (przepusc || !niezapisane) return false;
+        if (wProjekcieAdres(nowy, wProjekcie)) return false;
         // Wpis, do którego prowadził „Wstecz”, zostaje w historii – adres edytora wraca jako nowy
         // wpis, więc kolejne „Wstecz” znów zapyta o zapis.
         window.history.pushState(null, '', e.oldURL);
@@ -90,7 +94,8 @@ export function useStrazWyjscia(edycja: ProjektWEdycji) {
   );
   const przejdz = (adres: string) => {
     ustawCel(undefined);
-    zatwierdzone.current = true;
+    // Ten sam zapis co w `e.newURL` (kodowanie znaków przez przeglądarkę).
+    zatwierdzony.current = new URL(adres, window.location.href).hash;
     window.location.hash = adres;
   };
   const okno = cel && (
