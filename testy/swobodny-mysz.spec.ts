@@ -14,7 +14,7 @@ import {
   uchwyt,
   wTolerancji,
 } from './swobodnyUI';
-import { dodaj, drzewo, karta, panel, zaznacz } from './szablonUI';
+import { dodaj, drzewo, karta, panel, sekcja, zaznacz } from './szablonUI';
 
 /**
  * M2b-9: tryb swobodny – praca myszą (przeciąganie, uchwyty, przyciąganie, prowadnice), klawiaturą
@@ -338,6 +338,7 @@ test('uchwyt i pole szerokości skalują obwiednię zaznaczonych elementów', as
   await page.keyboard.down('Shift');
   await page.mouse.click(a.x, a.y);
   await page.keyboard.up('Shift');
+  await sekcja(page, 'Rozmiar zaznaczenia');
   const szer = panel(page).getByLabel('Szerokość zaznaczenia (mm)');
   await expect(szer).toHaveValue('50');
   await page.keyboard.down('Alt');

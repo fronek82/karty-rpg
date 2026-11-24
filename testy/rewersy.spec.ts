@@ -51,6 +51,7 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   await expect(page.locator('.karta-podgladu')).toBeVisible();
 
   // Kolor tła, tekstura i 4 tryby dopasowania obrazu tła.
+  await sekcja(page, 'Tło karty');
   await page.locator('#karta-tlo-kolor').fill('#1e293b');
   await page
     .getByRole('group', { name: 'Rodzaj tła' })
@@ -98,6 +99,7 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   await dodaj(page, 'Tekst', 'Tytuł rewersu');
   await expect(panel(page).getByText(/Klucz danych/)).toHaveCount(0);
   await panel(page).getByLabel('Stały tekst').fill('ARKANA');
+  await sekcja(page, 'Styl tekstu');
   await panel(page).getByLabel('Czcionka').selectOption('tytul');
   await panel(page).getByLabel('Rozmiar (pt)').fill('16');
   const uzyciaSvg = page.locator('.karta-podgladu .svg-opakowanie svg use');
@@ -106,6 +108,7 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
 
   // Warstwa grafiki SVG z katalogu (kolorowalna).
   await dodaj(page, 'Ikona', 'Znak SVG');
+  await sekcja(page, 'Ikona');
   await panel(page).getByLabel('Rodzaj grafiki').selectOption('ozdobnik');
   await page.getByTestId('wybor-ikony-svg').getByRole('button', { name: 'kątownik' }).click();
   await panel(page).getByLabel('Kolor tekstu', { exact: true }).fill('#facc15');
@@ -167,12 +170,14 @@ test('przypisania rewersu na 3 poziomach (talia -> szablon -> karta), duplikowan
   const ust = await otworzDruk(page);
   await ust.getByRole('button', { name: 'Nowy tył' }).click();
   await page.getByLabel('Nazwa tyłu').fill('Rewers A');
+  await sekcja(page, 'Tło karty');
   await page.locator('#karta-tlo-kolor').fill('#112233');
   await zapisano(page);
   await page.getByRole('link', { name: '← Powrót' }).click();
 
   await ust.getByRole('button', { name: 'Nowy tył' }).click();
   await page.getByLabel('Nazwa tyłu').fill('Rewers B');
+  await sekcja(page, 'Tło karty');
   await page.locator('#karta-tlo-kolor').fill('#445566');
   await zapisano(page);
   await page.getByRole('link', { name: '← Powrót' }).click();

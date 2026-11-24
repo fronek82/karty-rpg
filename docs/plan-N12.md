@@ -76,3 +76,7 @@ a użytkownik chciał kilku wersji całego wiersza.
 - Okno „Załadować ponownie stronę?” przy odświeżaniu z niezapisanymi zmianami to okno
   przeglądarki (`beforeunload`) – jego przyciski są w języku przeglądarki i aplikacja nie może
   ich zmienić.
+- Wszystkie sekcje panelu edytora karty (przód i tył) są po wczytaniu i po zmianie zaznaczenia
+  zwinięte – także „Styl tekstu”, „Tło karty”, ustawienia obrazu, ikony, separatora i tabeli
+  (prośba właściciela). Wyjątek: „Położenie i rozmiar” przy zaznaczeniu kilku elementów
+  swobodnych, bo tam są przyciski wyrównania. Testy e2e otwierają sekcje przed użyciem pól.

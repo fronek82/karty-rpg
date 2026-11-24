@@ -501,6 +501,7 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   const kolejnosc = drzewo(page).locator('[role=treeitem]');
   await expect(kolejnosc.nth(1)).toHaveAccessibleName(/^Tytuł – /);
   await expect(kolejnosc.nth(2)).toHaveAccessibleName(/^Dekor – /);
+  await sekcja(page, 'Separator');
   await panel(page).getByLabel('Kolor linii').fill('#5b3a1e');
 
   // Panel z podwójną linią (pole opisu).

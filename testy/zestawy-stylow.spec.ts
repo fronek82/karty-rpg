@@ -44,6 +44,7 @@ test('zestaw stylów zmienia ramkę i separator, daje się cofnąć i zapisać',
     'true',
   );
   await zaznacz(page, 'Separator');
+  await sekcja(page, 'Separator');
   await expect(page.getByRole('button', { name: 'łańcuch', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',

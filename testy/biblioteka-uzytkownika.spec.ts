@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { dodaj, kreator, panel } from './szablonUI';
+import { dodaj, kreator, panel, sekcja } from './szablonUI';
 import { zapisano } from './pomoc';
 
 /**
@@ -38,6 +38,7 @@ test('SVG zaimportowany w Bibliotekach → Ozdobniki jest od razu w wyborze ikon
 
   await kreator(page, { nazwa: 'Nowy projekt', format: 'Standard / Poker', uklad: 'Pusta karta' });
   await dodaj(page, 'Ikona', 'Znak');
+  await sekcja(page, 'Ikona');
   await panel(page).getByLabel('Rodzaj grafiki').selectOption('ozdobnik');
   const wybor = page.getByTestId('wybor-ikony-svg');
   await expect(wybor.getByTestId('grupa-systemowe')).toHaveText('Systemowe');
@@ -70,6 +71,7 @@ test('obraz wgrany w edytorze jednego projektu jest w wyborze w drugim; ten sam 
   await kreator(page, { nazwa: 'Projekt B', format: 'Standard / Poker', uklad: 'Pusta karta' });
   await dodaj(page, 'Obraz');
   await panel(page).getByLabel('Treść', { exact: true }).selectOption('staly');
+  await sekcja(page, 'Obraz');
   const listaB = panel(page).getByLabel('Obraz z biblioteki');
   await expect(listaB.locator('option', { hasText: 'herb.png' })).toHaveCount(1);
   await listaB.selectOption('obraz-herb');

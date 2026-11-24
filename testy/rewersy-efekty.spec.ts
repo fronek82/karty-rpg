@@ -141,6 +141,7 @@ test('edytor rewersu: tekst po łuku, krycie warstw oraz krycie i zabarwienie te
   await expect(page.getByRole('heading', { level: 1, name: 'Edytor tyłu' })).toBeVisible();
 
   // Tekstura tła + krycie tekstury + zabarwienie kolorem.
+  await sekcja(page, 'Tło karty');
   await page
     .getByRole('group', { name: 'Rodzaj tła' })
     .getByRole('button', { name: 'Obraz' })
