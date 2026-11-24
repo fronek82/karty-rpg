@@ -87,7 +87,7 @@ export function PanelOdmian({
     }, `odmiana:${kontener.id}:${i}`);
 
   return (
-    <Sekcja tytul={t('odmiany.tytul')} otwarta={!!p}>
+    <Sekcja tytul={t('odmiany.tytul')}>
       <label className="wiersz-pola">
         <input type="checkbox" checked={!!p} onChange={(e) => przelacz(e.target.checked)} />
         {t('odmiany.wlacz')}

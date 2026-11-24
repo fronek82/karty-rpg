@@ -378,7 +378,7 @@ export function PanelWezla({
         zmien={zmienWezel}
         poWygladzie={
           pole && maStylTekstu(pole) && !znajdzGrupeStylu(szablon, pole.grupaStyluId) ? (
-            <Sekcja tytul={t('wlasciwosci.styl')} otwarta={pole.typ === 'tekst'}>
+            <Sekcja tytul={t('wlasciwosci.styl')}>
               <PanelStylu
                 styl={pole.styl}
                 czcionki={czcionki}
@@ -452,7 +452,7 @@ export function PanelWezla({
       )}
 
       {zEtykieta && (
-        <Sekcja tytul={t('szablon.etykieta')} otwarta={!!etykieta}>
+        <Sekcja tytul={t('szablon.etykieta')}>
           <label className="wiersz-pola">
             <input
               type="checkbox"

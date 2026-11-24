@@ -203,7 +203,7 @@ export function PanelKarty({
           ))}
         </div>
       </Sekcja>
-      <Sekcja tytul={t('wlasciwosci.ramkaKarty')} otwarta={!!szablon.ramka}>
+      <Sekcja tytul={t('wlasciwosci.ramkaKarty')}>
         <PoleRamki
           etykieta={t('wlasciwosci.ramkaKarty')}
           krawedzie={false}
