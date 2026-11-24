@@ -44,6 +44,9 @@ function polaSzablonu(s: Szablon): Map<string, Pole> {
   return m;
 }
 
+/** Wartość listy odmian przy kilku kartach o różnych wartościach (nie trafia do danych). */
+const ROZNE = '\u0000rozne';
+
 /** Typ karty (menu pakietu) dla szablonu – nazwa i rozmiary do wyboru. */
 export function typDlaSzablonu(pakiet: Pakiet | undefined, szablonId: string) {
   for (const typ of pakiet?.typyKart ?? []) {
@@ -235,6 +238,33 @@ export function PanelKart({
                     +
                   </button>
                 </div>
+              </div>
+            );
+          }
+          if (kol.opcje) {
+            // Przełącznik odmian: wybór z listy; wartość spoza listy (np. literówka z CSV) też widać.
+            const spoza = w && !kol.opcje.some((o) => o.wartosc === w) ? w : undefined;
+            return (
+              <div key={kol.klucz} className="pole-panelu">
+                <label htmlFor={id}>{nazwa}</label>
+                <select
+                  id={id}
+                  value={w ?? ROZNE}
+                  onChange={(e) => ustaw(kol.klucz, e.target.value)}
+                >
+                  {w === undefined && (
+                    <option value={ROZNE} disabled>
+                      {t('kartka.rozne')}
+                    </option>
+                  )}
+                  <option value="">{t('odmiany.domyslnaKarty')}</option>
+                  {kol.opcje.map((o) => (
+                    <option key={o.wartosc} value={o.wartosc}>
+                      {o.nazwa ? `${o.wartosc} – ${o.nazwa}` : o.wartosc}
+                    </option>
+                  ))}
+                  {spoza && <option value={spoza}>{spoza}</option>}
+                </select>
               </div>
             );
           }

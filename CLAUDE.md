@@ -32,7 +32,7 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   w przodach i tyłach projektu oraz zapisane w `Projekt.paleta` (`src/dane/koloryProjektu.ts`,
   kontekst `ui/szablon/koloryProjektu.tsx`).
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 33` (`src/model/projekt.ts`), baza Dexie w wersji 5.
+- Schemat projektu: `WERSJA_SCHEMATU = 34` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
 ## Gdzie co jest
 

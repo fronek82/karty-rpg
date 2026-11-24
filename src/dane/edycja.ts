@@ -1,6 +1,7 @@
 import type { Arkusz, UstawieniaArkusza } from '../model/arkusz';
 import type { DaneZasobow, OpisZasobu, Projekt } from '../model/projekt';
 import {
+  czyKontener,
   type Karta,
   kluczKomorki,
   polaDrzewa,
@@ -10,6 +11,8 @@ import {
   type Talia,
   type UstawieniaObrazu,
   type Wezel,
+  wartoscOdmiany,
+  wezlyDrzewa,
 } from '../model/szablon';
 
 import { opisObrazu } from './obrazy';
@@ -43,16 +46,31 @@ export interface KolumnaDanych {
   typPola?: Pole['typ'];
   /** Wartość domyślna parametru (podpowiedź w pustej komórce). */
   domyslnie?: string;
+  /** Przełącznik odmian: wartości do wyboru (wartość odmiany i nazwa elementu – może być pusta). */
+  opcje?: { wartosc: string; nazwa: string }[];
 }
 
 function nazwaKlucza(klucz: string): string {
   return klucz.charAt(0).toUpperCase() + klucz.slice(1);
 }
 
-/** Kolumny danych jednego szablonu: pola z kluczem (wszystkie warianty), potem parametry. */
+/**
+ * Kolumny danych jednego szablonu: pola z kluczem i przełączniki odmian (wszystkie warianty),
+ * potem parametry.
+ */
 export function kolumnySzablonu(s: Szablon): KolumnaDanych[] {
   const wynik = new Map<string, KolumnaDanych>();
   for (const korzen of [s.korzen, ...(s.warianty ?? []).map((w) => w.korzen)]) {
+    for (const w of wezlyDrzewa(korzen)) {
+      const klucz = czyKontener(w) ? w.przelacznik?.klucz : undefined;
+      if (!czyKontener(w) || !klucz || wynik.has(klucz)) continue;
+      wynik.set(klucz, {
+        klucz,
+        nazwa: w.nazwa || nazwaKlucza(klucz),
+        rodzaj: 'pole',
+        opcje: w.dzieci.map((d, i) => ({ wartosc: wartoscOdmiany(w, i), nazwa: d.nazwa ?? '' })),
+      });
+    }
     for (const pole of polaDrzewa(korzen)) {
       if (pole.typ === 'tabela') {
         // Każda komórka wartości tabeli to osobna kolumna danych (nazwa = nagłówek, przy kilku

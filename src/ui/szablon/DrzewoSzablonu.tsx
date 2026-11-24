@@ -1,5 +1,5 @@
 import { formatujLiczbe, t } from '../../i18n';
-import { czyKontener, type Kontener, type Wezel } from '../../model/szablon';
+import { czyKontener, type Kontener, wartoscOdmiany, type Wezel } from '../../model/szablon';
 
 const opisPolozenia = (p: NonNullable<Wezel['pozycja']>) =>
   t('polozenie.opisWDrzewie', {
@@ -50,6 +50,10 @@ export function DrzewoSzablonu({
     // Położenie dziecka kontenera swobodnego: X · Y (mm) i obrót.
     const poz = rodzic?.typ === 'swobodny' ? (w.pozycja ?? { x: 0, y: 0 }) : undefined;
     const poza = !!pozaKarta?.has(w.id);
+    // Dziecko przełącznika odmian: wartość odmiany przy nazwie.
+    const odmiana = rodzic?.przelacznik
+      ? wartoscOdmiany(rodzic, rodzic.dzieci.indexOf(w))
+      : undefined;
     return (
       <li
         key={w.id}
@@ -73,6 +77,12 @@ export function DrzewoSzablonu({
           </span>
           {nazwaWezla(w)}
           {w.nazwa && <span className="podpis"> · {t(`wezel.${w.typ}`)}</span>}
+          {kontener && w.przelacznik && <span className="podpis"> · {t('odmiany.wDrzewie')}</span>}
+          {odmiana !== undefined && (
+            <span className="znacznik-polozenia" title={t('odmiany.wartoscWDrzewie')}>
+              = {odmiana}
+            </span>
+          )}
           {poz && (
             <span
               className="znacznik-polozenia"

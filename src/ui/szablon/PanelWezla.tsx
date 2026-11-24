@@ -21,6 +21,7 @@ import {
   wszystkieWezly,
 } from '../../model/szablon';
 import { kluczPolaPrzodu } from '../../silnik/karta';
+import { PanelOdmian } from './PanelOdmian';
 import { nazwaWezla } from './DrzewoSzablonu';
 import { Liczba, Lista, Przelacznik, Sekcja } from './Kontrolki';
 import { PanelPolozenia, type RozmiaryKotwicy } from './PanelPolozenia';
@@ -311,6 +312,15 @@ export function PanelWezla({
                 )}
               </p>
             </div>
+          )}
+          {!wiele && (
+            <PanelOdmian
+              szablon={szablon}
+              kontener={wezel}
+              zmienWezel={zmienWezel}
+              bezDanych={bezDanych}
+              zajeteKlucze={zajeteKlucze}
+            />
           )}
         </>
       )}

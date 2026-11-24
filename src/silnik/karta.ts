@@ -3,6 +3,7 @@ import {
   czyKontener,
   type DopasowanieObrazu,
   type Karta,
+  type Kontener,
   kluczeTabeli,
   kluczKomorki,
   type Kolor,
@@ -27,6 +28,8 @@ import {
   type TrybTla,
   type UstawieniaObrazu,
   type Wezel,
+  wezlyDrzewa,
+  wybranaOdmiana,
   wymiaryKarty,
   type ZabarwienieTla,
 } from '../model/szablon';
@@ -131,7 +134,8 @@ export interface Ostrzezenie {
     | 'nieznane-pole-do-omijania'
     | 'nieznany-element-ozdobny'
     | 'niska-rozdzielczosc-ramki'
-    | 'niska-rozdzielczosc-obrazu';
+    | 'niska-rozdzielczosc-obrazu'
+    | 'nieznana-odmiana';
   szczegoly?: string;
 }
 
@@ -199,6 +203,38 @@ export function daneZParametrami(
 export function napis(n: NapisSzablonu | undefined, dane: Record<string, string>): string {
   if (n === undefined) return '';
   return typeof n === 'string' ? n : (dane[n.parametr] ?? '');
+}
+
+/**
+ * Identyfikatory dzieci przełączników odmian, które na tej karcie są ukryte (z każdego
+ * przełącznika widać jedno dziecko). Nieznana wartość w danych – ostrzeżenie i odmiana domyślna.
+ */
+export function ukryteOdmianyPrzelacznikow(
+  korzen: Kontener,
+  dane: Record<string, string>,
+  ostrzezenia?: Ostrzezenie[],
+): Set<string> {
+  const ukryte = new Set<string>();
+  const odwiedz = (w: Wezel) => {
+    if (!czyKontener(w)) return;
+    if (w.przelacznik) {
+      const wartosc = w.przelacznik.klucz ? dane[w.przelacznik.klucz] : undefined;
+      const { wezel, nieznana } = wybranaOdmiana(w, wartosc);
+      if (nieznana)
+        ostrzezenia?.push({
+          pole: w.nazwa || w.id,
+          komunikat: 'nieznana-odmiana',
+          szczegoly: wartosc!.trim(),
+        });
+      for (const d of w.dzieci) if (d !== wezel) ukryte.add(d.id);
+      // Ukryte gałęzie nie są układane – ich przełączniki nie dają ostrzeżeń.
+      if (wezel) odwiedz(wezel);
+      return;
+    }
+    w.dzieci.forEach(odwiedz);
+  };
+  odwiedz(korzen);
+  return ukryte;
 }
 
 /** Wartość pola z danych karty albo wartość stała/domyślna z szablonu. */
@@ -588,9 +624,11 @@ export function renderujKarte(
     if (n) wypiszNarozniki(rysujNarozniki(n, obszar, o.kolor ?? CZARNY, ctx.elementy), id);
   };
 
+  const ukryteOdmiany = ukryteOdmianyPrzelacznikow(korzenKarty(szablon, karta), dane, ostrzezenia);
   const kontekst: KontekstUkladu = {
     czyUkryty: (w) =>
-      !czyKontener(w) && (w.gdyPuste ?? 'pokaz-ramke') === 'ukryj' && czyPuste(w, dane),
+      ukryteOdmiany.has(w.id) ||
+      (!czyKontener(w) && (w.gdyPuste ?? 'pokaz-ramke') === 'ukryj' && czyPuste(w, dane)),
     zmierzPole: (pole, ogr) => zmierzPole(pole, ogr, dane, ctx),
   };
 
@@ -1097,6 +1135,17 @@ function indeksujPolaAwersu(szablon: Szablon): IndeksPolAwersu {
       if (istniejacy === undefined) pola.set(idPola, pole.klucz);
       else if (istniejacy !== null && istniejacy !== pole.klucz) pola.set(idPola, null);
     }
+    // Przełączniki odmian – klucz `przelacznik:<nazwa>`.
+    for (const w of wezlyDrzewa(korzen)) {
+      const klucz = czyKontener(w) ? w.przelacznik?.klucz : undefined;
+      if (!klucz) continue;
+      const nazwa = normalizujNazwePola(w.nazwa || klucz);
+      if (!nazwa) continue;
+      const idPola = `przelacznik:${nazwa}`;
+      const istniejacy = pola.get(idPola);
+      if (istniejacy === undefined) pola.set(idPola, klucz);
+      else if (istniejacy !== null && istniejacy !== klucz) pola.set(idPola, null);
+    }
   }
   return { pola, tabele };
 }
@@ -1143,6 +1192,11 @@ function dopasujKolumnyTabeli(rewersTabela: PoleTabela, awersTabela: PoleTabela)
 export function wspolneKluczeRewersu(szablon: Szablon, rewers: Rewers): Set<string> {
   const indeks = indeksujPolaAwersu(szablon);
   const wynik = new Set<string>();
+  for (const w of wezlyDrzewa(rewers.korzen)) {
+    if (!czyKontener(w) || !w.przelacznik || !w.nazwa) continue;
+    const klucz = indeks.pola.get(`przelacznik:${normalizujNazwePola(w.nazwa)}`);
+    if (klucz) wynik.add(klucz);
+  }
   for (const pole of polaDrzewa(rewers.korzen)) {
     const nazwa = pole.nazwa ? normalizujNazwePola(pole.nazwa) : '';
     if (!nazwa) continue;
@@ -1174,7 +1228,17 @@ function podstawWspolnePolaRewersu(
   const podmienWezel = (w: Wezel): Wezel => {
     if (czyKontener(w)) {
       const dzieci = w.dzieci.map(podmienWezel);
-      return dzieci.some((d, i) => d !== w.dzieci[i]) ? { ...w, dzieci } : w;
+      const x = dzieci.some((d, i) => d !== w.dzieci[i]) ? { ...w, dzieci } : w;
+      // Przełącznik tyłu o nazwie przełącznika przodu wybiera odmianę z danych karty.
+      const klucz =
+        w.przelacznik && w.nazwa
+          ? indeks.pola.get(`przelacznik:${normalizujNazwePola(w.nazwa)}`)
+          : undefined;
+      const val = klucz ? dane[klucz] : undefined;
+      if (!klucz || val === undefined || val.trim() === '') return x;
+      uzyteDane[klucz] = val;
+      zmieniono = true;
+      return { ...x, przelacznik: { ...w.przelacznik, klucz } };
     }
     const nazwa = w.nazwa ? normalizujNazwePola(w.nazwa) : '';
     if (!nazwa) return w;

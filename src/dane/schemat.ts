@@ -134,6 +134,7 @@ const baza = {
   minWysokosc: opc(nieujemna),
   pozycja: opc(pozycja),
   krycie: opc(liczba.min(0).max(1)),
+  odmiana: opc(z.string()),
 };
 const bazaPola = {
   ...baza,
@@ -303,6 +304,7 @@ const kontener: z.ZodType<Kontener> = z.lazy(() =>
     ...baza,
     typ: z.enum(['wiersz', 'kolumna', 'warstwy', 'swobodny']),
     dzieci: z.array(wezel),
+    przelacznik: opc(obj({ klucz: opc(identyfikator), domyslna: opc(z.string()) })),
     tloZDanych: opc(kolorZDanych),
     teksturaTla: opc(identyfikator),
     postrzepienie: opc(postrzepienie),
@@ -835,6 +837,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // zaokrąglenia rogów dopasowuje je do przodu jak dotąd.
   // 31→32: opcjonalne teksty przykładowe pól tyłu (`Rewers.przyklad`) – bez zmian danych.
   // 32→33: opcjonalna paleta kolorów projektu (`Projekt.paleta`) – bez zmian danych.
+  // 33→34: opcjonalny przełącznik odmian kontenera (`przelacznik`) i wartość odmiany węzła
+  // (`odmiana`) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -873,6 +877,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     30: (d) => d,
     31: (d) => d,
     32: (d) => d,
+    33: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -912,6 +917,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     30: (d) => d,
     31: (d) => d,
     32: (d) => d,
+    33: (d) => d,
   },
 };
 

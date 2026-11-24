@@ -210,6 +210,21 @@ interface WezelBazowy {
   pozycja?: Pozycja;
   /** Krycie warstwy/węzła 0–1 (domyślnie 1 – w pełni nieprzezroczysty). */
   krycie?: number;
+  /**
+   * Wartość odmiany, gdy węzeł jest dzieckiem przełącznika (`Kontener.przelacznik`); pusta –
+   * numer pozycji w rodzicu (1, 2, 3…).
+   */
+  odmiana?: string;
+}
+
+/**
+ * Przełącznik odmian: kontener pokazuje jedno dziecko – to, którego wartość odmiany jest
+ * w danych karty pod `klucz` (bez klucza – na tyle – wartość z przełącznika przodu o tej samej
+ * nazwie). Bez wartości – odmiana `domyslna`, a bez niej pierwsze dziecko.
+ */
+export interface Przelacznik {
+  klucz?: string;
+  domyslna?: string;
 }
 
 /**
@@ -220,6 +235,8 @@ interface WezelBazowy {
 export interface Kontener extends WezelBazowy {
   typ: 'wiersz' | 'kolumna' | 'warstwy' | 'swobodny';
   dzieci: Wezel[];
+  /** Przełącznik odmian – z dzieci widać jedno, wybrane z danych karty. */
+  przelacznik?: Przelacznik;
   tloZDanych?: KolorZDanych;
   teksturaTla?: string;
   postrzepienie?: Postrzepienie;
@@ -845,4 +862,36 @@ function stabilnyJson(v: unknown): string {
     return `{${pary.join(',')}}`;
   }
   return JSON.stringify(v) ?? 'null';
+}
+
+// --- Przełącznik odmian (N12).
+
+const normalizujOdmiane = (v: string) => v.trim().toLocaleLowerCase('pl');
+
+/** Wartość odmiany dziecka przełącznika: wpisana albo numer pozycji (od 1). */
+export const wartoscOdmiany = (k: Kontener, i: number): string =>
+  k.dzieci[i]?.odmiana?.trim() || String(i + 1);
+
+/** Indeks dziecka o danej wartości odmiany (bez wielkości liter); brak – `-1`. */
+export function indeksOdmiany(k: Kontener, wartosc: string | undefined): number {
+  const v = wartosc === undefined ? '' : normalizujOdmiane(wartosc);
+  if (!v) return -1;
+  return k.dzieci.findIndex((_, i) => normalizujOdmiane(wartoscOdmiany(k, i)) === v);
+}
+
+/**
+ * Dziecko przełącznika widoczne dla danej wartości z danych: pasujące, potem odmiana domyślna,
+ * potem pierwsze. `nieznana` – wartość niepusta, której żadne dziecko nie ma.
+ */
+export function wybranaOdmiana(
+  k: Kontener,
+  wartosc: string | undefined,
+): { wezel: Wezel | undefined; nieznana: boolean } {
+  const i = indeksOdmiany(k, wartosc);
+  if (i >= 0) return { wezel: k.dzieci[i], nieznana: false };
+  const d = indeksOdmiany(k, k.przelacznik?.domyslna);
+  return {
+    wezel: k.dzieci[d >= 0 ? d : 0],
+    nieznana: !!wartosc?.trim(),
+  };
 }
