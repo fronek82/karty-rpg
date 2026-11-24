@@ -16,6 +16,7 @@ import {
 import { znajdzElement } from '../ozdobniki/katalog';
 import { LIMITY_SVG } from '../ozdobniki/svgImport';
 import { MAKS_ELEMENTOW_BIBLIOTEKI, odwolaniaDoElementow } from './biblioteka';
+import { MAKS_KOLOROW_PALETY } from './koloryProjektu';
 
 /** Błąd wczytywania danych z komunikatem po polsku, gotowym do pokazania użytkownikowi. */
 export class BladDanych extends Error {
@@ -674,6 +675,7 @@ export const schematProjektu = obj({
   arkusze: z.array(arkusz),
   pakiet: opc(z.string()),
   biblioteka: opc(obj({ ozdobniki: z.array(elementOzdobny).max(MAKS_ELEMENTOW_BIBLIOTEKI) })),
+  paleta: opc(z.array(z.string().regex(/^#[0-9a-f]{6}$/)).max(MAKS_KOLOROW_PALETY)),
 });
 
 export const schematPaczkiOzdobnika = obj({
@@ -832,6 +834,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 30→31: opcjonalne `promienRogow` i `postrzepienie` rewersu (tyłu) – bez zmian danych; tył bez
   // zaokrąglenia rogów dopasowuje je do przodu jak dotąd.
   // 31→32: opcjonalne teksty przykładowe pól tyłu (`Rewers.przyklad`) – bez zmian danych.
+  // 32→33: opcjonalna paleta kolorów projektu (`Projekt.paleta`) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -869,6 +872,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     29: (d) => d,
     30: (d) => d,
     31: (d) => d,
+    32: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -907,6 +911,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     29: (d) => d,
     30: (d) => d,
     31: (d) => d,
+    32: (d) => d,
   },
 };
 

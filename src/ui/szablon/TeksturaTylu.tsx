@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { t } from '../../i18n';
 import { DOMYSLNY_KOLOR_TEKSTU, type Rewers, type TrybTla } from '../../model/szablon';
-import { Liczba, Lista, Wybor } from './Kontrolki';
+import { Liczba, Lista, PoleKoloru, Wybor } from './Kontrolki';
 
 /** Wgrywanie obrazu tła tyłu karty z pliku (PNG, JPEG). */
 export function WgrywanieTekstury({ wgraj, blad }: { wgraj: (f: File) => void; blad: string }) {
@@ -94,19 +94,15 @@ export function DodatkiTeksturyTylu({
       />
       {zabarwienie && (
         <div className="dwa-pola">
-          <div className="pole-panelu">
-            <label htmlFor="karta-tekstura-zabarwienie-kolor">
-              {t('dekoracje.kolorZabarwienia')}
-            </label>
-            <input
-              id="karta-tekstura-zabarwienie-kolor"
-              type="color"
-              value={zabarwienie.kolor}
-              onChange={(e) =>
-                zmienZabarwienie({ kolor: e.target.value }, 'teksturaZabarwienieKolor')
-              }
-            />
-          </div>
+          <PoleKoloru
+            id="karta-tekstura-zabarwienie-kolor"
+            etykieta={t('dekoracje.kolorZabarwienia')}
+            wartosc={zabarwienie.kolor}
+            moznaBrak={false}
+            zmien={(kolor) =>
+              kolor !== undefined && zmienZabarwienie({ kolor }, 'teksturaZabarwienieKolor')
+            }
+          />
           <Liczba
             etykieta={t('dekoracje.silaZabarwienia')}
             wartosc={Math.round(zabarwienie.krycie * 100)}

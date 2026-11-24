@@ -1,6 +1,6 @@
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import type { Arkusz } from './arkusz';
-import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
+import type { Kolor, Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
 
 /**
  * Numer wersji schematu zapisu projektu (plik `.kartyrpg` i IndexedDB). Zwiększać z migracją.
@@ -34,8 +34,9 @@ import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 30 – N9: wzór tła z biblioteki SVG (`wzorTla.rodzaj: 'svg'`, odwołanie do elementu) i układ kafelków.
  * 31 – N10: zaokrąglenie rogów i postrzępienie tyłu (`Rewers.promienRogow`, `postrzepienie`).
  * 32 – teksty przykładowe pól tyłu do podglądu (`Rewers.przyklad`).
+ * 33 – N11: kolory zapisane w projekcie (`Projekt.paleta`).
  */
-export const WERSJA_SCHEMATU = 32;
+export const WERSJA_SCHEMATU = 33;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 
@@ -85,6 +86,8 @@ export interface Projekt {
    * spłaszczone do M/L/C/Z, bez surowego SVG). Brak pola = projekt bez własnych elementów.
    */
   biblioteka?: { ozdobniki: ElementOzdobny[] };
+  /** Kolory zapisane przez użytkownika („Kolory projektu”), w kolejności dodania (`#rrggbb`). */
+  paleta?: Kolor[];
 }
 
 /** Bajty zasobów projektu według identyfikatora. */

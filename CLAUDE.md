@@ -28,8 +28,11 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   z konfiguracją `STRONY`, `PanelKarty.tsx`), kreator tyłu z gotowymi układami, „Rozmiar jak
   w szablonie”, kontrola zgodności rozmiarów przodu i tyłu (`dane/zgodnosc.ts`), w UI „Przód”
   i „Tył” zamiast „Awers” i „Rewers” (w kodzie, kluczach i plikach nazwy bez zmian).
+- Ukończone N11 (`docs/plan-N11.md`): „Kolory projektu” przy polach koloru – kolory użyte
+  w przodach i tyłach projektu oraz zapisane w `Projekt.paleta` (`src/dane/koloryProjektu.ts`,
+  kontekst `ui/szablon/koloryProjektu.tsx`).
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 32` (`src/model/projekt.ts`), baza Dexie w wersji 5.
+- Schemat projektu: `WERSJA_SCHEMATU = 33` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
 ## Gdzie co jest
 

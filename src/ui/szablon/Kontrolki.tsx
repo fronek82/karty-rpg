@@ -2,6 +2,7 @@ import { useId, useState, type ReactNode } from 'react';
 import { t } from '../../i18n';
 import { rozwinOdstepy, type Odstepy } from '../../model/szablon';
 import { PoleLiczby } from '../kartka/PoleLiczby';
+import { useWyborKoloruProjektu } from './koloryProjektu';
 
 /** Zwijana sekcja panelu właściwości. */
 export function Sekcja({
@@ -144,6 +145,7 @@ export function PoleKoloru({
 }) {
   const autoId = useId();
   const id = wlasneId ?? autoId;
+  const kolory = useWyborKoloruProjektu({ etykieta, wartosc, zmien, wylaczone: !!wylaczone });
   return (
     <div
       className={`pole-panelu pole-koloru${wylaczone ? ' wylaczone' : ''}`}
@@ -167,7 +169,9 @@ export function PoleKoloru({
           {...(wylaczone ? { 'aria-describedby': `${id}-powod` } : {})}
           onChange={(e) => zmien(e.target.value)}
         />
+        {kolory.przycisk}
       </span>
+      {kolory.panel}
       {wylaczone && (
         <small id={`${id}-powod`} className="podpis">
           {wylaczone.powod}
