@@ -10,6 +10,7 @@ export const NAZWY_ZRZUTOW = [
   'edytor-kartki',
   'edytor-szablonu',
   'ustawienia',
+  'biblioteki',
 ] as const;
 
 /** Rozmiar okna przeglądarki, a więc i zrzutu (deviceScaleFactor 1). */

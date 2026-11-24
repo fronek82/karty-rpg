@@ -245,8 +245,8 @@
               alt="Ekran startowy aplikacji w jasnym motywie, z trzema kolumnami"
             />
             <figcaption>
-              Ekran startowy: przyciski po lewej, „Moje projekty” pośrodku i „Importuj pliki…” po
-              prawej.
+              Ekran startowy: po lewej nowy projekt i nowy szablon, pośrodku zakładki „Moje
+              projekty” i „Moje szablony”, po prawej „Importuj pliki…”.
             </figcaption>
           </figure>
           <ol>
@@ -450,7 +450,7 @@
             </li>
             <li>
               W „Rodzaj tła” wybierz: „Brak” (papier), „Kolor”, „Obraz” (tekstura JPG/PNG z
-              biblioteki projektu) albo „Wzór”.
+              biblioteki) albo „Wzór”.
             </li>
             <li>
               Wzory: linie pionowe, linie poziome, kratka, romby (dwa zestawy linii ukośnych), linie
@@ -479,12 +479,16 @@
             <li>
               Kliknij „Importuj SVG…” i wybierz plik. Aplikacja sprawdza plik: usuwa skrypty, obrazy
               i odwołania do zewnętrznych plików. Tekst trzeba zamienić na krzywe, a plik może mieć
-              do 512 KB. Nowy ozdobnik od razu jest zaznaczony.
+              do 512 KB. Otworzy się okno importu z raportem, co pominięto, i podglądem.
             </li>
             <li>
-              W „Użyj jako” wskaż, do czego element służy: „motyw”, „narożnik”, „zakończenie”,
-              „środek separatora”, „kształt wartości” albo „ramka 9-slice”. W „Kolor” wybierz
-              „jednolity (kolorowalny)” albo „zachowaj kolory”. Zmiany zapisują się od razu.
+              W oknie w „Użyj jako” wskaż, do czego element służy: „motyw”, „narożnik”,
+              „zakończenie”, „środek separatora”, „kształt wartości” albo „ramka 9-slice”. W „Kolor”
+              wybierz „jednolity (kolorowalny)” albo „zachowaj kolory” i wpisz „Nazwa”.
+            </li>
+            <li>
+              Kliknij „Dodaj do biblioteki” („Anuluj” przerywa import). Nowy ozdobnik jest
+              zaznaczony, a jego ustawienia zmienisz w panelu obok. Zmiany zapisują się od razu.
             </li>
           </ol>
           <p>
@@ -932,8 +936,8 @@
             <li>
               W „Opcje druku i arkusza” oraz w „Biblioteki” (zakładka „Czcionki”) sekcja „Katalog
               Google Fonts” pozwala przeglądać kroje z polskimi znakami i dodawać je przyciskiem
-              „Pobierz”. Pobrana czcionka zapisuje się w projekcie i działa później bez dostępu do
-              sieci.
+              „Pobierz”. Pobrana czcionka trafia do biblioteki, jest dostępna we wszystkich
+              projektach i działa później bez dostępu do sieci.
             </li>
             <li>
               W sekcji „Opcje PDF” przełącznik „Niewidoczna warstwa tekstowa w PDF (wyszukiwanie i
@@ -1004,8 +1008,8 @@
           <ul>
             <li>
               W „Opcje druku i arkusza”, w sekcji „Szablony projektu”, kliknij „Eksportuj” przy
-              szablonie. Powstaje plik <code>.kartyrpg-szablon</code> z elementami biblioteki
-              ozdobników, których szablon używa. Podkład ze wzoru do niego nie trafia.
+              szablonie. Powstaje plik <code>.kartyrpg-szablon</code> z kopiami ozdobników, czcionek
+              i obrazów, których szablon używa. Podkład ze wzoru do niego nie trafia.
             </li>
             <li>
               „Importuj szablon…” w tej samej sekcji albo „Importuj szablon” na ekranie „Stwórz
@@ -1046,6 +1050,19 @@
             układ: przycisk „Dodaj…”, pole wyszukiwania po nazwie i podglądy. Przy każdym podglądzie
             są przyciski „Zmień nazwę”, „Pobierz” i „Usuń”.
           </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/pl/biblioteki.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Strona Biblioteki na zakładce Ozdobniki z jednym własnym ozdobnikiem i jego ustawieniami obok"
+            />
+            <figcaption>
+              Zakładka „Ozdobniki” po imporcie pliku SVG. Po prawej podgląd na karcie i wybór „Użyj
+              jako”.
+            </figcaption>
+          </figure>
           <ul>
             <li>
               „Obrazy” to pliki PNG i JPG. Ten sam plik wgrany drugi raz nie tworzy nowego wpisu.
@@ -1057,7 +1074,8 @@
             </li>
             <li>
               „Ozdobniki” to ozdobniki i ramki: plik SVG, PNG (ramka 9-slice z wcięciami po trzecim)
-              albo paczka <code>.kartyrpg-ozdobnik</code>. „Pobierz” zapisuje paczkę do pliku.
+              albo paczka <code>.kartyrpg-ozdobnik</code>. Oprócz „Dodaj…” są tu przyciski „Importuj
+              SVG…” (okno z raportem) i „Dodaj ramkę z PNG…”. „Pobierz” zapisuje paczkę do pliku.
               Kliknięcie podglądu otwiera ustawienia ozdobnika: rodzaj, kolor, nazwę, prostokąt na
               tekst kształtu i wcięcia ramki 9-slice. Ozdobniki systemowe są widoczne do wglądu.
             </li>
@@ -1160,8 +1178,8 @@
               alt="The start screen in the light theme, with three columns"
             />
             <figcaption>
-              The start screen: buttons on the left, “My projects” in the middle and “Import files…”
-              on the right.
+              The start screen: a new project and a new template on the left, the “My projects” and
+              “My templates” tabs in the middle and “Import files…” on the right.
             </figcaption>
           </figure>
           <ol>
@@ -1367,7 +1385,7 @@
             </li>
             <li>
               In “Background type” choose “None” (paper), “Colour”, “Image” (a JPG/PNG texture from
-              the project library) or “Pattern”.
+              the library) or “Pattern”.
             </li>
             <li>
               Patterns: vertical lines, horizontal lines, grid, diamonds (two sets of diagonal
@@ -1397,12 +1415,17 @@
             <li>
               Click “Import SVG…” and choose a file. The app checks the file and removes scripts,
               images and references to external files. Text has to be converted to outlines, and the
-              file can be up to 512 KB. The new ornament is selected right away.
+              file can be up to 512 KB. An import window opens with a report of what was skipped and
+              a preview.
             </li>
             <li>
-              Under “Use as”, say what the element is for: “pattern”, “corner”, “end cap”, “divider
-              center”, “value shape” or “9-slice frame”. Under “Color”, choose “solid (recolorable)”
-              or “keep the colors”. Changes are saved at once.
+              In the window, under “Use as”, say what the element is for: “pattern”, “corner”, “end
+              cap”, “divider center”, “value shape” or “9-slice frame”. Under “Color”, choose “solid
+              (recolorable)” or “keep the colors”, and fill in “Name”.
+            </li>
+            <li>
+              Click “Add to the library” (“Cancel” stops the import). The new ornament is selected,
+              and you can change its settings in the panel next to it. Changes are saved at once.
             </li>
           </ol>
           <p>
@@ -1847,7 +1870,8 @@
             <li>
               In “Print &amp; sheet options” and in “Libraries” (the “Fonts” tab), “Google Fonts
               catalog” lists typefaces with Polish glyphs that you can add with “Download”. A
-              downloaded typeface stays inside the project and works offline.
+              downloaded typeface goes to the library, is available in all projects and works
+              offline.
             </li>
             <li>
               Under “PDF options”, “Invisible text layer in PDF (search and copy)” places searchable
@@ -1919,8 +1943,9 @@
           <ul>
             <li>
               In “Print &amp; sheet options”, in the “Project templates” section, click “Export”
-              next to a template. You get a <code>.kartyrpg-szablon</code> file with the ornament
-              library elements the template uses. The reference image does not go into it.
+              next to a template. You get a <code>.kartyrpg-szablon</code> file with copies of the
+              ornaments, fonts and images the template uses. The reference image does not go into
+              it.
             </li>
             <li>
               “Import a template…” in the same section, or “Import a template” on the “Create your
@@ -1961,6 +1986,19 @@
             the same layout: an “Add…” button, a search box by name and previews. Each preview has
             “Rename”, “Download” and “Delete” buttons.
           </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/en/biblioteki.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The Libraries page on the Ornaments tab with one custom ornament and its settings next to it"
+            />
+            <figcaption>
+              The “Ornaments” tab after importing an SVG file. On the right: a preview on a card and
+              the “Use as” choice.
+            </figcaption>
+          </figure>
           <ul>
             <li>
               “Images” are PNG and JPG files. Uploading the same file again adds no new entry.
@@ -1972,10 +2010,11 @@
             </li>
             <li>
               “Ornaments” are ornaments and frames: an SVG file, a PNG (a 9-slice frame with insets
-              at one third) or a <code>.kartyrpg-ozdobnik</code> package. “Download” saves the
-              package to a file. Clicking a preview opens the ornament settings: kind, color, name,
-              the text box of a shape and the insets of a 9-slice frame. System ornaments are shown
-              for reference.
+              at one third) or a <code>.kartyrpg-ozdobnik</code> package. Besides “Add…”, this tab
+              has “Import SVG…” (a window with a report) and “Add a frame from PNG…”. “Download”
+              saves the package to a file. Clicking a preview opens the ornament settings: kind,
+              color, name, the text box of a shape and the insets of a 9-slice frame. System
+              ornaments are shown for reference.
             </li>
             <li>
               “Delete” on an entry used by a project first shows the names of those projects and a

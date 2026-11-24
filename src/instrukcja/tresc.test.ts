@@ -403,9 +403,16 @@ describe('parytet sekcji PL ↔ EN', () => {
 });
 
 describe('zrzuty ekranu w treści', () => {
-  const NAZWY = ['start', 'mausritter', 'edytor-kartki', 'edytor-szablonu', 'ustawienia'];
+  const NAZWY = [
+    'start',
+    'mausritter',
+    'edytor-kartki',
+    'edytor-szablonu',
+    'ustawienia',
+    'biblioteki',
+  ];
 
-  it.each(JEZYKI)('(%s) pięć rysunków z alt, podpisem, wymiarami i loading=lazy', (j) => {
+  it.each(JEZYKI)('(%s) sześć rysunków z alt, podpisem, wymiarami i loading=lazy', (j) => {
     const rysunki = [...artykul(j).querySelectorAll('figure')];
     expect(rysunki.map((f) => f.querySelector('img')!.getAttribute('src'))).toEqual(
       NAZWY.map((n) => `/instrukcja-zrzuty/${j}/${n}.png`).sort(
