@@ -69,16 +69,14 @@ function Probka({ kolor, wybrany, wybierz }: { kolor: Kolor; wybrany: boolean; w
 }
 
 /**
- * Przycisk „Kolory projektu” obok pola koloru i rozwijany pod polem panel z próbkami:
+ * Przycisk „Paleta projektu” obok pola koloru i rozwijany pod polem panel z próbkami:
  * zapisane (z usuwaniem) i użyte w projekcie. Bez kontekstu (np. w kreatorze) – nic.
  */
 export function useWyborKoloruProjektu({
-  etykieta,
   wartosc,
   zmien,
   wylaczone,
 }: {
-  etykieta: string;
   wartosc: string | undefined;
   zmien: (kolor: string) => void;
   wylaczone?: boolean;
@@ -94,7 +92,7 @@ export function useWyborKoloruProjektu({
       className="maly przycisk-kolorow-projektu"
       aria-expanded={otwarty}
       aria-controls={idPanelu}
-      aria-label={t('kolory.pokaz', { pole: etykieta })}
+      aria-label={t('kolory.pokaz')}
       title={t('kolory.tytul')}
       disabled={wylaczone}
       onClick={() => ustawOtwarty((o) => !o)}

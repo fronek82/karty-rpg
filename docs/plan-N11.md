@@ -48,4 +48,5 @@ zapisać w projekcie na stałe.
 - Import pliku szablonu albo tyłu do innego projektu nie dokłada kolorów do palety tego
   projektu. Kolory szablonu i tak pojawią się w „Użytych w projekcie”.
 - Ikona przycisku to emoji 🎨: nie wymaga nowego zasobu, a przycisk ma opis dostępny
-  („Kolory projektu: <pole>”).
+  („Paleta projektu”). Opis nie zawiera etykiety pola ani słowa „Kolor”, żeby nie
+  dublować nazwy pola koloru (wyszukiwanie pola po etykiecie znajduje samo pole).

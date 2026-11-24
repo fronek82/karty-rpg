@@ -943,7 +943,7 @@ export const pl = {
   'wlasciwosci.minWysokosc': 'Min. wysokość (mm)',
   'wlasciwosci.wlacz': 'Włącz: {pole}',
   'kolory.tytul': 'Kolory projektu',
-  'kolory.pokaz': 'Kolory projektu: {pole}',
+  'kolory.pokaz': 'Paleta projektu',
   'kolory.zapisane': 'Zapisane',
   'kolory.brakZapisanych': 'Brak – zapisz kolor przyciskiem poniżej.',
   'kolory.uzyte': 'Użyte w projekcie',

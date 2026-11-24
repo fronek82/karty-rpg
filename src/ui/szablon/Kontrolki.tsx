@@ -145,7 +145,7 @@ export function PoleKoloru({
 }) {
   const autoId = useId();
   const id = wlasneId ?? autoId;
-  const kolory = useWyborKoloruProjektu({ etykieta, wartosc, zmien, wylaczone: !!wylaczone });
+  const kolory = useWyborKoloruProjektu({ wartosc, zmien, wylaczone: !!wylaczone });
   return (
     <div
       className={`pole-panelu pole-koloru${wylaczone ? ' wylaczone' : ''}`}

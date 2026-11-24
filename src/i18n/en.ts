@@ -951,7 +951,7 @@ export const en: Slownik = {
   'wlasciwosci.minWysokosc': 'Min. height (mm)',
   'wlasciwosci.wlacz': 'Enable: {pole}',
   'kolory.tytul': 'Project colors',
-  'kolory.pokaz': 'Project colors: {pole}',
+  'kolory.pokaz': 'Project palette',
   'kolory.zapisane': 'Saved',
   'kolory.brakZapisanych': 'None yet – save a color with the button below.',
   'kolory.uzyte': 'Used in this project',
