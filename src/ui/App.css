@@ -2501,6 +2501,68 @@ button.maly {
   justify-content: flex-start;
 }
 
+/* N11: kolory projektu przy polach koloru. */
+.pole-koloru .przycisk-kolorow-projektu {
+  align-self: center;
+  line-height: 1;
+}
+.kolory-projektu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.4rem;
+  background: var(--pole);
+}
+.kolory-projektu button.maly {
+  align-self: flex-start;
+}
+.kolory-projektu-grupa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.kolory-projektu-grupa > small:first-child {
+  color: var(--tekst-przygaszony);
+}
+.probki-kolorow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.probki-kolorow li {
+  display: flex;
+  align-items: center;
+}
+.probka-koloru {
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--obramowanie);
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+.probka-koloru.wybrana {
+  outline: 2px solid var(--zaznaczenie);
+  outline-offset: 1px;
+}
+.usun-probke {
+  min-width: 0;
+  padding: 0 0.15rem;
+  border: none;
+  background: none;
+  color: var(--tekst-przygaszony);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
 /* M2-6: menu „Pobierz”, układ arkusza. */
 .menu-pobierz {
   position: relative;

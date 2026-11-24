@@ -45,6 +45,7 @@ import { RODZAJE_REWERSU } from './PozycjeMenuDodaj';
 import { przygotujPlikObrazu } from '../obrazyUI';
 import { nazwaPliku } from '../pliki';
 import type { ProjektWEdycji } from '../useProjekt';
+import { DostawcaKolorowProjektu } from './koloryProjektu';
 import {
   EdytorDrzewa,
   type PlikSzablonuEdytora,
@@ -426,7 +427,7 @@ export function EdytorKarty({
   const podklad = strona === 'przod' ? szablon?.podklad : undefined;
 
   return (
-    <>
+    <DostawcaKolorowProjektu edycja={edycja}>
       {pytanie && stareWymiary && (
         <OknoZmianyRozmiaru
           strona={strona}
@@ -540,7 +541,7 @@ export function EdytorKarty({
           />
         )}
       />
-    </>
+    </DostawcaKolorowProjektu>
   );
 }
 
