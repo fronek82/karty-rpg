@@ -1,11 +1,13 @@
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { t } from '../i18n';
 import { OknoModalne } from './OknoModalne';
 import { tekstZapisu, type ProjektWEdycji } from './useProjekt';
+import { ustawStrazTrasy } from './useTrasa';
 
 /**
  * Zapis ręczny w edytorach projektu (Edytor kart, Edytor szablonu i rewersu): przycisk „Zapisz”
- * ze stanem zapisu, skrót Ctrl+S / Cmd+S i okno „Niezapisane zmiany” przy wyjściu z projektu.
+ * ze stanem zapisu, skrót Ctrl+S / Cmd+S i okno „Niezapisane zmiany” przy wyjściu z projektu
+ * (linkiem w aplikacji albo przyciskiem „Wstecz” / „Dalej” przeglądarki).
  */
 
 /** Ctrl+S / Cmd+S zapisuje projekt (zamiast zapisu strony przez przeglądarkę). */
@@ -54,11 +56,42 @@ export function PrzyciskZapisu({ edycja }: { edycja: ProjektWEdycji }) {
 export function useStrazWyjscia(edycja: ProjektWEdycji) {
   const [cel, ustawCel] = useState<string>();
   const wProjekcie = `#/projekt/${encodeURIComponent(edycja.projekt.id)}`;
+  const wewnatrz = (adres: string) => adres === wProjekcie || adres.startsWith(`${wProjekcie}/`);
   const sprawdzWyjscie = (e: MouseEvent, adres: string) => {
     if (!edycja.niezapisane) return;
-    if (adres === wProjekcie || adres.startsWith(`${wProjekcie}/`)) return;
+    if (wewnatrz(adres)) return;
     e.preventDefault();
     ustawCel(adres);
+  };
+
+  // „Wstecz” / „Dalej” przeglądarki (albo gest gładzika) zmienia sam adres – bez kliknięcia linku.
+  // Straż trasy działa przed zmianą widoku: przy niezapisanych zmianach przywraca bieżący adres
+  // (`pushState` nie wywołuje kolejnego `hashchange`) i pokazuje to samo okno co przy linku.
+  const { niezapisane } = edycja;
+  /** Przejście zatwierdzone w oknie – nie zatrzymujemy go drugi raz. */
+  const zatwierdzone = useRef(false);
+  useEffect(
+    () =>
+      ustawStrazTrasy((e) => {
+        if (zatwierdzone.current) {
+          zatwierdzone.current = false;
+          return false;
+        }
+        if (!niezapisane) return false;
+        const nowy = new URL(e.newURL).hash || '#/';
+        if (nowy === wProjekcie || nowy.startsWith(`${wProjekcie}/`)) return false;
+        // Wpis, do którego prowadził „Wstecz”, zostaje w historii – adres edytora wraca jako nowy
+        // wpis, więc kolejne „Wstecz” znów zapyta o zapis.
+        window.history.pushState(null, '', e.oldURL);
+        ustawCel(nowy);
+        return true;
+      }),
+    [niezapisane, wProjekcie],
+  );
+  const przejdz = (adres: string) => {
+    ustawCel(undefined);
+    zatwierdzone.current = true;
+    window.location.hash = adres;
   };
   const okno = cel && (
     <OknoModalne tytul={t('projekt.wyjscieTytul')} zamknij={() => ustawCel(undefined)}>
@@ -70,23 +103,13 @@ export function useStrazWyjscia(edycja: ProjektWEdycji) {
           onClick={() => {
             void edycja
               .zapiszTeraz()
-              .then(() => {
-                ustawCel(undefined);
-                window.location.hash = cel;
-              })
+              .then(() => przejdz(cel))
               .catch(() => ustawCel(undefined));
           }}
         >
           {t('projekt.zapiszIWyjdz')}
         </button>
-        <button
-          type="button"
-          className="niebezpieczny"
-          onClick={() => {
-            ustawCel(undefined);
-            window.location.hash = cel;
-          }}
-        >
+        <button type="button" className="niebezpieczny" onClick={() => przejdz(cel)}>
           {t('projekt.wyjdzBezZapisu')}
         </button>
         <button type="button" autoFocus onClick={() => ustawCel(undefined)}>

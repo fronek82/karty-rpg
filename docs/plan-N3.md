@@ -53,8 +53,10 @@ Cofnięcie gestu – tylko Escape. Testy: `useGestSwobodny.test.tsx` (zdarzenia)
   jako awers nie ma czego przycinać.
 - N3-3: Zapis ręczny obejmuje Edytor kart, szablonu i rewersu (ta sama instancja `useProjekt`, więc
   przejścia między nimi zachowują niezapisane zmiany w pamięci). Biblioteka ozdobników projektu
-  i kreator nowego szablonu zostają przy autozapisie. Okno przy wyjściu pojawia się tylko dla
-  linków poza projekt (logo, „Powrót” do listy).
+  i kreator nowego szablonu zostają przy autozapisie. Okno przy wyjściu pojawia się dla
+  linków poza projekt (logo, „Powrót” do listy) i – od poprawki po N11 – dla „Wstecz” / „Dalej”
+  przeglądarki: straż trasy (`ustawStrazTrasy` w `ui/useTrasa.ts`) działa przed zmianą widoku,
+  przywraca adres edytora jako nowy wpis historii (`pushState`) i pokazuje to samo okno.
 - N3-4: Edytor rewersu zapisuje rewers w bibliotece globalnej po zapisie projektu; przy wyjściu
   z edytora – tylko gdy nie ma niezapisanych zmian.
 - N3-5: Przy 1440 px pasek Edytora szablonu mieści się w jednym rzędzie (także przy „Niezapisane

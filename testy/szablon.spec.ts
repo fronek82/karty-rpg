@@ -194,6 +194,43 @@ test('duplikuje szablon z paska i opcji druku, a Cofnij pozostawia oryginał w e
   ).toBeVisible();
 });
 
+test('Edytor szablonu: „Wstecz” przeglądarki przy niezapisanych zmianach pyta o zapis', async ({
+  page,
+}) => {
+  await page.goto('./#/wlasne/nowy/awers');
+  await page.getByLabel('Nazwa szablonu').fill('Karta wstecz');
+  await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+  const adresEdytora = page.url();
+  const status = page.locator('.status-zapisu');
+  const okno = page.getByRole('dialog', { name: 'Niezapisane zmiany' });
+
+  // Bez zmian „Wstecz” po prostu wraca do kreatora.
+  await page.goBack();
+  await expect(page).toHaveURL(/#\/wlasne\/nowy\/awers$/);
+  await page.goForward();
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+
+  // Ze zmianami: okno, „Zostań” zostawia edytor i zmiany.
+  await page.getByLabel('Nazwa szablonu').fill('Karta wstecz 2');
+  await expect(status).toHaveText('Niezapisane zmiany');
+  await page.goBack();
+  await expect(okno).toBeVisible();
+  await expect(page).toHaveURL(adresEdytora);
+  await okno.getByRole('button', { name: 'Zostań' }).click();
+  await expect(drzewo(page)).toBeVisible();
+  await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Karta wstecz 2');
+
+  // „Zapisz i wyjdź” zapisuje i przechodzi tam, dokąd prowadził „Wstecz”.
+  await page.goBack();
+  await okno.getByRole('button', { name: 'Zapisz i wyjdź' }).click();
+  await expect(page).toHaveURL(/#\/wlasne\/nowy\/awers$/);
+  await page.goto(adresEdytora);
+  await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Karta wstecz 2', {
+    timeout: 15000,
+  });
+});
+
 test('Edytor szablonu: zapis ręczny (Ctrl+S), okno przy wyjściu, eksport i import pliku szablonu', async ({
   page,
 }, info) => {
