@@ -943,27 +943,6 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                       className="svg-opakowanie"
                       dangerouslySetInnerHTML={{ __html: podglad.svg }}
                     />
-                    {/* Pusty stan tylko w edytorze: warstwa HTML nad sceną – nie trafia do SVG,
-                        PDF, PNG ani miniatur (te powstają ze sceny). */}
-                    {pustaKarta && (
-                      <div
-                        className="pusta-karta-podgladu"
-                        data-testid="pusty-stan-karty"
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        <p>{t('szablon.pustaKartaPodglad')}</p>
-                        <MenuDodaj
-                          rodzaje={u.rodzajeDodaj ?? RODZAJE}
-                          dodaj={dodaj}
-                          przycisk={{
-                            tresc: '＋',
-                            className: 'menu-dodaj-duzy',
-                            etykieta: t('szablon.dodajElement'),
-                            testId: 'dodaj-pusta-karta',
-                          }}
-                        />
-                      </div>
-                    )}
                     {/* Podkład ze wzoru: nad kartą (tło karty jest kryjące), nie łapie kliknięć. */}
                     {podklad?.podklad?.widoczny && podklad.adres && (
                       <img
@@ -1016,6 +995,27 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                           />
                         );
                       })}
+                    {/* Pusty stan tylko w edytorze: warstwa HTML nad sceną – nie trafia do SVG,
+                        PDF, PNG ani miniatur (te powstają ze sceny). */}
+                    {pustaKarta && (
+                      <div
+                        className="pusta-karta-podgladu"
+                        data-testid="pusty-stan-karty"
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <p>{t('szablon.pustaKartaPodglad')}</p>
+                        <MenuDodaj
+                          rodzaje={u.rodzajeDodaj ?? RODZAJE}
+                          dodaj={dodaj}
+                          przycisk={{
+                            tresc: '＋',
+                            className: 'menu-dodaj-duzy',
+                            etykieta: t('szablon.dodajElement'),
+                            testId: 'dodaj-pusta-karta',
+                          }}
+                        />
+                      </div>
+                    )}
                     <NakladkaSwobodna
                       szer={szer}
                       wys={wys}

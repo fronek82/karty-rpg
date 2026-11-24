@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { t } from '../../i18n';
 import {
   DOMYSLNE_TLO_KARTY,
@@ -410,6 +410,7 @@ function WyborWzoru({
   const adresBiblioteki = useAdresBiblioteki();
   const wyjdzDoBiblioteki = useWyjscieDoBiblioteki();
   const plik = useRef<HTMLInputElement>(null);
+  const idEtykiety = useId();
   const [komunikat, ustawKomunikat] = useState<{ tekst: string; blad?: boolean }>();
   const [dodawany, ustawDodawany] = useState<string>();
   const brakGrafiki =
@@ -430,11 +431,11 @@ function WyborWzoru({
   };
   return (
     <div className="pole-panelu">
-      <span id="wzor-tla-wbudowane">{t('tloKarty.wzor')}</span>
+      <span id={idEtykiety}>{t('tloKarty.wzor')}</span>
       <div
         className="wybor-narozniki"
         role="group"
-        aria-labelledby="wzor-tla-wbudowane"
+        aria-labelledby={idEtykiety}
         data-testid="wzory-wbudowane"
       >
         <span className="grupa-ozdobnikow">{t('tloKarty.grupaWbudowane')}</span>
