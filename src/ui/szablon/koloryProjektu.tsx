@@ -13,8 +13,11 @@ import type { ProjektWEdycji } from '../useProjekt';
 export interface KoloryProjektu {
   /** Kolory zapisane przez użytkownika (`Projekt.paleta`). */
   zapisane: readonly Kolor[];
-  /** Kolory użyte w przodach i tyłach projektu (bez zapisanych). */
-  uzyte: readonly Kolor[];
+  /**
+   * Kolory użyte w przodach i tyłach projektu (bez zapisanych). Liczone dopiero przy pierwszym
+   * wywołaniu (otwarty panel), a nie przy każdej edycji dokumentu.
+   */
+  uzyte(): readonly Kolor[];
   zapisz(kolor: string): void;
   usun(kolor: string): void;
 }
@@ -31,16 +34,17 @@ export function DostawcaKolorowProjektu({
 }) {
   const { projekt, zmien } = edycja;
   const { szablony, rewersy, paleta } = projekt;
-  const uzyteWszystkie = useMemo(() => koloryUzyte({ szablony, rewersy }), [szablony, rewersy]);
   const wartosc = useMemo<KoloryProjektu>(() => {
     const zapisane = paleta ?? [];
+    let uzyte: readonly Kolor[] | undefined;
     return {
       zapisane,
-      uzyte: uzyteWszystkie.filter((k) => !zapisane.includes(k)),
+      uzyte: () =>
+        (uzyte ??= koloryUzyte({ szablony, rewersy }).filter((k) => !zapisane.includes(k))),
       zapisz: (kolor) => zmien((p) => dodajDoPalety(p, kolor)),
       usun: (kolor) => zmien((p) => usunZPalety(p, kolor)),
     };
-  }, [paleta, uzyteWszystkie, zmien]);
+  }, [paleta, szablony, rewersy, zmien]);
   return <Kontekst.Provider value={wartosc}>{children}</Kontekst.Provider>;
 }
 
@@ -98,50 +102,51 @@ export function useWyborKoloruProjektu({
       <span aria-hidden="true">🎨</span>
     </button>
   );
-  const panel =
-    otwarty && !wylaczone ? (
-      <div id={idPanelu} className="kolory-projektu" role="group" aria-label={t('kolory.tytul')}>
-        <div className="kolory-projektu-grupa" data-grupa="zapisane">
-          <small>{t('kolory.zapisane')}</small>
-          {kolory.zapisane.length === 0 ? (
-            <small className="podpis">{t('kolory.brakZapisanych')}</small>
-          ) : (
-            <ul className="probki-kolorow">
-              {kolory.zapisane.map((k) => (
-                <li key={k}>
-                  <Probka kolor={k} wybrany={k === biezacy} wybierz={() => zmien(k)} />
-                  <button
-                    type="button"
-                    className="usun-probke"
-                    aria-label={t('kolory.usun', { kolor: k })}
-                    title={t('kolory.usun', { kolor: k })}
-                    onClick={() => kolory.usun(k)}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        {kolory.uzyte.length > 0 && (
-          <div className="kolory-projektu-grupa" data-grupa="uzyte">
-            <small>{t('kolory.uzyte')}</small>
-            <ul className="probki-kolorow">
-              {kolory.uzyte.map((k) => (
-                <li key={k}>
-                  <Probka kolor={k} wybrany={k === biezacy} wybierz={() => zmien(k)} />
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {biezacy && !kolory.zapisane.includes(biezacy) && (
-          <button type="button" className="maly" onClick={() => kolory.zapisz(biezacy)}>
-            {t('kolory.zapiszBiezacy')}
-          </button>
+  const widoczny = otwarty && !wylaczone;
+  const uzyte = widoczny ? kolory.uzyte() : [];
+  const panel = widoczny ? (
+    <div id={idPanelu} className="kolory-projektu" role="group" aria-label={t('kolory.tytul')}>
+      <div className="kolory-projektu-grupa" data-grupa="zapisane">
+        <small>{t('kolory.zapisane')}</small>
+        {kolory.zapisane.length === 0 ? (
+          <small className="podpis">{t('kolory.brakZapisanych')}</small>
+        ) : (
+          <ul className="probki-kolorow">
+            {kolory.zapisane.map((k) => (
+              <li key={k}>
+                <Probka kolor={k} wybrany={k === biezacy} wybierz={() => zmien(k)} />
+                <button
+                  type="button"
+                  className="usun-probke"
+                  aria-label={t('kolory.usun', { kolor: k })}
+                  title={t('kolory.usun', { kolor: k })}
+                  onClick={() => kolory.usun(k)}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
-    ) : null;
+      {uzyte.length > 0 && (
+        <div className="kolory-projektu-grupa" data-grupa="uzyte">
+          <small>{t('kolory.uzyte')}</small>
+          <ul className="probki-kolorow">
+            {uzyte.map((k) => (
+              <li key={k}>
+                <Probka kolor={k} wybrany={k === biezacy} wybierz={() => zmien(k)} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {biezacy && !kolory.zapisane.includes(biezacy) && (
+        <button type="button" className="maly" onClick={() => kolory.zapisz(biezacy)}>
+          {t('kolory.zapiszBiezacy')}
+        </button>
+      )}
+    </div>
+  ) : null;
   return { przycisk, panel };
 }

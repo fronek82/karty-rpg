@@ -45,10 +45,18 @@ describe('koloryUzyte', () => {
           parametry: [{ wartosc: '#888888' }],
         },
       ],
-      rewersy: [{ tlo: '#222222', ramka: { kolor: '#333333' }, nazwa: '#ABC' }],
+      rewersy: [
+        {
+          tlo: '#222222',
+          ramka: { kolor: '#333333' },
+          tloZDanych: { klucz: 'typ', domyslny: '#ABC', mapa: [{ wartosc: '#1', kolor: '#444' }] },
+          nazwa: '#123',
+          korzen: { dzieci: [{ tekst: '#fed' }] },
+        },
+      ],
     } as unknown as Pick<Projekt, 'szablony' | 'rewersy'>;
-    // `nazwa` to też tekst – liczy się, bo wygląda jak kolor (rzadkie, a niegroźne).
-    expect(koloryUzyte(p)).toEqual(['#222222', '#111111', '#333333', '#aabbcc']);
+    // Teksty wyglądające jak kolor (`nazwa`, `tekst`, wartość reguły) nie są kolorami.
+    expect(koloryUzyte(p)).toEqual(['#222222', '#111111', '#333333', '#aabbcc', '#444444']);
   });
 
   it('ma limit długości listy', () => {

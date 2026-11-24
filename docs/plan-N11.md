@@ -40,3 +40,12 @@ zapisać w projekcie na stałe.
   pozycjonować, a panel nie zasłania innych pól.
 - Zapisanie i usunięcie koloru to zwykła zmiana projektu, więc działa dla niej „Cofnij”.
   W edytorze karty zapis jest ręczny, jak każda inna zmiana.
+- „Użyte w projekcie” bierze wartości tylko z pól kolorów modelu (klucze `kolor…`, `…Kolor`,
+  `tlo…`, `domyslny` w „Kolorze z danych”). Napisy w rodzaju „#123” w tekstach i nazwach nie są
+  kolorami. Lista jest liczona dopiero po otwarciu panelu.
+- Paleta ma najwyżej `MAKS_KOLOROW_PALETY` (64) kolory. Gdy jest pełna, nowy kolor wypiera
+  najstarszy; przy takiej liczbie to praktycznie się nie zdarza.
+- Import pliku szablonu albo tyłu do innego projektu nie dokłada kolorów do palety tego
+  projektu. Kolory szablonu i tak pojawią się w „Użytych w projekcie”.
+- Ikona przycisku to emoji 🎨: nie wymaga nowego zasobu, a przycisk ma opis dostępny
+  („Kolory projektu: <pole>”).

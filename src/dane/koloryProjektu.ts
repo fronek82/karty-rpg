@@ -7,8 +7,14 @@ export const MAKS_KOLOROW_PALETY = 64;
 /** Najwięcej kolorów na liście „Użyte w projekcie”. */
 export const LIMIT_KOLOROW_UZYTYCH = 24;
 
-/** Pola z treścią kart (teksty), a nie z wyglądem – kolory w nich pomijamy. */
+/** Pola z treścią kart (teksty), a nie z wyglądem – nie zaglądamy do nich. */
 const POMIJANE_KLUCZE = new Set(['przyklad', 'parametry']);
+
+/**
+ * Klucze pól typu `Kolor` w modelu (`kolor`, `kolorDomyslny`, `tlo`, `tloNaglowka`, `domyslny`
+ * w `KolorZDanych`…). Teksty pod innymi kluczami (np. napis „#123”) nie są kolorami.
+ */
+const KLUCZ_KOLORU = /kolor|^tlo|^domyslny$/i;
 
 /** `#rgb` / `#rrggbb` (dowolna wielkość liter) → `#rrggbb` małymi literami; inne – `undefined`. */
 export function normalizujKolor(wartosc: string): Kolor | undefined {
@@ -25,13 +31,15 @@ export function normalizujKolor(wartosc: string): Kolor | undefined {
 export function koloryUzyte(projekt: Pick<Projekt, 'szablony' | 'rewersy'>): Kolor[] {
   const liczby = new Map<Kolor, number>();
   const przejdz = (x: unknown): void => {
-    if (typeof x === 'string') {
-      const k = x.length <= 7 ? normalizujKolor(x) : undefined;
-      if (k) liczby.set(k, (liczby.get(k) ?? 0) + 1);
-    } else if (Array.isArray(x)) {
+    if (Array.isArray(x)) {
       for (const y of x) przejdz(y);
     } else if (x && typeof x === 'object') {
-      for (const [klucz, y] of Object.entries(x)) if (!POMIJANE_KLUCZE.has(klucz)) przejdz(y);
+      for (const [klucz, y] of Object.entries(x)) {
+        if (typeof y === 'string') {
+          const k = KLUCZ_KOLORU.test(klucz) ? normalizujKolor(y) : undefined;
+          if (k) liczby.set(k, (liczby.get(k) ?? 0) + 1);
+        } else if (!POMIJANE_KLUCZE.has(klucz)) przejdz(y);
+      }
     }
   };
   przejdz(projekt.szablony);
