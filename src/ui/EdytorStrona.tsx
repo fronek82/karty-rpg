@@ -2,8 +2,7 @@ import { czyProjektWlasny, dodajSzablonZKartka } from '../dane/wlasneKarty';
 import { t } from '../i18n';
 import { AktywnyProjektKontekst } from './AktywnyProjektKontekst';
 import { EdytorKartki } from './kartka/EdytorKartki';
-import { EdytorRewersu } from './rewers/EdytorRewersu';
-import { EdytorSzablonu } from './szablon/EdytorSzablonu';
+import { EdytorKarty } from './szablon/EdytorKarty';
 import { Kreator } from './szablon/Kreator';
 import { szablonZKreatora } from './szablon/nowySzablonUI';
 import { useProjekt } from './useProjekt';
@@ -41,7 +40,7 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
     const rewersDop = /^rewers\/(.+)$/.exec(podtrasa)?.[1];
     if (rewersDop) {
       const rewersId = decodeURIComponent(rewersDop);
-      return <EdytorRewersu key={rewersId} edycja={stan} rewersId={rewersId} />;
+      return <EdytorKarty key={`tyl:${rewersId}`} edycja={stan} strona="tyl" id={rewersId} />;
     }
     const identyfikator = /^szablon\/(.+)$/.exec(podtrasa)?.[1];
     const szablon = identyfikator && decodeURIComponent(identyfikator);
@@ -57,7 +56,8 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
           <a href={sciezka}>{t('szablon.wrocDoKartek')}</a>
         </section>
       );
-    if (szablon) return <EdytorSzablonu key={szablon} edycja={stan} szablonId={szablon} />;
+    if (szablon)
+      return <EdytorKarty key={`przod:${szablon}`} edycja={stan} strona="przod" id={szablon} />;
     if (podtrasa === 'nowy-szablon')
       return (
         <div className="tresc tresc-start kreator-w-projekcie">

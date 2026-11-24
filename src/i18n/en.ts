@@ -1418,8 +1418,6 @@ export const en: Slownik = {
     'Layers are positioned relative to this reference size and adapt to the target card.',
   'rewers.tloIRamka': 'Back background and frame',
   'rewers.warstwy': 'Layers',
-  'rewers.pusty':
-    'This card back has no layers yet. Use “+ Add” to insert text, an image, or a graphic.',
   'rewers.pomocPodgladu': 'Click a layer in the preview or tree to edit, move, or rotate it.',
   'rewers.przypisanieTalia': 'Default deck back',
   'rewers.przypisanieSzablon': 'Template card back',

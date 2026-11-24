@@ -51,7 +51,7 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   await expect(page.locator('.karta-podgladu')).toBeVisible();
 
   // Kolor tła, tekstura i 4 tryby dopasowania obrazu tła.
-  await page.locator('#rewers-tlo-kolor').fill('#1e293b');
+  await page.locator('#karta-tlo-kolor').fill('#1e293b');
   await page
     .getByRole('group', { name: 'Rodzaj tła' })
     .getByRole('button', { name: 'Obraz' })
@@ -91,8 +91,8 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   // Ramka karty na rewersie.
   const ramka = await sekcja(page, 'Ramka karty');
   await ramka.getByLabel('Ramka karty', { exact: true }).selectOption('linia');
-  await expect(page.locator('#rewers-ramka-ods')).toBeVisible();
-  await page.locator('#rewers-ramka-ods').fill('3');
+  await expect(page.locator('#karta-ramka-ods')).toBeVisible();
+  await page.locator('#karta-ramka-ods').fill('3');
 
   // Warstwa tekstu bez klucza danych + czcionka i rozmiar.
   await dodaj(page, 'Tekst', 'Tytuł rewersu');
@@ -167,13 +167,13 @@ test('przypisania rewersu na 3 poziomach (talia -> szablon -> karta), duplikowan
   const ust = await otworzDruk(page);
   await ust.getByRole('button', { name: 'Nowy rewers' }).click();
   await page.getByLabel('Nazwa rewersu').fill('Rewers A');
-  await page.locator('#rewers-tlo-kolor').fill('#112233');
+  await page.locator('#karta-tlo-kolor').fill('#112233');
   await zapisano(page);
   await page.getByRole('link', { name: '← Powrót' }).click();
 
   await ust.getByRole('button', { name: 'Nowy rewers' }).click();
   await page.getByLabel('Nazwa rewersu').fill('Rewers B');
-  await page.locator('#rewers-tlo-kolor').fill('#445566');
+  await page.locator('#karta-tlo-kolor').fill('#445566');
   await zapisano(page);
   await page.getByRole('link', { name: '← Powrót' }).click();
 
@@ -287,7 +287,7 @@ for (const motyw of ['light', 'dark'] as const) {
       `Layers heading EN (${motyw})`,
     );
 
-    await page.getByRole('link', { name: /Card editor/ }).click();
+    await page.getByRole('button', { name: /Card editor/ }).click();
     const ustEn = await otworzDruk(page, true);
     await ustEn
       .getByRole('button', { name: /Delete card back/ })

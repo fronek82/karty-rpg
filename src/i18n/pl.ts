@@ -1414,7 +1414,6 @@ export const pl = {
     'Warstwy pozycjonują się względem tych wymiarów i dopasowują do karty docelowej.',
   'rewers.tloIRamka': 'Tło i ramka rewersu',
   'rewers.warstwy': 'Warstwy',
-  'rewers.pusty': 'Rewers nie ma jeszcze warstw. Użyj „+ Dodaj”, aby dodać tło, tekst lub grafikę.',
   'rewers.pomocPodgladu':
     'Kliknij warstwę na podglądzie lub w drzewie, aby ją edytować, przesuwać lub obracać.',
   'rewers.przypisanieTalia': 'Domyślny rewers talii',
