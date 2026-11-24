@@ -156,6 +156,8 @@ export function rewersJakoSzablon(r: Rewers): Szablon {
     ...(r.teksturaTla !== undefined ? { teksturaTla: r.teksturaTla } : {}),
     ...(r.wzorTla ? { wzorTla: structuredClone(r.wzorTla) } : {}),
     ...(r.ramka !== undefined ? { ramka: r.ramka } : {}),
+    ...(r.promienRogow !== undefined ? { promienRogow: r.promienRogow } : {}),
+    ...(r.postrzepienie !== undefined ? { postrzepienie: structuredClone(r.postrzepienie) } : {}),
   };
 }
 
@@ -180,6 +182,8 @@ export function szablonDoRewersu(oryginal: Rewers, s: Szablon): Rewers {
       wynik.teksturaZabarwienie = structuredClone(oryginal.teksturaZabarwienie);
   }
   if (s.ramka !== undefined) wynik.ramka = s.ramka;
+  if (s.promienRogow !== undefined) wynik.promienRogow = s.promienRogow;
+  if (s.postrzepienie !== undefined) wynik.postrzepienie = structuredClone(s.postrzepienie);
   return wynik;
 }
 

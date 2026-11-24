@@ -389,6 +389,8 @@ export const schematRewersu = z.strictObject({
     teksturaTla: true,
     wzorTla: true,
     ramka: true,
+    promienRogow: true,
+    postrzepienie: true,
   }).shape,
   teksturaTryb: opc(z.enum(['wypelnij', 'dopasuj', 'rozciagnij', 'kafelki'])),
   teksturaKrycie: opc(liczba.min(0).max(1)),
@@ -826,6 +828,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // 28→29: opcjonalny wzór tła karty (`wzorTla` awersu i rewersu) – bez zmian danych.
   // 29→30: wzór tła z biblioteki SVG (`rodzaj: 'svg'`, `element`, `rozmiar`, `odstepX/Y`) i układ
   // kafelków (`uklad`) – pola opcjonalne, bez zmian danych (wbudowane wzory wyglądają jak dotąd).
+  // 30→31: opcjonalne `promienRogow` i `postrzepienie` rewersu (tyłu) – bez zmian danych; tył bez
+  // zaokrąglenia rogów dopasowuje je do przodu jak dotąd.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -861,6 +865,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     27: rozciagnieteKsztalty,
     28: (d) => d,
     29: (d) => d,
+    30: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -897,6 +902,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     27: rozciagnieteKsztalty,
     28: (d) => d,
     29: (d) => d,
+    30: (d) => d,
   },
 };
 
