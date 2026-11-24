@@ -83,6 +83,8 @@ test('czcionka pobrana z Google Fonts w projekcie A jest od razu dostępna w ist
   );
 
   // 3) Wróć do istniejącego projektu B – MedievalSharp jest od razu do wyboru w Stylu tekstu!
+  // (Najpierw zapis projektu A – inaczej wyjście zatrzymuje okno „Niezapisane zmiany”.)
+  await zapisano(page);
   await page.goto(urlProjektuB);
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
   await zaznacz(page, 'Opis');

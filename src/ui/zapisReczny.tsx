@@ -1,11 +1,13 @@
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { t } from '../i18n';
 import { OknoModalne } from './OknoModalne';
 import { tekstZapisu, type ProjektWEdycji } from './useProjekt';
+import { ustawStrazTrasy } from './useTrasa';
 
 /**
  * Zapis ręczny w edytorach projektu (Edytor kart, Edytor szablonu i rewersu): przycisk „Zapisz”
- * ze stanem zapisu, skrót Ctrl+S / Cmd+S i okno „Niezapisane zmiany” przy wyjściu z projektu.
+ * ze stanem zapisu, skrót Ctrl+S / Cmd+S i okno „Niezapisane zmiany” przy wyjściu z projektu
+ * (linkiem w aplikacji albo przyciskiem „Wstecz” / „Dalej” przeglądarki).
  */
 
 /** Ctrl+S / Cmd+S zapisuje projekt (zamiast zapisu strony przez przeglądarkę). */
@@ -46,6 +48,10 @@ export function PrzyciskZapisu({ edycja }: { edycja: ProjektWEdycji }) {
   );
 }
 
+/** Czy adres (`#/…`) prowadzi do projektu `wProjekcie` (`#/projekt/<id>`) albo jego podstrony. */
+const wProjekcieAdres = (adres: string, wProjekcie: string) =>
+  adres === wProjekcie || adres.startsWith(`${wProjekcie}/`);
+
 /**
  * Straż wyjścia: link poza bieżący projekt przy niezapisanych zmianach otwiera okno z wyborem
  * „Zapisz i wyjdź” / „Wyjdź bez zapisywania” / „Zostań”. Przejścia w obrębie projektu (Edytor kart,
@@ -56,9 +62,41 @@ export function useStrazWyjscia(edycja: ProjektWEdycji) {
   const wProjekcie = `#/projekt/${encodeURIComponent(edycja.projekt.id)}`;
   const sprawdzWyjscie = (e: MouseEvent, adres: string) => {
     if (!edycja.niezapisane) return;
-    if (adres === wProjekcie || adres.startsWith(`${wProjekcie}/`)) return;
+    if (wProjekcieAdres(adres, wProjekcie)) return;
     e.preventDefault();
     ustawCel(adres);
+  };
+
+  // „Wstecz” / „Dalej” przeglądarki (albo gest gładzika) zmienia sam adres – bez kliknięcia linku.
+  // Straż trasy działa przed zmianą widoku: przy niezapisanych zmianach przywraca bieżący adres
+  // (`pushState` nie wywołuje kolejnego `hashchange`) i pokazuje to samo okno co przy linku.
+  const { niezapisane } = edycja;
+  /**
+   * Adres przejścia zatwierdzonego w oknie – przepuszczany raz. Zerowany przy każdej zmianie adresu,
+   * więc nie przepuści później innego przejścia (np. gdy zatwierdzone nie wywołało `hashchange`).
+   */
+  const zatwierdzony = useRef<string>(undefined);
+  useEffect(
+    () =>
+      ustawStrazTrasy((e) => {
+        const nowy = new URL(e.newURL).hash || '#/';
+        const przepusc = zatwierdzony.current === nowy;
+        zatwierdzony.current = undefined;
+        if (przepusc || !niezapisane) return false;
+        if (wProjekcieAdres(nowy, wProjekcie)) return false;
+        // Wpis, do którego prowadził „Wstecz”, zostaje w historii – adres edytora wraca jako nowy
+        // wpis, więc kolejne „Wstecz” znów zapyta o zapis.
+        window.history.pushState(null, '', e.oldURL);
+        ustawCel(nowy);
+        return true;
+      }),
+    [niezapisane, wProjekcie],
+  );
+  const przejdz = (adres: string) => {
+    ustawCel(undefined);
+    // Ten sam zapis co w `e.newURL` (kodowanie znaków przez przeglądarkę).
+    zatwierdzony.current = new URL(adres, window.location.href).hash;
+    window.location.hash = adres;
   };
   const okno = cel && (
     <OknoModalne tytul={t('projekt.wyjscieTytul')} zamknij={() => ustawCel(undefined)}>
@@ -70,23 +108,13 @@ export function useStrazWyjscia(edycja: ProjektWEdycji) {
           onClick={() => {
             void edycja
               .zapiszTeraz()
-              .then(() => {
-                ustawCel(undefined);
-                window.location.hash = cel;
-              })
+              .then(() => przejdz(cel))
               .catch(() => ustawCel(undefined));
           }}
         >
           {t('projekt.zapiszIWyjdz')}
         </button>
-        <button
-          type="button"
-          className="niebezpieczny"
-          onClick={() => {
-            ustawCel(undefined);
-            window.location.hash = cel;
-          }}
-        >
+        <button type="button" className="niebezpieczny" onClick={() => przejdz(cel)}>
           {t('projekt.wyjdzBezZapisu')}
         </button>
         <button type="button" autoFocus onClick={() => ustawCel(undefined)}>

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { dodaj, kreator, panel } from './szablonUI';
+import { zapisano } from './pomoc';
 
 /**
  * N8: jedna biblioteka użytkownika – to, co dodane w Bibliotekach albo w edytorze jednego projektu,
@@ -63,6 +64,8 @@ test('obraz wgrany w edytorze jednego projektu jest w wyborze w drugim; ten sam 
   await page.getByTestId('plik-stalego-obrazu').setInputFiles(plik);
   const lista = panel(page).getByLabel('Obraz z biblioteki');
   await expect(lista).toHaveValue('obraz-herb');
+  // Zapis przed wyjściem z projektu – inaczej wyjście zatrzymuje okno „Niezapisane zmiany”.
+  await zapisano(page);
 
   await kreator(page, { nazwa: 'Projekt B', format: 'Standard / Poker', uklad: 'Pusta karta' });
   await dodaj(page, 'Obraz');
@@ -75,6 +78,7 @@ test('obraz wgrany w edytorze jednego projektu jest w wyborze w drugim; ten sam 
   // Ten sam plik (inna nazwa) wgrany drugi raz – odwołanie do istniejącego wpisu, bez nowego.
   await page.getByTestId('plik-stalego-obrazu').setInputFiles({ ...plik, name: 'herb-kopia.png' });
   await expect(listaB).toHaveValue('obraz-herb');
+  await zapisano(page);
   await page.goto('./#/biblioteki/obrazy');
   await expect(page.getByTestId('siatka-biblioteki').getByRole('listitem')).toHaveCount(1);
 });
