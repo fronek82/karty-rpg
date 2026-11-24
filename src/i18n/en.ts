@@ -548,6 +548,32 @@ export const en: Slownik = {
   'zgodnosc.rozmiar':
     'Front {przod} mm, back {tyl} mm – the back will be stretched to fit the front.',
   'zgodnosc.rogi': 'Corner radius: front {przod} mm, back {tyl} mm.',
+  'zgodnosc.tytul': 'Front and back sizes differ',
+  'zgodnosc.opisPrzypisania': 'The back “{tyl}” does not match the fronts you assign it to:',
+  'zgodnosc.para': '{nazwa}: front {przod}, back {tyl}',
+  'zgodnosc.paraRogi': '{nazwa}: front corners {przod} mm, back {tyl} mm',
+  'zgodnosc.skutek': 'On the sheet the back will be fitted to the front size (stretched).',
+  'zgodnosc.przypiszMimo': 'Assign anyway',
+  'zgodnosc.anuluj': 'Cancel',
+  'zgodnosc.generujMimo': 'Generate anyway',
+  'zgodnosc.druk': 'Front and back sizes differ – backs will be stretched to the front size:',
+  'zmianaRozmiaru.tytul': 'Resizing a linked template',
+  'zmianaRozmiaru.tylUzywany': 'This back is used by {liczba}{rozmiar}: {lista}.',
+  'zmianaRozmiaru.przodMaTyl': 'This front has {liczba}{rozmiar} assigned: {lista}.',
+  'zmianaRozmiaru.pozycja': '{nazwa} ({rozmiar} mm)',
+  'zmianaRozmiaru.skutek': 'After changing to {rozmiar} mm they will no longer match.',
+  'zmianaRozmiaru.skutekRogi':
+    'After changing the corner radius to {promien} mm they will no longer match.',
+  'zmianaRozmiaru.kopia': 'Create a copy in the new size',
+  'zmianaRozmiaru.kopiaOpis':
+    'The original stays unchanged and assigned; the copy is unassigned and opens in the editor.',
+  'zmianaRozmiaru.mimo': 'Change anyway',
+  'zmianaRozmiaru.anuluj': 'Cancel',
+  'zmianaRozmiaru.nazwaKopii': '{nazwa} ({rozmiar})',
+  'dopasowanieZawartosci.tytul': 'Content when resizing',
+  'dopasowanieZawartosci.skaluj': 'Scale content proportionally',
+  'dopasowanieZawartosci.zostaw': 'Keep elements in the same places',
+  'drzewo.pozaKarta': 'Element extends beyond the card',
   'kreator.podglad': 'Size preview',
   'kreator.anuluj': 'Cancel',
   'kreator.dalej': 'Next: field layout ►',
@@ -1634,6 +1660,8 @@ export const en: Slownik = {
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
 export const enMnoga: SlownikMnogi = {
+  'zgodnosc.przody': { one: '{n} front', other: '{n} fronts' },
+  'zgodnosc.tyly': { one: '{n} back', other: '{n} backs' },
   'pasek.usunietoWiele': { one: 'Deleted {n} item', other: 'Deleted {n} items' },
   'pasek.przywroconoWiele': { one: 'Restored {n} item.', other: 'Restored {n} items.' },
   'mieszane.zajete': {

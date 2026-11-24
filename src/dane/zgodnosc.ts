@@ -1,6 +1,14 @@
 import type { Mm } from '../model/jednostki';
 import type { Projekt } from '../model/projekt';
-import { wymiaryKarty, type Rewers, type Szablon } from '../model/szablon';
+import {
+  czyKontener,
+  wymiaryKarty,
+  type Kontener,
+  type Rewers,
+  type Rozmiar,
+  type Szablon,
+  type Wezel,
+} from '../model/szablon';
 import { rewersKarty } from './rewers';
 
 /**
@@ -82,6 +90,91 @@ export function powiazania(p: Projekt, strona: 'przod' | 'tyl', id: string): Pow
       wynik.set(r.id, { strona: 'tyl', id: r.id, nazwa: r.nazwa, wymiary: wymiaryTylu(r) });
     if (strona === 'tyl' && r.id === id)
       wynik.set(s.id, { strona: 'przod', id: s.id, nazwa: s.nazwa, wymiary: wymiaryPrzodu(s) });
+  }
+  return [...wynik.values()];
+}
+
+/** Sposób dopasowania zawartości karty przy zmianie jej rozmiaru. */
+export type DopasowanieZawartosci = 'skaluj' | 'zostaw';
+export const DOPASOWANIA_ZAWARTOSCI: readonly DopasowanieZawartosci[] = ['skaluj', 'zostaw'];
+
+const skalujRozmiar = (r: Rozmiar | undefined, k: number): Rozmiar | undefined =>
+  r !== undefined && r !== 'auto' && 'mm' in r ? { mm: Math.round(r.mm * k * 100) / 100 } : r;
+
+/**
+ * Zawartość karty po zmianie rozmiaru z `stary` na `nowy`: „skaluj” – położenia i rozmiary (mm)
+ * elementów przeskalowane osobno w poziomie i w pionie względem nowego rozmiaru karty;
+ * „zostaw” – bez zmian (elementy poza kartą pokazuje ostrzeżenie w drzewie).
+ */
+export function dopasujZawartosc(
+  s: Szablon,
+  stary: Pick<WymiaryStrony, 'szer' | 'wys'>,
+  nowy: Pick<WymiaryStrony, 'szer' | 'wys'>,
+  tryb: DopasowanieZawartosci,
+): Szablon {
+  const sx = nowy.szer / stary.szer;
+  const sy = nowy.wys / stary.wys;
+  if (tryb === 'zostaw' || (rowne(sx, 1) && rowne(sy, 1))) return s;
+  const zaokr = (x: number) => Math.round(x * 100) / 100;
+  const skaluj = (w: Wezel): Wezel => {
+    // Obrót 90° / 270°: szerokość elementu leży w pionie karty.
+    const poprzecznie = w.pozycja?.obrot === 90 || w.pozycja?.obrot === 270;
+    const [kx, ky] = poprzecznie ? [sy, sx] : [sx, sy];
+    const x: Wezel = { ...w };
+    const szer = skalujRozmiar(w.szerokosc, kx);
+    const wys = skalujRozmiar(w.wysokosc, ky);
+    if (szer !== undefined) x.szerokosc = szer;
+    if (wys !== undefined) x.wysokosc = wys;
+    if (w.pozycja)
+      x.pozycja = { ...w.pozycja, x: zaokr(w.pozycja.x * sx), y: zaokr(w.pozycja.y * sy) };
+    return czyKontener(x) ? ({ ...x, dzieci: x.dzieci.map(skaluj) } as Wezel) : x;
+  };
+  const korzen = (k: Kontener) => ({ ...k, dzieci: k.dzieci.map(skaluj) }) as Kontener;
+  return {
+    ...s,
+    korzen: korzen(s.korzen),
+    ...(s.warianty
+      ? { warianty: s.warianty.map((w) => ({ ...w, korzen: korzen(w.korzen) })) }
+      : {}),
+  };
+}
+
+/** Elementy, których obszar na karcie wychodzi poza jej krawędzie (z wyrenderowanych ramek). */
+export function elementyPozaKarta(
+  wezly: readonly { id: string; x: number; y: number; szer: number; wys: number }[],
+  szer: number,
+  wys: number,
+  korzenId: string,
+): Set<string> {
+  const wynik = new Set<string>();
+  for (const w of wezly)
+    if (
+      w.id !== korzenId &&
+      (w.x < -TOLERANCJA ||
+        w.y < -TOLERANCJA ||
+        w.x + w.szer > szer + TOLERANCJA ||
+        w.y + w.wys > wys + TOLERANCJA)
+    )
+      wynik.add(w.id);
+  return wynik;
+}
+
+/** Niezgodne pary przód–tył w talii (karty z rozstrzygniętym tyłem), każda para raz. */
+export function niezgodnosciTalii(
+  p: Projekt,
+  taliaId: string,
+): { przod: Szablon; tyl: Rewers; roznica: Niezgodnosc }[] {
+  const talia = p.talie.find((x) => x.id === taliaId);
+  if (!talia) return [];
+  const rewersy = new Map((p.rewersy ?? []).map((r) => [r.id, r] as const));
+  const szablony = new Map(p.szablony.map((s) => [s.id, s] as const));
+  const wynik = new Map<string, { przod: Szablon; tyl: Rewers; roznica: Niezgodnosc }>();
+  for (const k of talia.karty) {
+    const s = szablony.get(k.szablonId);
+    const r = s && rewersKarty(rewersy, k, s, talia);
+    if (!s || !r || wynik.has(`${s.id}\n${r.id}`)) continue;
+    const roznica = niezgodnosc(wymiaryPrzodu(s), wymiaryTylu(r));
+    if (roznica) wynik.set(`${s.id}\n${r.id}`, { przod: s, tyl: r, roznica });
   }
   return [...wynik.values()];
 }

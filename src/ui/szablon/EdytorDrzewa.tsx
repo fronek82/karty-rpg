@@ -52,6 +52,7 @@ import { ElementyWlasneKontekst } from './elementyWlasne';
 import { adresBiblioteki, biezacyAdres } from '../biblioteki/adresy';
 import { polaczElementy, useElementyOzdobne } from '../useBiblioteka';
 import { zasobyElementow } from '../../dane/biblioteka';
+import { elementyPozaKarta } from '../../dane/zgodnosc';
 import { Liczba, Sekcja } from './Kontrolki';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWezla } from './PanelWezla';
@@ -609,6 +610,9 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     ) : undefined;
   const wymiary = (x: string) => wezlyKarty?.find((w) => w.id === x);
   const { szer, wys } = wymiaryKarty(szablon);
+  const pozaKarta = wezlyKarty
+    ? elementyPozaKarta(wezlyKarty, szer, wys, szablon.korzen.id)
+    : undefined;
   const korzen = (x: string) => x === szablon.korzen.id;
   // „Opakuj” – tylko elementy jednego rodzica (bez korzenia).
   const rodzice = new Set(aktywne.map((x) => rodzicWezla(szablon, x)?.rodzic.id));
@@ -851,7 +855,12 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
           <aside className="panel-drzewa" aria-label={u.teksty.drzewo}>
             <h2>{u.teksty.drzewo}</h2>
             <div ref={drzewo}>
-              <DrzewoSzablonu korzen={szablon.korzen} zaznaczone={aktywne} wybierz={wybierz} />
+              <DrzewoSzablonu
+                korzen={szablon.korzen}
+                zaznaczone={aktywne}
+                wybierz={wybierz}
+                pozaKarta={pozaKarta}
+              />
             </div>
             {pustaKarta && (
               <div className="pusta-lista-drzewa" data-testid="pusty-stan-drzewa">

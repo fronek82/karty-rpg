@@ -36,16 +36,20 @@ export function DrzewoSzablonu({
   korzen,
   zaznaczone,
   wybierz,
+  pozaKarta,
 }: {
   korzen: Wezel;
   zaznaczone: readonly string[];
   wybierz: (id: string, dodaj: boolean) => void;
+  /** Elementy wychodzące poza krawędzie karty – ostrzeżenie przy nazwie. */
+  pozaKarta?: ReadonlySet<string>;
 }) {
   const wiersz = (w: Wezel, poziom: number, rodzic?: Kontener): React.ReactNode => {
     const wybrany = zaznaczone.includes(w.id);
     const kontener = czyKontener(w);
     // Położenie dziecka kontenera swobodnego: X · Y (mm) i obrót.
     const poz = rodzic?.typ === 'swobodny' ? (w.pozycja ?? { x: 0, y: 0 }) : undefined;
+    const poza = !!pozaKarta?.has(w.id);
     return (
       <li
         key={w.id}
@@ -53,7 +57,7 @@ export function DrzewoSzablonu({
         aria-level={poziom}
         aria-expanded={kontener && w.dzieci.length > 0 ? true : undefined}
         aria-selected={wybrany}
-        aria-label={`${nazwaWezla(w)} – ${t(`wezel.${w.typ}`)}${poz ? `, ${opisPolozenia(poz)}` : ''}`}
+        aria-label={`${nazwaWezla(w)} – ${t(`wezel.${w.typ}`)}${poz ? `, ${opisPolozenia(poz)}` : ''}${poza ? `, ${t('drzewo.pozaKarta')}` : ''}`}
         data-wezel={w.id}
         // Jeden przystanek Tab: pierwszy zaznaczony element, bez zaznaczenia – korzeń.
         tabIndex={(zaznaczone.length ? zaznaczone[0] === w.id : poziom === 1) ? 0 : -1}
@@ -81,6 +85,15 @@ export function DrzewoSzablonu({
                   {t('polozenie.znacznikObrotKrotki', { kat: poz.obrot })}
                 </span>
               ) : null}
+            </span>
+          )}
+          {poza && (
+            <span
+              className="ostrzezenie-drzewa"
+              title={t('drzewo.pozaKarta')}
+              data-testid="poza-karta"
+            >
+              ⚠
             </span>
           )}
         </span>

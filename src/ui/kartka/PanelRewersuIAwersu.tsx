@@ -12,6 +12,7 @@ import {
   wczytajPaczkeAwersuBezRewersu,
 } from '../awersyZProjektow';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
+import { przodyDoPrzypisania, useZgodnoscTylu } from '../zgodnoscTylu';
 import { dolaczRewersGlobalnyDoProjektu, useRewersyGlobalne } from '../rewersyGlobalne';
 import type { ProjektWEdycji } from '../useProjekt';
 import {
@@ -39,6 +40,7 @@ export function PanelRewersuIAwersu({
   const { projekt, zmien } = edycja;
   const projektRewersowy = czyProjektRewersowy(projekt);
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
+  const { okno: oknoZgodnosci, potwierdz: potwierdzZgodnosc } = useZgodnoscTylu();
   const awersyInne = useAwersyZProjektow(projekt.id, projekt.szablony);
   const [status, ustawStatus] = useState('');
   const [blad, ustawBlad] = useState('');
@@ -151,6 +153,7 @@ export function PanelRewersuIAwersu({
 
   return (
     <div className="panel-rewers-awers">
+      {oknoZgodnosci}
       {talia && (lokalneAwersy.length > 0 || awersyInne.length > 0 || projektRewersowy) && (
         <div className="pole-panelu">
           <label htmlFor={idAwersu}>{t('kartka.awersWszystkich')}</label>
@@ -213,16 +216,27 @@ export function PanelRewersuIAwersu({
             value={typeof talia.rewersId === 'string' ? talia.rewersId : ''}
             onChange={(e) => {
               const { id: v, zrodlo } = wybranaOpcja(e);
+              const przody = przodyDoPrzypisania(projekt, talia.id);
               if (zrodlo === 'globalny') {
                 const wpis = rewersyGlobalne.find((w) => w.klucz === v);
                 if (wpis) {
-                  void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
-                    przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, rid),
+                  void dolaczRewersGlobalnyDoProjektu(
+                    wpis,
+                    edycja,
+                    (p, rid) => przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, rid),
+                    (r) => potwierdzZgodnosc(przody, r),
                   ).catch(() => undefined);
                 }
                 return;
               }
-              zmien((p) => przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, v || undefined));
+              const r = projekt.rewersy?.find((x) => x.id === v);
+              void (r ? potwierdzZgodnosc(przody, r) : Promise.resolve(true)).then(
+                (tak) =>
+                  tak &&
+                  zmien((p) =>
+                    przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, v || undefined),
+                  ),
+              );
             }}
           >
             <option value="">{t('rewers.bezRewersu')}</option>

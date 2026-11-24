@@ -2855,6 +2855,23 @@ button.maly {
   background: transparent;
   border: 2px double var(--tekst-przygaszony);
 }
+.ostrzezenie-drzewa {
+  margin-left: 0.35rem;
+  color: var(--zle);
+  font-weight: 600;
+}
+.wybor-dopasowania {
+  border: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.wybor-dopasowania label {
+  display: block;
+}
+.okno-zmiany-rozmiaru .wiersz-przyciskow {
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
 .kreator-kopia {
   display: flex;
   flex-wrap: wrap;

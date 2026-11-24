@@ -543,6 +543,33 @@ export const pl = {
   'zgodnosc.rozmiar':
     'Przód {przod} mm, tył {tyl} mm – tył zostanie dopasowany do przodu i zniekształcony.',
   'zgodnosc.rogi': 'Zaokrąglenie rogów: przód {przod} mm, tył {tyl} mm.',
+  'zgodnosc.tytul': 'Rozmiary przodu i tyłu się różnią',
+  'zgodnosc.opisPrzypisania': 'Tył „{tyl}” nie pasuje do przodów, którym go przypisujesz:',
+  'zgodnosc.para': '{nazwa}: przód {przod}, tył {tyl}',
+  'zgodnosc.paraRogi': '{nazwa}: rogi przodu {przod} mm, tyłu {tyl} mm',
+  'zgodnosc.skutek': 'Na arkuszu tył zostanie dopasowany do rozmiaru przodu (rozciągnięty).',
+  'zgodnosc.przypiszMimo': 'Przypisz mimo to',
+  'zgodnosc.anuluj': 'Anuluj',
+  'zgodnosc.generujMimo': 'Generuj mimo to',
+  'zgodnosc.druk':
+    'Rozmiary przodu i tyłu się różnią – tyły zostaną rozciągnięte do rozmiaru przodów:',
+  'zmianaRozmiaru.tytul': 'Zmiana rozmiaru powiązanego szablonu',
+  'zmianaRozmiaru.tylUzywany': 'Ten tył jest używany przez {liczba}{rozmiar}: {lista}.',
+  'zmianaRozmiaru.przodMaTyl': 'Do tego przodu przypisano {liczba}{rozmiar}: {lista}.',
+  'zmianaRozmiaru.pozycja': '{nazwa} ({rozmiar} mm)',
+  'zmianaRozmiaru.skutek': 'Po zmianie na {rozmiar} mm przestaną do siebie pasować.',
+  'zmianaRozmiaru.skutekRogi':
+    'Po zmianie zaokrąglenia rogów na {promien} mm przestaną do siebie pasować.',
+  'zmianaRozmiaru.kopia': 'Utwórz kopię w nowym rozmiarze',
+  'zmianaRozmiaru.kopiaOpis':
+    'Oryginał zostaje bez zmian i dalej przypisany; kopia nie jest przypisana i otworzy się w edytorze.',
+  'zmianaRozmiaru.mimo': 'Zmień mimo to',
+  'zmianaRozmiaru.anuluj': 'Anuluj',
+  'zmianaRozmiaru.nazwaKopii': '{nazwa} ({rozmiar})',
+  'dopasowanieZawartosci.tytul': 'Zawartość przy zmianie rozmiaru',
+  'dopasowanieZawartosci.skaluj': 'Przeskaluj zawartość proporcjonalnie',
+  'dopasowanieZawartosci.zostaw': 'Zostaw elementy w tych samych miejscach',
+  'drzewo.pozaKarta': 'Element wychodzi poza kartę',
   'kreator.podglad': 'Podgląd rozmiaru',
   'kreator.anuluj': 'Anuluj',
   'kreator.dalej': 'Dalej: układ pól ►',
@@ -1642,6 +1669,13 @@ export type FormyMnogie = Partial<Record<Intl.LDMLPluralRule, string>> & { other
  * i other (liczby ułamkowe); parametr `{n}` to liczba, według której wybrano formę.
  */
 export const plMnoga = {
+  'zgodnosc.przody': {
+    one: '{n} przód',
+    few: '{n} przody',
+    many: '{n} przodów',
+    other: '{n} przodu',
+  },
+  'zgodnosc.tyly': { one: '{n} tył', few: '{n} tyły', many: '{n} tyłów', other: '{n} tyłu' },
   'pasek.usunietoWiele': {
     one: 'Usunięto {n} element',
     few: 'Usunięto {n} elementy',
