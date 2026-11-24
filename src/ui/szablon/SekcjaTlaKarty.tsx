@@ -187,7 +187,7 @@ export function SekcjaTlaKarty({
     </>
   );
   return (
-    <Sekcja tytul={t('tloKarty.tytul')} otwarta>
+    <Sekcja tytul={t('tloKarty.tytul')}>
       <Przelacznik
         etykieta={t('tloKarty.rodzaj')}
         opcje={(['brak', 'kolor', 'obraz', 'wzor'] as const).map((w) => ({

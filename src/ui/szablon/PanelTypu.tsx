@@ -256,7 +256,7 @@ export function PanelTypu({
       );
     case 'znaczniki':
       return (
-        <Sekcja tytul={t('wlasciwosci.znaczniki')} otwarta>
+        <Sekcja tytul={t('wlasciwosci.znaczniki')}>
           <div className="dwa-pola">
             <Liczba
               etykieta={t('wlasciwosci.kolumny')}
@@ -317,7 +317,7 @@ export function PanelTypu({
       );
     case 'obraz':
       return (
-        <Sekcja tytul={t('wlasciwosci.obraz')} otwarta>
+        <Sekcja tytul={t('wlasciwosci.obraz')}>
           <Lista
             etykieta={t('wlasciwosci.dopasowanie')}
             opcje={(['dopasuj', 'wypelnij', 'rozciagnij'] as const).map((k) => ({
@@ -366,7 +366,7 @@ export function PanelTypu({
     case 'ikona': {
       const wybranySvg = pole.element ? grafikiSvg.find((e) => e.id === pole.element) : undefined;
       return (
-        <Sekcja tytul={t('wlasciwosci.ikona')} otwarta>
+        <Sekcja tytul={t('wlasciwosci.ikona')}>
           <Lista
             etykieta={t('ikona.typ')}
             opcje={[
@@ -517,7 +517,7 @@ function PanelTabeli({
   return (
     <>
       {!wiele && (
-        <Sekcja tytul={t('tabela.kolumny', { liczba: kol.length })} otwarta>
+        <Sekcja tytul={t('tabela.kolumny', { liczba: kol.length })}>
           <ol className="kolumny-tabeli">
             {kol.map((k, i) => (
               <li key={k.klucz}>
@@ -640,7 +640,7 @@ function PanelTabeli({
           </button>
         </Sekcja>
       )}
-      <Sekcja tytul={t('tabela.wiersze')} otwarta>
+      <Sekcja tytul={t('tabela.wiersze')}>
         <Liczba
           etykieta={t('tabela.liczbaWierszy')}
           wartosc={tabela.wiersze ?? 1}

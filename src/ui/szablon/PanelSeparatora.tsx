@@ -95,7 +95,7 @@ export function PanelSeparatora({
     !!rysunek && rysunek.szerokosc > 0 && znajdzElement(rysunek.motyw, wlasne)?.rodzaj === 'motyw';
   const ozdoby = !!pole.zakonczenia || !!pole.srodek || !!rysunek;
   return (
-    <Sekcja tytul={t('wezel.separator')} otwarta>
+    <Sekcja tytul={t('wezel.separator')}>
       <PoleSzkicu
         {...(pole.szkic ? { wartosc: pole.szkic } : {})}
         zmien={(v) => ustaw({ szkic: v })}
