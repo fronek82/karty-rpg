@@ -183,29 +183,43 @@ export function PanelWezla({
               }
             />
           )}
-          {!bezDanych && pole.klucz ? (
+          {!bezDanych && pole.klucz && (
             <p className="podpis">{t('szablon.kluczDanych', { klucz: pole.klucz })}</p>
-          ) : (
-            (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
-              <div className="pole-panelu">
-                <label htmlFor={`staly-${id}`}>{t('wlasciwosci.stalyTekst')}</label>
-                <PoleWielowierszowe
-                  kluczRozmiaru={`szablon:staly:${pole.typ === 'tekst' ? 'tekst' : 'krotki'}`}
-                  id={`staly-${id}`}
-                  rows={pole.typ === 'tekst' ? 2 : 1}
-                  value={stalyTekst}
-                  onChange={(e) =>
-                    zmienWezel((w) => ({ ...w, tekst: e.target.value }) as Wezel, `staly:${id}`)
-                  }
-                  onPaste={(e) =>
-                    obsluzWklejenieZPdf(e, (v) => zmienWezel((w) => ({ ...w, tekst: v }) as Wezel))
-                  }
-                />
-              </div>
-            )
+          )}
+          {/* Wartość przykładowa – w tym samym miejscu na przodzie i na tyle (pod źródłem). */}
+          {!bezDanych && pole.klucz && pole.typ !== 'obraz' && (
+            <div className="pole-panelu">
+              <label htmlFor={`przyklad-${id}`}>{t('szablon.przyklad')}</label>
+              <PoleWielowierszowe
+                kluczRozmiaru={`szablon:przyklad:${pole.typ === 'tekst' ? 'tekst' : 'krotki'}`}
+                id={`przyklad-${id}`}
+                rows={pole.typ === 'tekst' ? 3 : 1}
+                value={szablon.przyklad?.[pole.klucz] ?? ''}
+                onChange={(e) => zmienPrzyklad(pole.klucz!, e.target.value, !czyWklejanieWToku())}
+                onPaste={(e) => obsluzWklejenieZPdf(e, (v) => zmienPrzyklad(pole.klucz!, v, false))}
+              />
+              <p className="podpis">{t('szablon.przykladOpis')}</p>
+            </div>
           )}
           {bezDanych && (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
             <PowiazanieZPrzodem pole={pole} przod={przodTylu} />
+          )}
+          {(bezDanych || !pole.klucz) && (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
+            <div className="pole-panelu">
+              <label htmlFor={`staly-${id}`}>{t('wlasciwosci.stalyTekst')}</label>
+              <PoleWielowierszowe
+                kluczRozmiaru={`szablon:staly:${pole.typ === 'tekst' ? 'tekst' : 'krotki'}`}
+                id={`staly-${id}`}
+                rows={pole.typ === 'tekst' ? 2 : 1}
+                value={stalyTekst}
+                onChange={(e) =>
+                  zmienWezel((w) => ({ ...w, tekst: e.target.value }) as Wezel, `staly:${id}`)
+                }
+                onPaste={(e) =>
+                  obsluzWklejenieZPdf(e, (v) => zmienWezel((w) => ({ ...w, tekst: v }) as Wezel))
+                }
+              />
+            </div>
           )}
           {pole.klucz && (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
             <div className="pole-panelu">
@@ -579,20 +593,6 @@ export function PanelWezla({
         />
       )}
 
-      {!wiele && pole?.klucz && pole.typ !== 'obraz' && (
-        <div className="pole-panelu">
-          <label htmlFor={`przyklad-${id}`}>{t('szablon.przyklad')}</label>
-          <PoleWielowierszowe
-            kluczRozmiaru={`szablon:przyklad:${pole.typ === 'tekst' ? 'tekst' : 'krotki'}`}
-            id={`przyklad-${id}`}
-            rows={pole.typ === 'tekst' ? 3 : 1}
-            value={szablon.przyklad?.[pole.klucz] ?? ''}
-            onChange={(e) => zmienPrzyklad(pole.klucz!, e.target.value, !czyWklejanieWToku())}
-            onPaste={(e) => obsluzWklejenieZPdf(e, (v) => zmienPrzyklad(pole.klucz!, v, false))}
-          />
-          <p className="podpis">{t('szablon.przykladOpis')}</p>
-        </div>
-      )}
       {!wiele && pole?.typ === 'tabela' && (
         <Sekcja tytul={t('szablon.przyklad')}>
           {kluczeTabeli(pole).map((k, i) => {
