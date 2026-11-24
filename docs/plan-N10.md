@@ -78,3 +78,12 @@ na kartach wartość karty (`renderujRewers`, `awers`), ale edytor tyłu tego ni
 - Decyzja: „Stały tekst” zostaje także przy powiązanym polu – to treść dla kart bez wartości.
 - Decyzja: zmiana przykładu z edytora tyłu trafia do tej samej historii cofania; miniatura tyłu
   pokazuje przykłady przodu (jak miniatura przodu).
+
+## Poprawka po etapie: własna wartość przykładowa tyłu (schemat 32)
+
+- Każde pole tekstowe (i wartość) tyłu ma okno „Wartość przykładowa” u góry panelu, jak na
+  przodzie. Pole powiązane z przodem – przykład przodu (wspólny); inne – własny przykład tyłu
+  `Rewers.przyklad` (id pola → tekst), tylko do podglądu w edytorze (`rewersZPrzykladami`);
+  na kartach i w druku – stały tekst.
+- Schemat 31→32: opcjonalne `Rewers.przyklad`, migracja bez zmian danych. Przy zapisie widoku
+  szablonu (`szablonDoRewersu`) zostają tylko niepuste przykłady istniejących pól.

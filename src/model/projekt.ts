@@ -32,8 +32,10 @@ import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 28 – N4: wartość w kształcie – `zachowajProporcje`, `ramiona`, nowe figury, etykieta obok kształtu.
  * 29 – N5: wzór tła karty (`wzorTla` awersu i rewersu: linie, kratka, romby, kropki).
  * 30 – N9: wzór tła z biblioteki SVG (`wzorTla.rodzaj: 'svg'`, odwołanie do elementu) i układ kafelków.
+ * 31 – N10: zaokrąglenie rogów i postrzępienie tyłu (`Rewers.promienRogow`, `postrzepienie`).
+ * 32 – teksty przykładowe pól tyłu do podglądu (`Rewers.przyklad`).
  */
-export const WERSJA_SCHEMATU = 31;
+export const WERSJA_SCHEMATU = 32;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

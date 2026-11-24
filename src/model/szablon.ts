@@ -636,6 +636,11 @@ export interface Rewers {
    */
   promienRogow?: Mm;
   postrzepienie?: Postrzepienie;
+  /**
+   * Teksty przykładowe pól tyłu do podglądu w edytorze (id pola → tekst). Nie trafiają na karty:
+   * tam jest stały tekst albo wartość pola przodu o tej samej nazwie.
+   */
+  przyklad?: Record<string, string>;
 }
 
 /** Brak pola dziedziczy, null jawnie wyłącza rewers. */

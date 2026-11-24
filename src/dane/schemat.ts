@@ -397,6 +397,7 @@ export const schematRewersu = z.strictObject({
   teksturaZabarwienie: opc(obj({ kolor: z.string(), krycie: liczba.min(0).max(1) })),
   rozmiar: obj({ tryb: z.literal('mm'), szerokosc: dodatnia, wysokosc: dodatnia }),
   korzen: kontener.and(obj({ typ: z.literal('swobodny') })),
+  przyklad: opc(z.record(z.string(), z.string())),
 });
 
 const ustawieniaObrazu = obj({
@@ -830,6 +831,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
   // kafelków (`uklad`) – pola opcjonalne, bez zmian danych (wbudowane wzory wyglądają jak dotąd).
   // 30→31: opcjonalne `promienRogow` i `postrzepienie` rewersu (tyłu) – bez zmian danych; tył bez
   // zaokrąglenia rogów dopasowuje je do przodu jak dotąd.
+  // 31→32: opcjonalne teksty przykładowe pól tyłu (`Rewers.przyklad`) – bez zmian danych.
   projekt: {
     1: (d) => d,
     2: (d) => d,
@@ -866,6 +868,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     28: (d) => d,
     29: (d) => d,
     30: (d) => d,
+    31: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -903,6 +906,7 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     28: (d) => d,
     29: (d) => d,
     30: (d) => d,
+    31: (d) => d,
   },
 };
 

@@ -29,7 +29,7 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   w szablonie”, kontrola zgodności rozmiarów przodu i tyłu (`dane/zgodnosc.ts`), w UI „Przód”
   i „Tył” zamiast „Awers” i „Rewers” (w kodzie, kluczach i plikach nazwy bez zmian).
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 31` (`src/model/projekt.ts`), baza Dexie w wersji 5.
+- Schemat projektu: `WERSJA_SCHEMATU = 32` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
 ## Gdzie co jest
 
