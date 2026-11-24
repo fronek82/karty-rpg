@@ -31,8 +31,12 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
 - Ukończone N11 (`docs/plan-N11.md`): „Kolory projektu” przy polach koloru – kolory użyte
   w przodach i tyłach projektu oraz zapisane w `Projekt.paleta` (`src/dane/koloryProjektu.ts`,
   kontekst `ui/szablon/koloryProjektu.tsx`).
+- Ukończone N12 (`docs/plan-N12.md`): przełącznik odmian – `Kontener.przelacznik` (kolumna danych,
+  odmiana domyślna) i `odmiana` dziecka; na karcie widać jedno dziecko wybrane wartością z danych
+  (`wybranaOdmiana` w `model/szablon.ts`, `ukryteOdmianyPrzelacznikow` w `silnik/karta.ts`), tył
+  dopasowuje przełącznik po nazwie, panel `ui/szablon/PanelOdmian.tsx`.
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 33` (`src/model/projekt.ts`), baza Dexie w wersji 5.
+- Schemat projektu: `WERSJA_SCHEMATU = 34` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
 ## Gdzie co jest
 

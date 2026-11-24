@@ -18,6 +18,7 @@ import { nazwaRozmiaru, nazwaWariantu } from '../nazwyPakietu';
 import type { Arkusz } from '../../model/arkusz';
 import {
   korzenieSzablonu,
+  normalizujOdmiane,
   polaDrzewa,
   type Pole,
   type PoleObraz,
@@ -43,6 +44,9 @@ function polaSzablonu(s: Szablon): Map<string, Pole> {
     for (const p of polaDrzewa(k)) if (p.klucz && !m.has(p.klucz)) m.set(p.klucz, p);
   return m;
 }
+
+/** Wartość listy odmian przy kilku kartach o różnych wartościach (nie trafia do danych). */
+const ROZNE = '\u0000rozne';
 
 /** Typ karty (menu pakietu) dla szablonu – nazwa i rozmiary do wyboru. */
 export function typDlaSzablonu(pakiet: Pakiet | undefined, szablonId: string) {
@@ -235,6 +239,37 @@ export function PanelKart({
                     +
                   </button>
                 </div>
+              </div>
+            );
+          }
+          if (kol.opcje) {
+            // Przełącznik odmian: wybór z listy; wartość spoza listy (np. literówka z CSV) też widać.
+            // Wartość pasująca do odmiany (bez wielkości liter i spacji) – jak w silniku – to ta odmiana.
+            const pasujaca = w
+              ? kol.opcje.find((o) => normalizujOdmiane(o.wartosc) === normalizujOdmiane(w))
+              : undefined;
+            const spoza = w && !pasujaca ? w : undefined;
+            return (
+              <div key={kol.klucz} className="pole-panelu">
+                <label htmlFor={id}>{nazwa}</label>
+                <select
+                  id={id}
+                  value={w === undefined ? ROZNE : (pasujaca?.wartosc ?? w)}
+                  onChange={(e) => ustaw(kol.klucz, e.target.value)}
+                >
+                  {w === undefined && (
+                    <option value={ROZNE} disabled>
+                      {t('kartka.rozne')}
+                    </option>
+                  )}
+                  <option value="">{t('odmiany.domyslnaKarty')}</option>
+                  {kol.opcje.map((o) => (
+                    <option key={o.wartosc} value={o.wartosc}>
+                      {o.nazwa ? `${o.wartosc} – ${o.nazwa}` : o.wartosc}
+                    </option>
+                  ))}
+                  {spoza && <option value={spoza}>{spoza}</option>}
+                </select>
               </div>
             );
           }

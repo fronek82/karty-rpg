@@ -35,8 +35,9 @@ import type { Kolor, Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 31 – N10: zaokrąglenie rogów i postrzępienie tyłu (`Rewers.promienRogow`, `postrzepienie`).
  * 32 – teksty przykładowe pól tyłu do podglądu (`Rewers.przyklad`).
  * 33 – N11: kolory zapisane w projekcie (`Projekt.paleta`).
+ * 34 – N12: przełącznik odmian kontenera (`Kontener.przelacznik`, `odmiana` węzła).
  */
-export const WERSJA_SCHEMATU = 33;
+export const WERSJA_SCHEMATU = 34;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

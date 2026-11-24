@@ -6,6 +6,7 @@ import {
   duplikujWezel,
   nowyWezel,
   opakuj,
+  pokazOdmianyZaznaczenia,
   przesunWezel,
   rodzicWezla,
   skopiujStyl,
@@ -401,7 +402,8 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   // Podgląd: silnik jak na kartce i w PDF. Zależy tylko od tego, co widać na karcie.
   const zasoby = edycja.zasoby.zasoby;
   const widoczny = szablon && tmp ? zastosujZmiany(szablon, tmp) : szablon;
-  const kluczRysunku = widoczny ? u.kluczRysunku(widoczny) : '';
+  // Zaznaczony element w odmianie przełącznika – podgląd pokazuje tę odmianę.
+  const kluczRysunku = widoczny ? u.kluczRysunku(pokazOdmianyZaznaczenia(widoczny, aktywne)) : '';
   const podglad = usePodglad(kluczRysunku, u.rysuj, u.przedrostekSvg, zasoby);
   const scenaPodgladu = podglad && 'scena' in podglad ? podglad.scena : undefined;
   useMiniatura(u.miniatura, edycja, id, !!szablon, scenaPodgladu);

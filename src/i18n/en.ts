@@ -213,6 +213,7 @@ export const en: Slownik = {
   'ostrzezenie.niskaRozdzielczoscRamki':
     'the frame corners from the image are only {a} dpi (at least 300 recommended) – use a larger image or a thinner frame',
   'ostrzezenie.nieznanyElementOzdobny': 'unknown ornament “{a}” – ornament skipped',
+  'ostrzezenie.nieznanaOdmiana': 'no variant “{a}” – default variant shown',
   'ostrzezenie.nieznanePoleDoOmijania': 'the template points to an unknown field to avoid “{a}”',
   'ostrzezenie.brakSzablonu': 'unknown card template',
   'ostrzezenie.kartaInnyRozmiar': 'the card has a different size than the sheet slot',
@@ -971,6 +972,23 @@ export const en: Slownik = {
   'grupy.opis': 'Style changes apply to all fields in this group.',
   'grupy.usun': 'Delete group and keep field styles',
   'koloryZDanych.tytul': 'Color from data',
+  'odmiany.nazwaDomyslna': 'Variant',
+  'odmiany.wDrzewie': 'variants from data',
+  'odmiany.wartoscWDrzewie': 'Variant value in card data',
+  'odmiany.tytul': 'Variants from data',
+  'odmiany.wlacz': 'Show one variant chosen in card data',
+  'odmiany.opis':
+    'Each element inside is one variant. A card shows only the one whose value you enter in the “{kolumna}” column (in CSV or in the card panel).',
+  'odmiany.opisTylu':
+    'The variant is chosen by the value of the front switch with the same name. Without it – the default variant.',
+  'odmiany.wartosc': 'Value of variant “{nazwa}”',
+  'odmiany.domyslna': 'When the card has no value',
+  'odmiany.pierwsza': 'first variant',
+  'odmiany.brakDzieci': 'Add elements inside – each one becomes a variant.',
+  'odmiany.podglad': 'The preview shows the variant containing the selected element.',
+  'odmiany.powtorzenie':
+    'Several variants have the value “{wartosc}” – the card shows the first one.',
+  'odmiany.domyslnaKarty': '— default —',
   'koloryZDanych.zrodlo': 'Color source field',
   'koloryZDanych.staly': 'Use a fixed color',
   'koloryZDanych.brakPol': 'Add a data field to the template to set a color rule.',

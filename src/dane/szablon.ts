@@ -14,7 +14,10 @@ import {
   stylPola,
   type StylTekstu,
   type Szablon,
+  normalizujOdmiane,
   ulamkiKotwicy,
+  wartoscOdmiany,
+  wolnaOdmiana,
   type Wezel,
   wezlyDrzewa,
   wszystkieWezly,
@@ -39,11 +42,14 @@ export type RodzajNowego =
 const CZARNY: Kolor = '#000000';
 const tresc = (rozmiar: number) => ({ czcionka: 'tresc', rozmiar: pt(rozmiar) });
 
-/** Klucze danych używane w szablonie (pola i komórki tabel). */
+/** Klucze danych używane w szablonie (pola, komórki tabel i przełączniki odmian). */
 export function kluczeSzablonu(s: Szablon): Set<string> {
   const k = new Set<string>();
   for (const w of wszystkieWezly(s)) {
-    if (czyKontener(w)) continue;
+    if (czyKontener(w)) {
+      if (w.przelacznik?.klucz) k.add(w.przelacznik.klucz);
+      continue;
+    }
     if (w.klucz) k.add(w.klucz);
     if (w.typ === 'tabela') for (const c of kluczeTabeli(w)) k.add(c);
   }
@@ -393,20 +399,32 @@ export function zmienWezel(s: Szablon, id: string, f: (w: Wezel) => Wezel): Szab
 /** Wstawia węzeł: do zaznaczonego kontenera (na koniec) albo za zaznaczonym polem. */
 export function wstawWezel(s: Szablon, celId: string, nowy: Wezel): Szablon {
   const cel = znajdzWezel(s, celId) ?? s.korzen;
-  if (czyKontener(cel))
-    return zmienWezel(
-      s,
-      cel.id,
-      (k) => ({ ...k, dzieci: [...(k as Kontener).dzieci, nowy] }) as Kontener,
-    );
+  if (czyKontener(cel)) return wstawDo(s, cel.id, cel.dzieci.length, nowy);
   const r = rodzicWezla(s, cel.id)!;
   return wstawDo(s, r.rodzic.id, r.indeks + 1, nowy);
+}
+
+/**
+ * Wartość odmiany elementu wstawianego do kontenera: w przełączniku – własna, jeśli wolna,
+ * inaczej pierwszy wolny numer (kopia, przeniesienie, nowy element nie zasłaniają istniejących
+ * odmian); poza przełącznikiem – bez wartości.
+ */
+function zOdmiana(k: Kontener, w: Wezel): Wezel {
+  if (!k.przelacznik) {
+    if (w.odmiana === undefined) return w;
+    const { odmiana: _o, ...reszta } = w;
+    void _o;
+    return reszta as Wezel;
+  }
+  const zajete = new Set(k.dzieci.map((_, i) => normalizujOdmiane(wartoscOdmiany(k, i))));
+  if (w.odmiana?.trim() && !zajete.has(normalizujOdmiane(w.odmiana))) return w;
+  return { ...w, odmiana: wolnaOdmiana(k) };
 }
 
 function wstawDo(s: Szablon, rodzicId: string, indeks: number, nowy: Wezel): Szablon {
   return zmienWezel(s, rodzicId, (k) => {
     const dzieci = [...(k as Kontener).dzieci];
-    dzieci.splice(indeks, 0, nowy);
+    dzieci.splice(indeks, 0, zOdmiana(k as Kontener, nowy));
     return { ...(k as Kontener), dzieci };
   });
 }
@@ -503,12 +521,15 @@ export function opakuj(
   // W kontenerze swobodnym nowy kontener dziedziczy całą `pozycja` pierwszego z opakowanych elementów
   // (x, y, kotwicę i obrót); opakowane elementy ją tracą i obracają się razem z kontenerem.
   const pozycja = wSwobodnym ? wybrane[0]?.pozycja : undefined;
+  // W przełączniku odmian nowy kontener przejmuje wartość odmiany pierwszego elementu.
+  const odmiana = r.rodzic.przelacznik ? wybrane[0]?.odmiana : undefined;
   const nowy: Kontener = {
     id: noweIdWezla(s, typ),
     nazwa,
     typ,
     odstep: 1,
     ...(pozycja ? { pozycja: { ...pozycja } } : {}),
+    ...(odmiana ? { odmiana } : {}),
     dzieci,
   };
   const zmieniony = zmienWezel(s, r.rodzic.id, (k) => {
@@ -540,7 +561,14 @@ export function duplikujWezel(
     ids.add(nid);
     noweIds.set(x.id, nid);
     const y = { ...x, id: nid, ...(x.nazwa ? { nazwa: `${x.nazwa} ${dopisek}` } : {}) } as Wezel;
-    if (czyKontener(y)) return y;
+    if (czyKontener(y)) {
+      if (y.przelacznik?.klucz) {
+        const k = kluczZNazwy(y.nazwa ?? y.przelacznik.klucz, klucze);
+        klucze.add(k);
+        y.przelacznik = { ...y.przelacznik, klucz: k };
+      }
+      return y;
+    }
     // Etykieta równa nazwie idzie za nią (jak przy zmianie nazwy w panelu).
     if ((y.typ === 'tekst' || y.typ === 'wartosc') && y.etykieta && y.etykieta.tekst === x.nazwa)
       y.etykieta = { ...y.etykieta, tekst: y.nazwa! };
@@ -1148,4 +1176,45 @@ export function ukladZWezlow(
   return new Map(
     wezly.map((w) => [w.id, w.obrot ? { ...w.lokalne, obrot: w.obrot } : w.lokalne] as const),
   );
+}
+
+/**
+ * Podgląd w edytorze: przełącznik odmian, w którego odmianie leży zaznaczony element, pokazuje
+ * tę odmianę (bez danych karty). Bez takich przełączników – ten sam szablon.
+ */
+export function pokazOdmianyZaznaczenia(s: Szablon, zaznaczone: readonly string[]): Szablon {
+  if (!zaznaczone.length) return s;
+  const szukane = new Set(zaznaczone);
+  let zmieniono = false;
+  // Zwraca węzeł (może zmieniony) i to, czy w jego poddrzewie jest zaznaczony element.
+  const odwiedz = (w: Wezel): [Wezel, boolean] => {
+    if (!czyKontener(w)) return [w, szukane.has(w.id)];
+    let zawiera = szukane.has(w.id);
+    let wybrany = -1;
+    const dzieci = w.dzieci.map((d, i) => {
+      const [x, z] = odwiedz(d);
+      if (z) {
+        zawiera = true;
+        if (wybrany < 0) wybrany = i;
+      }
+      return x;
+    });
+    let x: Kontener = dzieci.some((d, i) => d !== w.dzieci[i]) ? { ...w, dzieci } : w;
+    if (x.przelacznik && wybrany >= 0) {
+      zmieniono = true;
+      // Zaznaczone dziecko na początek, przełącznik bez klucza i wartości – widać pierwsze
+      // (także przy powtórzonych wartościach odmian). Widoczne jest jedno, więc kolejność
+      // pozostałych nie zmienia podglądu.
+      x = {
+        ...x,
+        przelacznik: {},
+        dzieci: [dzieci[wybrany]!, ...dzieci.filter((_, i) => i !== wybrany)],
+      };
+    }
+    return [x, zawiera];
+  };
+  const korzen = odwiedz(s.korzen)[0] as Kontener;
+  const warianty = s.warianty?.map((v) => ({ ...v, korzen: odwiedz(v.korzen)[0] as Kontener }));
+  if (!zmieniono) return s;
+  return { ...s, korzen, ...(warianty ? { warianty } : {}) };
 }
