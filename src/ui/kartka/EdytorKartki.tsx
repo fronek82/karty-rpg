@@ -95,6 +95,7 @@ import {
 import { obrazyScen, scenyKart, scenyStron, spakuj, type FormatObrazu } from '../eksportObrazow';
 import type { ZadaniePdf } from '../../druk/budowaPdf';
 import { nazwaPliku, zapiszPlik } from '../pliki';
+import { niezgodnosciDruku, przodyDoPrzypisania, useZgodnoscTylu } from '../zgodnoscTylu';
 import {
   dolaczRewersGlobalnyDoProjektu,
   useRewersyGlobalne,
@@ -1228,12 +1229,22 @@ export function EdytorKartki({
     }
   };
 
+  const {
+    okno: oknoZgodnosci,
+    potwierdz: potwierdzZgodnosc,
+    pytaj: pytajZgodnosc,
+  } = useZgodnoscTylu();
   const wybierzRewersKarty = (
     taliaId: string,
     kartaId: string,
     rewersId: PrzypisanieRewersu | undefined,
   ) => {
-    zmien((p) => przypiszRewers(p, { rodzaj: 'karta', taliaId, id: kartaId }, rewersId));
+    const r = projekt.rewersy?.find((x) => x.id === rewersId);
+    const przody = przodyDoPrzypisania(projekt, taliaId, [kartaId]);
+    void (r ? potwierdzZgodnosc(przody, r) : Promise.resolve(true)).then(
+      (tak) =>
+        tak && zmien((p) => przypiszRewers(p, { rodzaj: 'karta', taliaId, id: kartaId }, rewersId)),
+    );
   };
 
   const wybierzRewersGlobalnyKarty = (
@@ -1241,8 +1252,12 @@ export function EdytorKartki({
     kartaId: string,
     wpis: ZapisanyRewersGlobalny,
   ) => {
-    void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
-      przypiszRewers(p, { rodzaj: 'karta', taliaId, id: kartaId }, rid),
+    const przody = przodyDoPrzypisania(projekt, taliaId, [kartaId]);
+    void dolaczRewersGlobalnyDoProjektu(
+      wpis,
+      edycja,
+      (p, rid) => przypiszRewers(p, { rodzaj: 'karta', taliaId, id: kartaId }, rid),
+      (r) => potwierdzZgodnosc(przody, r),
     ).catch((e) => ustawToast({ tekst: e instanceof Error ? e.message : String(e) }));
   };
   // Przycisk „Rozmiar” na pasku nad kartą: następny (cyklicznie) rozmiar typu, który się mieści.
@@ -1325,6 +1340,25 @@ export function EdytorKartki({
 
   const pobierzPdf = async () => {
     if (!zasoby) return;
+    // Druk dwustronny z niezgodnymi rozmiarami przodu i tyłu – wyraźne pytanie przed generowaniem.
+    const rewersyMapa = new Map((projekt.rewersy ?? []).map((r) => [r.id, r] as const));
+    const niezgodne = bezRewersow
+      ? []
+      : [
+          ...new Set(
+            projekt.arkusze.flatMap((a) =>
+              czyDwustronnyWlaczony(
+                a,
+                projekt.talie.find((x) => x.id === a.taliaId),
+                zasoby.szablony,
+                rewersyMapa,
+              )
+                ? niezgodnosciDruku(projekt, a.taliaId)
+                : [],
+            ),
+          ),
+        ];
+    if (!(await pytajZgodnosc(t('zgodnosc.druk'), niezgodne, t('zgodnosc.generujMimo')))) return;
     ustawStatusPdf(t('arkusze.generowanie'));
     try {
       const bajty = await pdfWWatku(zadaniePdf(zasoby));
@@ -1823,6 +1857,7 @@ export function EdytorKartki({
     <div className="edytor-kartki">
       {naglowekProjektu}
       {oknoWyjscia}
+      {oknoZgodnosci}
       {!druk && !bezImportuTabeli && kartkaImportu && (
         <ImportDanych
           key={kartkaImportu.id}

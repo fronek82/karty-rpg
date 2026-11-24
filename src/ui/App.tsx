@@ -123,7 +123,8 @@ export function App() {
     !!gra ||
     wlasne ||
     trasa === '/wlasne/nowy' ||
-    trasa === '/wlasne/nowy/awers';
+    trasa === '/wlasne/nowy/awers' ||
+    trasa === '/wlasne/nowy/rewers';
 
   if (dawnaBiblioteka) return null;
   if (projekt) {
@@ -162,9 +163,9 @@ export function App() {
           <Leniwa>
             <WybierzStroneSzablonu />
           </Leniwa>
-        ) : trasa === '/wlasne/nowy/awers' ? (
+        ) : trasa === '/wlasne/nowy/awers' || trasa === '/wlasne/nowy/rewers' ? (
           <Leniwa>
-            <KreatorStrona />
+            <KreatorStrona strona={trasa === '/wlasne/nowy/rewers' ? 'tyl' : 'przod'} />
           </Leniwa>
         ) : biblioteka ? (
           <Leniwa>

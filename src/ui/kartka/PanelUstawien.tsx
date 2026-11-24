@@ -28,6 +28,7 @@ import { czyDwustronnyWlaczony, przypiszRewers } from '../../dane/rewers';
 import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
 import { RewersyProjektu } from '../rewers/RewersyProjektu';
+import { niezgodnosciDruku, przodyDoPrzypisania, useZgodnoscTylu } from '../zgodnoscTylu';
 import { dolaczRewersGlobalnyDoProjektu, useRewersyGlobalne } from '../rewersyGlobalne';
 import {
   dolaczRodzineGlobalnaDoProjektu,
@@ -130,6 +131,7 @@ export function PanelUstawien({
 }) {
   const { projekt, zmien } = edycja;
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
+  const { okno: oknoZgodnosci, potwierdz: potwierdzZgodnosc } = useZgodnoscTylu();
   const { rodzinyGlobalne } = useCzcionkiGlobalne(projekt);
   const u = arkusz.ustawienia;
   const [bladCzcionki, ustawBladCzcionki] = useState<string>();
@@ -166,6 +168,7 @@ export function PanelUstawien({
 
   return (
     <aside className="panel-edytora" aria-label={tytulPanelu}>
+      {oknoZgodnosci}
       <div className="naglowek-panelu">
         <h2 ref={naglowek} tabIndex={staly ? undefined : -1}>
           {tytulPanelu}
@@ -372,6 +375,20 @@ export function PanelUstawien({
                 />
                 <span>{t('dwustronny.wlacz')}</span>
               </label>
+              {dwu.wlaczony &&
+                (() => {
+                  const niezgodne = niezgodnosciDruku(projekt, arkusz.taliaId);
+                  return niezgodne.length > 0 ? (
+                    <div role="alert" className="uwaga" data-testid="niezgodne-rozmiary-druku">
+                      <p>{t('zgodnosc.druk')}</p>
+                      <ul>
+                        {niezgodne.map((x) => (
+                          <li key={x}>{x}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null;
+                })()}
               {dwu.wlaczony && (
                 <>
                   <div className="pole-panelu">
@@ -594,16 +611,27 @@ export function PanelUstawien({
               value={typeof talia.rewersId === 'string' ? talia.rewersId : ''}
               onChange={(e) => {
                 const { id: v, zrodlo } = wybranaOpcja(e);
+                const przody = przodyDoPrzypisania(projekt, talia.id);
                 if (zrodlo === 'globalny') {
                   const wpis = rewersyGlobalne.find((w) => w.klucz === v);
                   if (wpis) {
-                    void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
-                      przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, rid),
+                    void dolaczRewersGlobalnyDoProjektu(
+                      wpis,
+                      edycja,
+                      (p, rid) => przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, rid),
+                      (r) => potwierdzZgodnosc(przody, r),
                     ).catch(() => undefined);
                   }
                   return;
                 }
-                zmien((p) => przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, v || undefined));
+                const r = projekt.rewersy?.find((x) => x.id === v);
+                void (r ? potwierdzZgodnosc(przody, r) : Promise.resolve(true)).then(
+                  (tak) =>
+                    tak &&
+                    zmien((p) =>
+                      przypiszRewers(p, { rodzaj: 'talia', id: talia.id }, v || undefined),
+                    ),
+                );
               }}
             >
               <option value="">{t('rewers.brakPrzypisania')}</option>

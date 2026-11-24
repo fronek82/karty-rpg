@@ -33,7 +33,7 @@ import type { Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 29 – N5: wzór tła karty (`wzorTla` awersu i rewersu: linie, kratka, romby, kropki).
  * 30 – N9: wzór tła z biblioteki SVG (`wzorTla.rodzaj: 'svg'`, odwołanie do elementu) i układ kafelków.
  */
-export const WERSJA_SCHEMATU = 30;
+export const WERSJA_SCHEMATU = 31;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

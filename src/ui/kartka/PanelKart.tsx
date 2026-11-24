@@ -27,6 +27,7 @@ import {
 } from '../../model/szablon';
 import type { Pakiet, TypKarty } from '../../pakiety/typy';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
+import { przodyDoPrzypisania, useZgodnoscTylu } from '../zgodnoscTylu';
 import { dolaczRewersGlobalnyDoProjektu, useRewersyGlobalne } from '../rewersyGlobalne';
 import { PoleWielowierszowe } from '../PoleWielowierszowe';
 import type { ProjektWEdycji } from '../useProjekt';
@@ -95,6 +96,7 @@ export function PanelKart({
 }) {
   const { projekt, zmien } = edycja;
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
+  const { okno: oknoZgodnosci, potwierdz: potwierdzZgodnosc } = useZgodnoscTylu();
   const [wpisaneKopie, ustawWpisaneKopie] = useState<string>();
   const [bladRozmiaru, ustawBladRozmiaru] = useState<string>();
   const ids = karty.map((k) => k.karta.id);
@@ -162,6 +164,7 @@ export function PanelKart({
 
   return (
     <aside className="panel-edytora" aria-label={t('kartka.panelKart')}>
+      {oknoZgodnosci}
       <div className="naglowek-panelu">
         <h2 title={tytul}>{tytul}</h2>
         <button
@@ -425,17 +428,25 @@ export function PanelKart({
                 onChange={(e) => {
                   const { id: v, zrodlo } = wybranaOpcja(e);
                   if (v === '__rozne__') return;
+                  const przody = przodyDoPrzypisania(projekt, arkusz.taliaId, ids);
                   if (zrodlo === 'globalny') {
                     const wpis = rewersyGlobalne.find((w) => w.klucz === v);
                     if (wpis) {
-                      void dolaczRewersGlobalnyDoProjektu(wpis, edycja, (p, rid) =>
-                        przypiszRewersKartom(p, arkusz.taliaId, ids, rid),
+                      void dolaczRewersGlobalnyDoProjektu(
+                        wpis,
+                        edycja,
+                        (p, rid) => przypiszRewersKartom(p, arkusz.taliaId, ids, rid),
+                        (r) => potwierdzZgodnosc(przody, r),
                       ).catch(() => undefined);
                     }
                     return;
                   }
                   const nowy = v === '' ? undefined : v === '__brak__' ? null : v;
-                  zmien((p) => przypiszRewersKartom(p, arkusz.taliaId, ids, nowy));
+                  const r = projekt.rewersy?.find((x) => x.id === nowy);
+                  void (r ? potwierdzZgodnosc(przody, r) : Promise.resolve(true)).then(
+                    (tak) =>
+                      tak && zmien((p) => przypiszRewersKartom(p, arkusz.taliaId, ids, nowy)),
+                  );
                 }}
               >
                 {wspolnyDirect === '__rozne__' && (

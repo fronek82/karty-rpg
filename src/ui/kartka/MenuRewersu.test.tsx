@@ -43,7 +43,7 @@ describe('MenuRewersu', () => {
     );
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Domyślny (z talii lub szablonu)' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Bez rewersu' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Bez tyłu' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Rewers lokalny' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Rewers z innego projektu' }));
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });

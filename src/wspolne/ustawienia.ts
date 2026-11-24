@@ -14,3 +14,6 @@ export const KLUCZ_JEZYKA = 'karty.jezyk';
 export function jezykDomyslny(jezykPrzegladarki: string | undefined): 'pl' | 'en' {
   return /^pl(?:[-_]|$)/i.test(jezykPrzegladarki ?? '') ? 'pl' : 'en';
 }
+
+/** Klucz sposobu dopasowania zawartości karty przy zmianie rozmiaru: `skaluj` albo `zostaw`. */
+export const KLUCZ_DOPASOWANIA_ZAWARTOSCI = 'karty.dopasowanieZawartosci';

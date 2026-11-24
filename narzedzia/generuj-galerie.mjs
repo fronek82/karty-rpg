@@ -51,7 +51,7 @@ const POZYCJE = [
       plik: 'przedmiot-z-rewersem.kartyrpg-szablon',
       autor: 'Karty RPG',
       licencja: 'MIT',
-      tagi: ['poker', 'ekwipunek', 'item', 'rewers', 'back', '63x88'],
+      tagi: ['poker', 'ekwipunek', 'item', 'rewers', 'tył', 'back', '63x88'],
     },
     szablon: {
       id: 'gal-przedmiot',
@@ -326,7 +326,7 @@ const POZYCJE = [
       plik: 'postac-tarot.kartyrpg-szablon',
       autor: 'Karty RPG',
       licencja: 'MIT',
-      tagi: ['tarot', 'postac', 'character', 'npc', 'rewers', 'back', '70x120'],
+      tagi: ['tarot', 'postac', 'character', 'npc', 'rewers', 'tył', 'back', '70x120'],
     },
     szablon: {
       id: 'gal-postac',
@@ -623,7 +623,7 @@ const POZYCJE = [
       plik: 'rewers-geometryczny.kartyrpg-szablon',
       autor: 'Karty RPG',
       licencja: 'MIT',
-      tagi: ['rewers', 'back', 'ornament', 'dwustronny', 'duplex', 'poker', '63x88'],
+      tagi: ['rewers', 'tył', 'back', 'ornament', 'dwustronny', 'duplex', 'poker', '63x88'],
     },
     szablon: {
       id: 'gal-karta-rewers',

@@ -6,7 +6,7 @@ import {
   kluczTresciRewersuWPaczce,
 } from '../dane/archiwum';
 import type { DaneZasobow, Projekt } from '../model/projekt';
-import { kluczTresciSzablonu } from '../model/szablon';
+import { kluczTresciSzablonu, type Rewers } from '../model/szablon';
 import { baza } from './bazaUI';
 import type { ProjektWEdycji } from './useProjekt';
 
@@ -155,9 +155,12 @@ export async function dolaczRewersGlobalnyDoProjektu(
   wpis: ZapisanyRewersGlobalny,
   edycja: ProjektWEdycji,
   przypisz?: (projekt: Projekt, rewersId: string) => Projekt,
+  /** Kontrola przed dołączeniem (np. zgodność rozmiarów); `false` – nic się nie zmienia. */
+  sprawdz?: (rewers: Rewers) => Promise<boolean>,
 ): Promise<string> {
   const bajty = await wczytajPaczkeRewersu(wpis);
   const paczka = importujRewers(bajty);
+  if (sprawdz && !(await sprawdz(paczka.rewers))) return '';
   let wynikoweId = '';
   await edycja.zmienZZasobami((p, d) => {
     const dodany = dodajRewersZPaczki(p, d, paczka);

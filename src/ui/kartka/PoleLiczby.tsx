@@ -12,6 +12,7 @@ export function PoleLiczby({
   max,
   krok = 1,
   zmien,
+  poWyjsciu = false,
 }: {
   id: string;
   etykieta: string;
@@ -20,6 +21,8 @@ export function PoleLiczby({
   max: number;
   krok?: number;
   zmien: (v: number) => void;
+  /** Zatwierdzanie dopiero po opuszczeniu pola albo Enter (np. rozmiar karty z oknem pytania). */
+  poWyjsciu?: boolean;
 }) {
   const [tekst, ustawTekst] = useState(String(wartosc));
   const [zModelu, ustawZModelu] = useState(wartosc);
@@ -41,9 +44,19 @@ export function PoleLiczby({
         onChange={(e) => {
           ustawTekst(e.target.value);
           const v = e.target.valueAsNumber;
-          if (v >= min && v <= max) zmien(v);
+          if (!poWyjsciu && v >= min && v <= max) zmien(v);
         }}
-        onBlur={() => ustawTekst(String(wartosc))}
+        onKeyDown={(e) => {
+          if (poWyjsciu && e.key === 'Enter') {
+            e.preventDefault();
+            e.currentTarget.blur();
+          }
+        }}
+        onBlur={(e) => {
+          const v = e.currentTarget.valueAsNumber;
+          if (poWyjsciu && v >= min && v <= max && v !== wartosc) zmien(v);
+          ustawTekst(String(wartosc));
+        }}
       />
     </label>
   );

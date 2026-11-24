@@ -37,14 +37,14 @@ test('ekran wyboru strony Awers / Rewers ma opisy na środku bez SVG i wyrównan
   // Opisy po prawej (na środku treści) dla Awersu i Rewersu, bez dekoracyjnych SVG.
   const opisy = page.locator('.opisy-stron-karty .opis-strony-karty');
   await expect(opisy).toHaveCount(2);
-  await expect(opisy.nth(0)).toContainText('Awers');
+  await expect(opisy.nth(0)).toContainText('Przód');
   await expect(opisy.nth(0)).toContainText('Przód karty');
-  await expect(opisy.nth(1)).toContainText('Rewers');
+  await expect(opisy.nth(1)).toContainText('Tył');
   await expect(opisy.nth(1)).toContainText('Wspólny tył');
   await expect(page.locator('.opisy-stron-karty svg')).toHaveCount(0);
 
   // Przyciski po lewej w kreatorze awersu także mają etykietę sekcji i obniżenie pod nagłówkiem.
-  await page.getByRole('link', { name: /^Awers/ }).click();
+  await page.getByRole('link', { name: /^Przód/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Nowy szablon karty' })).toBeVisible();
   const kolKreator = (await page.locator('.kreator').boundingBox())!;
   const przyciskKreator = (await page
@@ -115,7 +115,7 @@ test('projekt gry (Mausritter): karty jednostronne – bez rewersów i druku dwu
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   const panel = await otworzDruk(page);
-  await expect(panel.getByRole('button', { name: /Nowy rewers/ })).toHaveCount(0);
-  await expect(panel.getByLabel('Domyślny rewers talii')).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: /Nowy tył/ })).toHaveCount(0);
+  await expect(panel.getByLabel('Domyślny tył talii')).toHaveCount(0);
   await expect(page.locator('.warstwa-rewersu')).toHaveCount(0);
 });

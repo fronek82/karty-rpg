@@ -102,8 +102,8 @@ for (const motyw of ['light', 'dark'] as const) {
     // 4) Wybór strony (Awers / Rewers) – odrębne kolory.
     await page.goto('./#/wlasne/nowy');
     await page.mouse.move(0, 0);
-    const linkAwers = page.getByRole('link', { name: /^Awers/ });
-    const btnRewers = page.getByRole('button', { name: /^Rewers/ });
+    const linkAwers = page.getByRole('link', { name: /^Przód/ });
+    const btnRewers = page.getByRole('link', { name: /^Tył/ });
     const kAwers = await kolory(linkAwers);
     const kRewers = await kolory(btnRewers);
     expect(kAwers.tlo).not.toBe(kRewers.tlo);

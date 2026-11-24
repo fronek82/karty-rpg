@@ -44,14 +44,14 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   const ust = await otworzDruk(page);
-  await ust.getByRole('button', { name: 'Nowy rewers' }).click();
+  await ust.getByRole('button', { name: 'Nowy tył' }).click();
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Edytor rewersu' })).toBeVisible();
-  await page.getByLabel('Nazwa rewersu').fill('Rewers zaklęcia');
+  await expect(page.getByRole('heading', { level: 1, name: 'Edytor tyłu' })).toBeVisible();
+  await page.getByLabel('Nazwa tyłu').fill('Rewers zaklęcia');
   await expect(page.locator('.karta-podgladu')).toBeVisible();
 
   // Kolor tła, tekstura i 4 tryby dopasowania obrazu tła.
-  await page.locator('#rewers-tlo-kolor').fill('#1e293b');
+  await page.locator('#karta-tlo-kolor').fill('#1e293b');
   await page
     .getByRole('group', { name: 'Rodzaj tła' })
     .getByRole('button', { name: 'Obraz' })
@@ -91,8 +91,8 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   // Ramka karty na rewersie.
   const ramka = await sekcja(page, 'Ramka karty');
   await ramka.getByLabel('Ramka karty', { exact: true }).selectOption('linia');
-  await expect(page.locator('#rewers-ramka-ods')).toBeVisible();
-  await page.locator('#rewers-ramka-ods').fill('3');
+  await expect(page.locator('#karta-ramka-ods')).toBeVisible();
+  await page.locator('#karta-ramka-ods').fill('3');
 
   // Warstwa tekstu bez klucza danych + czcionka i rozmiar.
   await dodaj(page, 'Tekst', 'Tytuł rewersu');
@@ -165,34 +165,34 @@ test('przypisania rewersu na 3 poziomach (talia -> szablon -> karta), duplikowan
 
   // Utwórz dwa rewersy o różnych kolorach tła.
   const ust = await otworzDruk(page);
-  await ust.getByRole('button', { name: 'Nowy rewers' }).click();
-  await page.getByLabel('Nazwa rewersu').fill('Rewers A');
-  await page.locator('#rewers-tlo-kolor').fill('#112233');
+  await ust.getByRole('button', { name: 'Nowy tył' }).click();
+  await page.getByLabel('Nazwa tyłu').fill('Rewers A');
+  await page.locator('#karta-tlo-kolor').fill('#112233');
   await zapisano(page);
   await page.getByRole('link', { name: '← Powrót' }).click();
 
-  await ust.getByRole('button', { name: 'Nowy rewers' }).click();
-  await page.getByLabel('Nazwa rewersu').fill('Rewers B');
-  await page.locator('#rewers-tlo-kolor').fill('#445566');
+  await ust.getByRole('button', { name: 'Nowy tył' }).click();
+  await page.getByLabel('Nazwa tyłu').fill('Rewers B');
+  await page.locator('#karta-tlo-kolor').fill('#445566');
   await zapisano(page);
   await page.getByRole('link', { name: '← Powrót' }).click();
 
   // 1. Poziom talii: przypisz Rewers A jako domyślny talii.
-  await ust.getByLabel('Domyślny rewers talii').selectOption({ label: 'Rewers A' });
+  await ust.getByLabel('Domyślny tył talii').selectOption({ label: 'Rewers A' });
   await expect(ust.locator('.podglad-rewersu-mini svg rect[fill="#112233"]')).toHaveCount(1);
 
   // Powrót do Edytora kart: Karta 1 dziedziczy Rewers A.
   await page.getByRole('link', { name: '← Powrót' }).click();
   await page.locator('[data-karta]').nth(0).click();
   const panelKart = page.getByRole('complementary', { name: 'Zaznaczone karty' });
-  const selectRewers = panelKart.getByLabel('Rewers', { exact: true });
+  const selectRewers = panelKart.getByLabel('Tył', { exact: true });
   await expect(selectRewers).toContainText('Dziedzicz (z talii: Rewers A)');
   await expect(panelKart.locator('.podglad-rewersu-mini svg rect[fill="#112233"]')).toHaveCount(1);
 
   // 2. W Edytorze kart (bez zaznaczonej karty): zmiana rewersu dla wszystkich kart na Rewers B.
   await page.keyboard.press('Escape');
   const panelPomoc = page.getByRole('complementary', { name: 'Pomoc' });
-  await panelPomoc.getByLabel('Rewers dla wszystkich kart', { exact: true }).selectOption({
+  await panelPomoc.getByLabel('Tył dla wszystkich kart', { exact: true }).selectOption({
     label: 'Rewers B',
   });
   await expect(panelPomoc.locator('.podglad-rewersu-mini svg rect[fill="#445566"]')).toHaveCount(1);
@@ -208,7 +208,7 @@ test('przypisania rewersu na 3 poziomach (talia -> szablon -> karta), duplikowan
 
   await page.locator('[data-karta]').nth(1).click();
   await selectRewers.selectOption('__brak__');
-  await expect(panelKart.getByText('Wyłączono jawnie (bez rewersu).')).toBeVisible();
+  await expect(panelKart.getByText('Wyłączono jawnie (bez tyłu).')).toBeVisible();
 
   // Zaznaczenie obu kart naraz -> różne przypisania.
   await page
@@ -261,9 +261,9 @@ for (const motyw of ['light', 'dark'] as const) {
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
     const ust = await otworzDruk(page);
-    await ust.getByRole('button', { name: 'Nowy rewers' }).click();
+    await ust.getByRole('button', { name: 'Nowy tył' }).click();
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Edytor rewersu' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Edytor tyłu' })).toBeVisible();
     await dodaj(page, 'Tekst', 'Nagłówek');
     await nazwij(page, 'Nagłówek');
 
@@ -287,7 +287,7 @@ for (const motyw of ['light', 'dark'] as const) {
       `Layers heading EN (${motyw})`,
     );
 
-    await page.getByRole('link', { name: /Card editor/ }).click();
+    await page.getByRole('button', { name: /Card editor/ }).click();
     const ustEn = await otworzDruk(page, true);
     await ustEn
       .getByRole('button', { name: /Delete card back/ })

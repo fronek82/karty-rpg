@@ -16,7 +16,7 @@ const korzen = fileURLToPath(new URL('.', import.meta.url));
 const DOZWOLONE: Record<string, string[]> = {
   'biblioteka/podgladElementu.ts': ['#7a2e24', '#f7f0dc', '#fff8e6'],
   'eksportObrazow.ts': ['#ffffff'], // tło eksportowanego obrazu
-  'szablon/EdytorSzablonu.tsx': ['#ffffff'], // domyślne tło karty
+  'szablon/PanelKarty.tsx': ['#ffffff'], // domyślne tło karty
   'szablon/Kontrolki.tsx': ['#000000'], // domyślny kolor pola wyboru koloru
   'szablon/Kreator.tsx': ['#ffffff'], // tło nowego szablonu
   'szablon/PanelSeparatora.tsx': ['#000000'],

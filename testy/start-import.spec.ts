@@ -106,23 +106,27 @@ test.describe('układ', () => {
   }) => {
     await page.goto('./');
     const linki = page.locator('.start-menu a.pasek-menu');
-    await expect(linki).toHaveCount(3);
+    await expect(linki).toHaveCount(4);
     await expect(linki.nth(0)).toContainText('Stwórz własne karty');
     await expect(linki.nth(1)).toContainText('Stwórz karty do Mausrittera');
     await expect(linki.nth(1)).toHaveAttribute('href', '#/gra/mausritter');
-    await expect(linki.nth(2)).toContainText('Awers');
+    await expect(linki.nth(2)).toContainText('Przód');
     await expect(linki.nth(2)).toHaveAttribute('href', '#/wlasne/nowy/awers');
-    await expect(page.locator('.start-menu button.pasek-menu')).toContainText('Rewers');
+    await expect(linki.nth(3)).toContainText('Tył');
+    await expect(linki.nth(3)).toHaveAttribute('href', '#/wlasne/nowy/rewers');
     await linki.nth(1).click();
     await expect(page).toHaveURL(/#\/gra\/mausritter$/);
   });
 
-  test('Nowy szablon → Rewers i Użyj w projekcie z zakładki Moje szablony', async ({ page }) => {
+  test('Nowy szablon → Tył (kreator) i Użyj w projekcie z zakładki Moje szablony', async ({
+    page,
+  }) => {
     await page.goto('./');
-    await page.locator('.start-menu button.pasek-menu').click();
+    await page.locator('.start-menu a.pasek-rewers').click();
+    await page.getByRole('button', { name: /Dalej: edytor tyłu/ }).click();
     await expect(page).toHaveURL(/#\/projekt\/([^/]+)\/rewers\//, { timeout: 15000 });
     const idOryginalu = /#\/projekt\/([^/]+)\/rewers\//.exec(page.url())![1]!;
-    const poleNazwy = page.getByLabel('Nazwa rewersu');
+    const poleNazwy = page.getByLabel('Nazwa tyłu');
     await expect(poleNazwy).toBeVisible({ timeout: 15000 });
     await poleNazwy.fill('Rewers ze startu');
     await zapisano(page);

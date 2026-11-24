@@ -24,9 +24,17 @@ vi.mock('../dane/baza', async (importOriginal) => {
 import { czyProjektRewersowy, kluczMiniaturyRewersu } from '../dane/baza';
 import {
   nowyProjektZAwersuZProjektu,
-  nowyProjektZRewersem,
   nowyProjektZRewersuZProjektu,
+  nowyProjektZSzablonuKreatora,
+  nowyProjektZTylemKreatora,
 } from './bazaUI';
+import { szablonZKreatora } from './szablon/nowySzablonUI';
+
+const nowyProjektZRewersem = (bazaUrl: string) =>
+  nowyProjektZTylemKreatora(
+    { nazwa: 'Rewers', szer: 63, wys: 88, promien: 3, tlo: '#ffffff', uklad: 'pusty' },
+    bazaUrl,
+  );
 
 const staraFetch = globalThis.fetch;
 
@@ -47,8 +55,8 @@ afterEach(() => {
   globalThis.fetch = staraFetch;
 });
 
-describe('nowyProjektZRewersem', () => {
-  it('tworzy projekt własny z rewersem 63×88 mm przypisanym do talii i zapisuje go z miniaturą karty', async () => {
+describe('nowyProjektZTylemKreatora', () => {
+  it('tworzy projekt własny z tyłem 63×88 mm przypisanym do talii i zapisuje go z miniaturą karty', async () => {
     const wynik = await nowyProjektZRewersem('/');
     expect(zapiszMock).toHaveBeenCalledTimes(1);
     const [projekt, zasoby] = zapiszMock.mock.calls[0] as [Projekt, DaneZasobow];
@@ -58,6 +66,7 @@ describe('nowyProjektZRewersem', () => {
     const rewers = projekt.rewersy![0]!;
     expect(rewers.id).toBe(wynik.rewersId);
     expect(rewers.rozmiar).toEqual({ tryb: 'mm', szerokosc: 63, wysokosc: 88 });
+    expect(rewers.promienRogow).toBe(3);
     expect(projekt.talie[0]?.rewersId).toBe(wynik.rewersId);
     expect(projekt.nazwa).toBe(rewers.nazwa);
     expect(zasoby.size).toBeGreaterThan(0);
@@ -117,5 +126,32 @@ describe('Użyj w projekcie (nowyProjektZAwersuZProjektu / nowyProjektZRewersuZP
     expect(nowy.szablony[0]?.nazwa).toBe('Karta zaklęcia');
     expect(nowy.szablony[0]?.rewersId).toBeUndefined();
     expect(nowy.rewersy ?? []).toHaveLength(0);
+  });
+});
+
+describe('nowyProjektZSzablonuKreatora z przypisanym tyłem', () => {
+  it('kopiuje tył z innego projektu i przypisuje go do szablonu; oryginał bez zmian', async () => {
+    const { rewersId } = await nowyProjektZRewersem('/');
+    const [zrodlo, zasobyZrodla] = zapiszMock.mock.calls[0] as [Projekt, DaneZasobow];
+    const kopiaZrodla = structuredClone(zrodlo);
+    wczytajMock.mockResolvedValue({ projekt: zrodlo, zasoby: zasobyZrodla });
+    zapiszMock.mockClear();
+    const s = szablonZKreatora({
+      nazwa: 'Talia A',
+      szer: 63,
+      wys: 88,
+      promien: 3,
+      tlo: '#ffffff',
+      uklad: 'pusty',
+    });
+    const id = await nowyProjektZSzablonuKreatora(s, '/', undefined, {
+      projektId: zrodlo.id,
+      rewersId,
+    });
+    const [nowy] = zapiszMock.mock.calls[0] as [Projekt, DaneZasobow];
+    expect(nowy.id).toBe(id);
+    expect(nowy.rewersy).toHaveLength(1);
+    expect(nowy.szablony[0]?.rewersId).toBe(nowy.rewersy![0]!.id);
+    expect(zrodlo).toEqual(kopiaZrodla);
   });
 });

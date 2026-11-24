@@ -43,6 +43,26 @@ describe('renderujRewers (M4-2)', () => {
     ...(elementy ? { elementy } : {}),
   });
 
+  it('własne rogi i postrzępienie tyłu: w edytorze z tyłu, na arkuszu rogi wyznacza przód', () => {
+    const r: Rewers = { ...bazowy, promienRogow: 5 };
+    const promienTla = (s: Scena) =>
+      wszystkieElementy(s).find((e) => e.typ === 'prostokat' && e.wypelnienie) as
+        { promien?: number } | undefined;
+    expect(promienTla(renderujRewers(r, ctx()).scena)?.promien).toBe(5);
+    expect(promienTla(renderujRewers(r, ctx(), { szer: 63, wys: 88 }).scena)?.promien).toBe(
+      undefined,
+    );
+    expect(
+      promienTla(renderujRewers(r, ctx(), { szer: 63, wys: 88, promienRogow: 2 }).scena)?.promien,
+    ).toBe(2);
+    const gladki = scenaDoSvg(renderujRewers(bazowy, ctx()).scena);
+    const postrzepiony = scenaDoSvg(
+      renderujRewers({ ...bazowy, postrzepienie: { sila: 1, ziarno: 3, ziarnistosc: 4 } }, ctx())
+        .scena,
+    );
+    expect(postrzepiony).not.toBe(gladki);
+  });
+
   it('renderuje cztery tryby dopasowania obrazu tła: wypelnij, dopasuj, rozciagnij, kafelki', () => {
     const wyniki = (['wypelnij', 'dopasuj', 'rozciagnij', 'kafelki'] as TrybTla[]).map((tryb) => {
       const r: Rewers = { ...bazowy, teksturaTla: 'tekstura', teksturaTryb: tryb };

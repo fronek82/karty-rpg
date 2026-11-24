@@ -34,21 +34,21 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
   await expect(
     przedmiot.locator('.galeria-podglad-svg svg').nth(1).locator('path').first(),
   ).toBeAttached();
-  await expect(przedmiot).toContainText('Awers');
-  await expect(przedmiot).toContainText('Rewers');
+  await expect(przedmiot).toContainText('Przód');
+  await expect(przedmiot).toContainText('Tył');
 
   // Bez osobnej biblioteki szablonów – szablon trafia do „Moich szablonów” przez „Użyj szablonu”.
   await expect(przedmiot.getByRole('button', { name: 'Do biblioteki' })).toHaveCount(0);
 
-  // Filtrowanie po frazie i przełączniku „Tylko z rewersem”.
+  // Filtrowanie po frazie i przełączniku „Tylko z tyłem”.
   await sekcja.getByLabel('Szukaj szablonu').fill('tarot');
   await expect(sekcja.locator('[data-galeria-szablon]')).toHaveCount(1);
   await expect(sekcja.locator('[data-galeria-szablon="postac-tarot"]')).toBeVisible();
 
   await sekcja.getByLabel('Szukaj szablonu').fill('');
-  await sekcja.getByLabel('Tylko z rewersem').check();
+  await sekcja.getByLabel('Tylko z tyłem').check();
   await expect(sekcja.locator('[data-galeria-szablon]')).toHaveCount(3);
-  await sekcja.getByLabel('Tylko z rewersem').uncheck();
+  await sekcja.getByLabel('Tylko z tyłem').uncheck();
 
   // Pobranie i utworzenie projektu jednym kliknięciem.
   await przedmiot.getByRole('button', { name: 'Użyj szablonu' }).click();

@@ -630,6 +630,12 @@ export interface Rewers {
   teksturaZabarwienie?: ZabarwienieTla;
   wzorTla?: WzorTla;
   ramka?: RamkaKarty;
+  /**
+   * Zaokrąglenie rogów tyłu (podgląd w edytorze, kontrola zgodności z przodem). Brak – tył
+   * dopasowuje rogi do przodu (projekty sprzed schematu 31). Na arkuszu rogi wyznacza przód.
+   */
+  promienRogow?: Mm;
+  postrzepienie?: Postrzepienie;
 }
 
 /** Brak pola dziedziczy, null jawnie wyłącza rewers. */

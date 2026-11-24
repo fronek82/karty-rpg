@@ -1177,9 +1177,9 @@ describe('M4-1: rewersy', () => {
   it('odrzuca obcy identyfikator lub duplikat w archiwum projektu', () => {
     const s = { ...projekt.szablony[0]!, rewersId: rewers.id };
     expect(() => przygotujProjekt({ ...projekt, szablony: [s], talie: [], arkusze: [] })).toThrow(
-      /nieznany rewers/,
+      /nieznany tył/,
     );
-    expect(() => przygotujProjekt({ ...projekt, rewersy: [rewers, rewers] })).toThrow(/rewersy/);
+    expect(() => przygotujProjekt({ ...projekt, rewersy: [rewers, rewers] })).toThrow(/tyły/);
   });
 
   it('przenosi obraz, ozdobnik i font rewersu oraz przepisuje kolidujące identyfikatory', () => {

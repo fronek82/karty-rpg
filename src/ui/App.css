@@ -2831,6 +2831,54 @@ button.maly {
   height: 12px;
 }
 
+/* Kreator tyłu: miniatury gotowych układów i „Rozmiar jak w szablonie”. */
+.uklad-tylu-logo,
+.uklad-tylu-ornament {
+  align-items: center;
+  justify-content: center;
+}
+.uklad-tylu-logo .m-logo {
+  width: 55%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+.uklad-tylu-wzor {
+  background-image: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--tekst-przygaszony) 45%, transparent) 0 1px,
+    transparent 1px 6px
+  ) !important;
+}
+.uklad-tylu-ornament .m-ramka {
+  align-self: stretch;
+  flex: 1;
+  background: transparent;
+  border: 2px double var(--tekst-przygaszony);
+}
+.ostrzezenie-drzewa {
+  margin-left: 0.35rem;
+  color: var(--zle);
+  font-weight: 600;
+}
+.wybor-dopasowania {
+  border: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.wybor-dopasowania label {
+  display: block;
+}
+.okno-zmiany-rozmiaru .wiersz-przyciskow {
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+.kreator-kopia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* M2b-9: nakładka nad podglądem karty (tylko w edytorze) i podkład ze wzoru. */
 .karta-podgladu:focus-visible {
   outline: 2px solid var(--zaznaczenie);

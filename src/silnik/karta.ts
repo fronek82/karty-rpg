@@ -1220,6 +1220,10 @@ export function renderujRewers(
   const podstawione = docelowy?.awers
     ? podstawWspolnePolaRewersu(rewers, docelowy.awers.szablon, docelowy.awers.dane)
     : undefined;
+  const promienRewersu =
+    docelowy?.szer !== undefined
+      ? docelowy.promienRogow
+      : (docelowy?.promienRogow ?? rewers.promienRogow);
   const szablon: Szablon = {
     id: rewers.id,
     nazwa: rewers.nazwa,
@@ -1227,7 +1231,9 @@ export function renderujRewers(
       docelowy?.szer !== undefined && docelowy?.wys !== undefined
         ? { tryb: 'mm', szerokosc: docelowy.szer, wysokosc: docelowy.wys }
         : rewers.rozmiar,
-    ...(docelowy?.promienRogow ? { promienRogow: docelowy.promienRogow } : {}),
+    // Na arkuszu rogi wyznacza przód (rozmiar docelowy); bez niego – własne rogi tyłu.
+    ...(promienRewersu ? { promienRogow: promienRewersu } : {}),
+    ...(rewers.postrzepienie ? { postrzepienie: rewers.postrzepienie } : {}),
     ...(rewers.tlo !== undefined ? { tlo: rewers.tlo } : {}),
     ...(rewers.teksturaTla !== undefined ? { teksturaTla: rewers.teksturaTla } : {}),
     ...(rewers.wzorTla !== undefined ? { wzorTla: rewers.wzorTla } : {}),

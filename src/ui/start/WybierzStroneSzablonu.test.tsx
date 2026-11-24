@@ -1,65 +1,25 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-const nowyProjektZRewersem = vi.fn();
-vi.mock('../bazaUI', () => ({
-  nowyProjektZRewersem: (...a: unknown[]) => nowyProjektZRewersem(...a),
-}));
-
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
+import { t } from '../../i18n';
 import { WybierzStroneSzablonu } from './WybierzStroneSzablonu';
 
-beforeEach(() => {
-  nowyProjektZRewersem.mockReset();
-  window.location.hash = '';
-});
 afterEach(cleanup);
 
 describe('WybierzStroneSzablonu', () => {
-  it('pokazuje Awers (link do kreatora), Rewers (przycisk) i opisy obu stron bez grafik', () => {
+  it('przód i tył to odnośniki do kreatora; opisy obu stron bez grafik', () => {
     const { container } = render(<WybierzStroneSzablonu />);
-    expect(screen.getByRole('link', { name: /^Awers/ }).getAttribute('href')).toBe(
+    const przod = t('wlasne.awersNazwa');
+    const tyl = t('wlasne.rewersNazwa');
+    expect(screen.getByRole('link', { name: new RegExp(`^${przod}`) }).getAttribute('href')).toBe(
       '#/wlasne/nowy/awers',
     );
-    expect(screen.getByRole('button', { name: /^Rewers/ })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Awers', level: 2 })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Rewers', level: 2 })).toBeTruthy();
+    expect(screen.getByRole('link', { name: new RegExp(`^${tyl}`) }).getAttribute('href')).toBe(
+      '#/wlasne/nowy/rewers',
+    );
+    expect(screen.getByRole('heading', { name: przod, level: 2 })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: tyl, level: 2 })).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
     expect(container.querySelector('svg')).toBeNull();
-  });
-
-  it('dwuklik na Rewers tworzy jeden projekt i otwiera edytor rewersu', async () => {
-    let koniec!: (v: { id: string; rewersId: string }) => void;
-    nowyProjektZRewersem.mockReturnValue(new Promise((r) => (koniec = r)));
-    render(<WybierzStroneSzablonu />);
-    const btn = screen.getByRole('button', { name: /^Rewers/ });
-    const linkAwers = screen.getByRole('link', { name: /^Awers/ });
-    fireEvent.click(btn);
-    fireEvent.click(btn);
-    expect(nowyProjektZRewersem).toHaveBeenCalledTimes(1);
-    expect((btn as HTMLButtonElement).disabled).toBe(true);
-    expect(linkAwers.getAttribute('aria-disabled')).toBe('true');
-
-    await act(async () => koniec({ id: 'p1', rewersId: 'r1' }));
-    await waitFor(() => expect(window.location.hash).toBe('#/projekt/p1/rewers/r1'));
-  });
-
-  it('błąd tworzenia rewersu: komunikat, odblokowanie i przywrócenie fokusu na przycisk', async () => {
-    nowyProjektZRewersem.mockRejectedValueOnce(new Error('brak miejsca'));
-    render(<WybierzStroneSzablonu />);
-    const btn = screen.getByRole('button', { name: /^Rewers/ });
-    fireEvent.click(btn);
-    expect((await screen.findByRole('alert')).textContent).toContain('brak miejsca');
-    await waitFor(() => expect((btn as HTMLButtonElement).disabled).toBe(false));
-    await waitFor(() => expect(document.activeElement).toBe(btn));
-  });
-
-  it('odmontowanie w trakcie tworzenia nie zmienia adresu hash', async () => {
-    let koniec!: (v: { id: string; rewersId: string }) => void;
-    nowyProjektZRewersem.mockReturnValue(new Promise((r) => (koniec = r)));
-    const { unmount } = render(<WybierzStroneSzablonu />);
-    fireEvent.click(screen.getByRole('button', { name: /^Rewers/ }));
-    unmount();
-    await act(async () => koniec({ id: 'p2', rewersId: 'r2' }));
-    expect(window.location.hash).toBe('');
   });
 });

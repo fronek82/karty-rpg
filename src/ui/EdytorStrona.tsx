@@ -1,9 +1,10 @@
+import { przypiszRewers } from '../dane/rewers';
 import { czyProjektWlasny, dodajSzablonZKartka } from '../dane/wlasneKarty';
 import { t } from '../i18n';
 import { AktywnyProjektKontekst } from './AktywnyProjektKontekst';
+import { dolaczTyl, paczkaTyluZProjektu } from './bazaUI';
 import { EdytorKartki } from './kartka/EdytorKartki';
-import { EdytorRewersu } from './rewers/EdytorRewersu';
-import { EdytorSzablonu } from './szablon/EdytorSzablonu';
+import { EdytorKarty } from './szablon/EdytorKarty';
 import { Kreator } from './szablon/Kreator';
 import { szablonZKreatora } from './szablon/nowySzablonUI';
 import { useProjekt } from './useProjekt';
@@ -41,7 +42,7 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
     const rewersDop = /^rewers\/(.+)$/.exec(podtrasa)?.[1];
     if (rewersDop) {
       const rewersId = decodeURIComponent(rewersDop);
-      return <EdytorRewersu key={rewersId} edycja={stan} rewersId={rewersId} />;
+      return <EdytorKarty key={`tyl:${rewersId}`} edycja={stan} strona="tyl" id={rewersId} />;
     }
     const identyfikator = /^szablon\/(.+)$/.exec(podtrasa)?.[1];
     const szablon = identyfikator && decodeURIComponent(identyfikator);
@@ -57,25 +58,41 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
           <a href={sciezka}>{t('szablon.wrocDoKartek')}</a>
         </section>
       );
-    if (szablon) return <EdytorSzablonu key={szablon} edycja={stan} szablonId={szablon} />;
+    if (szablon)
+      return <EdytorKarty key={`przod:${szablon}`} edycja={stan} strona="przod" id={szablon} />;
     if (podtrasa === 'nowy-szablon')
       return (
         <div className="tresc tresc-start kreator-w-projekcie">
           <Kreator
             anuluj={() => (window.location.hash = sciezka)}
-            utworz={(u) => {
+            utworz={async (u) => {
               // Nowy szablon bez zasobów – zwykła zmiana projektu (zapis w tle, jak każda edycja);
-              // id szablonu z wyniku (dodajSzablon nadaje unikalne).
+              // id szablonu z wyniku (dodajSzablon nadaje unikalne). Tył z innego projektu
+              // trafia do tego projektu jako kopia i jest przypisany do nowego szablonu.
+              const zrodlo = u.przypiszTyl;
+              const paczka =
+                zrodlo && zrodlo.projektId !== stan.projekt.id
+                  ? await paczkaTyluZProjektu(zrodlo)
+                  : undefined;
               let szablonId = '';
-              stan.zmien((p) => {
-                const w = dodajSzablonZKartka(p, stan.dane, {
+              await stan.zmienZZasobami((p, d) => {
+                const w = dodajSzablonZKartka(p, d, {
                   szablon: szablonZKreatora(u),
                   role: {},
                   zasoby: [],
                   dane: new Map(),
                 });
                 szablonId = w.szablonId;
-                return w.projekt;
+                const przypisz = (q: typeof p, rewersId: string) =>
+                  przypiszRewers(q, { rodzaj: 'szablon', id: w.szablonId }, rewersId);
+                if (paczka) {
+                  const z = dolaczTyl(w.projekt, w.zasoby, paczka, przypisz);
+                  return { projekt: z.projekt, dane: z.zasoby };
+                }
+                return {
+                  projekt: zrodlo ? przypisz(w.projekt, zrodlo.rewersId) : w.projekt,
+                  dane: w.zasoby,
+                };
               });
               window.location.hash = `${sciezka}/szablon/${encodeURIComponent(szablonId)}`;
             }}
