@@ -504,9 +504,17 @@ function PanelTabeli({
     zmienKolumny([...kol, { naglowek: String(kol.length + 1), klucz: k }]);
   };
   // Fokus po przesunięciu / usunięciu kolumny: pole nagłówka kolumny w nowym miejscu
-  // (albo przycisk „Dodaj kolumnę”).
-  const fokus = (sel: string) =>
-    requestAnimationFrame(() => document.querySelector<HTMLElement>(sel)?.focus());
+  // (albo przycisk „Dodaj kolumnę”). Tylko gdy fokus nadal jest na klikniętym przycisku albo
+  // przepadł (przycisk zniknął lub stał się nieaktywny) – nie zabieramy go z pola, do którego
+  // użytkownik zdążył przejść przed następną klatką (wpisany tekst trafiłby do nagłówka).
+  const fokus = (sel: string) => {
+    const przed = document.activeElement;
+    requestAnimationFrame(() => {
+      const teraz = document.activeElement;
+      if (teraz && teraz !== przed && teraz !== document.body) return;
+      document.querySelector<HTMLElement>(sel)?.focus();
+    });
+  };
   const przesun = (i: number, o: -1 | 1) => {
     const n = [...kol];
     [n[i], n[i + o]] = [n[i + o]!, n[i]!];
