@@ -144,8 +144,8 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
 
   // Utwórz niesymetryczny rewers.
   const ust = await otworzDruk(page);
-  await ust.getByRole('button', { name: 'Nowy rewers' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Edytor rewersu' })).toBeVisible();
+  await ust.getByRole('button', { name: 'Nowy tył' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Edytor tyłu' })).toBeVisible();
   await dodaj(page, 'Tekst', 'Napis góry');
   await panel(page).getByLabel('Stały tekst').fill('TYŁ KARTY');
   await zapisano(page);
@@ -159,8 +159,8 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
   await page.getByRole('menuitem').first().click();
 
   const panelUst = await otworzDruk(page);
-  await panelUst.getByLabel('Domyślny rewers talii').selectOption({ index: 1 });
-  await panelUst.getByLabel('Drukuj rewersy (przód i tył w parach stron)').check();
+  await panelUst.getByLabel('Domyślny tył talii').selectOption({ index: 1 });
+  await panelUst.getByLabel('Drukuj tyły (przód i tył w parach stron)').check();
 
   // Podgląd pokazuje parę przód + tył tej samej strony.
   const para = page.locator('.para-stron').first();
@@ -195,8 +195,8 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
 
   // Wróć do opcji druku i ustaw lokalną korektę rewersu X/Y.
   const panelDruk = await otworzDruk(page);
-  await panelDruk.getByLabel('Korekta rewersu X (mm)').fill('1.5');
-  await panelDruk.getByLabel('Korekta rewersu Y (mm)').fill('-0.5');
+  await panelDruk.getByLabel('Korekta tyłu X (mm)').fill('1.5');
+  await panelDruk.getByLabel('Korekta tyłu Y (mm)').fill('-0.5');
   await zapisano(page);
 
   // Pobierz dwustronny PDF -> 2 strony (przód + tył).
@@ -222,8 +222,8 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
     timeout: 15000,
   });
   const panelPo = panelDruku(page);
-  await expect(panelPo.getByLabel('Korekta rewersu X (mm)')).toHaveValue('1.5');
-  await expect(panelPo.getByLabel('Korekta rewersu Y (mm)')).toHaveValue('-0.5');
+  await expect(panelPo.getByLabel('Korekta tyłu X (mm)')).toHaveValue('1.5');
+  await expect(panelPo.getByLabel('Korekta tyłu Y (mm)')).toHaveValue('-0.5');
 
   // EN + ciemny motyw.
   const menuUst = await otworzUstawieniaAplikacji(page);

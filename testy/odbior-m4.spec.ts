@@ -235,7 +235,7 @@ for (const en of [false, true]) {
           rewersId: null,
           dane: {
             tytul: en ? 'Blank Field Note' : 'Karta robocza',
-            region: en ? 'No card back' : 'Bez rewersu',
+            region: en ? 'No card back' : 'Bez tyłu',
             opis: en
               ? 'Explicitly disables the back on this card – its mirrored slot on the back page stays empty.'
               : 'Jawne ustawienie „bez rewersu” zatrzymuje dziedziczenie – lustrzane pole na tyle zostaje puste.',

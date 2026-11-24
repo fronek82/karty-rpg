@@ -247,16 +247,16 @@ describe('wspólny plik szablonu awersu i rewersu', () => {
       { [PLIK_SZABLONU]: strToU8(JSON.stringify({ wersja: 27, role: {}, zasoby: [] })) },
       { level: 0 },
     );
-    expect(() => importujSzablon(bajty)).toThrow(/ani awersu, ani rewersu/);
+    expect(() => importujSzablon(bajty)).toThrow(/ani przodu, ani tyłu/);
   });
 });
 
 describe('domyślna nazwa nowego rewersu', () => {
   it('pochodzi z i18n i jest unikalna (także względem nazw spoza projektu)', () => {
-    const p = wlasny('n1', { rewersy: [rewers('r1', 'Rewers')] });
-    expect(nowyRewers(p).projekt.rewersy?.at(-1)?.nazwa).toBe('Rewers 2');
-    expect(nowyRewers(p, { zajeteNazwy: ['rewers 2'] }).projekt.rewersy?.at(-1)?.nazwa).toBe(
-      'Rewers 3',
+    const p = wlasny('n1', { rewersy: [rewers('r1', 'Tył')] });
+    expect(nowyRewers(p).projekt.rewersy?.at(-1)?.nazwa).toBe('Tył 2');
+    expect(nowyRewers(p, { zajeteNazwy: ['tył 2'] }).projekt.rewersy?.at(-1)?.nazwa).toBe(
+      'Tył 3',
     );
     expect(unikalnaNazwa('Tył', [])).toBe('Tył');
   });

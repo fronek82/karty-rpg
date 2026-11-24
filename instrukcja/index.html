@@ -6,8 +6,8 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta
       name="description"
-      content="Instrukcja programu Karty: karty do Mausrittera, własne szablony, rewersy, druk dwustronny, tryb drukarni, import tabel, galeria szablonów i eksport PDF."
-      data-pl="Instrukcja programu Karty: karty do Mausrittera, własne szablony, rewersy, druk dwustronny, tryb drukarni, import tabel, galeria szablonów i eksport PDF."
+      content="Instrukcja programu Karty: karty do Mausrittera, własne szablony, tyły kart, druk dwustronny, tryb drukarni, import tabel, galeria szablonów i eksport PDF."
+      data-pl="Instrukcja programu Karty: karty do Mausrittera, własne szablony, tyły kart, druk dwustronny, tryb drukarni, import tabel, galeria szablonów i eksport PDF."
       data-en="Guide to Cards: Mausritter cards, your own templates, card backs, double-sided printing, print-shop mode, spreadsheet import, template gallery and PDF export."
     />
     <meta name="wersja" content="%VITE_WERSJA%" />
@@ -186,7 +186,7 @@
             <li><a href="#pl-wlasne-szablony">Własne szablony</a></li>
             <li><a href="#pl-edycja-kart">Edycja kart na kartce</a></li>
             <li><a href="#pl-druk">Druk w skali 100%</a></li>
-            <li><a href="#pl-rewersy-i-drukarnia">Rewersy, druk dwustronny i drukarnia</a></li>
+            <li><a href="#pl-rewersy-i-drukarnia">Tyły kart, druk dwustronny i drukarnia</a></li>
             <li><a href="#pl-kalibracja">Kalibracja drukarki</a></li>
             <li><a href="#pl-eksport-import">Eksport i import</a></li>
             <li><a href="#pl-jezyk-motyw">Język i motyw</a></li>
@@ -304,8 +304,15 @@
           <h3 id="pl-kreator">Nowy szablon</h3>
           <ol>
             <li>
-              Na ekranie startowym w sekcji „Nowy szablon” kliknij „Awers” (przód karty, otwiera
-              kreator) albo „Rewers” (tył karty, otwiera od razu edytor rewersu).
+              Na ekranie startowym w sekcji „Nowy szablon” kliknij „Przód” albo „Tył”. Obie strony
+              zaczynają od kreatora (nazwa, format, orientacja, rogi, kolor, gotowy układ).
+            </li>
+            <li>
+              Pole „Rozmiar jak w szablonie” na górze formatu kopiuje szerokość, wysokość,
+              orientację i zaokrąglenie rogów z istniejącego przodu albo tyłu. Skopiowane pola są
+              zablokowane, a przycisk „Odblokuj” pozwala je zmienić. Gdy w kreatorze przodu
+              wybierzesz tył, zaznaczone pole „Przypisz ten tył do szablonu” od razu przypisze go do
+              nowego przodu.
             </li>
             <li>
               Możesz też kliknąć „Stwórz własne karty”. Na górze są „Moje szablony” (ostatnio
@@ -386,7 +393,7 @@
             </li>
             <li>
               „Eksport” na pasku zapisuje szablon do pliku <code>.kartyrpg-szablon</code>. „Import”
-              dodaje szablon z takiego pliku do projektu, także plik zapisany w edytorze rewersu, i
+              dodaje szablon z takiego pliku do projektu, także plik zapisany w edytorze tyłu, i
               pokazuje link do niego.
             </li>
             <li>
@@ -445,7 +452,7 @@
           <h3 id="pl-tlo-karty">Tło karty: kolor, obraz i wzór</h3>
           <ol>
             <li>
-              W Edytorze szablonu albo rewersu kliknij puste miejsce obok karty, aby nic nie było
+              W Edytorze przodu albo tyłu kliknij puste miejsce obok karty, aby nic nie było
               zaznaczone. W panelu właściwości otwórz sekcję „Tło karty”.
             </li>
             <li>
@@ -615,7 +622,7 @@
             </li>
             <li>
               „Tekst po łuku” wygina napis wzdłuż okręgu, co przydaje się w nagłówkach, pieczęciach
-              i na rewersach kart.
+              i na tyłach kart.
             </li>
           </ul>
           <h3 id="pl-ai-i-galeria">Układ ze zdjęcia i galeria szablonów</h3>
@@ -625,20 +632,20 @@
           </p>
           <ul>
             <li>
-              W Edytorze szablonu albo w Edytorze rewersu kliknij „Układ ze zdjęcia” w górnym pasku.
+              W Edytorze przodu albo w Edytorze tyłu kliknij „Układ ze zdjęcia” w górnym pasku.
               Wpisz własny „Klucz Claude API”, kliknij „Wybierz zdjęcie karty…” i „Rozpoznaj układ”.
               Po zaznaczeniu „Zapamiętaj klucz w tej przeglądarce” klucz zostaje lokalnie i nigdy
               nie trafia do eksportowanych plików; usuniesz go przyciskiem „Usuń zapisany klucz”.
             </li>
             <li>
-              Rozpoznane pola trafiają na stronę, którą właśnie edytujesz (awers albo rewers), w jej
+              Rozpoznane pola trafiają na stronę, którą właśnie edytujesz (przód albo tył), w jej
               rozmiarze. Gdy strona ma już elementy, okno pyta, co z nimi zrobić: „Zastąp elementy”
               albo „Dodaj obok”. Na pustej stronie wystarczy „Wstaw układ”. Rozmiar, tło i ramka
               strony zostają, a wstawienie cofniesz przyciskiem „Cofnij”.
             </li>
             <li>
-              Na awersie „Dołącz zdjęcie jako podkład (nie jest drukowany)” kładzie zdjęcie pod
-              podglądem i pomaga dopasować pola. Na rewersie pola są stałe (bez danych kart).
+              Na przodzie „Dołącz zdjęcie jako podkład (nie jest drukowany)” kładzie zdjęcie pod
+              podglądem i pomaga dopasować pola. Na tyle pola są stałe (bez danych kart).
             </li>
             <li>
               Model zwraca wyłącznie strukturę i proporcje pól bez kopiowania grafik ani treści.
@@ -646,8 +653,8 @@
             </li>
             <li>
               Na ekranie „Stwórz własne karty” „Galeria szablonów online” pozwala wyszukiwać i
-              filtrować neutralne szablony oraz rewersy. Przycisk „Użyj szablonu” tworzy projekt, a
-              szablon trafia do zakładki „Moje szablony”.
+              filtrować neutralne szablony przodów i tyłów. Przycisk „Użyj szablonu” tworzy projekt,
+              a szablon trafia do zakładki „Moje szablony”.
             </li>
             <li>
               „Importuj szablon z linku (URL)” pobiera paczkę <code>.kartyrpg-szablon</code> z
@@ -882,35 +889,41 @@
             Karta w strefie daje ostrzeżenie, a sama strefa jest zaznaczona na kartce. Wartość 0
             wyłącza strefę.
           </p>
-          <h2 id="pl-rewersy-i-drukarnia">Rewersy, druk dwustronny i drukarnia</h2>
+          <h2 id="pl-rewersy-i-drukarnia">Tyły kart, druk dwustronny i drukarnia</h2>
           <p>
-            Karty mogą mieć własne rewersy drukowane dwustronnie, a pliki PDF możesz przygotować ze
+            Karty mogą mieć własne tyły drukowane dwustronnie, a pliki PDF możesz przygotować ze
             spadem, znacznikami cięcia, czcionkami z katalogu Google Fonts i warstwą wyszukiwania
             tekstu.
           </p>
-          <h3 id="pl-rewersy">Rewersy kart</h3>
+          <h3 id="pl-rewersy">Tyły kart</h3>
           <ol>
             <li>
-              Kliknij „Drukuj karty”, znajdź sekcję „Rewersy” w panelu „Opcje druku i arkusza” i
-              kliknij „Nowy rewers”.
+              Kliknij „Drukuj karty”, znajdź sekcję „Tyły” w panelu „Opcje druku i arkusza” i
+              kliknij „Nowy tył”.
             </li>
             <li>
-              Na ekranie „Edytor rewersu” ułóż warstwy z kształtów, obrazów, ozdobników i napisów.
+              Na ekranie „Edytor tyłu” ułóż warstwy z kształtów, obrazów, ozdobników i napisów.
               Zmiany zapisuje „Zapisz” albo <kbd>Ctrl</kbd> + <kbd>S</kbd>. „Eksport” i „Import”
-              działają jak w edytorze szablonu (import dodaje nowy rewers). Do edycji kart
-              przejdziesz przyciskiem „Edytor kart”, a do poprzedniego ekranu przyciskiem „Powrót”.
+              działają jak w edytorze szablonu (import dodaje nowy tył). Do edycji kart przejdziesz
+              przyciskiem „Edytor kart”, a do poprzedniego ekranu przyciskiem „Powrót”.
             </li>
             <li>
-              Przypisz rewers na jednym z trzech poziomów: „Domyślny rewers talii” w „Opcje druku i
-              arkusza”, „Rewers szablonu” na elemencie „Karta” w edytorze szablonu albo „Rewers” w
-              panelu zaznaczonej karty. Opcja „Bez rewersu” wyłącza rewers dla wybranego szablonu
-              lub karty.
+              Przypisz tył na jednym z trzech poziomów: „Domyślny tył talii” w „Opcje druku i
+              arkusza”, „Tył szablonu” na elemencie „Karta” w edytorze szablonu albo „Tył” w panelu
+              zaznaczonej karty. Opcja „Bez tyłu” wyłącza tył dla wybranego szablonu lub karty.
+            </li>
+            <li>
+              Przód i tył powinny mieć ten sam rozmiar, orientację i rogi. Przy przypisaniu tyłu o
+              innym rozmiarze program pokaże różnicę i zapyta o zgodę. Zmiana rozmiaru szablonu
+              powiązanego z innymi otwiera okno z przyciskami „Utwórz kopię w nowym rozmiarze”,
+              „Zmień mimo to” i „Anuluj” oraz wyborem dopasowania zawartości: przeskalowanie albo
+              elementy w tych samych miejscach. Elementy poza kartą mają w drzewie znak ostrzeżenia.
             </li>
           </ol>
           <h3 id="pl-druk-dwustronny">Druk dwustronny</h3>
           <ol>
             <li>
-              W „Opcje druku i arkusza” otwórz sekcję „Druk dwustronny” i zaznacz „Drukuj rewersy
+              W „Opcje druku i arkusza” otwórz sekcję „Druk dwustronny” i zaznacz „Drukuj tyły
               (przód i tył w parach stron)”.
             </li>
             <li>
@@ -925,7 +938,7 @@
             </li>
             <li>
               Przyjrzyj się kartce pod światło, zmierz przesunięcie krzyżyków i wpisz poprawkę w
-              polach „Korekta rewersu X (mm)” i „Korekta rewersu Y (mm)”.
+              polach „Korekta tyłu X (mm)” i „Korekta tyłu Y (mm)”.
             </li>
           </ol>
           <h3 id="pl-tryb-drukarni">Tryb drukarni (spad i znaczniki)</h3>
@@ -1034,7 +1047,7 @@
           <ul>
             <li>
               Na ekranie startowym są dwie zakładki: „Moje projekty” i „Moje szablony”. „Moje
-              szablony” to wszystkie awersy i rewersy zapisane w tej przeglądarce i nie ma osobnej
+              szablony” to wszystkie przody i tyły zapisane w tej przeglądarce i nie ma osobnej
               biblioteki szablonów. „Użyj w projekcie” tworzy nowy projekt z kopią szablonu,
               „Duplikuj” robi kopię z dopiskiem „(kopia)”.
             </li>
@@ -1251,8 +1264,15 @@
           <h3 id="en-kreator">A new template</h3>
           <ol>
             <li>
-              On the start screen, under “New template”, click “Front” (front of the card, opens the
-              wizard) or “Back” (back of the card, opens the back editor right away).
+              On the start screen, under “New template”, click “Front” or “Back”. Both sides start
+              with the wizard (name, format, orientation, corners, colour, starting layout).
+            </li>
+            <li>
+              “Size as in template” at the top of the format section copies width, height,
+              orientation and corner radius from an existing front or back. Copied fields are
+              locked; “Make editable” lets you change them. When you pick a back in the front
+              wizard, the checked “Assign this back to the template” assigns it to the new front
+              right away.
             </li>
             <li>
               You can also click “Create your own cards”. At the top are “My templates” (recently
@@ -1852,6 +1872,13 @@
               options”, “Template card back” on the “Card” node in the template editor, or “Card
               back” in the selected card panel. Pick “No back” to switch it off for a specific
               template or card.
+            </li>
+            <li>
+              Front and back should share size, orientation and corners. When you assign a back of a
+              different size, the app shows the difference and asks for confirmation. Resizing a
+              template linked to others opens a dialog with “Create a copy in the new size”, “Change
+              anyway” and “Cancel”, plus how to fit the content: scale it or keep elements in place.
+              Elements outside the card get a warning mark in the tree.
             </li>
           </ol>
           <h3 id="en-druk-dwustronny">Double-sided printing</h3>

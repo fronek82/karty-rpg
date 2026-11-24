@@ -8,14 +8,14 @@ import { kliknijPobierzPdf, nowaPustaKartka, otworzDruk, otworzUstawieniaAplikac
  * - przeniesienie „Pobierz PDF” do rozwijanego menu „Pobierz” (bez osobnego przycisku obok).
  */
 
-test('Nowy szablon od zera: krok Awers / Rewers (PL i EN), Rewers otwiera od razu edytor rewersu', async ({
+test('Nowy szablon od zera: krok Przód / Tył (PL i EN), Tył przez kreator otwiera edytor tyłu', async ({
   page,
 }) => {
   await page.goto('./#/wlasne/nowy');
 
   const menu = page.getByRole('navigation', { name: 'Strona karty' });
-  const linkAwers = menu.getByRole('link', { name: /^Awers/ });
-  const btnRewers = menu.getByRole('button', { name: /^Rewers/ });
+  const linkAwers = menu.getByRole('link', { name: /^Przód/ });
+  const btnRewers = menu.getByRole('link', { name: /^Tył/ });
   await expect(linkAwers).toBeVisible();
   await expect(btnRewers).toBeVisible();
 
@@ -35,10 +35,12 @@ test('Nowy szablon od zera: krok Awers / Rewers (PL i EN), Rewers otwiera od raz
   await page.keyboard.press('Escape');
   const menuEn = page.getByRole('navigation', { name: 'Card side' });
   await expect(menuEn.getByRole('link', { name: /^Front/ })).toBeVisible();
-  await expect(menuEn.getByRole('button', { name: /^Back/ })).toBeVisible();
+  await expect(menuEn.getByRole('link', { name: /^Back/ })).toBeVisible();
 
-  // Rewers od razu tworzy projekt i otwiera edytor rewersu.
-  await menuEn.getByRole('button', { name: /^Back/ }).click();
+  // Tył: kreator (krok 1), potem nowy projekt i edytor tyłu.
+  await menuEn.getByRole('link', { name: /^Back/ }).click();
+  await expect(page).toHaveURL(/#\/wlasne\/nowy\/rewers$/);
+  await page.getByRole('button', { name: /Next: back editor/ }).click();
   await expect(page).toHaveURL(/#\/projekt\/[^/]+\/rewers\/[^/]+$/, { timeout: 15000 });
   await expect(page.getByRole('heading', { level: 1, name: 'Card back editor' })).toBeVisible({
     timeout: 15000,

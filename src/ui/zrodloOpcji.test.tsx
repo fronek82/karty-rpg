@@ -28,7 +28,7 @@ it('wybrana pozycja: zwykłe id i źródło z data-zrodlo (bez atrybutu – proj
     { id: 'rewers:p:r1', zrodlo: 'globalny' },
     { id: 'p:s', zrodlo: 'inny-projekt' },
   ]);
-  expect(screen.getByRole('group', { name: 'Zapisane rewersy' })).toBeTruthy();
+  expect(screen.getByRole('group', { name: 'Zapisane tyły' })).toBeTruthy();
 });
 
 it('pusta lista rewersów globalnych – bez grupy', () => {

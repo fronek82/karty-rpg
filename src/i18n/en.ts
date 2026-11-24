@@ -543,7 +543,7 @@ export const en: Slownik = {
   'kreator.grupaTyly': 'Backs',
   'kreator.opcjaSzablonu': '{nazwa} – {rozmiar} mm',
   'kreator.skopiowaneZ': 'Copied from: {nazwa}',
-  'kreator.odblokuj': 'Unlock',
+  'kreator.odblokuj': 'Make editable',
   'kreator.przypiszTyl': 'Assign this back to the template',
   'zgodnosc.rozmiar':
     'Front {przod} mm, back {tyl} mm – the back will be stretched to fit the front.',

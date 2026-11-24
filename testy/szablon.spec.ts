@@ -34,7 +34,7 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   page,
 }) => {
   await page.goto('./#/wlasne/nowy');
-  await page.getByRole('link', { name: /^Awers/ }).click();
+  await page.getByRole('link', { name: /^Przód/ }).click();
   await page.getByLabel('Nazwa szablonu').fill('Karta testowa');
   await page.getByText('Mini Euro').click();
   await page.getByRole('button', { name: 'poziomo' }).click();
@@ -241,11 +241,12 @@ test('Edytor szablonu: zapis ręczny (Ctrl+S), okno przy wyjściu, eksport i imp
   // Ten sam plik awersu w Edytorze rewersu wczytuje się jako rewers.
   await zapisz.click();
   await page.goto('./');
-  await page.locator('.start-menu button.pasek-menu').click();
-  await expect(page.getByLabel('Nazwa rewersu')).toBeVisible({ timeout: 15000 });
+  await page.locator('.start-menu a.pasek-rewers').click();
+  await page.getByRole('button', { name: /Dalej: edytor tyłu/ }).click();
+  await expect(page.getByLabel('Nazwa tyłu')).toBeVisible({ timeout: 15000 });
   await page.locator('.pasek-gorny input[type=file]').setInputFiles(plik);
-  const linkRewersu = page.getByRole('link', { name: /^Dodano rewers „Karta z pliku 2/ });
+  const linkRewersu = page.getByRole('link', { name: /^Dodano tył „Karta z pliku 2/ });
   await expect(linkRewersu).toBeVisible();
   await linkRewersu.click();
-  await expect(page.getByLabel('Nazwa rewersu')).toHaveValue(/^Karta z pliku 2/);
+  await expect(page.getByLabel('Nazwa tyłu')).toHaveValue(/^Karta z pliku 2/);
 });

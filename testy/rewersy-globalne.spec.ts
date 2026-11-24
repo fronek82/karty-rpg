@@ -30,9 +30,10 @@ test('zaprojektowany rewers jest dostępny do wybrania przy dowolnej karcie w os
 }) => {
   // 1) Zaprojektuj rewers przez „Nowy szablon od zera → Rewers”.
   await page.goto('./#/wlasne/nowy');
-  await page.getByRole('button', { name: /^Rewers/ }).click();
+  await page.getByRole('link', { name: /^Tył/ }).click();
+  await page.getByRole('button', { name: /Dalej: edytor tyłu/ }).click();
   await expect(page).toHaveURL(/#\/projekt\/.+\/rewers\//, { timeout: 15000 });
-  const poleNazwy = page.getByLabel('Nazwa rewersu');
+  const poleNazwy = page.getByLabel('Nazwa tyłu');
   await expect(poleNazwy).toBeVisible({ timeout: 15000 });
   await poleNazwy.fill('Rewers Warlock');
   await zapisano(page);
@@ -50,8 +51,8 @@ test('zaprojektowany rewers jest dostępny do wybrania przy dowolnej karcie w os
 
   // 3) W panelu zaznaczonej karty wybierz „Rewers Warlock” z zapisanych rewersów.
   const panelKarty = page.getByRole('complementary', { name: 'Zaznaczone karty' });
-  const wyborRewersu = panelKarty.getByLabel('Rewers', { exact: true });
-  await expect(wyborRewersu.locator('optgroup[label="Zapisane rewersy"] option')).toHaveText([
+  const wyborRewersu = panelKarty.getByLabel('Tył', { exact: true });
+  await expect(wyborRewersu.locator('optgroup[label="Zapisane tyły"] option')).toHaveText([
     'Rewers Warlock',
   ]);
   await wyborRewersu.selectOption({ label: 'Rewers Warlock' });
@@ -70,6 +71,6 @@ test('zaprojektowany rewers jest dostępny do wybrania przy dowolnej karcie w os
   await page.getByRole('button', { name: /Pusta kartka A4/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   const drukMaus = await otworzDruk(page);
-  await expect(drukMaus.getByLabel('Domyślny rewers talii')).toHaveCount(0);
-  await expect(drukMaus.getByRole('button', { name: /Nowy rewers/ })).toHaveCount(0);
+  await expect(drukMaus.getByLabel('Domyślny tył talii')).toHaveCount(0);
+  await expect(drukMaus.getByRole('button', { name: /Nowy tył/ })).toHaveCount(0);
 });
