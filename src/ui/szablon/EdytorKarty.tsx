@@ -15,6 +15,7 @@ import {
   duplikujRewersWProjekcie,
   przypiszRewers,
   rewersJakoSzablon,
+  przodRewersu,
   szablonDoRewersu,
   unikalnaNazwa,
   ustawStalyObrazRewersu,
@@ -61,7 +62,25 @@ const rysujPrzod: RysujPodglad = (klucz, ctx) => {
   const sz = JSON.parse(klucz) as Szablon;
   return renderujKarte(sz, { dane: danePodgladu(sz) }, ctx);
 };
-const rysujTyl: RysujPodglad = (klucz, ctx) => renderujRewers(JSON.parse(klucz) as Rewers, ctx);
+/** Podgląd tyłu: pola powiązane z przodem (ta sama nazwa) pokazują wartości przykładowe przodu. */
+const rysujTyl: RysujPodglad = (klucz, ctx) => {
+  const { rewers, przod } = JSON.parse(klucz) as {
+    rewers: Rewers;
+    przod?: Pick<Szablon, 'korzen' | 'warianty' | 'przyklad'>;
+  };
+  return renderujRewers(
+    rewers,
+    ctx,
+    przod
+      ? {
+          awers: {
+            szablon: przod as Szablon,
+            dane: danePodgladu(przod as Szablon),
+          },
+        }
+      : undefined,
+  );
+};
 
 /**
  * Konfiguracja strony karty: wszystko, czym różnią się edytory przodu i tyłu. Sam edytor
@@ -206,7 +225,21 @@ export const STRONY: Record<StronaKarty, KonfiguracjaStrony> = {
     ustawStalyObraz: ustawStalyObrazRewersu,
     kluczRysunku: (p, id, w) => {
       const r = p.rewersy?.find((x) => x.id === id);
-      return r ? JSON.stringify({ ...szablonDoRewersu(r, w), nazwa: '' }) : '';
+      if (!r) return '';
+      const przod = przodRewersu(p, id);
+      return JSON.stringify({
+        rewers: { ...szablonDoRewersu(r, w), nazwa: '' },
+        // Z przodu tylko to, co wpływa na podgląd tyłu: pola (z wariantami) i wartości przykładowe.
+        ...(przod
+          ? {
+              przod: {
+                korzen: przod.korzen,
+                ...(przod.warianty ? { warianty: przod.warianty } : {}),
+                ...(przod.przyklad ? { przyklad: przod.przyklad } : {}),
+              },
+            }
+          : {}),
+      });
     },
     rysuj: rysujTyl,
     przedrostekSvg: 'rw-',
@@ -258,6 +291,10 @@ export function EdytorKarty({
   const { projekt, zmien } = edycja;
   const szablon = useMemo(() => k.znajdz(projekt, id), [k, projekt, id]);
   const rewers = strona === 'tyl' ? projekt.rewersy?.find((r) => r.id === id) : undefined;
+  const przodTylu = useMemo(
+    () => (rewers ? przodRewersu(projekt, id) : undefined),
+    [rewers, projekt, id],
+  );
   const [idKopii, ustawIdKopii] = useState('');
   const kopia = idKopii ? k.znajdz(projekt, idKopii) : undefined;
   const [bladRozmiaru, ustawBladRozmiaru] = useState(false);
@@ -442,6 +479,25 @@ export function EdytorKarty({
           </button>
         }
         wgrajStalyObraz={wgrajStalyObraz}
+        przodTylu={
+          przodTylu && {
+            szablon: przodTylu,
+            zmienPrzyklad: (klucz, wartosc, grupuj) =>
+              zmien(
+                (p) =>
+                  STRONY.przod.zmienSzablon(p, przodTylu.id, (s) => {
+                    // Pusta wartość – bez wpisu (podgląd wraca do nazwy pola).
+                    const { [klucz]: _stara, ...przyklad } = s.przyklad ?? {};
+                    void _stara;
+                    return {
+                      ...s,
+                      przyklad: wartosc ? { ...przyklad, [klucz]: wartosc } : przyklad,
+                    };
+                  }),
+                grupuj ? { klucz: `rewers:przyklad-przodu:${klucz}` } : {},
+              ),
+          }
+        }
         podklad={
           strona === 'przod' && szablon
             ? {

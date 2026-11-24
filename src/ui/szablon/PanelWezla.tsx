@@ -18,7 +18,9 @@ import {
   type StylTekstu,
   type Szablon,
   type Wezel,
+  wszystkieWezly,
 } from '../../model/szablon';
+import { kluczPolaPrzodu } from '../../silnik/karta';
 import { nazwaWezla } from './DrzewoSzablonu';
 import { Liczba, Lista, Przelacznik, Sekcja } from './Kontrolki';
 import { PanelPolozenia, type RozmiaryKotwicy } from './PanelPolozenia';
@@ -62,6 +64,7 @@ export function PanelWezla({
   mozeNaSwobodny = true,
   bezDanych = false,
   korzenSwobodnyTylko = false,
+  przodTylu,
 }: {
   szablon: Szablon;
   wezel: Wezel;
@@ -92,6 +95,8 @@ export function PanelWezla({
   bezDanych?: boolean;
   /** Korzeń musi pozostać kontenerem swobodnym (np. w edytorze rewersu). */
   korzenSwobodnyTylko?: boolean;
+  /** Tył: przód, z którego pola o tej samej nazwie biorą dane kart. */
+  przodTylu?: PrzodTylu;
 }) {
   const id = wezel.id;
   const korzen = wezel.id === szablon.korzen.id;
@@ -198,6 +203,9 @@ export function PanelWezla({
                 />
               </div>
             )
+          )}
+          {bezDanych && (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
+            <PowiazanieZPrzodem pole={pole} przod={przodTylu} />
           )}
           {pole.klucz && (pole.typ === 'tekst' || pole.typ === 'wartosc') && (
             <div className="pole-panelu">
@@ -621,5 +629,60 @@ export function PanelWezla({
         />
       )}
     </>
+  );
+}
+
+/** Przód powiązany z edytowanym tyłem i zmiana jego wartości przykładowych. */
+export interface PrzodTylu {
+  szablon: Szablon;
+  zmienPrzyklad: (klucz: string, wartosc: string, grupuj: boolean) => void;
+}
+
+/**
+ * Pole tekstowe tyłu a dane kart: pole o nazwie pola przodu pokazuje wartość przykładową przodu
+ * (edytowalną tutaj) i na każdej karcie przejmuje jej wartość; inne – podpowiedź z nazwami pól.
+ */
+function PowiazanieZPrzodem({
+  pole,
+  przod,
+}: {
+  pole: PoleTekst | PoleWartosc;
+  przod: PrzodTylu | undefined;
+}) {
+  if (!przod) return <p className="podpis">{t('rewers.poleBezPrzodu')}</p>;
+  const klucz = kluczPolaPrzodu(przod.szablon, pole);
+  if (!klucz) {
+    const nazwy = [
+      ...new Set(
+        wszystkieWezly(przod.szablon)
+          .filter(
+            (w): w is PoleTekst | PoleWartosc =>
+              w.typ === pole.typ && !!(w as PoleTekst | PoleWartosc).klucz,
+          )
+          .map((w) => w.nazwa || w.klucz!),
+      ),
+    ];
+    return (
+      <p className="podpis">
+        {nazwy.length
+          ? t('rewers.poleNazwyPrzodu', { nazwy: nazwy.map((n) => `„${n}”`).join(', ') })
+          : t('rewers.poleStale')}
+      </p>
+    );
+  }
+  const id = `przyklad-tylu-${pole.id}`;
+  return (
+    <div className="pole-panelu">
+      <label htmlFor={id}>{t('rewers.przykladZPrzodu', { szablon: przod.szablon.nazwa })}</label>
+      <PoleWielowierszowe
+        kluczRozmiaru={`szablon:przyklad:${pole.typ === 'tekst' ? 'tekst' : 'krotki'}`}
+        id={id}
+        rows={pole.typ === 'tekst' ? 3 : 1}
+        value={przod.szablon.przyklad?.[klucz] ?? ''}
+        onChange={(e) => przod.zmienPrzyklad(klucz, e.target.value, !czyWklejanieWToku())}
+        onPaste={(e) => obsluzWklejenieZPdf(e, (v) => przod.zmienPrzyklad(klucz, v, false))}
+      />
+      <p className="podpis">{t('rewers.przykladZPrzoduOpis', { pole: pole.nazwa ?? '' })}</p>
+    </div>
   );
 }

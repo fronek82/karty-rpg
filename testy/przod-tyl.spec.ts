@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { otworzDruk, zapisano } from './pomoc';
-import { dodaj, drzewo, kartaNaKartce, panel, sekcja } from './szablonUI';
+import { dodaj, drzewo, kartaNaKartce, nazwij, panel, sekcja, zaznacz } from './szablonUI';
 
 /*
  * Przód i tył karty: wspólny edytor, kreator tyłu, „Rozmiar jak w szablonie”, kontrola zgodności
@@ -244,4 +244,50 @@ test('zmiana rozmiaru podpiętego tyłu → „Anuluj” i „Zmień mimo to”;
   await expect(page.locator('#karta-szer')).toHaveValue('31.5');
   await expect(element).toContainText('12,5 · 3');
   await expect(element.getByTestId('poza-karta')).toHaveCount(0);
+});
+
+test('tył: pole o nazwie pola przodu pokazuje i zmienia wartość przykładową przodu', async ({
+  page,
+}) => {
+  const id = await nowyTyl(page, 'Tył z danymi', 'Standard / Poker');
+  const adresTylu = page.url();
+  await dodaj(page, 'Tekst', 'Napis');
+  await expect(panel(page).getByText(/Gdy ten tył zostanie przypisany do przodu/)).toBeVisible();
+  await zapisano(page);
+
+  await page.goto(`./#/projekt/${id}/nowy-szablon`);
+  await jakWSzablonie(page, 'Tył z danymi');
+  await page.getByLabel('Nazwa szablonu').fill('Czary');
+  await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+  const adresPrzodu = page.url();
+  await dodaj(page, 'Tekst', 'Rodzaj');
+  await panel(page).getByLabel('Wartość przykładowa', { exact: true }).fill('Kula ognia');
+  await zapisano(page);
+
+  await page.goto(adresTylu);
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+  const podglad = page.locator('.karta-podgladu svg');
+  // Pole bez odpowiednika na przodzie: podpowiedź z nazwami pól przodu.
+  await zaznacz(page, 'Napis');
+  await expect(panel(page).getByText(/nazwę pola z przodu: „Rodzaj”/)).toBeVisible();
+  // Tekst na podglądzie to krzywe – zmianę treści widać po zmianie rysunku.
+  const rysunek = () => podglad.innerHTML();
+  const przed = await rysunek();
+  await nazwij(page, 'Rodzaj');
+  const przyklad = panel(page).getByLabel('Wartość przykładowa (z przodu „Czary”)');
+  await expect(przyklad).toHaveValue('Kula ognia');
+  await expect.poll(rysunek).not.toBe(przed);
+  const zPrzykladem = await rysunek();
+  await przyklad.fill('Tarcza');
+  await expect.poll(rysunek).not.toBe(zPrzykladem);
+  await zapisano(page);
+
+  // Wartość przykładowa jest wspólna z przodem.
+  await page.goto(adresPrzodu);
+  await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
+  await zaznacz(page, 'Rodzaj');
+  await expect(panel(page).getByLabel('Wartość przykładowa', { exact: true })).toHaveValue(
+    'Tarcza',
+  );
 });

@@ -1453,6 +1453,14 @@ export const pl = {
   'rewersy.usunGlobalnyEtykieta': 'Usuń zapisany tył {nazwa}',
   'rewersy.dodanoZGlobalnych': 'Dodano tył „{nazwa}” do projektu.',
   'rewers.tytulEdytora': 'Edytor tyłu',
+  'rewers.przykladZPrzodu': 'Wartość przykładowa (z przodu „{szablon}”)',
+  'rewers.przykladZPrzoduOpis':
+    'Na każdej karcie pole pokaże jej wartość „{pole}” z przodu; stały tekst – gdy karta jej nie ma. Wartość przykładowa jest wspólna z przodem i trafia tylko do podglądu.',
+  'rewers.poleNazwyPrzodu':
+    'Ten sam tekst na każdej karcie. Aby pole brało wartość z danych karty, nadaj mu nazwę pola z przodu: {nazwy}.',
+  'rewers.poleStale': 'Ten sam tekst na każdej karcie.',
+  'rewers.poleBezPrzodu':
+    'Ten sam tekst na każdej karcie. Gdy ten tył zostanie przypisany do przodu, pole o nazwie pola z przodu przejmie wartość z danych karty.',
   'rewers.brak': 'Nie znaleziono takiego tyłu w projekcie.',
   'rewers.zaimportowano': 'Dodano tył „{nazwa}” – otwórz.',
   'rewers.nazwa': 'Nazwa tyłu',

@@ -55,7 +55,7 @@ import { zasobyElementow } from '../../dane/biblioteka';
 import { elementyPozaKarta } from '../../dane/zgodnosc';
 import { Liczba, Sekcja } from './Kontrolki';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
-import { PanelWezla } from './PanelWezla';
+import { PanelWezla, type PrzodTylu } from './PanelWezla';
 import { PanelWyrownania } from './PanelWyrownania';
 import { PozycjeMenuDodaj, RODZAJE } from './PozycjeMenuDodaj';
 import {
@@ -157,6 +157,8 @@ export interface UstawieniaEdytoraDrzewa {
   plikSzablonu: PlikSzablonuEdytora;
   wgrajStalyObraz: (poleId: string, plik: File, sygnal: AbortSignal) => Promise<void>;
   podklad?: PodkladEdytora | undefined;
+  /** Tył: przód, z którego pola o tej samej nazwie biorą dane kart (wartość przykładowa w panelu). */
+  przodTylu?: PrzodTylu | undefined;
   panelKarty: (k: KontekstPaneluKarty) => ReactNode;
 }
 
@@ -1120,6 +1122,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                     : {})}
                   zajeteKlucze={zajeteKlucze}
                   {...(bezDanych ? { bezDanych: true } : {})}
+                  {...(u.przodTylu ? { przodTylu: u.przodTylu } : {})}
                   {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
                   rozmiaryKotwicy={rozmiaryKotwicy}
                   {...(wyrownanie ? { wyrownanie } : {})}

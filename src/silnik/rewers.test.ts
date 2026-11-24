@@ -4,7 +4,7 @@ import { scenyDoPdf } from '../druk/pdf';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import type { Rewers, Szablon, TrybTla } from '../model/szablon';
 import type { Czcionka, RejestrCzcionek } from './czcionki';
-import { renderujRewers, wspolneKluczeRewersu } from './karta';
+import { kluczPolaPrzodu, renderujRewers, wspolneKluczeRewersu } from './karta';
 import type { ElementSceny, GlifNaScenie, Scena } from './scena';
 import { scenaDoSvg } from './svg';
 import { tekstPoLukuNaScene, ulozTekst } from './tekst';
@@ -767,6 +767,16 @@ describe('wspólne pola awersu i rewersu', () => {
   it('wspolneKluczeRewersu wykrywa wyłącznie jednoznaczne pola (w tym kolumny tabeli) o tym samym typie i nazwie', () => {
     const klucze = wspolneKluczeRewersu(awersSzablon, rewersWspolny);
     expect([...klucze].sort()).toEqual(['ilustracja', 'nazwa', 'sila']);
+  });
+
+  it('kluczPolaPrzodu: klucz pola przodu o tym samym typie i nazwie, bez konfliktów', () => {
+    const pole = (id: string) =>
+      rewersWspolny.korzen.dzieci.find((w) => w.id === id) ?? awersSzablon.korzen;
+    expect(kluczPolaPrzodu(awersSzablon, pole('r-nazwa'))).toBe('nazwa');
+    expect(kluczPolaPrzodu(awersSzablon, pole('r-koszt-zly-typ'))).toBeUndefined();
+    expect(kluczPolaPrzodu(awersSzablon, pole('r-obraz'))).toBeUndefined();
+    // „Notatka” na przodzie ma dwa różne klucze – bez powiązania.
+    expect(kluczPolaPrzodu(awersSzablon, { ...pole('r-nazwa'), nazwa: 'Notatka' })).toBeUndefined();
   });
 
   it('renderujRewers podstawia wartości z awersu (tekst, obraz i tabela), a pomija inny typ i puste pola', () => {
