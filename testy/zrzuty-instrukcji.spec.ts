@@ -68,6 +68,10 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
       }
       const status = page.locator('.status-zapisu');
       if (await status.count()) await expect(status).toHaveText(t('projekt.zapisano'));
+      // Bez numeru wersji w stopce (zrzut ma być taki sam po każdej zmianie wersji).
+      const stopka = page.locator('.stopka span').first();
+      if (await stopka.count())
+        await stopka.evaluate((el, nazwa) => (el.textContent = nazwa), t('aplikacja.nazwa'));
       await page.mouse.move(0, 0);
       await page.screenshot({
         path: galeria
@@ -98,11 +102,6 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
     test('start', async ({ page }) => {
       await page.goto('./');
       await expect(page.getByRole('heading', { name: t('start.mojeProjekty') })).toBeVisible();
-      // Bez numeru wersji w stopce (zrzut ma być taki sam po każdej zmianie wersji).
-      await page
-        .locator('.stopka span')
-        .first()
-        .evaluate((el, nazwa) => (el.textContent = nazwa), t('aplikacja.nazwa'));
       await zapisz(page, 'start');
     });
 
@@ -175,6 +174,20 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
         .locator('legend', { hasText: t('uklad.kalibracja') })
         .evaluate((el) => el.scrollIntoView({ block: 'start' }));
       await zapisz(page, 'ustawienia');
+    });
+    test('biblioteki z zaimportowanym ozdobnikiem', async ({ page }) => {
+      const nazwa = jezyk === 'pl' ? 'Gwiazdka' : 'Star';
+      await page.goto('./#/biblioteki/ozdobniki');
+      await page.getByTestId('plik-svg').setInputFiles('testy/zasoby/gwiazdka.svg');
+      await page.getByLabel(t('biblioteka.nazwa'), { exact: true }).fill(nazwa);
+      await page.getByRole('button', { name: t('biblioteka.import.dodaj') }).click();
+      await expect(
+        page.getByTestId('siatka-biblioteki').getByRole('button', {
+          name: nazwa,
+          exact: true,
+        }),
+      ).toBeVisible();
+      await zapisz(page, 'biblioteki');
     });
     if (galeria) {
       test('własne karty', async ({ page }) => {

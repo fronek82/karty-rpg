@@ -95,3 +95,6 @@ dla tych rodzajów i widoku biblioteki projektu; teksty, instrukcja, SPEC.
   domyślnej aplikacji (EB Garamond z `public/czcionki`).
 - N8c: dodatkowo naprawione angielskie „Gotowe” („Ready-made” → „Done”).
 - Czcionki: ten sam plik pod inną rodziną lub wariantem to osobny wpis (poprawka po CI N8a).
+- Instrukcja po N8: odświeżone wszystkie zrzuty (`public/instrukcja-zrzuty/`), nowy szósty zrzut
+  `biblioteki` (zakładka „Ozdobniki” z zaimportowanym SVG) w sekcji „Biblioteki”; generator
+  zrzutów podmienia numer wersji w stopce na każdym ekranie, nie tylko na starcie.
