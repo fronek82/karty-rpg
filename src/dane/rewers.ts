@@ -279,6 +279,23 @@ export function duplikujRewersWProjekcie(
   return { projekt: { ...p, zmieniono: teraz(), rewersy }, id: noweId };
 }
 
+/**
+ * Przód, z którego tył bierze dane kart (pola o tej samej nazwie): szablon z tym tyłem, potem
+ * szablon pierwszej karty z tym tyłem (na karcie, szablonie albo talii). Brak – `undefined`.
+ */
+export function przodRewersu(p: Projekt, id: string): Szablon | undefined {
+  const przypisany = p.szablony.find((s) => s.rewersId === id);
+  if (przypisany) return przypisany;
+  const szablony = new Map(p.szablony.map((s) => [s.id, s]));
+  const rewersy = new Map((p.rewersy ?? []).map((r) => [r.id, r]));
+  for (const talia of p.talie)
+    for (const karta of talia.karty) {
+      const s = szablony.get(karta.szablonId);
+      if (s && rewersKarty(rewersy, karta, s, talia)?.id === id) return s;
+    }
+  return undefined;
+}
+
 export function przypisaniaRewersu(
   p: Projekt,
   id: string,

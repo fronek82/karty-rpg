@@ -1101,6 +1101,17 @@ function indeksujPolaAwersu(szablon: Szablon): IndeksPolAwersu {
   return { pola, tabele };
 }
 
+/**
+ * Klucz danych pola przodu, z którego pole tyłu (tekst lub wartość) przejmuje treść karty: ten sam
+ * typ i nazwa (bez wielkości liter). Brak dopasowania albo kilka różnych kluczy – `undefined`.
+ */
+export function kluczPolaPrzodu(szablon: Szablon, pole: Wezel): string | undefined {
+  if (czyKontener(pole) || (pole.typ !== 'tekst' && pole.typ !== 'wartosc') || !pole.nazwa)
+    return undefined;
+  const nazwa = normalizujNazwePola(pole.nazwa);
+  return (nazwa && indeksujPolaAwersu(szablon).pola.get(`${pole.typ}:${nazwa}`)) || undefined;
+}
+
 function dopasujKolumnyTabeli(rewersTabela: PoleTabela, awersTabela: PoleTabela) {
   const wiersze = Math.max(1, Math.floor(rewersTabela.wiersze ?? 1));
   const awersWiersze = Math.max(1, Math.floor(awersTabela.wiersze ?? 1));

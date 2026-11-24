@@ -62,3 +62,19 @@ Dwa edytory miały razem 933 linie, z czego ok. 250 to powielone fragmenty: pane
 (duplikat, link do kopii, eksport/import pliku, stały obraz, teksty). Po zmianie jest jedna
 implementacja każdego z nich; tył dostał przy okazji rogi, orientację, postrzępienie, zestawy
 stylów i grupy stylów.
+
+## Poprawka po etapie: wartość przykładowa na tyle
+
+Pole tekstowe tyłu o tej samej nazwie i typie co pole przodu z danymi już wcześniej przejmowało
+na kartach wartość karty (`renderujRewers`, `awers`), ale edytor tyłu tego nie pokazywał.
+
+- Podgląd tyłu renderuje się z przodem powiązanym (`przodRewersu`: szablon z tym tyłem, potem
+  szablon pierwszej karty, która go używa) i jego danymi podglądu (`danePodgladu`).
+- Panel pola tekstowego tyłu: przy powiązaniu – „Wartość przykładowa (z przodu „…”)”; edycja
+  zmienia `przyklad` przodu (jedna wartość, bez nowego pola w schemacie rewersu). Bez powiązania –
+  podpowiedź z nazwami pól przodu albo informacja o przypisaniu tyłu.
+- Decyzja: tył używany przez kilka przodów pokazuje przykład pierwszego z nich (bez wyboru w UI);
+  etykieta pola podaje nazwę tego przodu.
+- Decyzja: „Stały tekst” zostaje także przy powiązanym polu – to treść dla kart bez wartości.
+- Decyzja: zmiana przykładu z edytora tyłu trafia do tej samej historii cofania; miniatura tyłu
+  pokazuje przykłady przodu (jak miniatura przodu).

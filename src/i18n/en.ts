@@ -1457,6 +1457,14 @@ export const en: Slownik = {
   'rewersy.usunGlobalnyEtykieta': 'Delete saved card back {nazwa}',
   'rewersy.dodanoZGlobalnych': 'Added card back “{nazwa}” to the project.',
   'rewers.tytulEdytora': 'Card back editor',
+  'rewers.przykladZPrzodu': 'Sample value (from front “{szablon}”)',
+  'rewers.przykladZPrzoduOpis':
+    'On each card this field shows its “{pole}” value from the front; the fixed text is used when the card has none. The sample value is shared with the front and only used in the preview.',
+  'rewers.poleNazwyPrzodu':
+    'Same text on every card. To take a value from the card data, name the field like a front field: {nazwy}.',
+  'rewers.poleStale': 'Same text on every card.',
+  'rewers.poleBezPrzodu':
+    'Same text on every card. Once this back is assigned to a front, a field named like a front field takes the value from the card data.',
   'rewers.brak': 'No such card back was found in this project.',
   'rewers.zaimportowano': 'Added card back “{nazwa}” – open it.',
   'rewers.nazwa': 'Card back name',
