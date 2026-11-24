@@ -255,9 +255,7 @@ describe('domyślna nazwa nowego rewersu', () => {
   it('pochodzi z i18n i jest unikalna (także względem nazw spoza projektu)', () => {
     const p = wlasny('n1', { rewersy: [rewers('r1', 'Tył')] });
     expect(nowyRewers(p).projekt.rewersy?.at(-1)?.nazwa).toBe('Tył 2');
-    expect(nowyRewers(p, { zajeteNazwy: ['tył 2'] }).projekt.rewersy?.at(-1)?.nazwa).toBe(
-      'Tył 3',
-    );
+    expect(nowyRewers(p, { zajeteNazwy: ['tył 2'] }).projekt.rewersy?.at(-1)?.nazwa).toBe('Tył 3');
     expect(unikalnaNazwa('Tył', [])).toBe('Tył');
   });
 });

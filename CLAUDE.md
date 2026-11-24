@@ -24,8 +24,12 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
 - Ukończone N9 (`docs/plan-N9.md`): pusty stan karty na podglądzie i w drzewie (zamiast komunikatu
   w panelu „Karta”), wzory tła z biblioteki SVG (`wzorTla.rodzaj: 'svg'` – odwołanie do elementu
   ozdobnego, układy siatka/cegiełka/pion, element sceny `wzor`: SVG `<pattern>`, PDF – kopie wektorowe).
+- Ukończone N10 (`docs/plan-N10.md`): jeden edytor przodu i tyłu (`ui/szablon/EdytorKarty.tsx`
+  z konfiguracją `STRONY`, `PanelKarty.tsx`), kreator tyłu z gotowymi układami, „Rozmiar jak
+  w szablonie”, kontrola zgodności rozmiarów przodu i tyłu (`dane/zgodnosc.ts`), w UI „Przód”
+  i „Tył” zamiast „Awers” i „Rewers” (w kodzie, kluczach i plikach nazwy bez zmian).
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 30` (`src/model/projekt.ts`), baza Dexie w wersji 5.
+- Schemat projektu: `WERSJA_SCHEMATU = 31` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
 ## Gdzie co jest
 
@@ -71,13 +75,15 @@ model  →  ozdobniki / silnik  →  druk  →  dane  →  ui
   - `start/` – ekran startowy, Moje projekty / Moje szablony (`ListaProjektow.tsx`, logika
     w `mojeSzablony.ts`), kreatory,
     import, galeria online.
-  - `szablon/` – Edytor szablonu (awers): drzewo, panele właściwości, tryb swobodny (mysz);
-    `EdytorDrzewa.tsx` – część wspólna z Edytorem rewersu (zmiany edytora robi się tam), okno
-    „Układ ze zdjęcia” (`OknoUkladuZeZdjecia.tsx`).
+  - `szablon/` – Edytor karty, jeden dla przodu i tyłu (`EdytorKarty.tsx`, różnice stron
+    w `STRONY`; panel całej karty `PanelKarty.tsx`): drzewo, panele właściwości, tryb swobodny
+    (mysz); `EdytorDrzewa.tsx` – drzewo i podgląd, okno „Układ ze zdjęcia”
+    (`OknoUkladuZeZdjecia.tsx`), okno zmiany rozmiaru (`ZmianaRozmiaru.tsx`), kreator obu stron
+    (`Kreator.tsx`).
   - `biblioteki/` – ekran „Biblioteki” (`#/biblioteki/<zakładka>?powrot=…`: jedna biblioteka
     użytkownika – obrazy, czcionki, ozdobniki; wspólny `StronaBiblioteki.tsx`, szczegóły ozdobnika
     `EdytorOzdobnika.tsx`, import SVG `ImportSvg.tsx`). Hooki `useBiblioteka.ts` (`liveQuery`).
-  - `rewers/` – Edytor rewersu (nakładka na `EdytorDrzewa`). `kartka/` – Edytor kart (dane kart, układ kartki, druk, pobieranie).
+  - `rewers/` – podgląd i lista rewersów projektu. `kartka/` – Edytor kart (dane kart, układ kartki, druk, pobieranie).
   - `biblioteka/` – edytor ramki 9-slice i podglądy elementów (`podgladElementu.ts`).
   - Style: `tokeny.css` (zmienne motywów), `App.css`, `edytory.css`, `pasek.css`.
 - `testy/` – Playwright (`*.spec.ts`, wzorce `*-snapshots/`, pomocniki `*UI.ts`, `pomoc.ts`).
