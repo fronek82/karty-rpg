@@ -735,7 +735,11 @@ describe('klocki M2: ramka karty, romb, etykiety, separator, tabela', () => {
 
   it('ramka karty: prostokąt z odsunięciem, rogi zgodne z kartą', () => {
     const { scena } = renderujKarte(szablonCzaru, { dane: {} }, ctx);
-    const r = scena.elementy.at(-1)!;
+    // Karta z zaokrąglonymi rogami: zawartość w grupie przyciętej do konturu karty.
+    const g = scena.elementy[0]!;
+    expect(scena.elementy).toHaveLength(1);
+    expect(g.typ === 'grupa' && g.przyciecieKonturem).toBeTruthy();
+    const r = (g.typ === 'grupa' ? g.elementy : []).at(-1)!;
     expect(r).toMatchObject({ typ: 'prostokat', x: 1.15, y: 1.15 });
     if (r.typ !== 'prostokat') throw new Error();
     expect(r.szer).toBeCloseTo(63 - 2.3, 6);
@@ -1017,5 +1021,37 @@ describe('kwadrat i koło z szeroką etykietą', () => {
       if (tlo?.typ !== 'prostokat') throw new Error(ksztalt);
       expect(tlo.szer).toBeCloseTo(tlo.wys, 6);
     }
+  });
+});
+
+describe('zaokrąglone rogi karty', () => {
+  const s = (promienRogow?: number): Szablon => ({
+    id: 's',
+    nazwa: 's',
+    rozmiar: { tryb: 'mm', szerokosc: 40, wysokosc: 60 },
+    ...(promienRogow !== undefined ? { promienRogow } : {}),
+    korzen: { id: 'k', typ: 'kolumna', tlo: '#336699', dzieci: [] },
+  });
+
+  it('cała zawartość (także tło kontenera głównego) przycięta do konturu karty', () => {
+    const { scena } = renderujKarte(s(4), { dane: {} }, ctx);
+    expect(scena.elementy).toHaveLength(1);
+    const g = scena.elementy[0]!;
+    if (g.typ !== 'grupa') throw new Error('brak grupy');
+    expect(g.przyciecieKonturem).toBeDefined();
+    expect(g.elementy[0]).toMatchObject({ typ: 'prostokat', szer: 40, wys: 60 });
+    expect(scenaDoSvg(scena)).toContain('clip-path');
+  });
+
+  it('bez zaokrąglenia – bez grupy przycięcia', () => {
+    const { scena } = renderujKarte(s(), { dane: {} }, ctx);
+    expect(scena.elementy[0]).toMatchObject({ typ: 'prostokat', wypelnienie: '#336699' });
+  });
+
+  it('spad: przycięcie do ramki ze spadem, bez zaokrąglenia', () => {
+    const { scena } = renderujKarte(s(4), { dane: {} }, ctx, { spad: 3 });
+    const g = scena.elementy[0]!;
+    expect(g.typ === 'grupa' && g.przyciecie).toEqual({ x: -3, y: -3, szer: 46, wys: 66 });
+    expect(g.typ === 'grupa' && g.przyciecieKonturem).toBeFalsy();
   });
 });

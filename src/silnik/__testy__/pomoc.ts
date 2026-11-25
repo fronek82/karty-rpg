@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { pt } from '../../model/jednostki';
 import type { Szablon } from '../../model/szablon';
+import type { ElementSceny, Scena } from '../scena';
 import { RejestrCzcionek, wczytajCzcionke } from '../czcionki';
 
 const KATALOG = fileURLToPath(new URL('../../../public/czcionki/', import.meta.url));
@@ -101,3 +102,11 @@ export const szablonBroni: Szablon = {
     ],
   },
 };
+
+/** Elementy karty bez grupy przycięcia do zaokrąglonych rogów (karta z `promienRogow`). */
+export function zawartoscKarty(scena: Scena): ElementSceny[] {
+  const [g, ...reszta] = scena.elementy;
+  return g?.typ === 'grupa' && g.przyciecieKonturem && reszta.length === 0
+    ? g.elementy
+    : scena.elementy;
+}

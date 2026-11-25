@@ -614,6 +614,10 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     ) : undefined;
   const wymiary = (x: string) => wezlyKarty?.find((w) => w.id === x);
   const { szer, wys } = wymiaryKarty(szablon);
+  // Zaokrąglone rogi karty także na podkładzie i cieniu podglądu (w % – niezależnie od skali).
+  const promienKarty = szablon.postrzepienie?.sila
+    ? 0
+    : Math.min(szablon.promienRogow ?? 0, szer / 2, wys / 2);
   const pozaKarta = wezlyKarty
     ? elementyPozaKarta(wezlyKarty, szer, wys, szablon.korzen.id)
     : undefined;
@@ -945,6 +949,11 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                       aspectRatio: `${szer} / ${wys}`,
                       width: `min(100%, ${(szer / wys) * 70}vh)`,
                       touchAction: 'none',
+                      ...(promienKarty > 0
+                        ? {
+                            borderRadius: `${(promienKarty / szer) * 100}% / ${(promienKarty / wys) * 100}%`,
+                          }
+                        : {}),
                     }}
                     onPointerDown={gest.onPointerDown}
                     onPointerMove={gest.onPointerMove}
