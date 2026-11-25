@@ -101,6 +101,7 @@ model  →  ozdobniki / silnik  →  druk  →  dane  →  ui
 - Każdy etap zaczynaj od aktualnego `main`; po etapie: PR, scalenie do `main`, sprawdzenie
   wdrożenia na Pages (krok CI „Sprawdzenie strony po wdrożeniu”).
 - Commit i push po każdym kroku; komunikaty commitów po polsku.
+- Po wypchnięciu zmian zawsze otwieraj PR bez pytania (także przy drobnych poprawkach).
 - Przed PR: przegląd agentem `recenzent` i poprawki zgłoszonych błędów; pełne testy robi CI.
 - Bez gotowców pod konkretne gry – edytor daje tylko ogólne klocki.
 

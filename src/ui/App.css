@@ -1993,6 +1993,18 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   resize: vertical;
 }
 
+/* Pole wyboru z etykietą w jednej linii (np. „Tło do krawędzi slotu”). */
+label.pole-panelu.wybor {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+label.pole-panelu.wybor input[type='checkbox'] {
+  width: auto;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
 .licznik {
   display: inline-flex;
   align-items: center;
