@@ -7,6 +7,9 @@ import type { OpisZasobu } from '../model/projekt';
 import type { Szablon } from '../model/szablon';
 import { normalizujNazwe } from '../model/nazwy';
 
+/** Pola z treścią tekstową – tylko je czyści opcja „tekst z PDF” (bez odmian, parametrów, liczb). */
+const TRESC_TEKSTOWA = new Set<string | undefined>(['tekst', 'wpis']);
+
 export const LIMIT_TABELI = { bajty: 8 * 1024 * 1024, wiersze: 500, kolumny: 128, sztuki: 2000 };
 export interface WierszImportu {
   numer: number;
@@ -249,7 +252,7 @@ export function sprawdzImport(
           );
       } else
         dane[pole.klucz] =
-          opcje.tekstZPdf && pole.typPola !== 'tabela' ? wyczyscTekstZPdf(wartosc) : wartosc;
+          opcje.tekstZPdf && TRESC_TEKSTOWA.has(pole.typPola) ? wyczyscTekstZPdf(wartosc) : wartosc;
     }
     return { dane, ilosc: n };
   });
