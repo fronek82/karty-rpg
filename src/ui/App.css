@@ -1482,6 +1482,29 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   }
 }
 
+/* Przyciski powiększenia kartek – nad panelem, poza kolumną kartek (nie zasłaniają ich ani nie przesuwają). */
+.pasek-powiekszenia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.pasek-powiekszenia + .panel-edytora {
+  max-height: calc(100vh - 8.6rem);
+}
+
+.pasek-powiekszenia .wartosc-powiekszenia {
+  min-width: 4.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pasek-powiekszenia .podpis {
+  margin: 0 0.25rem;
+  font-size: 0.8rem;
+}
+
 .kartki {
   display: flex;
   flex-direction: column;
@@ -1490,9 +1513,17 @@ button.kafelek-podgladu:focus-visible .podpowiedz {
   min-width: 0;
 }
 
+/* Powiększone kartki są szersze niż kolumna – przewijanie w poziomie, wyrównanie do lewej. */
+.kartki[data-powiekszone] {
+  overflow-x: auto;
+  align-items: flex-start;
+  padding-bottom: 0.5rem;
+}
+
 .kartka {
-  width: 100%;
-  max-width: 72rem;
+  width: calc(100% * var(--powiekszenie, 1));
+  max-width: calc(72rem * var(--powiekszenie, 1));
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;

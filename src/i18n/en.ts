@@ -1122,6 +1122,12 @@ export const en: Slownik = {
     'Click an empty slot to add a card. Drag a card with the mouse; it cannot overlap another one.',
   'kartka.pomocZaznaczanie':
     'Shift + click adds a card to the selection; dragging over an empty area selects with a rectangle. You edit several cards of the same type at once.',
+  'kartka.powiekszenie': 'Sheet zoom',
+  'kartka.powiekszenieWartosc': 'Zoom {procent}% – click to fit to width (100%)',
+  'kartka.przybliz': 'Zoom in',
+  'kartka.oddal': 'Zoom out',
+  'kartka.dopasujPowiekszenie': 'Fit to width (100%)',
+  'kartka.powiekszenieKolko': 'Ctrl + mouse wheel – zoom',
   'kartka.pomocSkroty':
     'Shortcuts: Delete – delete, Ctrl+D – duplicate, Ctrl+Z – undo (Ctrl+Shift+Z – redo), arrows – move, Escape – deselect.',
   'kartka.pomocDruk':

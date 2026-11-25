@@ -30,6 +30,7 @@ import {
 } from '../silnik/scena';
 import { tekstNaScene, ulozTekst } from '../silnik/tekst';
 import {
+  liniaCiecia,
   symboleWSzarosci,
   wSkaliSzarosci,
   zbudujArkusz,
@@ -240,6 +241,14 @@ export function zbudujStronyRewersow(
         });
       }
     }
+
+    // Linie cięcia przodu odbite jak karty – na tyłach widać, gdzie ciąć (także od strony rewersu).
+    if (doNarysowania.length > 0)
+      for (const o of wynikPrzodu.odcinkiCiecia?.[n] ?? []) {
+        const [x1, x2] = os === 'pionowa' ? [strona.szer - o.x1, strona.szer - o.x2] : [o.x1, o.x2];
+        const [y1, y2] = os === 'pozioma' ? [strona.wys - o.y1, strona.wys - o.y2] : [o.y1, o.y2];
+        elementy.push(liniaCiecia({ x1, y1, x2, y2 }, u.linie));
+      }
 
     if (drukarnia?.znacznikiCiecia && celeNetto.length > 0) {
       elementy.push(...elementyZnacznikowCiecia(celeNetto, spad));

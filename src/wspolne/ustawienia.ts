@@ -17,3 +17,6 @@ export function jezykDomyslny(jezykPrzegladarki: string | undefined): 'pl' | 'en
 
 /** Klucz sposobu dopasowania zawartości karty przy zmianie rozmiaru: `skaluj` albo `zostaw`. */
 export const KLUCZ_DOPASOWANIA_ZAWARTOSCI = 'karty.dopasowanieZawartosci';
+
+/** Klucz powiększenia kartek w Edytorze kart (liczba, 1 = szerokość kolumny). */
+export const KLUCZ_POWIEKSZENIA_KARTKI = 'karty.powiekszenieKartki';

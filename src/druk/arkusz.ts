@@ -135,6 +135,11 @@ export interface WynikArkusza {
   /** Tylko przy `rozmiary: 'mieszane'` – układ pasów; `rozmieszczenie` i `siatka` są wtedy puste. */
   mieszane?: WynikMieszane;
   ostrzezenia: OstrzezenieArkusza[];
+  /**
+   * Widoczne odcinki linii cięcia na każdej stronie przodu (mm, już przycięte do papieru) –
+   * strony tyłów rysują ich lustrzane odbicie. Brak w trybie drukarni.
+   */
+  odcinkiCiecia?: Odcinek[][];
 }
 
 /** Układ kart w pasach (mm od rogu strony). */
@@ -325,7 +330,7 @@ export function odcinkiCiecia(
 }
 
 /** Linia przerywana z wzorem wyśrodkowanym na odcinku (kreski zaczynają i kończą się symetrycznie). */
-function liniaCiecia(o: { x1: Mm; y1: Mm; x2: Mm; y2: Mm }, l: LinieCiecia): ElementSceny {
+export function liniaCiecia(o: { x1: Mm; y1: Mm; x2: Mm; y2: Mm }, l: LinieCiecia): ElementSceny {
   const dlugosc = Math.hypot(o.x2 - o.x1, o.y2 - o.y1);
   const okres = l.kreska + l.przerwa;
   if (!(l.kreska > 0) || !(l.przerwa > 0)) {
@@ -684,6 +689,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
 
   const strony: Scena[] = [];
   const pozycjeKart: PozycjaKartyNaStronie[] = [];
+  const odcinkiStron: Odcinek[][] = [];
   const geometriaNaglowkow: WynikArkusza['naglowki'] = [];
   const liczbaStron = Math.max(
     rozmieszczenie.liczbaStron,
@@ -781,8 +787,9 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
         );
       }
     } else {
-      for (const o of przytnijLinieCiecia(odcinki, granice, u.linie))
-        elementy.push(liniaCiecia(o, u.linie));
+      const widoczne = przytnijLinieCiecia(odcinki, granice, u.linie);
+      odcinkiStron[strony.length] = widoczne;
+      for (const o of widoczne) elementy.push(liniaCiecia(o, u.linie));
     }
 
     const dolSiatki = poczatek.y + rzedySiatki * slot.wysokosc + odstepRzedu(rzedySiatki - 1);
@@ -900,6 +907,7 @@ export function zbudujArkusz(arkusz: Arkusz, talia: Talia, ctx: KontekstArkusza)
     },
     ...(tytul && u.tytul ? { tytul: { rozmiar: rozmiarTytulu, dlugosc: tytul.szer } } : {}),
     ostrzezenia,
+    ...(drukarnia ? {} : { odcinkiCiecia: odcinkiStron }),
   };
 }
 
@@ -1097,6 +1105,7 @@ function zbudujMieszane(w: {
 
   const strony: Scena[] = [];
   const pozycjeKart: PozycjaKartyNaStronie[] = [];
+  const odcinkiStron: Odcinek[][] = [];
   const granice = graniceCiecia(strona, ctx.kalibracja);
   for (let n = 0; n < liczbaStron; n++) {
     const elementy: ElementSceny[] = [];
@@ -1145,8 +1154,9 @@ function zbudujMieszane(w: {
         elementy.push(...elementyZnacznikowCiecia(naStronie, drukarnia.spad));
       }
     } else {
-      for (const o of przytnijLinieCiecia(odcinki, granice, u.linie))
-        elementy.push(liniaCiecia(o, u.linie));
+      const widoczne = przytnijLinieCiecia(odcinki, granice, u.linie);
+      odcinkiStron[strony.length] = widoczne;
+      for (const o of widoczne) elementy.push(liniaCiecia(o, u.linie));
     }
 
     if (u.tytul && tytul) {
@@ -1215,6 +1225,7 @@ function zbudujMieszane(w: {
     mieszane: { obszar, karty, pasy, wolne, pominiete: uklad.pominiete },
     ...(tytul && u.tytul ? { tytul: { rozmiar: rozmiarTytulu, dlugosc: tytul.szer } } : {}),
     ostrzezenia,
+    ...(drukarnia ? {} : { odcinkiCiecia: odcinkiStron }),
   };
 }
 
