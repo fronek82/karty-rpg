@@ -434,9 +434,9 @@ a.start-wsparcie-przycisk {
   box-sizing: border-box;
   width: 90%;
   padding: 0.55rem 1rem;
-  border: 1px solid #000;
+  border: 1px solid var(--wsparcie-obrys);
   border-radius: 8px;
-  background: #5f7fff;
+  background: var(--wsparcie-tlo);
   color: var(--tekst-wsparcia);
   font-family:
     Poppins,
@@ -463,6 +463,13 @@ a.start-wsparcie-przycisk:focus-visible {
   width: 1.4rem;
   height: 1.4rem;
   flex: none;
+  fill: none;
+  stroke: var(--wsparcie-filizanka);
+}
+
+.start-wsparcie-ikona .start-wsparcie-kubek {
+  fill: var(--wsparcie-filizanka);
+  stroke: var(--wsparcie-obrys);
 }
 
 @media print {

@@ -20,6 +20,10 @@
   --tekst-przygaszony: #5c5560;
   /* Napis na przycisku wsparcia (tło #5F7FFF w stylu Buy Me a Coffee). */
   --tekst-wsparcia: #ffffff;
+  /* Przycisk wsparcia w barwach Buy Me a Coffee – te same w obu motywach. */
+  --wsparcie-tlo: #5f7fff;
+  --wsparcie-filizanka: #ffdd00;
+  --wsparcie-obrys: #000000;
   --tlo-zaslonki: #000000;
   --obramowanie: #d3c6ba;
   --obramowanie-karty: #b4a0c8;
@@ -89,6 +93,10 @@
   --tekst: #ece4dc;
   --tekst-przygaszony: #b9aea8;
   --tekst-wsparcia: #000000;
+  /* Przycisk wsparcia w barwach Buy Me a Coffee – te same w obu motywach. */
+  --wsparcie-tlo: #5f7fff;
+  --wsparcie-filizanka: #ffdd00;
+  --wsparcie-obrys: #000000;
   --obramowanie: #4a4248;
   --obramowanie-karty: #b4a0c8;
   --pasek: #154b63;

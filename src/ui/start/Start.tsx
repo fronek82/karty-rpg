@@ -43,16 +43,13 @@ function IkonaFilizanki() {
   return (
     <svg className="start-wsparcie-ikona" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path
-        fill="#FFDD00"
-        stroke="#000"
+        className="start-wsparcie-kubek"
         strokeWidth="1"
         strokeLinejoin="round"
         d="M4 8h13v6.5A5.5 5.5 0 0 1 11.5 20h-2A5.5 5.5 0 0 1 4 14.5Z"
       />
-      <path fill="none" stroke="#FFDD00" strokeWidth="2" d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17" />
+      <path strokeWidth="2" d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17" />
       <path
-        fill="none"
-        stroke="#FFDD00"
         strokeWidth="1.5"
         strokeLinecap="round"
         d="M8 3.5c-.8 1 .8 1.6 0 2.8M11.5 3.5c-.8 1 .8 1.6 0 2.8"
