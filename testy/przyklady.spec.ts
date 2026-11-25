@@ -20,7 +20,7 @@ import { odcinkiCieciaProstokatow } from '../src/druk/pasy';
 import { importujProjekt } from '../src/dane/archiwum';
 import { renderujKarte } from '../src/silnik/karta';
 import type { Scena } from '../src/silnik/scena';
-import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
+import { rejestrTestowy, zawartoscKarty } from '../src/silnik/__testy__/pomoc';
 import {
   daneCzaru,
   daneStatystyk,
@@ -70,13 +70,13 @@ test.setTimeout(180_000);
  * o ułamki mm (domyślne odstępy klocków) – układ pionowy sprawdza wzorzec wizualny.
  */
 const tekstSceny = (s: Scena) =>
-  s.elementy.flatMap((e) =>
+  zawartoscKarty(s).flatMap((e) =>
     e.typ === 'tekst'
       ? [`${e.kolor}|${e.glify.map((g) => `${g.klucz}@${g.skala.toPrecision(4)}`).join(' ')}`]
       : [],
   );
 const poziomo = (s: Scena) =>
-  s.elementy.flatMap((e) => (e.typ === 'tekst' ? e.glify.map((g) => g.x) : []));
+  zawartoscKarty(s).flatMap((e) => (e.typ === 'tekst' ? e.glify.map((g) => g.x) : []));
 
 /** Eksport projektu z interfejsu → projekt odczytany w Node. */
 async function eksportZInterfejsu(page: Page) {
@@ -416,8 +416,9 @@ async function porownajOzdobna(page: Page) {
   expect(wzor.ostrzezenia).toEqual([]);
   expect([zUI.scena.szer, zUI.scena.wys]).toEqual([wzor.scena.szer, wzor.scena.wys]);
   expect(tekstSceny(zUI.scena)).toEqual(tekstSceny(wzor.scena));
+  // Karta z zaokrąglonymi rogami: elementy w grupie przyciętej do konturu karty.
   const symbole = (sc: Scena) =>
-    sc.elementy
+    zawartoscKarty(sc)
       .flatMap((e) =>
         e.typ === 'symbol' ? [{ klucz: e.klucz, e: e.macierz[4], f: e.macierz[5] }] : [],
       )
@@ -434,7 +435,8 @@ async function porownajOzdobna(page: Page) {
 
   // Pozostałe rysunki (tło, panel z podwójną linią, kształt z własnego SVG): ten sam typ, ta sama
   // liczba i położenie wszystkich liczb (kontury, prostokąty) z tolerancją 0,2 mm.
-  const rysunki = (sc: Scena) => sc.elementy.filter((e) => e.typ !== 'tekst' && e.typ !== 'symbol');
+  const rysunki = (sc: Scena) =>
+    zawartoscKarty(sc).filter((e) => e.typ !== 'tekst' && e.typ !== 'symbol');
   const liczby = (v: unknown): (number | string)[] =>
     typeof v === 'number' || typeof v === 'string'
       ? [v]
