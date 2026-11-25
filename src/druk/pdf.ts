@@ -71,6 +71,14 @@ export interface OpcjePdf {
 
 const r3 = (v: number) => zaokraglij(v, 3);
 
+/** Ile operatorów przekazywać naraz do pdf-lib (rozwija je jako argumenty funkcji). */
+const PARTIA_OPERATOROW = 10_000;
+
+/** Dopisuje operatory bez `push(...zrodlo)` – rozwinięcie dużej tablicy przepełnia stos. */
+function dolacz(cel: PDFOperator[], zrodlo: readonly PDFOperator[]): void {
+  for (const o of zrodlo) cel.push(o);
+}
+
 function kolorRgb(k: Kolor): [number, number, number] {
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/.exec(kolorSceny(k));
   if (!m) return [0, 0, 0];
@@ -139,8 +147,8 @@ function rysujKsztalt(
     const [r, g, b] = kolorRgb(wyp);
     ops.push(setFillingRgbColor(r, g, b));
   }
-  if (o) ops.push(...ustawObrys(o));
-  ops.push(...operatorySciezki(kontur));
+  if (o) dolacz(ops, ustawObrys(o));
+  dolacz(ops, operatorySciezki(kontur));
   ops.push(operatorMalowania(!!wyp, !!o, evenodd));
   ops.push(popGraphicsState());
   return ops;
@@ -425,7 +433,10 @@ class BudowniczyPdf {
         );
         zapas = Math.max(zapas, o.grubosc);
       }
-      ops.push(...operatorySciezki(c.kontur, (v) => Math.round(v * 1e4) / 1e4));
+      dolacz(
+        ops,
+        operatorySciezki(c.kontur, (v) => Math.round(v * 1e4) / 1e4),
+      );
       ops.push(operatorMalowania(c.wypelnienie !== undefined, !!o, !!c.evenodd));
       ops.push(popGraphicsState());
     }
@@ -496,7 +507,7 @@ class BudowniczyPdf {
       pushGraphicsState(),
       concatTransformationMatrix(PT_NA_MM, 0, 0, -PT_NA_MM, 0, scena.wys * PT_NA_MM),
     ];
-    for (const e of scena.elementy) ops.push(...(await this.element(scena, e, zasoby)));
+    for (const e of scena.elementy) dolacz(ops, await this.element(scena, e, zasoby));
     ops.push(popGraphicsState());
     if (stany.size > 0) {
       strona.node.set(
@@ -504,7 +515,9 @@ class BudowniczyPdf {
         this.doc.context.obj({ Type: 'Group', S: 'Transparency', CS: 'DeviceRGB' }),
       );
     }
-    strona.pushOperators(...ops);
+    // Partiami: pdf-lib rozwija argumenty (`push(...ops)`), a duża strona przekracza limit stosu.
+    for (let i = 0; i < ops.length; i += PARTIA_OPERATOROW)
+      strona.pushOperators(...ops.slice(i, i + PARTIA_OPERATOROW));
   }
 
   private async element(scena: Scena, e: ElementSceny, zasoby: ZasobyPdf): Promise<PDFOperator[]> {
@@ -566,7 +579,7 @@ class BudowniczyPdf {
         ops.push(popGraphicsState());
         if (this.opcje.warstwaTekstowa && e.wierszeTekst && e.wierszeTekst.length > 0) {
           const opsTekstu = this.operatoryWarstwyTekstowej(e.wierszeTekst, zasoby.fontTekstu);
-          if (opsTekstu.length > 0) ops.push(...opsTekstu);
+          if (opsTekstu.length > 0) dolacz(ops, opsTekstu);
         }
         return ops;
       }
@@ -629,8 +642,10 @@ class BudowniczyPdf {
         const s = Math.round(Math.sin(kat) * 1e6) / 1e6;
         const ops: PDFOperator[] = [pushGraphicsState()];
         // Przycięcie w układzie otaczającym – przed przekształceniem grupy.
-        if (e.przyciecieKonturem)
-          ops.push(...operatorySciezki(e.przyciecieKonturem), clip(), endPath());
+        if (e.przyciecieKonturem) {
+          dolacz(ops, operatorySciezki(e.przyciecieKonturem));
+          ops.push(clip(), endPath());
+        }
         if (e.przyciecie) {
           const p = e.przyciecie;
           ops.push(rectangle(r3(p.x), r3(p.y), r3(p.szer), r3(p.wys)), clip(), endPath());
@@ -676,7 +691,7 @@ class BudowniczyPdf {
           };
           // Wewnątrz Form XObject zerujemy odziedziczone ca/CA do 1, żeby krycie nie mnożyło się podwójnie.
           const wewOps: PDFOperator[] = [setGraphicsState(zasobyGrupy.extGState(1))];
-          for (const d of e.elementy) wewOps.push(...(await this.element(scena, d, zasobyGrupy)));
+          for (const d of e.elementy) dolacz(wewOps, await this.element(scena, d, zasobyGrupy));
           const zasobyDict: Record<string, PDFDict> = {};
           if (lokalneX.size > 0) {
             const xo = this.doc.context.obj({});
@@ -709,7 +724,7 @@ class BudowniczyPdf {
           const nazwaForm = zasoby.xObject(`T|${++this.licznikGrup}`, refForm, 'T');
           ops.push(setGraphicsState(zasoby.extGState(e.krycie)), drawObject(nazwaForm));
         } else {
-          for (const d of e.elementy) ops.push(...(await this.element(scena, d, zasoby)));
+          for (const d of e.elementy) dolacz(ops, await this.element(scena, d, zasoby));
         }
         ops.push(popGraphicsState());
         return ops;

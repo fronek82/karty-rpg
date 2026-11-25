@@ -90,6 +90,23 @@ describe('scenyDoPdf', () => {
     expect(doc.getPage(1).getWidth()).toBeCloseTo((88 / 25.4) * 72, 1);
   });
 
+  it('strona z bardzo wieloma operatorami nie przepełnia stosu', async () => {
+    // Regresja: `push(...ops)` całej strony przekraczał limit argumentów („Maximum call stack size exceeded”).
+    const elementy: ElementSceny[] = [];
+    for (let i = 0; i < 200_000; i++)
+      elementy.push({
+        typ: 'linia',
+        x1: i % 200,
+        y1: 0,
+        x2: i % 200,
+        y2: 10,
+        obrys: { kolor: '#000000', grubosc: 0.1 },
+      });
+    const scena: Scena = { szer: 210, wys: 297, elementy, glify: polaczGlify() };
+    const { bajty } = await scenyDoPdf([scena]);
+    expect((await PDFDocument.load(bajty)).getPageCount()).toBe(1);
+  }, 60_000);
+
   it('tworzy stronę o wymiarach sceny (mm → pt)', async () => {
     const { scena } = renderujKarte(
       szablonBroni,
