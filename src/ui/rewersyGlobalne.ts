@@ -70,7 +70,9 @@ export async function zapiszRewersGlobalnie(
  * projektów – dzięki czemu także wcześniej zaprojektowane rewersy są od razu dostępne).
  * Pomija rewersy należące już do bieżącego projektu oraz identyczne kopie (ten sam klucz treści,
  * np. z projektów, które jedynie zaimportowały ten sam rewers). Rewersy o tej samej nazwie,
- * ale innej treści, zostają na liście.
+ * ale innej treści, zostają na liście. Kopia w bibliotece tyłu zapisanego w projekcie
+ * (`rewers:<projekt>:<tył>`) jest pomijana, gdy tego tyłu lub projektu już nie ma (usunięty
+ * w „Moich szablonach” lub razem z projektem) – wpis zostaje w bazie, żeby „Cofnij” go przywróciło.
  */
 export async function listaRewersowGlobalnych(
   biezacyProjektId?: string,
@@ -103,12 +105,17 @@ export async function listaRewersowGlobalnych(
     }
   };
   const ukryte = wczytajUkryte();
+  // Wpis z kluczem projektu jest aktualny tylko, gdy ten tył nadal istnieje w projekcie zapisanym
+  // w bazie. Bieżący projekt (pominięty w `zProjektow`) jest odfiltrowany wcześniej w pętli.
+  const czyOsierocony = (id: string): boolean =>
+    id.startsWith(PRZEDROSTEK_KLUCZA) && !trescWProjekcie.has(id);
   const przedrostekBiezacego = biezacyProjektId
     ? `${PRZEDROSTEK_KLUCZA}${biezacyProjektId}:`
     : undefined;
 
   for (const w of zBiblioteki) {
     if (przedrostekBiezacego && w.id.startsWith(przedrostekBiezacego)) continue;
+    if (czyOsierocony(w.id)) continue;
     const tresc = await trescWpisu(w.id);
     if (tresc !== undefined) {
       if (tresciWProjekcie?.has(tresc) || widzianeTresci.has(tresc)) continue;
