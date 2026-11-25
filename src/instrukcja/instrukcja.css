@@ -261,3 +261,41 @@ main:focus {
   background: var(--tlo-panelu);
   border-bottom: 1px solid var(--obramowanie);
 }
+
+/* Wsparcie autora (Buy Me a Coffee) na końcu instrukcji; wygląd jak na ekranie startowym. */
+.wsparcie {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 2.5rem 0 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--obramowanie);
+}
+.wsparcie p {
+  margin: 0;
+  color: var(--tekst-przygaszony);
+}
+a.wsparcie-przycisk {
+  display: inline-block;
+  padding: 0.55rem 1.4rem;
+  border: 1px solid var(--wsparcie-obrys);
+  border-radius: 8px;
+  background: var(--wsparcie-tlo);
+  color: var(--tekst-wsparcia);
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+a.wsparcie-przycisk:hover {
+  transform: translateY(-1px);
+}
+a.wsparcie-przycisk:focus-visible {
+  outline: 2px solid var(--tekst);
+  outline-offset: 2px;
+}
+@media print {
+  .wsparcie {
+    display: none;
+  }
+}
