@@ -18,6 +18,8 @@
   --pole: #fffaf5;
   --tekst: #2b2a2e;
   --tekst-przygaszony: #5c5560;
+  /* Napis na przycisku wsparcia (tło #5F7FFF w stylu Buy Me a Coffee). */
+  --tekst-wsparcia: #ffffff;
   --tlo-zaslonki: #000000;
   --obramowanie: #d3c6ba;
   --obramowanie-karty: #b4a0c8;
@@ -86,6 +88,7 @@
   --pole: #1f1b1e;
   --tekst: #ece4dc;
   --tekst-przygaszony: #b9aea8;
+  --tekst-wsparcia: #000000;
   --obramowanie: #4a4248;
   --obramowanie-karty: #b4a0c8;
   --pasek: #154b63;

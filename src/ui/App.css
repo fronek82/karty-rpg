@@ -410,6 +410,67 @@ textarea:focus-visible {
   margin-top: 0.75rem;
 }
 
+/* Wsparcie autora (Buy Me a Coffee) pod menu „Nowy szablon”: większy odstęp niż między kafelkami. */
+.start-menu .start-wsparcie {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.3rem;
+}
+
+.start-wsparcie-podpis {
+  margin: 0;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--tekst-przygaszony);
+}
+
+a.start-wsparcie-przycisk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  width: 90%;
+  padding: 0.55rem 1rem;
+  border: 1px solid #000;
+  border-radius: 8px;
+  background: #5f7fff;
+  color: var(--tekst-wsparcia);
+  font-family:
+    Poppins,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: transform 0.12s;
+}
+
+a.start-wsparcie-przycisk:hover {
+  transform: translateY(-1px);
+}
+
+a.start-wsparcie-przycisk:focus-visible {
+  outline: 2px solid var(--tekst);
+  outline-offset: 2px;
+}
+
+.start-wsparcie-ikona {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: none;
+}
+
+@media print {
+  .start-wsparcie {
+    display: none;
+  }
+}
+
 a.pasek-menu {
   display: block;
   padding: 0.85rem 1rem;
