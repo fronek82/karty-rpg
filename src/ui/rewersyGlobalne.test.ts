@@ -150,6 +150,8 @@ describe('rewersyGlobalne i paczka rewersu', () => {
     const pZmieniony = projektZ('proj-r', [przykladowyRewers('rewers', 'Rewers Warlock')]);
     await zapiszRewersGlobalnie(pZmieniony, new Map(), 'rewers');
     expect(biblioteka.size).toBe(1);
+    // Kopia w bibliotece jest na liście tylko, gdy jej projekt jest w bazie.
+    projektyWBazie.set('proj-r', { projekt: pZmieniony, zasoby: new Map() });
 
     // Starszy projekt sprzed biblioteki również pojawia się na liście.
     const pStary = projektZ('proj-stary', [przykladowyRewers('r-stary', 'Stary rewers')]);
@@ -210,5 +212,19 @@ describe('rewersyGlobalne i paczka rewersu', () => {
     });
     const lista = await listaRewersowGlobalnych('inny', new Set());
     expect(lista.map((x) => `${x.projektId}:${x.rewersId}`).sort()).toEqual(['pa:r1', 'pb:r2']);
+  });
+
+  it('pomija kopię w bibliotece tyłu usuniętego z projektu lub razem z projektem', async () => {
+    const pA = projektZ('pa', [przykladowyRewers('r1', 'Usunięty tył')]);
+    const pB = projektZ('pb', [przykladowyRewers('r2', 'Tył z usuniętego projektu')]);
+    await zapiszRewersGlobalnie(pA, new Map(), 'r1');
+    await zapiszRewersGlobalnie(pB, new Map(), 'r2');
+    // Tył usunięty w „Moich szablonach” (projekt został), drugi projekt usunięty w całości.
+    projektyWBazie.set('pa', { projekt: projektZ('pa'), zasoby: new Map() });
+    expect(await listaRewersowGlobalnych('nowy', new Set())).toEqual([]);
+    // „Cofnij” przywraca projekt – kopia w bibliotece znów jest na liście.
+    projektyWBazie.set('pb', { projekt: pB, zasoby: new Map() });
+    const lista = await listaRewersowGlobalnych('nowy', new Set());
+    expect(lista.map((x) => x.nazwa)).toEqual(['Tył z usuniętego projektu']);
   });
 });
