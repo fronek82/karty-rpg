@@ -304,27 +304,19 @@
           <h3 id="pl-kreator">Nowy szablon</h3>
           <ol>
             <li>
-              Na ekranie startowym w sekcji „Nowy szablon” kliknij „Przód” albo „Tył”. Obie strony
-              zaczynają od kreatora (nazwa, format, orientacja, rogi, kolor, gotowy układ).
+              Na ekranie startowym w sekcji „Nowy szablon” kliknij „Przód” albo „Tył”. Otworzy się
+              kreator. Przód i tył mają ten sam kreator.
             </li>
             <li>
-              Pole „Rozmiar jak w szablonie” na górze formatu kopiuje szerokość, wysokość,
-              orientację i zaokrąglenie rogów z istniejącego przodu albo tyłu. Skopiowane pola są
-              zablokowane, a przycisk „Odblokuj” pozwala je zmienić. Gdy w kreatorze przodu
-              wybierzesz tył, zaznaczone pole „Przypisz ten tył do szablonu” od razu przypisze go do
-              nowego przodu.
+              Wpisz „Nazwa szablonu” i wybierz „Format karty”: „Standard / Poker”, „Bridge”, „Mini
+              Euro”, „Mini American”, „Tarot”, „Kwadrat” albo „Własny rozmiar” w milimetrach.
             </li>
             <li>
-              Możesz też kliknąć „Stwórz własne karty”. Na górze są „Moje szablony” (ostatnio
-              zmienione; „Pokaż wszystkie” otwiera zakładkę „Moje szablony” na starcie), niżej
-              „Przykładowe szablony” i „Galeria szablonów online”. Kafelek tworzy projekt z kopią
-              szablonu (przykład dodaje też jedną kartę z danymi przykładowymi). „Importuj szablon”
-              wczytuje plik z innego komputera.
-            </li>
-            <li>
-              W kreatorze wpisz „Nazwa szablonu” i wybierz „Format karty”: „Standard / Poker”,
-              „Bridge”, „Mini Euro”, „Mini American”, „Tarot”, „Kwadrat” albo „Własny rozmiar” w
-              milimetrach.
+              Jeśli karta ma mieć rozmiar jak inny przód albo tył, wybierz ten szablon w polu
+              „Rozmiar jak w szablonie” na górze formatu. Szerokość, wysokość, orientacja i
+              zaokrąglenie rogów zostaną skopiowane i zablokowane; „Odblokuj” pozwala je zmienić.
+              Gdy w kreatorze przodu wybierzesz tył, pole „Przypisz ten tył do szablonu” (domyślnie
+              zaznaczone) od razu przypisze go do nowego przodu.
             </li>
             <li>Ustaw orientację, „Zaokrąglenie rogów (mm)” i „Kolor karty”.</li>
             <li>
@@ -333,6 +325,13 @@
             </li>
             <li>Kliknij „Dalej: układ pól”. Otworzy się edytor szablonu.</li>
           </ol>
+          <p>
+            Zamiast zaczynać od zera, możesz kliknąć na starcie „Stwórz własne karty”. Na górze są
+            „Moje szablony” (ostatnio zmienione; „Pokaż wszystkie” otwiera zakładkę „Moje szablony”
+            na starcie), niżej „Przykładowe szablony” i „Galeria szablonów online”. Kliknięcie
+            kafelka tworzy projekt z kopią szablonu (przykład dodaje też jedną kartę z danymi
+            przykładowymi). „Importuj szablon” wczytuje plik z innego komputera.
+          </p>
           <h3 id="pl-edytor-szablonu">Edytor szablonu</h3>
           <figure>
             <img
@@ -656,14 +655,16 @@
               żadnej reguły, działa „Domyślny kolor reguły”.
             </li>
             <li>
-              „Wersje z danych” (na końcu panelu kontenera) robią z niego przełącznik: każdy element
-              w środku to jedna gotowa wersja. Włączone na wierszu z polami (np. ikona i tekst)
-              składają całą jego zawartość w wersję 1, a „Dodaj wersję” dodaje kopię całego wiersza.
-              Zmień w niej ikonę i napis, na przykład z <em>Podejrzany</em> na <em>Wskazówka</em>.
-              Na karcie widać tylko tę wersję, której wartość (domyślnie <code>1</code>,
-              <code>2</code>, <code>3</code>…) wpiszesz w kolumnie przełącznika w CSV albo
-              wybierzesz w panelu karty. Przełącznik tyłu o tej samej nazwie wybiera wersję z tej
-              samej kolumny. Zaznacz element wersji w drzewie, żeby zobaczyć ją w podglądzie.
+              „Wersje z danych” (na końcu panelu kontenera) robią z kontenera przełącznik. Każdy
+              element w środku to jedna gotowa wersja, a karta pokazuje tylko jedną z nich.
+              Przykład: włącz opcję na wierszu z ikoną i tekstem. Cała jego zawartość staje się
+              wersją 1. „Dodaj wersję” dodaje kopię wiersza; zmień w niej ikonę i napis, na przykład
+              z
+              <em>Podejrzany</em> na <em>Wskazówka</em>. Którą wersję widać, decyduje wartość
+              (domyślnie <code>1</code>, <code>2</code>, <code>3</code>…) wpisana w kolumnie
+              przełącznika w CSV albo wybrana w panelu karty. Przełącznik tyłu o tej samej nazwie
+              wybiera wersję z tej samej kolumny. Zaznacz element wersji w drzewie, żeby zobaczyć ją
+              w podglądzie.
             </li>
             <li>
               W polu tekstowym możesz włączyć „Listy numerowane” dla wierszy zaczynających się od
@@ -770,30 +771,71 @@
           </ul>
           <h3 id="pl-import-tabel">Import z tabeli i wklejanie z PDF</h3>
           <p>
-            Większe zestawy kart wczytasz z arkusza kalkulacyjnego, a opisy skopiowane z plików PDF
-            wkleisz bez ręcznego poprawiania końców wierszy.
+            Większe zestawy kart wczytasz z arkusza kalkulacyjnego (Excel, LibreOffice Calc, Arkusze
+            Google). Jeden wiersz tabeli to jedna karta, a jedna kolumna to jedno pole karty.
+          </p>
+          <ol>
+            <li>
+              Przygotuj plik. Najprościej kliknąć „Eksportuj szablon CSV” w panelu po prawej. Plik
+              ma w pierwszym wierszu nazwy pól szablonu i kolumnę „Ilość”. Uzupełnij go w arkuszu i
+              zapisz jako CSV (UTF-8) albo XLSX.
+            </li>
+            <li>
+              W edytorze kartki kliknij „Importuj CSV lub XLSX” i wybierz plik. Pierwszy niepusty
+              wiersz pliku to nagłówki kolumn. W pliku XLSX z kilkoma arkuszami wybierz arkusz w
+              polu „Arkusz z pliku XLSX”.
+            </li>
+            <li>Wybierz „Szablon nowych kart”.</li>
+            <li>
+              W sekcji „Przypisz kolumny do pól” sprawdź, która kolumna trafia do którego pola.
+              Kolumny o nazwach takich jak pola są przypisane od razu. Kolumnę, której nie chcesz
+              wczytać, ustaw na „Pomiń”. „Ilość” to liczba sztuk karty do druku; pusta komórka
+              oznacza jedną sztukę.
+            </li>
+            <li>
+              Sprawdź tabelę „Pierwsze 5 wierszy danych” i kliknij „Dodaj karty”. Jeśli coś jest nie
+              tak, okno poda numer wiersza i pole z błędem.
+            </li>
+          </ol>
+          <p>
+            W kolumnie z obrazem wpisz nazwę obrazu z „Biblioteki”, dokładnie taką, jak na stronie
+            biblioteki. Obraz trzeba dodać do biblioteki przed importem.
+          </p>
+          <h4>Złącz łamane wiersze</h4>
+          <p>
+            Tekst skopiowany z PDF ma zwykle Enter na końcu każdej linii, tak jak w kolumnie
+            oryginału, a długie słowa są przeniesione z dywizem. Po wklejeniu do komórki tabeli
+            takie złamania zostają i na karcie opis rozpada się na krótkie linie. Zaznacz w oknie
+            importu „Złącz łamane wiersze”, a aplikacja przed dodaniem kart:
           </p>
           <ul>
+            <li>łączy linie jednego akapitu w ciągły tekst,</li>
             <li>
-              Przycisk „Importuj CSV lub XLSX” w edytorze kartki wczytuje karty z pliku tabeli.
-              Wybierz „Szablon nowych kart”, dopasuj kolumny w sekcji „Przypisz kolumny do pól” (w
-              tym „Ilość”), sprawdź podgląd i kliknij „Dodaj karty”.
+              skleja wyrazy przeniesione dywizem, na przykład <em>zie-</em> i <em>mię</em> w
+              <em>ziemię</em> (tylko gdy następna linia zaczyna się małą literą),
             </li>
-            <li>
-              Jeśli tekst w komórkach tabeli pochodzi z PDF, zaznacz w oknie importu „Złącz łamane
-              wiersze” – pola tekstowe zostaną oczyszczone tak samo jak przy wklejaniu. Wybór jest
-              zapamiętywany w przeglądarce.
-            </li>
-            <li>
-              Przy wklejaniu tekstu z PDF skrótem <kbd>Ctrl</kbd> + <kbd>V</kbd> do wielowierszowego
-              pola karty albo szablonu aplikacja usuwa sztuczne złamania wiersza i łączy wyrazy
-              podzielone dywizem. Puste linie między akapitami oraz punkty list zostają bez zmian.
-            </li>
-            <li>
-              Wklejony i oczyszczony tekst cofniesz skrótem <kbd>Ctrl</kbd> + <kbd>Z</kbd>. Na macOS
-              zamiast <kbd>Ctrl</kbd> działa <kbd>Cmd</kbd>.
-            </li>
+            <li>usuwa podwójne spacje i spacje na początku i końcu linii.</li>
           </ul>
+          <p>
+            Pusta linia oddziela akapity i zostaje. Linie zaczynające się od <code>1.</code>,
+            <code>2)</code>, <code>-</code> albo <code>•</code> też zostają osobno, więc listy się
+            nie sklejają. Opcja działa tylko na pola tekstowe i pola do wpisania; nazwy obrazów,
+            liczby i ilości zostają bez zmian.
+          </p>
+          <p>
+            Nie zaznaczaj tej opcji, gdy w komórkach celowo łamiesz wiersze, na przykład w krótkich
+            wierszykach albo statystykach wypisanych jedna pod drugą: aplikacja połączy je w jeden
+            wiersz. Wybór zapamiętuje przeglądarka, więc przy następnym imporcie opcja będzie
+            ustawiona tak samo.
+          </p>
+          <h4>Wklejanie z PDF do pola</h4>
+          <p>
+            To samo czyszczenie działa przy wklejaniu. Gdy wkleisz tekst z PDF skrótem
+            <kbd>Ctrl</kbd> + <kbd>V</kbd> do wielowierszowego pola karty albo szablonu, aplikacja
+            od razu łączy linie i wyrazy przeniesione dywizem. Akapity i listy zostają. Jeśli chcesz
+            zachować tekst w oryginalnej postaci, cofnij czyszczenie skrótem <kbd>Ctrl</kbd> +
+            <kbd>Z</kbd>. Na macOS zamiast <kbd>Ctrl</kbd> działa <kbd>Cmd</kbd>.
+          </p>
           <h3 id="pl-przeciaganie">Przeciąganie i skróty</h3>
           <p>
             Kartę przeciągasz myszą do innego slotu, także na inną stronę. Karty nie mogą na siebie
@@ -948,15 +990,10 @@
           </p>
           <p>
             Strefa bezpieczeństwa to pas przy krawędzi kartki, w który karty nie powinny wchodzić.
-          </p>
-          <p>
-            Punkt fotograficzny może przyciąć brzegi odbitki o 1 do 3 mm. Dlatego dla „Zdjęcie 10 ×
-            15 cm”, „Zdjęcie 13 × 18 cm” i „Zdjęcie 15 × 21 cm” pole „Margines bezpieczeństwa (mm)”
-            ma domyślnie 3 mm.
-          </p>
-          <p>
-            Karta w strefie daje ostrzeżenie, a sama strefa jest zaznaczona na kartce. Wartość 0
-            wyłącza strefę.
+            Jest zaznaczona na kartce, a karta, która w nią wchodzi, daje ostrzeżenie. Szerokość
+            pasa ustawia „Margines bezpieczeństwa (mm)”; wartość 0 wyłącza strefę. Punkt
+            fotograficzny może przyciąć brzegi odbitki o 1 do 3 mm, dlatego dla „Zdjęcie 10 × 15
+            cm”, „Zdjęcie 13 × 18 cm” i „Zdjęcie 15 × 21 cm” margines ma domyślnie 3 mm.
           </p>
           <h2 id="pl-rewersy-i-drukarnia">Tyły kart, druk dwustronny i drukarnia</h2>
           <p>
@@ -1033,10 +1070,10 @@
           <h3 id="pl-czcionki-i-pdf">Katalog czcionek i wyszukiwanie w PDF</h3>
           <ul>
             <li>
-              W „Opcje druku i arkusza” oraz w „Biblioteki” (zakładka „Czcionki”) sekcja „Katalog
-              Google Fonts” pozwala przeglądać kroje z polskimi znakami i dodawać je przyciskiem
-              „Pobierz”. Pobrana czcionka trafia do biblioteki, jest dostępna we wszystkich
-              projektach i działa później bez dostępu do sieci.
+              Sekcja „Katalog Google Fonts” jest w panelu „Opcje druku i arkusza” i na stronie
+              „Biblioteki” (zakładka „Czcionki”). Przeglądasz w niej kroje z polskimi znakami i
+              dodajesz je przyciskiem „Pobierz”. Pobrana czcionka trafia do biblioteki, jest
+              dostępna we wszystkich projektach i działa później bez dostępu do sieci.
             </li>
             <li>
               W sekcji „Opcje PDF” przełącznik „Niewidoczna warstwa tekstowa w PDF (wyszukiwanie i
@@ -1348,27 +1385,19 @@
           <h3 id="en-kreator">A new template</h3>
           <ol>
             <li>
-              On the start screen, under “New template”, click “Front” or “Back”. Both sides start
-              with the wizard (name, format, orientation, corners, colour, starting layout).
+              On the start screen, under “New template”, click “Front” or “Back”. The wizard opens;
+              fronts and backs use the same one.
             </li>
             <li>
-              “Size as in template” at the top of the format section copies width, height,
-              orientation and corner radius from an existing front or back. Copied fields are
-              locked; “Make editable” lets you change them. When you pick a back in the front
-              wizard, the checked “Assign this back to the template” assigns it to the new front
-              right away.
+              Type a “Template name” and choose the “Card format”: “Standard / Poker”, “Bridge”,
+              “Mini Euro”, “Mini American”, “Tarot”, “Square” or “Custom size” in millimeters.
             </li>
             <li>
-              You can also click “Create your own cards”. At the top are “My templates” (recently
-              modified; “Show all” opens the “My templates” tab on the start screen), below them
-              “Sample templates” and the “Online template gallery”. A tile creates a project with a
-              copy of the template (a sample comes with one card of sample data). “Import a
-              template” loads a file from another computer.
-            </li>
-            <li>
-              In the wizard, type a “Template name” and choose the “Card format”: “Standard /
-              Poker”, “Bridge”, “Mini Euro”, “Mini American”, “Tarot”, “Square” or “Custom size” in
-              millimeters.
+              If the card should match another front or back, pick that template in “Size as in
+              template” at the top of the format section. Width, height, orientation and corner
+              radius are copied and locked; “Make editable” lets you change them. When you pick a
+              back in the front wizard, “Assign this back to the template” (ticked by default)
+              assigns it to the new front right away.
             </li>
             <li>Set the orientation, “Corner radius (mm)” and “Card color”.</li>
             <li>
@@ -1377,6 +1406,14 @@
             </li>
             <li>Click “Next: field layout”. The template editor opens.</li>
           </ol>
+          <p>
+            Instead of starting from scratch, you can click “Create your own cards” on the start
+            screen. At the top are “My templates” (recently modified; “Show all” opens the “My
+            templates” tab on the start screen), below them “Sample templates” and the “Online
+            template gallery”. Clicking a tile creates a project with a copy of the template (a
+            sample comes with one card of sample data). “Import a template” loads a file from
+            another computer.
+          </p>
           <h3 id="en-edytor-szablonu">The template editor</h3>
           <figure>
             <img
@@ -1702,14 +1739,15 @@
               matches no rule, “Default rule color” applies.
             </li>
             <li>
-              “Versions from data” (at the end of a container panel) turns it into a switch: each
-              element inside is one ready version. Turned on for a row with fields (e.g. an icon and
-              text), it puts the whole row content into version 1, and “Add version” adds a copy of
-              the whole row. Change its icon and label, for example from <em>Suspect</em> to
-              <em>Clue</em>. A card shows only the version whose value (by default <code>1</code>,
-              <code>2</code>, <code>3</code>…) you enter in the switch column of the CSV or choose
-              in the card panel. A back switch with the same name picks the version from the same
-              column. Select an element of a version in the tree to see it in the preview.
+              “Versions from data” (at the end of a container panel) turns the container into a
+              switch. Each element inside is one ready version, and a card shows only one of them.
+              For example, turn it on for a row with an icon and text. The whole row becomes version
+              1. “Add version” adds a copy of the row; change its icon and label, for example from
+              <em>Suspect</em> to <em>Clue</em>. Which version shows depends on the value (by
+              default <code>1</code>, <code>2</code>, <code>3</code>…) entered in the switch column
+              of the CSV or chosen in the card panel. A back switch with the same name picks the
+              version from the same column. Select an element of a version in the tree to see it in
+              the preview.
             </li>
             <li>
               In a text field you can turn on “Numbered lists” for lines starting with
@@ -1817,30 +1855,70 @@
           </ul>
           <h3 id="en-import-tabel">Spreadsheet import and pasting from PDF</h3>
           <p>
-            You can load larger card sets from a spreadsheet, and paste descriptions copied from PDF
-            files without fixing line breaks by hand.
+            You can load larger card sets from a spreadsheet (Excel, LibreOffice Calc, Google
+            Sheets). Each row of the table becomes one card, and each column fills one card field.
+          </p>
+          <ol>
+            <li>
+              Prepare the file. The easiest way is “Export CSV template” in the right-hand panel.
+              Its first row holds the template's field names and a “Quantity” column. Fill it in
+              your spreadsheet and save it as CSV (UTF-8) or XLSX.
+            </li>
+            <li>
+              In the sheet editor click “Import CSV or XLSX” and pick the file. The first non-empty
+              row is read as column headers. If an XLSX file has several worksheets, choose one in
+              “Worksheet from the XLSX file”.
+            </li>
+            <li>Choose the “Template for new cards”.</li>
+            <li>
+              Under “Map columns to fields”, check which column goes into which field. Columns named
+              like the fields are matched automatically. Set any column you don't want to load to
+              “Skip”. “Quantity” is the number of printed copies of a card; an empty cell means one
+              copy.
+            </li>
+            <li>
+              Look over the “First 5 data rows” table and click “Add cards”. If something is wrong,
+              the window tells you the row number and the field.
+            </li>
+          </ol>
+          <p>
+            In an image column, type the name of an image from “Libraries”, exactly as it appears on
+            the library page. Add the image to the library before you import.
+          </p>
+          <h4>Join broken lines</h4>
+          <p>
+            Text copied from a PDF usually has a line break at the end of every line of the original
+            column, and long words are split with a hyphen. Pasted into a spreadsheet cell, those
+            breaks stay, and the description on the card falls apart into short lines. Tick “Join
+            broken lines” in the import window and before adding the cards the app:
           </p>
           <ul>
+            <li>joins the lines of each paragraph into running text,</li>
             <li>
-              “Import CSV or XLSX” in the sheet editor builds cards from a table file. Pick
-              “Template for new cards”, match columns under “Map columns to fields” (including
-              “Quantity”), review the preview and click “Add cards”.
+              rejoins hyphenated words, for example <em>some-</em> and <em>thing</em> into
+              <em>something</em> (only when the next line starts with a lowercase letter),
             </li>
-            <li>
-              If the cells contain text copied from a PDF, tick “Join broken lines” in the import
-              window – text fields are cleaned the same way as when pasting. The choice is
-              remembered in the browser.
-            </li>
-            <li>
-              When you paste text from a PDF with <kbd>Ctrl</kbd> + <kbd>V</kbd> into a multi-line
-              card or template field, the app removes forced line breaks inside paragraphs and joins
-              hyphenated words. Blank lines between paragraphs and list items stay untouched.
-            </li>
-            <li>
-              You can undo pasted and cleaned text with <kbd>Ctrl</kbd> + <kbd>Z</kbd>. On macOS use
-              <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd>.
-            </li>
+            <li>removes double spaces and spaces at the start and end of lines.</li>
           </ul>
+          <p>
+            A blank line separates paragraphs and is kept. Lines starting with <code>1.</code>,
+            <code>2)</code>, <code>-</code> or <code>•</code> also stay on their own, so lists are
+            not merged. The option only affects text and write-in fields; image names, numbers and
+            quantities are left alone.
+          </p>
+          <p>
+            Leave it off when you break lines in cells on purpose, such as short verses or stats
+            listed one under another: the app would merge them into a single line. The browser
+            remembers your choice, so the next import starts with the same setting.
+          </p>
+          <h4>Pasting from a PDF into a field</h4>
+          <p>
+            The same cleanup runs when you paste. When you paste text from a PDF with
+            <kbd>Ctrl</kbd> + <kbd>V</kbd> into a multi-line card or template field, the app joins
+            the lines and the hyphenated words right away. Paragraphs and lists stay. To keep the
+            original text instead, undo the cleanup with <kbd>Ctrl</kbd> + <kbd>Z</kbd>. On macOS
+            use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd>.
+          </p>
           <h3 id="en-przeciaganie">Dragging and shortcuts</h3>
           <p>
             Drag a card with the mouse to another slot, including onto another page. Cards cannot
@@ -1992,14 +2070,12 @@
             “Cards separately – ZIP of JPGs, 300 dpi” and “Cards separately – ZIP of PNGs, 300 dpi”.
             They come in handy at a photo lab.
           </p>
-          <p>The safe margin is a strip along the sheet edge that cards should stay out of.</p>
           <p>
-            A photo lab may trim 1 to 3 mm off the edges of a print. So for “Photo 10 × 15 cm”,
-            “Photo 13 × 18 cm” and “Photo 15 × 21 cm” the “Safe margin (mm)” field defaults to 3 mm.
-          </p>
-          <p>
-            A card in the strip triggers a warning, and the strip itself is marked on the sheet. A
-            value of 0 turns it off.
+            The safe margin is a strip along the sheet edge that cards should stay out of. It is
+            marked on the sheet, and a card reaching into it triggers a warning. “Safe margin (mm)”
+            sets its width; 0 turns it off. A photo lab may trim 1 to 3 mm off the edges of a print,
+            so for “Photo 10 × 15 cm”, “Photo 13 × 18 cm” and “Photo 15 × 21 cm” the margin defaults
+            to 3 mm.
           </p>
           <h2 id="en-rewersy-i-drukarnia">Card backs, double-sided printing and print shop</h2>
           <p>
@@ -2077,10 +2153,10 @@
           <h3 id="en-czcionki-i-pdf">Font catalog and searchable PDF</h3>
           <ul>
             <li>
-              In “Print &amp; sheet options” and in “Libraries” (the “Fonts” tab), “Google Fonts
-              catalog” lists typefaces with Polish glyphs that you can add with “Download”. A
-              downloaded typeface goes to the library, is available in all projects and works
-              offline.
+              The “Google Fonts catalog” section is in the “Print &amp; sheet options” panel and on
+              the “Libraries” page (the “Fonts” tab). It lists typefaces with Polish glyphs that you
+              can add with “Download”. A downloaded typeface goes to the library, is available in
+              all projects and works offline.
             </li>
             <li>
               Under “PDF options”, “Invisible text layer in PDF (search and copy)” places searchable

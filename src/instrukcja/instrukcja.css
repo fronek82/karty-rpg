@@ -198,6 +198,12 @@ main:focus {
   line-height: 1.35;
 }
 
+.kolumna h4 {
+  margin: 1.2rem 0 0.35rem;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
 .kolumna :is(h2, h3) {
   scroll-margin-top: 1rem;
 }
