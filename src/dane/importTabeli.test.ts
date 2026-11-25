@@ -125,3 +125,16 @@ it('szablonCsv generuje plik UTF-8 z nagłówkami pól szablonu oraz kolumną Il
   expect(wczytane.naglowki).toEqual(['Tytuł', 'Opis; efekt', 'Ilość']);
   expect(wczytane.wiersze[0]?.komorki).toEqual(['Ognista kula', 'Zadaje 3k6 obrażeń', '2']);
 });
+
+it('opcja „tekst z PDF” łączy złamane wiersze tylko w polach tekstowych', () => {
+  const tabela = odczytajCsv(
+    'Nazwa;Ilustracja\n"Ten czar powoduje, że\nprzeciwnik upada na zie-\nmię.";',
+  );
+  const mapa = { pola: new Map([['nazwa', 0]]) };
+  expect(sprawdzImport(tabela, mapa, pola, []).wiersze[0]?.dane.nazwa).toBe(
+    'Ten czar powoduje, że\nprzeciwnik upada na zie-\nmię.',
+  );
+  expect(sprawdzImport(tabela, mapa, pola, [], { tekstZPdf: true }).wiersze[0]?.dane.nazwa).toBe(
+    'Ten czar powoduje, że przeciwnik upada na ziemię.',
+  );
+});

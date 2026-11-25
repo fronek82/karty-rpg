@@ -13,6 +13,15 @@ import type { OpisZasobu } from '../../model/projekt';
 import type { Rewers, Szablon } from '../../model/szablon';
 import { wspolneKluczeRewersu } from '../../silnik/karta';
 import { normalizujNazwe } from '../../model/nazwy';
+import { KLUCZ_IMPORTU_Z_PDF } from '../../wspolne/ustawienia';
+
+function odczytajTekstZPdf(): boolean {
+  try {
+    return localStorage.getItem(KLUCZ_IMPORTU_Z_PDF) === '1';
+  } catch {
+    return false;
+  }
+}
 
 function domyslneMapowanie(
   tabela: TabelaImportu,
@@ -57,6 +66,16 @@ export function ImportDanych({
   const [mapowanie, ustawMapowanie] = useState<MapowanieImportu>({ pola: new Map() });
   const [blad, ustawBlad] = useState('');
   const [trwa, ustawTrwa] = useState(false);
+  const [tekstZPdf, ustawTekstZPdfStan] = useState(odczytajTekstZPdf);
+  const ustawTekstZPdf = (v: boolean) => {
+    ustawTekstZPdfStan(v);
+    try {
+      if (v) localStorage.setItem(KLUCZ_IMPORTU_Z_PDF, '1');
+      else localStorage.removeItem(KLUCZ_IMPORTU_Z_PDF);
+    } catch {
+      // Zablokowane localStorage – wybór działa do zamknięcia strony.
+    }
+  };
   const szablon = szablony.find((s) => s.id === szablonId);
   const pola = useMemo(() => (szablon ? kolumnySzablonu(szablon) : []), [szablon]);
   const rewers = szablon ? rewersDlaSzablonu?.(szablon) : undefined;
@@ -65,8 +84,8 @@ export function ImportDanych({
     [szablon, rewers],
   );
   const wynik = useMemo(
-    () => (tabela ? sprawdzImport(tabela, mapowanie, pola, zasoby) : undefined),
-    [mapowanie, pola, tabela, zasoby],
+    () => (tabela ? sprawdzImport(tabela, mapowanie, pola, zasoby, { tekstZPdf }) : undefined),
+    [mapowanie, pola, tabela, zasoby, tekstZPdf],
   );
   const bledy = wynik?.bledy ?? [];
   const ileMap = mapowanie.pola.size + (mapowanie.ilosc !== undefined ? 1 : 0);
@@ -235,6 +254,15 @@ export function ImportDanych({
             </label>
           </fieldset>
         )}
+        <label className="pole-wyboru">
+          <input
+            type="checkbox"
+            checked={tekstZPdf}
+            onChange={(e) => ustawTekstZPdf(e.target.checked)}
+          />
+          <span>{t('tabelaImport.tekstZPdf')}</span>
+        </label>
+        <p className="podpis">{t('tabelaImport.tekstZPdfOpis')}</p>
         {tabela && !tabela.wiersze.length && <p role="status">{t('tabelaImport.brakWierszy')}</p>}
         {tabela && !!tabela.wiersze.length && !ileMap && <p>{t('tabelaImport.wybierz')}</p>}
         {wynik && !!pierwsze.length && !!ileMap && (

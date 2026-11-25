@@ -133,3 +133,25 @@ test('Pierwsza karta z „Przód dla wszystkich kart” da się zaznaczyć i usu
   await page.locator('.pasek-karty').getByRole('button', { name: 'Usuń' }).click();
   await expect(karty).toHaveCount(2);
 });
+
+test('Import CSV z opcją „Wyczyść tekst skopiowany z PDF” łączy złamane wiersze', async ({
+  page,
+}) => {
+  await kreator(page, { nazwa: 'Czary', format: 'Standard / Poker', uklad: 'Tytuł i opis' });
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Importuj CSV lub XLSX' }).click();
+  const okno = page.getByRole('dialog');
+  await okno.getByLabel('Plik CSV lub XLSX').setInputFiles({
+    name: 'karty.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Tytuł;Opis\nUpadek;"Przeciwnik upada na zie-\nmię i traci\nturę."'),
+  });
+  await okno.getByLabel('Wyczyść tekst skopiowany z PDF').check();
+  await okno.getByRole('button', { name: 'Dodaj karty' }).click();
+  await page.locator('.strona-kartki [data-karta]').first().click();
+  await expect(
+    page
+      .getByRole('complementary', { name: 'Zaznaczone karty' })
+      .getByLabel('Opis', { exact: true }),
+  ).toHaveValue('Przeciwnik upada na ziemię i traci turę.');
+});

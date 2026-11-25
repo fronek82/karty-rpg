@@ -1,3 +1,4 @@
+import { wyczyscTekstZPdf } from '../wspolne/wklejaniePdf';
 import { t } from '../i18n';
 import { MAKS_ZNACZNIKOW } from '../silnik/karta';
 import { MAKS_EGZEMPLARZY } from './kartka';
@@ -185,6 +186,8 @@ export function sprawdzImport(
   mapowanie: MapowanieImportu,
   pola: KolumnaDanych[],
   zasoby: readonly OpisZasobu[],
+  /** `tekstZPdf` – złamania wierszy i przeniesienia w polach tekstowych jak przy wklejaniu z PDF. */
+  opcje: { tekstZPdf?: boolean } = {},
 ) {
   const obrazy = new Map<string, string[]>();
   for (const z of zasoby) {
@@ -244,7 +247,9 @@ export function sprawdzImport(
               pole: pole.nazwa,
             }),
           );
-      } else dane[pole.klucz] = wartosc;
+      } else
+        dane[pole.klucz] =
+          opcje.tekstZPdf && pole.typPola !== 'tabela' ? wyczyscTekstZPdf(wartosc) : wartosc;
     }
     return { dane, ilosc: n };
   });

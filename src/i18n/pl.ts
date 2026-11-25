@@ -1438,6 +1438,9 @@ export const pl = {
   'tabelaImport.arkusz': 'Arkusz z pliku XLSX',
   'tabelaImport.plik': 'Plik CSV lub XLSX',
   'tabelaImport.mapowanie': 'Przypisz kolumny do pól',
+  'tabelaImport.tekstZPdf': 'Wyczyść tekst skopiowany z PDF',
+  'tabelaImport.tekstZPdfOpis':
+    'Łączy wiersze złamane w PDF i sklejone przeniesienia („zie-mię”); puste linie i listy zostają.',
   'tabelaImport.awersIRewers': 'przód i tył',
   'tabelaImport.ilosc': 'Ilość',
   'tabelaImport.kolumna': 'Kolumna {numer} · {nazwa}',
