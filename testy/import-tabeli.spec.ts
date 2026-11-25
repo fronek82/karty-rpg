@@ -110,3 +110,26 @@ test('projekt Mausrittera nie oferuje importu CSV/XLSX, także na kartce własne
   await expect(kartki.first().locator('[data-karta]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Importuj CSV lub XLSX' })).toHaveCount(0);
 });
+
+test('Pierwsza karta z „Przód dla wszystkich kart” da się zaznaczyć i usunąć także po imporcie CSV', async ({
+  page,
+}) => {
+  await kreator(page, { nazwa: 'Wyprawa', format: 'Standard / Poker', uklad: 'Tytuł i opis' });
+  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByLabel('Przód dla wszystkich kart').selectOption({ label: 'Wyprawa' });
+  const karty = page.locator('.strona-kartki [data-karta]');
+  await expect(karty).toHaveCount(1);
+  await page.getByRole('button', { name: 'Importuj CSV lub XLSX' }).click();
+  const okno = page.getByRole('dialog');
+  await okno.getByLabel('Plik CSV lub XLSX').setInputFiles({
+    name: 'karty.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Tytuł;Opis\nA;a\nB;b'),
+  });
+  await okno.getByRole('button', { name: 'Dodaj karty' }).click();
+  await expect(karty).toHaveCount(3);
+  await karty.first().click();
+  await expect(page.locator('.menu-typu')).toHaveCount(0);
+  await page.locator('.pasek-karty').getByRole('button', { name: 'Usuń' }).click();
+  await expect(karty).toHaveCount(2);
+});

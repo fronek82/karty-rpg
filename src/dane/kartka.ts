@@ -204,6 +204,37 @@ function noweId(p: Projekt): (baza: string) => string {
 }
 
 /**
+ * Pierwsza karta pustej talii (np. po wyborze „Przód dla wszystkich kart”). Na kartkach z siatką
+ * dostaje przypięcie w pierwszym slocie – bez niego wydruk ułożyłby ją sam, ale edytor nie
+ * widziałby jej jako karty (nie dałoby się jej zaznaczyć ani usunąć).
+ */
+export function dodajPierwszaKarteTalii(
+  p: Projekt,
+  taliaId: string,
+  karta: Omit<Karta, 'id' | 'ilosc'>,
+): Projekt {
+  const talia = p.talie.find((t) => t.id === taliaId);
+  if (!talia || talia.karty.length > 0) return p;
+  const nowa: Karta = { ...karta, id: noweId(p)('karta'), ilosc: 1 };
+  return {
+    ...p,
+    zmieniono: teraz(),
+    talie: p.talie.map((t) => (t.id === taliaId ? { ...t, karty: [nowa] } : t)),
+    arkusze: p.arkusze.map((a) =>
+      a.taliaId !== taliaId || czyMieszane(a)
+        ? a
+        : {
+            ...a,
+            przypiete: [
+              ...(a.przypiete ?? []),
+              przypiecie(nowa.id, { strona: 0, kolumna: 0, rzad: 0 }),
+            ],
+          },
+    ),
+  };
+}
+
+/**
  * Nowa karta w slocie: pierwszy z `rozmiary`, który się tam mieści (domyślny jest pierwszy).
  * `dane` – wartości początkowe pól.
  */

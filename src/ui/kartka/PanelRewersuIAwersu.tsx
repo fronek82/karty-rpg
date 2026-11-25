@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { dodajSzablon } from '../../dane/archiwum';
 import { czyProjektRewersowy } from '../../dane/baza';
+import { dodajPierwszaKarteTalii } from '../../dane/kartka';
 import { przypiszRewers } from '../../dane/rewers';
 import { slotSzablonu } from '../../dane/wlasneKarty';
 import { t } from '../../i18n';
@@ -73,16 +74,13 @@ export function PanelRewersuIAwersu({
       const sz = projekt.szablony.find((s) => s.id === wartosc);
       if (!sz) return;
       zmien((p) => {
-        const talie = p.talie.map((tl) => {
-          if (tl.id !== talia.id) return tl;
-          if (tl.karty.length === 0) {
-            return {
-              ...tl,
-              karty: [{ id: crypto.randomUUID(), szablonId: sz.id, dane: {}, ilosc: 1 }],
-            };
-          }
-          return { ...tl, karty: tl.karty.map((k) => ({ ...k, szablonId: sz.id })) };
-        });
+        if (p.talie.find((tl) => tl.id === talia.id)?.karty.length === 0)
+          return dodajPierwszaKarteTalii(p, talia.id, { szablonId: sz.id, dane: {} });
+        const talie = p.talie.map((tl) =>
+          tl.id !== talia.id
+            ? tl
+            : { ...tl, karty: tl.karty.map((k) => ({ ...k, szablonId: sz.id })) },
+        );
         return { ...p, zmieniono: new Date().toISOString(), talie };
       });
       return;
@@ -108,32 +106,31 @@ export function PanelRewersuIAwersu({
         const szablony = staryPustyId
           ? dodany.projekt.szablony.filter((s) => s.id !== staryPustyId)
           : dodany.projekt.szablony;
-        const talie = dodany.projekt.talie.map((tl) => {
-          if (tl.id !== talia.id) return tl;
-          if (tl.karty.length === 0) {
-            return {
-              ...tl,
-              karty: [{ id: crypto.randomUUID(), szablonId: dodany.szablonId, dane: {}, ilosc: 1 }],
+        const pusta = dodany.projekt.talie.find((tl) => tl.id === talia.id)?.karty.length === 0;
+        const zKarta = pusta
+          ? dodajPierwszaKarteTalii(dodany.projekt, talia.id, {
+              szablonId: dodany.szablonId,
+              dane: {},
+            })
+          : {
+              ...dodany.projekt,
+              talie: dodany.projekt.talie.map((tl) =>
+                tl.id !== talia.id
+                  ? tl
+                  : {
+                      ...tl,
+                      karty: tl.karty.map((k) => ({ ...k, szablonId: dodany.szablonId })),
+                    },
+              ),
             };
-          }
-          return {
-            ...tl,
-            karty: tl.karty.map((k) => ({ ...k, szablonId: dodany.szablonId })),
-          };
-        });
         const arkusze = staryPustyId
-          ? dodany.projekt.arkusze.map((a) => ({
+          ? zKarta.arkusze.map((a) => ({
               ...a,
               ustawienia: { ...a.ustawienia, slot: slotSzablonu(nowySzablon) },
             }))
-          : dodany.projekt.arkusze;
+          : zKarta.arkusze;
         return {
-          projekt: {
-            ...dodany.projekt,
-            szablony,
-            talie,
-            arkusze,
-          },
+          projekt: { ...zKarta, szablony, arkusze },
           dane: dodany.zasoby,
         };
       });
