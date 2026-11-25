@@ -19,3 +19,8 @@
 - Na tyłach rysujemy te same odcinki co z przodu (już przycięte do papieru), odbite względem osi
   odwracania – bez nożyczek. W trybie drukarni bez zmian (tam są znaczniki cięcia). Strona tyłu
   bez żadnej karty z tyłem zostaje pusta.
+- Ctrl + kółko: przesunięcia sumowane do progu 50 px na stopień (szczypanie na gładziku nie
+  przeskakuje do skrajnego stopnia); w trakcie przeciągania karty powiększenie się nie zmienia.
+  Punkt pod kursorem zostaje w miejscu (kotwica liczona względem kartki, wymiary mierzone po zmianie).
+- Linie na tyłach są odbiciem odcinków już przyciętych do granic przodu (z jego kalibracją); przy
+  różnych korektach X/Y przodu i tyłu przycięcie na tyle jest przybliżone – skutek kosmetyczny.

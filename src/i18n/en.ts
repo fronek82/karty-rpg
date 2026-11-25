@@ -1123,6 +1123,7 @@ export const en: Slownik = {
   'kartka.pomocZaznaczanie':
     'Shift + click adds a card to the selection; dragging over an empty area selects with a rectangle. You edit several cards of the same type at once.',
   'kartka.powiekszenie': 'Sheet zoom',
+  'kartka.powiekszenieWartosc': 'Zoom {procent}% – click to fit to width (100%)',
   'kartka.przybliz': 'Zoom in',
   'kartka.oddal': 'Zoom out',
   'kartka.dopasujPowiekszenie': 'Fit to width (100%)',

@@ -1115,6 +1115,8 @@ export const pl = {
   'kartka.pomocZaznaczanie':
     'Shift + klik dodaje kartę do zaznaczenia; przeciągnięcie po pustym miejscu zaznacza prostokątem. Wiele kart tego samego typu edytujesz naraz.',
   'kartka.powiekszenie': 'Powiększenie kartek',
+  'kartka.powiekszenieWartosc':
+    'Powiększenie {procent}% – kliknij, aby dopasować do szerokości (100%)',
   'kartka.przybliz': 'Przybliż',
   'kartka.oddal': 'Oddal',
   'kartka.dopasujPowiekszenie': 'Dopasuj do szerokości (100%)',

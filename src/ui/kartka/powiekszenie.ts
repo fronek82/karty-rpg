@@ -14,13 +14,16 @@ export function kolejnePowiekszenie(obecne: number, kierunek: 1 | -1): number {
   return [...STOPNIE_POWIEKSZENIA].reverse().find((s) => s < obecne - 1e-6) ?? MIN_POWIEKSZENIA;
 }
 
-/** Wartość z localStorage przycięta do zakresu; błędna lub brak – 1. */
+/** Najbliższy stopień powiększenia. */
+export function najblizszyStopien(v: number): number {
+  return STOPNIE_POWIEKSZENIA.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
+}
+
+/** Wartość z localStorage zaokrąglona do najbliższego stopnia; błędna lub brak – 1. */
 export function wczytajPowiekszenie(): number {
   try {
     const v = Number(localStorage.getItem(KLUCZ_POWIEKSZENIA_KARTKI));
-    return Number.isFinite(v) && v > 0
-      ? Math.min(MAX_POWIEKSZENIA, Math.max(MIN_POWIEKSZENIA, v))
-      : 1;
+    return Number.isFinite(v) && v > 0 ? najblizszyStopien(v) : 1;
   } catch {
     return 1;
   }

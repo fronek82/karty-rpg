@@ -209,6 +209,8 @@ interface Kartka {
 }
 
 const PROG_RUCHU = 4;
+/** Suma przesunięć kółka (px) z Ctrl na jeden stopień powiększenia – szczypanie na gładziku. */
+const PROG_KOLKA_POWIEKSZENIA = 50;
 /** Na dotyku karta „podnosi się” po tylu ms przytrzymania (wcześniejszy ruch przewija). */
 const PRZYTRZYMANIE_MS = 300;
 
@@ -360,28 +362,44 @@ export function EdytorKartki({
 
   // --- Powiększenie kartek (przyciski i Ctrl + kółko), zapamiętane w localStorage.
   const [powiekszenie, ustawPowiekszenieStan] = useState(wczytajPowiekszenie);
-  /** Punkt pod kursorem do utrzymania w miejscu po zmianie powiększenia (px w treści). */
+  const powiekszenieRef = useRef(powiekszenie);
+  /**
+   * Punkt do utrzymania w miejscu po zmianie powiększenia: kartka pod nim, jego położenie
+   * w kartce (ułamki szerokości i wysokości) i na ekranie (px).
+   */
   const kotwicaRef = useRef<
-    { x: number; y: number; ekranX: number; ekranY: number; s: number } | undefined
+    { kartka: Element; fx: number; fy: number; ekranX: number; ekranY: number } | undefined
   >(undefined);
   const zmienPowiekszenie = (nowe: number, punkt?: { clientX: number; clientY: number }) => {
-    if (nowe === powiekszenie) return;
+    if (nowe === powiekszenieRef.current) return;
     const el = kartkiRef.current;
     if (el) {
       const r = el.getBoundingClientRect();
       // Bez kursora (przyciski) – środek widocznej części kartek.
-      const ekranX = punkt ? punkt.clientX - r.left : el.clientWidth / 2;
+      const ekranX = punkt ? punkt.clientX : r.left + el.clientWidth / 2;
       const ekranY = punkt
         ? punkt.clientY
         : (Math.max(r.top, 0) + Math.min(r.bottom, window.innerHeight)) / 2;
-      kotwicaRef.current = {
-        x: el.scrollLeft + ekranX,
-        y: ekranY - r.top,
-        ekranX,
-        ekranY,
-        s: nowe / powiekszenie,
-      };
+      // Kartka pod punktem albo najbliższa mu w pionie.
+      let kartka: Element | undefined;
+      let odl = Infinity;
+      for (const k of el.querySelectorAll(':scope > .kartka')) {
+        const kr = k.getBoundingClientRect();
+        const d = ekranY < kr.top ? kr.top - ekranY : ekranY > kr.bottom ? ekranY - kr.bottom : 0;
+        if (d < odl) [kartka, odl] = [k, d];
+      }
+      if (kartka) {
+        const kr = kartka.getBoundingClientRect();
+        kotwicaRef.current = {
+          kartka,
+          fx: kr.width ? (ekranX - kr.left) / kr.width : 0,
+          fy: kr.height ? (ekranY - kr.top) / kr.height : 0,
+          ekranX,
+          ekranY,
+        };
+      }
     }
+    powiekszenieRef.current = nowe;
     ustawPowiekszenieStan(nowe);
     zapiszPowiekszenie(nowe);
   };
@@ -389,11 +407,12 @@ export function EdytorKartki({
     const k = kotwicaRef.current;
     const el = kartkiRef.current;
     kotwicaRef.current = undefined;
-    if (!k || !el) return;
-    el.scrollLeft = k.x * k.s - k.ekranX;
-    // Pionowo przewija się okno: punkt kotwicy (y w kartkach) ma zostać na tej samej wysokości ekranu.
-    const gora = el.getBoundingClientRect().top;
-    window.scrollBy(0, gora + k.y * k.s - k.ekranY);
+    if (!k || !el || !k.kartka.isConnected) return;
+    // Zmierzone wymiary po zmianie (max-width i wyśrodkowanie nie skalują się proporcjonalnie).
+    const kr = k.kartka.getBoundingClientRect();
+    el.scrollLeft += kr.left + k.fx * kr.width - k.ekranX;
+    // Pionowo przewija się okno.
+    window.scrollBy(0, kr.top + k.fy * kr.height - k.ekranY);
   }, [powiekszenie]);
 
   // --- Budowa stron (ta sama scena co w PDF), z pamięcią kart i kartek między renderami.
@@ -1143,11 +1162,21 @@ export function EdytorKartki({
 
   // Kółko myszy nad zaznaczoną kartą z ilustracją – skala ilustracji.
   const kolkoRef = useRef<(e: WheelEvent) => void>(() => undefined);
+  const sumaKolka = useRef(0);
   useEffect(() => {
     kolkoRef.current = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
+        // Zawsze blokujemy zoom przeglądarki (także na krańcach zakresu) i w trakcie gestu
+        // przeciągania. Szczypanie na gładziku daje wiele małych zdarzeń – sumujemy je do progu.
         e.preventDefault();
-        zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, e.deltaY < 0 ? 1 : -1), e);
+        if (nasluchy.current) return;
+        const krok = e.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? e.deltaY : e.deltaY * 40;
+        sumaKolka.current =
+          Math.sign(krok) === Math.sign(sumaKolka.current) ? sumaKolka.current + krok : krok;
+        if (Math.abs(sumaKolka.current) < PROG_KOLKA_POWIEKSZENIA) return;
+        const kierunek = sumaKolka.current < 0 ? 1 : -1;
+        sumaKolka.current = 0;
+        zmienPowiekszenie(kolejnePowiekszenie(powiekszenieRef.current, kierunek), e);
         return;
       }
       const el = (e.target as HTMLElement).closest<HTMLElement>('[data-karta]');
@@ -2132,7 +2161,9 @@ export function EdytorKartki({
               className="wartosc-powiekszenia"
               onClick={() => zmienPowiekszenie(1)}
               title={t('kartka.dopasujPowiekszenie')}
-              aria-label={t('kartka.dopasujPowiekszenie')}
+              aria-label={t('kartka.powiekszenieWartosc', {
+                procent: Math.round(powiekszenie * 100),
+              })}
             >
               {Math.round(powiekszenie * 100)}%
             </button>
