@@ -18,7 +18,7 @@ export function jezykDomyslny(jezykPrzegladarki: string | undefined): 'pl' | 'en
 /** Klucz sposobu dopasowania zawartości karty przy zmianie rozmiaru: `skaluj` albo `zostaw`. */
 export const KLUCZ_DOPASOWANIA_ZAWARTOSCI = 'karty.dopasowanieZawartosci';
 
-/** Klucz opcji importu CSV/XLSX „Wyczyść tekst skopiowany z PDF”: `1` (włączona) albo brak. */
+/** Klucz opcji importu CSV/XLSX „Połącz wiersze w akapity (tekst z PDF)”: `1` (włączona) albo brak. */
 export const KLUCZ_IMPORTU_Z_PDF = 'karty.importTekstZPdf';
 
 /** Klucz powiększenia kartek w Edytorze kart (liczba, 1 = szerokość kolumny). */

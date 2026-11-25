@@ -1443,7 +1443,7 @@ export const en: Slownik = {
   'tabelaImport.arkusz': 'Worksheet from the XLSX file',
   'tabelaImport.plik': 'CSV or XLSX file',
   'tabelaImport.mapowanie': 'Map columns to fields',
-  'tabelaImport.tekstZPdf': 'Clean up text copied from PDF',
+  'tabelaImport.tekstZPdf': 'Join lines into paragraphs (text from PDF)',
   'tabelaImport.tekstZPdfOpis':
     'Joins lines broken in the PDF and hyphenated words; blank lines and lists are kept.',
   'tabelaImport.awersIRewers': 'front & back',
