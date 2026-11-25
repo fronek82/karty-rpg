@@ -3063,6 +3063,8 @@ button.maly {
   width: 100%;
   height: 100%;
   object-fit: fill;
+  /* Zaokrąglone rogi karty (styl z podglądu). */
+  border-radius: inherit;
   pointer-events: none;
   user-select: none;
 }
