@@ -4,6 +4,7 @@ import { gry } from '../../pakiety/gry';
 import { nazwaGryDo } from '../nazwyPakietu';
 import { ListaProjektow } from './ListaProjektow';
 import { PanelImportu } from './PanelImportu';
+import { ADRES_WSPARCIA } from './wsparcie';
 
 /** Dekoracyjny emblemat trzech wachlarzowo ułożonych kart w banerze ekranu startowego. */
 function EmblematKart() {
@@ -34,6 +35,46 @@ function EmblematKart() {
         <circle className="start-baner-karta-znak" cx="15" cy="21" r="5" />
       </g>
     </svg>
+  );
+}
+
+/** Ikona filiżanki na przycisku wsparcia (inline SVG, bez zasobów z zewnątrz). */
+function IkonaFilizanki() {
+  return (
+    <svg className="start-wsparcie-ikona" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        className="start-wsparcie-kubek"
+        strokeWidth="1"
+        strokeLinejoin="round"
+        d="M4 8h13v6.5A5.5 5.5 0 0 1 11.5 20h-2A5.5 5.5 0 0 1 4 14.5Z"
+      />
+      <path strokeWidth="2" d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17" />
+      <path
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        d="M8 3.5c-.8 1 .8 1.6 0 2.8M11.5 3.5c-.8 1 .8 1.6 0 2.8"
+      />
+    </svg>
+  );
+}
+
+/** Podpis i przycisk wsparcia autora pod menu „Nowy szablon”; ukryty, gdy adres jest pusty. */
+function WsparcieAutora() {
+  if (!ADRES_WSPARCIA) return null;
+  return (
+    <div className="start-wsparcie">
+      <p className="start-wsparcie-podpis">{t('start.wsparciePodpis')}</p>
+      <a
+        href={ADRES_WSPARCIA}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="start-wsparcie-przycisk"
+        aria-label={t('start.wsparcieEtykieta')}
+      >
+        <IkonaFilizanki />
+        <span>{t('start.wsparciePrzycisk')}</span>
+      </a>
+    </div>
   );
 }
 
@@ -101,6 +142,7 @@ export function Start() {
             <b>{t('wlasne.rewersNazwa')}</b>
             <span>{t('wlasne.rewersOpis')}</span>
           </a>
+          <WsparcieAutora />
         </nav>
         <ListaProjektow odswiezenie={odswiezenie} />
         <PanelImportu onZmiana={() => ustawOdswiezenie((n) => n + 1)} />
