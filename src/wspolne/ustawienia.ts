@@ -18,5 +18,8 @@ export function jezykDomyslny(jezykPrzegladarki: string | undefined): 'pl' | 'en
 /** Klucz sposobu dopasowania zawartości karty przy zmianie rozmiaru: `skaluj` albo `zostaw`. */
 export const KLUCZ_DOPASOWANIA_ZAWARTOSCI = 'karty.dopasowanieZawartosci';
 
+/** Klucz opcji importu CSV/XLSX „Złącz łamane wiersze”: `1` (włączona) albo brak. */
+export const KLUCZ_IMPORTU_Z_PDF = 'karty.importTekstZPdf';
+
 /** Klucz powiększenia kartek w Edytorze kart (liczba, 1 = szerokość kolumny). */
 export const KLUCZ_POWIEKSZENIA_KARTKI = 'karty.powiekszenieKartki';

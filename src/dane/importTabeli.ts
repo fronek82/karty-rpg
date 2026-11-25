@@ -1,3 +1,4 @@
+import { wyczyscTekstZPdf } from '../wspolne/wklejaniePdf';
 import { t } from '../i18n';
 import { MAKS_ZNACZNIKOW } from '../silnik/karta';
 import { MAKS_EGZEMPLARZY } from './kartka';
@@ -5,6 +6,9 @@ import { kolumnySzablonu, type KolumnaDanych } from './edycja';
 import type { OpisZasobu } from '../model/projekt';
 import type { Szablon } from '../model/szablon';
 import { normalizujNazwe } from '../model/nazwy';
+
+/** Pola z treścią tekstową – tylko je czyści opcja „tekst z PDF” (bez odmian, parametrów, liczb). */
+const TRESC_TEKSTOWA = new Set<string | undefined>(['tekst', 'wpis']);
 
 export const LIMIT_TABELI = { bajty: 8 * 1024 * 1024, wiersze: 500, kolumny: 128, sztuki: 2000 };
 export interface WierszImportu {
@@ -185,6 +189,8 @@ export function sprawdzImport(
   mapowanie: MapowanieImportu,
   pola: KolumnaDanych[],
   zasoby: readonly OpisZasobu[],
+  /** `tekstZPdf` – złamania wierszy i przeniesienia w polach tekstowych jak przy wklejaniu z PDF. */
+  opcje: { tekstZPdf?: boolean } = {},
 ) {
   const obrazy = new Map<string, string[]>();
   for (const z of zasoby) {
@@ -244,7 +250,9 @@ export function sprawdzImport(
               pole: pole.nazwa,
             }),
           );
-      } else dane[pole.klucz] = wartosc;
+      } else
+        dane[pole.klucz] =
+          opcje.tekstZPdf && TRESC_TEKSTOWA.has(pole.typPola) ? wyczyscTekstZPdf(wartosc) : wartosc;
     }
     return { dane, ilosc: n };
   });

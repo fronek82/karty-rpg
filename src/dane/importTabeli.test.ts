@@ -125,3 +125,33 @@ it('szablonCsv generuje plik UTF-8 z nagłówkami pól szablonu oraz kolumną Il
   expect(wczytane.naglowki).toEqual(['Tytuł', 'Opis; efekt', 'Ilość']);
   expect(wczytane.wiersze[0]?.komorki).toEqual(['Ognista kula', 'Zadaje 3k6 obrażeń', '2']);
 });
+
+it('opcja „tekst z PDF” łączy złamane wiersze tylko w polach tekstowych', () => {
+  const tabela = odczytajCsv(
+    'Nazwa;Ilustracja\n"Ten czar powoduje, że\nprzeciwnik upada na zie-\nmię.";',
+  );
+  const mapa = { pola: new Map([['nazwa', 0]]) };
+  expect(sprawdzImport(tabela, mapa, pola, []).wiersze[0]?.dane.nazwa).toBe(
+    'Ten czar powoduje, że\nprzeciwnik upada na zie-\nmię.',
+  );
+  expect(sprawdzImport(tabela, mapa, pola, [], { tekstZPdf: true }).wiersze[0]?.dane.nazwa).toBe(
+    'Ten czar powoduje, że przeciwnik upada na ziemię.',
+  );
+  // Przełącznik odmian, parametr i liczba – bez zmian.
+  const inne: KolumnaDanych[] = [
+    { klucz: 'odm', nazwa: 'Odmiana', rodzaj: 'pole', opcje: [] },
+    { klucz: 'par', nazwa: 'Parametr', rodzaj: 'parametr' },
+    { klucz: 'wart', nazwa: 'Wartość', rodzaj: 'pole', typPola: 'wartosc' },
+  ];
+  const surowa = 'a-\nb\u00AD';
+  const t2 = {
+    naglowki: ['A', 'B', 'C'],
+    wiersze: [{ numer: 2, komorki: [surowa, surowa, surowa] }],
+  };
+  const m2 = { pola: new Map(inne.map((p, i) => [p.klucz, i])) };
+  expect(sprawdzImport(t2, m2, inne, [], { tekstZPdf: true }).wiersze[0]?.dane).toEqual({
+    odm: surowa,
+    par: surowa,
+    wart: surowa,
+  });
+});

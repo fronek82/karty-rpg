@@ -8,6 +8,7 @@ import {
   dodajKarteMieszane,
   dodajKarteWSlocie,
   dodajKartke,
+  dodajPierwszaKarteTalii,
   dodajNaglowek,
   dodajStrone,
   duplikujKarty,
@@ -80,6 +81,17 @@ const pol = (p: Projekt, id: string) =>
   kartyKartki(p, A, ctx.szablony).find((k) => k.karta.id === id)!;
 
 describe('kartka – dodawanie i rozmiary', () => {
+  it('pierwsza karta pustej talii jest przypięta w pierwszym slocie (da się ją zaznaczyć)', () => {
+    const taliaId = pusty.arkusze.find((a) => a.id === A)!.taliaId;
+    const p = dodajPierwszaKarteTalii(pusty, taliaId, { szablonId: BRON.szablonId, dane: {} });
+    const karty = kartyKartki(p, A, ctx.szablony);
+    expect(karty).toHaveLength(1);
+    expect(karty[0]).toMatchObject({ strona: 0, kolumna: 0, rzad: 0 });
+    // Talia niepusta – bez zmian.
+    expect(dodajPierwszaKarteTalii(p, taliaId, { szablonId: BRON.szablonId, dane: {} })).toBe(p);
+    expect(() => przygotujProjekt(p)).not.toThrow();
+  });
+
   it('karta w slocie w domyślnym rozmiarze; gdy się nie mieści – następny rozmiar', () => {
     const { projekt, kartaId } = ok(
       dodajKarteWSlocie(pusty, A, { strona: 0, kolumna: 2, rzad: 1 }, ZBROJA, ctx),
