@@ -3,7 +3,7 @@ import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
 import { scenyDoPdf } from '../druk/pdf';
 import { pt } from '../model/jednostki';
 import type { OzdobaMotyw, Szablon } from '../model/szablon';
-import { rejestrTestowy } from '../silnik/__testy__/pomoc';
+import { rejestrTestowy, zawartoscKarty } from '../silnik/__testy__/pomoc';
 import { renderujKarte } from '../silnik/karta';
 import { scenaDoSvg } from '../silnik/svg';
 import { tekstOstrzezenia } from '../ui/ostrzezenia';
@@ -223,8 +223,9 @@ describe('motyw w scenie karty', () => {
   it('ozdoba zastępuje linię ramki; promień karty nie zakrzywia motywu (R3)', () => {
     const sz = { ...kartaZRamka(ozdoba('wb:pnacze')), promienRogow: 4 };
     const { scena } = renderujKarte(sz, { dane: { nazwa: 'A' } }, ctx);
-    expect(scena.elementy.filter((e) => e.typ === 'prostokat' && e.obrys)).toHaveLength(0);
-    expect(scena.elementy.some((e) => e.typ === 'symbol')).toBe(true);
+    const el = zawartoscKarty(scena);
+    expect(el.filter((e) => e.typ === 'prostokat' && e.obrys)).toHaveLength(0);
+    expect(el.some((e) => e.typ === 'symbol')).toBe(true);
     expect(Object.keys(scena.symbole ?? {}).sort()).toEqual(['wb:pnacze', 'wb:pnacze:kostka']);
   });
 

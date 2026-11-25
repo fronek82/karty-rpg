@@ -29,6 +29,10 @@ const szablon = (w?: WzorTla, inne: Partial<Szablon> = {}): Szablon => ({
   korzen: { id: 'k', typ: 'swobodny', dzieci: [] },
   ...inne,
 });
+/** Zawartość karty bez grupy przycięcia do zaokrąglonych rogów. */
+const zawartosc = (e: ElementSceny[]): ElementSceny[] =>
+  e.length === 1 && e[0]!.typ === 'grupa' && e[0]!.przyciecieKonturem ? e[0]!.elementy : e;
+
 const odcinki = (e: ElementSceny[]) =>
   e.flatMap((x) => (x.typ === 'sciezka' ? x.kontur.filter((k) => k[0] === 'M') : []));
 
@@ -84,24 +88,27 @@ describe('wzór tła karty (N5)', () => {
   });
 
   it('karta: wzór nad kolorem tła, przycięty do rogów, z kryciem; kolejność względem tekstury', () => {
-    const w = renderujKarte(szablon(wzor('kratka', { krycie: 0.4 })), { dane: {} }, ctx).scena;
-    expect(w.elementy[0]!.typ).toBe('prostokat');
-    const g = w.elementy[1]!;
+    const w = zawartosc(
+      renderujKarte(szablon(wzor('kratka', { krycie: 0.4 })), { dane: {} }, ctx).scena.elementy,
+    );
+    expect(w[0]!.typ).toBe('prostokat');
+    const g = w[1]!;
     expect(g.typ).toBe('grupa');
     if (g.typ === 'grupa') {
       expect(g.krycie).toBe(0.4);
       expect(g.przyciecieKonturem).toBeDefined();
     }
-    const nad = renderujKarte(
-      szablon(wzor('kratka'), { teksturaTla: 'tekstura' }),
-      { dane: {} },
-      ctx,
-    ).scena.elementy;
-    const pod = renderujKarte(
-      szablon(wzor('kratka', { podTekstura: true }), { teksturaTla: 'tekstura' }),
-      { dane: {} },
-      ctx,
-    ).scena.elementy;
+    const nad = zawartosc(
+      renderujKarte(szablon(wzor('kratka'), { teksturaTla: 'tekstura' }), { dane: {} }, ctx).scena
+        .elementy,
+    );
+    const pod = zawartosc(
+      renderujKarte(
+        szablon(wzor('kratka', { podTekstura: true }), { teksturaTla: 'tekstura' }),
+        { dane: {} },
+        ctx,
+      ).scena.elementy,
+    );
     const jestWzor = (e: ElementSceny) =>
       e.typ === 'grupa' && e.elementy.some((x) => x.typ === 'sciezka');
     const jestObraz = (e: ElementSceny) =>
@@ -112,7 +119,7 @@ describe('wzór tła karty (N5)', () => {
 
   it('tryb drukarni: wzór sięga spadu i trzyma położenie względem karty netto', () => {
     const sz = szablon(wzor('pionowe'));
-    const bez = renderujKarte(sz, { dane: {} }, ctx).scena.elementy[1]!;
+    const bez = zawartosc(renderujKarte(sz, { dane: {} }, ctx).scena.elementy)[1]!;
     const zew = renderujKarte(sz, { dane: {} }, ctx, { spad: 3 }).scena.elementy[0]!;
     const ze = (zew.typ === 'grupa' ? zew.elementy[1] : undefined)!;
     expect(ze.typ === 'grupa' && ze.przyciecie).toEqual({ x: -3, y: -3, szer: 66, wys: 96 });
@@ -253,8 +260,9 @@ describe('wzór tła z biblioteki SVG (N9)', () => {
     expect(w.ostrzezenia).toEqual([
       { pole: 'tlo-karty', komunikat: 'nieznany-element-ozdobny', szczegoly: 'wlasny-kafel' },
     ]);
-    expect(w.scena.elementy.some((e) => e.typ === 'grupa')).toBe(false);
-    expect(w.scena.elementy[0]).toMatchObject({ typ: 'prostokat', wypelnienie: '#fffbea' });
+    const e = zawartosc(w.scena.elementy);
+    expect(e.some((x) => x.typ === 'grupa')).toBe(false);
+    expect(e[0]).toMatchObject({ typ: 'prostokat', wypelnienie: '#fffbea' });
   });
 
   it('rozwinWzor pokrywa obszar kopiami (także po obrocie) i przycina do obszaru', () => {

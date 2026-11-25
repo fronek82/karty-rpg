@@ -1084,6 +1084,7 @@ export function renderujKarte(
     }
   }
 
+  const promienKarty = Math.min(szablon.promienRogow ?? 0, szer / 2, wys / 2);
   return {
     scena: {
       szer,
@@ -1093,7 +1094,18 @@ export function renderujKarte(
           ? [{ typ: 'grupa', x: 0, y: 0, przyciecie: { ...ramkaBrutto }, elementy }]
           : poszarpanaKarta
             ? [{ typ: 'grupa', x: 0, y: 0, przyciecieKonturem: poszarpanaKarta, elementy }]
-            : elementy,
+            : promienKarty > 0
+              ? // Zaokrąglone rogi: cała zawartość (tło kontenerów, obrazy, pola) przycięta do karty.
+                [
+                  {
+                    typ: 'grupa',
+                    x: 0,
+                    y: 0,
+                    przyciecieKonturem: konturProstokata(0, 0, szer, wys, promienKarty),
+                    elementy,
+                  },
+                ]
+              : elementy,
       glify,
       ...symboleSceny(symbole),
     },

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { pt } from '../model/jednostki';
 import type { Szablon } from '../model/szablon';
 import { renderujKarte } from '../silnik/karta';
-import { rejestrTestowy } from '../silnik/__testy__/pomoc';
+import { rejestrTestowy, zawartoscKarty } from '../silnik/__testy__/pomoc';
 import type { ElementSceny, Scena } from '../silnik/scena';
 import { scenaDoSvg } from '../silnik/svg';
 import { scenyDoPdf } from '../druk/pdf';
@@ -123,7 +123,7 @@ describe('ramka z narożnikami w scenie', () => {
       { dane: {} },
       ctx,
     );
-    const r = scena.elementy.filter((e) => e.typ === 'prostokat' && e.obrys);
+    const r = zawartoscKarty(scena).filter((e) => e.typ === 'prostokat' && e.obrys);
     expect(r).toHaveLength(2);
     const [z, w] = r as Extract<ElementSceny, { typ: 'prostokat' }>[];
     // Przerwa domyślna 2× grubość: oś wewnętrznej 0,15 + 0,3 + 0,6 od krawędzi.
