@@ -145,7 +145,7 @@ test('przełącznik w opcjach druku: jeden rozmiar ↔ mieszane, własny układ 
   page,
 }) => {
   await page.goto('./#/');
-  await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
+  await page.getByRole('link', { name: /\+ NOWE KARTY/ }).click();
   await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu(SZABLONY[0]!));
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   // Karta 70×120 w slocie (A4: 2 × 2 sloty).

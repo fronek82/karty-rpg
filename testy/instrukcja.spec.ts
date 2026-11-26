@@ -45,7 +45,7 @@ test('pasek ma link powrotu do aplikacji', async ({ page }) => {
   await page.goto('./instrukcja/');
   await page.getByRole('link', { name: 'Wróć do aplikacji' }).click();
   await expect(page).toHaveURL(/\/karty-rpg\/$/);
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Karty do gier');
+  await expect(page.locator('.riso-tytul')).toHaveText('KARTY RPG');
 });
 
 test('?lang=en: angielska treść, lang i tytuł; ?lang ma pierwszeństwo przed zapisem', async ({
