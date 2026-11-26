@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Edytor szablonu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F0E8}
+.tip{position:relative}
+.tipbox{position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);background:#111111;color:#F3F0E8;font-family:Archivo,sans-serif;font-size:12px;font-weight:700;line-height:1.2;padding:7px 10px;white-space:nowrap;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s,visibility 0s linear .12s;z-index:60;box-shadow:3px 3px 0 #5D7FA3;text-align:left}
+.tip:hover .tipbox,.tip:focus-visible .tipbox{opacity:1;visibility:visible;transition:opacity .12s .5s,visibility 0s linear .5s}
+.tip-l .tipbox{left:auto;right:calc(100% + 12px)}
+
+button{font:inherit;cursor:pointer}
+input,select{font:inherit}
+summary{cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+</style>
+</helmet>
+<div style="height: 900px; min-width: 1100px; display: flex; flex-direction: column; background: #F3F0E8; color: #111111; font-family: Archivo, sans-serif; font-size: 13px">
+
+  <header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 16px; padding: 0 16px; border-bottom: 2px solid #111111">
+    <a href="#" style="display: flex; align-items: center; height: 40px; padding: 0 12px; border: 1.5px solid #111111; color: #111111; text-decoration: none; font-weight: 700">← Projekty</a>
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 17px">Karty zaklęć maga</span>
+    <nav aria-label="Etapy projektu" style="margin-left: 20px; display: flex; align-items: center; gap: 6px; font-weight: 700">
+      <span aria-current="page" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; background: #111111; color: #F3F0E8"><span style="width: 20px; height: 20px; background: #E8B4A8; color: #111; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px">1</span>Szablony</span>
+      <span style="color: #5A5852">→</span>
+      <a href="#" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; color: #111111; text-decoration: none; border: 1.5px solid transparent"><span style="width: 20px; height: 20px; border: 1.5px solid #111; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px">2</span>Karty</a>
+      <span style="color: #5A5852">→</span>
+      <a href="#" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; color: #111111; text-decoration: none; border: 1.5px solid transparent"><span style="width: 20px; height: 20px; border: 1.5px solid #111; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px">3</span>Druk</a>
+    </nav>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px">
+      <button type="button" aria-label="Cofnij" title="Cofnij (Ctrl+Z)" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-3"></path></svg></button>
+      <button type="button" aria-label="Ponów" title="Ponów (Ctrl+Y)" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"></path><path d="M20 9H9a5 5 0 0 0 0 10h3"></path></svg></button>
+      <span style="width: 1px; height: 28px; background: #C9C4B8; margin: 0 4px"></span>
+      <button type="button" aria-label="Ustawienia" title="Ustawienia aplikacji" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3 M12 19v3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M2 12h3 M19 12h3 M4.9 19.1 7 17 M17 7l2.1-2.1"></path></svg></button>
+      <button type="button" style="height: 40px; padding: 0 14px; background: transparent; border: 1.5px solid #111111; font-weight: 700">Szablon ▾</button>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5A5852; padding: 0 8px">✓ zapisano</span>
+      <button type="button" style="height: 40px; padding: 0 18px; background: #111111; color: #F3F0E8; border: 1.5px solid #111111; font-weight: 700">Przejdź do kart →</button>
+    </div>
+  </header>
+
+  <div style="flex-grow: 1; min-height: 0; display: flex">
+
+    <nav aria-label="Dodaj element" style="width: {{ leftW }}; flex-shrink: 0; display: flex; flex-direction: column; border-right: 2px solid #111111; background: #EDE9E0">
+      <div style="height: 42px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; padding: 0 14px; border-bottom: 1.5px solid #111111"><sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ false }}"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.1em">DODAJ ELEMENT</span></sc-if></div>
+      <div style="flex-grow: 1; overflow-y: {{ ovf }}; padding: {{ railPadTop }} 8px 6px; display: flex; flex-direction: column; gap: 2px">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: 1px solid #C9C4B8">
+            <sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ false }}">
+              <span style="padding: 2px 6px 4px; font-size: 11px; font-weight: 700; color: #5A5852">{{ g.name }}</span>
+            </sc-if>
+            <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+              <button type="button" draggable="true" onDragStart="{{ it.drag }}" onDragEnd="{{ dragEnd }}" onClick="{{ it.add }}" class="tip" aria-label="{{ it.name }}" style="cursor: grab; display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 {{ padX }}; width: 100%; box-sizing: border-box; justify-content: {{ justify }}; background: transparent; border: none; color: #111111; text-align: left"><sc-if value="{{ collapsed }}" hint-placeholder-val="{{ false }}"><span class="tipbox">{{ it.name }} – {{ it.tip }}</span></sc-if>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="{{ it.d }}"></path></svg>
+                <sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ false }}"><span style="font-weight: 500; white-space: nowrap">{{ it.name }}</span><sc-if value="{{ it.def }}" hint-placeholder-val="{{ false }}"><span style="margin-left: auto; padding: 1px 5px; background: #111111; color: #F3F0E8; font-family: 'IBM Plex Mono', monospace; font-size: 9px">DOMYŚLNY</span></sc-if></sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </sc-for>
+        <sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 10px 6px; font-size: 12px; line-height: 1.45; color: #5A5852">Przeciągnij element na kartę – trafi tam, gdzie go upuścisz. Kliknięcie dodaje go na środku.</p>
+        </sc-if>
+      </div>
+      <button type="button" onClick="{{ toggleLeft }}" aria-label="{{ leftLabel }}" class="tip" style="height: 44px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: {{ justify }}; gap: 8px; padding: 0 16px; background: transparent; border: none; border-top: 1.5px solid #111111; color: #111111; font-weight: 700"><sc-if value="{{ collapsed }}" hint-placeholder-val="{{ false }}"><span class="tipbox">{{ leftLabel }}</span></sc-if>
+        <span style="font-family: 'Archivo Black', sans-serif">{{ leftArrow }}</span>
+        <sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ false }}"><span>Zwiń</span></sc-if>
+      </button>
+    </nav>
+
+    <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; background: #DCD8CE">
+      <div style="height: 42px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: flex-end; gap: 0; padding: 0 12px; background: #EDE9E0; border-bottom: 1.5px solid #111111">
+        <span style="height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: #DCD8CE; border: 1.5px solid #111111; border-bottom: none; margin-bottom: -1.5px; font-weight: 700"><span style="width: 10px; height: 14px; border: 2px solid #D98C8C"></span>Zaklęcie<span style="font-size: 11px; color: #5A5852">63×88</span></span>
+        <span style="height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 14px; color: #5A5852; font-weight: 500"><span style="width: 10px; height: 14px; border: 2px solid #C9A75A"></span>Zaklęcie – rytuał</span>
+        <button type="button" title="Nowy szablon – inny rodzaj karty w tym projekcie (np. rytuał, przedmiot)" style="height: 30px; margin: 0 0 2px 6px; padding: 0 10px; background: transparent; border: 1.5px dashed #111111; font-weight: 700">＋ Nowy szablon</button>
+        <div role="tablist" aria-label="Strona karty" style="margin-left: auto; margin-bottom: 4px; display: flex">
+          <button type="button" role="tab" onClick="{{ toFront }}" aria-selected="{{ frontSel }}" style="height: 30px; padding: 0 14px; background: {{ frontBg }}; color: {{ frontFg }}; border: 1.5px solid #111111; font-weight: 700">Przód</button>
+          <button type="button" role="tab" onClick="{{ toBack }}" aria-selected="{{ backSel }}" style="height: 30px; padding: 0 14px; background: {{ backBg }}; color: {{ backFg }}; border: 1.5px solid #111111; border-left: none; font-weight: 700">Tył</button>
+        </div>
+      </div>
+      <div style="flex-grow: 1; min-height: 0; display: flex">
+        <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; background-image: radial-gradient(#C3BEB2 1px, transparent 1px); background-size: 16px 16px">
+          <div onPointerMove="{{ gMove }}" onPointerUp="{{ gUp }}" onPointerLeave="{{ gUp }}" style="position: relative; display: grid; grid-template-columns: 22px 395px; grid-template-rows: 22px 514px; user-select: none; touch-action: none">
+            <div style="background: #DCD8CE; border-right: 1px solid #8E8B85; border-bottom: 1px solid #8E8B85; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 8px; color: #5A5852">cm</div>
+            <div aria-hidden="true" onPointerDown="{{ newH }}" title="Przeciągnij w dół, żeby dodać poziomą linię pomocniczą" style="cursor: s-resize; position: relative; overflow: hidden; border-bottom: 1px solid #8E8B85; background: repeating-linear-gradient(90deg, #111111 0 1px, transparent 1px 47.6190px) bottom / 100% 13px no-repeat, repeating-linear-gradient(90deg, #5A5852 0 1px, transparent 1px 23.8095px) bottom / 100% 8px no-repeat, repeating-linear-gradient(90deg, #A9A498 0 1px, transparent 1px 4.7619px) bottom / 100% 4px no-repeat, #E6E2D8; background-position: 48px bottom, 48px bottom, 48px bottom">
+              <div style="position: absolute; left: {{ selX }}; width: {{ selW }}; top: 0; bottom: 0; background: rgba(63,106,147,0.28); border-left: 1px solid #3F6A93; border-right: 1px solid #3F6A93"></div>
+              <sc-for list="{{ rulerX }}" as="rx" hint-placeholder-count="8"><span style="position: absolute; left: {{ rx.p }}; top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #111111">{{ rx.n }}</span></sc-for>
+            </div>
+            <div aria-hidden="true" onPointerDown="{{ newV }}" title="Przeciągnij w prawo, żeby dodać pionową linię pomocniczą" style="cursor: e-resize; position: relative; overflow: hidden; border-right: 1px solid #8E8B85; background: repeating-linear-gradient(180deg, #111111 0 1px, transparent 1px 47.6190px) right / 13px 100% no-repeat, repeating-linear-gradient(180deg, #5A5852 0 1px, transparent 1px 23.8095px) right / 8px 100% no-repeat, repeating-linear-gradient(180deg, #A9A498 0 1px, transparent 1px 4.7619px) right / 4px 100% no-repeat, #E6E2D8; background-position: right 48px, right 48px, right 48px">
+              <div style="position: absolute; top: {{ selY }}; height: {{ selH }}; left: 0; right: 0; background: rgba(63,106,147,0.28); border-top: 1px solid #3F6A93; border-bottom: 1px solid #3F6A93"></div>
+              <sc-for list="{{ rulerY }}" as="ry" hint-placeholder-count="9"><span style="position: absolute; top: {{ ry.p }}; left: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #111111">{{ ry.n }}</span></sc-for>
+            </div>
+            <div style="padding: 48px; display: flex; align-items: flex-start; justify-content: flex-start">
+          <sc-if value="{{ isFront }}" hint-placeholder-val="{{ true }}">
+            <div onDragOver="{{ allowDrop }}" onDrop="{{ drop }}" style="position: relative; width: 300px; height: 419px; box-sizing: border-box; background: #FBF9F4; border: 7px solid #D98C8C; border-radius: 10px; box-shadow: 6px 6px 0 rgba(17,17,17,0.18); outline: {{ dropOutline }}; outline-offset: 6px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+              <sc-for list="{{ added }}" as="ad" hint-placeholder-count="0">
+                <div style="position: absolute; left: {{ ad.x }}; top: {{ ad.y }}; z-index: 2; padding: 6px 10px; background: rgba(93,127,163,0.14); border: 1.5px dashed #3F6A93; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #111111; white-space: nowrap">{{ ad.name }}</div>
+              </sc-for>
+              <sc-if value="{{ dragging }}" hint-placeholder-val="{{ false }}">
+                <div style="position: absolute; left: 50%; bottom: -54px; transform: translateX(-50%); z-index: 3; padding: 6px 12px; background: #3F6A93; color: #FFFFFF; font-weight: 700; white-space: nowrap">Upuść na karcie, żeby dodać: {{ dragName }}</div>
+              </sc-if>
+              <div style="display: flex; align-items: center; justify-content: space-between">
+                <div style="position: relative; padding: 2px 4px; outline: 2px solid #3F6A93; outline-offset: 2px">
+                  <span style="font-family: 'Archivo Black', sans-serif; font-size: 22px">Kula ognia</span>
+                  <span style="position: absolute; left: -5px; top: -5px; width: 7px; height: 7px; background: #FFFFFF; border: 1.5px solid #3F6A93"></span>
+                  <span style="position: absolute; right: -5px; top: -5px; width: 7px; height: 7px; background: #FFFFFF; border: 1.5px solid #3F6A93"></span>
+                  <span style="position: absolute; left: -5px; bottom: -5px; width: 7px; height: 7px; background: #FFFFFF; border: 1.5px solid #3F6A93"></span>
+                  <span style="position: absolute; right: -5px; bottom: -5px; width: 7px; height: 7px; background: #FFFFFF; border: 1.5px solid #3F6A93"></span>
+                  <span style="position: absolute; left: -2px; top: -26px; padding: 2px 6px; background: #3F6A93; color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 10px; white-space: nowrap">Tekst · nazwa</span>
+                </div>
+                <span style="width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid #D98C8C; display: flex; align-items: center; justify-content: center; font-family: 'Archivo Black', sans-serif; font-size: 16px">3</span>
+              </div>
+              <div style="height: 120px; border: 1.5px solid #111111; background: repeating-linear-gradient(45deg, #EFEAE0 0 6px, #F7F4EE 6px 12px); display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5A5852">obraz</div>
+              <div style="display: flex; align-items: center; gap: 8px"><span style="flex-grow: 1; height: 1.5px; background: #111"></span><span style="width: 8px; height: 8px; transform: rotate(45deg); border: 1.5px solid #111"></span><span style="flex-grow: 1; height: 1.5px; background: #111"></span></div>
+              <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12px">
+                <div><b>Zasięg:</b> 45 m</div>
+                <div><b>Czas rzucania:</b> 1 akcja</div>
+              </div>
+              <p style="margin: 0; font-size: 11px; line-height: 1.45">Jasna smuga mknie z palca do wskazanego punktu i wybucha kulą ognia. Każde stworzenie w promieniu 6 m wykonuje rzut obronny.</p>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isBack }}" hint-placeholder-val="{{ false }}">
+            <div style="width: 300px; height: 419px; box-sizing: border-box; background: #5D7FA3; border: 7px solid #111111; border-radius: 10px; box-shadow: 6px 6px 0 rgba(17,17,17,0.18); display: flex; align-items: center; justify-content: center">
+              <div style="width: 150px; height: 150px; border: 3px solid #F3F0E8; transform: rotate(45deg); display: flex; align-items: center; justify-content: center"><span style="transform: rotate(-45deg); font-family: 'Archivo Black', sans-serif; font-size: 28px; color: #F3F0E8">MAG</span></div>
+            </div>
+          </sc-if>
+            </div>
+            <sc-for list="{{ guides }}" as="gd" hint-placeholder-count="0">
+              <div onPointerDown="{{ gd.grab }}" style="position: absolute; z-index: 20; left: {{ gd.l }}; top: {{ gd.t }}; width: {{ gd.w }}; height: {{ gd.h }}; cursor: {{ gd.cur }}; display: flex; align-items: center; justify-content: center">
+                <div style="width: {{ gd.lw }}; height: {{ gd.lh }}; background: #1A9BB5; pointer-events: none"></div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ showGuideLabel }}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; z-index: 21; left: {{ glX }}; top: {{ glY }}; padding: 3px 7px; background: #1A9BB5; color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 11px; pointer-events: none; white-space: nowrap">{{ guideLabel }}</span>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      <div style="height: 44px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-top: 1.5px solid #111111; background: #EDE9E0; font-family: 'IBM Plex Mono', monospace; font-size: 11px">
+        <span style="display: flex; align-items: center; gap: 12px"><span>63 × 88 mm · układ swobodny · przyciąganie wł.</span><span style="color: #1A9BB5; font-weight: 600">linie pomocnicze: {{ guideCount }}</span><sc-if value="{{ hasGuides }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ clearGuides }}" style="height: 26px; padding: 0 8px; background: transparent; border: 1px solid #111; font-family: inherit; font-size: 11px">Usuń linie</button></sc-if></span>
+        <div style="display: flex; align-items: center; gap: 6px">
+          <button type="button" aria-label="Pomniejsz" style="width: 26px; height: 26px; background: transparent; border: 1px solid #111; font-weight: 700">−</button>
+          <span style="min-width: 44px; text-align: center">180%</span>
+          <button type="button" aria-label="Powiększ" style="width: 26px; height: 26px; background: transparent; border: 1px solid #111; font-weight: 700">+</button>
+          <button type="button" style="height: 26px; padding: 0 8px; background: transparent; border: 1px solid #111">Dopasuj</button>
+        </div>
+      </div>
+    </main>
+
+    <sc-if value="{{ rightOpen }}" hint-placeholder-val="{{ true }}">
+      <aside aria-label="Panele" style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; border-left: 2px solid #111111; background: #F3F0E8; min-height: 0">
+        <div style="height: 42px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; padding: 0 14px; border-bottom: 1.5px solid #111111;  display: flex; align-items: center; gap: 8px">
+          <span style="font-family: 'Archivo Black', sans-serif; font-size: 15px">{{ tabTitle }}</span>
+          <span style="font-size: 12px; color: #5A5852">{{ tabSub }}</span>
+        </div>
+        <div style="flex-grow: 1; min-height: 0; overflow-y: auto">
+          <sc-if value="{{ isLib }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #C9C4B8">
+              <div role="group" aria-label="Źródło" style="display: flex">
+                <button type="button" style="flex-grow: 1; height: 32px; background: #111111; color: #F3F0E8; border: 1.5px solid #111111; font-weight: 700">Moja biblioteka</button>
+                <button type="button" style="flex-grow: 1; height: 32px; background: transparent; color: #111111; border: 1.5px solid #111111; border-left: none; font-weight: 700">Systemowe</button>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                <button type="button" style="height: 40px; background: #E8B4A8; color: #111111; border: 1.5px solid #111111; font-weight: 700">＋ Wgraj obraz</button>
+                <button type="button" style="height: 40px; background: #E8B4A8; color: #111111; border: 1.5px solid #111111; font-weight: 700">＋ Wgraj czcionkę</button>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+                <sc-for list="{{ libThumbs }}" as="th" hint-placeholder-count="8">
+                  <button type="button" aria-label="{{ th.n }}" title="{{ th.n }}" draggable="true" style="aspect-ratio: 1; background: #FFFFFF; border: 1px solid #111111; display: flex; align-items: center; justify-content: center; font-family: {{ th.f }}; font-size: 18px; color: #111111">{{ th.g }}</button>
+                </sc-for>
+              </div>
+              <span style="font-size: 11px; color: #5A5852">Przeciągnij na kartę albo kliknij, żeby wstawić w zaznaczenie.</span>
+              <button type="button" style="height: 34px; background: transparent; border: 1.5px solid #111111; font-weight: 700">Otwórz całą bibliotekę ↗</button>
+            </div>
+          </sc-if>
+          <sc-for list="{{ sections }}" as="s" hint-placeholder-count="4">
+            <details open="{{ s.open }}" style="border-bottom: 1px solid #C9C4B8">
+              <summary style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; font-weight: 700">{{ s.name }}<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▾</span></summary>
+              <div style="padding: 0 14px 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                <sc-for list="{{ s.fields }}" as="f" hint-placeholder-count="2">
+                  <label style="display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #5A5852">{{ f.l }}<span style="height: 30px; display: flex; align-items: center; padding: 0 8px; background: #FFFFFF; border: 1px solid #111111; color: #111111; font-size: 12px; font-family: 'IBM Plex Mono', monospace">{{ f.v }}</span></label>
+                </sc-for>
+              </div>
+            </details>
+          </sc-for>
+        </div>
+        <sc-if value="{{ structOpen }}" hint-placeholder-val="{{ true }}">
+          <div role="separator" aria-orientation="horizontal" aria-label="Przeciągnij, żeby zmienić wysokość Struktury" title="Przeciągnij, żeby zmienić wysokość" onPointerDown="{{ divDown }}" onPointerMove="{{ divMove }}" onPointerUp="{{ divUp }}" style="height: 10px; flex-shrink: 0; cursor: row-resize; touch-action: none; border-top: 2px solid #111111; background: #E6E2D8; display: flex; align-items: center; justify-content: center">
+            <span style="width: 36px; height: 3px; border-top: 1px solid #5A5852; border-bottom: 1px solid #5A5852"></span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ structClosed }}" hint-placeholder-val="{{ false }}">
+          <div style="border-top: 2px solid #111111"></div>
+        </sc-if>
+        <div style="height: {{ structH }}; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 14px 4px 6px; border-bottom: 1px solid #C9C4B8">
+            <button type="button" onClick="{{ toggleStruct }}" aria-expanded="{{ structOpenStr }}" style="height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 8px; background: transparent; border: none; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 14px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{ structArrow }}</span>Struktura</button>
+            <div style="display: flex; gap: 4px">
+              <button type="button" aria-label="Wyżej" title="Wyżej" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">↑</button>
+              <button type="button" aria-label="Niżej" title="Niżej" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">↓</button>
+              <button type="button" aria-label="Duplikuj" title="Duplikuj" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">⧉</button>
+              <button type="button" aria-label="Usuń" title="Usuń" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">✕</button>
+            </div>
+          </div>
+          <div style="overflow-y: auto; padding: 6px 0; font-size: 12px">
+            <sc-for list="{{ tree }}" as="n" hint-placeholder-count="7">
+              <div style="display: flex; align-items: center; gap: 6px; height: 26px; padding-left: {{ n.pad }}; background: {{ n.bg }}; color: {{ n.fg }}">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; opacity: 0.8">{{ n.kind }}</span><span style="font-weight: 500">{{ n.name }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </aside>
+    </sc-if>
+
+    <nav aria-label="Przełącz panel" style="width: 52px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; border-left: 1.5px solid #111111; background: #EDE9E0">
+      <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5">
+        <button type="button" onClick="{{ tb.pick }}" aria-label="{{ tb.name }}" class="tip tip-l" aria-pressed="{{ tb.on }}" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: {{ tb.bg }}; border: 1.5px solid {{ tb.bd }}"><span class="tipbox">{{ tb.name }}</span>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ tb.fg }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ tb.d }}"></path></svg>
+        </button>
+      </sc-for>
+      <button type="button" onClick="{{ toggleRight }}" aria-label="{{ rightLabel }}" class="tip tip-l" style="margin-top: auto; width: 40px; height: 40px; background: transparent; border: none; font-family: 'Archivo Black', sans-serif; color: #111"><span class="tipbox">{{ rightLabel }}</span>{{ rightArrow }}</button>
+    </nav>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { left: false, right: true, tab: 'el', side: 'front', drag: null, added: [], structH: 250, structOpen: true, guides: [{ id: 1, dir: 'h', mm: 44 }, { id: 2, dir: 'v', mm: 31.5 }], gdrag: null, gnext: 3 }; }
+  renderVals() {
+    const L = this.state.left, front = this.state.side === 'front';
+    const addAt = (name, x, y) => this.setState({ added: [...this.state.added, { name, x: Math.round(x) + 'px', y: Math.round(y) + 'px' }], drag: null, side: 'front' });
+    const I = (name, tip, d) => ({ name, tip, d, def: name === 'Swobodny',
+      drag: (e) => { try { e.dataTransfer.setData('text/plain', name); e.dataTransfer.effectAllowed = 'copy'; } catch (_) {} this.setState({ drag: name }); },
+      add: () => addAt(name, 90 + (this.state.added.length % 4) * 12, 170 + (this.state.added.length % 4) * 22) });
+    const groups = [
+      { name: 'Układ', items: [I('Swobodny','domyślny – dowolne położenie myszką','M4 4h7v7H4z M13 13h7v7h-7z M15 4h5v5 M4 15v5h5'), I('Wiersz','elementy obok siebie','M3 8h18v8H3z M9 8v8 M15 8v8'), I('Kolumna','elementy jeden pod drugim','M8 3h8v18H8z M8 9h8 M8 15h8'), I('Warstwy','elementy jeden na drugim','M12 3 3 8l9 5 9-5z M3 13l9 5 9-5')] },
+      { name: 'Treść', items: [I('Tekst','nazwa, opis','M5 6V4h14v2 M12 4v16 M9 20h6'), I('Etykieta + wartość','np. Zasięg: 30 m','M3 9h6 M3 15h6 M12 6h9v12h-9z'), I('Wartość w kształcie','liczba w kółku, tarczy…','M12 3l8 5v8l-8 5-8-5V8z M10 12h4'), I('Pole do wpisania','miejsce na ołówek','M3 7h18v10H3z M7 10v4'), I('Znaczniki','kratki do odhaczania','M4 5h4v4H4z M4 15h4v4H4z M11 7h9 M11 17h9'), I('Tabela','statystyki w rzędach','M3 5h18v14H3z M3 10h18 M3 15h18 M10 5v14')] },
+      { name: 'Grafika', items: [I('Obraz','ilustracja karty','M3 5h18v14H3z M3 16l5-5 4 4 3-3 6 6'), I('Ikona','symbol z biblioteki','M12 3l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2-5.5 3.2 1.4-6L3.3 9.2l6.1-.6z')] },
+      { name: 'Ozdoby', items: [I('Separator','prosta linia','M3 12h18'), I('Separator z zakończeniami','linia z ozdobnymi końcami','M8 12h8 M2 12l3-3 3 3-3 3z M16 12l3-3 3 3-3 3z'), I('Separator z motywem','linia z ozdobą w środku','M3 12h6 M15 12h6 M12 8l3 4-3 4-3-4z')] }
+    ];
+    const T = (id, name, d) => ({ id, name, d });
+    const tabsDef = [
+      T('el','Właściwości elementu','M4 6h9 M17 6h3 M15 4v4 M4 12h3 M11 12h9 M9 10v4 M4 18h11 M19 18h1 M17 16v4'),
+      T('card','Karta: rozmiar, ramka, tło','M6 3h12v18H6z M9 7h6 M9 11h6'),
+      T('styles','Style','M4 20l6-6 M14 4l6 6-8 8-6-6z'),
+      T('lib','Biblioteka','M4 4h4v16H4z M10 4h4v16h-4z M16 5l4 1-3 14-4-1z'),
+      T('snap','Przyciąganie i siatka','M6 3v8a6 6 0 0 0 12 0V3 M6 7h4 M14 7h4')
+    ];
+    const F = (l, v) => ({ l, v });
+    const S = (name, fields, open) => ({ name, fields, open });
+    const content = {
+      el: ['Właściwości', 'Tekst · nazwa', [
+        S('Położenie i rozmiar', [F('X','4,5 mm'), F('Y','4,5 mm'), F('Szerokość','29 mm'), F('Wysokość','7 mm'), F('Obrót','0°'), F('Liczone od','lewy górny')], true),
+        S('Styl tekstu', [F('Czcionka','Archivo Black'), F('Rozmiar','11 pt'), F('Kolor','#111111'), F('Wyrównanie','do lewej')], true),
+        S('Wygląd (tło, ramka, rogi)', [F('Tło','brak'), F('Ramka','brak')], false),
+        S('Odstępy', [F('Wewnątrz','1 mm'), F('Na zewnątrz','0 mm')], false),
+        S('Wartość przykładowa', [F('Tekst','Kula ognia'), F('Klucz danych','nazwa')], false)
+      ]],
+      card: ['Karta', 'cała karta', [
+        S('Rozmiar i rogi', [F('Szerokość','63 mm'), F('Wysokość','88 mm'), F('Orientacja','pionowo'), F('Rogi','3 mm')], true),
+        S('Ramka karty', [F('Grubość','2 mm'), F('Kolor','łososiowy'), F('Wzór','gładka'), F('Odsunięcie','0 mm')], true),
+        S('Tło karty', [F('Kolor','#FBF9F4'), F('Wzór','brak')], false),
+        S('Tekstura i krawędź', [F('Tekstura','brak'), F('Postrzępienie','wył.')], false),
+        S('Układ karty', [F('Układ','swobodny'), F('Odstępy','3 mm')], false)
+      ]],
+      styles: ['Style', 'wspólny wygląd', [
+        S('Zestawy stylów', [F('Zestaw','Riso – zaklęcia'), F('Akcja','Zastosuj')], true),
+        S('Grupy stylów', [F('Nagłówki','Archivo Black 11'), F('Opisy','Archivo 8')], true),
+        S('Kopiuj / wklej styl', [F('Kopiuj','z zaznaczenia'), F('Wklej','na zaznaczenie')], false)
+      ]],
+      lib: ['Biblioteka', 'obrazy, czcionki, ozdobniki', [
+        S('Czcionki w projekcie', [F('Nagłówki','Archivo Black'), F('Opisy','Archivo')], false)
+      ]],
+      snap: ['Przyciąganie', 'precyzja', [
+        S('Przyciąganie', [F('Do innych pól','wł.'), F('Siatka','1 mm')], true),
+        S('Podkład ze wzoru', [F('Obraz','brak'), F('Przezroczystość','50%')], false)
+      ]]
+    }[this.state.tab];
+    const N = (kind, name, depth, sel) => ({ kind, name, pad: (10 + depth * 14) + 'px', bg: sel ? '#3F6A93' : 'transparent', fg: sel ? '#FFFFFF' : '#111111' });
+    const extra = this.state.added.map(a => N('+', a.name, 1));
+    const tree = front ? [...[N('▣','Karta · swobodny',0)], ...extra,  N('T','Nazwa',1,true), N('⬡','Koszt',1), N('▨','Obraz',1), N('—','Separator z motywem',1), N('⇅','Kolumna: parametry',1), N('L:','Zasięg',2), N('L:','Czas rzucania',2), N('T','Opis',1)]
+                       : [N('▣','Tył karty',0), N('▨','Tekstura tła',1), N('⬡','Romb z napisem',1)];
+    return {
+      added: this.state.added, dragging: !!this.state.drag, dragName: this.state.drag || '',
+      dropOutline: this.state.drag ? '3px dashed #3F6A93' : 'none',
+      dragEnd: () => this.setState({ drag: null }),
+      allowDrop: (e) => { e.preventDefault(); },
+      drop: (e) => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); const sc = r.width / 300 || 1; const name = this.state.drag || (e.dataTransfer && e.dataTransfer.getData('text/plain')) || 'Element'; addAt(name, (e.clientX - r.left) / sc - 7, (e.clientY - r.top) / sc - 7); },
+      structOpen: this.state.structOpen, structClosed: !this.state.structOpen, structOpenStr: this.state.structOpen ? 'true' : 'false',
+      structH: this.state.structOpen ? this.state.structH + 'px' : '44px', structArrow: this.state.structOpen ? '▾' : '▸',
+      toggleStruct: () => this.setState({ structOpen: !this.state.structOpen }),
+      divDown: (e) => { try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {} this.dY = e.clientY; this.dH = this.state.structH; },
+      divMove: (e) => { if (this.dY == null) return; const h = Math.max(120, Math.min(600, this.dH + (this.dY - e.clientY))); if (h !== this.state.structH) this.setState({ structH: h }); },
+      divUp: () => { this.dY = null; },
+      railPadTop: '10px', collapsed: !L, ovf: L ? 'auto' : 'visible',
+      rulerX: Array.from({ length: 8 }, (_, i) => ({ n: String(i), p: Math.round(48 + i * 10 * 4.7619 + 2) + 'px' })),
+      rulerY: Array.from({ length: 10 }, (_, i) => ({ n: String(i), p: Math.round(48 + i * 10 * 4.7619 + 1) + 'px' })),
+      selX: Math.round(48 + 4.5 * 4.7619) + 'px', selW: Math.round(29 * 4.7619) + 'px', selY: Math.round(48 + 4.5 * 4.7619) + 'px', selH: Math.round(7 * 4.7619) + 'px',
+      ...(() => {
+        const K = 4.761905, OFF = 48, R = 22, W = 417, H = 536;
+        const toPx = (mm) => R + OFF + mm * K;
+        const gs = this.state.guides, dr = this.state.gdrag;
+        const startDrag = (dir) => (e) => { e.preventDefault(); const id = this.state.gnext; this.setState({ guides: [...this.state.guides, { id, dir, mm: -20 }], gdrag: id, gnext: id + 1 }); };
+        const cur = gs.find(g => g.id === dr);
+        return {
+          guides: gs.filter(g => toPx(g.mm) > R).map(g => g.dir === 'h'
+            ? { l: R + 'px', t: (toPx(g.mm) - 4) + 'px', w: (W - R) + 'px', h: '9px', lw: '100%', lh: '1px', cur: 'row-resize', grab: (e) => { e.preventDefault(); this.setState({ gdrag: g.id }); } }
+            : { l: (toPx(g.mm) - 4) + 'px', t: R + 'px', w: '9px', h: (H - R) + 'px', lw: '1px', lh: '100%', cur: 'col-resize', grab: (e) => { e.preventDefault(); this.setState({ gdrag: g.id }); } }),
+          newH: startDrag('h'), newV: startDrag('v'),
+          gMove: (e) => { if (this.state.gdrag == null) return; const r = e.currentTarget.getBoundingClientRect(); const sc = r.width / W || 1; const x = (e.clientX - r.left) / sc, y = (e.clientY - r.top) / sc; const g = this.state.guides.find(q => q.id === this.state.gdrag); if (!g) return; const v = Math.round(((g.dir === 'h' ? y : x) - R - OFF) / K * 2) / 2; if (v !== g.mm) this.setState({ guides: this.state.guides.map(q => q.id === g.id ? { ...q, mm: v } : q) }); },
+          gUp: () => { if (this.state.gdrag == null) return; this.setState({ guides: this.state.guides.filter(q => toPx(q.mm) > R), gdrag: null }); },
+          showGuideLabel: !!(cur && toPx(cur.mm) > R), guideLabel: cur ? String(cur.mm).replace('.', ',') + ' mm' : '',
+          glX: cur ? (cur.dir === 'v' ? (toPx(cur.mm) + 6) + 'px' : (R + 6) + 'px') : '0', glY: cur ? (cur.dir === 'h' ? (toPx(cur.mm) + 6) + 'px' : (R + 6) + 'px') : '0',
+          guideCount: gs.filter(g => toPx(g.mm) > R).length, hasGuides: gs.length > 0, clearGuides: () => this.setState({ guides: [] })
+        };
+      })(),
+      leftOpen: L, leftW: L ? '230px' : '60px', padX: L ? '8px' : '0', justify: L ? 'flex-start' : 'center',
+      leftArrow: L ? '«' : '»', leftLabel: L ? 'Zwiń menu' : 'Rozwiń menu z nazwami',
+      toggleLeft: () => this.setState({ left: !this.state.left }),
+      groups,
+      rightOpen: this.state.right, rightArrow: this.state.right ? '»' : '«', rightLabel: this.state.right ? 'Zwiń panele' : 'Rozwiń panele',
+      toggleRight: () => this.setState({ right: !this.state.right }),
+      tabs: tabsDef.map(t => { const on = this.state.tab === t.id && this.state.right; return { ...t, on: on ? 'true' : 'false', bg: on ? '#111111' : 'transparent', fg: on ? '#F3F0E8' : '#111111', bd: on ? '#111111' : 'transparent', pick: () => this.setState({ tab: t.id, right: true }) }; }),
+      isLib: this.state.tab === 'lib',
+      openLib: () => this.setState({ tab: 'lib', right: true }),
+      libThumbs: [{n:'Smok.png',g:'🐉'.slice(0,0)+'▲',f:'Archivo'},{n:'Narożnik ozdobny',g:'╔',f:'IBM Plex Mono'},{n:'Czaszka.svg',g:'☠',f:'Archivo'},{n:'Runa',g:'ᚱ',f:'Archivo'},{n:'Czcionka Uncial',g:'Aa',f:"'Archivo Black'"},{n:'Pergamin.jpg',g:'▦',f:'Archivo'},{n:'Miecz.svg',g:'†',f:'Archivo'},{n:'Liść',g:'❧',f:'Archivo'}],
+      tabTitle: content[0], tabSub: content[1], sections: content[2], tree,
+      isFront: front, isBack: !front,
+      frontSel: front ? 'true' : 'false', backSel: front ? 'false' : 'true',
+      frontBg: front ? '#111111' : 'transparent', frontFg: front ? '#F3F0E8' : '#111111',
+      backBg: front ? 'transparent' : '#111111', backFg: front ? '#111111' : '#F3F0E8',
+      toFront: () => this.setState({ side: 'front' }), toBack: () => this.setState({ side: 'back' })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Druk</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F0E8}
+.tip{position:relative}
+.tipbox{position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);background:#111111;color:#F3F0E8;font-family:Archivo,sans-serif;font-size:12px;font-weight:700;line-height:1.2;padding:7px 10px;white-space:nowrap;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s,visibility 0s linear .12s;z-index:60;box-shadow:3px 3px 0 #5D7FA3;text-align:left}
+.tip:hover .tipbox,.tip:focus-visible .tipbox{opacity:1;visibility:visible;transition:opacity .12s .5s,visibility 0s linear .5s}
+.tip-l .tipbox{left:auto;right:calc(100% + 12px)}
+
+button{font:inherit;cursor:pointer}
+input,select{font:inherit}
+summary{cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+</style>
+</helmet>
+<div style="height: 900px; min-width: 1100px; display: flex; flex-direction: column; background: #F3F0E8; color: #111111; font-family: Archivo, sans-serif; font-size: 13px">
+
+  <header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 16px; padding: 0 16px; border-bottom: 2px solid #111111">
+    <a href="#" style="display: flex; align-items: center; height: 40px; padding: 0 12px; border: 1.5px solid #111111; color: #111111; text-decoration: none; font-weight: 700">← Projekty</a>
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 17px">Karty zaklęć maga</span>
+    <nav aria-label="Etapy projektu" style="margin-left: 20px; display: flex; align-items: center; gap: 6px; font-weight: 700">
+      <a href="#" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; color: #111111; text-decoration: none"><span style="width: 20px; height: 20px; border: 1.5px solid #111; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px">1</span>Szablony</a>
+      <span style="color: #5A5852">→</span>
+      <a href="#" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; color: #111111; text-decoration: none"><span style="width: 20px; height: 20px; border: 1.5px solid #111; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px">2</span>Karty</a>
+      <span style="color: #5A5852">→</span>
+      <span aria-current="page" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; background: #111111; color: #F3F0E8"><span style="width: 20px; height: 20px; background: #E8B4A8; color: #111; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px">3</span>Druk</span>
+    </nav>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px">
+      <button type="button" aria-label="Cofnij" title="Cofnij (Ctrl+Z)" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-3"></path></svg></button>
+      <button type="button" aria-label="Ponów" title="Ponów (Ctrl+Y)" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"></path><path d="M20 9H9a5 5 0 0 0 0 10h3"></path></svg></button>
+      <span style="width: 1px; height: 28px; background: #C9C4B8; margin: 0 4px"></span>
+      <button type="button" aria-label="Ustawienia" title="Ustawienia aplikacji" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3 M12 19v3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M2 12h3 M19 12h3 M4.9 19.1 7 17 M17 7l2.1-2.1"></path></svg></button>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5A5852; padding: 0 8px">✓ zapisano</span>
+      <button type="button" style="height: 40px; padding: 0 18px; background: #111111; color: #F3F0E8; border: 1.5px solid #111111; font-weight: 700">⤓ Pobierz PDF</button>
+    </div>
+  </header>
+
+  <div style="flex-grow: 1; min-height: 0; display: flex">
+
+    <nav aria-label="Karty w druku" style="width: {{ leftW }}; flex-shrink: 0; display: flex; flex-direction: column; border-right: 2px solid #111111; background: #EDE9E0">
+      <div style="height: 50px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; padding: 0 14px; border-bottom: 1.5px solid #111111"><sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ true }}"><span style="flex-grow: 1; display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.1em">KARTY W DRUKU</span><span style="font-size: 11px; color: #5A5852">{{ total }} szt.</span></span></sc-if></div>
+      <div style="flex-grow: 1; overflow-y: {{ ovf }}; padding: {{ railPadTop }} 8px 4px; display: flex; flex-direction: column; gap: 3px">
+        <sc-for list="{{ cards }}" as="c" hint-placeholder-count="8">
+          <div class="tip" style="display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 {{ padX }}; justify-content: {{ justify }}; background: {{ c.bg }}; border: 1px solid {{ c.bd }}"><sc-if value="{{ collapsed }}" hint-placeholder-val="{{ false }}"><span class="tipbox">{{ c.name }} × {{ c.copies }}</span></sc-if>
+            <button type="button" onClick="{{ c.toggle }}" aria-label="Drukuj kartę {{ c.name }}" aria-pressed="{{ c.onStr }}" style="width: 18px; height: 18px; flex-shrink: 0; padding: 0; background: {{ c.check }}; border: 1.5px solid #111111; color: #F3F0E8; font-size: 11px; line-height: 1">{{ c.mark }}</button>
+            <sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ true }}">
+              <span style="flex-grow: 1; font-weight: 500; color: {{ c.fg }}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ c.name }}</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: {{ c.fg }}">×{{ c.copies }}</span>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ true }}">
+          <p style="margin: 8px 6px; font-size: 12px; line-height: 1.45; color: #5A5852">Odznacz karty, których nie chcesz teraz drukować. Liczbę kopii zmienisz w kroku Karty.</p>
+        </sc-if>
+      </div>
+      <button type="button" onClick="{{ toggleLeft }}" aria-label="{{ leftLabel }}" class="tip" style="height: 44px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: {{ justify }}; gap: 8px; padding: 0 16px; background: transparent; border: none; border-top: 1.5px solid #111111; color: #111111; font-weight: 700"><sc-if value="{{ collapsed }}" hint-placeholder-val="{{ false }}"><span class="tipbox">{{ leftLabel }}</span></sc-if><span style="font-family: 'Archivo Black', sans-serif">{{ leftArrow }}</span><sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ true }}"><span>Zwiń</span></sc-if></button>
+    </nav>
+
+    <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; background: #DCD8CE">
+      <div style="height: 50px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1.5px solid #111111; background: #EDE9E0">
+        <span style="font-size: 12px">Pokaż:</span>
+        <span style="display: flex; padding-left: 1.5px">
+          <sc-for list="{{ shows }}" as="v" hint-placeholder-count="3"><button type="button" onClick="{{ v.pick }}" aria-pressed="{{ v.on }}" disabled="{{ v.off }}" style="height: 34px; padding: 0 12px; margin-left: -1.5px; background: {{ v.bg }}; color: {{ v.fg }}; border: 1.5px solid #111111; font-weight: 700; opacity: {{ v.op }}">{{ v.name }}</button></sc-for>
+        </span>
+        <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{ sheetInfo }}</span>
+      </div>
+
+      <div style="flex-grow: 1; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 36px; background-image: radial-gradient(#C3BEB2 1px, transparent 1px); background-size: 16px 16px">
+        <sc-for list="{{ pages }}" as="pg" hint-placeholder-count="1">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px">
+            <div style="position: relative; width: {{ pw }}; height: {{ ph }}; background: #FFFFFF; box-shadow: 5px 5px 0 rgba(17,17,17,0.2); display: flex; align-items: center; justify-content: center">
+              <div style="position: absolute; left: {{ safe }}; top: {{ safe }}; right: {{ safe }}; bottom: {{ safe }}; border: 1px dashed #E0A397; pointer-events: none"></div>
+              <div style="display: grid; grid-template-columns: {{ cols }}; gap: 0">
+                <sc-for list="{{ pg.slots }}" as="sl" hint-placeholder-count="9">
+                  <div style="width: {{ sw }}; height: {{ sh }}; box-sizing: border-box; padding: 2px; outline: {{ cut }}; outline-offset: -0.5px">
+                    <div style="width: 100%; height: 100%; box-sizing: border-box; background: {{ sl.bg }}; border: {{ sl.border }}; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: {{ sl.justify }}; padding: 5px 3px; gap: 3px; overflow: hidden">
+                      <span style="font-family: 'Archivo Black', sans-serif; font-size: 8px; line-height: 1.1; text-align: center; color: {{ sl.fg }}">{{ sl.name }}</span>
+                      <sc-if value="{{ sl.isFront }}" hint-placeholder-val="{{ true }}"><span style="width: 80%; height: 30%; border: 1px solid #111; background: repeating-linear-gradient(45deg, #EFEAE0 0 3px, #F7F4EE 3px 6px)"></span><span style="width: 80%; height: 2px; background: #CFCAC0"></span><span style="width: 60%; height: 2px; background: #CFCAC0"></span></sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">{{ pg.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="height: 44px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-top: 1.5px solid #111111; background: #EDE9E0">
+        <span style="font-size: 12px; margin-right: 4px">Strona:</span>
+        <sc-for list="{{ pageNav }}" as="n" hint-placeholder-count="2"><button type="button" onClick="{{ n.pick }}" aria-pressed="{{ n.on }}" style="width: 36px; height: 36px; background: {{ n.bg }}; color: {{ n.fg }}; border: 1.5px solid #111111; font-family: 'IBM Plex Mono', monospace; font-weight: 600">{{ n.num }}</button></sc-for>
+        <span style="margin-left: auto; font-size: 12px; color: #5A5852">Różowa przerywana linia = margines bezpieczeństwa drukarki</span>
+      </div>
+    </main>
+
+    <aside aria-label="Ustawienia druku" style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; border-left: 2px solid #111111; min-height: 0">
+      <div style="height: 50px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; padding: 0 14px; border-bottom: 1.5px solid #111111"><span style="font-family: 'Archivo Black', sans-serif; font-size: 15px">Ustawienia druku</span></div>
+      <div style="flex-grow: 1; overflow-y: auto">
+        <details open style="border-bottom: 1px solid #C9C4B8">
+          <summary style="display: flex; justify-content: space-between; padding: 10px 14px; font-weight: 700">Papier<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▾</span></summary>
+          <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px">            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+              <sc-for list="{{ papers }}" as="p" hint-placeholder-count="7">
+                <button type="button" onClick="{{ p.pick }}" aria-pressed="{{ p.on }}" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px; background: {{ p.bg }}; color: {{ p.fg }}; border: 1.5px solid #111111">
+                  <span style="width: {{ p.iw }}; height: {{ p.ih }}; border: 1.5px solid {{ p.fg }}"></span>
+                  <span style="font-weight: 700; font-size: 12px">{{ p.name }}</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px">{{ p.mm }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+              <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Orientacja
+                <span style="display: flex"><button type="button" onClick="{{ setPortrait }}" aria-pressed="{{ portraitOn }}" style="flex-grow: 1; height: 32px; background: {{ portraitBg }}; color: {{ portraitFg }}; border: 1.5px solid #111111; font-weight: 700">Pion</button><button type="button" onClick="{{ setLandscape }}" aria-pressed="{{ landscapeOn }}" style="flex-grow: 1; height: 32px; background: {{ landscapeBg }}; color: {{ landscapeFg }}; border: 1.5px solid #111111; border-left: none; font-weight: 700">Poziom</button></span>
+              </div>
+              <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Kolor<select style="height: 32px; background: #FFFFFF; border: 1.5px solid #111111"><option>kolorowo</option><option>czarno-biało</option></select></label>
+            </div>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Margines bezpieczeństwa (mm)<input type="number" value="5" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label></div>
+        </details>
+        <details open style="border-bottom: 1px solid #C9C4B8">
+          <summary style="display: flex; justify-content: space-between; padding: 10px 14px; font-weight: 700">Układ kart na arkuszu<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▾</span></summary>
+          <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px"><span style="display: flex"><button type="button" style="flex-grow: 1; height: 30px; background: #111111; color: #F3F0E8; border: 1.5px solid #111111; font-weight: 700; font-size: 12px">Jeden rozmiar</button><button type="button" style="flex-grow: 1; height: 30px; background: #FFFFFF; color: #111111; border: 1.5px solid #111111; border-left: none; font-weight: 700; font-size: 12px">Mieszane</button></span><span style="display: flex"><button type="button" style="flex-grow: 1; height: 30px; background: #111111; color: #F3F0E8; border: 1.5px solid #111111; font-weight: 700; font-size: 12px">Automatyczny</button><button type="button" style="flex-grow: 1; height: 30px; background: #FFFFFF; color: #111111; border: 1.5px solid #111111; border-left: none; font-weight: 700; font-size: 12px">Własny układ</button></span><div style="padding: 8px 10px; background: #FFFFFF; border: 1px solid #111111; font-size: 12px">{{ layoutInfo }}</div><span style="font-size: 11px; color: #5A5852">Własny układ: marginesy, kolumny, rzędy, odstępy i przesunięcie – np. pod gotowe arkusze z perforacją.</span><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Margines lewy (mm)<input type="number" value="5" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Margines górny (mm)<input type="number" value="5" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Odstęp poziomy (mm)<input type="number" value="0" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Odstęp pionowy (mm)<input type="number" value="0" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label></div><div style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid #C9C4B8"><span style="font-size: 11px; font-weight: 700">Moje układy</span><div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #FFFFFF; border: 1px solid #111111; font-size: 12px"><span>Arkusz Avery 3×3</span><button type="button" style="height: 26px; padding: 0 8px; background: transparent; border: 1px solid #111">Użyj</button></div><button type="button" style="height: 30px; background: transparent; border: 1.5px dashed #111111; font-weight: 700">Zapisz jako mój układ</button></div></div>
+        </details>
+        <details open style="border-bottom: 1px solid #C9C4B8">
+          <summary style="display: flex; justify-content: space-between; padding: 10px 14px; font-weight: 700">Linie cięcia<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▾</span></summary>
+          <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px"><button type="button" onClick="{{ toggleCut }}" aria-pressed="{{ cutOn }}" style="display: flex; align-items: center; gap: 10px; padding: 0; background: transparent; border: none; text-align: left; font-size: 12px"><span style="width: 16px; height: 16px; border: 1.5px solid #111111; background: {{ cutBox }}; color: #F3F0E8; font-size: 10px; display: flex; align-items: center; justify-content: center">{{ cutMark }}</span>Linie cięcia wokół kart</button>
+            <sc-if value="{{ cutOnB }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Grubość (mm)
+                  <span style="display: flex; padding-left: 1.5px"><sc-for list="{{ widths }}" as="w" hint-placeholder-count="4"><button type="button" onClick="{{ w.pick }}" aria-pressed="{{ w.on }}" style="flex-grow: 1; height: 30px; margin-left: -1.5px; background: {{ w.bg }}; color: {{ w.fg }}; border: 1.5px solid #111111; font-family: 'IBM Plex Mono', monospace; font-size: 11px">{{ w.v }}</button></sc-for></span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Kolor linii
+                  <span style="display: flex; gap: 6px"><sc-for list="{{ colors }}" as="k" hint-placeholder-count="5"><button type="button" onClick="{{ k.pick }}" aria-label="{{ k.n }}" title="{{ k.n }}" aria-pressed="{{ k.on }}" style="width: 30px; height: 30px; background: {{ k.c }}; border: 1.5px solid #111111; outline: {{ k.ring }}; outline-offset: 2px"></button></sc-for></span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Kreska (mm)<input type="number" value="{{ dash }}" onChange="{{ setDash }}" min="0" step="0.5" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label>
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Przerwa (mm)<input type="number" value="{{ gap }}" onChange="{{ setGap }}" min="0" step="0.5" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: {{ previewBg }}; border: 1px solid #111111"><span style="font-size: 11px; color: {{ previewFg }}">Podgląd:</span><span style="flex-grow: 1; height: 0; border-top: {{ cutPreview }}"></span></div>
+                <span style="font-size: 11px; color: #5A5852">Na ciemnych kartach wybierz jasny kolor. Przerwa 0 = linia ciągła.</span>
+              </div>
+            </sc-if></div>
+        </details>
+        <details style="border-bottom: 1px solid #C9C4B8">
+          <summary style="display: flex; justify-content: space-between; padding: 10px 14px; font-weight: 700">Druk dwustronny<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▸</span></summary>
+          <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px"><button type="button" onClick="{{ toggleDuplex }}" aria-pressed="{{ duplexOn }}" style="display: flex; align-items: center; gap: 10px; padding: 0; background: transparent; border: none; text-align: left"><span style="width: 18px; height: 18px; border: 1.5px solid #111111; background: {{ duplexBox }}; color: #F3F0E8; font-size: 11px; display: flex; align-items: center; justify-content: center">{{ duplexMark }}</span>Drukuj tyły (przód i tył w parach stron)</button>
+            <sc-if value="{{ duplex }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Krawędź odwracania<select style="height: 32px; background: #FFFFFF; border: 1.5px solid #111111"><option>Długa krawędź</option><option>Krótka krawędź</option></select></label>
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Korekta tyłu X (mm)<input type="number" value="0" style="height: 32px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label>
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Korekta tyłu Y (mm)<input type="number" value="0" style="height: 32px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label>
+                </div>
+                <button type="button" style="height: 34px; background: #FFFFFF; border: 1.5px solid #111111; font-weight: 700">Wydruk próbny dwustronny</button>
+              </div>
+            </sc-if>
+</div>
+        </details>
+        <details style="border-bottom: 1px solid #C9C4B8">
+          <summary style="display: flex; justify-content: space-between; padding: 10px 14px; font-weight: 700">Karta w slocie<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▸</span></summary>
+          <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px"><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Położenie karty w slocie<select style="height: 30px; background: #FFFFFF; border: 1.5px solid #111111"><option>Środek</option><option>Lewy górny róg</option></select></label><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Luz (mm)<input type="number" value="0" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Linie cięcia i obrysy<select style="height: 30px; background: #FFFFFF; border: 1.5px solid #111111"><option>Wokół karty</option><option>Wokół slotu</option></select></label></div><span style="display: flex; align-items: center; gap: 10px; font-size: 12px"><span style="width: 16px; height: 16px; flex-shrink: 0; border: 1.5px solid #111111; background: #FFFFFF; color: #F3F0E8; font-size: 10px; display: flex; align-items: center; justify-content: center"></span>Tło do krawędzi slotu</span></div>
+        </details>
+        <details style="border-bottom: 1px solid #C9C4B8">
+          <summary style="display: flex; justify-content: space-between; padding: 10px 14px; font-weight: 700">Tryb drukarni (spad)<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▸</span></summary>
+          <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px"><span style="display: flex; align-items: center; gap: 10px; font-size: 12px"><span style="width: 16px; height: 16px; flex-shrink: 0; border: 1.5px solid #111111; background: #FFFFFF; color: #F3F0E8; font-size: 10px; display: flex; align-items: center; justify-content: center"></span>Przygotuj do drukarni (spad i znaczniki cięcia)</span><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Spad (mm)<input type="number" value="3" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Znaczniki cięcia<select style="height: 30px; background: #FFFFFF; border: 1.5px solid #111111"><option>tak</option><option>nie</option></select></label></div><span style="font-size: 11px; color: #5A5852">Netto 63 × 88 mm · brutto ze spadem 69 × 94 mm. W tym trybie zamiast linii cięcia są znaczniki.</span></div>
+        </details>
+        <details style="border-bottom: 1px solid #C9C4B8">
+          <summary style="display: flex; justify-content: space-between; padding: 10px 14px; font-weight: 700">Tytuł arkusza<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▸</span></summary>
+          <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px"><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Tytuł arkusza<input type="text" value="Zaklęcia – krąg 1–3" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Położenie tytułu<select style="height: 30px; background: #FFFFFF; border: 1.5px solid #111111"><option>bez tytułu</option><option>u góry</option><option>z lewej, pionowo</option></select></label></div>
+        </details>
+        <details style="border-bottom: 1px solid #C9C4B8">
+          <summary style="display: flex; justify-content: space-between; padding: 10px 14px; font-weight: 700">Kalibracja drukarki<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▸</span></summary>
+          <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px"><span style="font-size: 12px; line-height: 1.45">Wydrukuj w skali 100% i zmierz – jeśli wymiary się nie zgadzają, ustaw przesunięcie lub korektę.</span><button type="button" style="height: 32px; background: #FFFFFF; border: 1.5px solid #111111; font-weight: 700">Wydruk testowy (PDF)</button><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Przesunięcie X (mm)<input type="number" value="0" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label><label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Przesunięcie Y (mm)<input type="number" value="0" style="height: 30px; padding: 0 8px; background: #FFFFFF; border: 1.5px solid #111111"></label></div></div>
+        </details>
+        <details open style="border-bottom: 1px solid #C9C4B8">
+          <summary style="display: flex; justify-content: space-between; padding: 10px 14px; font-weight: 700">Pobierz<span style="font-family: 'IBM Plex Mono', monospace; color: #5A5852">▾</span></summary>
+          <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px"><button type="button" style="height: 42px; background: #111111; color: #F3F0E8; border: 1.5px solid #111111; font-weight: 700">⤓ PDF do druku</button>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px"><button type="button" style="height: 32px; background: #FFFFFF; border: 1.5px solid #111111; font-size: 12px">Strony – JPG / PNG</button><button type="button" style="height: 32px; background: #FFFFFF; border: 1.5px solid #111111; font-size: 12px">Karty osobno – ZIP</button></div><span style="display: flex; align-items: center; gap: 10px; font-size: 12px"><span style="width: 16px; height: 16px; flex-shrink: 0; border: 1.5px solid #111111; background: #111111; color: #F3F0E8; font-size: 10px; display: flex; align-items: center; justify-content: center">✓</span>Niewidoczna warstwa tekstowa w PDF (wyszukiwanie)</span></div>
+        </details>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const C = (name, copies, back) => ({ name, copies, back: back || '#5D7FA3', on: true });
+    this.state = { left: true, paper: 'A4', land: false, duplex: true, cut: true, cutW: 0.2, cutC: '#8E8B85', dash: 2, gap: 1, show: 'both', page: 0, cards: [
+      C('Kula ognia', 2), C('Magiczny pocisk', 3), C('Tarcza', 1), C('Błyskawica', 1), C('Niewidzialność', 1, '#6E6B66'), C('Sen', 2), C('Mglisty krok', 1), C('Pajęczyna', 1)
+    ] };
+  }
+  renderVals() {
+    const st = this.state, L = st.left;
+    const P = { 'A4': [210, 297], 'Letter': [216, 279], 'A5': [148, 210], '10×15': [100, 150], '13×18': [130, 180], '15×21': [150, 210], 'Własny': [200, 280] };
+    let [W, H] = P[st.paper]; if (st.land) [W, H] = [H, W];
+    const m = 5, cw = 63, ch = 88;
+    const cols = Math.max(1, Math.floor((W - 2 * m) / cw)), rows = Math.max(1, Math.floor((H - 2 * m) / ch)), per = cols * rows;
+    const list = []; st.cards.forEach(c => { if (c.on) for (let i = 0; i < c.copies; i++) list.push(c); });
+    const pagesN = Math.max(1, Math.ceil(list.length / per)); const page = Math.min(st.page, pagesN - 1);
+    const slice = list.slice(page * per, page * per + per);
+    const k = Math.min(400 / H, (st.show === 'both' && st.duplex ? 330 : 520) / W);
+    const fronts = [], backs = [];
+    for (let i = 0; i < per; i++) { const c = slice[i]; fronts.push(c ? { name: c.name, bg: '#FBF9F4', border: '3px solid #D98C8C', fg: '#111111', isFront: true, justify: 'flex-start' } : { name: '', bg: 'transparent', border: '1px dashed #D8D3C8', fg: '#111', isFront: false, justify: 'center' }); }
+    for (let r = 0; r < rows; r++) for (let cI = cols - 1; cI >= 0; cI--) { const c = slice[r * cols + cI]; backs.push(c ? { name: 'TYŁ', bg: c.back, border: '2px solid #111111', fg: '#F3F0E8', isFront: false, justify: 'center' } : { name: '', bg: 'transparent', border: '1px dashed #D8D3C8', fg: '#111', isFront: false, justify: 'center' }); }
+    const show = st.duplex ? st.show : 'front';
+    const pages = [];
+    if (show !== 'back') pages.push({ slots: fronts, label: 'Strona ' + (page + 1) + ' · przód' });
+    if (show !== 'front') pages.push({ slots: backs, label: 'Strona ' + (page + 1) + ' · tył (lustrzanie)' });
+    const sel = (on) => ({ bg: on ? '#111111' : '#FFFFFF', fg: on ? '#F3F0E8' : '#111111' });
+    const total = list.length;
+    return {
+      railPadTop: '10px', collapsed: !L, ovf: L ? 'auto' : 'visible',
+      leftOpen: L, leftW: L ? '230px' : '60px', padX: L ? '8px' : '0', justify: L ? 'flex-start' : 'center',
+      leftArrow: L ? '«' : '»', leftLabel: L ? 'Zwiń listę' : 'Rozwiń listę kart', toggleLeft: () => this.setState({ left: !L }),
+      total,
+      cards: st.cards.map((c, i) => ({ ...c, onStr: c.on ? 'true' : 'false', check: c.on ? '#111111' : '#FFFFFF', mark: c.on ? '✓' : '', fg: c.on ? '#111111' : '#8E8B85', bg: c.on ? '#FFFFFF' : 'transparent', bd: c.on ? '#111111' : '#C9C4B8', toggle: () => this.setState({ cards: st.cards.map((x, j) => j === i ? { ...x, on: !x.on } : x) }) })),
+      shows: [['front', 'Przody'], ['back', 'Tyły'], ['both', 'Przód + tył']].map(([id, name]) => { const on = show === id; const s = sel(on); const off = !st.duplex && id !== 'front'; return { name, on: on ? 'true' : 'false', bg: s.bg, fg: s.fg, off, op: off ? '0.4' : '1', pick: () => this.setState({ show: id }) }; }),
+      sheetInfo: total + ' kart · ' + per + ' na stronę · ' + pagesN + (pagesN === 1 ? ' strona' : ' strony') + (st.duplex ? ' (+ tyły)' : ''),
+      pages, pw: Math.round(W * k) + 'px', ph: Math.round(H * k) + 'px', sw: Math.round(cw * k) + 'px', sh: Math.round(ch * k) + 'px', safe: Math.round(m * k) + 'px',
+      cols: 'repeat(' + cols + ', auto)', cut: st.cut ? Math.max(1, Math.round(st.cutW * k * 1.6)) + 'px ' + (st.gap > 0 ? 'dashed' : 'solid') + ' ' + st.cutC : 'none',
+      pageNav: Array.from({ length: pagesN }, (_, i) => { const s = sel(i === page); return { num: i + 1, on: i === page ? 'true' : 'false', bg: s.bg, fg: s.fg, pick: () => this.setState({ page: i }) }; }),
+      papers: Object.keys(P).map(id => { const on = st.paper === id; const s = sel(on); const [pw, ph] = P[id]; const f = 34 / Math.max(pw, ph); return { name: id, mm: id === 'Własny' ? '… mm' : pw + '×' + ph, iw: Math.round(pw * f) + 'px', ih: Math.round(ph * f) + 'px', on: on ? 'true' : 'false', bg: s.bg, fg: s.fg, pick: () => this.setState({ paper: id, page: 0 }) }; }),
+      portraitOn: st.land ? 'false' : 'true', landscapeOn: st.land ? 'true' : 'false',
+      portraitBg: sel(!st.land).bg, portraitFg: sel(!st.land).fg, landscapeBg: sel(st.land).bg, landscapeFg: sel(st.land).fg,
+      setPortrait: () => this.setState({ land: false, page: 0 }), setLandscape: () => this.setState({ land: true, page: 0 }),
+      layoutInfo: 'Karty 63×88 mm · ' + cols + ' × ' + rows + ' = ' + per + ' na stronę · margines 5 mm',
+      cutOnB: st.cut,
+      widths: [0.1, 0.2, 0.3, 0.5].map(v => { const s2 = sel(st.cutW === v); return { v: String(v).replace('.', ','), on: st.cutW === v ? 'true' : 'false', bg: s2.bg, fg: s2.fg, pick: () => this.setState({ cutW: v }) }; }),
+      colors: [['szary','#8E8B85'],['czarny','#111111'],['biały','#FFFFFF'],['łososiowy','#D98C8C'],['niebieski','#5D7FA3']].map(([n, c]) => ({ n, c, on: st.cutC === c ? 'true' : 'false', ring: st.cutC === c ? '2px solid #3F6A93' : 'none', pick: () => this.setState({ cutC: c }) })),
+      dash: st.dash, gap: st.gap,
+      setDash: (e) => this.setState({ dash: Math.max(0, parseFloat(e.target.value) || 0) }), setGap: (e) => this.setState({ gap: Math.max(0, parseFloat(e.target.value) || 0) }),
+      cutPreview: Math.max(1, Math.round(st.cutW * 6)) + 'px ' + (st.gap > 0 ? 'dashed' : 'solid') + ' ' + st.cutC,
+      previewBg: st.cutC === '#FFFFFF' ? '#3A3936' : '#FFFFFF', previewFg: st.cutC === '#FFFFFF' ? '#F3F0E8' : '#5A5852',
+      cutOn: st.cut ? 'true' : 'false', cutBox: st.cut ? '#111111' : '#FFFFFF', cutMark: st.cut ? '✓' : '', toggleCut: () => this.setState({ cut: !st.cut }),
+      duplex: st.duplex, duplexOn: st.duplex ? 'true' : 'false', duplexBox: st.duplex ? '#111111' : '#FFFFFF', duplexMark: st.duplex ? '✓' : '', toggleDuplex: () => this.setState({ duplex: !st.duplex })
+    };
+  }
+}
+</script>
+</body>
+</html>

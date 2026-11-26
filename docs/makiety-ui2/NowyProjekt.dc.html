@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Okno: nowy projekt</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+input{font:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 960px; box-sizing: border-box; background: #F3F0E8; display: flex; align-items: center; justify-content: center; font-family: Archivo, sans-serif; color: #111111; font-size: 14px; overflow: hidden">
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1440px; height: 960px">
+    <div style="height: 110px; border-bottom: 3px solid #111111; padding: 28px 40px; box-sizing: border-box; font-family: 'Archivo Black', sans-serif; font-size: 44px">KARTY RPG</div>
+    <div style="position: absolute; left: 0; top: 110px; width: 340px; height: 850px; border-right: 3px solid #111111"></div>
+    <div style="position: absolute; left: 40px; top: 145px; width: 260px; height: 110px; background: #E8B4A8; border: 2px solid #111111"></div>
+    <div style="position: absolute; left: 380px; top: 230px; width: 310px; height: 420px; border: 2px solid #111111; background: #FFFFFF"></div>
+    <div style="position: absolute; left: 720px; top: 230px; width: 310px; height: 420px; border: 2px solid #111111; background: #FFFFFF"></div>
+    <div style="position: absolute; left: 1060px; top: 230px; width: 310px; height: 420px; border: 2px solid #111111; background: #FFFFFF"></div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1440px; height: 960px; background: rgba(17,17,17,0.62)"></div>
+
+  <div role="dialog" aria-label="Nowy projekt" style="position: relative; width: 780px; background: #F3F0E8; border: 3px solid #111111; box-shadow: 10px 10px 0 #111111; display: flex; flex-direction: column">
+
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 2px solid #111111">
+      <div style="display: flex; align-items: center; gap: 14px">
+        <div style="position: relative; width: 30px; height: 38px">
+          <div style="position: absolute; left: 5px; top: 0; width: 24px; height: 33px; background: #D98C8C; mix-blend-mode: multiply"></div>
+          <div style="position: absolute; left: 0; top: 5px; width: 24px; height: 33px; background: #5D7FA3; mix-blend-mode: multiply"></div>
+        </div>
+        <h1 style="margin: 0; font-family: 'Archivo Black', sans-serif; font-size: 28px">Nowy projekt</h1>
+      </div>
+      <button type="button" aria-label="Zamknij" style="width: 44px; height: 44px; background: transparent; border: 2px solid #111111; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 18px">✕</button>
+    </div>
+
+    <div style="padding: 20px 28px; display: flex; flex-direction: column; gap: 20px">
+
+      <label style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em">1 · NAZWA PROJEKTU</span>
+        <input type="text" placeholder="np. Zaklęcia – krąg 2" style="height: 46px; padding: 0 14px; background: #FFFFFF; border: 2px solid #111111; outline: none; font-size: 16px; color: #111111">
+      </label>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em">2 · JAK ZACZĄĆ</span>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+          <button type="button" onClick="{{ pickBlank }}" aria-pressed="{{ blankOn }}" style="text-align: left; padding: 14px 16px; background: {{ blankBg }}; color: #111111; border: 2px solid #111111; box-shadow: {{ blankShadow }}; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-family: 'Archivo Black', sans-serif; font-size: 17px">Pusta karta</span>
+            <span style="font-size: 12px; line-height: 1.45">Projektujesz nowy wzór od zera.</span>
+          </button>
+          <button type="button" onClick="{{ pickTpl }}" disabled="{{ noTemplates }}" aria-pressed="{{ tplOnStr }}" style="text-align: left; padding: 14px 16px; background: {{ tplBg }}; color: {{ tplFg }}; border: 2px {{ tplLine }} {{ tplFg }}; box-shadow: {{ tplShadow }}; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-family: 'Archivo Black', sans-serif; font-size: 17px">Z szablonu</span>
+            <span style="font-size: 12px; line-height: 1.45">{{ tplText }}</span>
+          </button>
+          <button type="button" onClick="{{ pickImport }}" aria-pressed="{{ impOnStr }}" style="text-align: left; padding: 14px 16px; background: {{ impBg }}; color: #111111; border: 2px solid #111111; box-shadow: {{ impShadow }}; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-family: 'Archivo Black', sans-serif; font-size: 17px">Import pliku</span>
+            <span style="font-size: 12px; line-height: 1.45">Wzór z pliku .json, np. od innego gracza.</span>
+          </button>
+        </div>
+      </div>
+
+      <sc-if value="{{ blankOnB }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 20px">
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em">3 · ROZMIAR KARTY</span>
+              <div role="group" aria-label="Orientacja karty" style="display: flex">
+                <button type="button" onClick="{{ setPortrait }}" aria-pressed="{{ portraitOn }}" style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; background: {{ portraitBg }}; color: {{ portraitFg }}; border: 2px solid #111111; font-weight: 700">
+                  <span style="width: 10px; height: 15px; border: 1.5px solid {{ portraitFg }}"></span>Pionowo
+                </button>
+                <button type="button" onClick="{{ setLandscape }}" aria-pressed="{{ landscapeOn }}" style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; background: {{ landscapeBg }}; color: {{ landscapeFg }}; border: 2px solid #111111; border-left: none; font-weight: 700">
+                  <span style="width: 15px; height: 10px; border: 1.5px solid {{ landscapeFg }}"></span>Poziomo
+                </button>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px">
+              <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="6">
+                <button type="button" onClick="{{ s.pick }}" aria-pressed="{{ s.on }}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; background: {{ s.bg }}; color: {{ s.fg }}; border: 2px solid #111111">
+                  <span style="width: {{ s.w }}; height: {{ s.h }}; border: 1.5px {{ s.line }} {{ s.fg }}"></span>
+                  <span style="font-weight: 700; font-size: 13px">{{ s.name }}</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">{{ s.mm }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ custom }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 12px; align-items: flex-end">
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px">Szerokość (mm)<input type="number" value="{{ cw }}" style="width: 110px; height: 42px; padding: 0 10px; background: #FFFFFF; border: 2px solid #111111"></label>
+                <span style="font-family: 'Archivo Black', sans-serif; padding-bottom: 10px">×</span>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px">Wysokość (mm)<input type="number" value="{{ ch }}" style="width: 110px; height: 42px; padding: 0 10px; background: #FFFFFF; border: 2px solid #111111"></label>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em">4 · STRONY KARTY</span>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+              <button type="button" onClick="{{ toggleFront }}" aria-pressed="{{ frontOn }}" style="display: flex; align-items: center; gap: 14px; text-align: left; padding: 12px 16px; background: {{ frontBg }}; color: #111111; border: 2px solid #111111; box-shadow: {{ frontShadow }}">
+                <span style="width: 28px; height: 38px; flex-shrink: 0; border: 2px solid #111111; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Archivo Black', sans-serif">A</span>
+                <span style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1"><span style="font-family: 'Archivo Black', sans-serif; font-size: 16px">Przód (awers)</span><span style="font-size: 12px">pola z danymi, ramki, grafiki</span></span>
+                <span style="width: 24px; height: 24px; flex-shrink: 0; border: 2px solid #111111; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700">{{ frontMark }}</span>
+              </button>
+              <button type="button" onClick="{{ toggleBack }}" aria-pressed="{{ backOn }}" style="display: flex; align-items: center; gap: 14px; text-align: left; padding: 12px 16px; background: {{ backBg }}; color: #111111; border: 2px solid #111111; box-shadow: {{ backShadow }}">
+                <span style="width: 28px; height: 38px; flex-shrink: 0; border: 2px dashed #111111; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Archivo Black', sans-serif">R</span>
+                <span style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1"><span style="font-family: 'Archivo Black', sans-serif; font-size: 16px">Tył (rewers)</span><span style="font-size: 12px">wspólny dla talii: tło, logo</span></span>
+                <span style="width: 24px; height: 24px; flex-shrink: 0; border: 2px solid #111111; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700">{{ backMark }}</span>
+              </button>
+            </div>
+            <span style="font-size: 12px">Zaznacz jedną lub obie strony. Brakującą dodasz później w projekcie.</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ tplOn }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em">3 · WYBIERZ SZABLON</span>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+            <sc-for list="{{ templates }}" as="t" hint-placeholder-count="3">
+              <button type="button" onClick="{{ t.pick }}" aria-pressed="{{ t.on }}" style="display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 12px; background: {{ t.bg }}; color: #111111; border: 2px solid #111111; box-shadow: {{ t.shadow }}">
+                <span style="height: 130px; align-self: stretch; background: #FFFFFF; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center; gap: 8px">
+                  <span style="width: {{ t.w }}; height: {{ t.h }}; border: 3px solid {{ t.frame }}; background: #FBF9F4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px">
+                    <span style="width: 70%; height: 6px; background: {{ t.frame }}"></span>
+                    <span style="width: 70%; height: 30%; border: 1px solid #B9B4A8"></span>
+                    <span style="width: 70%; height: 3px; background: #CFCAC0"></span>
+                    <span style="width: 50%; height: 3px; background: #CFCAC0"></span>
+                  </span>
+                  <sc-if value="{{ t.hasBack }}" hint-placeholder-val="{{ true }}">
+                    <span style="width: {{ t.w }}; height: {{ t.h }}; background: {{ t.frame }}; opacity: 0.85"></span>
+                  </sc-if>
+                </span>
+                <span style="font-family: 'Archivo Black', sans-serif; font-size: 15px">{{ t.name }}</span>
+                <span style="font-size: 12px; line-height: 1.4">{{ t.info }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ impOn }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em">3 · PLIK SZABLONU</span>
+          <sc-if value="{{ noFile }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 32px; background: #FFFFFF; border: 2px dashed #111111">
+              <span style="font-weight: 700">Przeciągnij tu plik .json</span>
+              <button type="button" onClick="{{ loadFile }}" style="height: 44px; padding: 0 18px; background: #111111; color: #F3F0E8; border: 2px solid #111111; font-weight: 700">Wybierz z dysku…</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasFile }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; gap: 16px; align-items: center; padding: 14px; background: #FFFFFF; border: 2px solid #111111">
+              <span style="width: 46px; height: 64px; flex-shrink: 0; border: 3px solid #5D7FA3; background: #FBF9F4"></span>
+              <span style="width: 46px; height: 64px; flex-shrink: 0; background: #5D7FA3; opacity: 0.85"></span>
+              <span style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+                <span style="font-family: 'Archivo Black', sans-serif; font-size: 15px">Karta przedmiotu</span>
+                <span style="font-size: 12px">karta-przedmiotu.json · 63×88 mm · przód + tył · 7 pól</span>
+              </span>
+              <button type="button" onClick="{{ clearFile }}" style="height: 40px; padding: 0 14px; background: transparent; color: #111111; border: 2px solid #111111">Zmień plik</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 28px; border-top: 2px solid #111111">
+      <span style="font-size: 12px; max-width: 320px; line-height: 1.45">{{ hint }}</span>
+      <div style="display: flex; gap: 0">
+        <button type="button" style="height: 48px; padding: 0 20px; background: #FFFFFF; color: #111111; border: 2px solid #111111; border-right: none; font-weight: 700">Anuluj</button>
+        <button type="button" disabled="{{ ctaDisabled }}" style="height: 48px; padding: 0 26px; background: {{ ctaBg }}; color: #F3F0E8; border: 2px solid {{ ctaBg }}; font-weight: 700">{{ cta }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"hasTemplates":{"editor":"boolean","default":true,"section":"Stan"},"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { land: false, size: 'poker', start: 'blank', front: true, back: false, tpl: 'spell', file: false }; }
+  renderVals() {
+    const has = this.props.hasTemplates ?? true;
+    const st = (!has && this.state.start === 'tpl') ? 'blank' : this.state.start;
+    const on = (k) => st === k;
+    const sh = '5px 5px 0 #5D7FA3';
+    const pick = (on) => ({ bg: on ? '#E8B4A8' : '#FFFFFF', shadow: on ? sh : 'none' });
+    const sizes = [
+      ['poker','Poker','63×88','24px','34px'],['mini','Mini euro','44×67','17px','26px'],['us','Mini US','41×63','16px','25px'],
+      ['tarot','Tarot','70×120','20px','34px'],['sq','Kwadrat','70×70','26px','26px'],['custom','Własny','… mm','22px','30px']
+    ];
+    const tpls = [
+      ['spell','Zaklęcie','z „Karty zaklęć maga” · 63×88 · przód + tył','#D98C8C','52px','72px',true],
+      ['monster','Potwór','z „Bestiariusz” · 44×67 · tylko przód','#9DB59A','40px','61px',false],
+      ['item','Przedmiot','z „Ekwipunek drużyny” · 63×88 · przód + tył','#C9A75A','52px','72px',true]
+    ];
+    const ctaDisabled = on('import') && !this.state.file;
+    return {
+      blankOn: on('blank') ? 'true' : 'false', blankOnB: on('blank'), blankBg: pick(on('blank')).bg, blankShadow: pick(on('blank')).shadow,
+      tplOn: on('tpl'), tplOnStr: on('tpl') ? 'true' : 'false', noTemplates: !has,
+      tplBg: !has ? 'transparent' : pick(on('tpl')).bg, tplShadow: pick(on('tpl')).shadow,
+      tplFg: has ? '#111111' : '#5A5852', tplLine: has ? 'solid' : 'dashed',
+      tplText: has ? 'Kopia wzoru z innego projektu.' : 'Brak szablonów – pierwszy powstanie w projekcie.',
+      impOn: on('import'), impOnStr: on('import') ? 'true' : 'false', impBg: pick(on('import')).bg, impShadow: pick(on('import')).shadow,
+      pickBlank: () => this.setState({ start: 'blank' }), pickTpl: () => this.setState({ start: 'tpl' }), pickImport: () => this.setState({ start: 'import' }),
+      sizes: sizes.map(([id,name,mm0,w0,h0]) => { const sel = this.state.size === id; const L = this.state.land; const w = L ? h0 : w0, h = L ? w0 : h0; const mm = (L && mm0.includes('×')) ? mm0.split('×').reverse().join('×') : mm0; return { name, mm, w, h, on: sel ? 'true' : 'false', bg: sel ? '#111111' : '#FFFFFF', fg: sel ? '#F3F0E8' : '#111111', line: id === 'custom' ? 'dashed' : 'solid', pick: () => this.setState({ size: id }) }; }),
+      custom: this.state.size === 'custom',
+      cw: this.state.land ? 88 : 63, ch: this.state.land ? 63 : 88,
+      portraitOn: this.state.land ? 'false' : 'true', landscapeOn: this.state.land ? 'true' : 'false',
+      portraitBg: this.state.land ? '#FFFFFF' : '#111111', portraitFg: this.state.land ? '#111111' : '#F3F0E8',
+      landscapeBg: this.state.land ? '#111111' : '#FFFFFF', landscapeFg: this.state.land ? '#F3F0E8' : '#111111',
+      setPortrait: () => this.setState({ land: false }), setLandscape: () => this.setState({ land: true }),
+      frontOn: this.state.front ? 'true' : 'false', frontBg: pick(this.state.front).bg, frontShadow: pick(this.state.front).shadow, frontMark: this.state.front ? '✓' : '',
+      backOn: this.state.back ? 'true' : 'false', backBg: pick(this.state.back).bg, backShadow: pick(this.state.back).shadow, backMark: this.state.back ? '✓' : '',
+      toggleFront: () => { if (this.state.front && !this.state.back) return; this.setState({ front: !this.state.front }); },
+      toggleBack: () => { if (this.state.back && !this.state.front) return; this.setState({ back: !this.state.back }); },
+      templates: tpls.map(([id,name,info,frame,w,h,hasBack]) => { const sel = this.state.tpl === id; return { name, info, frame, w, h, hasBack, on: sel ? 'true' : 'false', bg: pick(sel).bg, shadow: pick(sel).shadow, pick: () => this.setState({ tpl: id }) }; }),
+      noFile: !this.state.file, hasFile: this.state.file,
+      loadFile: () => this.setState({ file: true }), clearFile: () => this.setState({ file: false }),
+      hint: on('blank') ? (this.state.front && this.state.back ? 'Otworzy się edytor z zakładkami Przód i Tył.' : (this.state.front ? 'Otworzy się edytor przodu. Tył dodasz później.' : 'Otworzy się edytor tyłu. Przód dodasz później.')) : (on('tpl') ? 'Kopia szablonu – otworzy się lista kart do wypełnienia.' : 'Wzór z pliku – otworzy się lista kart do wypełnienia.'),
+      cta: 'Utwórz projekt',
+      ctaDisabled, ctaBg: ctaDisabled ? '#8E8B85' : '#111111'
+    };
+  }
+}
+</script>
+</body>
+</html>

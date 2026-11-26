@@ -35,6 +35,8 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   odmiana domyślna) i `odmiana` dziecka; na karcie widać jedno dziecko wybrane wartością z danych
   (`wybranaOdmiana` w `model/szablon.ts`, `ukryteOdmianyPrzelacznikow` w `silnik/karta.ts`), tył
   dopasowuje przełącznik po nazwie, panel `ui/szablon/PanelOdmian.tsx`.
+- Następny etap: **UI2 – wygląd „drukarnia riso” i przepływ Szablony → Karty → Druk**
+  (`docs/plan-UI2.md`, makiety w `docs/makiety-ui2/`), etapy R1…R9.
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 34` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 

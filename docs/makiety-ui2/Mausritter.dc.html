@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Mausritter – arkusz kart</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F0E8}
+.tip{position:relative}
+.tipbox{position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);background:#111111;color:#F3F0E8;font-family:Archivo,sans-serif;font-size:12px;font-weight:700;line-height:1.2;padding:7px 10px;white-space:nowrap;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s,visibility 0s linear .12s;z-index:60;box-shadow:3px 3px 0 #5D7FA3;text-align:left}
+.tip:hover .tipbox,.tip:focus-visible .tipbox{opacity:1;visibility:visible;transition:opacity .12s .5s,visibility 0s linear .5s}
+.tip-l .tipbox{left:auto;right:calc(100% + 12px)}
+
+button{font:inherit;cursor:pointer}
+input,select{font:inherit}
+</style>
+</helmet>
+<div style="height: 900px; min-width: 1100px; display: flex; flex-direction: column; background: #F3F0E8; color: #111111; font-family: Archivo, sans-serif; font-size: 13px">
+
+  <header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 16px; padding: 0 16px; border-bottom: 2px solid #111111">
+    <a href="#" style="display: flex; align-items: center; height: 40px; padding: 0 12px; border: 1.5px solid #111111; color: #111111; text-decoration: none; font-weight: 700">← Projekty</a>
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 17px">Ekwipunek drużyny</span>
+    <span style="padding: 3px 8px; background: #9DB59A; border: 1.5px solid #111111; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600">MAUSRITTER</span>
+    <nav aria-label="Etapy projektu" style="margin-left: 12px; display: flex; align-items: center; gap: 6px; font-weight: 700">
+      <span aria-current="page" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; background: #111111; color: #F3F0E8"><span style="width: 20px; height: 20px; background: #E8B4A8; color: #111; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px">1</span>Karty na arkuszach</span>
+      <span style="color: #5A5852">→</span>
+      <a href="#" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; color: #111111; text-decoration: none"><span style="width: 20px; height: 20px; border: 1.5px solid #111; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px">2</span>Druk</a>
+    </nav>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px">
+      <button type="button" aria-label="Cofnij" title="Cofnij (Ctrl+Z)" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-3"></path></svg></button>
+      <button type="button" aria-label="Ponów" title="Ponów (Ctrl+Y)" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"></path><path d="M20 9H9a5 5 0 0 0 0 10h3"></path></svg></button>
+      <span style="width: 1px; height: 28px; background: #C9C4B8; margin: 0 4px"></span>
+      <button type="button" aria-label="Ustawienia" title="Ustawienia aplikacji" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3 M12 19v3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M2 12h3 M19 12h3 M4.9 19.1 7 17 M17 7l2.1-2.1"></path></svg></button>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5A5852; padding: 0 8px">✓ zapisano</span>
+      <button type="button" style="height: 40px; padding: 0 18px; background: #111111; color: #F3F0E8; border: 1.5px solid #111111; font-weight: 700">Do druku →</button>
+    </div>
+  </header>
+
+  <div style="flex-grow: 1; min-height: 0; display: flex">
+
+    <nav aria-label="Dodaj kartę" style="width: {{ leftW }}; flex-shrink: 0; display: flex; flex-direction: column; border-right: 2px solid #111111; background: #EDE9E0">
+      <div style="height: 46px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; padding: 0 14px; border-bottom: 1.5px solid #111111"><sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ false }}"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.1em">DODAJ KARTĘ</span></sc-if></div>
+      <div style="flex-grow: 1; overflow-y: {{ ovf }}; padding: {{ railPadTop }} 8px 6px; display: flex; flex-direction: column; gap: 4px">
+        <sc-for list="{{ types }}" as="t" hint-placeholder-count="6">
+          <button type="button" draggable="true" onDragStart="{{ t.drag }}" onDragEnd="{{ dragEnd }}" onClick="{{ t.add }}" class="tip" aria-label="Dodaj kartę: {{ t.name }}" style="cursor: grab; display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 4px {{ padX }}; justify-content: {{ justify }}; background: #FFFFFF; border: 1.5px solid #111111; color: #111111; text-align: left"><sc-if value="{{ collapsed }}" hint-placeholder-val="{{ false }}"><span class="tipbox">{{ t.name }} · {{ t.sizes }}</span></sc-if>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="{{ t.d }}"></path></svg>
+            <sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ true }}"><span style="display: flex; flex-direction: column"><span style="font-weight: 700">{{ t.name }}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5A5852">{{ t.sizes }}</span></span></sc-if>
+          </button>
+        </sc-for>
+        <sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ true }}">
+          <p style="margin: 10px 6px 0; font-size: 12px; line-height: 1.45; color: #5A5852">Przeciągnij typ na wolny kafelek. Kliknięcie wstawia kartę w pierwsze wolne miejsce. Rozmiar zmienisz po prawej.</p>
+        </sc-if>
+      </div>
+      <button type="button" onClick="{{ toggleLeft }}" aria-label="{{ leftLabel }}" class="tip" style="height: 44px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: {{ justify }}; gap: 8px; padding: 0 16px; background: transparent; border: none; border-top: 1.5px solid #111111; color: #111111; font-weight: 700"><sc-if value="{{ collapsed }}" hint-placeholder-val="{{ false }}"><span class="tipbox">{{ leftLabel }}</span></sc-if><span style="font-family: 'Archivo Black', sans-serif">{{ leftArrow }}</span><sc-if value="{{ leftOpen }}" hint-placeholder-val="{{ true }}"><span>Zwiń</span></sc-if></button>
+    </nav>
+
+    <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; background: #DCD8CE">
+      <div style="height: 46px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: flex-end; padding: 0 12px; background: #EDE9E0; border-bottom: 1.5px solid #111111">
+        <sc-for list="{{ sheetTabs }}" as="sh" hint-placeholder-count="2">
+          <button type="button" onClick="{{ sh.pick }}" style="height: 36px; padding: 0 14px; margin-bottom: -1.5px; background: {{ sh.bg }}; border: {{ sh.bd }}; border-bottom: none; color: #111111; font-weight: {{ sh.w }}">{{ sh.name }}</button>
+        </sc-for>
+        <button type="button" style="height: 30px; margin: 0 0 3px 8px; padding: 0 10px; background: transparent; border: 1.5px dashed #111111; font-weight: 700">＋ Arkusz</button>
+        <span style="margin-left: auto; margin-bottom: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 11px">{{ usage }}</span>
+      </div>
+
+      <div style="flex-grow: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; background-image: radial-gradient(#C3BEB2 1px, transparent 1px); background-size: 16px 16px">
+        <div style="width: 504px; height: 713px; background: #FFFFFF; box-shadow: 5px 5px 0 rgba(17,17,17,0.2); display: flex; align-items: center; justify-content: center; gap: 14px">
+          <span style="writing-mode: vertical-rl; transform: rotate(180deg); font-family: 'Archivo Black', sans-serif; font-size: 24px; letter-spacing: 0.02em">{{ sheetTitle }}</span>
+          <div onDragOver="{{ allowDrop }}" onDrop="{{ drop }}" style="position: relative; width: 434px; height: 620px; display: grid; grid-template-columns: repeat(7, 62px); grid-template-rows: repeat(10, 62px); background-color: #FFFFFF; background-image: linear-gradient(#C9C4B8 1px, transparent 1px), linear-gradient(90deg, #C9C4B8 1px, transparent 1px); background-size: 62px 62px; border: 1px solid #C9C4B8; outline: {{ dropOutline }}; outline-offset: 4px">
+            <sc-for list="{{ placed }}" as="c" hint-placeholder-count="6">
+              <button type="button" onClick="{{ c.pick }}" aria-label="{{ c.label }}" aria-pressed="{{ c.on }}" style="grid-column: {{ c.gc }}; grid-row: {{ c.gr }}; margin: 0; box-sizing: border-box; background: #FFFFFF; border: 1.5px solid #111111; outline: {{ c.ring }}; outline-offset: -4px; padding: 4px 5px; display: flex; flex-direction: column; justify-content: space-between; text-align: left; color: #111111; overflow: hidden">
+                <span style="display: flex; justify-content: space-between; gap: 2px"><span style="font-family: 'Archivo Black', sans-serif; font-size: 9px; line-height: 1.05">{{ c.name }}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 8px">{{ c.stat }}</span></span>
+                <span style="font-size: 7px; line-height: 1.2; color: #444">{{ c.sub }}</span>
+                <span style="display: flex; gap: 2px"><sc-for list="{{ c.dots }}" as="d" hint-placeholder-count="3"><span style="width: 6px; height: 6px; border-radius: 50%; border: 1px solid #111"></span></sc-for></span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ chooser }}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(243,240,232,0.86); display: flex; align-items: center; justify-content: center">
+            <div style="width: 520px; background: #F3F0E8; border: 3px solid #111111; box-shadow: 8px 8px 0 #111111; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+              <h2 style="margin: 0; font-family: 'Archivo Black', sans-serif; font-size: 22px">Od czego zaczynamy?</h2>
+              <button type="button" onClick="{{ startEmpty }}" style="display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 14px 16px; background: #E8B4A8; border: 2px solid #111111; box-shadow: 5px 5px 0 #5D7FA3; color: #111111"><span style="font-family: 'Archivo Black', sans-serif; font-size: 16px">Pusty arkusz A4</span><span style="font-size: 12px">Siatka 7 × 10 kafelków – sam układasz karty.</span></button>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.08em">GOTOWE ARKUSZE</span>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                <sc-for list="{{ presets }}" as="pr" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ pr.pick }}" style="display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 12px; background: #FFFFFF; border: 2px solid #111111; color: #111111"><span style="font-weight: 700">{{ pr.name }}</span><span style="font-size: 11px; color: #5A5852">{{ pr.info }}</span></button>
+                </sc-for>
+              </div>
+              <span style="font-size: 11px; color: #5A5852">Układ kart według gry Mausritter (Isaac Williams, Losing Games). Bez grafik i tekstów z podręcznika.</span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </main>
+
+    <aside aria-label="Karta" style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; border-left: 2px solid #111111; min-height: 0">
+      <div style="height: 46px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; padding: 0 14px; border-bottom: 1.5px solid #111111;  display: flex; align-items: center; justify-content: space-between">
+        <span style="font-family: 'Archivo Black', sans-serif; font-size: 15px">{{ panelTitle }}</span>
+        <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ true }}">
+          <span style="display: flex; gap: 6px"><button type="button" onClick="{{ dup }}" style="height: 32px; padding: 0 10px; background: transparent; border: 1.5px solid #111111">⧉ Duplikuj</button><button type="button" onClick="{{ del }}" style="height: 32px; padding: 0 10px; background: transparent; border: 1.5px solid #111111">✕ Usuń</button></span>
+        </sc-if>
+      </div>
+      <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ true }}">
+        <div style="flex-grow: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Rozmiar (kafelki)
+            <span style="display: flex; gap: 6px; flex-wrap: wrap"><sc-for list="{{ sizeOpts }}" as="z" hint-placeholder-count="2"><button type="button" onClick="{{ z.pick }}" aria-pressed="{{ z.on }}" style="display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; background: {{ z.bg }}; color: {{ z.fg }}; border: 1.5px solid #111111; font-weight: 700"><span style="width: {{ z.iw }}; height: {{ z.ih }}; border: 1.5px solid {{ z.fg }}"></span>{{ z.name }}</button></sc-for></span>
+          </div>
+          <sc-if value="{{ hasVariants }}" hint-placeholder-val="{{ false }}">
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Wariant<select style="height: 34px; background: #FFFFFF; border: 1.5px solid #111111"><option>Przedmiot</option><option>Sakiewka</option></select></label>
+          </sc-if>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Nazwa<input type="text" value="{{ sel.name }}" style="height: 34px; padding: 0 10px; background: #FFFFFF; border: 1.5px solid #111111; font-size: 13px"></label>
+          <sc-if value="{{ hasStat }}" hint-placeholder-val="{{ true }}">
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">{{ statLabel }}<input type="text" value="{{ sel.stat }}" style="height: 34px; padding: 0 10px; background: #FFFFFF; border: 1.5px solid #111111"></label>
+          </sc-if>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">{{ subLabel }}<input type="text" value="{{ sel.sub }}" style="height: 34px; padding: 0 10px; background: #FFFFFF; border: 1.5px solid #111111"></label>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Kropki użycia<select style="height: 34px; background: #FFFFFF; border: 1.5px solid #111111"><option>3</option><option>0</option><option>1</option><option>2</option><option>4</option><option>6</option></select></label>
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Obraz
+            <div style="display: flex; gap: 6px"><button type="button" style="flex-grow: 1; height: 34px; background: #FFFFFF; border: 1.5px solid #111111">Z biblioteki…</button><button type="button" style="flex-grow: 1; height: 34px; background: #FFFFFF; border: 1.5px solid #111111">＋ Wgraj</button></div>
+          </div>
+          <span style="font-size: 11px; color: #5A5852; padding-top: 8px; border-top: 1px solid #C9C4B8">Kartę przesuniesz, przeciągając ją na inny wolny kafelek.</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noSel }}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 14px; display: flex; flex-direction: column; gap: 12px">
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700">Tytuł arkusza<input type="text" value="{{ sheetTitle }}" style="height: 34px; padding: 0 10px; background: #FFFFFF; border: 1.5px solid #111111"></label>
+          <span style="font-size: 12px; line-height: 1.45; color: #5A5852">Kliknij kartę na arkuszu, żeby ją edytować, albo przeciągnij nową z lewej.</span>
+        </div>
+      </sc-if>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"showChooser":{"editor":"boolean","default":true,"section":"Stan"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const K = (type, name, stat, sub, c, r, w, h) => ({ type, name, stat, sub, c, r, w, h });
+    this.state = { left: true, chooser: null, sel: 1, sheet: 0, drag: null, cards: [
+      K('bron','Miecz','d6/d8','średnia',1,1,1,1), K('bron','Topór bojowy','d10','ciężka',2,1,1,2), K('bron','Łuk','d6','dystansowa',3,1,1,2),
+      K('zbroja','Kolczuga','1 obr','ciężka',4,1,1,2), K('zbroja','Skórznia','1 obr','lekka',5,1,2,1),
+      K('ekwipunek','Pochodnie','','6 godzin',1,2,1,1), K('ekwipunek','Racje','','na 3 dni',5,2,1,1), K('ekwipunek','Sakiewka','/ 250p','monety',6,2,1,1),
+      K('zaklecie','Ogniste pociski','','1 kość / 2k6',1,4,1,1), K('stan','Wyczerpana','','Usunięcie: długi odpoczynek',2,4,1,1), K('stan','Przerażona','','Usunięcie: krótki odpoczynek',3,4,1,1)
+    ] };
+  }
+  renderVals() {
+    const st = this.state, L = st.left;
+    const chooser = st.chooser === null ? (this.props.showChooser ?? true) : st.chooser;
+    const T = {
+      bron: { name: 'Broń', d: 'M14.5 17.5 3 6V3h3l11.5 11.5 M13 19l6-6 M16 16l4 4 M19 21l2-2', sizes: [[1,1,'1×1'],[1,2,'1×2 ciężka']], stat: 'Obrażenia', sub: 'Rodzaj', dots: 3 },
+      zbroja: { name: 'Zbroja', d: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z', sizes: [[1,2,'1×2 ciężka'],[2,1,'2×1 lekka']], stat: 'Obrona', sub: 'Rodzaj', dots: 3 },
+      ekwipunek: { name: 'Ekwipunek', d: 'M6 8h12l-1 13H7z M9 8V6a3 3 0 0 1 6 0v2', sizes: [[1,1,'1×1'],[2,1,'2×1'],[1,2,'1×2']], stat: 'Pojemność', sub: 'Opis', dots: 3, variants: true },
+      zaklecie: { name: 'Zaklęcie', d: 'M12 3l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2-5.5 3.2 1.4-6L3.3 9.2l6.1-.6z', sizes: [[1,1,'1×1']], stat: '', sub: 'Skutek', dots: 3 },
+      stan: { name: 'Stan', d: 'M12 5v14 M5 12h14', sizes: [[1,1,'1×1']], stat: '', sub: 'Usunięcie', dots: 0 },
+      pusta: { name: 'Pusta karta', d: 'M5 5h14v14H5z', sizes: [[1,1,'1×1'],[2,1,'2×1'],[1,2,'1×2'],[2,2,'2×2']], stat: '', sub: 'Tekst', dots: 0 }
+    };
+    const cards = st.cards;
+    const occ = (c, r, w, h, skip) => cards.some((k, i) => i !== skip && c < k.c + k.w && k.c < c + w && r < k.r + k.h && k.r < r + h);
+    const fits = (c, r, w, h, skip) => c >= 1 && r >= 1 && c + w - 1 <= 7 && r + h - 1 <= 10 && !occ(c, r, w, h, skip);
+    const firstFree = (w, h) => { for (let r = 1; r <= 10; r++) for (let c = 1; c <= 7; c++) if (fits(c, r, w, h, -1)) return [c, r]; return null; };
+    const make = (type, c, r) => { const t = T[type]; const [w, h] = t.sizes[0]; return { type, name: 'Nowa: ' + t.name.toLowerCase(), stat: '', sub: '', c, r, w, h }; };
+    const addAt = (type, c, r) => { const t = T[type]; const [w, h] = t.sizes[0]; let pos = (c && fits(c, r, w, h, -1)) ? [c, r] : firstFree(w, h); if (!pos) return this.setState({ drag: null }); const k = make(type, pos[0], pos[1]); this.setState({ cards: [...cards, k], sel: cards.length, drag: null, chooser: false }); };
+    const selI = st.sel != null && st.sel < cards.length ? st.sel : null;
+    const s = selI != null ? cards[selI] : null; const ts = s ? T[s.type] : null;
+    const used = cards.reduce((a, k) => a + k.w * k.h, 0);
+    const presets = [['Broń i pancerze','gotowy arkusz – 70 kafelków'],['Wyposażenie','gotowy arkusz – 70 kafelków'],['Stany','gotowy arkusz – 60 kafelków'],['Wszystkie trzy','3 arkusze naraz']];
+    return {
+      railPadTop: '10px', collapsed: !L, ovf: L ? 'auto' : 'visible',
+      leftOpen: L, leftW: L ? '220px' : '60px', padX: L ? '8px' : '0', justify: L ? 'flex-start' : 'center',
+      leftArrow: L ? '«' : '»', leftLabel: L ? 'Zwiń menu' : 'Rozwiń menu z nazwami', toggleLeft: () => this.setState({ left: !L }),
+      types: Object.keys(T).map(id => ({ name: T[id].name, d: T[id].d, sizes: T[id].sizes.map(x => x[2]).join(' · '), add: () => addAt(id), drag: (e) => { try { e.dataTransfer.setData('text/plain', id); } catch (_) {} this.setState({ drag: id }); } })),
+      dragEnd: () => this.setState({ drag: null }),
+      allowDrop: (e) => e.preventDefault(),
+      drop: (e) => { e.preventDefault(); if (!st.drag) return; const r = e.currentTarget.getBoundingClientRect(); const sc = r.width / 434 || 1; addAt(st.drag, Math.floor((e.clientX - r.left) / sc / 62) + 1, Math.floor((e.clientY - r.top) / sc / 62) + 1); },
+      dropOutline: st.drag ? '3px dashed #3F6A93' : 'none',
+      sheetTabs: [['Broń i ekwipunek', 0], ['Stany', 1]].map(([name, i]) => ({ name, pick: () => this.setState({ sheet: i }), bg: st.sheet === i ? '#DCD8CE' : 'transparent', bd: st.sheet === i ? '1.5px solid #111111' : '1.5px solid transparent', w: st.sheet === i ? '700' : '500' })),
+      sheetTitle: st.sheet === 0 ? 'Broń i ekwipunek' : 'Stany',
+      usage: used + ' / 70 kafelków zajętych',
+      placed: cards.map((k, i) => ({ name: k.name, stat: k.stat, sub: k.sub, label: T[k.type].name + ': ' + k.name, gc: k.c + ' / span ' + k.w, gr: k.r + ' / span ' + k.h, on: i === selI ? 'true' : 'false', ring: i === selI ? '3px solid #3F6A93' : 'none', dots: Array.from({ length: T[k.type].dots }, (_, j) => j), pick: () => this.setState({ sel: i }) })),
+      chooser,
+      startEmpty: () => this.setState({ chooser: false, cards: [], sel: null }),
+      presets: presets.map(([name, info]) => ({ name, info, pick: () => this.setState({ chooser: false }) })),
+      hasSel: !!s, noSel: !s, panelTitle: s ? ts.name : 'Arkusz', sel: s || { name: '', stat: '', sub: '' },
+      hasStat: !!(ts && ts.stat), statLabel: ts ? ts.stat : '', subLabel: ts ? ts.sub : '', hasVariants: !!(ts && ts.variants),
+      sizeOpts: ts ? ts.sizes.map(([w, h, name]) => { const on = s.w === w && s.h === h; const ok = fits(s.c, s.r, w, h, selI); return { name, iw: (w * 10) + 'px', ih: (h * 10) + 'px', on: on ? 'true' : 'false', bg: on ? '#111111' : '#FFFFFF', fg: on ? '#F3F0E8' : (ok ? '#111111' : '#8E8B85'), pick: () => { if (ok) this.setState({ cards: cards.map((k, i) => i === selI ? { ...k, w, h } : k) }); } }; }) : [],
+      dup: () => { if (!s) return; const pos = firstFree(s.w, s.h); if (pos) this.setState({ cards: [...cards, { ...s, c: pos[0], r: pos[1] }], sel: cards.length }); },
+      del: () => { if (selI == null) return; this.setState({ cards: cards.filter((_, i) => i !== selI), sel: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>
