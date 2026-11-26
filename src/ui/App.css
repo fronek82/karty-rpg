@@ -1,12 +1,7 @@
 @import './pasek.css';
 
 :root {
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--czcionka-tekst);
   line-height: 1.5;
 }
 
@@ -254,14 +249,6 @@ textarea:focus-visible {
 }
 
 /* --- Start --- */
-/* Czcionka tytułu: Cinzel Decorative Bold (OFL 1.1, public/czcionki). Awaryjnie Georgia. */
-@font-face {
-  font-family: 'Cinzel Decorative';
-  src: url('/czcionki/CinzelDecorative-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
 
 .start-naglowek {
   text-align: center;

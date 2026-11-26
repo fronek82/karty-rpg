@@ -3,15 +3,17 @@ import { describe, expect, it } from 'vitest';
 
 const css = readFileSync(new URL('./tokeny.css', import.meta.url), 'utf8');
 
-/** Zmienne CSS z bloku o podanym selektorze (z rozwiązaniem odwołań var(--x)). */
+/** Zmienne CSS z bloku o podanym selektorze (z wielostopniowym rozwiązaniem odwołań var(--x)). */
 function tokeny(selektor: RegExp): Record<string, string> {
   const blok = new RegExp(`${selektor.source}\\s*\\{([^}]*)\\}`).exec(css);
   if (!blok) throw new Error(`Brak bloku ${selektor.source} w tokeny.css`);
   const wynik: Record<string, string> = {};
   for (const m of blok[1]!.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)) wynik[m[1]!] = m[2]!.trim();
-  for (const [k, v] of Object.entries(wynik)) {
-    const ref = /^var\(--([\w-]+)\)$/.exec(v);
-    if (ref) wynik[k] = wynik[ref[1]!]!;
+  for (let runda = 0; runda < 4; runda++) {
+    for (const [k, v] of Object.entries(wynik)) {
+      const ref = /^var\(--([\w-]+)\)$/.exec(v);
+      if (ref && wynik[ref[1]!]) wynik[k] = wynik[ref[1]!]!;
+    }
   }
   return wynik;
 }
@@ -29,312 +31,132 @@ function luminancja(hex: string): number {
   return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 }
 
-/** Barwa (0–360) i nasycenie (0–1) koloru #rrggbb. */
-function barwa(hex: string): { h: number; s: number } {
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [
-    number,
-    number,
-    number,
-  ];
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const d = max - min;
-  if (d === 0) return { h: 0, s: 0 };
-  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  const l = (max + min) / 2;
-  return { h: (h * 60 + 360) % 360, s: d / (1 - Math.abs(2 * l - 1)) };
-}
-
-/** Mieszanie w sRGB: `procent` % koloru `a` i reszta `b` (jak color-mix(in srgb, a N%, b)). */
-function mieszaj(a: string, procent: number, b: string): string {
-  const skladowe = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const [x, y] = [skladowe(a), skladowe(b)];
-  const w = x.map((v, i) => Math.round((v * procent + y[i]! * (100 - procent)) / 100));
-  return `#${w.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-}
-
 function kontrast(a: string, b: string): number {
   const [x, y] = [luminancja(a), luminancja(b)].sort((p, q) => q - p);
   return (x! + 0.05) / (y! + 0.05);
 }
 
-describe('tokeny motywów', () => {
-  it('oba motywy definiują te same tokeny', () => {
+const TOKENY_NIEKOLOROWE = new Set(['color-scheme', 'riso-mieszanie']);
+
+/** Wymagane tokeny UI2 „drukarnia riso” z sekcji 3.1 docs/plan-UI2.md. */
+const PALETA_RISO_JASNY: Record<string, string> = {
+  tlo: '#f3f0e8',
+  'tlo-pasek': '#ede9e0',
+  'tlo-robocze': '#dcd8ce',
+  powierzchnia: '#ffffff',
+  tekst: '#111111',
+  'tekst-2': '#5a5852',
+  'linia-2': '#c9c4b8',
+  akcent: '#e8b4a8',
+  'riso-roz': '#d98c8c',
+  'riso-niebieski': '#5d7fa3',
+  'riso-ochra': '#e3c77a',
+  'riso-szalwia': '#9db59a',
+  zaznaczenie: '#3f6a93',
+  'linia-pomocnicza': '#1a9bb5',
+};
+
+const PALETA_RISO_CIEMNY: Record<string, string> = {
+  tlo: '#17171a',
+  'tlo-pasek': '#1e1e22',
+  'tlo-robocze': '#2a2a2f',
+  powierzchnia: '#202024',
+  tekst: '#e9e4d8',
+  'tekst-2': '#a9a498',
+  'linia-2': '#3a3a40',
+  akcent: '#b8675a',
+  'riso-roz': '#b8675a',
+  'riso-niebieski': '#3f6a93',
+  'riso-ochra': '#b8973f',
+  'riso-szalwia': '#5f8a5c',
+  zaznaczenie: '#8fb0d1',
+  'linia-pomocnicza': '#4fc3db',
+};
+
+describe('tokeny motywów UI2 (drukarnia riso)', () => {
+  it('oba motywy definiują dokładnie ten sam zestaw tokenów', () => {
     expect(Object.keys(ciemny).sort()).toEqual(Object.keys(jasny).sort());
   });
 
-  it('wartości kolorów to #rrggbb (poza cieniami)', () => {
+  it('wartości tokenów kolorów to #rrggbb (poza cieniami i trybem mieszania)', () => {
     for (const motyw of [jasny, ciemny])
       for (const [k, v] of Object.entries(motyw))
-        if (!k.startsWith('cien') && k !== 'color-scheme') expect(v, k).toMatch(/^#[0-9a-f]{6}$/i);
+        if (!k.startsWith('cien') && !TOKENY_NIEKOLOROWE.has(k))
+          expect(v, k).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
-  it('jasny: tekst na tle i na panelu – AAA', () => {
-    expect(kontrast(jasny.tekst!, jasny.tlo!)).toBeGreaterThanOrEqual(7);
-    expect(kontrast(jasny.tekst!, jasny['tlo-panelu']!)).toBeGreaterThanOrEqual(7);
+  it('motyw jasny ma komplet tokenów riso z planu UI2 (sekcja 3.1)', () => {
+    for (const [klucz, oczekiwany] of Object.entries(PALETA_RISO_JASNY)) {
+      expect(jasny[klucz]?.toLowerCase(), klucz).toBe(oczekiwany);
+    }
+    expect(jasny['riso-mieszanie']).toBe('multiply');
   });
 
-  it('jasny: link w tekście ciągłym (#1F6C92) – AA na tle i panelu', () => {
-    expect(jasny.link!.toLowerCase()).toBe('#1f6c92');
-    expect(kontrast(jasny.link!, jasny.tlo!)).toBeGreaterThanOrEqual(4.5);
-    expect(kontrast(jasny.link!, jasny['tlo-panelu']!)).toBeGreaterThanOrEqual(4.5);
+  it('motyw ciemny ma komplet tokenów riso z planu UI2 (sekcja 3.1)', () => {
+    for (const [klucz, oczekiwany] of Object.entries(PALETA_RISO_CIEMNY)) {
+      expect(ciemny[klucz]?.toLowerCase(), klucz).toBe(oczekiwany);
+    }
+    expect(ciemny['riso-mieszanie']).toBe('screen');
   });
 
-  it('jasny: link dla większych elementów (#2A7FA8) – co najmniej 3:1', () => {
-    expect(jasny['link-duzy']!.toLowerCase()).toBe('#2a7fa8');
-    expect(kontrast(jasny['link-duzy']!, jasny.tlo!)).toBeGreaterThanOrEqual(3);
+  it('czcionki interfejsu UI2 (Archivo Black, Archivo, IBM Plex Mono) są zadeklarowane lokalnie', () => {
+    expect(css).toContain("font-family: 'Archivo Black'");
+    expect(css).toContain("font-family: 'Archivo'");
+    expect(css).toContain("font-family: 'IBM Plex Mono'");
+    expect(css).not.toContain('fonts.googleapis.com');
   });
 
-  it('jasny: biały na akcencie i na pasku – granica AA (4,5)', () => {
-    expect(kontrast('#ffffff', jasny.akcent!)).toBeGreaterThanOrEqual(4.5);
-    expect(kontrast(jasny['pasek-tekst']!, jasny.pasek!)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('jasny: wyróżnienie (bordo) na tle – AAA', () => {
-    expect(kontrast(jasny.wyroznienie!, jasny.tlo!)).toBeGreaterThanOrEqual(7);
-  });
-
-  it('ciemny: tekst, przygaszony tekst i link na tle – AA lub więcej', () => {
-    expect(kontrast(ciemny.tekst!, ciemny.tlo!)).toBeGreaterThanOrEqual(7);
-    expect(kontrast(ciemny['tekst-przygaszony']!, ciemny.tlo!)).toBeGreaterThanOrEqual(4.5);
-    expect(kontrast(ciemny.link!, ciemny.tlo!)).toBeGreaterThanOrEqual(7);
-    expect(kontrast(ciemny.link!, ciemny['tlo-panelu']!)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('ciemny: bez różu – bordo #8E2C48, wyróżnienie i tytuł złote #E9A645', () => {
-    expect(ciemny.bordo!.toLowerCase()).toBe('#8e2c48');
-    expect(ciemny.wyroznienie!.toLowerCase()).toBe('#e9a645');
-    expect(ciemny.tytul!.toLowerCase()).toBe('#e9a645');
-  });
-
-  it('ciemny: złoty na ciemnym tle i panelu – AA', () => {
-    expect(kontrast(ciemny.wyroznienie!, ciemny.tlo!)).toBeGreaterThanOrEqual(4.5);
-    expect(kontrast(ciemny.wyroznienie!, ciemny['tlo-panelu']!)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('ciemny: beż na bordo – AA dla dużego tekstu (3:1) i zbliżony do AA', () => {
-    expect(kontrast(ciemny['bordo-tekst']!, ciemny.bordo!)).toBeGreaterThanOrEqual(3);
-  });
-
-  it('ciemny: biały na akcencie (przycisk główny) – AA', () => {
-    expect(kontrast(ciemny['akcent-tekst']!, ciemny.akcent!)).toBeGreaterThanOrEqual(4.5);
-    expect(kontrast(ciemny['pasek-tekst']!, ciemny.pasek!)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('oba motywy: zaznaczenie i ostrzeżenie czytelne jako elementy graficzne (3:1) na panelu', () => {
+  it('oba motywy: główny tekst na wszystkich tłach roboczych – AAA (>= 7:1)', () => {
     for (const m of [jasny, ciemny]) {
-      expect(kontrast(m.zaznaczenie!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(3);
-      expect(kontrast(m.zle!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(3);
-      expect(kontrast(m.dobrze!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(3);
+      for (const tlo of [m.tlo!, m['tlo-pasek']!, m['tlo-robocze']!, m.powierzchnia!]) {
+        expect(kontrast(m.tekst!, tlo)).toBeGreaterThanOrEqual(7);
+      }
     }
   });
 
-  it('jasny: czerwień ostrzeżeń i przygaszony tekst – AA na tle i panelu', () => {
-    for (const tlo of [jasny.tlo!, jasny['tlo-panelu']!]) {
-      expect(kontrast(jasny.zle!, tlo)).toBeGreaterThanOrEqual(4.5);
-      expect(kontrast(jasny['tekst-przygaszony']!, tlo)).toBeGreaterThanOrEqual(4.5);
-    }
-  });
-
-  it('oba motywy: tekst zaznaczonego przycisku segmentowego (akcent) – AA', () => {
-    for (const m of [jasny, ciemny])
-      expect(kontrast(m['akcent-tekst']!, m.akcent!)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('ciemny: czerwień ostrzeżeń czytelna na tle i panelu – AA', () => {
-    for (const tlo of [ciemny.tlo!, ciemny['tlo-panelu']!])
-      expect(kontrast(ciemny.zle!, tlo)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('ciemny: żaden token nie ma odcienia różu (barwa 300–345°), poza jawnymi wyjątkami', () => {
-    // Wyjątki: bordo to wymagany kolor ozdób (#8E2C48), a przycisk niebezpieczny w ciemnym to
-    // to samo bordo (UI-7); prowadnica leży wyłącznie na białym papierze karty (B120).
-    const wyjatki = new Set(['bordo', 'prowadnica', 'niebezpieczny-tlo', 'niebezpieczny-obrys']);
-    // Kontrola detektora: wyjątki faktycznie są różowawe.
-    expect(barwa(ciemny.prowadnica!).h).toBeGreaterThan(300);
-    const roz = Object.entries(ciemny)
-      .filter(([k, v]) => /^#[0-9a-f]{6}$/i.test(v) && !wyjatki.has(k))
-      .filter(([, v]) => {
-        const { h, s } = barwa(v);
-        return s > 0.2 && h >= 300 && h <= 345;
-      })
-      .map(([k]) => k);
-    expect(roz).toEqual([]);
-  });
-  it('start: menu (bordo, granat), tytuł i przygaszony napis – kontrast w obu motywach', () => {
+  it('oba motywy: tekst drugorzędny (--tekst-2) na tle, pasku i powierzchni – AA (>= 4,5:1)', () => {
     for (const m of [jasny, ciemny]) {
-      // Napis na kolorowych paskach menu startowego (bordo i --kolor-4, biały lub beż).
-      expect(kontrast(m['bordo-tekst']!, m.bordo!)).toBeGreaterThanOrEqual(4.5);
-      expect(kontrast(m['akcent-tekst']!, m['kolor-4']!)).toBeGreaterThanOrEqual(4.5);
-      // Tytuł (duża czcionka, 3:1) na tle strony.
-      expect(kontrast(m.tytul!, m.tlo!)).toBeGreaterThanOrEqual(4.5);
-      // Obrys strefy upuszczania i opis importu.
-      expect(kontrast(m['tekst-przygaszony']!, m.tlo!)).toBeGreaterThanOrEqual(4.5);
-      expect(kontrast(m['obramowanie-karty']!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(1.5);
+      for (const tlo of [m.tlo!, m['tlo-pasek']!, m.powierzchnia!]) {
+        expect(kontrast(m['tekst-2']!, tlo)).toBeGreaterThanOrEqual(4.5);
+      }
     }
   });
 
-  it('start: opis kafelka gry (kolor zamiast opacity) – AA na panelu i na wypełnionym kafelku', () => {
+  it('oba motywy: główny przycisk (--przycisk-tekst na --przycisk) i link – AA lub AAA', () => {
     for (const m of [jasny, ciemny]) {
-      expect(kontrast(m['tekst-przygaszony']!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(4.5);
-      expect(kontrast(m['akcent-tekst']!, m.akcent!)).toBeGreaterThanOrEqual(4.5);
+      expect(kontrast(m['przycisk-tekst']!, m.przycisk!)).toBeGreaterThanOrEqual(7);
+      expect(kontrast(m.link!, m.tlo!)).toBeGreaterThanOrEqual(4.5);
+      expect(kontrast(m.link!, m['tlo-pasek']!)).toBeGreaterThanOrEqual(4.5);
     }
   });
 
-  describe('edytory (UI-7)', () => {
-    it('oba motywy: tekst i przygaszony tekst na panelu, polu i zaznaczeniu – AA', () => {
-      for (const m of [jasny, ciemny]) {
-        for (const tlo of [m['tlo-panelu']!, m.pole!, m['zaznaczenie-tlo']!, m.tlo!]) {
-          expect(kontrast(m.tekst!, tlo)).toBeGreaterThanOrEqual(7);
-        }
-        // Podpisy, opisy, etykiety pól, nagłówki menu, wyłączone przyciski i pola.
-        for (const tlo of [m['tlo-panelu']!, m.pole!, m.tlo!])
-          expect(kontrast(m['tekst-przygaszony']!, tlo)).toBeGreaterThanOrEqual(4.5);
-      }
-    });
-
-    it('oba motywy: link i znacznik położenia (link na zaznaczeniu) oraz link na panelu – AA', () => {
-      for (const m of [jasny, ciemny]) {
-        expect(kontrast(m.link!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(4.5);
-        expect(kontrast(m.link!, m['zaznaczenie-tlo']!)).toBeGreaterThanOrEqual(4.5);
-      }
-    });
-
-    it('oba motywy: obrys pól formularza – 3:1 względem pola, panelu i tła', () => {
-      for (const m of [jasny, ciemny])
-        for (const tlo of [m.pole!, m['tlo-panelu']!, m.tlo!])
-          expect(kontrast(m['obramowanie-pola']!, tlo)).toBeGreaterThanOrEqual(3);
-    });
-
-    it('oba motywy: zaznaczenie (obrys i tło) – obrys 3:1 na tle zaznaczenia i panelu', () => {
-      for (const m of [jasny, ciemny]) {
-        expect(kontrast(m.zaznaczenie!, m['zaznaczenie-tlo']!)).toBeGreaterThanOrEqual(3);
-        expect(kontrast(m.zaznaczenie!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(3);
-        expect(kontrast(m.zaznaczenie!, m.pole!)).toBeGreaterThanOrEqual(3);
-      }
-    });
-
-    it('oba motywy: przycisk niebezpieczny – tekst AA na własnym tle, wypełnienie i obrys to --bordo', () => {
-      for (const m of [jasny, ciemny]) {
-        expect(kontrast(m['niebezpieczny-tekst']!, m['niebezpieczny-tlo']!)).toBeGreaterThanOrEqual(
-          4.5,
-        );
-        // Obrys to wprost --bordo (nie inna barwa) – w obu motywach.
-        expect(m['niebezpieczny-obrys']!.toLowerCase()).toBe(m.bordo!.toLowerCase());
-        // Próg 1,8:1 dotyczy tylko obrysu względem panelu: w ciemnym przycisk jest wypełniony
-        // bordo z etykietą o kontraście >= 4,5:1, więc o rozpoznaniu decyduje wypełnienie i
-        // tekst, a obrys (bordo na ciemnym panelu 1,9:1) tylko domyka kształt.
-        expect(kontrast(m['niebezpieczny-obrys']!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(1.8);
-      }
-      // Jasny: bordowy napis (AAA) na panelu, bez wypełnienia.
-      expect(jasny['niebezpieczny-tekst']!.toLowerCase()).toBe(jasny.bordo!.toLowerCase());
-      expect(kontrast(jasny['niebezpieczny-tekst']!, jasny['tlo-panelu']!)).toBeGreaterThanOrEqual(
-        7,
-      );
-      // Ciemny: wypełnienie to zatwierdzone bordo #8E2C48 (winne bordo, nie róż) z beżem.
-      expect(ciemny['niebezpieczny-tlo']!.toLowerCase()).toBe(ciemny.bordo!.toLowerCase());
-      expect(ciemny['niebezpieczny-tlo']!.toLowerCase()).toBe('#8e2c48');
-      expect(ciemny['niebezpieczny-tekst']!.toLowerCase()).toBe('#ece4dc');
-    });
-
-    it('oba motywy: ostrzeżenie (--zle) i powód blokady (--wyroznienie) na panelu i polu – AA', () => {
-      for (const m of [jasny, ciemny])
-        for (const tlo of [m['tlo-panelu']!, m.pole!]) {
-          expect(kontrast(m.zle!, tlo)).toBeGreaterThanOrEqual(4.5);
-          expect(kontrast(m.wyroznienie!, tlo)).toBeGreaterThanOrEqual(4.5);
-        }
-    });
-
-    it('oba motywy: komunikat „dobrze” – tekst AA na własnym tle, obrys 3:1 na panelu', () => {
-      for (const m of [jasny, ciemny]) {
-        expect(kontrast(m['dobrze-tekst']!, m['dobrze-tlo']!)).toBeGreaterThanOrEqual(4.5);
-        expect(kontrast(m.dobrze!, m['tlo-panelu']!)).toBeGreaterThanOrEqual(3);
-      }
-    });
-
-    it('oba motywy: nakładki na białym papierze (zaznaczenie, ostrzeżenie, wstawianie, prowadnica) – 3:1', () => {
-      for (const m of [jasny, ciemny]) {
-        expect(m.papier!.toLowerCase()).toBe('#ffffff');
-        for (const k of [
-          'zaznaczenie-papier',
-          'zaznaczenie-karty',
-          'dobrze-papier',
-          'zle-papier',
-          'prowadnica',
-        ])
-          expect(kontrast(m[k]!, m.papier!), k).toBeGreaterThanOrEqual(3);
-      }
-    });
-
-    it('oba motywy: etykietka i pasek akcji na ciemnym tle podpowiedzi – AA', () => {
-      for (const m of [jasny, ciemny])
-        for (const k of ['tekst-podpowiedzi', 'zle-jasny', 'link-na-ciemnym'])
-          expect(kontrast(m[k]!, m['tlo-podpowiedzi']!), k).toBeGreaterThanOrEqual(4.5);
-    });
-
-    it('oba motywy: pole nazwy projektu na pasku (czarne 22% nad paskiem) – biały tekst AA', () => {
-      for (const m of [jasny, ciemny])
-        expect(
-          kontrast(m['pasek-tekst']!, mieszaj('#000000', 22, m.pasek!)),
-        ).toBeGreaterThanOrEqual(4.5);
-    });
-
-    it('oba motywy: hover przycisków głównego i paska (czarne nad akcentem) – biały tekst AA', () => {
-      for (const m of [jasny, ciemny]) {
-        expect(
-          kontrast(m['akcent-tekst']!, mieszaj('#000000', 18, m.akcent!)),
-        ).toBeGreaterThanOrEqual(4.5);
-        expect(
-          kontrast(m['pasek-tekst']!, mieszaj('#000000', 32, m.pasek!)),
-        ).toBeGreaterThanOrEqual(4.5);
-      }
-    });
-
-    it('znaczniki sekcji: pasek ozdobny, ale tekst nagłówka czytelny na tle panelu', () => {
-      // Pasek (--kolor-1…4 w 85 % na panelu) nie niesie informacji – sekcję rozpoznaje nagłówek.
-      for (const m of [jasny, ciemny])
-        for (const k of ['kolor-1', 'kolor-2', 'kolor-3', 'kolor-4']) {
-          const pasek = mieszaj(m[k]!, 85, m['tlo-panelu']!);
-          // Kontrola, że pasek faktycznie odróżnia się od panelu (nie jest „niewidzialny”).
-          expect(kontrast(pasek, m['tlo-panelu']!), k).toBeGreaterThanOrEqual(1.4);
-        }
-    });
-  });
-
-  it('kroki menu oraz przyciski Awers/Rewers: jednolity kolor kroków i kontrast w motywie ciemnym', () => {
-    const gra = ['krok-gra-1', 'krok-gra-2'] as const;
-    const wlasne = ['krok-wlasne-1', 'krok-wlasne-2', 'krok-wlasne-3', 'krok-wlasne-4'] as const;
+  it('oba motywy: zaznaczenie, ostrzeżenie i „dobrze” czytelne jako elementy graficzne (>= 3:1)', () => {
     for (const m of [jasny, ciemny]) {
-      // Wszystkie kroki w ramach ścieżki mają jeden kolor (bez rozjaśnień między krokami).
-      expect(m['krok-gra-2']!.toLowerCase()).toBe(m['krok-gra-1']!.toLowerCase());
-      for (let i = 1; i < wlasne.length; i++) {
-        expect(m[wlasne[i]!]!.toLowerCase()).toBe(m['krok-wlasne-1']!.toLowerCase());
+      expect(kontrast(m.zaznaczenie!, m.tlo!)).toBeGreaterThanOrEqual(3);
+      expect(kontrast(m.zaznaczenie!, m.powierzchnia!)).toBeGreaterThanOrEqual(3);
+      expect(kontrast(m.zle!, m.tlo!)).toBeGreaterThanOrEqual(4.5);
+      expect(kontrast(m.dobrze!, m.tlo!)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('oba motywy: nakładki na białym papierze karty – co najmniej 3:1', () => {
+    for (const m of [jasny, ciemny]) {
+      expect(m.papier!.toLowerCase()).toBe('#ffffff');
+      for (const k of [
+        'zaznaczenie-papier',
+        'zaznaczenie-karty',
+        'dobrze-papier',
+        'zle-papier',
+        'prowadnica',
+      ]) {
+        expect(kontrast(m[k]!, m.papier!), k).toBeGreaterThanOrEqual(3);
       }
-      // Awers i Rewers mają odróżniające się od siebie kolory.
-      expect(m['strona-awers']!.toLowerCase()).not.toBe(m['strona-rewers']!.toLowerCase());
     }
-    // Motyw ciemny: ciemny napis (#1e202c) zachowuje kontrast AA (>= 4,5) w spoczynku i po hover, oraz >= 3:1 w :active.
-    for (const k of [...gra, ...wlasne]) {
-      expect(kontrast(ciemny['krok-tekst']!, ciemny[k]!), k).toBeGreaterThanOrEqual(4.5);
-      expect(
-        kontrast(ciemny['krok-tekst']!, mieszaj('#000000', 12, ciemny[k]!)),
-        `${k}:hover`,
-      ).toBeGreaterThanOrEqual(4.5);
-      expect(
-        kontrast(ciemny['krok-tekst']!, mieszaj('#000000', 22, ciemny[k]!)),
-        `${k}:active`,
-      ).toBeGreaterThanOrEqual(3);
-    }
-    for (const k of ['strona-awers', 'strona-rewers'] as const) {
-      expect(kontrast(ciemny['strona-tekst']!, ciemny[k]!), k).toBeGreaterThanOrEqual(4.5);
-      expect(
-        kontrast(ciemny['strona-tekst']!, mieszaj('#000000', 12, ciemny[k]!)),
-        `${k}:hover`,
-      ).toBeGreaterThanOrEqual(4.5);
-      expect(
-        kontrast(ciemny['strona-tekst']!, mieszaj('#000000', 22, ciemny[k]!)),
-        `${k}:active`,
-      ).toBeGreaterThanOrEqual(3);
+  });
+
+  it('oba motywy: dymek podpowiedzi (--tekst-podpowiedzi na --tlo-podpowiedzi) – AAA', () => {
+    for (const m of [jasny, ciemny]) {
+      expect(kontrast(m['tekst-podpowiedzi']!, m['tlo-podpowiedzi']!)).toBeGreaterThanOrEqual(7);
     }
   });
 });

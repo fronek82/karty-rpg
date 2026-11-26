@@ -1,0 +1,637 @@
+/*
+ * Wspólne style komponentów UI2 „drukarnia riso” (etap R1):
+ * NaglowekProjektu, PasekBoczny (z dymkiem po 0,5 s), PanelSekcji, układ roboczy.
+ * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
+ */
+
+/* --- Układ pełnoekranowy projektu --- */
+.ui2-ekran {
+  height: 100vh;
+  min-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: var(--czcionka-tekst);
+  font-size: 13px;
+}
+
+.ui2-tresc {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+
+.ui2-srodek {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo-robocze);
+}
+
+.ui2-pasek-roboczy {
+  height: var(--ui2-pasek-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--tlo-pasek);
+  border-bottom: 1.5px solid var(--tekst);
+}
+
+.ui2-obszar-roboczy {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--tlo-robocze);
+  background-image: radial-gradient(var(--kropki-robocze) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.ui2-pasek-stanu {
+  height: var(--ui2-stan-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  border-top: 1.5px solid var(--tekst);
+  background: var(--tlo-pasek);
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+}
+
+/* --- Nagłówek projektu (sekcja 4.1) --- */
+.ui2-naglowek {
+  height: var(--ui2-naglowek-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  background: var(--tlo);
+  color: var(--tekst);
+  border-bottom: 2px solid var(--tekst);
+}
+
+.ui2-naglowek-powrot {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  border: 1.5px solid var(--tekst);
+  background: transparent;
+  color: var(--tekst);
+  text-decoration: none;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ui2-naglowek-powrot:hover {
+  background: var(--tlo-pasek);
+  color: var(--tekst);
+}
+
+.ui2-naglowek-nazwa {
+  font-family: var(--czcionka-naglowek);
+  font-size: 17px;
+  line-height: 1.1;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui2-etykieta-mausritter {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--riso-szalwia);
+  color: var(--na-akcencie);
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.ui2-kroki {
+  margin-left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.ui2-krok {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  color: var(--tekst);
+  text-decoration: none;
+  border: 1.5px solid transparent;
+  white-space: nowrap;
+}
+
+a.ui2-krok:hover {
+  border-color: var(--tekst);
+  color: var(--tekst);
+}
+
+.ui2-krok-aktywny {
+  background: var(--tekst);
+  color: var(--tlo);
+  border-color: var(--tekst);
+}
+
+.ui2-krok-numer {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid var(--tekst);
+}
+
+.ui2-krok-aktywny .ui2-krok-numer {
+  background: var(--akcent);
+  color: var(--na-akcencie);
+  border-color: var(--akcent);
+}
+
+.ui2-krok-strzalka {
+  color: var(--tekst-2);
+  user-select: none;
+}
+
+.ui2-naglowek-prawa {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ui2-przycisk-ikona {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ui2-przycisk-ikona:hover:not(:disabled) {
+  background: var(--tlo-pasek);
+}
+
+.ui2-przycisk-ikona:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ui2-separator-pionowy {
+  width: 1px;
+  height: 28px;
+  background: var(--linia-2);
+  margin: 0 2px;
+}
+
+.ui2-stan-zapisu {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  color: var(--tekst-2);
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.ui2-przycisk-glowny {
+  height: 40px;
+  padding: 0 18px;
+  background: var(--tekst);
+  color: var(--tlo);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.ui2-przycisk-glowny:hover:not(:disabled) {
+  opacity: 0.9;
+  color: var(--tlo);
+}
+
+.ui2-przycisk-glowny:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ui2-przycisk-kontur {
+  height: 40px;
+  padding: 0 14px;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.ui2-przycisk-kontur:hover:not(:disabled) {
+  background: var(--tlo-pasek);
+  color: var(--tekst);
+}
+
+/* Menu ustawień w nagłówku projektu */
+.ui2-ustawienia-opakowanie {
+  position: relative;
+}
+
+.ui2-ustawienia-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 80;
+  min-width: 220px;
+  padding: 12px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  box-shadow: 4px 4px 0 var(--riso-niebieski);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ui2-ustawienia-wiersz {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ui2-ustawienia-etykieta {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tekst-2);
+  text-transform: uppercase;
+}
+
+.ui2-segmenty {
+  display: inline-flex;
+}
+
+.ui2-segment {
+  height: 30px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ui2-segment + .ui2-segment {
+  border-left: none;
+}
+
+.ui2-segment[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.ui2-ustawienia-link {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 10px;
+  border: 1.5px solid var(--tekst);
+  color: var(--tekst);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.ui2-ustawienia-link:hover {
+  background: var(--tlo-pasek);
+  color: var(--tekst);
+}
+
+/* --- Wąski pasek boczny (sekcja 4.2) --- */
+.ui2-pasek-boczny {
+  width: var(--ui2-lewy-zwiniety);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo-pasek);
+  color: var(--tekst);
+  border-right: 2px solid var(--tekst);
+  position: relative;
+  z-index: 20;
+}
+
+.ui2-pasek-boczny.rozwiniety {
+  width: var(--ui2-lewy-rozwiniety);
+}
+
+.ui2-pasek-boczny.prawy {
+  width: var(--ui2-prawy-pasek);
+  border-right: none;
+  border-left: 1.5px solid var(--tekst);
+}
+
+.ui2-pasek-boczny-naglowek {
+  height: var(--ui2-pasek-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1.5px solid var(--tekst);
+}
+
+.ui2-pasek-boczny-tytul {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ui2-pasek-boczny-lista {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: visible;
+}
+
+.ui2-pasek-boczny.rozwiniety .ui2-pasek-boczny-lista {
+  overflow-y: auto;
+  padding-top: 8px;
+}
+
+.ui2-pasek-grupa {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--linia-2);
+}
+
+.ui2-pasek-grupa:last-of-type {
+  border-bottom: none;
+}
+
+.ui2-pasek-grupa-tytul {
+  padding: 2px 6px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tekst-2);
+}
+
+.ui2-pasek-pozycja {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 38px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-radius: 0;
+  color: var(--tekst);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui2-pasek-pozycja[draggable='true'] {
+  cursor: grab;
+}
+
+.ui2-pasek-boczny.rozwiniety .ui2-pasek-pozycja {
+  justify-content: flex-start;
+  padding: 0 8px;
+}
+
+.ui2-pasek-pozycja:hover {
+  background: var(--tlo);
+  border-color: var(--tekst);
+}
+
+.ui2-pasek-pozycja[aria-pressed='true'],
+.ui2-pasek-pozycja.aktywna {
+  background: var(--tekst);
+  color: var(--tlo);
+  border-color: var(--tekst);
+}
+
+.ui2-pasek-pozycja-nazwa {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui2-pasek-odznaka {
+  margin-left: auto;
+  padding: 1px 5px;
+  background: var(--tekst);
+  color: var(--tlo);
+  font-family: var(--czcionka-mono);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.ui2-pasek-wskazowka {
+  margin: 10px 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--tekst-2);
+}
+
+.ui2-pasek-przelacznik {
+  position: relative;
+  height: var(--ui2-stan-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: transparent;
+  border: none;
+  border-top: 1.5px solid var(--tekst);
+  border-radius: 0;
+  color: var(--tekst);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ui2-pasek-boczny.rozwiniety .ui2-pasek-przelacznik {
+  justify-content: flex-start;
+}
+
+.ui2-pasek-przelacznik:hover {
+  background: var(--tlo);
+}
+
+.ui2-pasek-strzalka {
+  font-family: var(--czcionka-naglowek);
+  font-size: 14px;
+}
+
+/* Dymek podpowiedzi w stanie zwiniętym – zwykły element DOM, pojawia się po 0,5 s (sekcja 4.2, D11) */
+.ui2-dymek {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--tlo-podpowiedzi);
+  color: var(--tekst-podpowiedzi);
+  font-family: var(--czcionka-tekst);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 7px 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.12s,
+    visibility 0s linear 0.12s;
+  z-index: 60;
+  box-shadow: 3px 3px 0 var(--riso-niebieski);
+  text-align: left;
+}
+
+.ui2-pasek-boczny.prawy .ui2-dymek,
+.ui2-dymek-lewo .ui2-dymek {
+  left: auto;
+  right: calc(100% + 12px);
+}
+
+.ui2-ma-dymek:hover .ui2-dymek,
+.ui2-ma-dymek:focus-visible .ui2-dymek {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.12s 0.5s,
+    visibility 0s linear 0.5s;
+}
+
+/* --- Prawy panel z sekcjami (sekcja 4.3) --- */
+.ui2-panel-sekcji {
+  width: var(--ui2-prawy-panel);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--tlo);
+  color: var(--tekst);
+  border-left: 2px solid var(--tekst);
+}
+
+.ui2-panel-naglowek {
+  height: var(--ui2-pasek-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-bottom: 1.5px solid var(--tekst);
+}
+
+.ui2-panel-tytul {
+  font-family: var(--czcionka-naglowek);
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.ui2-panel-podtytul {
+  font-size: 12px;
+  color: var(--tekst-2);
+}
+
+.ui2-panel-tresc {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ui2-sekcja {
+  border-bottom: 1px solid var(--linia-2);
+}
+
+.ui2-sekcja-naglowek {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.ui2-sekcja-naglowek::-webkit-details-marker {
+  display: none;
+}
+
+.ui2-sekcja-strzalka {
+  font-family: var(--czcionka-mono);
+  color: var(--tekst-2);
+  font-size: 12px;
+}
+
+.ui2-sekcja:not([open]) .ui2-sekcja-strzalka::before {
+  content: '▸';
+}
+
+.ui2-sekcja[open] .ui2-sekcja-strzalka::before {
+  content: '▾';
+}
+
+.ui2-sekcja-cialo {
+  padding: 0 14px 12px;
+}
