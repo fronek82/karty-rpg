@@ -11,6 +11,7 @@ import type {
 import type { Czcionka, RejestrCzcionek, UlozonyGlif } from './czcionki';
 import type { DefinicjaGlifu, ElementSceny, GlifNaScenie, WierszTekstuSceny } from './scena';
 import { konturIkony } from './ikony';
+import { graniceGrafemow } from './grafemy';
 
 /** Fragment tekstu w jednym stylu. Akapit to ciąg fragmentów; `\n` w tekście kończy akapit. */
 export interface Fragment {
@@ -409,9 +410,6 @@ function zbudujWiersz(
   };
 }
 
-// Granice grafemów zachowują litery ze znakami łączącymi i sekwencje Unicode jako całość.
-const GRAFEMY = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-
 /** Najdłuższy mieszczący się prefiks od granicy grafemu; każdy prefiks składamy razem. */
 function prefiksSlowa(
   f: Fragment,
@@ -562,7 +560,8 @@ export function ulozTekst(
             pisz([k], k.szerokosc);
             continue;
           }
-          const granice = Array.from(GRAFEMY.segment(f.tekst), (g) => g.index);
+          // Granice grafemów zachowują litery ze znakami łączącymi i sekwencje Unicode jako całość.
+          const granice = graniceGrafemow(f.tekst);
           granice.push(f.tekst.length);
           for (let od = 0; od < granice.length - 1;) {
             const p = prefiksSlowa(
