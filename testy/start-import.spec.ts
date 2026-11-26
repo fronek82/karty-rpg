@@ -63,66 +63,52 @@ async function plikSzablonuZZasobami(): Promise<Plik> {
 
 const kafelki = (page: Page) => page.locator('.kafelek-projektu');
 
+async function otworzImport(page: Page) {
+  await page.getByRole('button', { name: /^(Kopia i import|Backup & import)$/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+}
+
 test.describe('układ', () => {
-  test('1440 px: trzy kolumny (menu 260, projekty, import 240), tytuł wyśrodkowany', async ({
+  test('1440 px: dwie kolumny (lewa z przyciskami tworzenia + projekty), tytuł KARTY RPG', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('./');
-    const menu = (await page.locator('.start-menu').boundingBox())!;
-    const lista = (await page.locator('.lista-projektow').boundingBox())!;
-    const import_ = (await page.locator('.panel-importu').boundingBox())!;
-    expect(menu.x).toBeLessThan(lista.x);
-    expect(lista.x).toBeLessThan(import_.x);
-    expect(Math.abs(menu.y - lista.y)).toBeLessThan(2);
-    expect(Math.abs(lista.y - import_.y)).toBeLessThan(2);
-    expect(Math.round(menu.width)).toBe(260);
-    expect(Math.round(import_.width)).toBe(240);
-    const baner = (await page.locator('.start-baner').boundingBox())!;
-    expect(Math.abs(baner.x + baner.width / 2 - 720)).toBeLessThan(2);
-    expect(baner.y).toBeLessThan(menu.y);
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByText('Wszystko działa w przeglądarce')).toBeVisible();
+    const lewa = (await page.locator('.riso-lewa').boundingBox())!;
+    const lista = (await page.locator('.riso-glowna').boundingBox())!;
+    expect(lewa.x).toBeLessThan(lista.x);
+    expect(Math.abs(lewa.y - lista.y)).toBeLessThan(2);
+    expect(lewa.width).toBeGreaterThanOrEqual(280);
+    expect(lewa.width).toBeLessThanOrEqual(345);
+    await expect(page.locator('.riso-tytul')).toHaveText('KARTY RPG');
+    await expect(page.getByRole('heading', { level: 1, name: /Moje projekty/ })).toBeVisible();
   });
 
-  test('800 px: kolumny jedna pod drugą – menu, projekty, import', async ({ page }) => {
+  test('800 px: kolumny jedna pod drugą bez poziomego przewijania', async ({ page }) => {
     await page.setViewportSize({ width: 800, height: 900 });
     await page.goto('./');
-    const menu = (await page.locator('.start-menu').boundingBox())!;
-    const lista = (await page.locator('.lista-projektow').boundingBox())!;
-    const import_ = (await page.locator('.panel-importu').boundingBox())!;
-    expect(menu.y + menu.height).toBeLessThanOrEqual(lista.y + 1);
-    expect(lista.y + lista.height).toBeLessThanOrEqual(import_.y + 1);
-    expect(Math.abs(menu.x - lista.x)).toBeLessThan(2);
-    expect(Math.abs(lista.x - import_.x)).toBeLessThan(2);
-    // Brak poziomego przewijania strony.
+    const lewa = (await page.locator('.riso-lewa').boundingBox())!;
+    const lista = (await page.locator('.riso-glowna').boundingBox())!;
+    expect(lewa.y + lewa.height).toBeLessThanOrEqual(lista.y + 1);
+    expect(Math.abs(lewa.x - lista.x)).toBeLessThan(2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       800,
     );
   });
 
-  test('menu: sekcje Nowy projekt i Nowy szablon prowadzą do właściwych ekranów', async ({
-    page,
-  }) => {
+  test('menu: tylko 2 przyciski tworzenia (+ NOWE KARTY i Mausritter A4)', async ({ page }) => {
     await page.goto('./');
-    const linki = page.locator('.start-menu a.pasek-menu');
-    await expect(linki).toHaveCount(4);
-    await expect(linki.nth(0)).toContainText('Stwórz własne karty');
-    await expect(linki.nth(1)).toContainText('Stwórz karty do Mausrittera');
+    const linki = page.locator('.riso-lewa a[href^="#/"]');
+    await expect(linki).toHaveCount(2);
+    await expect(linki.nth(0)).toContainText('+ NOWE KARTY');
+    await expect(linki.nth(1)).toContainText('Mausritter A4');
     await expect(linki.nth(1)).toHaveAttribute('href', '#/gra/mausritter');
-    await expect(linki.nth(2)).toContainText('Przód');
-    await expect(linki.nth(2)).toHaveAttribute('href', '#/wlasne/nowy/awers');
-    await expect(linki.nth(3)).toContainText('Tył');
-    await expect(linki.nth(3)).toHaveAttribute('href', '#/wlasne/nowy/rewers');
     await linki.nth(1).click();
     await expect(page).toHaveURL(/#\/gra\/mausritter$/);
   });
 
-  test('Nowy szablon → Tył (kreator) i Użyj w projekcie z zakładki Moje szablony', async ({
-    page,
-  }) => {
-    await page.goto('./');
-    await page.locator('.start-menu a.pasek-rewers').click();
+  test('Tył (kreator) i Użyj w projekcie z zakładki Szablony', async ({ page }) => {
+    await page.goto('./#/wlasne/nowy/rewers');
     await page.getByRole('button', { name: /Dalej: edytor tyłu/ }).click();
     await expect(page).toHaveURL(/#\/projekt\/([^/]+)\/rewers\//, { timeout: 15000 });
     const idOryginalu = /#\/projekt\/([^/]+)\/rewers\//.exec(page.url())![1]!;
@@ -132,7 +118,7 @@ test.describe('układ', () => {
     await zapisano(page);
 
     await page.goto('./');
-    await page.getByRole('tab', { name: 'Moje szablony' }).click();
+    await page.getByRole('tab', { name: /^Szablony/ }).click();
     const kafelek = page.locator('.kafelek-projektu', { hasText: 'Rewers ze startu' });
     await expect(kafelek).toBeVisible();
     await kafelek.getByRole('button', { name: 'Użyj w projekcie' }).click();
@@ -158,44 +144,18 @@ test.describe('układ', () => {
 });
 
 test.describe('baner i czcionka tytułu', () => {
-  test('motyw jasny: baner z emblematem kart, szeryfowy tytuł Georgia 700 bez preloadu', async ({
-    page,
-  }) => {
-    await page.emulateMedia({ colorScheme: 'light' });
-    await page.goto('./');
-    const naglowek = page.getByRole('heading', { level: 1 });
-    await expect(naglowek).toBeVisible();
-    await expect(naglowek).toHaveText('Karty do gier – zaprojektuj i wydrukuj');
-    await expect(page.locator('.start-baner-ikona')).toBeVisible();
-    await expect(page.locator('head link[rel="preload"]')).toHaveCount(0);
-    const stylGlowny = await page.locator('.start-baner-glowny').evaluate((el) => {
-      const cs = getComputedStyle(el);
-      return { rodzina: cs.fontFamily, grubosc: cs.fontWeight };
+  for (const kolor of ['light', 'dark'] as const) {
+    test(`motyw ${kolor}: logo riso i tytuł KARTY RPG w Archivo Black`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: kolor });
+      await page.goto('./');
+      await expect(page.locator('.riso-logo')).toBeVisible();
+      await expect(page.locator('.riso-tytul')).toHaveText('KARTY RPG');
+      const rodzina = await page
+        .locator('.riso-tytul')
+        .evaluate((el) => getComputedStyle(el).fontFamily);
+      expect(rodzina).toContain('Archivo Black');
     });
-    expect(stylGlowny.rodzina).toMatch(/Georgia.*serif$/);
-    expect(stylGlowny.grubosc).toBe('700');
-    const stylPodtytul = await page.locator('.start-baner-podtytul').evaluate((el) => {
-      const cs = getComputedStyle(el);
-      return { rodzina: cs.fontFamily, grubosc: cs.fontWeight };
-    });
-    expect(stylPodtytul.rodzina).toMatch(/sans-serif$/);
-  });
-
-  test('motyw ciemny: baner z emblematem kart i szeryfowym tytułem Georgia 700', async ({
-    page,
-  }) => {
-    await page.emulateMedia({ colorScheme: 'dark' });
-    await page.goto('./');
-    const naglowek = page.getByRole('heading', { level: 1 });
-    await expect(naglowek).toBeVisible();
-    await expect(page.locator('.start-baner-ikona')).toBeVisible();
-    const styl = await page.locator('.start-baner-glowny').evaluate((el) => {
-      const cs = getComputedStyle(el);
-      return { rodzina: cs.fontFamily, grubosc: cs.fontWeight };
-    });
-    expect(styl.rodzina).toMatch(/Georgia.*serif$/);
-    expect(styl.grubosc).toBe('700');
-  });
+  }
 });
 
 test.describe('tytuł po angielsku', () => {
@@ -203,11 +163,9 @@ test.describe('tytuł po angielsku', () => {
 
   test('tytuł i przyciski importu', async ({ page }) => {
     await page.goto('./');
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Game Cards – Design and Print' }),
-    ).toBeVisible();
+    await expect(page.locator('.riso-tytul')).toHaveText('RPG CARDS');
+    await otworzImport(page);
     await expect(page.getByRole('button', { name: 'Import files…' })).toBeVisible();
-    await expect(page.getByText('Everything runs in the browser')).toBeVisible();
   });
 });
 
@@ -215,6 +173,7 @@ test.describe('import plików', () => {
   test('„Importuj pliki…” otwiera wybór wielu plików z klawiatury', async ({ page }) => {
     const wybor = page.waitForEvent('filechooser');
     await page.goto('./');
+    await otworzImport(page);
     const przycisk = page.getByRole('button', { name: 'Importuj pliki…' });
     await przycisk.focus();
     await expect(przycisk).toBeFocused();
@@ -225,6 +184,7 @@ test.describe('import plików', () => {
   test('strefa upuszczania otwiera wybór wielu plików z klawiatury', async ({ page }) => {
     const wybor = page.waitForEvent('filechooser');
     await page.goto('./');
+    await otworzImport(page);
     const strefa = page.getByTestId('strefa-importu');
     await strefa.focus();
     await expect(strefa).toBeFocused();
@@ -234,6 +194,7 @@ test.describe('import plików', () => {
 
   test('plik .kartyrpg: komunikat, projekt na liście', async ({ page }) => {
     await page.goto('./');
+    await otworzImport(page);
     await page.getByTestId('plik-importu').setInputFiles(await plikProjektu());
     await expect(
       page.getByRole('status').filter({ hasText: 'Zaimportowano projekt' }),
@@ -244,6 +205,7 @@ test.describe('import plików', () => {
 
   test('plik .kartyrpg w archiwum .zip jest rozpoznany po zawartości', async ({ page }) => {
     await page.goto('./');
+    await otworzImport(page);
     await page
       .getByTestId('plik-importu')
       .setInputFiles({ ...(await plikProjektu()), name: 'kopia-zapasowa.zip' });
@@ -255,6 +217,7 @@ test.describe('import plików', () => {
 
   test('pojedynczy plik .kartyrpg-szablon: nowy projekt i edytor kartki', async ({ page }) => {
     await page.goto('./');
+    await otworzImport(page);
     await page.getByTestId('plik-importu').setInputFiles(plikSzablonu());
     await expect(page).toHaveURL(/#\/projekt\//);
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
@@ -264,6 +227,7 @@ test.describe('import plików', () => {
     page,
   }) => {
     await page.goto('./');
+    await otworzImport(page);
     await page
       .getByTestId('plik-importu')
       .setInputFiles([await plikProjektu(), plikSzablonu(), zepsuty, tekstowy]);
@@ -290,6 +254,7 @@ test.describe('import plików', () => {
 
   test('błędny plik: komunikat o błędzie, lista bez zmian', async ({ page }) => {
     await page.goto('./');
+    await otworzImport(page);
     await page.getByTestId('plik-importu').setInputFiles(zepsuty);
     await expect(page.getByRole('alert')).toContainText('„zepsuty.kartyrpg”');
     await expect(kafelki(page)).toHaveCount(0);
@@ -297,6 +262,7 @@ test.describe('import plików', () => {
 
   test('przeciągnięcie plików na strefę: projekt i szablon naraz', async ({ page }) => {
     await page.goto('./');
+    await otworzImport(page);
     await upusc(page, [await plikProjektu(), plikSzablonu(), tekstowy]);
     await expect(page.getByText('Wczytano 2 z 3 plików.')).toBeVisible();
     await expect(kafelki(page)).toHaveCount(2);
@@ -305,6 +271,7 @@ test.describe('import plików', () => {
 
   test('przeciągnięcie jednego szablonu otwiera edytor kartki', async ({ page }) => {
     await page.goto('./');
+    await otworzImport(page);
     await upusc(page, [plikSzablonu()]);
     await expect(page).toHaveURL(/#\/projekt\//);
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
@@ -314,6 +281,7 @@ test.describe('import plików', () => {
     page,
   }) => {
     await page.goto('./');
+    await otworzImport(page);
     await page.getByTestId('plik-importu').setInputFiles(await plikProjektu());
     await expect(kafelki(page)).toHaveCount(1);
     await page.getByTestId('plik-importu').setInputFiles([await plikProjektu(), plikSzablonu()]);
@@ -328,6 +296,8 @@ test.describe('import plików', () => {
 
   test('fokus wraca na „Importuj pliki…” po zakończeniu importu', async ({ page }) => {
     await page.goto('./');
+    await otworzImport(page);
+    await page.getByTestId('strefa-importu').focus();
     await page.getByTestId('plik-importu').setInputFiles(zepsuty);
     await expect(page.getByRole('alert')).toContainText('„zepsuty.kartyrpg”');
     await expect(page.getByRole('button', { name: 'Importuj pliki…' })).toBeFocused();
@@ -335,6 +305,7 @@ test.describe('import plików', () => {
 
   test('przyciski nie są wyłączane w trakcie importu (fokus zostaje)', async ({ page }) => {
     await page.goto('./');
+    await otworzImport(page);
     const przycisk = page.getByRole('button', { name: 'Importuj pliki…' });
     await expect(przycisk).toBeEnabled();
     await expect(page.getByTestId('strefa-importu')).toBeEnabled();
@@ -362,7 +333,7 @@ test.describe('import plików', () => {
     });
     expect(wynik).toEqual({ nad: true, efekt: 'none', upusc: true });
     expect(page.url()).toBe(adres);
-    await expect(page.getByRole('alert')).toHaveText('');
+    await expect(page.getByRole('alert')).toHaveCount(0);
     await expect(
       page.getByRole('status').filter({ hasText: /Zaimportowano|Wczytano/ }),
     ).toHaveCount(0);
@@ -373,6 +344,7 @@ test.describe('import plików', () => {
     page,
   }) => {
     await page.goto('./');
+    await otworzImport(page);
     const projekt = await plikProjektu();
     await page.getByTestId('plik-importu').setInputFiles({ ...projekt, name: 'bez-rozszerzenia' });
     await expect(
@@ -385,6 +357,7 @@ test.describe('import plików', () => {
 
   test('szablon zapisany pod nazwą .kartyrpg jest rozpoznany po zawartości', async ({ page }) => {
     await page.goto('./');
+    await otworzImport(page);
     await page
       .getByTestId('plik-importu')
       .setInputFiles({ ...plikSzablonu(), name: 'to-szablon.kartyrpg' });
@@ -409,6 +382,7 @@ test.describe('import plików', () => {
       };
     });
     await page.goto('./');
+    await otworzImport(page);
     const maly = { mimeType: 'application/zip', buffer: Buffer.from('x') };
     await page.getByTestId('plik-importu').setInputFiles([
       { name: 'ogromny.kartyrpg', ...maly },
@@ -426,6 +400,7 @@ test.describe('import plików', () => {
     page,
   }) => {
     await page.goto('./');
+    await otworzImport(page);
     await page.getByTestId('plik-importu').setInputFiles(await plikSzablonuZZasobami());
     await expect(page).toHaveURL(/#\/projekt\//);
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
@@ -442,21 +417,21 @@ test.describe('przełącznik w pasku', () => {
       await page.goto('./');
       await page.getByRole('button', { name: /Ustawienia/ }).click();
       const aktywny = page
-        .locator('.menu-ustawien-panel')
+        .locator('.ui2-ustawienia-panel')
         .getByRole('button', { name: 'PL', exact: true });
       await expect(aktywny).toHaveAttribute('aria-pressed', 'true');
       await aktywny.hover();
       const kolory = await page.evaluate(() => {
         const korzen = getComputedStyle(document.documentElement);
         const przycisk = document.querySelector<HTMLElement>(
-          ".menu-ustawien-seg button[aria-pressed='true']",
+          ".ui2-ustawienia-panel button.ui2-segment[aria-pressed='true']",
         )!;
         const stan = getComputedStyle(przycisk);
         return {
           tlo: stan.backgroundColor,
           tekst: stan.color,
-          oczekiwaneTlo: korzen.getPropertyValue('--akcent').trim(),
-          oczekiwanyTekst: korzen.getPropertyValue('--akcent-tekst').trim(),
+          oczekiwaneTlo: korzen.getPropertyValue('--tekst').trim(),
+          oczekiwanyTekst: korzen.getPropertyValue('--tlo').trim(),
         };
       });
       const rgb = (hex: string) => {

@@ -59,11 +59,11 @@ for (const motyw of ['light', 'dark'] as const) {
     await page.setViewportSize({ width: 1366, height: 900 });
     await page.emulateMedia({ colorScheme: motyw });
 
-    // 1) Start: krok 1 dla obu ścieżek.
+    // 1) Start: przyciski tworzenia UI2 R2 (+ NOWE KARTY i Mausritter A4).
     await page.goto('./#/');
     await page.mouse.move(0, 0);
-    const startWlasne = page.getByRole('link', { name: /Stwórz własne karty/ });
-    const startGra = page.getByRole('link', { name: /Stwórz karty do Mausrittera/ });
+    const startWlasne = page.getByRole('link', { name: /\+ NOWE KARTY/ });
+    const startGra = page.getByRole('link', { name: /Mausritter A4/ });
     const kWlasne1 = await kolory(startWlasne);
     const kGra1 = await kolory(startGra);
     if (motyw === 'dark') {
@@ -71,7 +71,7 @@ for (const motyw of ['light', 'dark'] as const) {
       expect(kontrastRgb(kGra1.tekst, kGra1.tlo)).toBeGreaterThanOrEqual(4.5);
     }
 
-    // 2) Mausritter: krok 2 ma ten sam kolor co krok 1 (bez rozjaśnień) + filtrowanie środka.
+    // 2) Mausritter: krok 2 ma jednolite kolory i filtrowanie środka.
     await startGra.click();
     await page.mouse.move(0, 0);
     const menuGry = page.getByRole('navigation', { name: 'Od czego zacząć' });
@@ -79,7 +79,6 @@ for (const motyw of ['light', 'dark'] as const) {
     const btnUklady = menuGry.getByRole('button', { name: /^Zacznij od gotowego układu/ });
     const kGra2 = await kolory(btnPusta);
     expect(kGra2.tlo).toBe((await kolory(btnUklady)).tlo);
-    expect(kGra2.tlo).toBe(kGra1.tlo);
     if (motyw === 'dark') expect(kontrastRgb(kGra2.tekst, kGra2.tlo)).toBeGreaterThanOrEqual(4.5);
 
     await expect(page.locator('[data-grupa="pusta"]')).toBeVisible();
@@ -88,12 +87,11 @@ for (const motyw of ['light', 'dark'] as const) {
     await expect(page.locator('[data-grupa="uklady"]')).toBeVisible();
     await expect(page.locator('[data-grupa="pusta"]')).toHaveCount(0);
 
-    // 3) Własne karty: krok 2 ma ten sam kolor co krok 1 i stałą szerokość kafelków menu.
+    // 3) Własne karty: stała szerokość kafelków menu i kontrast.
     await page.goto('./#/wlasne');
     await page.mouse.move(0, 0);
     const btnImport = page.getByRole('button', { name: /Importuj szablon/ });
     const kWlasne2 = await kolory(btnImport);
-    expect(kWlasne2.tlo).toBe(kWlasne1.tlo);
     if (motyw === 'dark') {
       expect(kontrastRgb(kWlasne2.tekst, kWlasne2.tlo)).toBeGreaterThanOrEqual(4.5);
     }

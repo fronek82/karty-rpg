@@ -22,12 +22,10 @@ test.describe('język domyślny według przeglądarki (D8)', () => {
     test('angielski interfejs na starcie, lang i przyciski paska', async ({ page }) => {
       await page.goto('./');
       expect(await jezykDokumentu(page)).toBe('en');
-      await expect(
-        page.getByRole('heading', { level: 1, name: 'Game Cards – Design and Print' }),
-      ).toBeVisible();
-      await expect(page.getByRole('link', { name: /Create cards for Mausritter/ })).toBeVisible();
-      await expect(page.getByRole('link', { name: /Create your own cards/ })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'My projects' })).toBeVisible();
+      await expect(page.locator('.riso-tytul')).toHaveText('RPG CARDS');
+      await expect(page.getByRole('link', { name: /Mausritter A4/ })).toBeVisible();
+      await expect(page.getByRole('link', { name: /\+ NEW CARDS/ })).toBeVisible();
+      await expect(page.getByRole('heading', { name: /My projects/ })).toBeVisible();
       await expect(page.getByText('You have no projects yet.')).toBeVisible();
       const panel = await otworzUstawieniaAplikacji(page);
       await expect(panel.getByRole('link', { name: /^Guide/ })).toHaveAttribute(
@@ -56,9 +54,7 @@ test.describe('język domyślny według przeglądarki (D8)', () => {
     test('polski interfejs na starcie', async ({ page }) => {
       await page.goto('./');
       expect(await jezykDokumentu(page)).toBe('pl');
-      await expect(
-        page.getByRole('heading', { level: 1, name: 'Karty do gier – zaprojektuj i wydrukuj' }),
-      ).toBeVisible();
+      await expect(page.locator('.riso-tytul')).toHaveText('KARTY RPG');
       const panel = await otworzUstawieniaAplikacji(page);
       const grupa = panel.getByRole('group', { name: 'Język' });
       await expect(grupa.getByRole('button', { name: 'PL' })).toHaveAttribute(
@@ -101,7 +97,7 @@ test('przełączenie PL → EN → PL bez przeładowania, język zapamiętany po
   );
   await wybierz(page, 'EN');
   await expect(page.getByRole('heading', { name: 'My projects' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Create cards for Mausritter/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Mausritter A4/ })).toBeVisible();
   expect(await jezykDokumentu(page)).toBe('en');
   expect(await zapamietany(page)).toBe('en');
   expect(
@@ -172,7 +168,7 @@ test.describe('edytor kartki po angielsku', () => {
     page,
   }) => {
     await page.goto('./#/');
-    await page.getByRole('link', { name: /Create cards for Mausritter/ }).click();
+    await page.getByRole('link', { name: /Mausritter A4/ }).click();
     await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('link', { name: /^Print cards/ })).toBeVisible();
@@ -202,7 +198,7 @@ test.describe('edytor kartki po angielsku', () => {
     page,
   }) => {
     await page.goto('./#/');
-    await page.getByRole('link', { name: /Create cards for Mausritter/ }).click();
+    await page.getByRole('link', { name: /Mausritter A4/ }).click();
     await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     await page
@@ -243,7 +239,7 @@ test.describe('edytor kartki po angielsku', () => {
 
   test('opcje druku po angielsku: tytuł, papier, kalibracja', async ({ page }) => {
     await page.goto('./#/');
-    await page.getByRole('link', { name: /Create cards for Mausritter/ }).click();
+    await page.getByRole('link', { name: /Mausritter A4/ }).click();
     await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     const opcje = await otworzDruk(page, true);
@@ -304,7 +300,7 @@ test.describe('zrzuty UI-2', () => {
       .getByRole('button', { name: 'Dark theme' })
       .click();
     await page.keyboard.press('Escape');
-    await page.getByRole('link', { name: /Create cards for Mausritter/ }).click();
+    await page.getByRole('link', { name: /Mausritter A4/ }).click();
     await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     await page
