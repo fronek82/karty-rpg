@@ -1,168 +1,244 @@
 /*
- * Tokeny kolorów interfejsu – jedno źródło wartości dla motywu jasnego i ciemnego.
- * Motyw ustawia atrybut data-theme na <html> (skrypt w index.html i src/ui/motyw.ts).
- * Kontrasty tych par sprawdza test src/ui/tokeny.test.ts, który czyta ten plik.
- * Kolory kart na podglądzie pochodzą z szablonu i nie zależą od motywu.
+ * Tokeny kolorów i czcionek interfejsu „drukarnia riso” (UI2) – jedno źródło wartości
+ * dla motywu jasnego i ciemnego. Motyw ustawia atrybut data-theme na <html>
+ * (skrypt w index.html i src/ui/motyw.ts). Kompletność i kontrasty sprawdza
+ * src/ui/tokeny.test.ts.
  *
- * Tokeny „-papier” służą do nakładek rysowanych na białym papierze kartki i karty (zaznaczenie,
- * pole wstawiania, ostrzeżenie): papier jest biały w obu motywach, więc te kolory nie jadą za
- * motywem i mają kontrast >= 3:1 względem bieli. --papier-ozdobnika to kolor papieru, na którym
- * rysuje się podgląd ozdobnika (dane karty, nie motyw). --obramowanie-pola to obrys pól formularzy
- * (>= 3:1 względem pola i panelu); --obramowanie zostaje na linie podziału i obramowania ozdobne.
+ * Kolory kart na podglądzie pochodzą z szablonu i nie zależą od motywu.
+ * Tokeny „-papier” służą do nakładek rysowanych na białym papierze karty/arkusza.
  */
+
+/* Czcionki interfejsu UI2 (lokalne pliki OFL w public/czcionki/, wpisane do LICENCJE.md). */
+@font-face {
+  font-family: 'Archivo Black';
+  src: url('/czcionki/ArchivoBlack-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Archivo';
+  src: url('/czcionki/Archivo-Variable.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/czcionki/IBMPlexMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/czcionki/IBMPlexMono-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root,
 [data-theme='light'] {
   color-scheme: light;
-  --tlo: #ede4dc;
-  --tlo-panelu: #f6f0ea;
-  --pole: #fffaf5;
-  --tekst: #2b2a2e;
-  --tekst-przygaszony: #5c5560;
-  /* Napis na przycisku wsparcia (tło #5F7FFF w stylu Buy Me a Coffee). */
+
+  /* Paleta główna „drukarnia riso” (sekcja 3.1 planu UI2) */
+  --tlo: #f3f0e8;
+  --tlo-pasek: #ede9e0;
+  --tlo-robocze: #dcd8ce;
+  --kropki-robocze: #c3beb2;
+  --powierzchnia: #ffffff;
+  --tekst: #111111;
+  --tekst-2: #5a5852;
+  --linia-2: #c9c4b8;
+  --akcent: #e8b4a8;
+  --akcent-jasny: #e8b4a8;
+  --na-akcencie: #111111;
+  --riso-roz: #d98c8c;
+  --riso-niebieski: #5d7fa3;
+  --riso-ochra: #e3c77a;
+  --riso-szalwia: #9db59a;
+  --zaznaczenie: #3f6a93;
+  --linia-pomocnicza: #1a9bb5;
+  --riso-mieszanie: multiply;
+
+  /* Mapowanie dla istniejących widoków (do czasu pełnej migracji w R2–R8) */
+  --tlo-panelu: var(--tlo-pasek);
+  --pole: var(--powierzchnia);
+  --tekst-przygaszony: var(--tekst-2);
   --tekst-wsparcia: #ffffff;
-  /* Przycisk wsparcia w barwach Buy Me a Coffee – te same w obu motywach. */
   --wsparcie-tlo: #5f7fff;
   --wsparcie-filizanka: #ffdd00;
   --wsparcie-obrys: #000000;
   --tlo-zaslonki: #000000;
-  --obramowanie: #d3c6ba;
-  --obramowanie-karty: #b4a0c8;
-  --pasek: #1b7fa8;
-  --pasek-tekst: #ffffff;
-  --akcent: #1b7fa8;
-  --akcent-tekst: #ffffff;
-  --przycisk: var(--akcent);
-  --przycisk-tekst: var(--akcent-tekst);
-  --link: #1f6c92;
-  --link-duzy: #2a7fa8;
-  --bordo: #7d2240;
+  --obramowanie: var(--linia-2);
+  --obramowanie-karty: var(--tekst);
+  --obramowanie-pola: var(--tekst);
+  --pasek: var(--tekst);
+  --pasek-tekst: var(--tlo);
+  --akcent-tekst: var(--na-akcencie);
+  --przycisk: var(--tekst);
+  --przycisk-tekst: var(--tlo);
+  --link: #3f6a93;
+  --link-duzy: #5d7fa3;
+  --bordo: #8e2c48;
   --bordo-tekst: #ffffff;
-  --wyroznienie: #7d2240;
-  --tytul: #7d2240;
-  --kolor-1: #e0876a;
-  --kolor-2: #e9a645;
-  --kolor-3: #5f9ea8;
-  --kolor-4: #356d8a;
-  --na-jasnym: #2b2a2e;
-  --zaznaczenie: #1b7fa8;
-  --zaznaczenie-tlo: #e3f0f6;
-  --zaznaczenie-karty: #2a6fd6;
-  --dobrze: #2f8f4e;
-  --dobrze-tlo: #e3f1e5;
-  --dobrze-tekst: #285a28;
+  --wyroznienie: #8e2c48;
+  --tytul: var(--tekst);
+  --kolor-1: var(--riso-roz);
+  --kolor-2: var(--riso-ochra);
+  --kolor-3: var(--riso-szalwia);
+  --kolor-4: var(--riso-niebieski);
+  --na-jasnym: #111111;
+  --zaznaczenie-tlo: #e3ebf2;
+  --zaznaczenie-karty: #3f6a93;
+  --dobrze: #2f7a49;
+  --dobrze-tlo: #e2efe4;
+  --dobrze-tekst: #215734;
   --zle: #b03226;
-  --tlo-podpowiedzi: #1f2430;
-  --tekst-podpowiedzi: #ffffff;
-  --przezroczyste-tlo: #e6e0d8;
-  --szachownica-1: #e4e0da;
+  --tlo-podpowiedzi: #111111;
+  --tekst-podpowiedzi: #f3f0e8;
+  --przezroczyste-tlo: #e6e2d8;
+  --szachownica-1: #e4e0d6;
   --szachownica-2: #ffffff;
   --papier: #ffffff;
   --zle-jasny: #ff9a9a;
-  --link-na-ciemnym: #8fb8ff;
-  --prowadnica: #d6247f;
-  --obramowanie-pola: #857970;
-  --niebezpieczny-tlo: var(--tlo-panelu);
+  --link-na-ciemnym: #8fb0d1;
+  --prowadnica: #1a9bb5;
+  --niebezpieczny-tlo: var(--powierzchnia);
   --niebezpieczny-tekst: var(--bordo);
   --niebezpieczny-obrys: var(--bordo);
   --papier-ozdobnika: #f7f0dc;
-  --zaznaczenie-papier: #1b7fa8;
-  --dobrze-papier: #2f8f4e;
+  --zaznaczenie-papier: #3f6a93;
+  --dobrze-papier: #2f7a49;
   --zle-papier: #b03226;
-  --przygaszony-papier: #6b6b6b;
-  /* Świadomy wybór użytkownika dla motywu jasnego: biały napis na pastelowych przyciskach kroków i Awers/Rewers. */
-  --krok-tekst: #ffffff;
-  --krok-gra-1: #669ca6;
-  --krok-gra-2: #669ca6;
-  --krok-wlasne-1: #df8973;
-  --krok-wlasne-2: #df8973;
-  --krok-wlasne-3: #df8973;
-  --krok-wlasne-4: #df8973;
-  --strona-awers: #9ac183;
-  --strona-rewers: #eaa448;
-  --strona-tekst: #ffffff;
-  --cien: 0 2px 10px rgb(0 0 0 / 18%);
-  --cien-paska: 0 1px 3px rgb(0 0 0 / 12%);
+  --przygaszony-papier: #5a5852;
+  --krok-tekst: #111111;
+  --krok-gra-1: var(--riso-szalwia);
+  --krok-gra-2: var(--riso-szalwia);
+  --krok-wlasne-1: var(--akcent);
+  --krok-wlasne-2: var(--akcent);
+  --krok-wlasne-3: var(--akcent);
+  --krok-wlasne-4: var(--akcent);
+  --strona-awers: var(--riso-szalwia);
+  --strona-rewers: var(--riso-ochra);
+  --strona-tekst: #111111;
+  --cien: 4px 4px 0 rgb(17 17 17 / 16%);
+  --cien-paska: 0 1px 0 rgb(17 17 17 / 12%);
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
-  --tlo: #1e1a1d;
-  --tlo-panelu: #2a2528;
-  --tlo-zaslonki: #000000;
-  --pole: #1f1b1e;
-  --tekst: #ece4dc;
-  --tekst-przygaszony: #b9aea8;
+
+  /* Paleta główna „drukarnia riso” – motyw ciemny (sekcja 3.1 planu UI2) */
+  --tlo: #17171a;
+  --tlo-pasek: #1e1e22;
+  --tlo-robocze: #2a2a2f;
+  --kropki-robocze: #3a3a40;
+  --powierzchnia: #202024;
+  --tekst: #e9e4d8;
+  --tekst-2: #a9a498;
+  --linia-2: #3a3a40;
+  --akcent: #b8675a;
+  --akcent-jasny: #e8b4a8;
+  --na-akcencie: #17171a;
+  --riso-roz: #b8675a;
+  --riso-niebieski: #3f6a93;
+  --riso-ochra: #b8973f;
+  --riso-szalwia: #5f8a5c;
+  --zaznaczenie: #8fb0d1;
+  --linia-pomocnicza: #4fc3db;
+  --riso-mieszanie: screen;
+
+  /* Mapowanie dla istniejących widoków (do czasu pełnej migracji w R2–R8) */
+  --tlo-panelu: var(--tlo-pasek);
+  --pole: var(--powierzchnia);
+  --tekst-przygaszony: var(--tekst-2);
   --tekst-wsparcia: #000000;
-  /* Przycisk wsparcia w barwach Buy Me a Coffee – te same w obu motywach. */
   --wsparcie-tlo: #5f7fff;
   --wsparcie-filizanka: #ffdd00;
   --wsparcie-obrys: #000000;
-  --obramowanie: #4a4248;
-  --obramowanie-karty: #b4a0c8;
-  --pasek: #154b63;
-  --pasek-tekst: #ffffff;
-  --akcent: #1f6e94;
-  --akcent-tekst: #ffffff;
-  --przycisk: var(--akcent);
-  --przycisk-tekst: var(--akcent-tekst);
-  --link: #6fb8da;
-  --link-duzy: #6fb8da;
+  --tlo-zaslonki: #000000;
+  --obramowanie: var(--linia-2);
+  --obramowanie-karty: var(--tekst);
+  --obramowanie-pola: var(--tekst);
+  --pasek: var(--tlo-pasek);
+  --pasek-tekst: var(--tekst);
+  --akcent-tekst: var(--na-akcencie);
+  --przycisk: var(--tekst);
+  --przycisk-tekst: var(--tlo);
+  --link: #8fb0d1;
+  --link-duzy: #8fb0d1;
   --bordo: #8e2c48;
-  --bordo-tekst: #ece4dc;
-  --wyroznienie: #e9a645;
-  --tytul: #e9a645;
-  --kolor-1: #e0876a;
-  --kolor-2: #e9a645;
-  --kolor-3: #5f9ea8;
-  --kolor-4: #356d8a;
-  --na-jasnym: #2b2a2e;
-  --zaznaczenie: #5ab0d8;
-  --zaznaczenie-tlo: #22404f;
-  --zaznaczenie-karty: #2a6fd6;
-  --dobrze: #5cc47e;
-  --dobrze-tlo: #213a28;
-  --dobrze-tekst: #a9dfb5;
+  --bordo-tekst: #e9e4d8;
+  --wyroznienie: #e3c77a;
+  --tytul: var(--tekst);
+  --kolor-1: var(--riso-roz);
+  --kolor-2: var(--riso-ochra);
+  --kolor-3: var(--riso-szalwia);
+  --kolor-4: var(--riso-niebieski);
+  --na-jasnym: #17171a;
+  --zaznaczenie-tlo: #243240;
+  --zaznaczenie-karty: #3f6a93;
+  --dobrze: #68b87d;
+  --dobrze-tlo: #203326;
+  --dobrze-tekst: #b4e0bf;
   --zle: #ee7a6c;
-  --tlo-podpowiedzi: #0f1218;
-  --tekst-podpowiedzi: #ffffff;
-  --przezroczyste-tlo: #3a3438;
-  --szachownica-1: #3a3438;
-  --szachownica-2: #4a4248;
+  --tlo-podpowiedzi: #e9e4d8;
+  --tekst-podpowiedzi: #17171a;
+  --przezroczyste-tlo: #2c2c32;
+  --szachownica-1: #2a2a2f;
+  --szachownica-2: #3a3a40;
   --papier: #ffffff;
   --zle-jasny: #ee7a6c;
-  --link-na-ciemnym: #8fb8ff;
-  --prowadnica: #d6247f;
-  --obramowanie-pola: #8a7f85;
+  --link-na-ciemnym: #8fb0d1;
+  --prowadnica: #1a9bb5;
   --niebezpieczny-tlo: var(--bordo);
   --niebezpieczny-tekst: var(--bordo-tekst);
   --niebezpieczny-obrys: var(--bordo);
   --papier-ozdobnika: #f7f0dc;
-  --zaznaczenie-papier: #1f6e94;
-  --dobrze-papier: #2f8f4e;
+  --zaznaczenie-papier: #3f6a93;
+  --dobrze-papier: #2f7a49;
   --zle-papier: #b03226;
-  --przygaszony-papier: #6b6b6b;
-  --krok-tekst: #1e202c;
-  --krok-gra-1: #1eabb8;
-  --krok-gra-2: #1eabb8;
-  --krok-wlasne-1: #dc9571;
-  --krok-wlasne-2: #dc9571;
-  --krok-wlasne-3: #dc9571;
-  --krok-wlasne-4: #dc9571;
-  --strona-awers: #9ac183;
-  --strona-rewers: #d3b989;
-  --strona-tekst: #1e202c;
-  --cien: 0 2px 10px rgb(0 0 0 / 45%);
-  --cien-paska: 0 1px 3px rgb(0 0 0 / 40%);
+  --przygaszony-papier: #5a5852;
+  --krok-tekst: #17171a;
+  --krok-gra-1: var(--riso-szalwia);
+  --krok-gra-2: var(--riso-szalwia);
+  --krok-wlasne-1: var(--akcent-jasny);
+  --krok-wlasne-2: var(--akcent-jasny);
+  --krok-wlasne-3: var(--akcent-jasny);
+  --krok-wlasne-4: var(--akcent-jasny);
+  --strona-awers: var(--riso-szalwia);
+  --strona-rewers: var(--riso-ochra);
+  --strona-tekst: #17171a;
+  --cien: 4px 4px 0 rgb(0 0 0 / 45%);
+  --cien-paska: 0 1px 0 rgb(0 0 0 / 40%);
 }
 
 /*
- * Wymiary pasków przycisków (pasek górny edytorów) – wspólne dla obu motywów.
- * Przyciski, pole nazwy i przełączniki paska mają tę samą wysokość; odstęp w grupie jest mniejszy
- * niż między grupami (nazwa i zapis | historia | plik i narzędzia | nawigacja | ustawienia).
+ * Typografia i stałe wymiary układu UI2 (wspólne dla obu motywów).
+ * Wysokości pasków liczone razem z dolną/górną linią (box-sizing: border-box),
+ * aby poziome linie sąsiednich kolumn zawsze leżały na tej samej wysokości (sekcja 3.3).
  */
 :root {
+  --czcionka-naglowek: 'Archivo Black', sans-serif;
+  --czcionka-tekst: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --czcionka-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --ui2-naglowek-h: 56px;
+  --ui2-pasek-h: 42px;
+  --ui2-stan-h: 44px;
+  --ui2-lewy-zwiniety: 60px;
+  --ui2-lewy-rozwiniety: 224px;
+  --ui2-prawy-pasek: 52px;
+  --ui2-prawy-panel: 300px;
+
+  /* Wymiary dotychczasowych pasków (do czasu pełnej migracji w R4–R8) */
   --pasek-wysokosc: 2.1rem;
-  --pasek-promien: 0.4rem;
+  --pasek-promien: 0px;
   --pasek-odstep: 0.6rem;
   --pasek-odstep-grupy: 0.9rem;
 }
