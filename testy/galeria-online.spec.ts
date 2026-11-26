@@ -15,7 +15,7 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
 }) => {
   // Startujemy ze strony głównej, żeby wczytać moduł listy projektów przed testem offline.
   await page.goto('./#/');
-  await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
+  await page.getByRole('link', { name: /\+ NOWE KARTY/ }).click();
 
   const sekcja = page.locator('.galeria-online');
   await expect(
@@ -60,7 +60,7 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
   await page.getByRole('link', { name: 'Karty', exact: true }).click();
   await expect(page.locator('.kafelek-projektu').first()).toContainText('Karta przedmiotu');
-  await page.getByRole('tab', { name: 'Moje szablony' }).click();
+  await page.getByRole('tab', { name: /^Szablony/ }).click();
   await expect(
     page.locator('.kafelek-projektu').filter({ hasText: 'Rewers przedmiotu' }),
   ).toHaveCount(1);

@@ -137,6 +137,7 @@ describe('parytet słowników pl ↔ en', () => {
       'start.wsparciePrzycisk',
       'start.import',
       'ui2.mausritterEtykieta',
+      'start.mausritterTytul',
     ]);
   });
 });

@@ -286,8 +286,7 @@ test('Edytor szablonu: zapis ręczny (Ctrl+S), okno przy wyjściu, eksport i imp
 
   // Ten sam plik awersu w Edytorze rewersu wczytuje się jako rewers.
   await zapisz.click();
-  await page.goto('./');
-  await page.locator('.start-menu a.pasek-rewers').click();
+  await page.goto('./#/wlasne/nowy/rewers');
   await page.getByRole('button', { name: /Dalej: edytor tyłu/ }).click();
   await expect(page.getByLabel('Nazwa tyłu')).toBeVisible({ timeout: 15000 });
   await page.locator('.pasek-gorny input[type=file]').setInputFiles(plik);

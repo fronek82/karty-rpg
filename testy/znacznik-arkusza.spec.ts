@@ -54,11 +54,14 @@ async function otworz(page: Page, pion: boolean) {
     'proba-znacznika-arkusza',
   );
   await page.goto('./#/');
+  await page.getByRole('button', { name: 'Kopia i import' }).click();
   await page.getByTestId('plik-importu').setInputFiles({
     name: 'arkusz-broni.kartyrpg',
     mimeType: 'application/zip',
     buffer: Buffer.from(eksportujProjekt({ ...projekt, pakiet: 'mausritter' }, zasoby)),
   });
+  await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+  await page.keyboard.press('Escape');
   await page.getByRole('link', { name: NAZWA, exact: true }).first().click();
   await expect(karta(page, 'Patyk')).toBeVisible();
   await expect(karta(page, 'Duża karta')).toBeVisible();

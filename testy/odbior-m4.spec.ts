@@ -323,11 +323,14 @@ for (const en of [false, true]) {
         role: { ...bazowy.role, tytul: 'Almendra', tresc: 'Almendra' },
       };
 
+      await page.getByRole('button', { name: /^(Kopia i import|Backup & import)$/ }).click();
       await page.getByTestId('plik-importu').setInputFiles({
         name: 'atlas-m4.kartyrpg',
         mimeType: 'application/zip',
         buffer: Buffer.from(eksportujProjekt(projekt, zasoby)),
       });
+      await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+      await page.keyboard.press('Escape');
       await page.getByRole('link', { name: nazwa, exact: true }).first().click();
 
       await expect(page.locator('html')).toHaveAttribute('lang', jezyk);

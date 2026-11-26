@@ -12,7 +12,7 @@ test('Biblioteki: obrazy, czcionki (próbka kroju) i ozdobniki – dodawanie, sz
   test.setTimeout(60_000);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('./#/');
-  await page.getByRole('link', { name: 'Biblioteki', exact: true }).click();
+  await page.getByRole('link', { name: 'Biblioteka', exact: true }).click();
   await expect(page).toHaveURL(/#\/biblioteki$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Biblioteki' })).toBeVisible();
   const zakladki = page.getByRole('navigation', { name: 'Rodzaje bibliotek' });

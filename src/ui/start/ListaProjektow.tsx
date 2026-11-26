@@ -355,88 +355,106 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
       return nowe;
     });
 
-  const poleWyboru = (klucz: string, nazwa: string) =>
-    zaznaczanie && (
-      <label className="wybor-kafelka">
-        <input
-          type="checkbox"
-          checked={zaznaczone.has(klucz)}
-          onChange={() => przelaczZaznaczenie(klucz)}
-          aria-label={t('lista.zaznaczEtykieta', { nazwa })}
-        />
-      </label>
-    );
-
   const klasaKafelka = (klucz: string) =>
-    zaznaczanie && zaznaczone.has(klucz) ? 'kafelek-projektu zaznaczony' : 'kafelek-projektu';
+    zaznaczanie && zaznaczone.has(klucz)
+      ? 'riso-kafelek kafelek-projektu zaznaczony'
+      : 'riso-kafelek kafelek-projektu';
 
   const brakWynikow = fraza.trim() !== '' && (
     <p className="podpis">{t('lista.brakWynikow', { fraza: fraza.trim() })}</p>
   );
 
+  const liczbaGlowna = String(
+    zakladka === 'projekty' ? (widoczneProjekty?.length ?? 0) : widoczneSzablony.length,
+  ).padStart(2, '0');
+
+  const etykietaFormatu = (p: PodsumowanieProjektu): string => {
+    if (p.pakiet === 'mausritter') return t('ui2.mausritterEtykieta');
+    if (p.typStrony === 'rewers') return t('start.formatRewers');
+    if (p.wymiary) {
+      const { szer, wys } = p.wymiary;
+      const a = Math.min(szer, wys);
+      const b = Math.max(szer, wys);
+      if (a === 63 && b === 88) return 'POKER';
+      if (a === 44 && b === 67) return 'MINI EURO';
+      if (a === 41 && b === 63) return 'MINI US';
+      if (a === 70 && b === 120) return 'TAROT';
+    }
+    return t('start.formatWlasny');
+  };
+
   return (
     <section className="lista-projektow" aria-labelledby="moje-projekty">
-      <div className="zakladki-listy" role="tablist" aria-label={t('start.zakladkiListy')}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={zakladka === 'projekty'}
-          className={zakladka === 'projekty' ? 'zakladka aktywna' : 'zakladka'}
-          onClick={() => ustawZakladke('projekty')}
-        >
-          {t('start.mojeProjekty')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={zakladka === 'szablony'}
-          className={zakladka === 'szablony' ? 'zakladka aktywna' : 'zakladka'}
-          onClick={() => ustawZakladke('szablony')}
-        >
-          {t('start.mojeSzablony')}
-        </button>
+      <div className="riso-pasek-listy">
+        <div className="riso-zakladki" role="tablist" aria-label={t('start.zakladkiListy')}>
+          <h1 id="moje-projekty" ref={naglowek} tabIndex={-1} className="riso-h1">
+            {zakladka === 'projekty' ? t('start.mojeProjekty') : t('start.mojeSzablony')}{' '}
+            <span className="riso-licznik">{liczbaGlowna}</span>
+          </h1>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={zakladka === 'projekty'}
+            className="riso-link-zakladka"
+            onClick={() => ustawZakladke('projekty')}
+          >
+            {t('start.mojeProjekty')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={zakladka === 'szablony'}
+            className="riso-link-zakladka"
+            onClick={() => ustawZakladke('szablony')}
+          >
+            {t('start.szablonyLink', { n: pozycje.length })}
+          </button>
+        </div>
+
+        <div className="riso-narzedzia-prawa">
+          <label className="riso-szukaj">
+            <span className="riso-szukaj-etykieta">{t('start.szukajEtykieta')}</span>
+            <input
+              type="search"
+              value={fraza}
+              onChange={(e) => ustawFraze(e.target.value)}
+              aria-label={
+                zakladka === 'projekty' ? t('lista.szukajProjektow') : t('lista.szukajSzablonow')
+              }
+            />
+          </label>
+          <label className="riso-sortuj">
+            <span>{t('lista.sortuj')}</span>
+            <select
+              value={sortowanie}
+              onChange={(e) => ustawSortowanie(e.target.value as Sortowanie)}
+            >
+              {SORTOWANIA.map((s) => (
+                <option key={s} value={s}>
+                  {t(`lista.sort.${s}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {!zaznaczanie && (
+            <button
+              type="button"
+              className="riso-przycisk-maly"
+              disabled={trwa || celeWidoczne.length === 0}
+              onClick={() => ustawZaznaczanie(true)}
+            >
+              {t('lista.zaznacz')}
+            </button>
+          )}
+        </div>
       </div>
-      <div className="naglowek-sekcji">
-        <h2 id="moje-projekty" ref={naglowek} tabIndex={-1}>
-          {zakladka === 'projekty' ? t('start.mojeProjekty') : t('start.mojeSzablony')}
-        </h2>
+
+      {(trwa || status) && (
         <p role="status" aria-live="polite" className="status">
           {trwa ? t('projekty.trwa') : status}
         </p>
-      </div>
-      <div className="narzedzia-listy">
-        <input
-          type="search"
-          value={fraza}
-          onChange={(e) => ustawFraze(e.target.value)}
-          placeholder={t('lista.szukaj')}
-          aria-label={
-            zakladka === 'projekty' ? t('lista.szukajProjektow') : t('lista.szukajSzablonow')
-          }
-        />
-        <label>
-          {t('lista.sortuj')}
-          <select
-            value={sortowanie}
-            onChange={(e) => ustawSortowanie(e.target.value as Sortowanie)}
-          >
-            {SORTOWANIA.map((s) => (
-              <option key={s} value={s}>
-                {t(`lista.sort.${s}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-        {!zaznaczanie && (
-          <button
-            type="button"
-            disabled={trwa || celeWidoczne.length === 0}
-            onClick={() => ustawZaznaczanie(true)}
-          >
-            {t('lista.zaznacz')}
-          </button>
-        )}
-      </div>
+      )}
+
       {zaznaczanie && (
         <div className="pasek-zaznaczenia" role="group" aria-label={t('lista.zaznaczanie')}>
           <label>
@@ -468,6 +486,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           </button>
         </div>
       )}
+
       {zakladka === 'szablony' && (
         <div className="filtr-szablonow" role="group" aria-label={t('start.mojeSzablony')}>
           {(['wszystkie', 'awers', 'rewers'] as const).map((f) => (
@@ -487,11 +506,13 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
           ))}
         </div>
       )}
+
       {blad && (
         <p role="alert" className="uwaga">
           {blad}
         </p>
       )}
+
       {widoczneProjekty === undefined ? (
         <p>{t('projekty.wczytywanie')}</p>
       ) : zakladka === 'projekty' ? (
@@ -502,7 +523,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
             </p>
           )
         ) : (
-          <ul className="kafelki-projektow">
+          <ul className="riso-siatka kafelki-projektow">
             {widoczneProjekty.map((p) => {
               const czyWlasny = !p.pakiet || p.pakiet === 'wlasne';
               const czyRewersowy = p.typStrony === 'rewers';
@@ -516,56 +537,75 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                 ? (miniaturyUrl.get(kluczMiniaturyRewersu(p.id, p.aktywnyRewersId)) ??
                   (czyRewersowy ? miniaturyUrl.get(p.id) : undefined))
                 : undefined;
-              const para = Boolean(urlAwersu && urlRewersu);
-              const pojedynczaKarta = Boolean(
-                !para && ((czyWlasny && p.aktywnySzablonId && urlAwersu) || urlRewersu),
-              );
+              const urlOkladki = urlAwersu ?? urlRewersu;
               const href = `#/projekt/${encodeURIComponent(p.id)}`;
               return (
                 <li key={p.id} className={klasaKafelka(p.id)}>
+                  {zaznaczanie && (
+                    <label className="riso-wybor-kafelka">
+                      <input
+                        type="checkbox"
+                        checked={zaznaczone.has(p.id)}
+                        onChange={() => przelaczZaznaczenie(p.id)}
+                        aria-label={t('lista.zaznaczEtykieta', { nazwa: p.nazwa })}
+                      />
+                    </label>
+                  )}
                   <a
                     href={href}
-                    className={
-                      para
-                        ? 'miniatura miniatura-para'
-                        : pojedynczaKarta
-                          ? 'miniatura miniatura-rewersu'
-                          : 'miniatura'
-                    }
+                    className="riso-podglad miniatura"
                     aria-hidden="true"
                     tabIndex={-1}
                   >
-                    {para ? (
-                      <>
-                        <img alt="" src={urlAwersu} />
-                        <img alt="" src={urlRewersu} />
-                      </>
-                    ) : urlAwersu || urlRewersu ? (
-                      <img alt="" src={urlAwersu ?? urlRewersu} />
-                    ) : (
-                      <span className="bez-miniatury">🂠</span>
-                    )}
-                  </a>
-                  {poleWyboru(p.id, p.nazwa)}
-                  <div className="opis-projektu">
-                    <div className="naglowek-kafelka-projektu">
-                      <a href={href} className="nazwa">
-                        {p.nazwa}
-                      </a>
+                    <span className="riso-rog riso-rog-lg" />
+                    <span className="riso-rog riso-rog-pg" />
+                    <span className="riso-rog riso-rog-ld" />
+                    <span className="riso-rog riso-rog-pd" />
+                    <div className="riso-karta-okladka">
+                      <div className="riso-karta-cien" />
+                      {urlOkladki ? (
+                        <img alt="" src={urlOkladki} />
+                      ) : (
+                        <div className="riso-karta-zastepcza">✦</div>
+                      )}
                     </div>
-                    <span className="podpis">
-                      {t('start.podsumowanie', {
-                        strony: p.liczbaStron,
-                        karty: p.liczbaKart,
-                      })}{' '}
-                      · {t('projekty.zmieniono', { data: formatujDate(p.zmieniono) })}
+                  </a>
+
+                  <div className="riso-kafelek-meta-gora">
+                    <span className="riso-kafelek-format-grupa">
+                      <span>{etykietaFormatu(p)}</span>
+                      {p.wymiary && (
+                        <span className="riso-wymiar-badge">
+                          {p.wymiary.szer}×{p.wymiary.wys}
+                        </span>
+                      )}
                     </span>
-                    <span className="akcje">
-                      <a className="przycisk glowny" href={href}>
+                    <span>{formatujDate(p.zmieniono)}</span>
+                  </div>
+
+                  <h3 className="riso-kafelek-tytul naglowek-kafelka-projektu">
+                    <a href={href} className="nazwa">
+                      {p.nazwa}
+                    </a>
+                  </h3>
+
+                  <div className="riso-kafelek-liczniki">
+                    {t('start.podsumowanie', { strony: p.liczbaStron, karty: p.liczbaKart })}
+                  </div>
+
+                  <div className="riso-kafelek-akcje">
+                    <div className="riso-kafelek-glowne">
+                      <a className="riso-btn-otworz" href={href}>
                         {t('start.otworz')}
                       </a>
+                      <a className="riso-btn-drukuj" href={href}>
+                        {t('start.drukuj')}
+                      </a>
+                    </div>
+                    <div className="riso-kafelek-drugie">
                       <button
                         type="button"
+                        className="riso-link-akcja"
                         disabled={trwa}
                         onClick={() => void eksportujProjektKafelka(p)}
                       >
@@ -573,13 +613,14 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                       </button>
                       <button
                         type="button"
+                        className="riso-link-akcja"
                         disabled={trwa}
                         aria-label={t('start.usunProjekt', { nazwa: p.nazwa })}
                         onClick={() => usun([{ rodzaj: 'projekt', projekt: p }])}
                       >
                         {t('projekty.usun')}
                       </button>
-                    </span>
+                    </div>
                   </div>
                 </li>
               );
@@ -589,48 +630,73 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
       ) : widoczneSzablony.length === 0 ? (
         brakWynikow || <p className="podpis">{t('projekty.brakSzablonow')}</p>
       ) : (
-        <ul className="kafelki-projektow">
+        <ul className="riso-siatka kafelki-projektow">
           {widoczneSzablony.map((poz) => {
             const urlMiniatury = miniaturyUrl.get(poz.klucz);
             const czyRewers = poz.rodzaj === 'rewers';
             return (
               <li key={poz.klucz} className={klasaKafelka(poz.klucz)}>
+                {zaznaczanie && (
+                  <label className="riso-wybor-kafelka">
+                    <input
+                      type="checkbox"
+                      checked={zaznaczone.has(poz.klucz)}
+                      onChange={() => przelaczZaznaczenie(poz.klucz)}
+                      aria-label={t('lista.zaznaczEtykieta', { nazwa: poz.nazwa })}
+                    />
+                  </label>
+                )}
                 <a
                   href={poz.href}
-                  className="miniatura miniatura-rewersu"
+                  className="riso-podglad miniatura"
                   aria-hidden="true"
                   tabIndex={-1}
                 >
-                  {urlMiniatury ? (
-                    <img alt="" src={urlMiniatury} />
-                  ) : (
-                    <span className="bez-miniatury">🂠</span>
-                  )}
-                </a>
-                {poleWyboru(poz.klucz, poz.nazwa)}
-                <div className="opis-projektu">
-                  <div className="naglowek-kafelka-projektu">
-                    <a href={poz.href} className="nazwa">
-                      {poz.nazwa}
-                    </a>
-                    <span className={`znacznik-strony-karty znacznik-strony-karty-${poz.rodzaj}`}>
-                      {czyRewers ? t('projekty.stronaRewers') : t('projekty.stronaAwers')}
-                    </span>
+                  <span className="riso-rog riso-rog-lg" />
+                  <span className="riso-rog riso-rog-pg" />
+                  <span className="riso-rog riso-rog-ld" />
+                  <span className="riso-rog riso-rog-pd" />
+                  <div className="riso-karta-okladka">
+                    <div className="riso-karta-cien" />
+                    {urlMiniatury ? (
+                      <img alt="" src={urlMiniatury} />
+                    ) : (
+                      <div className="riso-karta-zastepcza">◆</div>
+                    )}
                   </div>
-                  <span className="podpis">
-                    {poz.zmieniono
-                      ? t('projekty.zmieniono', { data: formatujDate(poz.zmieniono) })
-                      : ''}
+                </a>
+
+                <div className="riso-kafelek-meta-gora">
+                  <span className="riso-wymiar-badge">
+                    {czyRewers ? t('projekty.stronaRewers') : t('projekty.stronaAwers')}
                   </span>
-                  <span className="akcje">
-                    <a className="przycisk glowny" href={poz.href}>
+                  <span>{poz.zmieniono ? formatujDate(poz.zmieniono) : ''}</span>
+                </div>
+
+                <h3 className="riso-kafelek-tytul naglowek-kafelka-projektu">
+                  <a href={poz.href} className="nazwa">
+                    {poz.nazwa}
+                  </a>
+                </h3>
+
+                <div className="riso-kafelek-akcje">
+                  <div className="riso-kafelek-glowne">
+                    <a className="riso-btn-otworz" href={poz.href}>
                       {t('start.otworz')}
                     </a>
-                    <button type="button" disabled={trwa} onClick={() => void uzyjWProjekcie(poz)}>
-                      {t('projekty.uzyjWProjekcie')}
-                    </button>
                     <button
                       type="button"
+                      className="riso-btn-drukuj"
+                      disabled={trwa}
+                      onClick={() => void uzyjWProjekcie(poz)}
+                    >
+                      {t('projekty.uzyjWProjekcie')}
+                    </button>
+                  </div>
+                  <div className="riso-kafelek-drugie">
+                    <button
+                      type="button"
+                      className="riso-link-akcja"
                       disabled={trwa}
                       aria-label={t('projekty.duplikujEtykieta', { nazwa: poz.nazwa })}
                       onClick={() => void duplikuj(poz)}
@@ -639,6 +705,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                     </button>
                     <button
                       type="button"
+                      className="riso-link-akcja"
                       disabled={trwa}
                       onClick={() => void eksportujSzablonKafelka(poz)}
                     >
@@ -646,6 +713,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                     </button>
                     <button
                       type="button"
+                      className="riso-link-akcja"
                       disabled={trwa}
                       aria-label={
                         czyRewers
@@ -656,7 +724,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                     >
                       {t('projekty.usun')}
                     </button>
-                  </span>
+                  </div>
                 </div>
               </li>
             );

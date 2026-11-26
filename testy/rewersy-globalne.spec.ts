@@ -11,18 +11,14 @@ import { otworzDruk, panelDruku, slot, zapisano } from './pomoc';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-test('ekran startowy: lewe menu ma górny odstęp wyrównujący pierwszy przycisk do sekcji projektów', async ({
+test('ekran startowy: lewa kolumna z przyciskiem + NOWE KARTY wyrównana do sekcji projektów', async ({
   page,
 }) => {
   await page.goto('./#/');
-  await expect(page.getByRole('heading', { level: 2, name: 'Moje projekty' })).toBeVisible();
-  const kolumny = (await page.locator('.start-kolumny').boundingBox())!;
-  const pierwszyPrzycisk = (await page
-    .locator('.start-kolumny > .start-menu .pasek-menu')
-    .first()
-    .boundingBox())!;
-  // padding-top kontenera kolumn + padding-top menu + etykieta „NOWY PROJEKT” obniżają przycisk.
-  expect(pierwszyPrzycisk.y - kolumny.y).toBeGreaterThanOrEqual(60);
+  await expect(page.getByRole('heading', { level: 1, name: /Moje projekty/ })).toBeVisible();
+  const cialo = (await page.locator('.riso-cialo').boundingBox())!;
+  const pierwszyPrzycisk = (await page.getByTestId('start-nowe-karty').boundingBox())!;
+  expect(pierwszyPrzycisk.y - cialo.y).toBeGreaterThanOrEqual(24);
 });
 
 test('zaprojektowany rewers jest dostępny do wybrania przy dowolnej karcie w osobnym projekcie awersu', async ({

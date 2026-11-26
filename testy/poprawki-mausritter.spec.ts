@@ -213,11 +213,14 @@ test('zwolnione 2×1 jest pierwszym dostępnym wyborem dla zbroi zapisanej jako 
     'proba-rozmiarow',
   );
   await page.goto('./#/');
+  await page.getByRole('button', { name: 'Kopia i import' }).click();
   await page.getByTestId('plik-importu').setInputFiles({
     name: 'rozmiary.kartyrpg',
     mimeType: 'application/zip',
     buffer: Buffer.from(eksportujProjekt({ ...projekt, pakiet: 'mausritter' }, zasoby)),
   });
+  await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+  await page.keyboard.press('Escape');
   await page.getByRole('link', { name: 'Próba rozmiarów', exact: true }).first().click();
   const zbroja = karta(page, 'Stara zbroja');
   await zbroja.click();

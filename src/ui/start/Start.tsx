@@ -1,92 +1,59 @@
-import { useEffect, useState } from 'react';
-import { t } from '../../i18n';
-import { gry } from '../../pakiety/gry';
-import { nazwaGryDo } from '../nazwyPakietu';
+import { useEffect, useId, useRef, useState } from 'react';
+import { JEZYKI, t, ustawJezyk } from '../../i18n';
+import { useJezyk } from '../../i18n/react';
+import { useMotyw } from '../motyw';
+import { ADRES_BIBLIOTEK, adresInstrukcji } from '../NaglowekAplikacji';
+import { OknoModalne } from '../OknoModalne';
 import { ListaProjektow } from './ListaProjektow';
 import { PanelImportu } from './PanelImportu';
 import { ADRES_WSPARCIA } from './wsparcie';
+import './startRiso.css';
 
-/** Dekoracyjny emblemat trzech wachlarzowo ułożonych kart w banerze ekranu startowego. */
-function EmblematKart() {
-  return (
-    <svg
-      className="start-baner-ikona"
-      viewBox="0 0 84 58"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <g className="start-baner-karta-srodek" transform="translate(27, 3)">
-        <rect className="start-baner-karta-obrys" x="0" y="0" width="30" height="42" rx="4" />
-        <rect className="start-baner-karta-ramka" x="4" y="4" width="22" height="34" rx="2" />
-        <path className="start-baner-karta-znak" d="M15 13 L20.5 21 L15 29 L9.5 21 Z" />
-      </g>
-      <g className="start-baner-karta-lewa" transform="translate(9, 10) rotate(-17 15 21)">
-        <rect className="start-baner-karta-obrys" x="0" y="0" width="30" height="42" rx="4" />
-        <rect className="start-baner-karta-ramka" x="4" y="4" width="22" height="34" rx="2" />
-        <path
-          className="start-baner-karta-znak"
-          d="M15 13.5 L17.3 18.8 L22.5 21 L17.3 23.2 L15 28.5 L12.7 23.2 L7.5 21 L12.7 18.8 Z"
-        />
-      </g>
-      <g className="start-baner-karta-prawa" transform="translate(45, 10) rotate(17 15 21)">
-        <rect className="start-baner-karta-obrys" x="0" y="0" width="30" height="42" rx="4" />
-        <rect className="start-baner-karta-ramka" x="4" y="4" width="22" height="34" rx="2" />
-        <circle className="start-baner-karta-znak" cx="15" cy="21" r="5" />
-      </g>
-    </svg>
-  );
-}
-
-/** Ikona filiżanki na przycisku wsparcia (inline SVG, bez zasobów z zewnątrz). */
-function IkonaFilizanki() {
-  return (
-    <svg className="start-wsparcie-ikona" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path
-        className="start-wsparcie-kubek"
-        strokeWidth="1"
-        strokeLinejoin="round"
-        d="M4 8h13v6.5A5.5 5.5 0 0 1 11.5 20h-2A5.5 5.5 0 0 1 4 14.5Z"
-      />
-      <path strokeWidth="2" d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17" />
-      <path
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        d="M8 3.5c-.8 1 .8 1.6 0 2.8M11.5 3.5c-.8 1 .8 1.6 0 2.8"
-      />
-    </svg>
-  );
-}
-
-/** Podpis i przycisk wsparcia autora pod menu „Nowy szablon”; ukryty, gdy adres jest pusty. */
-function WsparcieAutora() {
-  if (!ADRES_WSPARCIA) return null;
-  return (
-    <div className="start-wsparcie">
-      <p className="start-wsparcie-podpis">{t('start.wsparciePodpis')}</p>
-      <a
-        href={ADRES_WSPARCIA}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="start-wsparcie-przycisk"
-        aria-label={t('start.wsparcieEtykieta')}
-      >
-        <IkonaFilizanki />
-        <span>{t('start.wsparciePrzycisk')}</span>
-      </a>
-    </div>
-  );
-}
+const wersja = import.meta.env.VITE_WERSJA ?? '0.1.0';
 
 /**
- * Ekran startowy: baner z emblematem kart i opis u góry, pod nimi trzy kolumny – menu „Nowy projekt”
- * i „Nowy szablon”, zakładki „Moje projekty” / „Moje szablony” oraz „Import”. Poniżej 900 px kolumny
- * układają się jedna pod drugą w tej kolejności.
+ * Strona główna „drukarnia riso” (UI2, etap R2, wzór: docs/makiety-ui2/Riso.dc.html):
+ * - nagłówek z logo riso, tytułem KARTY RPG oraz przyciskami Biblioteka, Ustawienia, Kopia i import;
+ * - lewa kolumna z dokładnie dwoma przyciskami tworzenia (+ NOWE KARTY i Mausritter A4) oraz wsparciem;
+ * - środek z siatką równych kafelków projektów / szablonów.
  */
-export function Start() {
+export function Start({
+  trescRef,
+}: {
+  trescRef?: React.RefObject<HTMLElement | null>;
+} = {}) {
   const [odswiezenie, ustawOdswiezenie] = useState(0);
-  // Plik upuszczony poza strefą importu nie może zostać otwarty przez przeglądarkę
-  // (zamiast aplikacji pokazałby się plik): blokujemy domyślną akcję, poza strefą kursor „zakaz”.
+  const [importOtwarty, ustawImportOtwarty] = useState(false);
+  const [ustawieniaOtwarte, ustawUstawieniaOtwarte] = useState(false);
+  const opakowanieUstawien = useRef<HTMLDivElement>(null);
+  const przyciskUstawien = useRef<HTMLButtonElement>(null);
+  const idPaneluUstawien = useId();
+  const { motyw, ustaw: ustawMotyw } = useMotyw();
+  const jezyk = useJezyk();
+
+  useEffect(() => {
+    if (!ustawieniaOtwarte) return;
+    const klikPoza = (e: MouseEvent) => {
+      if (opakowanieUstawien.current && !opakowanieUstawien.current.contains(e.target as Node)) {
+        ustawUstawieniaOtwarte(false);
+      }
+    };
+    const klawisz = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        ustawUstawieniaOtwarte(false);
+        przyciskUstawien.current?.focus();
+      }
+    };
+    document.addEventListener('mousedown', klikPoza);
+    window.addEventListener('keydown', klawisz);
+    return () => {
+      document.removeEventListener('mousedown', klikPoza);
+      window.removeEventListener('keydown', klawisz);
+    };
+  }, [ustawieniaOtwarte]);
+
+  // Plik upuszczony poza strefą importu nie może zostać otwarty przez przeglądarkę.
   useEffect(() => {
     const blokuj = (e: DragEvent) => {
       if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
@@ -104,49 +71,148 @@ export function Start() {
   }, []);
 
   return (
-    <div className="start">
-      <header className="start-naglowek">
-        <div className="start-baner">
-          <EmblematKart />
-          <h1 className="start-baner-tytul">
-            <span className="start-baner-glowny">{t('start.banerTytul')}</span>
-            <span className="ukryte"> – </span>
-            <span className="start-baner-podtytul">{t('start.banerPodtytul')}</span>
-          </h1>
+    <div className="riso-start">
+      <header className="riso-naglowek">
+        <div className="riso-marka">
+          <div className="riso-logo" aria-hidden="true">
+            <div className="riso-logo-a" />
+            <div className="riso-logo-b" />
+          </div>
+          <div>
+            <div className="riso-podtytul">{t('start.risoPodtytul', { wersja })}</div>
+            <div className="riso-tytul">{t('start.risoTytul')}</div>
+          </div>
         </div>
-        <p>{t('start.opis')}</p>
-      </header>
-      <div className="start-kolumny">
-        <nav className="start-menu" aria-labelledby="start-nowy start-nowy-szablon">
-          <p id="start-nowy" className="etykieta-sekcji">
-            {t('start.nowyProjekt')}
-          </p>
-          <a href="#/wlasne" className="pasek-menu pasek-wlasne-1">
-            <b>{t('start.stworzWlasne')}</b>
-            <span>{t('start.wlasneOpis')}</span>
+
+        <nav className="riso-nawigacja" aria-label={t('pasek.narzedzia')}>
+          <a href={ADRES_BIBLIOTEK} className="riso-przycisk-nav">
+            {t('start.biblioteka')}
           </a>
-          {gry.map((g) => (
-            <a key={g.id} href={`#/gra/${g.id}`} className="pasek-menu pasek-gra-1">
-              <b>{t('start.stworzDo', { gra: nazwaGryDo(g) })}</b>
-              <span>{t('start.gotoweOpis')}</span>
-            </a>
-          ))}
-          <p id="start-nowy-szablon" className="etykieta-sekcji etykieta-sekcji-odstep">
-            {t('start.nowySzablon')}
-          </p>
-          <a href="#/wlasne/nowy/awers" className="pasek-menu pasek-awers">
-            <b>{t('wlasne.awersNazwa')}</b>
-            <span>{t('wlasne.awersOpis')}</span>
-          </a>
-          <a href="#/wlasne/nowy/rewers" className="pasek-menu pasek-rewers">
-            <b>{t('wlasne.rewersNazwa')}</b>
-            <span>{t('wlasne.rewersOpis')}</span>
-          </a>
-          <WsparcieAutora />
+
+          <div className="ui2-ustawienia-opakowanie" ref={opakowanieUstawien}>
+            <button
+              ref={przyciskUstawien}
+              type="button"
+              className="riso-przycisk-nav"
+              aria-expanded={ustawieniaOtwarte}
+              aria-controls={idPaneluUstawien}
+              onClick={() => ustawUstawieniaOtwarte((v) => !v)}
+            >
+              {t('pasek.ustawienia')}
+            </button>
+            {ustawieniaOtwarte && (
+              <div
+                id={idPaneluUstawien}
+                className="ui2-ustawienia-panel panel-ustawien"
+                role="region"
+                aria-label={t('pasek.ustawienia')}
+              >
+                <div className="ui2-ustawienia-wiersz">
+                  <span className="ui2-ustawienia-etykieta">{t('motyw.grupa')}</span>
+                  <div className="ui2-segmenty" role="group" aria-label={t('motyw.grupa')}>
+                    <button
+                      type="button"
+                      className="ui2-segment"
+                      aria-label={t('motyw.jasny')}
+                      aria-pressed={motyw === 'light'}
+                      onClick={() => ustawMotyw('light')}
+                    >
+                      {t('motyw.jasnyKrotki')}
+                    </button>
+                    <button
+                      type="button"
+                      className="ui2-segment"
+                      aria-label={t('motyw.ciemny')}
+                      aria-pressed={motyw === 'dark'}
+                      onClick={() => ustawMotyw('dark')}
+                    >
+                      {t('motyw.ciemnyKrotki')}
+                    </button>
+                  </div>
+                </div>
+                <div className="ui2-ustawienia-wiersz">
+                  <span className="ui2-ustawienia-etykieta">{t('jezyk.grupa')}</span>
+                  <div className="ui2-segmenty" role="group" aria-label={t('jezyk.grupa')}>
+                    {JEZYKI.map((kod) => (
+                      <button
+                        key={kod}
+                        type="button"
+                        lang={kod}
+                        className="ui2-segment"
+                        aria-pressed={jezyk === kod}
+                        onClick={() => ustawJezyk(kod)}
+                      >
+                        {kod === 'pl' ? t('jezyk.pl') : t('jezyk.en')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <a
+                  className="ui2-ustawienia-link"
+                  href={adresInstrukcji(jezyk)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('pasek.instrukcja')} ↗
+                </a>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="riso-przycisk-nav"
+            onClick={() => ustawImportOtwarty(true)}
+          >
+            {t('start.kopiaIImport')}
+          </button>
         </nav>
-        <ListaProjektow odswiezenie={odswiezenie} />
-        <PanelImportu onZmiana={() => ustawOdswiezenie((n) => n + 1)} />
+      </header>
+
+      <div className="riso-cialo">
+        <aside className="riso-lewa" aria-label={t('start.nowyProjekt')}>
+          <a href="#/wlasne" className="riso-nowe-karty" data-testid="start-nowe-karty">
+            <span className="riso-nowe-karty-tytul">{t('start.noweKarty')}</span>
+            <span className="riso-nowe-karty-opis">{t('start.noweKartyOpis')}</span>
+          </a>
+
+          <div className="riso-gotowe">
+            <span className="riso-etykieta-mono">{t('start.risoGotoweUklady')}</span>
+            <a href="#/gra/mausritter" className="riso-kafelek-gry" data-testid="start-mausritter">
+              <span>
+                <span className="riso-kafelek-gry-nazwa">{t('start.mausritterTytul')}</span>
+                <span className="riso-kafelek-gry-opis">{t('start.mausritterOpis')}</span>
+              </span>
+              <span className="riso-kafelek-gry-strzalka" aria-hidden="true">
+                →
+              </span>
+            </a>
+          </div>
+
+          {ADRES_WSPARCIA && (
+            <a
+              href={ADRES_WSPARCIA}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="riso-kawa"
+              aria-label={t('start.wsparcieEtykieta')}
+            >
+              <span className="riso-kawa-tytul">{t('start.kawaTytul')}</span>
+              <span className="riso-kawa-opis">{t('start.kawaOpis')}</span>
+            </a>
+          )}
+        </aside>
+
+        <main ref={trescRef} id="tresc-aplikacji" tabIndex={-1} className="riso-glowna">
+          <ListaProjektow odswiezenie={odswiezenie} />
+        </main>
       </div>
+
+      {importOtwarty && (
+        <OknoModalne tytul={t('start.kopiaIImportTytul')} zamknij={() => ustawImportOtwarty(false)}>
+          <PanelImportu onZmiana={() => ustawOdswiezenie((n) => n + 1)} />
+        </OknoModalne>
+      )}
     </div>
   );
 }

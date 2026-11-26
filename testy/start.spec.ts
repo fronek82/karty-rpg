@@ -3,21 +3,19 @@ import { expect, test } from '@playwright/test';
 test('start: wybór gry po polsku, pusta lista projektów', async ({ page }) => {
   await page.goto('./');
   await expect(page.locator('html')).toHaveAttribute('lang', 'pl');
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Karty do gier – zaprojektuj i wydrukuj' }),
-  ).toBeVisible();
-  await expect(page.getByRole('link', { name: /Stwórz karty do Mausrittera/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Stwórz własne karty/ })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Moje projekty' })).toBeVisible();
+  await expect(page.locator('.riso-tytul')).toHaveText('KARTY RPG');
+  await expect(page.getByRole('link', { name: /Mausritter A4/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /\+ NOWE KARTY/ })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /Moje projekty/ })).toBeVisible();
   await expect(page.getByText('Nie masz jeszcze żadnych projektów.')).toBeVisible();
 });
 
-test('własne karty: menu z nowym szablonem i importem, kafelki przykładów, bez listy gier; stara trasa działa', async ({
+test('własne karty: menu z importem, kafelki przykładów, bez listy gier; stara trasa działa', async ({
   page,
 }) => {
   await page.goto('./');
-  await expect(page.getByText('Własny szablon, własny format')).toBeVisible();
-  await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
+  await expect(page.getByText('Dowolny rozmiar, pola, ramki i wzory')).toBeVisible();
+  await page.getByRole('link', { name: /\+ NOWE KARTY/ }).click();
   await expect(page).toHaveURL(/#\/wlasne$/);
   const naglowek = page.getByRole('heading', { level: 1, name: 'Stwórz własne karty' });
   await expect(naglowek).toBeVisible();
@@ -32,7 +30,7 @@ test('własne karty: menu z nowym szablonem i importem, kafelki przykładów, be
 
 test('Mausritter: drugi ekran z pustą kartką i gotowymi układami', async ({ page }) => {
   await page.goto('./');
-  await page.getByRole('link', { name: /Stwórz karty do Mausrittera/ }).click();
+  await page.getByRole('link', { name: /Mausritter A4/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Karty do Mausrittera' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Pusta kartka A4/ })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Broń i pancerze', exact: true })).toHaveCount(0);
@@ -46,7 +44,7 @@ test('nieznana trasa i dawne trasy', async ({ page }) => {
   await page.goto('./#/nie-ma-takiej');
   await expect(page.getByRole('heading', { name: 'Nie ma takiej strony.' })).toBeVisible();
   await page.getByRole('link', { name: 'Wróć na stronę startową' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: /Karty do gier/ })).toBeVisible();
+  await expect(page.locator('.riso-tytul')).toHaveText('KARTY RPG');
   await page.goto('./#/arkusze');
   await expect(page).toHaveURL(/#\/$/);
   await page.goto('./#/projekt/nie-ma');
@@ -64,7 +62,7 @@ test('odnośnik pomija pasek, a przejścia klawiaturą przenoszą fokus do głó
   await expect(pomin).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(main.getByRole('heading', { level: 1 })).toBeFocused();
-  await page.getByRole('link', { name: /Stwórz karty do Mausrittera/ }).press('Enter');
+  await page.getByRole('link', { name: /Mausritter A4/ }).press('Enter');
   await expect(main.getByRole('heading', { level: 1, name: 'Karty do Mausrittera' })).toBeFocused();
   await page.getByRole('button', { name: /Pusta kartka A4/ }).press('Enter');
   const edytor = main.getByRole('heading', { level: 1 });

@@ -145,7 +145,7 @@ test('przełącznik w opcjach druku: jeden rozmiar ↔ mieszane, własny układ 
   page,
 }) => {
   await page.goto('./#/');
-  await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
+  await page.getByRole('link', { name: /\+ NOWE KARTY/ }).click();
   await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu(SZABLONY[0]!));
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   // Karta 70×120 w slocie (A4: 2 × 2 sloty).
@@ -264,11 +264,14 @@ test('na mieszanej kartce 1×1, 1×2 i 2×1 kalibracja chroni początki linii', 
     'margines-znacznikow',
   );
   await page.goto('./#/');
+  await page.getByRole('button', { name: 'Kopia i import' }).click();
   await page.getByTestId('plik-importu').setInputFiles({
     name: 'margines-znacznikow.kartyrpg',
     mimeType: 'application/zip',
     buffer: Buffer.from(eksportujProjekt({ ...projekt, pakiet: PAKIET_WLASNY }, zasoby)),
   });
+  await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+  await page.keyboard.press('Escape');
   await page.getByRole('link', { name: nazwa, exact: true }).first().click();
   const svg = page.locator('svg.svg-strony');
   const d = konturNaD(konturIkony('nozyczki', -2.75, -2.75, 5.5));

@@ -169,7 +169,7 @@ test('klawiatura: Enter i Spacja na kafelku tworzą projekt, Tab przechodzi po k
 test('powrót na ekran pokazuje podglądy od razu (pamięć)', async ({ page }) => {
   await wejdz(page);
   await page.getByRole('link', { name: 'Start' }).click();
-  await page.getByRole('link', { name: /Stwórz własne karty/ }).click();
+  await page.getByRole('link', { name: /\+ NOWE KARTY/ }).click();
   await expect(page.locator('.papier-svg svg')).toHaveCount(6);
   await expect(page.locator('.szkielet')).toHaveCount(0);
 });

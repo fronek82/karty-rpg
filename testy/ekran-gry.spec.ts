@@ -167,7 +167,7 @@ test('powrót na ekran pokazuje podglądy od razu (pamięć)', async ({ page }) 
   await wejdz(page);
   await pokazUklady(page);
   await page.getByRole('link', { name: 'Start', exact: true }).click();
-  await page.getByRole('link', { name: /Stwórz karty do Mausrittera/ }).click();
+  await page.getByRole('link', { name: /Mausritter A4/ }).click();
   await expect(page.locator('[data-podglad]')).toHaveCount(1, { timeout: 1000 });
   // Ten sam moment, w którym kafelki wchodzą do DOM, ma już wszystkie kartki (bez szkieletów).
   expect(await page.locator('.szkielet').count()).toBe(0);

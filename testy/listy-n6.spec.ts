@@ -37,7 +37,7 @@ test('Moje szablony: sekcja na ekranie własnych kart, szukanie, sortowanie, dup
   }
   await moje.getByRole('button', { name: 'Pokaż wszystkie' }).click();
   await expect(page).toHaveURL(/#\/$/);
-  await expect(page.getByRole('tab', { name: 'Moje szablony' })).toHaveAttribute(
+  await expect(page.getByRole('tab', { name: /^Szablony/ })).toHaveAttribute(
     'aria-selected',
     'true',
   );
@@ -106,7 +106,7 @@ test('Moje szablony: sekcja na ekranie własnych kart, szukanie, sortowanie, dup
   await expect(kafelki).toHaveCount(0);
 
   // Moje szablony: wszystkie da się teraz usunąć naraz i przywrócić z miniaturami.
-  await page.getByRole('tab', { name: 'Moje szablony' }).click();
+  await page.getByRole('tab', { name: /^Szablony/ }).click();
   await expect(kafelki).toHaveCount(3);
   await page.getByRole('button', { name: 'Zaznacz…' }).click();
   await page.getByRole('checkbox', { name: 'Zaznacz wszystkie' }).check();

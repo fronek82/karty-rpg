@@ -4,7 +4,7 @@ import { expect, type Page } from '@playwright/test';
 
 export async function nowaPustaKartka(page: Page) {
   await page.goto('./#/');
-  await page.getByRole('link', { name: /Stwórz karty do Mausrittera/ }).click();
+  await page.getByRole('link', { name: /Mausritter A4/ }).click();
   await page.getByRole('button', { name: /Pusta kartka A4/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 }
@@ -89,9 +89,24 @@ export async function otworzUstawieniaAplikacji(page: Page) {
   if ((await przycisk.getAttribute('aria-expanded')) !== 'true') {
     await przycisk.click();
   }
-  const panel = page.locator('.menu-ustawien-panel');
+  const panel = page.locator('.menu-ustawien-panel, .ui2-ustawienia-panel');
   await expect(panel).toBeVisible();
   return panel;
+}
+
+/** Otwiera okno „Kopia i import” na stronie startowej (UI2 R2). */
+export async function otworzImport(page: Page) {
+  await page.getByRole('button', { name: /^(Kopia i import|Backup & import)$/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+}
+
+/** Zamyka otwarte okno „Kopia i import” po zakończeniu importu. */
+export async function zamknijImport(page: Page) {
+  const okno = page.getByRole('dialog');
+  if (await okno.isVisible()) {
+    await page.keyboard.press('Escape');
+    await expect(okno).toHaveCount(0);
+  }
 }
 
 /** Otwiera rozwijane menu „Pobierz” (w razie potrzeby przechodzi najpierw do „Drukuj karty”) i klika „Pobierz PDF (do druku)”. */
