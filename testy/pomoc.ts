@@ -94,6 +94,21 @@ export async function otworzUstawieniaAplikacji(page: Page) {
   return panel;
 }
 
+/** Otwiera okno „Kopia i import” na stronie startowej (UI2 R2). */
+export async function otworzImport(page: Page) {
+  await page.getByRole('button', { name: /^(Kopia i import|Backup & import)$/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+}
+
+/** Zamyka otwarte okno „Kopia i import” po zakończeniu importu. */
+export async function zamknijImport(page: Page) {
+  const okno = page.getByRole('dialog');
+  if (await okno.isVisible()) {
+    await page.keyboard.press('Escape');
+    await expect(okno).toHaveCount(0);
+  }
+}
+
 /** Otwiera rozwijane menu „Pobierz” (w razie potrzeby przechodzi najpierw do „Drukuj karty”) i klika „Pobierz PDF (do druku)”. */
 export async function kliknijPobierzPdf(page: Page, en = false) {
   const pobierz = page.getByRole('button', { name: en ? 'Download' : 'Pobierz', exact: true });

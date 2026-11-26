@@ -264,11 +264,14 @@ test('na mieszanej kartce 1×1, 1×2 i 2×1 kalibracja chroni początki linii', 
     'margines-znacznikow',
   );
   await page.goto('./#/');
+  await page.getByRole('button', { name: 'Kopia i import' }).click();
   await page.getByTestId('plik-importu').setInputFiles({
     name: 'margines-znacznikow.kartyrpg',
     mimeType: 'application/zip',
     buffer: Buffer.from(eksportujProjekt({ ...projekt, pakiet: PAKIET_WLASNY }, zasoby)),
   });
+  await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+  await page.keyboard.press('Escape');
   await page.getByRole('link', { name: nazwa, exact: true }).first().click();
   const svg = page.locator('svg.svg-strony');
   const d = konturNaD(konturIkony('nozyczki', -2.75, -2.75, 5.5));

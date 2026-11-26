@@ -52,6 +52,7 @@ test('eksport → import jako kopia → lista z miniaturą → usunięcie', asyn
   await page.waitForTimeout(1800); // miniatura zapisywana po chwili
   await page.getByRole('link', { name: 'Karty', exact: true }).click();
   // Plik z pobrania ma w katalogu tymczasowym losową nazwę bez rozszerzenia – nadajemy tę z pobrania.
+  await page.getByRole('button', { name: 'Kopia i import' }).click();
   await page.getByTestId('plik-importu').setInputFiles({
     name: eksport.suggestedFilename(),
     mimeType: 'application/zip',
@@ -60,6 +61,7 @@ test('eksport → import jako kopia → lista z miniaturą → usunięcie', asyn
   await expect(page.getByRole('alertdialog')).toContainText('jest już w tej przeglądarce');
   await page.getByRole('button', { name: 'Zapisz jako kopię' }).click();
   await expect(page.locator('.kafelek-projektu')).toHaveCount(2);
+  await page.keyboard.press('Escape');
   await expect(page.locator('.kafelek-projektu .miniatura img').first()).toBeVisible();
   await expect(page.locator('.kafelek-projektu').first()).toContainText('stron: 1, kart: 51');
   // Usuwanie bez pytania; pasek „Cofnij” na dole ekranu przywraca projekt (z miniaturą).
@@ -119,11 +121,14 @@ test('projekt sprzed edytora (ilości, bez przypięć, grupy) otwiera się jako 
   };
   const sztuk = stary.talie.reduce((s, t) => s + t.karty.reduce((a, k) => a + k.ilosc, 0), 0);
   await page.goto('./#/');
+  await page.getByRole('button', { name: 'Kopia i import' }).click();
   await page.getByTestId('plik-importu').setInputFiles({
     name: 'stary.kartyrpg',
     mimeType: 'application/zip',
     buffer: Buffer.from(eksportujProjekt(stary, zasoby)),
   });
+  await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+  await page.keyboard.press('Escape');
   await page.getByRole('link', { name: 'Stary projekt' }).first().click();
   await expect(page.locator('[data-karta]')).toHaveCount(sztuk, { timeout: 15000 });
   await expect(page.locator('[data-naglowek]')).toHaveCount(6);

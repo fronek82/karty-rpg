@@ -251,11 +251,14 @@ for (const en of [false, true]) {
         async (f) => new Uint8Array(await readFile(f)),
         'wyprawa-test-m3',
       );
+      await page.getByRole('button', { name: /^(Kopia i import|Backup & import)$/ }).click();
       await page.getByTestId('plik-importu').setInputFiles({
         name: 'wyprawa.kartyrpg',
         mimeType: 'application/zip',
         buffer: Buffer.from(eksportujProjekt({ ...projekt, pakiet: PAKIET_WLASNY }, zasoby)),
       });
+      await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+      await page.keyboard.press('Escape');
       await page.getByRole('link', { name: nazwa, exact: true }).first().click();
       await expect(page.locator('html')).toHaveAttribute('lang', jezyk);
       await expect(page.locator('html')).toHaveAttribute('data-theme', motyw);
