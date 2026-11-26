@@ -78,7 +78,7 @@
   --obramowanie-karty: var(--tekst);
   --obramowanie-pola: var(--tekst);
   --pasek: var(--tekst);
-  --pasek-tekst: var(--tlo);
+  --pasek-tekst: #ffffff;
   --akcent-tekst: var(--na-akcencie);
   --przycisk: var(--tekst);
   --przycisk-tekst: var(--tlo);
@@ -91,7 +91,7 @@
   --kolor-1: var(--riso-roz);
   --kolor-2: var(--riso-ochra);
   --kolor-3: var(--riso-szalwia);
-  --kolor-4: var(--riso-niebieski);
+  --kolor-4: #3f6a93;
   --na-jasnym: #111111;
   --zaznaczenie-tlo: #e3ebf2;
   --zaznaczenie-karty: #3f6a93;
@@ -144,7 +144,7 @@
   --linia-2: #3a3a40;
   --akcent: #b8675a;
   --akcent-jasny: #e8b4a8;
-  --na-akcencie: #17171a;
+  --na-akcencie: #000000;
   --riso-roz: #b8675a;
   --riso-niebieski: #3f6a93;
   --riso-ochra: #b8973f;
@@ -166,7 +166,7 @@
   --obramowanie-karty: var(--tekst);
   --obramowanie-pola: var(--tekst);
   --pasek: var(--tlo-pasek);
-  --pasek-tekst: var(--tekst);
+  --pasek-tekst: #ffffff;
   --akcent-tekst: var(--na-akcencie);
   --przycisk: var(--tekst);
   --przycisk-tekst: var(--tlo);
@@ -187,8 +187,8 @@
   --dobrze-tlo: #203326;
   --dobrze-tekst: #b4e0bf;
   --zle: #ee7a6c;
-  --tlo-podpowiedzi: #e9e4d8;
-  --tekst-podpowiedzi: #17171a;
+  --tlo-podpowiedzi: #0f1218;
+  --tekst-podpowiedzi: #f3f0e8;
   --przezroczyste-tlo: #2c2c32;
   --szachownica-1: #2a2a2f;
   --szachownica-2: #3a3a40;
@@ -204,7 +204,7 @@
   --dobrze-papier: #2f7a49;
   --zle-papier: #b03226;
   --przygaszony-papier: #5a5852;
-  --krok-tekst: #17171a;
+  --krok-tekst: #000000;
   --krok-gra-1: var(--riso-szalwia);
   --krok-gra-2: var(--riso-szalwia);
   --krok-wlasne-1: var(--akcent-jasny);
@@ -213,7 +213,7 @@
   --krok-wlasne-4: var(--akcent-jasny);
   --strona-awers: var(--riso-szalwia);
   --strona-rewers: var(--riso-ochra);
-  --strona-tekst: #17171a;
+  --strona-tekst: #000000;
   --cien: 4px 4px 0 rgb(0 0 0 / 45%);
   --cien-paska: 0 1px 0 rgb(0 0 0 / 40%);
 }
