@@ -23,3 +23,9 @@ export const KLUCZ_IMPORTU_Z_PDF = 'karty.importTekstZPdf';
 
 /** Klucz powiększenia kartek w Edytorze kart (liczba, 1 = szerokość kolumny). */
 export const KLUCZ_POWIEKSZENIA_KARTKI = 'karty.powiekszenieKartki';
+
+/** Prefiks klucza stanu rozwinięcia paska bocznego w localStorage (np. `karty.pasekBoczny.edytor`: `1` | `0`). */
+export const PREFIKS_PASKA_BOCZNEGO = 'karty.pasekBoczny.';
+
+/** Klucz zapamiętanej wysokości panelu Struktury w edytorze szablonu (w px). */
+export const KLUCZ_WYSOKOSCI_STRUKTURY = 'karty.wysokoscStruktury';

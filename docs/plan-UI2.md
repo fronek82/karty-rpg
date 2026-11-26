@@ -341,5 +341,9 @@ Każdy etap: gałąź od aktualnego `main`, commit po każdym kroku, PR, przegl�
 - **D10** Motyw: „drukarnia riso”, stonowane kolory; ciemny motyw ze screen-blend.
 - **D11** Dymki pasków bocznych po 0,5 s, tylko w stanie zwiniętym.
 - **D12** Linijki w mm z zerem w rogu karty i linie pomocnicze jak w Photoshopie, niedrukowane.
+- **D13 (R1)** Dla zachowania spójności i kontrastu dotychczasowych ekranów w trakcie migracji R1–R8
+  dotychczasowe nazwy tokenów w `tokeny.css` zostały zmapowane na nową paletę „drukarnia riso”.
+  Do niezależnej weryfikacji komponentów R1 w Playwright (dymek 0,5 s, wyrównanie wysokości pasków)
+  dodano wewnętrzną trasę `#/ui2-podglad` (do usunięcia w R9).
 
 Nowe decyzje podjęte w trakcie realizacji dopisuj tutaj z numerem etapu.
