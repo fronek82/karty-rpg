@@ -150,6 +150,30 @@ export function App() {
     );
   }
 
+  if (trasa === '/' || dawna) {
+    return (
+      <div className="aplikacja">
+        {pominPasek}
+        <Leniwa>
+          <Start trescRef={tresc} />
+        </Leniwa>
+        <footer className="stopka">
+          <span>
+            {t('aplikacja.nazwa')} · {t('start.wersja', { wersja })}
+          </span>
+          <span>{t('start.stopkaPrzegladarka')}</span>
+          <span className="rozpychacz" />
+          <a href={ADRES_LICENCJI} target="_blank" rel="noopener">
+            {t('start.licencje')}
+          </a>
+          <a href={ADRES_REPOZYTORIUM} target="_blank" rel="noopener">
+            {t('start.kodZrodlowy')}
+          </a>
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className="aplikacja">
       {pominPasek}
@@ -160,11 +184,7 @@ export function App() {
         tabIndex={-1}
         className={szerokaTresc ? 'tresc tresc-start' : 'tresc'}
       >
-        {trasa === '/' || dawna ? (
-          <Leniwa>
-            <Start />
-          </Leniwa>
-        ) : gra ? (
+        {gra ? (
           <Leniwa>
             <WyborGry id={decodeURIComponent(gra)} />
           </Leniwa>

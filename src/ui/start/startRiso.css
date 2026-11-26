@@ -1,0 +1,640 @@
+/*
+ * Strona główna UI2 „drukarnia riso” (etap R2, wzór: docs/makiety-ui2/Riso.dc.html i RisoDark.dc.html).
+ * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
+ */
+
+.riso-start {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: var(--czcionka-tekst);
+  font-size: 14px;
+}
+
+/* --- Nagłówek strony głównej --- */
+.riso-naglowek {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 40px 20px;
+  border-bottom: 3px solid var(--tekst);
+  background: var(--tlo);
+}
+
+.riso-marka {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+}
+
+.riso-logo {
+  position: relative;
+  width: 52px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+.riso-logo-a {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 40px;
+  height: 56px;
+  background: var(--riso-roz);
+  mix-blend-mode: var(--riso-mieszanie);
+  border-radius: 3px;
+}
+
+.riso-logo-b {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 40px;
+  height: 56px;
+  background: var(--riso-niebieski);
+  mix-blend-mode: var(--riso-mieszanie);
+  border-radius: 3px;
+}
+
+.riso-podtytul {
+  font-family: var(--czcionka-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--tekst);
+  text-transform: uppercase;
+}
+
+.riso-tytul {
+  font-family: var(--czcionka-naglowek);
+  font-size: 44px;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--tekst);
+}
+
+.riso-nawigacja {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.riso-przycisk-nav {
+  height: 44px;
+  padding: 0 16px;
+  background: transparent;
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.riso-przycisk-nav:hover {
+  background: var(--tlo-pasek);
+  color: var(--tekst);
+}
+
+/* --- Układ dwukolumnowy --- */
+.riso-cialo {
+  display: flex;
+  flex-wrap: wrap;
+  flex-grow: 1;
+}
+
+.riso-lewa {
+  flex: 1 1 280px;
+  max-width: 340px;
+  box-sizing: border-box;
+  padding: 32px 28px 32px 40px;
+  border-right: 3px solid var(--tekst);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.riso-nowe-karty {
+  position: relative;
+  display: block;
+  text-align: left;
+  padding: 22px 20px;
+  background: var(--akcent-jasny);
+  color: var(--na-jasnym);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  box-shadow: 6px 6px 0 var(--riso-niebieski);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.riso-nowe-karty:hover {
+  color: var(--na-jasnym);
+  transform: translate(-1px, -1px);
+  box-shadow: 7px 7px 0 var(--riso-niebieski);
+}
+
+.riso-nowe-karty-tytul {
+  display: block;
+  font-family: var(--czcionka-naglowek);
+  font-size: 26px;
+  line-height: 1.05;
+}
+
+.riso-nowe-karty-opis {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.riso-gotowe {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.riso-etykieta-mono {
+  font-family: var(--czcionka-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.riso-kafelek-gry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  text-align: left;
+  text-decoration: none;
+}
+
+.riso-kafelek-gry:hover {
+  background: var(--tlo-pasek);
+  color: var(--tekst);
+}
+
+.riso-kafelek-gry-nazwa {
+  display: block;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.riso-kafelek-gry-opis {
+  display: block;
+  font-size: 12px;
+  color: var(--tekst-2);
+}
+
+.riso-kafelek-gry-strzalka {
+  font-family: var(--czcionka-naglowek);
+  font-size: 20px;
+}
+
+.riso-kawa {
+  margin-top: auto;
+  display: block;
+  padding: 14px 16px;
+  border: 2px dashed var(--tekst);
+  color: var(--tekst);
+  text-decoration: none;
+}
+
+.riso-kawa:hover {
+  background: var(--tlo-pasek);
+  color: var(--tekst);
+}
+
+.riso-kawa-tytul {
+  display: block;
+  font-weight: 700;
+}
+
+.riso-kawa-opis {
+  display: block;
+  font-size: 12px;
+  color: var(--tekst-2);
+}
+
+/* --- Kolumna główna (projekty i szablony) --- */
+.riso-glowna {
+  flex: 999 1 560px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.riso-pasek-listy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 2px solid var(--tekst);
+  padding-bottom: 12px;
+}
+
+.riso-zakladki {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.riso-h1 {
+  margin: 0;
+  font-family: var(--czcionka-naglowek);
+  font-size: 32px;
+  line-height: 1.1;
+  color: var(--tekst);
+}
+
+.riso-licznik {
+  color: var(--zaznaczenie);
+}
+
+.riso-link-zakladka {
+  background: none;
+  border: none;
+  padding: 6px 0;
+  color: var(--tekst);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.riso-link-zakladka[aria-selected='true'],
+.riso-link-zakladka[aria-pressed='true'] {
+  font-weight: 700;
+  color: var(--zaznaczenie);
+}
+
+.riso-narzedzia-prawa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.riso-szukaj {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--tekst);
+  height: 40px;
+  padding: 0 12px;
+  background: var(--powierzchnia);
+}
+
+.riso-szukaj-etykieta {
+  font-family: var(--czcionka-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tekst-2);
+}
+
+.riso-szukaj input {
+  width: 170px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--tekst);
+  font: inherit;
+}
+
+.riso-sortuj {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--tekst-2);
+}
+
+.riso-sortuj select {
+  height: 40px;
+  padding: 0 10px;
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  font: inherit;
+}
+
+.riso-przycisk-maly {
+  height: 40px;
+  padding: 0 12px;
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  background: transparent;
+  color: var(--tekst);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.riso-przycisk-maly:hover:not(:disabled) {
+  background: var(--tlo-pasek);
+}
+
+.riso-przycisk-maly:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --- Siatka kafelków projektów (równe wysokości w rzędzie – D2) --- */
+.riso-siatka {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 36px 28px;
+  align-items: stretch;
+}
+
+.riso-kafelek {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.riso-kafelek.zaznaczony .riso-podglad {
+  outline: 3px solid var(--zaznaczenie);
+  outline-offset: 2px;
+}
+
+.riso-podglad {
+  position: relative;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--powierzchnia);
+  border: 2px solid var(--tekst);
+  text-decoration: none;
+  overflow: hidden;
+}
+
+/* Znaczniki cięcia w 4 rogach podglądu */
+.riso-rog {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.riso-rog-lg {
+  left: 10px;
+  top: 10px;
+  border-left: 1.5px solid var(--tekst);
+  border-top: 1.5px solid var(--tekst);
+}
+
+.riso-rog-pg {
+  right: 10px;
+  top: 10px;
+  border-right: 1.5px solid var(--tekst);
+  border-top: 1.5px solid var(--tekst);
+}
+
+.riso-rog-ld {
+  left: 10px;
+  bottom: 10px;
+  border-left: 1.5px solid var(--tekst);
+  border-bottom: 1.5px solid var(--tekst);
+}
+
+.riso-rog-pd {
+  right: 10px;
+  bottom: 10px;
+  border-right: 1.5px solid var(--tekst);
+  border-bottom: 1.5px solid var(--tekst);
+}
+
+.riso-karta-okladka {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 150px;
+  max-height: 168px;
+}
+
+.riso-karta-cien {
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  width: 100%;
+  height: 100%;
+  background: var(--riso-niebieski);
+  mix-blend-mode: var(--riso-mieszanie);
+  pointer-events: none;
+}
+
+.riso-kafelek:nth-child(3n + 2) .riso-karta-cien {
+  background: var(--riso-ochra);
+}
+
+.riso-kafelek:nth-child(3n) .riso-karta-cien {
+  background: var(--riso-roz);
+}
+
+.riso-karta-okladka img {
+  position: relative;
+  display: block;
+  max-width: 150px;
+  max-height: 168px;
+  width: auto;
+  height: auto;
+  border: 1.5px solid var(--tekst);
+  background: var(--papier);
+}
+
+.riso-karta-zastepcza {
+  position: relative;
+  width: 96px;
+  height: 134px;
+  background: var(--riso-ochra);
+  mix-blend-mode: var(--riso-mieszanie);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--czcionka-naglowek);
+  font-size: 32px;
+  color: var(--na-jasnym);
+}
+
+/* Pasek pod podglądem: etykieta wymiarów (nie na podglądzie!), format i data */
+.riso-kafelek-meta-gora {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  color: var(--tekst-2);
+}
+
+.riso-kafelek-format-grupa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.riso-wymiar-badge {
+  background: var(--tekst);
+  color: var(--tlo);
+  padding: 2px 6px;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.riso-kafelek-tytul {
+  margin: 0;
+  min-height: 46px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-family: var(--czcionka-naglowek);
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.riso-kafelek-tytul a {
+  color: var(--tekst);
+  text-decoration: none;
+}
+
+.riso-kafelek-tytul a:hover {
+  text-decoration: underline;
+}
+
+.riso-kafelek-liczniki {
+  font-size: 13px;
+  color: var(--tekst-2);
+}
+
+.riso-kafelek-akcje {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.riso-kafelek-glowne {
+  display: flex;
+  gap: 0;
+}
+
+.riso-btn-otworz {
+  flex-grow: 1;
+  height: 44px;
+  background: var(--tekst);
+  color: var(--tlo);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.riso-btn-otworz:hover {
+  opacity: 0.9;
+  color: var(--tlo);
+}
+
+.riso-btn-drukuj {
+  height: 44px;
+  padding: 0 18px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-left: none;
+  border-radius: 0;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.riso-btn-drukuj:hover {
+  background: var(--tlo-pasek);
+  color: var(--tekst);
+}
+
+.riso-kafelek-drugie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.riso-link-akcja {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  color: var(--tekst-2);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.riso-link-akcja:hover:not(:disabled) {
+  color: var(--tekst);
+}
+
+.riso-wybor-kafelka {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  background: var(--powierzchnia);
+  border: 1.5px solid var(--tekst);
+  padding: 4px;
+  display: inline-flex;
+}
+
+@media (max-width: 860px) {
+  .riso-naglowek {
+    padding: 20px;
+  }
+
+  .riso-lewa {
+    max-width: none;
+    border-right: none;
+    border-bottom: 3px solid var(--tekst);
+    padding: 20px;
+  }
+
+  .riso-glowna {
+    padding: 20px;
+  }
+}

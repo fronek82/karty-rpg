@@ -200,6 +200,7 @@ export function NaglowekProjektu({
                     <button
                       key={kod}
                       type="button"
+                      lang={kod}
                       className="ui2-segment"
                       aria-pressed={jezyk === kod}
                       onClick={() => ustawJezyk(kod)}

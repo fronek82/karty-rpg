@@ -111,6 +111,8 @@ export interface PodsumowanieProjektu {
   aktywnySzablonId?: string;
   /** Aktywny rewers przypisany w talii, szablonie lub karcie (do podglądu Awers + Rewers). */
   aktywnyRewersId?: string;
+  /** Wymiary karty (mm) z aktywnego szablonu lub rewersu – do etykiety na kafelku startowym. */
+  wymiary?: { szer: number; wys: number };
 }
 
 /** Stabilny klucz miniatury SVG konkretnego rewersu w tabeli `miniatury`. */
@@ -696,6 +698,19 @@ export class BazaProjektow {
         return undefined;
       };
       const aktywnyRewersId = znajdzAktywnyRewers();
+      const zrodloWymiaru = pierwszyRewers ?? niepustySzablon ?? w.projekt.szablony[0];
+      const r = zrodloWymiaru?.rozmiar;
+      const wymiary = r
+        ? r.tryb === 'sloty'
+          ? {
+              szer: Math.round(r.slot.szerokosc * r.kolumny),
+              wys: Math.round(r.slot.wysokosc * r.rzedy),
+            }
+          : {
+              szer: Math.round(r.szerokosc),
+              wys: Math.round(r.wysokosc),
+            }
+        : undefined;
       return {
         id: w.id,
         nazwa: pierwszyRewers?.nazwa || w.projekt.nazwa,
@@ -724,6 +739,7 @@ export class BazaProjektow {
         ...(niepustySzablon ? { aktywnySzablonId: niepustySzablon.id } : {}),
         ...(aktywnyRewersId ? { aktywnyRewersId } : {}),
         ...(w.projekt.pakiet ? { pakiet: w.projekt.pakiet } : {}),
+        ...(wymiary ? { wymiary } : {}),
       };
     });
   }
