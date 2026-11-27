@@ -352,3 +352,52 @@ Każdy etap: gałąź od aktualnego `main`, commit po każdym kroku, PR, przegl�
   arkuszowych i zgodności wstecznej.
 
 Nowe decyzje podjęte w trakcie realizacji dopisuj tutaj z numerem etapu.
+
+## 10. Stan po nocy
+
+### Etapy scalone do `main`
+
+- **PR #121** (`plan-ui2-riso`) – plan UI2 (był już scalony przed rozpoczęciem pracy).
+- **R1 – PR #122 (`ui2-r1`, scalony `9acf040`)**: tokeny „drukarnia riso” (light + dark), lokalne czcionki OFL (`Archivo Black`, `Archivo`, `IBM Plex Mono`) + `LICENCJE.md`, wspólne komponenty `src/ui/ui2/` (`NaglowekProjektu`, `PasekBoczny` z dymkiem 0,5 s i zapamiętywaniem w `localStorage`, `PanelSekcji`, `Ikony`).
+- **R2 – PR #123 (`ui2-r2`, scalony `3af614e`)**: strona główna riso, równe kafelki projektów z prawdziwymi miniaturami kart, znacznikami cięcia i wymiarami, tylko 2 przyciski tworzenia (`+ NOWE KARTY`, `Mausritter A4`).
+- **R3 – PR #124 (`ui2-r3`, scalony `b237295`)**: okno „Nowy projekt” z 3 ścieżkami startu (Pusta karta z orientacją Pionowo/Poziomo i niezależnym Przód/Tył, Z szablonu, Import pliku), układ swobodny domyślny (D7).
+- **R4 – PR #125 (`ui2-r4`, scalony `b87b44b`)**: edytor szablonu UI2 – lewy pasek elementów (15 typów w 4 grupach, `Swobodny` pierwszy z odznaką `DOMYŚLNY`), przeciąganie elementu na kartę w miejscu upuszczenia, zakładki szablonów + `＋ Nowy szablon`, przełącznik `Przód | Tył`, pasek stanu z zoomem, zwijana i przesuwana `Struktura` (120–600 px, zapamiętana w `localStorage`) i skrajny prawy pasek ikon 52 px.
+- **R5 – PR #126 (`ui2-r5`, scalony `5b1ce45`)**: linijki w mm (zero w rogu karty, wystawanie 10 mm), pas zaznaczonego elementu na obu linijkach, linie pomocnicze (dodawanie z linijek co 0,5 mm, przesuwanie, usuwanie przez upuszczenie na linijce lub „Usuń linie”, skrót `Ctrl+;`), przyciąganie elementów swobodnych do linii pomocniczych, schemat `WERSJA_SCHEMATU = 35` z migracją `34 → 35` (linie nigdy nie drukują się ani nie trafiają do sceny SVG/PDF).
+- **R6 – PR #127 (`ui2-r6`, scalony `27ebb22`)**: ekran „Krok 2: Karty” (`src/ui/karty/EkranKart.tsx`, trasa `#/projekt/<id>/karty`, decyzja D14 bez zmian modelu) – lewy pasek „Dodaj karty” (klik/drag szablonu, eksport CSV), widok `Podgląd | Tabela`, `Przód | Tył | Obie`, szukanie i filtr, prawy panel karty (duplikuj/usuń, pola, kopie `− / +`, wybór tyłu na kartę).
+- **R7 – PR #128 (`ui2-r7`, scalony `335bac9`)**: ekran „Krok 3: Druk” – nowa sekcja „Linie cięcia” (`SekcjaLiniiCiecia.tsx`: włącznik, grubość 0,1/0,2/0,3/0,5 mm, próbki kolorów + własny, kreska i przerwa z 0 = ciągła, podgląd SVG z ciemnym tłem dla jasnych kolorów, komunikat o trybie drukarni) oraz nawigacja kroków UI2 w nagłówku `EdytorKartki`.
+- **R8 – PR #129 (`ui2-r8`, scalony `0a8c631`)**: Mausritter – czysta logika siatki kafelków (`siatkaMausritter.ts` + testy Vitest), lewy pasek „Dodaj kartę” (6 typów, przeciąganie na konkretny wolny kafelek + kliknięcie w pierwsze wolne miejsce), licznik `zajęte / 70 kafelków`, zachowane dokładne wymiary wzorców PNG (`1036×733 px`).
+- **R9 – bieżący PR (`ui2-r9`)**: usunięcie tymczasowej trasy `#/ui2-podglad` (testy R1 przeniesione na prawdziwy edytor), zrzuty UI2 w obu motywach w `docs/obrazy/ui2/`, aktualizacja `CLAUDE.md` oraz ta sekcja „Stan po nocy”.
+
+### Co zostało (opcjonalne / na później)
+
+- Rozbudowanie statycznej instrukcji (`instrukcja/index.html`) o nowe zrzuty z `docs/obrazy/ui2/` oraz opis przepływu `1 Szablony → 2 Karty → 3 Druk` i linii pomocniczych.
+- Ewentualne dopracowanie wizualne szczegółów po obejrzeniu zrzutów w `docs/obrazy/ui2/` rano.
+
+### Lista rzeczy do ręcznego sprawdzenia rano (krok po kroku)
+
+1. **Strona główna (jasny i ciemny motyw)**:
+   - Otwórz aplikację, przełącz motyw jasny/ciemny i język PL/EN.
+   - Sprawdź, że w lewej kolumnie są tylko 2 przyciski tworzenia: `+ NOWE KARTY` i `Mausritter A4` (+ wsparcie).
+   - Sprawdź, że kafelki projektów mają równe wysokości i przyciski `Otwórz` / `Drukuj` wyrównane do dołu.
+2. **Okno „Nowy projekt”**:
+   - Kliknij `+ NOWE KARTY`.
+   - Przełącz `Pionowo` ↔ `Poziomo` i sprawdź, że wymiary formatów zamieniają się (np. `63×88` → `88×63`).
+   - Zaznacz `Tył (rewers)` razem z `Przód (awers)` (lub sam `Tył`), zwróć uwagę na dynamiczny dopisek przy przycisku `Utwórz projekt`, i utwórz projekt.
+3. **Edytor szablonu + linijki i linie pomocnicze**:
+   - Najedź na ikonę w zwiniętym lewym pasku „Dodaj element” — po ok. 0,5 s pojawi się dymek z opisem. Rozwiń pasek (`»`) i sprawdź, że `Swobodny` jest pierwszy z odznaką `DOMYŚLNY`.
+   - Przeciągnij element `Tekst` z lewego paska bezpośrednio na kartę — powinien wylądować w miejscu upuszczenia, a na obu linijkach pojawi się pas `--zaznaczenie`.
+   - Przeciągnij z górnej i lewej linijki na kartę, żeby dodać linie pomocnicze (widać etykietę mm co 0,5 mm). Przesuń element `Tekst` w pobliże linii — przyciągnie się. Sprawdź `Ctrl+;` (ukryj/pokaż) i usuwanie linii (upuszczenie na linijce lub „Usuń linie”).
+   - Zwiń/rozwiń `Strukturę` u dołu prawej kolumny i przeciągnij belkę rozdzielającą nad nią (wysokość zapamiętuje się po odświeżeniu). Kliknij `＋ Nowy szablon` i przełącz `Przód | Tył`.
+4. **Krok 2: Karty**:
+   - Zapisz szablon i kliknij `2 Karty` w górnym pasku.
+   - Dodaj 2–3 karty klikając lub przeciągając szablon z lewego paska.
+   - Zmień liczbę kopii przyciskami `− / +` (odznaka `×N`), zmień `Tył karty` na pojedynczej karcie, przełącz `Przód | Tył | Obie` oraz `Podgląd | Tabela` (edytuj komórkę w tabeli i wróć do podglądu).
+5. **Krok 3: Druk i linie cięcia**:
+   - Kliknij `Do druku →`.
+   - W prawym panelu rozwiń/sprawdź `Linie cięcia`: zmień grubość na `0,5 mm`, kliknij jasną próbkę `#cccccc` (podgląd przełącza tło na ciemne) i czerwoną `#c83e3b`, ustaw `Przerwa = 0` (linia ciągła) i sprawdź podgląd arkusza oraz pobranie PDF.
+6. **Mausritter**:
+   - Wróć na start, kliknij `Mausritter A4` → `Pusta kartka A4`.
+   - Sprawdź etykietę `MAUSRITTER`, kroki `1 Karty na arkuszach → 2 Druk` i licznik `0 / 70 kafelków` pod arkuszem.
+   - Przeciągnij `Broń` z lewego paska na dowolny wolny kafelek siatki i kliknij `Stan` (trafi na kolejne wolne miejsce); sprawdź, że licznik kafelków się aktualizuje.
+7. **Zrzuty poglądowe**:
+   - Obejrzyj wygenerowane zrzuty obu motywów w katalogu `docs/obrazy/ui2/`.

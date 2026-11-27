@@ -35,10 +35,17 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   odmiana domyślna) i `odmiana` dziecka; na karcie widać jedno dziecko wybrane wartością z danych
   (`wybranaOdmiana` w `model/szablon.ts`, `ukryteOdmianyPrzelacznikow` w `silnik/karta.ts`), tył
   dopasowuje przełącznik po nazwie, panel `ui/szablon/PanelOdmian.tsx`.
-- Następny etap: **UI2 – wygląd „drukarnia riso” i przepływ Szablony → Karty → Druk**
-  (`docs/plan-UI2.md`, makiety w `docs/makiety-ui2/`), etapy R1…R9.
+- Ukończone **UI2 – wygląd „drukarnia riso” i przepływ Szablony → Karty → Druk** (PR #122–#130,
+  `docs/plan-UI2.md`, zrzuty w `docs/obrazy/ui2/`): tokeny i lokalne czcionki OFL (`Archivo Black`,
+  `Archivo`, `IBM Plex Mono`), wspólne komponenty (`src/ui/ui2/`), strona główna riso z miniaturami
+  i 2 przyciskami tworzenia (`+ NOWE KARTY`, `Mausritter A4`), okno „Nowy projekt” (3 ścieżki,
+  orientacja, niezależne Przód/Tył, swobodny domyślny), edytor szablonu z lewym paskiem elementów
+  (drag-and-drop), zakładkami szablonów, przesuwaną/zwijaną Strukturą, linijkami w mm i liniami
+  pomocniczymi (schemat v35), ekran „Krok 2: Karty” (`src/ui/karty/EkranKart.tsx`), sekcja „Linie
+  cięcia” w druku (`SekcjaLiniiCiecia.tsx`) oraz lewy pasek i licznik kafelków w Mausritterze
+  (`siatkaMausritter.ts`).
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 34` (`src/model/projekt.ts`), baza Dexie w wersji 5.
+- Schemat projektu: `WERSJA_SCHEMATU = 35` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
 ## Gdzie co jest
 
