@@ -80,7 +80,7 @@ test('R4 / Plan S: pasek nad kartą bez zakładek wielu szablonów, z menu Szabl
 }) => {
   await otworzNowyEdytor(page);
 
-  const pasekZakladek = page.getByRole('toolbar', { name: 'Szablony' });
+  const pasekZakladek = page.getByRole('toolbar', { name: 'Szablon ▾' });
   await expect(pasekZakladek.locator('.edytor-ui2-zakladka')).toHaveCount(0);
   await expect(pasekZakladek.getByTestId('menu-szablon-przycisk')).toBeVisible();
 });
