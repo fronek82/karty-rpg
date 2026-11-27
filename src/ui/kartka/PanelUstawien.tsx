@@ -38,6 +38,7 @@ import {
 import { KatalogGoogleFonts } from './KatalogGoogleFonts';
 import { PanelUkladu } from './PanelUkladu';
 import { PoleLiczby } from './PoleLiczby';
+import { SekcjaLiniiCiecia } from './SekcjaLiniiCiecia';
 import { SzablonyProjektu } from './SzablonyProjektu';
 import type { Projekt } from '../../model/projekt';
 import type { ProjektWEdycji } from '../useProjekt';
@@ -350,6 +351,7 @@ export function PanelUstawien({
         {...(przelaczRozmiary ? { przelaczRozmiary } : {})}
         {...(naKartce ? { naKartce } : {})}
       />
+      <SekcjaLiniiCiecia arkusz={arkusz} zmien={zmien} />
       {!bezRewersow &&
         (() => {
           const rewersyMapa = new Map((projekt.rewersy ?? []).map((r) => [r.id, r] as const));

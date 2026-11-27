@@ -1878,6 +1878,20 @@ export const pl = {
   'karty.doDruku': 'Do druku →',
   'karty.brakTyluPodglad': 'Brak przypisanego tyłu',
   'karty.bezNazwy': '(bez nazwy)',
+  'druk.kartyWDruku': 'Karty w druku',
+  'druk.kartyWDrukuWskazowka':
+    'Odznacz kartę, żeby pominąć ją w tym druku. Liczbę kopii zmienisz w kroku 2.',
+  'druk.linieCiecia.tytul': 'Linie cięcia',
+  'druk.linieCiecia.wlacz': 'Pokaż linie cięcia',
+  'druk.linieCiecia.grubosc': 'Grubość linii',
+  'druk.linieCiecia.kolor': 'Kolor linii',
+  'druk.linieCiecia.kolorWlasny': 'Własny kolor linii cięcia',
+  'druk.linieCiecia.kreska': 'Kreska (mm)',
+  'druk.linieCiecia.przerwa': 'Przerwa (mm)',
+  'druk.linieCiecia.przerwaOpis': '0 mm = linia ciągła.',
+  'druk.linieCiecia.podglad': 'Podgląd linii cięcia',
+  'druk.linieCiecia.trybDrukarni':
+    'W trybie drukarni zamiast linii cięcia drukowane są znaczniki cięcia.',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;

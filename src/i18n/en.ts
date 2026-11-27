@@ -1878,6 +1878,20 @@ export const en: Slownik = {
   'karty.doDruku': 'To print →',
   'karty.brakTyluPodglad': 'No back assigned',
   'karty.bezNazwy': '(untitled)',
+  'druk.kartyWDruku': 'Cards in print',
+  'druk.kartyWDrukuWskazowka':
+    'Uncheck a card to skip it in this print. Edit copy count in step 2.',
+  'druk.linieCiecia.tytul': 'Cut lines',
+  'druk.linieCiecia.wlacz': 'Show cut lines',
+  'druk.linieCiecia.grubosc': 'Line width',
+  'druk.linieCiecia.kolor': 'Line color',
+  'druk.linieCiecia.kolorWlasny': 'Custom cut line color',
+  'druk.linieCiecia.kreska': 'Dash (mm)',
+  'druk.linieCiecia.przerwa': 'Gap (mm)',
+  'druk.linieCiecia.przerwaOpis': '0 mm = solid line.',
+  'druk.linieCiecia.podglad': 'Cut line preview',
+  'druk.linieCiecia.trybDrukarni':
+    'In print-shop mode, crop marks are printed instead of cut lines.',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
