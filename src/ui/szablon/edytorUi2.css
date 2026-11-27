@@ -1,0 +1,340 @@
+/*
+ * Style układu edytora szablonu UI2 „drukarnia riso” (etap R4, wzór: docs/makiety-ui2/Edytor.dc.html).
+ * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
+ */
+
+.edytor-szablonu {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.edytor-szablonu > .pasek-gorny.ui2-naglowek {
+  height: auto;
+  min-height: var(--ui2-naglowek-h);
+  flex-wrap: wrap;
+  row-gap: 4px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.uklad-szablonu.edytor-ui2-uklad {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  gap: 0;
+  padding: 0;
+  align-items: stretch;
+  background: var(--tlo);
+}
+
+.edytor-ui2-srodek {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo-robocze);
+}
+
+/* Pasek zakładek szablonów + przełącznik Przód | Tył (wysokość 42 px z linią – sekcja 3.3) */
+.edytor-ui2-zakladki {
+  height: var(--ui2-pasek-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 12px;
+  background: var(--tlo-pasek);
+  border-bottom: 1.5px solid var(--tekst);
+  overflow-x: auto;
+}
+
+.edytor-ui2-zakladka {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: var(--tekst-2);
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1.5px solid transparent;
+  border-bottom: none;
+}
+
+.edytor-ui2-zakladka:hover {
+  color: var(--tekst);
+}
+
+.edytor-ui2-zakladka.aktywna {
+  background: var(--tlo-robocze);
+  color: var(--tekst);
+  border-color: var(--tekst);
+  margin-bottom: -1.5px;
+  font-weight: 700;
+}
+
+.edytor-ui2-zakladka-rozmiar {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  color: var(--tekst-2);
+}
+
+.edytor-ui2-nowy-szablon {
+  height: 30px;
+  margin: 0 0 3px 6px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px dashed var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.edytor-ui2-nowy-szablon:hover {
+  background: var(--tlo);
+  color: var(--tekst);
+}
+
+.edytor-ui2-strony {
+  margin-left: auto;
+  margin-bottom: 4px;
+  display: inline-flex;
+}
+
+.edytor-ui2-strona-btn {
+  height: 30px;
+  padding: 0 14px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.edytor-ui2-strona-btn + .edytor-ui2-strona-btn {
+  border-left: none;
+}
+
+.edytor-ui2-strona-btn[aria-selected='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+/* Obszar roboczy z siatką kropek */
+.edytor-ui2-robocze {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px 24px;
+  background-color: var(--tlo-robocze);
+  background-image: radial-gradient(var(--kropki-robocze) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Podświetlenie karty podczas przeciągania elementu z lewego paska */
+.edytor-ui2-upusc-cel {
+  outline: 2px dashed var(--zaznaczenie);
+  outline-offset: 6px;
+}
+
+.edytor-ui2-upusc-podpowiedz {
+  margin-top: 14px;
+  padding: 6px 12px;
+  background: var(--zaznaczenie);
+  color: var(--papier);
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Pasek stanu na dole (44 px z linią – wyrównany z przyciskiem Zwiń lewego paska) */
+.edytor-ui2-stan-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edytor-ui2-stan-btn {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  background: transparent;
+  color: var(--tekst);
+  border: 1px solid var(--tekst);
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.edytor-ui2-stan-btn:hover {
+  background: var(--tlo);
+}
+
+/* Prawa kolumna: Właściwości (góra) + przesuwana granica + zwijana Struktura (dół) */
+.edytor-ui2-prawa-kolumna {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--tlo);
+  border-left: 2px solid var(--tekst);
+}
+
+.edytor-ui2-prawa-naglowek {
+  height: var(--ui2-pasek-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-bottom: 1.5px solid var(--tekst);
+}
+
+.edytor-ui2-prawa-tytul {
+  font-family: var(--czcionka-naglowek);
+  font-size: 15px;
+}
+
+.panel-edytora.edytor-ui2-prawa-tresc {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 0;
+  position: static;
+  max-height: none;
+  background: var(--tlo);
+}
+
+.edytor-ui2-granica {
+  height: 10px;
+  flex-shrink: 0;
+  cursor: row-resize;
+  touch-action: none;
+  border-top: 2px solid var(--tekst);
+  background: var(--tlo-pasek);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edytor-ui2-granica-uchwyt {
+  width: 36px;
+  height: 3px;
+  border-top: 1px solid var(--tekst-2);
+  border-bottom: 1px solid var(--tekst-2);
+}
+
+.panel-drzewa.edytor-ui2-struktura {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: none;
+  position: static;
+  padding: 0;
+  border: none;
+  border-top: 2px solid var(--tekst);
+  border-radius: 0;
+  overflow: hidden;
+  background: var(--tlo);
+}
+
+.panel-drzewa.edytor-ui2-struktura.z-granica {
+  border-top: none;
+}
+
+.edytor-ui2-struktura-naglowek {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px 4px 6px;
+  border-bottom: 1px solid var(--linia-2);
+  flex-shrink: 0;
+}
+
+.edytor-ui2-struktura-przelacz {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  color: var(--tekst);
+  font-family: var(--czcionka-naglowek);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.edytor-ui2-struktura-cialo {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 10px;
+}
+
+/* Skrajny prawy pasek ikon (52 px, dymki po lewej) */
+.edytor-ui2-prawy-pasek {
+  width: var(--ui2-prawy-pasek);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  border-left: 1.5px solid var(--tekst);
+  background: var(--tlo-pasek);
+}
+
+.edytor-ui2-prawy-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.edytor-ui2-prawy-btn:hover {
+  background: var(--tlo);
+  border-color: var(--tekst);
+}
+
+.edytor-ui2-prawy-btn[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+  border-color: var(--tekst);
+}
+
+.edytor-ui2-prawy-zwin {
+  margin-top: auto;
+  font-family: var(--czcionka-naglowek);
+}

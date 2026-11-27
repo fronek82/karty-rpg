@@ -58,7 +58,7 @@ import { Liczba, Sekcja } from './Kontrolki';
 import { NakladkaSwobodna } from './NakladkaSwobodna';
 import { PanelWezla, type PrzodTylu } from './PanelWezla';
 import { PanelWyrownania } from './PanelWyrownania';
-import { PozycjeMenuDodaj, RODZAJE } from './PozycjeMenuDodaj';
+import { GRUPY_ELEMENTOW, IKONY_RODZAJOW, PozycjeMenuDodaj, RODZAJE } from './PozycjeMenuDodaj';
 import {
   budujCele,
   celSkalowania,
@@ -70,11 +70,33 @@ import {
 } from './swobodnyMysz';
 import { upuscWezel } from './upuszczanie';
 import { useGestSwobodny } from './useGestSwobodny';
+import { PasekBoczny, type GrupaPaskaBocznego } from '../ui2/PasekBoczny';
+import { IkonaKreskowa } from '../ui2/Ikony';
+import { KLUCZ_WYSOKOSCI_STRUKTURY } from '../../wspolne/ustawienia';
+import './edytorUi2.css';
 
 // Okno AI ładowane dopiero po kliknięciu „Układ ze zdjęcia”.
 const OknoUkladuZeZdjecia = lazy(() =>
   import('./OknoUkladuZeZdjecia').then((m) => ({ default: m.OknoUkladuZeZdjecia })),
 );
+
+const WYSOKOSC_STRUKTURY_DOMYSLNA = 240;
+const WYSOKOSC_STRUKTURY_MIN = 120;
+const WYSOKOSC_STRUKTURY_MAX = 600;
+const POZIOMY_ZOOM = [50, 75, 100, 125, 150, 175, 200] as const;
+
+function odczytajWysokoscStruktury(): number {
+  try {
+    const raw = window.localStorage.getItem(KLUCZ_WYSOKOSCI_STRUKTURY);
+    const n = raw ? Number(raw) : NaN;
+    if (Number.isFinite(n) && n >= WYSOKOSC_STRUKTURY_MIN && n <= WYSOKOSC_STRUKTURY_MAX) {
+      return Math.round(n);
+    }
+  } catch {
+    // Brak dostępu do localStorage.
+  }
+  return WYSOKOSC_STRUKTURY_DOMYSLNA;
+}
 
 /*
  * Wspólny edytor drzewa elementów karty – awersu (Edytor szablonu) i rewersu (Edytor rewersu):
@@ -120,11 +142,15 @@ export interface PlikSzablonuEdytora {
 
 export interface UstawieniaEdytoraDrzewa {
   edycja: ProjektWEdycji;
+  /** Edytowana strona karty (do przełącznika Przód | Tył). */
+  strona?: 'przod' | 'tyl';
   /** Id edytowanego szablonu lub rewersu (miniatura, efekty przy zmianie). */
   id: string;
   /** Edytowane drzewo (rewers – w postaci szablonu); brak – ekran „nie znaleziono”. */
   szablon: Szablon | undefined;
   zmienSz: ZmianaSzablonu;
+  /** Utworzenie nowego pustego szablonu w bieżącym projekcie. */
+  nowySzablon?: () => void;
   /** Czcionki użyte w edytowanym szablonie (synchronizacja z biblioteką przeglądarki). */
   czcionkiUzyte: readonly string[];
   /** Klucz rysunku dla widocznego szablonu (z gestem w toku); zmiana klucza = nowy rysunek. */
@@ -429,25 +455,62 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     zatwierdz: (zmiany, klucz) => zmienSz((s) => zastosujZmiany(s, zmiany), klucz),
   });
 
+  // Stan UI2 R4: przeciąganie z lewego paska, powiększenie, zwijana i przesuwana Struktura, prawy panel.
+  const [przeciaganyRodzaj, ustawPrzeciaganyRodzaj] = useState<RodzajNowego>();
+  const [nadKarta, ustawNadKarta] = useState(false);
+  const [zoom, ustawZoom] = useState<'dopasuj' | number>('dopasuj');
+  const [strukturaOtwarta, ustawStrukturaOtwarta] = useState(true);
+  const [wysokoscStruktury, ustawWysokoscStruktury] = useState<number>(odczytajWysokoscStruktury);
+  const [prawyPanelOtwarty, ustawPrawyPanelOtwarty] = useState(true);
+  const [prawaZakladka, ustawPrawaZakladka] = useState<'element' | 'karta'>('element');
+  const gestGranicy = useRef<{ startY: number; startH: number } | undefined>(undefined);
+
   // Operacje liczone w aktualizatorze (na najnowszym szablonie); nowe id przekazywane przez zmienną.
   const zajeteKlucze = (): Iterable<string> => (bezDanych ? [] : (u.zajeteKlucze?.() ?? []));
   const cel = jeden ?? szablon?.korzen;
-  const dodaj = (r: RodzajNowego) => {
+  const dodaj = (r: RodzajNowego, pozycjaMm?: { x: number; y: number }) => {
     if (!cel) return;
     let noweId = '';
     zmienSz((s) => {
-      const c = znajdzWezel(s, cel.id) ?? s.korzen;
+      const wybrany = znajdzWezel(s, cel.id) ?? s.korzen;
+      // Przy upuszczeniu bezpośrednio na kartę w układzie swobodnym wstawiamy do korzenia (chyba że zaznaczony jest kontener swobodny).
+      const c =
+        pozycjaMm &&
+        s.korzen.typ === 'swobodny' &&
+        !(czyKontener(wybrany) && wybrany.typ === 'swobodny')
+          ? s.korzen
+          : wybrany;
       const rodzic = czyKontener(c) ? c : rodzicWezla(s, c.id)?.rodzic;
       const w = nowyWezel(s, r, t(`wezel.${r}`), {
         wWierszu: rodzic?.typ === 'wiersz',
         ...(bezDanych ? { bezKlucza: true } : { zajete: zajeteKlucze() }),
       });
-      // W kontenerze swobodnym element dostaje położenie i rozmiar w mm.
-      const nowy = rodzic?.typ === 'swobodny' ? dostosujDoSwobodnego(w) : w;
+      // W kontenerze swobodnym element dostaje położenie i rozmiar w mm (z pozycją upuszczenia, jeśli podano).
+      let nowy = rodzic?.typ === 'swobodny' ? dostosujDoSwobodnego(w) : w;
+      if (pozycjaMm && rodzic?.typ === 'swobodny') {
+        const { szer: kSzer, wys: kWys } = wymiaryKarty(s);
+        const szerElem =
+          nowy.szerokosc && typeof nowy.szerokosc === 'object' && 'mm' in nowy.szerokosc
+            ? nowy.szerokosc.mm
+            : 20;
+        const wysElem =
+          nowy.wysokosc && typeof nowy.wysokosc === 'object' && 'mm' in nowy.wysokosc
+            ? nowy.wysokosc.mm
+            : 10;
+        const nx = zaokraglij(
+          Math.max(0, Math.min(kSzer - szerElem, pozycjaMm.x - szerElem / 2)),
+          1,
+        );
+        const ny = zaokraglij(Math.max(0, Math.min(kWys - wysElem, pozycjaMm.y - wysElem / 2)), 1);
+        nowy = { ...nowy, pozycja: { ...(nowy.pozycja ?? {}), x: nx, y: ny } };
+      }
       noweId = nowy.id;
       return wstawWezel(s, c.id, nowy);
     });
-    if (noweId) ustawZazn([noweId]);
+    if (noweId) {
+      ustawZazn([noweId]);
+      ustawPrawaZakladka('element');
+    }
   };
   const usun = () => {
     if (!szablon) return;
@@ -697,6 +760,108 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   const elementyWyboru = polaczElementy(projekt.biblioteka?.ozdobniki ?? [], zyweElementy);
   const podklad = u.podklad;
 
+  const dozwoloneRodzaje = u.rodzajeDodaj ?? RODZAJE;
+  const dozwoloneSet = new Set<RodzajNowego>(dozwoloneRodzaje);
+  const grupyPaska: GrupaPaskaBocznego[] = GRUPY_ELEMENTOW.map((g) => ({
+    id: g.id,
+    nazwa: t(`edytor.grupa.${g.id}`),
+    pozycje: g.rodzaje
+      .filter((r) => dozwoloneSet.has(r))
+      .map((r) => ({
+        id: r,
+        nazwa: t(`wezel.${r}`),
+        podpowiedz: tJesliJest(`edytor.tip.${r}`) ?? undefined,
+        ikona: IKONY_RODZAJOW[r],
+        ...(r === 'swobodny' ? { odznaka: t('edytor.domyslny') } : {}),
+        przeciagane: true,
+        onKlik: () => dodaj(r),
+        onPoczatekPrzeciagania: (e: React.DragEvent<HTMLButtonElement>) => {
+          e.dataTransfer.setData('application/x-karty-rodzaj', r);
+          e.dataTransfer.setData('text/plain', r);
+          e.dataTransfer.effectAllowed = 'copy';
+          ustawPrzeciaganyRodzaj(r);
+        },
+        onKoniecPrzeciagania: () => {
+          ustawPrzeciaganyRodzaj(undefined);
+          ustawNadKarta(false);
+        },
+      })),
+  })).filter((g) => g.pozycje.length > 0);
+
+  const stronaAktywna = u.strona ?? 'przod';
+  const rewersyProjektu = projekt.rewersy ?? [];
+  const maRewers = rewersyProjektu.length > 0;
+  const adresPrzod = `#/projekt/${idProjektu}/szablon/${encodeURIComponent(
+    u.przodTylu?.szablon.id ?? projekt.szablony[0]?.id ?? id,
+  )}`;
+  const przypisanyRewersId =
+    stronaAktywna === 'przod'
+      ? (projekt.szablony.find((s) => s.id === id)?.rewersId ?? rewersyProjektu[0]?.id)
+      : id;
+  const adresTyl = przypisanyRewersId
+    ? `#/projekt/${idProjektu}/rewers/${encodeURIComponent(przypisanyRewersId)}`
+    : undefined;
+
+  const zmienZoomKrok = (delta: -1 | 1) => {
+    ustawZoom((poprzedni) => {
+      const biezacy = poprzedni === 'dopasuj' ? 100 : poprzedni;
+      const idx = POZIOMY_ZOOM.findIndex((p) => p >= biezacy);
+      const start = idx === -1 ? POZIOMY_ZOOM.length - 1 : idx;
+      const nast = Math.max(0, Math.min(POZIOMY_ZOOM.length - 1, start + delta));
+      return POZIOMY_ZOOM[nast]!;
+    });
+  };
+
+  const szerokoscPodgladu =
+    zoom === 'dopasuj'
+      ? `min(100%, ${(szer / wys) * 70}vh)`
+      : `${Math.round((szer * 3.78 * zoom) / 100)}px`;
+
+  const onUpuscNaKarte = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    ustawNadKarta(false);
+    const pobrany = (
+      e.dataTransfer.getData('application/x-karty-rodzaj') ||
+      e.dataTransfer.getData('text/plain') ||
+      przeciaganyRodzaj ||
+      ''
+    ).trim() as RodzajNowego | '';
+    ustawPrzeciaganyRodzaj(undefined);
+    if (!pobrany || !dozwoloneSet.has(pobrany as RodzajNowego)) return;
+    const rect = kartaRef.current?.getBoundingClientRect();
+    if (rect && rect.width > 0 && rect.height > 0) {
+      const xMm = zaokraglij(((e.clientX - rect.left) / rect.width) * szer, 1);
+      const yMm = zaokraglij(((e.clientY - rect.top) / rect.height) * wys, 1);
+      dodaj(pobrany as RodzajNowego, { x: xMm, y: yMm });
+    } else {
+      dodaj(pobrany as RodzajNowego);
+    }
+  };
+
+  const krokiProjektu = [
+    {
+      id: 'szablony',
+      numer: 1,
+      etykieta: t('ui2.krok.szablony'),
+      href: adresPrzod,
+      aktywny: true,
+    },
+    {
+      id: 'karty',
+      numer: 2,
+      etykieta: t('ui2.krok.karty'),
+      href: `#/projekt/${idProjektu}`,
+      aktywny: false,
+    },
+    {
+      id: 'druk',
+      numer: 3,
+      etykieta: t('ui2.krok.druk'),
+      href: `#/projekt/${idProjektu}/drukuj`,
+      aktywny: false,
+    },
+  ];
+
   return (
     <ElementyWlasneKontekst.Provider
       value={{
@@ -707,8 +872,12 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
       }}
     >
       <div className="edytor-szablonu">
-        <header className="pasek-gorny" role="banner">
-          <a href="#/" className="logo" onClick={(e) => sprawdzWyjscie(e, '#/')}>
+        <header className="pasek-gorny ui2-naglowek" role="banner">
+          <a
+            href="#/"
+            className="logo ui2-naglowek-powrot"
+            onClick={(e) => sprawdzWyjscie(e, '#/')}
+          >
             {t('aplikacja.nazwa')}
           </a>
           <span className="grupa-paska">
@@ -721,6 +890,32 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             />
             <PrzyciskZapisu edycja={edycja} />
           </span>
+          <nav aria-label={t('ui2.etapyProjektu')} className="ui2-kroki">
+            {krokiProjektu.map((krok, idx) => (
+              <span key={krok.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {idx > 0 && (
+                  <span className="ui2-krok-strzalka" aria-hidden="true">
+                    →
+                  </span>
+                )}
+                {krok.aktywny ? (
+                  <span aria-current="page" className="ui2-krok ui2-krok-aktywny">
+                    <span className="ui2-krok-numer">{krok.numer}</span>
+                    {krok.etykieta}
+                  </span>
+                ) : (
+                  <a
+                    href={krok.href}
+                    className="ui2-krok"
+                    onClick={(e) => sprawdzWyjscie(e, krok.href)}
+                  >
+                    <span className="ui2-krok-numer">{krok.numer}</span>
+                    {krok.etykieta}
+                  </a>
+                )}
+              </span>
+            ))}
+          </nav>
           <span className="odstep" />
           <span className="grupa-paska">
             <button
@@ -859,337 +1054,599 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             {komunikatPliku.tekst}
           </p>
         )}
-        <div className="uklad-szablonu">
-          <aside className="panel-drzewa" aria-label={u.teksty.drzewo}>
-            <h2>{u.teksty.drzewo}</h2>
-            <div ref={drzewo}>
-              <DrzewoSzablonu
-                korzen={szablon.korzen}
-                zaznaczone={aktywne}
-                wybierz={wybierz}
-                pozaKarta={pozaKarta}
-              />
-            </div>
-            {pustaKarta && (
-              <div className="pusta-lista-drzewa" data-testid="pusty-stan-drzewa">
-                <p className="podpis">{t('szablon.brakElementow')}</p>
-                <MenuDodaj
-                  rodzaje={u.rodzajeDodaj ?? RODZAJE}
-                  dodaj={dodaj}
-                  przycisk={{
-                    tresc: t('szablon.dodajPusta'),
-                    className: 'menu-dodaj-pusta',
-                    testId: 'dodaj-pusty-stan-drzewa',
-                  }}
-                />
-              </div>
-            )}
-            <div className="akcje-drzewa">
-              <MenuDodaj rodzaje={u.rodzajeDodaj ?? RODZAJE} dodaj={dodaj} />
-              <button
-                type="button"
-                disabled={!moznaWyzej}
-                onClick={() => ruch((s, x) => przesunWezel(s, x, -1))}
-              >
-                {t('szablon.wyzej')}
-              </button>
-              <button
-                type="button"
-                disabled={!moznaNizej}
-                onClick={() => ruch((s, x) => przesunWezel(s, x, 1))}
-              >
-                {t('szablon.nizej')}
-              </button>
-              <button
-                type="button"
-                disabled={!moznaDoKontenera}
-                onClick={() => ruch(doPoprzedniegoKontenera)}
-              >
-                {t('szablon.doKontenera')}
-              </button>
-              <button type="button" disabled={!moznaWyjac} onClick={() => ruch(wyzej)}>
-                {t('szablon.wyjmij')}
-              </button>
-              <button type="button" disabled={!moznaOpakowac} onClick={() => opakujW('wiersz')}>
-                {t('szablon.opakujWiersz')}
-              </button>
-              <button type="button" disabled={!moznaOpakowac} onClick={() => opakujW('kolumna')}>
-                {t('szablon.opakujKolumne')}
-              </button>
-              <button type="button" disabled={!jeden || korzenZazn} onClick={duplikuj}>
-                {t('kartka.duplikuj')}
-              </button>
-              <button
-                type="button"
-                className="niebezpieczny"
-                disabled={aktywne.length === 0 || aktywne.includes(szablon.korzen.id)}
-                onClick={usun}
-              >
-                {t('kartka.usun')}
-              </button>
-            </div>
-            <p className="podpis">{t('szablon.pomocDrzewa')}</p>
-          </aside>
+        <div className="uklad-szablonu edytor-ui2-uklad">
+          <PasekBoczny
+            ekranId="edytor"
+            tytul={t('edytor.dodajElement')}
+            grupy={grupyPaska}
+            wskazowka={t('edytor.wskazowkaDodaj')}
+            domyslnieRozwiniety={false}
+          />
 
-          <section className="podglad-szablonu" aria-label={u.teksty.podglad}>
-            {podglad && 'blad' in podglad ? (
-              <p role="alert" className="uwaga">
-                {t('szablon.bladPodgladu', { szczegoly: String(podglad.blad) })}
-              </p>
-            ) : (
-              podglad && (
-                <>
-                  <div
-                    ref={kartaRef}
-                    className="karta-podgladu"
-                    role="group"
-                    aria-label={t('nakladka.opis')}
-                    tabIndex={0}
-                    style={{
-                      aspectRatio: `${szer} / ${wys}`,
-                      width: `min(100%, ${(szer / wys) * 70}vh)`,
-                      touchAction: 'none',
-                      ...(promienKarty > 0
-                        ? {
-                            borderRadius: `${(promienKarty / szer) * 100}% / ${(promienKarty / wys) * 100}%`,
-                          }
-                        : {}),
-                    }}
-                    onPointerDown={gest.onPointerDown}
-                    onPointerMove={gest.onPointerMove}
-                    onPointerUp={gest.onPointerUp}
-                    onPointerCancel={gest.onPointerCancel}
-                    onLostPointerCapture={gest.onLostPointerCapture}
+          <div className="edytor-ui2-srodek">
+            <div className="edytor-ui2-zakladki" role="toolbar" aria-label={t('ui2.krok.szablony')}>
+              {projekt.szablony.map((sz) => {
+                const wSz = wymiaryKarty(sz);
+                const aktywna = stronaAktywna === 'przod' && sz.id === id;
+                const href = `#/projekt/${idProjektu}/szablon/${encodeURIComponent(sz.id)}`;
+                return (
+                  <a
+                    key={sz.id}
+                    href={href}
+                    className={`edytor-ui2-zakladka${aktywna ? ' aktywna' : ''}`}
+                    aria-current={aktywna ? 'page' : undefined}
+                    onClick={(e) => sprawdzWyjscie(e, href)}
                   >
+                    <span>{sz.nazwa}</span>
+                    <span className="edytor-ui2-zakladka-rozmiar">
+                      {wSz.szer}×{wSz.wys}
+                    </span>
+                  </a>
+                );
+              })}
+              {u.nowySzablon && (
+                <button type="button" className="edytor-ui2-nowy-szablon" onClick={u.nowySzablon}>
+                  {t('edytor.nowySzablon')}
+                </button>
+              )}
+              {maRewers && adresTyl && (
+                <div
+                  className="edytor-ui2-strony"
+                  role="tablist"
+                  aria-label={t('edytor.stronaKarty')}
+                >
+                  <a
+                    role="tab"
+                    aria-selected={stronaAktywna === 'przod'}
+                    href={adresPrzod}
+                    className="edytor-ui2-strona-btn"
+                    onClick={(e) => sprawdzWyjscie(e, adresPrzod)}
+                  >
+                    {t('edytor.przod')}
+                  </a>
+                  <a
+                    role="tab"
+                    aria-selected={stronaAktywna === 'tyl'}
+                    href={adresTyl}
+                    className="edytor-ui2-strona-btn"
+                    onClick={(e) => sprawdzWyjscie(e, adresTyl)}
+                  >
+                    {t('edytor.tyl')}
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <section className="podglad-szablonu edytor-ui2-robocze" aria-label={u.teksty.podglad}>
+              {podglad && 'blad' in podglad ? (
+                <p role="alert" className="uwaga">
+                  {t('szablon.bladPodgladu', { szczegoly: String(podglad.blad) })}
+                </p>
+              ) : (
+                podglad && (
+                  <>
                     <div
-                      className="svg-opakowanie"
-                      dangerouslySetInnerHTML={{ __html: podglad.svg }}
-                    />
-                    {/* Podkład ze wzoru: nad kartą (tło karty jest kryjące), nie łapie kliknięć. */}
-                    {podklad?.podklad?.widoczny && podklad.adres && (
-                      <img
-                        className="podklad-podgladu"
-                        data-testid="podklad-podgladu"
-                        src={podklad.adres}
-                        alt=""
-                        aria-hidden="true"
-                        draggable={false}
-                        style={{ opacity: 1 - podklad.podklad.przezroczystosc / 100 }}
-                      />
-                    )}
-                    {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
-                    {[...podglad.wezly]
-                      .sort(
-                        (a, b) => b.lokalne.szer * b.lokalne.wys - a.lokalne.szer * a.lokalne.wys,
-                      )
-                      .map((w) => {
-                        const wezel = wezlyPoId.get(w.id);
-                        if (!wezel) return null;
-                        const r = w.obrys
+                      ref={kartaRef}
+                      className={`karta-podgladu${przeciaganyRodzaj || nadKarta ? ' edytor-ui2-upusc-cel' : ''}`}
+                      role="group"
+                      aria-label={t('nakladka.opis')}
+                      tabIndex={0}
+                      style={{
+                        aspectRatio: `${szer} / ${wys}`,
+                        width: szerokoscPodgladu,
+                        touchAction: 'none',
+                        ...(promienKarty > 0
                           ? {
-                              x: w.obrys.x - w.lokalne.szer / 2,
-                              y: w.obrys.y - w.lokalne.wys / 2,
-                              szer: w.lokalne.szer,
-                              wys: w.lokalne.wys,
+                              borderRadius: `${(promienKarty / szer) * 100}% / ${(promienKarty / wys) * 100}%`,
                             }
-                          : w;
-                        return (
-                          <button
-                            key={w.id}
-                            type="button"
-                            tabIndex={-1}
-                            className={`obszar-wezla${aktywne.includes(w.id) ? ' zaznaczony' : ''}${czyKontener(wezel) ? ' kontener' : ''}`}
-                            data-obszar={w.id}
-                            aria-label={nazwaWezla(wezel)}
-                            style={{
-                              left: `${(r.x / szer) * 100}%`,
-                              top: `${(r.y / wys) * 100}%`,
-                              width: `${(r.szer / szer) * 100}%`,
-                              height: `${(r.wys / wys) * 100}%`,
-                              ...(w.obrys ? { transform: `rotate(${w.obrys.kat}deg)` } : {}),
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Klik myszą obsługuje już `pointerdown` (zaznaczanie i przeciąganie);
-                              // tu zostaje aktywacja z klawiatury i technologii asystujących.
-                              if (e.detail === 0) wybierz(w.id, e.shiftKey);
+                          : {}),
+                      }}
+                      onPointerDown={gest.onPointerDown}
+                      onPointerMove={gest.onPointerMove}
+                      onPointerUp={gest.onPointerUp}
+                      onPointerCancel={gest.onPointerCancel}
+                      onLostPointerCapture={gest.onLostPointerCapture}
+                      onDragOver={(e) => {
+                        if (
+                          przeciaganyRodzaj ||
+                          e.dataTransfer.types.includes('application/x-karty-rodzaj') ||
+                          e.dataTransfer.types.includes('text/plain')
+                        ) {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'copy';
+                          if (!nadKarta) ustawNadKarta(true);
+                        }
+                      }}
+                      onDragLeave={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                          ustawNadKarta(false);
+                        }
+                      }}
+                      onDrop={onUpuscNaKarte}
+                    >
+                      <div
+                        className="svg-opakowanie"
+                        dangerouslySetInnerHTML={{ __html: podglad.svg }}
+                      />
+                      {/* Podkład ze wzoru: nad kartą (tło karty jest kryjące), nie łapie kliknięć. */}
+                      {podklad?.podklad?.widoczny && podklad.adres && (
+                        <img
+                          className="podklad-podgladu"
+                          data-testid="podklad-podgladu"
+                          src={podklad.adres}
+                          alt=""
+                          aria-hidden="true"
+                          draggable={false}
+                          style={{ opacity: 1 - podklad.podklad.przezroczystosc / 100 }}
+                        />
+                      )}
+                      {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
+                      {[...podglad.wezly]
+                        .sort(
+                          (a, b) => b.lokalne.szer * b.lokalne.wys - a.lokalne.szer * a.lokalne.wys,
+                        )
+                        .map((w) => {
+                          const wezel = wezlyPoId.get(w.id);
+                          if (!wezel) return null;
+                          const r = w.obrys
+                            ? {
+                                x: w.obrys.x - w.lokalne.szer / 2,
+                                y: w.obrys.y - w.lokalne.wys / 2,
+                                szer: w.lokalne.szer,
+                                wys: w.lokalne.wys,
+                              }
+                            : w;
+                          return (
+                            <button
+                              key={w.id}
+                              type="button"
+                              tabIndex={-1}
+                              className={`obszar-wezla${aktywne.includes(w.id) ? ' zaznaczony' : ''}${czyKontener(wezel) ? ' kontener' : ''}`}
+                              data-obszar={w.id}
+                              aria-label={nazwaWezla(wezel)}
+                              style={{
+                                left: `${(r.x / szer) * 100}%`,
+                                top: `${(r.y / wys) * 100}%`,
+                                width: `${(r.szer / szer) * 100}%`,
+                                height: `${(r.wys / wys) * 100}%`,
+                                ...(w.obrys ? { transform: `rotate(${w.obrys.kat}deg)` } : {}),
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Klik myszą obsługuje już `pointerdown` (zaznaczanie i przeciąganie);
+                                // tu zostaje aktywacja z klawiatury i technologii asystujących.
+                                if (e.detail === 0) wybierz(w.id, e.shiftKey);
+                              }}
+                            />
+                          );
+                        })}
+                      {/* Pusty stan tylko w edytorze: warstwa HTML nad sceną – nie trafia do SVG,
+                          PDF, PNG ani miniatur (te powstają ze sceny). */}
+                      {pustaKarta && (
+                        <div
+                          className="pusta-karta-podgladu"
+                          data-testid="pusty-stan-karty"
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <p>{t('szablon.pustaKartaPodglad')}</p>
+                          <MenuDodaj
+                            rodzaje={dozwoloneRodzaje}
+                            dodaj={dodaj}
+                            przycisk={{
+                              tresc: '＋',
+                              className: 'menu-dodaj-duzy',
+                              etykieta: t('szablon.dodajElement'),
+                              testId: 'dodaj-pusta-karta',
                             }}
                           />
-                        );
-                      })}
-                    {/* Pusty stan tylko w edytorze: warstwa HTML nad sceną – nie trafia do SVG,
-                        PDF, PNG ani miniatur (te powstają ze sceny). */}
+                        </div>
+                      )}
+                      <NakladkaSwobodna
+                        szer={szer}
+                        wys={wys}
+                        stan={gest.stan}
+                        siatka={przyciaganie.siatka}
+                        prostokat={prostokatUchwytow}
+                        obrot={celUchwytow?.lokalne ? celUchwytow.obrot : 0}
+                        uchwytDown={gest.onUchwytDown}
+                        uchwytKlawisz={(uch, e) => {
+                          if (e.altKey || e.ctrlKey || e.metaKey) return;
+                          if (gest.strzalkiUchwytu(uch, e)) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
+                      />
+                    </div>
+                    {przeciaganyRodzaj && (
+                      <div className="edytor-ui2-upusc-podpowiedz" role="status">
+                        {t('edytor.upuscPodpowiedz', { nazwa: t(`wezel.${przeciaganyRodzaj}`) })}
+                      </div>
+                    )}
+                    {celeZazn.length === aktywne.length &&
+                      celeZazn.some((c) => c.obrotPrzodkow !== 0) && (
+                        <p className="podpis" role="status">
+                          {t('nakladka.uchwytyNiedostepne')}
+                        </p>
+                      )}
+                    <NarzedziaPodgladu
+                      przyciaganie={przyciaganie}
+                      ustawPrzyciaganie={ustawPrzyciaganie}
+                      podklad={podklad}
+                    />
+                    {podglad.ostrzezenia.length > 0 && (
+                      <ul className="ostrzezenia-karty">
+                        {podglad.ostrzezenia.map((o, i) => {
+                          const w = znajdzWezel(szablon, o.pole);
+                          return (
+                            <li key={i}>
+                              {tekstOstrzezenia({ ...o, pole: w ? nazwaWezla(w) : o.pole })}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </>
+                )
+              )}
+              <p className="podpis">{u.teksty.pomocPodgladu}</p>
+            </section>
+
+            <div className="ui2-pasek-stanu" data-testid="pasek-stanu-edytora">
+              <span>
+                {szer} × {wys} mm · {t(`wezel.${szablon.korzen.typ}`)} ·{' '}
+                {przyciaganie.siatka > 0
+                  ? `${t('edytor.przyciaganieWl')} (${przyciaganie.siatka} mm)`
+                  : t('edytor.przyciaganieWyl')}
+              </span>
+              <span className="edytor-ui2-stan-zoom">
+                <button
+                  type="button"
+                  className="edytor-ui2-stan-btn"
+                  aria-label={t('edytor.pomniejsz')}
+                  onClick={() => zmienZoomKrok(-1)}
+                >
+                  −
+                </button>
+                <span data-testid="zoom-wartosc">
+                  {zoom === 'dopasuj' ? t('edytor.dopasuj') : `${zoom}%`}
+                </span>
+                <button
+                  type="button"
+                  className="edytor-ui2-stan-btn"
+                  aria-label={t('edytor.powieksz')}
+                  onClick={() => zmienZoomKrok(1)}
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  className="edytor-ui2-stan-btn"
+                  onClick={() => ustawZoom('dopasuj')}
+                >
+                  {t('edytor.dopasuj')}
+                </button>
+              </span>
+            </div>
+          </div>
+
+          {prawyPanelOtwarty && (
+            <div className="edytor-ui2-prawa-kolumna">
+              <aside
+                className="panel-edytora edytor-ui2-prawa-tresc"
+                aria-label={t('szablon.wlasciwosci')}
+              >
+                {prawaZakladka === 'karta' ? (
+                  u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
+                ) : (
+                  <>
+                    {rozmiarZaznaczenia}
+                    {edytowany ? (
+                      <>
+                        <h2>
+                          {aktywne.length > 1
+                            ? t('szablon.zaznaczono', { liczba: aktywne.length })
+                            : nazwaWezla(edytowany)}
+                        </h2>
+                        <p className="akcje-stylu">
+                          <button
+                            type="button"
+                            onClick={() => ustawSchowek(skopiujStyl(edytowany, szablon))}
+                          >
+                            {t('wlasciwosci.kopiujStyl')}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!schowek}
+                            onClick={() =>
+                              schowek &&
+                              zmienSz((s) =>
+                                aktywne.reduce(
+                                  (x, idW) => zmienWezel(x, idW, (w) => wklejStyl(w, schowek)),
+                                  s,
+                                ),
+                              )
+                            }
+                          >
+                            {t('wlasciwosci.wklejStyl')}
+                          </button>
+                        </p>
+                        <PanelWezla
+                          key={aktywne.join(',')}
+                          szablon={szablon}
+                          wezel={edytowany}
+                          zmienSzablon={zmienSz}
+                          wiele={aktywne.length > 1}
+                          wymiary={wymiary(edytowany.id)}
+                          czcionki={czcionki}
+                          obrazy={obrazy}
+                          {...(aktywne.length === 1
+                            ? {
+                                wgrajStalyObraz: (plik: File, sygnal: AbortSignal) =>
+                                  u.wgrajStalyObraz(edytowany.id, plik, sygnal),
+                              }
+                            : {})}
+                          zajeteKlucze={zajeteKlucze}
+                          {...(bezDanych ? { bezDanych: true } : {})}
+                          {...(u.przodTylu ? { przodTylu: u.przodTylu } : {})}
+                          {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
+                          rozmiaryKotwicy={rozmiaryKotwicy}
+                          {...(wyrownanie ? { wyrownanie } : {})}
+                          mozeNaSwobodny={!!uklad}
+                          kolejnosc={(jak) =>
+                            zmienSz((s) => zmienKolejnoscRysowania(s, edytowany.id, jak))
+                          }
+                          // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
+                          zmienWezel={(f, klucz) =>
+                            zmienSz(
+                              (s) => aktywne.reduce((x, idW) => zmienWezel(x, idW, f), s),
+                              klucz && `${klucz}:${aktywne.join(',')}`,
+                            )
+                          }
+                          zmienTyp={(typ) =>
+                            zmienSz((s) =>
+                              aktywne.reduce(
+                                (x, idW) =>
+                                  czyKontener(edytowany)
+                                    ? zmienTypKontenera(x, idW, typ as Kontener['typ'], uklad)
+                                    : zmienTypPola(
+                                        x,
+                                        idW,
+                                        typ as Pole['typ'],
+                                        t(`wezel.${typ}`),
+                                        zajeteKlucze(),
+                                        bezDanych,
+                                      ),
+                                s,
+                              ),
+                            )
+                          }
+                          zmienPrzyklad={(klucz, v, grupuj = true) => {
+                            if (bezDanych) return;
+                            zmienSz(
+                              (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
+                              grupuj ? `przyklad:${klucz}` : undefined,
+                            );
+                          }}
+                        />
+                      </>
+                    ) : aktywne.length > 1 ? (
+                      <>
+                        <h2>{t('szablon.zaznaczono', { liczba: aktywne.length })}</h2>
+                        <p className="podpis">{t('szablon.wieleOpis')}</p>
+                        {wyrownanie && (
+                          <fieldset className="polozenie">
+                            <legend>
+                              <strong>{t('polozenie.tytul')}</strong>
+                            </legend>
+                            {wyrownanie}
+                          </fieldset>
+                        )}
+                      </>
+                    ) : (
+                      u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
+                    )}
+                  </>
+                )}
+              </aside>
+
+              {strukturaOtwarta && (
+                <div
+                  className="edytor-ui2-granica"
+                  role="separator"
+                  aria-orientation="horizontal"
+                  aria-label={t('edytor.zmienWysokoscStruktury')}
+                  data-testid="granica-struktury"
+                  onPointerDown={(e) => {
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    gestGranicy.current = { startY: e.clientY, startH: wysokoscStruktury };
+                  }}
+                  onPointerMove={(e) => {
+                    if (!gestGranicy.current) return;
+                    const dy = gestGranicy.current.startY - e.clientY;
+                    const nowa = Math.max(
+                      WYSOKOSC_STRUKTURY_MIN,
+                      Math.min(WYSOKOSC_STRUKTURY_MAX, Math.round(gestGranicy.current.startH + dy)),
+                    );
+                    ustawWysokoscStruktury(nowa);
+                  }}
+                  onPointerUp={() => {
+                    if (!gestGranicy.current) return;
+                    gestGranicy.current = undefined;
+                    try {
+                      window.localStorage.setItem(
+                        KLUCZ_WYSOKOSCI_STRUKTURY,
+                        String(wysokoscStruktury),
+                      );
+                    } catch {
+                      // Best-effort.
+                    }
+                  }}
+                >
+                  <span className="edytor-ui2-granica-uchwyt" aria-hidden="true" />
+                </div>
+              )}
+
+              <aside
+                className={`panel-drzewa edytor-ui2-struktura${strukturaOtwarta ? ' z-granica' : ''}`}
+                aria-label={u.teksty.drzewo}
+                style={strukturaOtwarta ? { height: `${wysokoscStruktury}px` } : undefined}
+              >
+                <div className="edytor-ui2-struktura-naglowek">
+                  <button
+                    type="button"
+                    className="edytor-ui2-struktura-przelacz"
+                    aria-expanded={strukturaOtwarta}
+                    data-testid="przelacz-strukture"
+                    onClick={() => ustawStrukturaOtwarta((v) => !v)}
+                  >
+                    <span aria-hidden="true">{strukturaOtwarta ? '▾' : '▸'}</span>
+                    <span>{u.teksty.drzewo}</span>
+                  </button>
+                </div>
+                {strukturaOtwarta && (
+                  <div className="edytor-ui2-struktura-cialo">
+                    <div ref={drzewo}>
+                      <DrzewoSzablonu
+                        korzen={szablon.korzen}
+                        zaznaczone={aktywne}
+                        wybierz={wybierz}
+                        pozaKarta={pozaKarta}
+                      />
+                    </div>
                     {pustaKarta && (
-                      <div
-                        className="pusta-karta-podgladu"
-                        data-testid="pusty-stan-karty"
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        <p>{t('szablon.pustaKartaPodglad')}</p>
+                      <div className="pusta-lista-drzewa" data-testid="pusty-stan-drzewa">
+                        <p className="podpis">{t('szablon.brakElementow')}</p>
                         <MenuDodaj
-                          rodzaje={u.rodzajeDodaj ?? RODZAJE}
+                          rodzaje={dozwoloneRodzaje}
                           dodaj={dodaj}
                           przycisk={{
-                            tresc: '＋',
-                            className: 'menu-dodaj-duzy',
-                            etykieta: t('szablon.dodajElement'),
-                            testId: 'dodaj-pusta-karta',
+                            tresc: t('szablon.dodajPusta'),
+                            className: 'menu-dodaj-pusta',
+                            testId: 'dodaj-pusty-stan-drzewa',
                           }}
                         />
                       </div>
                     )}
-                    <NakladkaSwobodna
-                      szer={szer}
-                      wys={wys}
-                      stan={gest.stan}
-                      siatka={przyciaganie.siatka}
-                      prostokat={prostokatUchwytow}
-                      obrot={celUchwytow?.lokalne ? celUchwytow.obrot : 0}
-                      uchwytDown={gest.onUchwytDown}
-                      uchwytKlawisz={(uch, e) => {
-                        if (e.altKey || e.ctrlKey || e.metaKey) return;
-                        if (gest.strzalkiUchwytu(uch, e)) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }
-                      }}
-                    />
+                    <div className="akcje-drzewa">
+                      <MenuDodaj rodzaje={dozwoloneRodzaje} dodaj={dodaj} />
+                      <button
+                        type="button"
+                        disabled={!moznaWyzej}
+                        onClick={() => ruch((s, x) => przesunWezel(s, x, -1))}
+                      >
+                        {t('szablon.wyzej')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!moznaNizej}
+                        onClick={() => ruch((s, x) => przesunWezel(s, x, 1))}
+                      >
+                        {t('szablon.nizej')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!moznaDoKontenera}
+                        onClick={() => ruch(doPoprzedniegoKontenera)}
+                      >
+                        {t('szablon.doKontenera')}
+                      </button>
+                      <button type="button" disabled={!moznaWyjac} onClick={() => ruch(wyzej)}>
+                        {t('szablon.wyjmij')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!moznaOpakowac}
+                        onClick={() => opakujW('wiersz')}
+                      >
+                        {t('szablon.opakujWiersz')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!moznaOpakowac}
+                        onClick={() => opakujW('kolumna')}
+                      >
+                        {t('szablon.opakujKolumne')}
+                      </button>
+                      <button type="button" disabled={!jeden || korzenZazn} onClick={duplikuj}>
+                        {t('kartka.duplikuj')}
+                      </button>
+                      <button
+                        type="button"
+                        className="niebezpieczny"
+                        disabled={aktywne.length === 0 || aktywne.includes(szablon.korzen.id)}
+                        onClick={usun}
+                      >
+                        {t('kartka.usun')}
+                      </button>
+                    </div>
+                    <p className="podpis">{t('szablon.pomocDrzewa')}</p>
                   </div>
-                  {celeZazn.length === aktywne.length &&
-                    celeZazn.some((c) => c.obrotPrzodkow !== 0) && (
-                      <p className="podpis" role="status">
-                        {t('nakladka.uchwytyNiedostepne')}
-                      </p>
-                    )}
-                  <NarzedziaPodgladu
-                    przyciaganie={przyciaganie}
-                    ustawPrzyciaganie={ustawPrzyciaganie}
-                    podklad={podklad}
-                  />
-                  {podglad.ostrzezenia.length > 0 && (
-                    <ul className="ostrzezenia-karty">
-                      {podglad.ostrzezenia.map((o, i) => {
-                        const w = znajdzWezel(szablon, o.pole);
-                        return (
-                          <li key={i}>
-                            {tekstOstrzezenia({ ...o, pole: w ? nazwaWezla(w) : o.pole })}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </>
-              )
-            )}
-            <p className="podpis">{u.teksty.pomocPodgladu}</p>
-          </section>
-
-          <aside className="panel-edytora" aria-label={t('szablon.wlasciwosci')}>
-            {rozmiarZaznaczenia}
-            {edytowany ? (
-              <>
-                <h2>
-                  {aktywne.length > 1
-                    ? t('szablon.zaznaczono', { liczba: aktywne.length })
-                    : nazwaWezla(edytowany)}
-                </h2>
-                <p className="akcje-stylu">
-                  <button
-                    type="button"
-                    onClick={() => ustawSchowek(skopiujStyl(edytowany, szablon))}
-                  >
-                    {t('wlasciwosci.kopiujStyl')}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!schowek}
-                    onClick={() =>
-                      schowek &&
-                      zmienSz((s) =>
-                        aktywne.reduce(
-                          (x, idW) => zmienWezel(x, idW, (w) => wklejStyl(w, schowek)),
-                          s,
-                        ),
-                      )
-                    }
-                  >
-                    {t('wlasciwosci.wklejStyl')}
-                  </button>
-                </p>
-                <PanelWezla
-                  key={aktywne.join(',')}
-                  szablon={szablon}
-                  wezel={edytowany}
-                  zmienSzablon={zmienSz}
-                  wiele={aktywne.length > 1}
-                  wymiary={wymiary(edytowany.id)}
-                  czcionki={czcionki}
-                  obrazy={obrazy}
-                  {...(aktywne.length === 1
-                    ? {
-                        wgrajStalyObraz: (plik: File, sygnal: AbortSignal) =>
-                          u.wgrajStalyObraz(edytowany.id, plik, sygnal),
-                      }
-                    : {})}
-                  zajeteKlucze={zajeteKlucze}
-                  {...(bezDanych ? { bezDanych: true } : {})}
-                  {...(u.przodTylu ? { przodTylu: u.przodTylu } : {})}
-                  {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
-                  rozmiaryKotwicy={rozmiaryKotwicy}
-                  {...(wyrownanie ? { wyrownanie } : {})}
-                  mozeNaSwobodny={!!uklad}
-                  kolejnosc={(jak) => zmienSz((s) => zmienKolejnoscRysowania(s, edytowany.id, jak))}
-                  // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
-                  zmienWezel={(f, klucz) =>
-                    zmienSz(
-                      (s) => aktywne.reduce((x, idW) => zmienWezel(x, idW, f), s),
-                      klucz && `${klucz}:${aktywne.join(',')}`,
-                    )
-                  }
-                  zmienTyp={(typ) =>
-                    zmienSz((s) =>
-                      aktywne.reduce(
-                        (x, idW) =>
-                          czyKontener(edytowany)
-                            ? zmienTypKontenera(x, idW, typ as Kontener['typ'], uklad)
-                            : zmienTypPola(
-                                x,
-                                idW,
-                                typ as Pole['typ'],
-                                t(`wezel.${typ}`),
-                                zajeteKlucze(),
-                                bezDanych,
-                              ),
-                        s,
-                      ),
-                    )
-                  }
-                  zmienPrzyklad={(klucz, v, grupuj = true) => {
-                    if (bezDanych) return;
-                    zmienSz(
-                      (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
-                      grupuj ? `przyklad:${klucz}` : undefined,
-                    );
-                  }}
-                />
-              </>
-            ) : aktywne.length > 1 ? (
-              <>
-                <h2>{t('szablon.zaznaczono', { liczba: aktywne.length })}</h2>
-                <p className="podpis">{t('szablon.wieleOpis')}</p>
-                {wyrownanie && (
-                  <fieldset className="polozenie">
-                    <legend>
-                      <strong>{t('polozenie.tytul')}</strong>
-                    </legend>
-                    {wyrownanie}
-                  </fieldset>
                 )}
-              </>
-            ) : (
-              u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
-            )}
-          </aside>
+              </aside>
+            </div>
+          )}
+
+          <div
+            className="edytor-ui2-prawy-pasek"
+            role="toolbar"
+            aria-orientation="vertical"
+            aria-label={t('edytor.przelaczPanel')}
+          >
+            <button
+              type="button"
+              className="edytor-ui2-prawy-btn ui2-z-dymkiem"
+              aria-label={t('edytor.zakladka.element')}
+              aria-pressed={prawyPanelOtwarty && prawaZakladka === 'element'}
+              onClick={() => {
+                ustawPrawyPanelOtwarty(true);
+                ustawPrawaZakladka('element');
+              }}
+            >
+              <IkonaKreskowa sciezka="M4 6h16M4 12h16M4 18h10" />
+              <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                {t('edytor.zakladka.element')}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="edytor-ui2-prawy-btn ui2-z-dymkiem"
+              aria-label={t('edytor.zakladka.karta')}
+              aria-pressed={prawyPanelOtwarty && prawaZakladka === 'karta'}
+              onClick={() => {
+                ustawPrawyPanelOtwarty(true);
+                ustawPrawaZakladka('karta');
+              }}
+            >
+              <IkonaKreskowa sciezka="M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+              <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                {t('edytor.zakladka.karta')}
+              </span>
+            </button>
+            <a
+              href={adresOzdobnikow}
+              className="edytor-ui2-prawy-btn ui2-z-dymkiem"
+              aria-label={t('edytor.zakladka.biblioteka')}
+              onClick={(e) => sprawdzWyjscie(e, adresOzdobnikow)}
+            >
+              <IkonaKreskowa sciezka="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                {t('edytor.zakladka.biblioteka')}
+              </span>
+            </a>
+            <button
+              type="button"
+              className="edytor-ui2-prawy-btn edytor-ui2-prawy-zwin ui2-z-dymkiem"
+              aria-label={t('edytor.przelaczPanel')}
+              aria-expanded={prawyPanelOtwarty}
+              onClick={() => ustawPrawyPanelOtwarty((v) => !v)}
+            >
+              <span aria-hidden="true">{prawyPanelOtwarty ? '»' : '«'}</span>
+              <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                {t('edytor.przelaczPanel')}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </ElementyWlasneKontekst.Provider>
