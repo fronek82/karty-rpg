@@ -454,7 +454,7 @@
 }
 
 .karty-ui2-dopasowanie .ostrzezenie {
-  color: var(--blad, #b91c1c);
+  color: var(--blad);
 }
 
 .karty-ui2-modal-akcje {
