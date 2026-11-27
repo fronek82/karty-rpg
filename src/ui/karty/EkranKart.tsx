@@ -1,4 +1,11 @@
-import { useMemo, useState, type DragEvent } from 'react';
+import { useEffect, useMemo, useState, type DragEvent } from 'react';
+import {
+  aktualizujRewersWProjekcie,
+  aktualizujSzablonWProjekcie,
+  wykryjNowszeWersje,
+  type NowaWersjaSzablonu,
+} from '../../dane/aktualizacjaSzablonu';
+import type { WpisSzablonu } from '../../dane/bibliotekaSzablonow';
 import { kolumnySzablonu, ustawDane } from '../../dane/edycja';
 import { przypiszRewers, rewersKarty } from '../../dane/rewers';
 import { nazwaKarty } from '../../dane/szablon';
@@ -6,11 +13,14 @@ import { t } from '../../i18n';
 import type { Karta, PrzypisanieRewersu, Rewers, Szablon, Talia } from '../../model/szablon';
 import { renderujKarte, renderujRewers, type KontekstRenderowania } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
+import { baza } from '../bazaUI';
+import { usePasekKomunikatu } from '../PasekKomunikatu';
 import { nazwaPliku, zapiszPlik } from '../pliki';
 import { NaglowekProjektu, type DefinicjaKroku, type StanZapisuUi2 } from '../ui2/NaglowekProjektu';
 import { PasekBoczny, type GrupaPaskaBocznego } from '../ui2/PasekBoczny';
 import type { ProjektWEdycji } from '../useProjekt';
 import { PrzyciskZapisu, useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
+import { OknoAktualizacjiSzablonu } from './OknoAktualizacjiSzablonu';
 import './kartyUi2.css';
 
 interface WpisKarty {
@@ -51,6 +61,53 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
   const [filtrSzablonu, ustawFiltrSzablonu] = useState('');
   const [zaznaczone, ustawZaznaczone] = useState<string[]>([]);
   const [nadUpuszczaniem, ustawNadUpuszczaniem] = useState(false);
+  const [wpisySzablonow, ustawWpisySzablonow] = useState<WpisSzablonu[]>([]);
+  const [aktualizowanyCel, ustawAktualizowanyCel] = useState<
+    { rodzaj: 'awers' | 'rewers'; idWProjekcie: string } | undefined
+  >();
+  const [wersjaKomunikatu, ustawWersjeKomunikatu] = useState<number | undefined>();
+  const { pasek: pasekKomunikatu, pokaz: pokazKomunikat } = usePasekKomunikatu();
+
+  useEffect(() => {
+    let aktywny = true;
+    const odswiez = () => {
+      void baza()
+        .szablonyBiblioteki()
+        .then((lista) => {
+          if (aktywny) ustawWpisySzablonow(lista);
+        })
+        .catch(() => undefined);
+    };
+    odswiez();
+    window.addEventListener('focus', odswiez);
+    return () => {
+      aktywny = false;
+      window.removeEventListener('focus', odswiez);
+    };
+  }, []);
+
+  const nowszeWersje = useMemo(
+    () => wykryjNowszeWersje(projekt, wpisySzablonow),
+    [projekt, wpisySzablonow],
+  );
+  const aktualizowanaWersja = useMemo(
+    () =>
+      aktualizowanyCel
+        ? nowszeWersje.find(
+            (n) =>
+              n.rodzaj === aktualizowanyCel.rodzaj &&
+              n.idWProjekcie === aktualizowanyCel.idWProjekcie,
+          )
+        : undefined,
+    [aktualizowanyCel, nowszeWersje],
+  );
+  const nowszePoSzablonie = useMemo(
+    () =>
+      new Map(
+        nowszeWersje.filter((n) => n.rodzaj === 'awers').map((n) => [n.idWProjekcie, n] as const),
+      ),
+    [nowszeWersje],
+  );
 
   const szablonyPoId = useMemo(
     () => new Map(projekt.szablony.map((s) => [s.id, s] as const)),
@@ -313,23 +370,58 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
         ? 'niezapisane'
         : 'zapisano';
 
+  const zatwierdzAktualizacje = (zmiana: NowaWersjaSzablonu) => {
+    const docelowaWersja = edycja.wersja + 1;
+    if (zmiana.rodzaj === 'awers') {
+      zmien(
+        (p) => aktualizujSzablonWProjekcie(p, zmiana.idWProjekcie, zmiana.wpisBiblioteki).projekt,
+      );
+    } else {
+      zmien((p) => aktualizujRewersWProjekcie(p, zmiana.idWProjekcie, zmiana.wpisBiblioteki));
+    }
+    ustawAktualizowanyCel(undefined);
+    ustawWersjeKomunikatu(docelowaWersja);
+    pokazKomunikat({
+      tekst:
+        zmiana.liczbaKart > 0
+          ? t('karty.aktualizacja.zaktualizowano', {
+              n: zmiana.liczbaKart,
+              nazwa: zmiana.wpisBiblioteki.nazwa,
+            })
+          : t('karty.aktualizacja.zaktualizowanoSzablon', {
+              nazwa: zmiana.wpisBiblioteki.nazwa,
+            }),
+      akcja: {
+        etykieta: t('pasek.cofnij'),
+        wykonaj: () => {
+          ustawWersjeKomunikatu(undefined);
+          edycja.cofnij();
+        },
+      },
+    });
+  };
+
   const grupyPaska: GrupaPaskaBocznego[] = [
     {
       id: 'szablony',
       nazwa: t('karty.grupaSzablony'),
       pozycje: [
-        ...projekt.szablony.map((sz) => ({
-          id: `sz-${sz.id}`,
-          nazwa: sz.nazwa,
-          ikona: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z',
-          przeciagane: true,
-          onKlik: () => dodajKarteSzablonu(sz.id),
-          onPoczatekPrzeciagania: (e: DragEvent<HTMLButtonElement>) => {
-            e.dataTransfer.setData('application/x-karty-szablon', sz.id);
-            e.dataTransfer.setData('text/plain', sz.id);
-            e.dataTransfer.effectAllowed = 'copy';
-          },
-        })),
+        ...projekt.szablony.map((sz) => {
+          const maNowsza = nowszePoSzablonie.has(sz.id);
+          return {
+            id: `sz-${sz.id}`,
+            nazwa: sz.nazwa,
+            ...(maNowsza ? { odznaka: '●', podpowiedz: t('karty.nowszaWersja') } : {}),
+            ikona: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z',
+            przeciagane: true,
+            onKlik: () => dodajKarteSzablonu(sz.id),
+            onPoczatekPrzeciagania: (e: DragEvent<HTMLButtonElement>) => {
+              e.dataTransfer.setData('application/x-karty-szablon', sz.id);
+              e.dataTransfer.setData('text/plain', sz.id);
+              e.dataTransfer.effectAllowed = 'copy';
+            },
+          };
+        }),
         {
           id: 'nowy-szablon',
           nazwa: t('edytor.nowySzablon'),
@@ -489,6 +581,31 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
               </select>
             )}
           </div>
+
+          {nowszeWersje.length > 0 && (
+            <div className="karty-ui2-aktualizacje" data-testid="pasek-nowszych-szablonow">
+              {nowszeWersje.map((zm) => (
+                <div
+                  key={`${zm.rodzaj}:${zm.idWProjekcie}`}
+                  className="karty-ui2-aktualizacja-wiersz"
+                >
+                  <span className="karty-ui2-aktualizacja-odznaka">{t('karty.nowszaWersja')}</span>
+                  <span className="karty-ui2-aktualizacja-nazwa">{zm.nazwaWProjekcie}</span>
+                  <button
+                    type="button"
+                    className="karty-ui2-aktualizacja-przycisk"
+                    onClick={() =>
+                      ustawAktualizowanyCel({ rodzaj: zm.rodzaj, idWProjekcie: zm.idWProjekcie })
+                    }
+                  >
+                    {zm.liczbaKart > 0
+                      ? t('karty.aktualizujKarty', { n: zm.liczbaKart })
+                      : t('karty.aktualizujSzablon')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           <section
             className="karty-ui2-obszar"
@@ -759,6 +876,17 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
           </div>
         </aside>
       </div>
+      {aktualizowanaWersja && (
+        <OknoAktualizacjiSzablonu
+          projekt={projekt}
+          zmiana={aktualizowanaWersja}
+          zasoby={zasoby}
+          ctxRenderu={ctxRenderu}
+          onZatwierdz={() => zatwierdzAktualizacje(aktualizowanaWersja)}
+          onAnuluj={() => ustawAktualizowanyCel(undefined)}
+        />
+      )}
+      {wersjaKomunikatu === edycja.wersja && pasekKomunikatu}
     </div>
   );
 }

@@ -1937,6 +1937,22 @@ export const en: Slownik = {
   'edytor.skrot.cofnijOpis': 'undo / redo',
   'edytor.skrot.zapiszOpis': 'save',
   'edytor.skrot.linieOpis': 'show / hide guides',
+  // Plan S (S2): template copy updates in project
+  'karty.nowszaWersja': 'A newer template version is available',
+  'karty.aktualizujKarty': 'Update cards ({n})',
+  'karty.aktualizujSzablon': 'Update template',
+  'karty.aktualizacja.tytul': 'Update template “{nazwa}”',
+  'karty.aktualizacja.opis':
+    'The new version from “My templates” will replace the copy in this project. Card data ({n}) will be preserved.',
+  'karty.aktualizacja.opisBezKart':
+    'The new version from “My templates” will replace the copy in this project.',
+  'karty.aktualizacja.przed': 'Before',
+  'karty.aktualizacja.po': 'After',
+  'karty.aktualizacja.polaPrzeniesione': 'Preserved fields',
+  'karty.aktualizacja.polaPominiete': 'Unmatched fields (skipped)',
+  'karty.aktualizacja.polaNowe': 'New fields (empty)',
+  'karty.aktualizacja.zaktualizowano': 'Updated cards ({n}) from template “{nazwa}”.',
+  'karty.aktualizacja.zaktualizowanoSzablon': 'Updated template copy “{nazwa}”.',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
