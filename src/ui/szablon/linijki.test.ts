@@ -4,15 +4,30 @@ import { WERSJA_SCHEMATU } from '../../model/projekt';
 import {
   formatujMmLinii,
   kreskiLinijki,
+  kreskiPrzypietejLinijki,
+  krokEtykietCm,
   mmNaProcentLinijki,
+  mmNaPxLinijki,
   nowaLiniaPomocnicza,
   pozycjeLiniiOsi,
+  pxLinijkiNaMm,
   pxNaMm,
   WYSTAWANIE_MM,
   zaokraglijLinie,
 } from './linijki';
 
-describe('linijki i linie pomocnicze (UI2 R5)', () => {
+describe('linijki i linie pomocnicze (UI2 R5 + R10)', () => {
+  it('przelicza mm ↔ px jednej skali i dostosowuje krok etykiet cm przy małym zoomie', () => {
+    expect(mmNaPxLinijki(0, 120, 4)).toBe(120);
+    expect(mmNaPxLinijki(10, 120, 4)).toBe(160);
+    expect(pxLinijkiNaMm(160, 120, 4)).toBe(10);
+    expect(krokEtykietCm(4)).toBe(1);
+    expect(krokEtykietCm(1.5)).toBe(2);
+    expect(krokEtykietCm(0.7)).toBe(5);
+    const kreski = kreskiPrzypietejLinijki(300, 50, 1.5);
+    const etykiety = kreski.filter((k) => k.etykieta !== undefined).map((k) => Number(k.etykieta));
+    expect(etykiety.every((cm) => Math.abs(cm) % 2 === 0)).toBe(true);
+  });
   it('zaokrągla pozycję linii pomocniczej do kroku 0,5 mm', () => {
     expect(zaokraglijLinie(10.2)).toBe(10);
     expect(zaokraglijLinie(10.3)).toBe(10.5);

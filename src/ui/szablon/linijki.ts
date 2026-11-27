@@ -6,6 +6,9 @@ export const WYSTAWANIE_MM = 10;
 /** Krok położenia linii pomocniczej przy przeciąganiu (mm). */
 export const KROK_LINII_MM = 0.5;
 
+/** Minimalny odstęp między sąsiednimi cyframi cm na linijce (px). */
+export const MIN_ODSTEP_CYFR_PX = 18;
+
 export interface KreskaLinijki {
   mm: number;
   rodzaj: 'mm' | 'polcm' | 'cm';
@@ -13,9 +16,71 @@ export interface KreskaLinijki {
   etykieta?: string;
 }
 
+export interface KreskaPikselowa extends KreskaLinijki {
+  /** Pozycja w pikselach od początku widocznej linijki. */
+  px: number;
+}
+
 /** Zaokrągla pozycję linii pomocniczej do kroku 0,5 mm. */
 export function zaokraglijLinie(mm: number): number {
   return Math.round(mm / KROK_LINII_MM) * KROK_LINII_MM;
+}
+
+/** Jedna funkcja skali: przelicza pozycję w mm (względem rogu karty) na px w układzie linijki. */
+export function mmNaPxLinijki(mm: number, poczatekPx: number, pxNaMmSkala: number): number {
+  return poczatekPx + mm * pxNaMmSkala;
+}
+
+/** Odwrotność `mmNaPxLinijki`: przelicza px w układzie linijki na mm względem rogu karty. */
+export function pxLinijkiNaMm(px: number, poczatekPx: number, pxNaMmSkala: number): number {
+  if (pxNaMmSkala <= 0) return 0;
+  return (px - poczatekPx) / pxNaMmSkala;
+}
+
+/** Krok etykiet w cm: gdy 1 cm < 18 px, pokazujemy co drugą (lub co 5.) cyfrę, żeby nigdy na siebie nie nachodziły. */
+export function krokEtykietCm(pxNaMmSkala: number): number {
+  const cmPx = pxNaMmSkala * 10;
+  if (cmPx <= 0) return 1;
+  if (cmPx < MIN_ODSTEP_CYFR_PX / 2) return 5;
+  if (cmPx < MIN_ODSTEP_CYFR_PX) return 2;
+  return 1;
+}
+
+/**
+ * Wylicza widoczne kreski przypiętej linijki (od 0 do `dlugoscLinijkiPx`) w oparciu o `poczatekPx`
+ * (pozycja zera karty w układzie linijki) i skalę `pxNaMmSkala`.
+ */
+export function kreskiPrzypietejLinijki(
+  dlugoscLinijkiPx: number,
+  poczatekPx: number,
+  pxNaMmSkala: number,
+): KreskaPikselowa[] {
+  if (dlugoscLinijkiPx <= 0 || pxNaMmSkala <= 0) return [];
+  const startMm = Math.floor(pxLinijkiNaMm(0, poczatekPx, pxNaMmSkala));
+  const koniecMm = Math.ceil(pxLinijkiNaMm(dlugoscLinijkiPx, poczatekPx, pxNaMmSkala));
+  const krokCm = krokEtykietCm(pxNaMmSkala);
+  const rysujMm = pxNaMmSkala >= 2.2;
+  const wynik: KreskaPikselowa[] = [];
+  for (let mm = startMm; mm <= koniecMm; mm++) {
+    const px = mmNaPxLinijki(mm, poczatekPx, pxNaMmSkala);
+    if (px < -1 || px > dlugoscLinijkiPx + 1) continue;
+    const abs = Math.abs(mm);
+    if (abs % 10 === 0) {
+      const cm = mm / 10;
+      const pokazCyfre = Math.abs(cm) % krokCm === 0;
+      wynik.push({
+        mm,
+        px,
+        rodzaj: 'cm',
+        ...(pokazCyfre ? { etykieta: String(cm) } : {}),
+      });
+    } else if (abs % 5 === 0) {
+      wynik.push({ mm, px, rodzaj: 'polcm' });
+    } else if (rysujMm) {
+      wynik.push({ mm, px, rodzaj: 'mm' });
+    }
+  }
+  return wynik;
 }
 
 /**
