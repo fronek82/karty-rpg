@@ -79,12 +79,16 @@ test.describe('UI2 R2 – strona główna drukarnia riso', () => {
     await oknoSz.getByLabel('Nazwa szablonu').fill('SzDwustronny');
     await oknoSz.getByRole('button', { name: /Tył \(rewers\)/ }).click();
     await oknoSz.getByRole('button', { name: 'Utwórz szablon' }).click();
+    await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
+    await page.getByRole('link', { name: '← Szablony' }).click();
     await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(2, { timeout: 10000 });
 
     await page.getByTestId('start-nowy-szablon').click();
     oknoSz = page.getByTestId('okno-nowy-szablon');
     await oknoSz.getByLabel('Nazwa szablonu').fill('SzJednostronny');
     await oknoSz.getByRole('button', { name: 'Utwórz szablon' }).click();
+    await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
+    await page.getByRole('link', { name: '← Szablony' }).click();
     await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(3, { timeout: 10000 });
 
     // 2. Projekt dwustronny z szablonu SzDwustronny (dodajemy pole Tekst i zapisujemy).

@@ -1989,6 +1989,17 @@ export const en: Slownik = {
   'szablony.usunEtykieta': 'Delete template {nazwa}',
   'szablony.usunieto': 'Removed “{nazwa}” from My templates.',
   'szablony.utworzono': 'Added “{nazwa}” to My templates.',
+  // Plan S (S4): standalone template editor (#/szablon/<id>)
+  'szablony.powrotDoSzablonow': '← Templates',
+  'szablony.wrocDoProjektu': '← Back to project {nazwa}',
+  'szablony.brakTylu': 'no back',
+  'szablony.dodajTyl': '+ Add back',
+  'szablony.nieZnaleziono': 'Template not found in My templates.',
+  'szablony.zastapiono': 'Replaced template from file: “{nazwa}”.',
+  'edytor.menuSzablon.importZastap': 'Import (replace)…',
+  'edytor.menuSzablon.usun': 'Delete template',
+  'szablony.usunPotwierdzTytul': 'Delete template “{nazwa}”?',
+  'szablony.usunPotwierdzOpis': 'The template will be removed from “My templates”.',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
@@ -2034,5 +2045,9 @@ export const enMnoga: SlownikMnogi = {
   'szablony.usunietoZKopiami': {
     one: 'Removed “{nazwa}” from My templates (copy in {n} project remains unchanged).',
     other: 'Removed “{nazwa}” from My templates (copies in {n} projects remain unchanged).',
+  },
+  'szablony.dopisekKopii': {
+    one: 'Copy in {n} project – changes will not affect it until you update',
+    other: 'Copies in {n} projects – changes will not affect them until you update',
   },
 };

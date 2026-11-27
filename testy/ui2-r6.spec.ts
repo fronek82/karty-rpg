@@ -9,6 +9,8 @@ test('R6: Krok 2 Karty – dodawanie kart, Podgląd/Tabela, Przód/Tył/Obie, ko
   const oknoSz = page.getByTestId('okno-nowy-szablon');
   await oknoSz.getByRole('button', { name: /Tył \(rewers\)/ }).click();
   await oknoSz.getByRole('button', { name: 'Utwórz szablon' }).click();
+  await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
+  await page.getByRole('link', { name: '← Szablony' }).click();
   await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(2, { timeout: 10000 });
 
   await page.getByTestId('start-nowe-karty').click();

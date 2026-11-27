@@ -7,6 +7,8 @@ async function otworzNowyEdytor(page: import('@playwright/test').Page) {
     .getByTestId('okno-nowy-szablon')
     .getByRole('button', { name: 'Utwórz szablon' })
     .click();
+  await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
+  await page.getByRole('link', { name: '← Szablony' }).click();
   await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(1, { timeout: 10000 });
   await page.getByTestId('start-nowe-karty').click();
   const okno = page.getByTestId('okno-nowy-projekt');

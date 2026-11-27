@@ -30,7 +30,9 @@ test.describe('Plan S (S3) – Moje szablony, Nowy szablon i Nowy projekt', () =
     await oknoSzablon.getByRole('button', { name: /Tył \(rewers\)/ }).click();
     await oknoSzablon.getByRole('button', { name: 'Utwórz szablon' }).click();
 
-    // Automatycznie przełącza na zakładkę Moje szablony i pokazuje nowy szablon (+ przypięty tył).
+    // Po utworzeniu otwiera się samodzielny edytor szablonu (#/szablon/<id>); powrót prowadzi na zakładkę Moje szablony.
+    await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
+    await page.getByRole('link', { name: '← Szablony' }).click();
     await expect(page.getByRole('tab', { name: /^Szablony/ })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -47,6 +49,8 @@ test.describe('Plan S (S3) – Moje szablony, Nowy szablon i Nowy projekt', () =
     await oknoSzablon.getByRole('button', { name: /Import pliku/ }).click();
     await oknoSzablon.getByTestId('ns-plik-szablonu').setInputFiles(plikSzablonu());
     await oknoSzablon.getByRole('button', { name: 'Utwórz szablon' }).click();
+    await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
+    await page.getByRole('link', { name: '← Szablony' }).click();
     await expect(kafelkiSzablonow).toHaveCount(3, { timeout: 10000 });
 
     // 3) Duplikuj i Usuń z „Cofnij” w Moich szablonach.

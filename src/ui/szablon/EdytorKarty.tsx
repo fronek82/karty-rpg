@@ -50,6 +50,7 @@ import {
   EdytorDrzewa,
   type PlikSzablonuEdytora,
   type RysujPodglad,
+  type TrybBibliotekiEdytora,
   type UstawieniaEdytoraDrzewa,
 } from './EdytorDrzewa';
 import { DodatkiTeksturyTylu, WgrywanieTekstury } from './TeksturaTylu';
@@ -285,10 +286,18 @@ export function EdytorKarty({
   edycja,
   strona,
   id,
+  trybBiblioteki,
+  duplikujWlasne,
+  kopiaWlasna,
+  plikSzablonuWlasny,
 }: {
   edycja: ProjektWEdycji;
   strona: StronaKarty;
   id: string;
+  trybBiblioteki?: TrybBibliotekiEdytora;
+  duplikujWlasne?: () => void;
+  kopiaWlasna?: { adres: string; tekst: string };
+  plikSzablonuWlasny?: PlikSzablonuEdytora;
 }) {
   const k = STRONY[strona];
   const { projekt, zmien } = edycja;
@@ -305,7 +314,7 @@ export function EdytorKarty({
   const idProjektu = encodeURIComponent(projekt.id);
   const adres = (x: string) => `#/projekt/${idProjektu}/${k.segment}/${encodeURIComponent(x)}`;
   const teksty = k.teksty();
-  useZapisTyluWBibliotece(edycja, id, strona === 'tyl' && !!rewers);
+  useZapisTyluWBibliotece(edycja, id, strona === 'tyl' && !!rewers && !trybBiblioteki);
 
   const zmienSz = (f: (s: Szablon) => Szablon, klucz?: string) =>
     zmien((p) => k.zmienSzablon(p, id, f), klucz ? { klucz: `${k.segment}:${klucz}` } : {});
@@ -482,23 +491,28 @@ export function EdytorKarty({
         {...(k.rodzajeDodaj ? { rodzajeDodaj: k.rodzajeDodaj } : {})}
         teksty={teksty}
         zmienNazwe={(nazwa) => zmienSz((s) => ({ ...s, nazwa }), 'nazwa')}
-        duplikuj={() => {
-          let nowe = '';
-          zmien((p) => {
-            const w = k.duplikuj(p, id, sufiksKopii);
-            nowe = w.id;
-            return w.projekt;
-          });
-          ustawIdKopii(nowe);
-        }}
+        duplikuj={
+          duplikujWlasne ??
+          (() => {
+            let nowe = '';
+            zmien((p) => {
+              const w = k.duplikuj(p, id, sufiksKopii);
+              nowe = w.id;
+              return w.projekt;
+            });
+            ustawIdKopii(nowe);
+          })
+        }
         kopia={
-          kopia && {
+          kopiaWlasna ??
+          (kopia && {
             adres: adres(kopia.id),
             tekst: teksty.otworzKopie(kopia.nazwa),
-          }
+          })
         }
-        adresPowrotu={k.adresPowrotu(projekt, id)}
-        plikSzablonu={plikSzablonu}
+        adresPowrotu={trybBiblioteki?.hrefPowrotu ?? k.adresPowrotu(projekt, id)}
+        plikSzablonu={plikSzablonuWlasny ?? plikSzablonu}
+        trybBiblioteki={trybBiblioteki}
         akcjaGlowna={
           <button type="button" className="ui2-przycisk-glowny" onClick={robKarty}>
             {t('edytor.przejdzDoKart')}

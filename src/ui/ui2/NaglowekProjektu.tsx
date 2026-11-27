@@ -21,6 +21,10 @@ export interface NaglowekProjektuProps {
   kroki: readonly DefinicjaKroku[];
   mausritter?: boolean;
   hrefPowrotu?: string;
+  /** Etykieta przycisku powrotu (domyślnie „← Projekty”). */
+  etykietaPowrotu?: string;
+  /** Dopisek pod nazwą (np. informacja o kopiach szablonu w projektach). */
+  podtytul?: string;
   onNawiguj?: (e: MouseEvent, href: string) => void;
   mozeCofnac?: boolean;
   mozePonowic?: boolean;
@@ -59,6 +63,8 @@ export function NaglowekProjektu({
   kroki,
   mausritter = false,
   hrefPowrotu = '#/',
+  etykietaPowrotu,
+  podtytul,
   onNawiguj,
   mozeCofnac = false,
   mozePonowic = false,
@@ -115,48 +121,61 @@ export function NaglowekProjektu({
         className="ui2-naglowek-powrot"
         onClick={(e) => onNawiguj?.(e, hrefPowrotu)}
       >
-        {t('ui2.projektyPowrot')}
+        {etykietaPowrotu ?? t('ui2.projektyPowrot')}
       </a>
-      {edycjaNazwy ? (
-        <input
-          className="ui2-naglowek-nazwa-input nazwa-projektu"
-          title={edycjaNazwy.wartosc}
-          aria-label={edycjaNazwy.etykieta}
-          value={edycjaNazwy.wartosc}
-          onChange={(e) => edycjaNazwy.onChange(e.target.value)}
-        />
-      ) : (
-        <span className="ui2-naglowek-nazwa" title={nazwaProjektu}>
-          {nazwaProjektu}
-        </span>
-      )}
+      <div className="ui2-naglowek-tytul-grupa">
+        {edycjaNazwy ? (
+          <input
+            className="ui2-naglowek-nazwa-input nazwa-projektu"
+            title={edycjaNazwy.wartosc}
+            aria-label={edycjaNazwy.etykieta}
+            value={edycjaNazwy.wartosc}
+            onChange={(e) => edycjaNazwy.onChange(e.target.value)}
+          />
+        ) : (
+          <span className="ui2-naglowek-nazwa" title={nazwaProjektu}>
+            {nazwaProjektu}
+          </span>
+        )}
+        {podtytul && (
+          <span className="ui2-naglowek-podtytul" data-testid="naglowek-dopisek-kopii">
+            {podtytul}
+          </span>
+        )}
+      </div>
       {mausritter && <span className="ui2-etykieta-mausritter">{t('ui2.mausritterEtykieta')}</span>}
 
-      <nav aria-label={t('ui2.etapyProjektu')} className="ui2-kroki">
-        {kroki.map((krok, idx) => {
-          const aktywny = krok.id === aktywnyKrok;
-          return (
-            <span key={krok.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {idx > 0 && (
-                <span className="ui2-krok-strzalka" aria-hidden="true">
-                  →
-                </span>
-              )}
-              {aktywny ? (
-                <span aria-current="page" className="ui2-krok ui2-krok-aktywny">
-                  <span className="ui2-krok-numer">{krok.numer}</span>
-                  {krok.etykieta}
-                </span>
-              ) : (
-                <a href={krok.href} className="ui2-krok" onClick={(e) => onNawiguj?.(e, krok.href)}>
-                  <span className="ui2-krok-numer">{krok.numer}</span>
-                  {krok.etykieta}
-                </a>
-              )}
-            </span>
-          );
-        })}
-      </nav>
+      {kroki.length > 0 && (
+        <nav aria-label={t('ui2.etapyProjektu')} className="ui2-kroki">
+          {kroki.map((krok, idx) => {
+            const aktywny = krok.id === aktywnyKrok;
+            return (
+              <span key={krok.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {idx > 0 && (
+                  <span className="ui2-krok-strzalka" aria-hidden="true">
+                    →
+                  </span>
+                )}
+                {aktywny ? (
+                  <span aria-current="page" className="ui2-krok ui2-krok-aktywny">
+                    <span className="ui2-krok-numer">{krok.numer}</span>
+                    {krok.etykieta}
+                  </span>
+                ) : (
+                  <a
+                    href={krok.href}
+                    className="ui2-krok"
+                    onClick={(e) => onNawiguj?.(e, krok.href)}
+                  >
+                    <span className="ui2-krok-numer">{krok.numer}</span>
+                    {krok.etykieta}
+                  </a>
+                )}
+              </span>
+            );
+          })}
+        </nav>
+      )}
 
       <div className="ui2-naglowek-prawa">
         <button

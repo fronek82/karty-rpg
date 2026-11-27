@@ -28,6 +28,9 @@ const Biblioteki = lazy(() =>
 const EdytorStrona = lazy(() =>
   import('./EdytorStrona').then((m) => ({ default: m.EdytorStrona })),
 );
+const EdytorSzablonuStrona = lazy(() =>
+  import('./szablon/EdytorSzablonuStrona').then((m) => ({ default: m.EdytorSzablonuStrona })),
+);
 
 const ADRES_REPOZYTORIUM = 'https://github.com/fronek82/karty-rpg';
 const ADRES_LICENCJI = `${ADRES_REPOZYTORIUM}/blob/main/LICENCJE.md`;
@@ -100,6 +103,7 @@ export function App() {
   const dopasowanie = /^\/projekt\/([^/]+)(?:\/(.*))?$/.exec(trasa);
   const projekt = dopasowanie?.[1];
   const podtrasa = dopasowanie?.[2] ?? '';
+  const szablonTrasa = /^\/szablon\/([^/?]+)(?:\?(.*))?$/.exec(trasa);
   const gra = /^\/gra\/([^/]+)$/.exec(trasa)?.[1];
   // „Biblioteki” (N7): `#/biblioteki` = pierwsza zakładka (Obrazy).
   const biblioteka = /^\/biblioteki(?:\/([^/?]*))?(?:\?(.*))?$/.exec(trasa);
@@ -128,6 +132,24 @@ export function App() {
     trasa === '/wlasne/nowy/rewers';
 
   if (dawnaBiblioteka) return null;
+  if (szablonTrasa) {
+    const szablonId = decodeURIComponent(szablonTrasa[1]!);
+    const zapytanie = szablonTrasa[2];
+    return (
+      <div className="aplikacja">
+        {pominPasek}
+        <main ref={tresc} id="tresc-aplikacji" tabIndex={-1}>
+          <Leniwa>
+            <EdytorSzablonuStrona
+              key={szablonId}
+              id={szablonId}
+              {...(zapytanie ? { zapytanie } : {})}
+            />
+          </Leniwa>
+        </main>
+      </div>
+    );
+  }
   if (projekt) {
     // Edytor kartki zajmuje cały ekran (własny pasek górny).
     return (
