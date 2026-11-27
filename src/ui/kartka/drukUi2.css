@@ -3,6 +3,27 @@
  * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
  */
 
+/* Dokładna wysokość paska jak przed UI-1 (55,78 px) chroni podpikselową pozycję wzorców PNG kartek. */
+.edytor-kartki > .pasek-gorny {
+  height: 3.486328125rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.edytor-kartki > .pasek-gorny .ui2-kroki {
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.edytor-kartki > .pasek-gorny .ui2-krok {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  gap: 5px;
+}
+
 .druk-ui2-linie-cialo {
   display: flex;
   flex-direction: column;
