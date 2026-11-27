@@ -51,51 +51,6 @@
   z-index: 30;
 }
 
-.edytor-ui2-zakladki-lista {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.edytor-ui2-zakladki-lista::-webkit-scrollbar {
-  display: none;
-}
-
-.edytor-ui2-zakladka {
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  color: var(--tekst-2);
-  text-decoration: none;
-  font-weight: 500;
-  white-space: nowrap;
-  border: 1.5px solid transparent;
-  border-bottom: none;
-}
-
-.edytor-ui2-zakladka:hover {
-  color: var(--tekst);
-}
-
-.edytor-ui2-zakladka.aktywna {
-  background: var(--tlo-robocze);
-  color: var(--tekst);
-  border-color: var(--tekst);
-  margin-bottom: -1.5px;
-  font-weight: 700;
-}
-
-.edytor-ui2-zakladka-rozmiar {
-  font-family: var(--czcionka-mono);
-  font-size: 11px;
-  color: var(--tekst-2);
-}
-
 .edytor-ui2-nowy-szablon {
   height: 30px;
   margin: 0 0 4px 4px;

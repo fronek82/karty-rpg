@@ -152,8 +152,6 @@ export interface UstawieniaEdytoraDrzewa {
   /** Edytowane drzewo (rewers – w postaci szablonu); brak – ekran „nie znaleziono”. */
   szablon: Szablon | undefined;
   zmienSz: ZmianaSzablonu;
-  /** Utworzenie nowego pustego szablonu w bieżącym projekcie. */
-  nowySzablon?: () => void;
   /** Czcionki użyte w edytowanym szablonie (synchronizacja z biblioteką przeglądarki). */
   czcionkiUzyte: readonly string[];
   /** Klucz rysunku dla widocznego szablonu (z gestem w toku); zmiana klucza = nowy rysunek. */
@@ -1083,41 +1081,11 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
           />
 
           <div className="edytor-ui2-srodek">
-            <div className="edytor-ui2-zakladki" role="toolbar" aria-label={t('ui2.krok.szablony')}>
-              {!u.trybBiblioteki && (
-                <>
-                  <div className="edytor-ui2-zakladki-lista">
-                    {projekt.szablony.map((sz) => {
-                      const wSz = wymiaryKarty(sz);
-                      const aktywna = stronaAktywna === 'przod' && sz.id === id;
-                      const href = `#/projekt/${idProjektu}/szablon/${encodeURIComponent(sz.id)}`;
-                      return (
-                        <a
-                          key={sz.id}
-                          href={href}
-                          className={`edytor-ui2-zakladka${aktywna ? ' aktywna' : ''}`}
-                          aria-current={aktywna ? 'page' : undefined}
-                          onClick={(e) => sprawdzWyjscie(e, href)}
-                        >
-                          <span>{sz.nazwa}</span>
-                          <span className="edytor-ui2-zakladka-rozmiar">
-                            {wSz.szer}×{wSz.wys}
-                          </span>
-                        </a>
-                      );
-                    })}
-                  </div>
-                  {u.nowySzablon && (
-                    <button
-                      type="button"
-                      className="edytor-ui2-nowy-szablon"
-                      onClick={u.nowySzablon}
-                    >
-                      {t('edytor.nowySzablon')}
-                    </button>
-                  )}
-                </>
-              )}
+            <div
+              className="edytor-ui2-zakladki"
+              role="toolbar"
+              aria-label={t('edytor.menuSzablon')}
+            >
               {u.trybBiblioteki ? (
                 u.trybBiblioteki.adresPrzod && u.trybBiblioteki.adresTyl ? (
                   <div
