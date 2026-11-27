@@ -345,5 +345,10 @@ Każdy etap: gałąź od aktualnego `main`, commit po każdym kroku, PR, przegl�
   dotychczasowe nazwy tokenów w `tokeny.css` zostały zmapowane na nową paletę „drukarnia riso”.
   Do niezależnej weryfikacji komponentów R1 w Playwright (dymek 0,5 s, wyrównanie wysokości pasków)
   dodano wewnętrzną trasę `#/ui2-podglad` (do usunięcia w R9).
+- **D14 (R6)** Rozdzielenie ekranu „Krok 2: Karty” (`EkranKart.tsx`, trasa `#/projekt/<id>/karty`)
+  od „Krok 3: Druk” (`#/projekt/<id>/drukuj`) nie wymagało zmian w modelu projektu – `projekt.talie`
+  (dane kart, kopie, przypisania tyłów) i `projekt.arkusze` (układ druku) były już rozdzielone.
+  Dotychczasowa trasa `#/projekt/<id>` i `#/projekt/<id>/kartka/<aid>` pozostaje dla projektów
+  arkuszowych i zgodności wstecznej.
 
 Nowe decyzje podjęte w trakcie realizacji dopisuj tutaj z numerem etapu.
