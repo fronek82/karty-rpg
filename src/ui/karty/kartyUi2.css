@@ -478,3 +478,40 @@
   background: var(--tekst);
   color: var(--tlo);
 }
+
+.karty-ui2-pasek-szukaj {
+  width: calc(100% - 16px);
+  margin: 4px 8px 6px;
+  padding: 5px 8px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--linia);
+  border-radius: 0;
+  font-size: 12px;
+}
+
+.karty-ui2-szablon-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--akcent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.karty-ui2-przenies-btn {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.karty-ui2-przenies-btn:hover {
+  background: var(--tlo-pasek);
+}

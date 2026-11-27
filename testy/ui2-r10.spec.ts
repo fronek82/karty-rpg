@@ -26,20 +26,12 @@ async function otworzNowyEdytor(page: Page) {
     .getByRole('button', { name: 'Utwórz szablon' })
     .click();
   await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
-  await page.getByRole('link', { name: '← Szablony' }).click();
-  await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(1, { timeout: 10000 });
-  await page.getByTestId('start-nowe-karty').click();
-  const okno = page.getByTestId('okno-nowy-projekt');
-  await okno.getByTestId('np-lista-szablonow').locator('button').first().click();
-  await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
-  await page
-    .getByRole('navigation', { name: 'Etapy projektu' })
-    .getByRole('link', { name: /Szablony/ })
-    .click();
   await expect(page.locator('.karta-podgladu')).toBeVisible();
 }
 
-test('R10: nagłówek bez usuniętych przycisków, menu Szablon ▾ ma 5 pozycji', async ({ page }) => {
+test('R10: nagłówek bez usuniętych przycisków, menu Szablon ▾ ma 6 pozycji (z Usuń)', async ({
+  page,
+}) => {
   await otworzNowyEdytor(page);
 
   const naglowek = page.locator('header.ui2-naglowek');
@@ -48,13 +40,13 @@ test('R10: nagłówek bez usuniętych przycisków, menu Szablon ▾ ma 5 pozycji
     await expect(naglowek.getByRole('button', { name: zakazany })).toHaveCount(0);
     await expect(naglowek.getByRole('link', { name: zakazany })).toHaveCount(0);
   }
-  await expect(naglowek.getByRole('link', { name: '← Projekty' })).toBeVisible();
-  await expect(naglowek.getByRole('button', { name: 'Przejdź do kart →' })).toBeVisible();
+  await expect(naglowek.getByRole('link', { name: '← Szablony' })).toBeVisible();
+  await expect(naglowek.locator('.ui2-kroki')).toHaveCount(0);
 
   await page.getByTestId('menu-szablon-przycisk').click();
   const menu = page.getByTestId('menu-szablon');
   await expect(menu).toBeVisible();
-  await expect(menu.getByRole('menuitem')).toHaveCount(5);
+  await expect(menu.getByRole('menuitem')).toHaveCount(6);
 
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);

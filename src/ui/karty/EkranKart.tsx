@@ -2,10 +2,13 @@ import { useEffect, useMemo, useState, type DragEvent } from 'react';
 import {
   aktualizujRewersWProjekcie,
   aktualizujSzablonWProjekcie,
+  dodajKopieRewersuDoProjektu,
+  dodajKopieSzablonuDoProjektu,
+  przeniesKartyNaSzablon,
   wykryjNowszeWersje,
   type NowaWersjaSzablonu,
 } from '../../dane/aktualizacjaSzablonu';
-import type { WpisSzablonu } from '../../dane/bibliotekaSzablonow';
+import { roleSzablonu, type WpisSzablonu } from '../../dane/bibliotekaSzablonow';
 import { kolumnySzablonu, ustawDane } from '../../dane/edycja';
 import { przypiszRewers, rewersKarty } from '../../dane/rewers';
 import { nazwaKarty } from '../../dane/szablon';
@@ -14,13 +17,16 @@ import type { Karta, PrzypisanieRewersu, Rewers, Szablon, Talia } from '../../mo
 import { renderujKarte, renderujRewers, type KontekstRenderowania } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
 import { baza } from '../bazaUI';
+import { zapiszMiniatureWpisuSzablonu } from '../miniaturaRewersu';
 import { usePasekKomunikatu } from '../PasekKomunikatu';
 import { nazwaPliku, zapiszPlik } from '../pliki';
+import { OknoNowySzablon } from '../start/OknoNowySzablon';
 import { NaglowekProjektu, type DefinicjaKroku, type StanZapisuUi2 } from '../ui2/NaglowekProjektu';
 import { PasekBoczny, type GrupaPaskaBocznego } from '../ui2/PasekBoczny';
 import type { ProjektWEdycji } from '../useProjekt';
 import { PrzyciskZapisu, useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
 import { OknoAktualizacjiSzablonu } from './OknoAktualizacjiSzablonu';
+import { OknoPrzeniesieniaKart } from './OknoPrzeniesieniaKart';
 import './kartyUi2.css';
 
 interface WpisKarty {
@@ -61,12 +67,22 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
   const [filtrSzablonu, ustawFiltrSzablonu] = useState('');
   const [zaznaczone, ustawZaznaczone] = useState<string[]>([]);
   const [nadUpuszczaniem, ustawNadUpuszczaniem] = useState(false);
+  const [szukajBiblioteki, ustawSzukajBiblioteki] = useState('');
+  const [oknoNowegoSzablonu, ustawOknoNowegoSzablonu] = useState(false);
+  const [oknoPrzeniesienia, ustawOknoPrzeniesienia] = useState(false);
   const [wpisySzablonow, ustawWpisySzablonow] = useState<WpisSzablonu[]>([]);
   const [aktualizowanyCel, ustawAktualizowanyCel] = useState<
     { rodzaj: 'awers' | 'rewers'; idWProjekcie: string } | undefined
   >();
   const [wersjaKomunikatu, ustawWersjeKomunikatu] = useState<number | undefined>();
   const { pasek: pasekKomunikatu, pokaz: pokazKomunikat } = usePasekKomunikatu();
+
+  const odswiezSzablonyBiblioteki = () => {
+    void baza()
+      .szablonyBiblioteki()
+      .then((lista) => ustawWpisySzablonow(lista))
+      .catch(() => undefined);
+  };
 
   useEffect(() => {
     let aktywny = true;
@@ -282,7 +298,62 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
     }));
   };
 
+  const wpisyPoId = useMemo(
+    () => new Map(wpisySzablonow.map((w) => [w.id, w] as const)),
+    [wpisySzablonow],
+  );
+
+  const dodajKarteZMoichSzablonow = (wpis: WpisSzablonu) => {
+    if (wpis.rodzaj !== 'awers' || !wpis.szablon) return;
+    const domyslnyRewers = wpis.domyslnyRewersId ? wpisyPoId.get(wpis.domyslnyRewersId) : undefined;
+    let noweId = '';
+    zmien((p) => {
+      const dodany = dodajKopieSzablonuDoProjektu(
+        p,
+        wpis,
+        domyslnyRewers ? { domyslnyRewers } : {},
+      );
+      const sz = dodany.projekt.szablony.find((s) => s.id === dodany.szablonId);
+      if (!sz) return dodany.projekt;
+      noweId = unikalneIdKarty(dodany.projekt.talie);
+      const nowaKarta: Karta = {
+        id: noweId,
+        szablonId: sz.id,
+        dane: { ...(sz.przyklad ?? {}) },
+        ilosc: 1,
+      };
+      if (dodany.projekt.talie.length === 0) {
+        return {
+          ...dodany.projekt,
+          talie: [{ id: 't-1', nazwa: dodany.projekt.nazwa, karty: [nowaKarta] }],
+        };
+      }
+      const celTalia = dodany.projekt.talie[0]!;
+      return {
+        ...dodany.projekt,
+        talie: dodany.projekt.talie.map((tl) =>
+          tl.id === celTalia.id ? { ...tl, karty: [...tl.karty, nowaKarta] } : tl,
+        ),
+      };
+    });
+    if (noweId) ustawZaznaczone([noweId]);
+  };
+
   const zmienTylKarty = (wpis: WpisKarty, wartosc: string) => {
+    if (wartosc.startsWith('bib:')) {
+      const idBib = wartosc.slice(4);
+      const wpisTylu = wpisyPoId.get(idBib);
+      if (!wpisTylu || wpisTylu.rodzaj !== 'rewers') return;
+      zmien((p) => {
+        const dodany = dodajKopieRewersuDoProjektu(p, wpisTylu);
+        return przypiszRewers(
+          dodany.projekt,
+          { rodzaj: 'karta', taliaId: wpis.talia.id, id: wpis.karta.id },
+          dodany.rewersId,
+        );
+      });
+      return;
+    }
     const cel: PrzypisanieRewersu | undefined =
       wartosc === '__domyslny__' ? undefined : wartosc === '__brak__' ? null : wartosc;
     zmien((p) =>
@@ -340,6 +411,14 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
   const onUpuscSzablon = (e: DragEvent) => {
     e.preventDefault();
     ustawNadUpuszczaniem(false);
+    const bibId = e.dataTransfer.getData('application/x-karty-bib-szablon').trim();
+    if (bibId) {
+      const wpis = wpisyPoId.get(bibId);
+      if (wpis) {
+        dodajKarteZMoichSzablonow(wpis);
+        return;
+      }
+    }
     const szId = (
       e.dataTransfer.getData('application/x-karty-szablon') ||
       e.dataTransfer.getData('text/plain') ||
@@ -353,14 +432,10 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
   const sumaKopii = wszystkieWpisy.reduce((acc, w) => acc + w.karta.ilosc, 0);
   const przyblizoneArkusze = sumaKopii === 0 ? 0 : Math.ceil(sumaKopii / 9);
 
-  const pierwszySzablonHref = projekt.szablony[0]
-    ? `#/projekt/${idProjektu}/szablon/${encodeURIComponent(projekt.szablony[0].id)}`
-    : `#/projekt/${idProjektu}/nowy-szablon`;
-
+  // Plan S (S5, D-S4): projekt ma wyłącznie kroki 1 Karty → 2 Druk (szablony edytuje się w Moich szablonach).
   const kroki: DefinicjaKroku[] = [
-    { id: 'szablony', numer: 1, etykieta: t('ui2.krok.szablony'), href: pierwszySzablonHref },
-    { id: 'karty', numer: 2, etykieta: t('ui2.krok.karty'), href: `#/projekt/${idProjektu}/karty` },
-    { id: 'druk', numer: 3, etykieta: t('ui2.krok.druk'), href: `#/projekt/${idProjektu}/drukuj` },
+    { id: 'karty', numer: 1, etykieta: t('ui2.krok.karty'), href: `#/projekt/${idProjektu}/karty` },
+    { id: 'druk', numer: 2, etykieta: t('ui2.krok.druk'), href: `#/projekt/${idProjektu}/drukuj` },
   ];
 
   const stanZapisu: StanZapisuUi2 =
@@ -401,34 +476,132 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
     });
   };
 
+  const przeniesWybraneNaSzablon = (docelowySzablonId: string) => {
+    const cel = szablonyPoId.get(docelowySzablonId);
+    if (!cel || aktywneIds.length === 0) return;
+    const zbior = new Set(aktywneIds);
+    const wynik = przeniesKartyNaSzablon(projekt, zbior, docelowySzablonId);
+    if (wynik.przeniesioneKarty === 0) {
+      ustawOknoPrzeniesienia(false);
+      return;
+    }
+    const docelowaWersja = edycja.wersja + 1;
+    zmien((p) => przeniesKartyNaSzablon(p, zbior, docelowySzablonId).projekt);
+    ustawOknoPrzeniesienia(false);
+    ustawWersjeKomunikatu(docelowaWersja);
+    pokazKomunikat({
+      tekst: t('karty.przenies.przeniesiono', { n: wynik.przeniesioneKarty, nazwa: cel.nazwa }),
+      akcja: {
+        etykieta: t('pasek.cofnij'),
+        wykonaj: () => {
+          ustawWersjeKomunikatu(undefined);
+          edycja.cofnij();
+        },
+      },
+    });
+  };
+
+  // Szablony z „Moich szablonów” nieobecne jeszcze w projekcie (porównane po zrodlo.id).
+  const zrodlaAwersowWProjekcie = useMemo(
+    () => new Set(projekt.szablony.map((s) => s.zrodlo?.id).filter((x): x is string => !!x)),
+    [projekt.szablony],
+  );
+  const szablonyZBiblioteki = useMemo(
+    () => wpisySzablonow.filter((w) => w.rodzaj === 'awers' && !zrodlaAwersowWProjekcie.has(w.id)),
+    [wpisySzablonow, zrodlaAwersowWProjekcie],
+  );
+  const widoczneZBiblioteki = useMemo(() => {
+    const f = szukajBiblioteki.trim().toLocaleLowerCase('pl');
+    if (!f) return szablonyZBiblioteki;
+    return szablonyZBiblioteki.filter((w) => w.nazwa.toLocaleLowerCase('pl').includes(f));
+  }, [szablonyZBiblioteki, szukajBiblioteki]);
+
+  const zrodlaRewersowWProjekcie = useMemo(
+    () => new Set((projekt.rewersy ?? []).map((r) => r.zrodlo?.id).filter((x): x is string => !!x)),
+    [projekt.rewersy],
+  );
+  const rewersyZBiblioteki = useMemo(
+    () =>
+      wpisySzablonow.filter((w) => w.rodzaj === 'rewers' && !zrodlaRewersowWProjekcie.has(w.id)),
+    [wpisySzablonow, zrodlaRewersowWProjekcie],
+  );
+
+  const powrotKarty = encodeURIComponent(`/projekt/${idProjektu}/karty`);
+
+  const otworzWMoichSzablonach = async (sz: Szablon) => {
+    if (sz.zrodlo?.id && wpisyPoId.has(sz.zrodlo.id)) {
+      window.location.hash = `#/szablon/${encodeURIComponent(sz.zrodlo.id)}?powrot=${powrotKarty}`;
+      return;
+    }
+    const byloNiezapisane = edycja.niezapisane;
+    const dodany = await baza().dodajSzablonDoBiblioteki(sz, roleSzablonu(sz, projekt.role));
+    const wpis = await baza().szablonBiblioteki(dodany.id);
+    if (wpis) await zapiszMiniatureWpisuSzablonu(wpis).catch(() => undefined);
+    zmien((p) => ({
+      ...p,
+      szablony: p.szablony.map((x) =>
+        x.id === sz.id ? { ...x, zrodlo: { id: dodany.id, hash: dodany.hash } } : x,
+      ),
+    }));
+    if (!byloNiezapisane) {
+      await edycja.zapiszTeraz().catch(() => undefined);
+    }
+    window.location.hash = `#/szablon/${encodeURIComponent(dodany.id)}?powrot=${powrotKarty}`;
+  };
+
   const grupyPaska: GrupaPaskaBocznego[] = [
     {
-      id: 'szablony',
-      nazwa: t('karty.grupaSzablony'),
+      id: 'w-projekcie',
+      nazwa: t('karty.grupaWProjekcie'),
+      pozycje: projekt.szablony.map((sz) => {
+        const maNowsza = nowszePoSzablonie.has(sz.id);
+        return {
+          id: `sz-${sz.id}`,
+          nazwa: sz.nazwa,
+          ...(maNowsza ? { odznaka: '●', podpowiedz: t('karty.nowszaWersja') } : {}),
+          ikona: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z',
+          przeciagane: true,
+          onKlik: () => dodajKarteSzablonu(sz.id),
+          onPoczatekPrzeciagania: (e: DragEvent<HTMLButtonElement>) => {
+            e.dataTransfer.setData('application/x-karty-szablon', sz.id);
+            e.dataTransfer.setData('text/plain', sz.id);
+            e.dataTransfer.effectAllowed = 'copy';
+          },
+        };
+      }),
+    },
+    {
+      id: 'moje-szablony',
+      nazwa: t('karty.grupaZMoichSzablonow'),
+      naglowekDodatkowy:
+        szablonyZBiblioteki.length > 0 ? (
+          <input
+            type="search"
+            className="karty-ui2-pasek-szukaj"
+            aria-label={t('karty.szukajZMoichSzablonow')}
+            placeholder={t('karty.szukajZMoichSzablonow')}
+            value={szukajBiblioteki}
+            onChange={(e) => ustawSzukajBiblioteki(e.target.value)}
+          />
+        ) : undefined,
       pozycje: [
-        ...projekt.szablony.map((sz) => {
-          const maNowsza = nowszePoSzablonie.has(sz.id);
-          return {
-            id: `sz-${sz.id}`,
-            nazwa: sz.nazwa,
-            ...(maNowsza ? { odznaka: '●', podpowiedz: t('karty.nowszaWersja') } : {}),
-            ikona: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z',
-            przeciagane: true,
-            onKlik: () => dodajKarteSzablonu(sz.id),
-            onPoczatekPrzeciagania: (e: DragEvent<HTMLButtonElement>) => {
-              e.dataTransfer.setData('application/x-karty-szablon', sz.id);
-              e.dataTransfer.setData('text/plain', sz.id);
-              e.dataTransfer.effectAllowed = 'copy';
-            },
-          };
-        }),
+        ...widoczneZBiblioteki.map((w) => ({
+          id: `bib-${w.id}`,
+          nazwa: w.nazwa,
+          ikona: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z',
+          przeciagane: true,
+          onKlik: () => dodajKarteZMoichSzablonow(w),
+          onPoczatekPrzeciagania: (e: DragEvent<HTMLButtonElement>) => {
+            e.dataTransfer.setData('application/x-karty-bib-szablon', w.id);
+            e.dataTransfer.setData('text/plain', w.id);
+            e.dataTransfer.effectAllowed = 'copy';
+          },
+        })),
         {
           id: 'nowy-szablon',
           nazwa: t('edytor.nowySzablon'),
           ikona: 'M12 5v14M5 12h14',
-          onKlik: () => {
-            window.location.hash = `#/projekt/${idProjektu}/nowy-szablon`;
-          },
+          onKlik: () => ustawOknoNowegoSzablonu(true),
         },
       ],
     },
@@ -729,11 +902,24 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
                             >
                               <option value="__domyslny__">{t('karty.tylDomyslny')}</option>
                               <option value="__brak__">{t('karty.tylBrak')}</option>
-                              {rewersyProjektu.map((r) => (
-                                <option key={r.id} value={r.id}>
-                                  {r.nazwa}
-                                </option>
-                              ))}
+                              {rewersyProjektu.length > 0 && (
+                                <optgroup label={t('karty.grupaWProjekcie')}>
+                                  {rewersyProjektu.map((r) => (
+                                    <option key={r.id} value={r.id}>
+                                      {r.nazwa}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                              {rewersyZBiblioteki.length > 0 && (
+                                <optgroup label={t('karty.grupaZMoichSzablonow')}>
+                                  {rewersyZBiblioteki.map((r) => (
+                                    <option key={r.id} value={`bib:${r.id}`}>
+                                      {r.nazwa}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
                             </select>
                           </td>
                         </tr>
@@ -785,6 +971,17 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
           </div>
 
           <div className="karty-ui2-prawa-tresc">
+            {wybraneWpisy.length > 0 && projekt.szablony.length > 1 && (
+              <button
+                type="button"
+                className="karty-ui2-przenies-btn"
+                data-testid="przenies-na-szablon-btn"
+                onClick={() => ustawOknoPrzeniesienia(true)}
+              >
+                {t('karty.przeniesNaSzablon')}
+              </button>
+            )}
+
             {aktywnyWpis ? (
               <>
                 <div className="karty-ui2-podglad-pary">
@@ -803,17 +1000,28 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
                 {aktywnyWpis.szablon && (
                   <p className="podpis">
                     {t('karty.kolumnaSzablon')}: <strong>{aktywnyWpis.szablon.nazwa}</strong> ·{' '}
-                    <a
-                      href={`#/projekt/${idProjektu}/szablon/${encodeURIComponent(aktywnyWpis.szablon.id)}`}
-                      onClick={(e) =>
-                        sprawdzWyjscie(
-                          e,
-                          `#/projekt/${idProjektu}/szablon/${encodeURIComponent(aktywnyWpis.szablon!.id)}`,
-                        )
-                      }
-                    >
-                      {t('karty.edytujWyglad')}
-                    </a>
+                    {aktywnyWpis.szablon.zrodlo?.id &&
+                    wpisyPoId.has(aktywnyWpis.szablon.zrodlo.id) ? (
+                      <a
+                        href={`#/szablon/${encodeURIComponent(aktywnyWpis.szablon.zrodlo.id)}?powrot=${powrotKarty}`}
+                        onClick={(e) =>
+                          sprawdzWyjscie(
+                            e,
+                            `#/szablon/${encodeURIComponent(aktywnyWpis.szablon!.zrodlo!.id)}?powrot=${powrotKarty}`,
+                          )
+                        }
+                      >
+                        {t('karty.edytujWMoichSzablonach')}
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        className="karty-ui2-szablon-link"
+                        onClick={() => void otworzWMoichSzablonach(aktywnyWpis.szablon!)}
+                      >
+                        {t('karty.edytujWMoichSzablonach')}
+                      </button>
+                    )}
                   </p>
                 )}
 
@@ -862,11 +1070,24 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
                   >
                     <option value="__domyslny__">{t('karty.tylDomyslny')}</option>
                     <option value="__brak__">{t('karty.tylBrak')}</option>
-                    {rewersyProjektu.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.nazwa}
-                      </option>
-                    ))}
+                    {rewersyProjektu.length > 0 && (
+                      <optgroup label={t('karty.grupaWProjekcie')}>
+                        {rewersyProjektu.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.nazwa}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {rewersyZBiblioteki.length > 0 && (
+                      <optgroup label={t('karty.grupaZMoichSzablonow')}>
+                        {rewersyZBiblioteki.map((r) => (
+                          <option key={r.id} value={`bib:${r.id}`}>
+                            {r.nazwa}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </label>
               </>
@@ -884,6 +1105,42 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
           ctxRenderu={ctxRenderu}
           onZatwierdz={() => zatwierdzAktualizacje(aktualizowanaWersja)}
           onAnuluj={() => ustawAktualizowanyCel(undefined)}
+        />
+      )}
+      {oknoPrzeniesienia &&
+        wybraneWpisy.length > 0 &&
+        (() => {
+          const zrodlowe: Szablon[] = [];
+          const widziane = new Set<string>();
+          for (const w of wybraneWpisy) {
+            if (w.szablon && !widziane.has(w.szablon.id)) {
+              widziane.add(w.szablon.id);
+              zrodlowe.push(w.szablon);
+            }
+          }
+          const dostepne =
+            zrodlowe.length === 1
+              ? projekt.szablony.filter((s) => s.id !== zrodlowe[0]!.id)
+              : projekt.szablony;
+          return (
+            <OknoPrzeniesieniaKart
+              liczbaKart={wybraneWpisy.length}
+              szablonyZrodlowe={zrodlowe}
+              dostepneSzablony={dostepne}
+              onZatwierdz={przeniesWybraneNaSzablon}
+              onAnuluj={() => ustawOknoPrzeniesienia(false)}
+            />
+          );
+        })()}
+      {oknoNowegoSzablonu && (
+        <OknoNowySzablon
+          zamknij={() => ustawOknoNowegoSzablonu(false)}
+          onUtworzono={(wynik) => {
+            odswiezSzablonyBiblioteki();
+            if (!edycja.niezapisane) {
+              window.location.hash = `#/szablon/${encodeURIComponent(wynik.id)}?powrot=${powrotKarty}`;
+            }
+          }}
         />
       )}
       {wersjaKomunikatu === edycja.wersja && pasekKomunikatu}

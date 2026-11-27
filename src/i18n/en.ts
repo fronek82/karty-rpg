@@ -2000,6 +2000,17 @@ export const en: Slownik = {
   'edytor.menuSzablon.usun': 'Delete template',
   'szablony.usunPotwierdzTytul': 'Delete template “{nazwa}”?',
   'szablony.usunPotwierdzOpis': 'The template will be removed from “My templates”.',
+  // Plan S (S5): Cards → Print steps, From My templates sidebar, Move to template…
+  'karty.grupaWProjekcie': 'In project',
+  'karty.grupaZMoichSzablonow': 'From My templates',
+  'karty.szukajZMoichSzablonow': 'Search templates…',
+  'karty.edytujWMoichSzablonach': 'Edit in My templates ↗',
+  'karty.przeniesNaSzablon': 'Move to template…',
+  'karty.przenies.tytul': 'Move selected cards ({n})',
+  'karty.przenies.wybierzCel': 'Target template',
+  'karty.przenies.zatwierdz': 'Move cards ({n})',
+  'karty.przenies.przeniesiono': 'Moved cards ({n}) to template “{nazwa}”.',
+  'karty.przenies.brakInnych': 'Add another template from “My templates” first.',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */

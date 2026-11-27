@@ -1882,34 +1882,12 @@ export function EdytorKartki({
         {czyProjektWlasny(projekt) ? (
           <>
             <a
-              href={
-                projekt.szablony[0]
-                  ? `#/projekt/${idProjektuUrl}/szablon/${encodeURIComponent(projekt.szablony[0].id)}`
-                  : `#/projekt/${idProjektuUrl}/nowy-szablon`
-              }
-              className="ui2-krok"
-              onClick={(e) =>
-                sprawdzWyjscie(
-                  e,
-                  projekt.szablony[0]
-                    ? `#/projekt/${idProjektuUrl}/szablon/${encodeURIComponent(projekt.szablony[0].id)}`
-                    : `#/projekt/${idProjektuUrl}/nowy-szablon`,
-                )
-              }
-            >
-              <span className="ui2-krok-numer">1</span>
-              {t('ui2.krok.szablony')}
-            </a>
-            <span className="ui2-krok-strzalka" aria-hidden="true">
-              →
-            </span>
-            <a
               href={`#/projekt/${idProjektuUrl}/karty`}
               className={`ui2-krok${!druk ? ' ui2-krok-aktywny' : ''}`}
               aria-current={!druk ? 'page' : undefined}
               onClick={(e) => sprawdzWyjscie(e, `#/projekt/${idProjektuUrl}/karty`)}
             >
-              <span className="ui2-krok-numer">2</span>
+              <span className="ui2-krok-numer">1</span>
               {t('ui2.krok.karty')}
             </a>
             <span className="ui2-krok-strzalka" aria-hidden="true">
@@ -1917,7 +1895,7 @@ export function EdytorKartki({
             </span>
             {druk ? (
               <span aria-current="page" className="ui2-krok ui2-krok-aktywny">
-                <span className="ui2-krok-numer">3</span>
+                <span className="ui2-krok-numer">2</span>
                 {t('ui2.krok.druk')}
               </span>
             ) : (
@@ -1926,7 +1904,7 @@ export function EdytorKartki({
                 className="ui2-krok"
                 onClick={(e) => sprawdzWyjscie(e, adresDruku)}
               >
-                <span className="ui2-krok-numer">3</span>
+                <span className="ui2-krok-numer">2</span>
                 {t('ui2.krok.druk')}
               </a>
             )}
