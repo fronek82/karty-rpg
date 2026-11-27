@@ -35,8 +35,7 @@ function plikSzablonu(s: Szablon) {
 test('import szablonu → kartka 63×88 (3×3), karta z menu, papier zdjęciowy, eksport', async ({
   page,
 }) => {
-  await page.goto('./#/');
-  await page.getByRole('link', { name: /\+ NOWE KARTY/ }).click();
+  await page.goto('./#/wlasne');
   await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu(szablonCzaru));
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await expect(page.locator('.nazwa-projektu')).toHaveValue('Czar (test)');
@@ -154,8 +153,7 @@ test('pole tekstu zawija ciąg bez spacji i zachowuje szerokość panelu na kart
       ],
     },
   };
-  await page.goto('./#/');
-  await page.getByRole('link', { name: /\+ NOWE KARTY/ }).click();
+  await page.goto('./#/wlasne');
   await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu(s));
   await slot(page, 1, 2, 1).click();
   await page.getByRole('menuitem', { name: /Próba tekstu/ }).click();

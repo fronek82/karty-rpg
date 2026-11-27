@@ -15,7 +15,7 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
 }) => {
   // Startujemy ze strony głównej, żeby wczytać moduł listy projektów przed testem offline.
   await page.goto('./#/');
-  await page.getByRole('link', { name: /\+ NOWE KARTY/ }).click();
+  await page.goto('./#/wlasne');
 
   const sekcja = page.locator('.galeria-online');
   await expect(

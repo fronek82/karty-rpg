@@ -24,7 +24,7 @@ test.describe('język domyślny według przeglądarki (D8)', () => {
       expect(await jezykDokumentu(page)).toBe('en');
       await expect(page.locator('.riso-tytul')).toHaveText('RPG CARDS');
       await expect(page.getByRole('link', { name: /Mausritter A4/ })).toBeVisible();
-      await expect(page.getByRole('link', { name: /\+ NEW CARDS/ })).toBeVisible();
+      await expect(page.getByRole('button', { name: /\+ NEW CARDS/ })).toBeVisible();
       await expect(page.getByRole('heading', { name: /My projects/ })).toBeVisible();
       await expect(page.getByText('You have no projects yet.')).toBeVisible();
       const panel = await otworzUstawieniaAplikacji(page);
