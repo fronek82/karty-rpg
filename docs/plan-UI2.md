@@ -497,3 +497,8 @@ roboczy i zachodzi na elementy pod kartą, a cyfry nakładają się na kreski.
 - **D15** Przyciąganie, podkład, linie pomocnicze i pomoc są w pasku stanu jako dymki, nie w obszarze
   roboczym ani w prawym pasku.
 - **D16** Linijki przypięte do krawędzi obszaru roboczego, nie do opakowania karty.
+
+## 12. Zmiana po UI2
+
+Od 27.11.2026 obowiązuje `docs/plan-S.md`: szablony są w osobnej bibliotece, projekt ma kroki
+Karty → Druk. Zmienia to sekcje 4.1 (mapa kroków), 5.1 (przyciski tworzenia), 5.2 i 5.3 tego planu.

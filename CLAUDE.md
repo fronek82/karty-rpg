@@ -50,6 +50,8 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   paska stanu (Przyciąganie, Podkład, Linie, `? Skróty` — D15), 4-ikonowy prawy pasek
   (Właściwości, Karta, Style, Biblioteka), 5 ikon + menu `⋯` w nagłówku Struktury oraz przypięte
   do krawędzi obszaru roboczego linijki (`LinijkiKarty.tsx`, D16).
+- Następny etap: **S – biblioteka szablonów osobno od projektów** (`docs/plan-S.md`, etapy S1…S6):
+  szablony i tyły w osobnej bibliotece, projekty składają z nich karty (kroki Karty → Druk).
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 35` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 
