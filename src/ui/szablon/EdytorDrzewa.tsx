@@ -190,6 +190,18 @@ export interface UstawieniaEdytoraDrzewa {
   /** Tył: przód, z którego pola o tej samej nazwie biorą dane kart (wartość przykładowa w panelu). */
   przodTylu?: PrzodTylu | undefined;
   panelKarty: (k: KontekstPaneluKarty) => ReactNode;
+  /** Tryb edytora szablonu w „Moich szablonach” (poza projektem, Plan S S4). */
+  trybBiblioteki?: TrybBibliotekiEdytora | undefined;
+}
+
+export interface TrybBibliotekiEdytora {
+  etykietaPowrotu: string;
+  hrefPowrotu: string;
+  dopisekKopii?: string | undefined;
+  adresPrzod?: string | undefined;
+  adresTyl?: string | undefined;
+  onDodajTyl?: (() => void) | undefined;
+  onUsun?: (() => void) | undefined;
 }
 
 const wPolu = (e: Element | null) =>
@@ -440,7 +452,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   const kluczRysunku = widoczny ? u.kluczRysunku(pokazOdmianyZaznaczenia(widoczny, aktywne)) : '';
   const podglad = usePodglad(kluczRysunku, u.rysuj, u.przedrostekSvg, zasoby);
   const scenaPodgladu = podglad && 'scena' in podglad ? podglad.scena : undefined;
-  useMiniatura(u.miniatura, edycja, id, !!szablon, scenaPodgladu);
+  useMiniatura(u.miniatura, edycja, id, !!szablon && !u.trybBiblioteki, scenaPodgladu);
 
   const wezlyPoId = useMemo(
     () => new Map(szablon ? wszystkieWezly(szablon).map((w) => [w.id, w] as const) : []),
@@ -961,8 +973,16 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             onChange: u.zmienNazwe,
           }}
           aktywnyKrok="szablony"
-          kroki={krokiProjektu}
-          hrefPowrotu="#/"
+          kroki={u.trybBiblioteki ? [] : krokiProjektu}
+          hrefPowrotu={u.trybBiblioteki?.hrefPowrotu ?? '#/'}
+          {...(u.trybBiblioteki
+            ? {
+                etykietaPowrotu: u.trybBiblioteki.etykietaPowrotu,
+                ...(u.trybBiblioteki.dopisekKopii
+                  ? { podtytul: u.trybBiblioteki.dopisekKopii }
+                  : {}),
+              }
+            : {})}
           onNawiguj={sprawdzWyjscie}
           mozeCofnac={edycja.mozeCofnac}
           mozePonowic={edycja.mozePonowic}
@@ -970,7 +990,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
           onPonow={edycja.ponow}
           stanZapisu={stanZapisuUi2}
           onZapisz={() => void edycja.zapiszTeraz().catch(() => undefined)}
-          akcjaGlowna={u.akcjaGlowna}
+          akcjaGlowna={u.trybBiblioteki ? undefined : u.akcjaGlowna}
         />
         <input
           ref={plikImportu}
@@ -1037,9 +1057,12 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             {u.kopia && <a href={u.kopia.adres}>{u.kopia.tekst}</a>}
             {komunikatPliku && !komunikatPliku.blad && (
               <>
-                {komunikatPliku.link && (
-                  <a href={komunikatPliku.link.adres}>{komunikatPliku.link.tekst}</a>
-                )}{' '}
+                {komunikatPliku.link &&
+                  (komunikatPliku.link.adres ? (
+                    <a href={komunikatPliku.link.adres}>{komunikatPliku.link.tekst}</a>
+                  ) : (
+                    <span>{komunikatPliku.link.tekst}</span>
+                  ))}{' '}
                 {komunikatPliku.tekst}
               </>
             )}
@@ -1061,32 +1084,88 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
 
           <div className="edytor-ui2-srodek">
             <div className="edytor-ui2-zakladki" role="toolbar" aria-label={t('ui2.krok.szablony')}>
-              <div className="edytor-ui2-zakladki-lista">
-                {projekt.szablony.map((sz) => {
-                  const wSz = wymiaryKarty(sz);
-                  const aktywna = stronaAktywna === 'przod' && sz.id === id;
-                  const href = `#/projekt/${idProjektu}/szablon/${encodeURIComponent(sz.id)}`;
-                  return (
-                    <a
-                      key={sz.id}
-                      href={href}
-                      className={`edytor-ui2-zakladka${aktywna ? ' aktywna' : ''}`}
-                      aria-current={aktywna ? 'page' : undefined}
-                      onClick={(e) => sprawdzWyjscie(e, href)}
+              {!u.trybBiblioteki && (
+                <>
+                  <div className="edytor-ui2-zakladki-lista">
+                    {projekt.szablony.map((sz) => {
+                      const wSz = wymiaryKarty(sz);
+                      const aktywna = stronaAktywna === 'przod' && sz.id === id;
+                      const href = `#/projekt/${idProjektu}/szablon/${encodeURIComponent(sz.id)}`;
+                      return (
+                        <a
+                          key={sz.id}
+                          href={href}
+                          className={`edytor-ui2-zakladka${aktywna ? ' aktywna' : ''}`}
+                          aria-current={aktywna ? 'page' : undefined}
+                          onClick={(e) => sprawdzWyjscie(e, href)}
+                        >
+                          <span>{sz.nazwa}</span>
+                          <span className="edytor-ui2-zakladka-rozmiar">
+                            {wSz.szer}×{wSz.wys}
+                          </span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                  {u.nowySzablon && (
+                    <button
+                      type="button"
+                      className="edytor-ui2-nowy-szablon"
+                      onClick={u.nowySzablon}
                     >
-                      <span>{sz.nazwa}</span>
-                      <span className="edytor-ui2-zakladka-rozmiar">
-                        {wSz.szer}×{wSz.wys}
-                      </span>
-                    </a>
-                  );
-                })}
-              </div>
-              {u.nowySzablon && (
-                <button type="button" className="edytor-ui2-nowy-szablon" onClick={u.nowySzablon}>
-                  {t('edytor.nowySzablon')}
-                </button>
+                      {t('edytor.nowySzablon')}
+                    </button>
+                  )}
+                </>
               )}
+              {u.trybBiblioteki ? (
+                u.trybBiblioteki.adresPrzod && u.trybBiblioteki.adresTyl ? (
+                  <div
+                    className="edytor-ui2-strony"
+                    role="tablist"
+                    aria-label={t('edytor.stronaKarty')}
+                  >
+                    <a
+                      role="tab"
+                      aria-selected={stronaAktywna === 'przod'}
+                      href={u.trybBiblioteki.adresPrzod}
+                      className="edytor-ui2-strona-btn"
+                      onClick={(e) => sprawdzWyjscie(e, u.trybBiblioteki!.adresPrzod!)}
+                    >
+                      {t('edytor.przod')}
+                    </a>
+                    <a
+                      role="tab"
+                      aria-selected={stronaAktywna === 'tyl'}
+                      href={u.trybBiblioteki.adresTyl}
+                      className="edytor-ui2-strona-btn"
+                      onClick={(e) => sprawdzWyjscie(e, u.trybBiblioteki!.adresTyl!)}
+                    >
+                      {t('edytor.tyl')}
+                    </a>
+                  </div>
+                ) : (
+                  <div className="edytor-ui2-strony-info">
+                    <span className="edytor-ui2-strona-aktywna-etykieta">
+                      {stronaAktywna === 'tyl' ? t('edytor.tyl') : t('edytor.przod')}
+                    </span>
+                    {stronaAktywna === 'przod' && (
+                      <>
+                        <span className="edytor-ui2-brak-tylu">· {t('szablony.brakTylu')}</span>
+                        {u.trybBiblioteki.onDodajTyl && (
+                          <button
+                            type="button"
+                            className="edytor-ui2-nowy-szablon"
+                            onClick={u.trybBiblioteki.onDodajTyl}
+                          >
+                            {t('szablony.dodajTyl')}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )
+              ) : null}
               <div className="edytor-ui2-menu-opakowanie" ref={menuSzablonRef}>
                 <button
                   ref={przyciskAi}
@@ -1134,7 +1213,9 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                         plikImportu.current?.click();
                       }}
                     >
-                      {t('edytor.menuSzablon.import')}
+                      {u.trybBiblioteki
+                        ? t('edytor.menuSzablon.importZastap')
+                        : t('edytor.menuSzablon.import')}
                     </button>
                     <button
                       type="button"
@@ -1157,10 +1238,23 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                     >
                       {t('edytor.menuSzablon.rozmiar')}
                     </button>
+                    {u.trybBiblioteki?.onUsun && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="edytor-ui2-menu-usun"
+                        onClick={() => {
+                          ustawMenuSzablonOtwarte(false);
+                          u.trybBiblioteki?.onUsun?.();
+                        }}
+                      >
+                        {t('edytor.menuSzablon.usun')}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
-              {maRewers && adresTyl && (
+              {!u.trybBiblioteki && maRewers && adresTyl && (
                 <div
                   className="edytor-ui2-strony"
                   role="tablist"

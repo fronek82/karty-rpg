@@ -135,6 +135,23 @@
   outline: none;
 }
 
+.ui2-naglowek-tytul-grupa {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  gap: 1px;
+}
+
+.ui2-naglowek-podtytul {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--tekst-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ui2-etykieta-mausritter {
   display: inline-flex;
   align-items: center;

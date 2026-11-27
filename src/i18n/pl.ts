@@ -1989,6 +1989,17 @@ export const pl = {
   'szablony.usunEtykieta': 'Usuń szablon {nazwa}',
   'szablony.usunieto': 'Usunięto „{nazwa}” z Moich szablonów.',
   'szablony.utworzono': 'Dodano „{nazwa}” do Moich szablonów.',
+  // Plan S (S4): edytor szablonu poza projektem (#/szablon/<id>)
+  'szablony.powrotDoSzablonow': '← Szablony',
+  'szablony.wrocDoProjektu': '← Wróć do projektu {nazwa}',
+  'szablony.brakTylu': 'brak tyłu',
+  'szablony.dodajTyl': '+ Dodaj tył',
+  'szablony.nieZnaleziono': 'Nie znaleziono szablonu w Moich szablonach.',
+  'szablony.zastapiono': 'Zastąpiono szablon z pliku: „{nazwa}”.',
+  'edytor.menuSzablon.importZastap': 'Importuj (zastąp)…',
+  'edytor.menuSzablon.usun': 'Usuń szablon',
+  'szablony.usunPotwierdzTytul': 'Usunąć szablon „{nazwa}”?',
+  'szablony.usunPotwierdzOpis': 'Szablon zniknie z „Moich szablonów”.',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;
@@ -2075,6 +2086,12 @@ export const plMnoga = {
     few: 'Usunięto „{nazwa}” z Moich szablonów (kopie w {n} projektach pozostają bez zmian).',
     many: 'Usunięto „{nazwa}” z Moich szablonów (kopie w {n} projektach pozostają bez zmian).',
     other: 'Usunięto „{nazwa}” z Moich szablonów (kopie w {n} projektach pozostają bez zmian).',
+  },
+  'szablony.dopisekKopii': {
+    one: 'Kopia w {n} projekcie – zmiany nie zmienią jej, dopóki jej nie zaktualizujesz',
+    few: 'Kopie w {n} projektach – zmiany nie zmienią ich, dopóki ich nie zaktualizujesz',
+    many: 'Kopie w {n} projektach – zmiany nie zmienią ich, dopóki ich nie zaktualizujesz',
+    other: 'Kopie w {n} projektach – zmiany nie zmienią ich, dopóki ich nie zaktualizujesz',
   },
 } as const satisfies Record<string, FormyMnogie>;
 

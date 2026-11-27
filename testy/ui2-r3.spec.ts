@@ -34,6 +34,8 @@ test.describe('UI2 R3 / Plan S S3 – okna Nowy szablon i Nowy projekt', () => {
     await okno.getByLabel('Nazwa szablonu').fill('Moje zaklęcia');
     await okno.getByRole('button', { name: 'Utwórz szablon' }).click();
 
+    await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
+    await page.getByRole('link', { name: '← Szablony' }).click();
     await expect(page.getByRole('tab', { name: /^Szablony/ })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -57,6 +59,8 @@ test.describe('UI2 R3 / Plan S S3 – okna Nowy szablon i Nowy projekt', () => {
     await expect(btnUtworzSz).toBeEnabled();
     await expect(oknoSz).toContainText('czar.kartyrpg-szablon');
     await btnUtworzSz.click();
+    await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
+    await page.getByRole('link', { name: '← Szablony' }).click();
     await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(1, { timeout: 10000 });
 
     // 2) Utworzenie projektu z tego szablonu w oknie Nowy projekt.

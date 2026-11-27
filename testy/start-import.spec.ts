@@ -117,6 +117,8 @@ test.describe('układ', () => {
     await okno.getByRole('button', { name: /Tył/ }).click();
     await okno.getByRole('button', { name: /Przód/ }).click();
     await okno.getByRole('button', { name: 'Utwórz szablon' }).click();
+    await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
+    await page.getByRole('link', { name: '← Szablony' }).click();
 
     await expect(page.getByRole('tab', { name: /^Szablony/ })).toHaveAttribute(
       'aria-selected',

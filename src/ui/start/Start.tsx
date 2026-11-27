@@ -257,9 +257,10 @@ export function Start({
       {nowySzablonOtwarty && (
         <OknoNowySzablon
           zamknij={() => ustawNowySzablonOtwarty(false)}
-          onUtworzono={() => {
+          onUtworzono={(wynik) => {
             ustawOdswiezenie((n) => n + 1);
             ustawZakladke('szablony');
+            window.location.hash = `#/szablon/${encodeURIComponent(wynik.id)}`;
           }}
         />
       )}
