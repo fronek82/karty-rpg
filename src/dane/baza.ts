@@ -1164,6 +1164,25 @@ export class BazaProjektow {
     return wynik;
   }
 
+  /** Zbiorcza mapa `idSzablonuWBibliotece → liczba projektów z kopią` (jedno odczytanie `projekty`). */
+  async liczbaKopiiSzablonow(): Promise<Map<string, number>> {
+    const liczniki = new Map<string, number>();
+    for (const w of await this.db.projekty.toArray()) {
+      if (w.tylkoSzablony) continue;
+      const widzianeWProjekcie = new Set<string>();
+      for (const s of w.projekt.szablony) {
+        if (s.zrodlo?.id) widzianeWProjekcie.add(s.zrodlo.id);
+      }
+      for (const r of w.projekt.rewersy ?? []) {
+        if (r.zrodlo?.id) widzianeWProjekcie.add(r.zrodlo.id);
+      }
+      for (const id of widzianeWProjekcie) {
+        liczniki.set(id, (liczniki.get(id) ?? 0) + 1);
+      }
+    }
+    return liczniki;
+  }
+
   /**
    * Rejestruje szablony i tyły projektu własnego w bibliotece szablonów (łączenie po `hash`,
    * sufiks przy zajętej nazwie) i wpisuje `zrodlo` w kopie w projekcie. Pakiety gier bez zmian.

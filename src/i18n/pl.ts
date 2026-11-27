@@ -1953,6 +1953,42 @@ export const pl = {
   'karty.aktualizacja.polaNowe': 'Nowe pola (puste)',
   'karty.aktualizacja.zaktualizowano': 'Zaktualizowano karty ({n}) według szablonu „{nazwa}”.',
   'karty.aktualizacja.zaktualizowanoSzablon': 'Zaktualizowano kopię szablonu „{nazwa}”.',
+  // Plan S (S3): strona główna (Moje szablony), okna Nowy szablon i Nowy projekt
+  'start.nowySzablonBtn': '+ NOWY SZABLON',
+  'start.nowySzablonOpis': 'Zaprojektuj wzór karty albo tyłu w Moich szablonach',
+  'nowySzablon.tytul': 'Nowy szablon',
+  'nowySzablon.sciezka.odZera': 'Nowy od zera',
+  'nowySzablon.sciezka.import': 'Import pliku .kartyrpg-szablon',
+  'nowySzablon.nazwaEtykieta': 'Nazwa szablonu',
+  'nowySzablon.nazwaPlaceholder': 'np. Zaklęcie, Przedmiot, Wróg…',
+  'nowySzablon.utworz': 'Utwórz szablon',
+  'nowySzablon.domyslnaNazwa': 'Nowy szablon',
+  'nowySzablon.domyslnaNazwaTylu': 'Nowy tył',
+  'nowySzablon.podpowiedzOba': 'Utworzy przód i przypięty do niego tył w Moich szablonach.',
+  'nowySzablon.podpowiedzPrzod': 'Utworzy szablon przodu w Moich szablonach.',
+  'nowySzablon.podpowiedzTyl': 'Utworzy szablon tyłu w Moich szablonach.',
+  'nowySzablon.podpowiedzImport': 'Zaimportuje szablon do Moich szablonów.',
+  'nowyProjekt.sciezka.mojeSzablony': 'Z Moich szablonów',
+  'nowyProjekt.sciezka.importProjektu': 'Import pliku projektu',
+  'nowyProjekt.wybierzSzablony': 'Wybierz szablony dla projektu (opcjonalnie)',
+  'nowyProjekt.szukajSzablonow': 'Szukaj w Moich szablonach…',
+  'nowyProjekt.brakSzablonowPodpowiedz':
+    'Nie masz jeszcze żadnych szablonów w Moich szablonach. Utwórz pierwszy szablon albo utwórz pusty projekt i dodaj szablony później.',
+  'nowyProjekt.utworzPierwszySzablon': '+ Nowy szablon',
+  'nowyProjekt.wybranoSzablonow': 'Wybrano szablonów: {n}',
+  'nowyProjekt.bezSzablonowInfo':
+    'Projekt powstanie bez szablonów – dodasz je później w kroku Karty.',
+  'nowyProjekt.importProjektuOpis': 'Upuść plik .kartyrpg tutaj albo kliknij, aby wybrać',
+  'nowyProjekt.opisPlikuProjektu': '{plik} · szablonów: {szablony} · kart: {karty}',
+  'nowyProjekt.bladPlikuProjektu': 'Nie udało się wczytać pliku projektu: {szczegoly}',
+  'szablony.nieuzywany': 'nieużywany',
+  'szablony.kafelekEdytuj': 'Edytuj',
+  'szablony.kafelekDuplikuj': 'Duplikuj',
+  'szablony.eksport': 'Eksport',
+  'szablony.usun': 'Usuń',
+  'szablony.usunEtykieta': 'Usuń szablon {nazwa}',
+  'szablony.usunieto': 'Usunięto „{nazwa}” z Moich szablonów.',
+  'szablony.utworzono': 'Dodano „{nazwa}” do Moich szablonów.',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;
@@ -2027,6 +2063,18 @@ export const plMnoga = {
     few: 'Jest wzorem tła {n} kart (szablonów) – zostanie tam samo tło kolorem.',
     many: 'Jest wzorem tła {n} kart (szablonów) – zostanie tam samo tło kolorem.',
     other: 'Jest wzorem tła {n} karty (szablonu) – zostanie tam samo tło kolorem.',
+  },
+  'szablony.kopieWProjektach': {
+    one: 'kopia w {n} projekcie',
+    few: 'kopie w {n} projektach',
+    many: 'kopie w {n} projektach',
+    other: 'kopie w {n} projektach',
+  },
+  'szablony.usunietoZKopiami': {
+    one: 'Usunięto „{nazwa}” z Moich szablonów (kopia w {n} projekcie pozostaje bez zmian).',
+    few: 'Usunięto „{nazwa}” z Moich szablonów (kopie w {n} projektach pozostają bez zmian).',
+    many: 'Usunięto „{nazwa}” z Moich szablonów (kopie w {n} projektach pozostają bez zmian).',
+    other: 'Usunięto „{nazwa}” z Moich szablonów (kopie w {n} projektach pozostają bez zmian).',
   },
 } as const satisfies Record<string, FormyMnogie>;
 

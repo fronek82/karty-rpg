@@ -58,20 +58,21 @@ test('Moje szablony: sekcja na ekranie własnych kart, szukanie, sortowanie, dup
   await page.getByLabel('Sortuj').selectOption('nazwa-za');
   expect(await nazwyKafelkow(page)).toEqual([...az].reverse());
 
-  // Duplikuj: kopia z dopiskiem „(kopia)”.
+  // Duplikuj: kopia z dopiskiem „(2)” w Moich szablonach (Plan S).
   await page.getByRole('button', { name: `Duplikuj szablon ${az[0]}` }).click();
   await expect(kafelki).toHaveCount(3);
-  await expect(
-    page.locator('.kafelek-projektu .nazwa', { hasText: `${az[0]} (kopia)` }),
-  ).toHaveCount(1);
-
-  // Szablonu używanego przez karty projektu nie da się usunąć (projekt by się zepsuł).
-  await page.getByRole('button', { name: `Usuń projekt ${az[0]}`, exact: true }).click();
-  await expect(page.locator('.lista-projektow [role=alert]')).toContainText(
-    `Nie usunięto: ${az[0]}`,
+  await expect(page.locator('.kafelek-projektu .nazwa', { hasText: `${az[0]} (2)` })).toHaveCount(
+    1,
   );
-  await expect(kafelki).toHaveCount(3);
+
+  // Plan S (D-S1): usunięcie szablonu z Moich szablonów nie psuje projektów – ostrzega i pozwala cofnąć.
+  await page.getByRole('button', { name: `Usuń szablon ${az[0]}`, exact: true }).click();
   const pasek = page.getByTestId('pasek-komunikatu');
+  await expect(pasek).toBeVisible();
+  await expect(pasek).toContainText('pozostaje bez zmian');
+  await expect(kafelki).toHaveCount(2);
+  await pasek.getByRole('button', { name: 'Cofnij' }).click();
+  await expect(kafelki).toHaveCount(3);
   await expect(pasek).toHaveCount(0);
 
   // Moje projekty: zaznacz wszystkie → jeden pasek, Cofnij przywraca oba projekty.

@@ -37,10 +37,11 @@ async function pobierz(adres: string): Promise<Uint8Array> {
 async function zapiszNowyProjekt(
   projekt: import('../model/projekt').Projekt,
   zasoby: import('../model/projekt').DaneZasobow,
+  rejestrujSzablony = false,
 ): Promise<string> {
   const { dolaczZasobyGlobalne } = await import('./zasobyGlobalne');
   const zGlobalnymi = await dolaczZasobyGlobalne(projekt, zasoby);
-  await baza().zapisz(zGlobalnymi.projekt, zGlobalnymi.dane);
+  await baza().zapisz(zGlobalnymi.projekt, zGlobalnymi.dane, { rejestrujSzablony });
   return zGlobalnymi.projekt.id;
 }
 
@@ -73,7 +74,7 @@ export async function nowyProjektZSzablonu(
   const { projekt, zasoby } = await nowyProjektWlasny(importujSzablon(bajty), (plik) =>
     pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  return zapiszNowyProjekt(projekt, zasoby);
+  return zapiszNowyProjekt(projekt, zasoby, true);
 }
 
 /** Nowy projekt własnych kart z szablonu z kreatora – zapisany w bazie; zwraca id. */
@@ -121,7 +122,7 @@ export async function zapiszProjektZPrzykladu(
   const { projekt, zasoby } = await nowyProjektZPrzykladu(przyklad, (plik) =>
     pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  const id = await zapiszNowyProjekt(projekt, zasoby);
+  const id = await zapiszNowyProjekt(projekt, zasoby, true);
   const pierwszySzablon = projekt.szablony[0]?.id;
   if (pierwszySzablon) {
     const { zapiszMiniatureSzablonu } = await import('./miniaturaRewersu');
@@ -355,4 +356,146 @@ export async function nowyProjektPustaKarta(
   }
   const szablonId = projekt.szablony[0]?.id ?? 'szablon-1';
   return `#/projekt/${encodeURIComponent(id)}/szablon/${encodeURIComponent(szablonId)}`;
+}
+
+/**
+ * Tworzy nowy szablon przodu i/lub tyłu w „Moich szablonach” (Plan S, S3, sekcja 5.2).
+ * Domyślny układ swobodny, wybrane wymiary w mm, strony przód / tył.
+ */
+export async function utworzSzablonWBibliotece(
+  opcje: {
+    nazwa: string;
+    szer: number;
+    wys: number;
+    przod: boolean;
+    tyl: boolean;
+  },
+  bazaUrl: string = import.meta.env.BASE_URL,
+): Promise<{ id: string; rodzaj: 'awers' | 'rewers'; nazwa: string; rewersId?: string }> {
+  const [
+    { nowyTyl },
+    { DOMYSLNE_TLO_KARTY },
+    { szablonZKreatora },
+    { zapiszMiniatureWpisuSzablonu },
+  ] = await Promise.all([
+    import('../dane/rewers'),
+    import('../model/szablon'),
+    import('./szablon/nowySzablonUI'),
+    import('./miniaturaRewersu'),
+  ]);
+  const role = { tytul: 'EB Garamond', tresc: 'EB Garamond' };
+  const nazwaBazowa =
+    opcje.nazwa.trim() ||
+    (opcje.przod ? t('nowySzablon.domyslnaNazwa') : t('nowySzablon.domyslnaNazwaTylu'));
+
+  let rewersId: string | undefined;
+  let nazwaTylu = nazwaBazowa;
+  if (opcje.tyl) {
+    const nazwaR = opcje.przod ? `${nazwaBazowa} – ${t('projekty.stronaRewers')}` : nazwaBazowa;
+    const rewers = nowyTyl(
+      'rewers',
+      {
+        nazwa: nazwaR,
+        szer: opcje.szer,
+        wys: opcje.wys,
+        promien: 3,
+        tlo: DOMYSLNE_TLO_KARTY,
+        uklad: 'pusty',
+      },
+      t('kreator.grafikaTylu'),
+    );
+    const dodanyR = await baza().dodajRewersDoBiblioteki(rewers, role, { bezDeduplikacji: true });
+    rewersId = dodanyR.id;
+    const wpisR = await baza().szablonBiblioteki(rewersId);
+    if (wpisR) {
+      nazwaTylu = wpisR.nazwa;
+      await zapiszMiniatureWpisuSzablonu(wpisR, bazaUrl).catch(() => undefined);
+    }
+  }
+
+  if (opcje.przod) {
+    const szablon = szablonZKreatora({
+      nazwa: nazwaBazowa,
+      szer: opcje.szer,
+      wys: opcje.wys,
+      promien: 3,
+      tlo: DOMYSLNE_TLO_KARTY,
+      uklad: 'swobodny',
+    });
+    const dodanyA = await baza().dodajSzablonDoBiblioteki(szablon, role, {
+      ...(rewersId ? { domyslnyRewersId: rewersId } : {}),
+      bezDeduplikacji: true,
+    });
+    const wpisA = await baza().szablonBiblioteki(dodanyA.id);
+    if (wpisA) {
+      await zapiszMiniatureWpisuSzablonu(wpisA, bazaUrl).catch(() => undefined);
+    }
+    return {
+      id: dodanyA.id,
+      rodzaj: 'awers',
+      nazwa: wpisA?.nazwa ?? nazwaBazowa,
+      ...(rewersId ? { rewersId } : {}),
+    };
+  }
+
+  return { id: rewersId!, rodzaj: 'rewers', nazwa: nazwaTylu };
+}
+
+/**
+ * Tworzy nowy projekt własnych kart z wybranych szablonów w „Moich szablonach” (Plan S, S3, sekcja 5.3).
+ * Każdy wybrany szablon trafia do projektu jako kopia z `zrodlo: { id, hash }` (wraz z przypiętym tyłem).
+ * Można nie wybrać żadnego szablonu (projekt zaczyna pusty). Zwraca id projektu.
+ */
+export async function nowyProjektZSzablonowBiblioteki(
+  opcje: { nazwa: string; szablonIds: readonly string[] },
+  bazaUrl: string = import.meta.env.BASE_URL,
+): Promise<string> {
+  const [
+    { dodajKopieRewersuDoProjektu, dodajKopieSzablonuDoProjektu },
+    { PAKIET_WLASNY, pakietWlasny },
+    { projektZPakietu },
+  ] = await Promise.all([
+    import('../dane/aktualizacjaSzablonu'),
+    import('../dane/wlasneKarty'),
+    import('../dane/pakiet'),
+  ]);
+  const nazwa = opcje.nazwa.trim() || t('nowyProjekt.nazwaDomyslna');
+  const pustyPakiet = pakietWlasny([]);
+  const bazowy = await projektZPakietu(
+    pustyPakiet,
+    (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
+    pobierz,
+  );
+  let projekt: import('../model/projekt').Projekt = {
+    ...bazowy.projekt,
+    nazwa,
+    pakiet: PAKIET_WLASNY,
+    szablony: [],
+    talie: [{ id: 'talia-1', nazwa, karty: [] }],
+    arkusze: [
+      {
+        id: 'arkusz-1',
+        nazwa,
+        taliaId: 'talia-1',
+        ustawienia: structuredClone(pustyPakiet.nowaKartka.ustawienia),
+      },
+    ],
+  };
+
+  for (const id of opcje.szablonIds) {
+    const wpis = await baza().szablonBiblioteki(id);
+    if (!wpis) continue;
+    if (wpis.rodzaj === 'awers') {
+      const domyslnyRewers = wpis.domyslnyRewersId
+        ? await baza().szablonBiblioteki(wpis.domyslnyRewersId)
+        : undefined;
+      projekt = dodajKopieSzablonuDoProjektu(projekt, wpis, {
+        ...(domyslnyRewers ? { domyslnyRewers } : {}),
+      }).projekt;
+    } else if (wpis.rodzaj === 'rewers') {
+      projekt = dodajKopieRewersuDoProjektu(projekt, wpis).projekt;
+    }
+  }
+
+  return zapiszNowyProjekt(projekt, bazowy.zasoby);
 }

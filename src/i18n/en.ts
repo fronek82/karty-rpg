@@ -1953,6 +1953,42 @@ export const en: Slownik = {
   'karty.aktualizacja.polaNowe': 'New fields (empty)',
   'karty.aktualizacja.zaktualizowano': 'Updated cards ({n}) from template “{nazwa}”.',
   'karty.aktualizacja.zaktualizowanoSzablon': 'Updated template copy “{nazwa}”.',
+  // Plan S (S3): home page (My templates), New template and New project modals
+  'start.nowySzablonBtn': '+ NEW TEMPLATE',
+  'start.nowySzablonOpis': 'Design a card front or back in My templates',
+  'nowySzablon.tytul': 'New template',
+  'nowySzablon.sciezka.odZera': 'New from scratch',
+  'nowySzablon.sciezka.import': 'Import .kartyrpg-szablon file',
+  'nowySzablon.nazwaEtykieta': 'Template name',
+  'nowySzablon.nazwaPlaceholder': 'e.g. Spell, Item, Enemy…',
+  'nowySzablon.utworz': 'Create template',
+  'nowySzablon.domyslnaNazwa': 'New template',
+  'nowySzablon.domyslnaNazwaTylu': 'New back',
+  'nowySzablon.podpowiedzOba': 'Creates a front and an attached back in My templates.',
+  'nowySzablon.podpowiedzPrzod': 'Creates a front template in My templates.',
+  'nowySzablon.podpowiedzTyl': 'Creates a back template in My templates.',
+  'nowySzablon.podpowiedzImport': 'Imports the template into My templates.',
+  'nowyProjekt.sciezka.mojeSzablony': 'From My templates',
+  'nowyProjekt.sciezka.importProjektu': 'Import project file',
+  'nowyProjekt.wybierzSzablony': 'Choose templates for the project (optional)',
+  'nowyProjekt.szukajSzablonow': 'Search My templates…',
+  'nowyProjekt.brakSzablonowPodpowiedz':
+    'You have no templates in My templates yet. Create your first template or create an empty project and add templates later.',
+  'nowyProjekt.utworzPierwszySzablon': '+ New template',
+  'nowyProjekt.wybranoSzablonow': 'Selected templates: {n}',
+  'nowyProjekt.bezSzablonowInfo':
+    'The project will start without templates – you can add them later in Cards.',
+  'nowyProjekt.importProjektuOpis': 'Drop a .kartyrpg file here or click to choose',
+  'nowyProjekt.opisPlikuProjektu': '{plik} · templates: {szablony} · cards: {karty}',
+  'nowyProjekt.bladPlikuProjektu': 'Could not read project file: {szczegoly}',
+  'szablony.nieuzywany': 'unused',
+  'szablony.kafelekEdytuj': 'Edit',
+  'szablony.kafelekDuplikuj': 'Duplicate',
+  'szablony.eksport': 'Export',
+  'szablony.usun': 'Delete',
+  'szablony.usunEtykieta': 'Delete template {nazwa}',
+  'szablony.usunieto': 'Removed “{nazwa}” from My templates.',
+  'szablony.utworzono': 'Added “{nazwa}” to My templates.',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
@@ -1990,5 +2026,13 @@ export const enMnoga: SlownikMnogi = {
     one: 'It is the background pattern of {n} card (template) – only the background colour will remain.',
     other:
       'It is the background pattern of {n} cards (templates) – only the background colour will remain.',
+  },
+  'szablony.kopieWProjektach': {
+    one: 'copy in {n} project',
+    other: 'copies in {n} projects',
+  },
+  'szablony.usunietoZKopiami': {
+    one: 'Removed “{nazwa}” from My templates (copy in {n} project remains unchanged).',
+    other: 'Removed “{nazwa}” from My templates (copies in {n} projects remain unchanged).',
   },
 };

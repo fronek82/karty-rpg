@@ -64,11 +64,12 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
   await expect(
     page.locator('.kafelek-projektu').filter({ hasText: 'Rewers przedmiotu' }),
   ).toHaveCount(1);
-  await page.locator('.kafelek-projektu').filter({ hasText: 'Karta przedmiotu' }).first().click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Edytor szablonu' })).toBeVisible({
-    timeout: 15000,
-  });
-  await page.getByRole('button', { name: 'Przejdź do kart →', exact: true }).click();
+  await page.getByRole('tab', { name: 'Moje projekty' }).click();
+  await page
+    .locator('.kafelek-projektu')
+    .filter({ hasText: 'Karta przedmiotu' })
+    .getByRole('link', { name: 'Otwórz' })
+    .click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await context.setOffline(false);
 });
