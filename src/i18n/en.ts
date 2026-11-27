@@ -1892,6 +1892,11 @@ export const en: Slownik = {
   'druk.linieCiecia.podglad': 'Cut line preview',
   'druk.linieCiecia.trybDrukarni':
     'In print-shop mode, crop marks are printed instead of cut lines.',
+  'mausritter.odCzegoZaczynamy': 'Where do we start?',
+  'mausritter.dodajKarte': 'Add card',
+  'mausritter.wskazowkaDodaj':
+    'Drag a card onto a free sheet tile or click to place in the first free spot.',
+  'mausritter.licznikKafelkow': '{zajete} / {razem} tiles',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */
