@@ -275,6 +275,11 @@
   flex-shrink: 0;
 }
 
+.edytor-ui2-struktura-tytul {
+  margin: 0;
+  font-size: inherit;
+}
+
 .edytor-ui2-struktura-przelacz {
   height: 34px;
   display: inline-flex;

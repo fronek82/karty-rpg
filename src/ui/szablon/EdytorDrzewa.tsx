@@ -1493,16 +1493,18 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                 style={strukturaOtwarta ? { height: `${wysokoscStruktury}px` } : undefined}
               >
                 <div className="edytor-ui2-struktura-naglowek">
-                  <button
-                    type="button"
-                    className="edytor-ui2-struktura-przelacz"
-                    aria-expanded={strukturaOtwarta}
-                    data-testid="przelacz-strukture"
-                    onClick={() => ustawStrukturaOtwarta((v) => !v)}
-                  >
-                    <span aria-hidden="true">{strukturaOtwarta ? '▾' : '▸'}</span>
-                    <span>{u.teksty.drzewo}</span>
-                  </button>
+                  <h2 className="edytor-ui2-struktura-tytul">
+                    <button
+                      type="button"
+                      className="edytor-ui2-struktura-przelacz"
+                      aria-expanded={strukturaOtwarta}
+                      data-testid="przelacz-strukture"
+                      onClick={() => ustawStrukturaOtwarta((v) => !v)}
+                    >
+                      <span aria-hidden="true">{strukturaOtwarta ? '▾' : '▸'}</span>
+                      <span>{u.teksty.drzewo}</span>
+                    </button>
+                  </h2>
                 </div>
                 {strukturaOtwarta && (
                   <div className="edytor-ui2-struktura-cialo">
@@ -1626,7 +1628,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             <a
               href={adresOzdobnikow}
               className="edytor-ui2-prawy-btn ui2-z-dymkiem"
-              aria-label={t('edytor.zakladka.biblioteka')}
+              aria-label={t('edytor.otworzCalaBiblioteke')}
               onClick={(e) => sprawdzWyjscie(e, adresOzdobnikow)}
             >
               <IkonaKreskowa sciezka="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
