@@ -50,8 +50,15 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   paska stanu (Przyciąganie, Podkład, Linie, `? Skróty` — D15), 4-ikonowy prawy pasek
   (Właściwości, Karta, Style, Biblioteka), 5 ikon + menu `⋯` w nagłówku Struktury oraz przypięte
   do krawędzi obszaru roboczego linijki (`LinijkiKarty.tsx`, D16).
-- Następny etap: **S – „Moje szablony” osobno od projektów** (`docs/plan-S.md`, etapy S1…S6):
-  szablony i tyły w osobnej bibliotece, projekty składają z nich karty (kroki Karty → Druk).
+- Ukończone **Plan S – „Moje szablony” osobno od projektów** (PR #135, #137, #138, #139, #140,
+  `docs/plan-S.md`, etapy S1–S6): tabela `szablony` w Dexie 6 i schemat v36 (`ZrodloSzablonu`),
+  migracja z kopią bezpieczeństwa i łączeniem duplikatów (`src/dane/migracjaSzablonow.ts`),
+  aktualizacja kopii szablonów w projektach („Jest nowsza wersja szablonu”, „Aktualizuj karty (N)”
+  z podglądem Przed/Po i „Cofnij”, `src/dane/aktualizacjaSzablonu.ts`, `OknoAktualizacjiSzablonu.tsx`),
+  ekran startowy „Moje szablony” z oknami „Nowy szablon” i „Nowy projekt”, samodzielny edytor
+  szablonu `#/szablon/<id>` (`EdytorSzablonuStrona.tsx`), kroki projektu **1 Karty → 2 Druk**,
+  lewy pasek „W projekcie” / „Z Moich szablonów”, wybór tyłu z „Moich szablonów”, „Przenieś na
+  szablon…” (`OknoPrzeniesieniaKart.tsx`) oraz zaktualizowana instrukcja PL/EN.
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 36` (`src/model/projekt.ts`), baza Dexie w wersji 6.
 

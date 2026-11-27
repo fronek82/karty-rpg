@@ -459,28 +459,6 @@ export function EdytorKarty({
         id={id}
         szablon={szablon}
         zmienSz={zmienSz}
-        nowySzablon={() => {
-          if (!szablon) return;
-          let nowe = '';
-          zmien((p) => {
-            const w = STRONY.przod.duplikuj(p, p.szablony[0]?.id ?? id, sufiksKopii);
-            nowe = w.id;
-            const nazwa = unikalnaNazwa(
-              szablon.nazwa,
-              p.szablony.map((x) => x.nazwa),
-            );
-            return zmienSzablon(w.projekt, nowe, (s) => ({
-              ...s,
-              nazwa,
-              korzen: { id: 'k', typ: 'swobodny', dzieci: [] },
-              przyklad: undefined,
-              podklad: undefined,
-            }));
-          });
-          if (nowe) {
-            window.location.hash = `#/projekt/${idProjektu}/szablon/${encodeURIComponent(nowe)}`;
-          }
-        }}
         czcionkiUzyte={szablon ? czcionkiSzablonu(rewers ?? szablon) : []}
         kluczRysunku={(w) => k.kluczRysunku(projekt, id, w)}
         rysuj={k.rysuj}

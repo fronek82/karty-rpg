@@ -304,8 +304,8 @@
           <h3 id="pl-kreator">Nowy szablon</h3>
           <ol>
             <li>
-              Na ekranie startowym w sekcji „Nowy szablon” kliknij „Przód” albo „Tył”. Otworzy się
-              kreator. Przód i tył mają ten sam kreator.
+              Na ekranie startowym kliknij „+ NOWY SZABLON” (albo „+ Nowy szablon” na dole lewego
+              paska w projekcie) i wybierz „Przód” albo „Tył”.
             </li>
             <li>
               Wpisz „Nazwa szablonu” i wybierz „Format karty”: „Standard / Poker”, „Bridge”, „Mini
@@ -315,22 +315,23 @@
               Jeśli karta ma mieć rozmiar jak inny przód albo tył, wybierz ten szablon w polu
               „Rozmiar jak w szablonie” na górze formatu. Szerokość, wysokość, orientacja i
               zaokrąglenie rogów zostaną skopiowane i zablokowane; „Odblokuj” pozwala je zmienić.
-              Gdy w kreatorze przodu wybierzesz tył, pole „Przypisz ten tył do szablonu” (domyślnie
-              zaznaczone) od razu przypisze go do nowego przodu.
+              Przy tworzeniu przodu możesz też od razu utworzyć pasujący tył albo wybrać istniejący.
             </li>
             <li>Ustaw orientację, „Zaokrąglenie rogów (mm)” i „Kolor karty”.</li>
             <li>
               W „Zacznij od układu” wybierz „Pusta karta”, „Tytuł i opis”, „Swobodny: pola w
               dowolnych miejscach” albo „Tytuł, siatka 2×2, opis i stopka”.
             </li>
-            <li>Kliknij „Dalej: układ pól”. Otworzy się edytor szablonu.</li>
+            <li>
+              Kliknij „Utwórz szablon”. Nowy szablon zapisuje się w zakładce „Moje szablony” i
+              otwiera w edytorze szablonu.
+            </li>
           </ol>
           <p>
-            Zamiast zaczynać od zera, możesz kliknąć na starcie „Stwórz własne karty”. Na górze są
-            „Moje szablony” (ostatnio zmienione; „Pokaż wszystkie” otwiera zakładkę „Moje szablony”
-            na starcie), niżej „Przykładowe szablony” i „Galeria szablonów online”. Kliknięcie
-            kafelka tworzy projekt z kopią szablonu (przykład dodaje też jedną kartę z danymi
-            przykładowymi). „Importuj szablon” wczytuje plik z innego komputera.
+            Zamiast zaczynać od zera, możesz na starcie kliknąć „+ NOWE KARTY” i wybrać gotowy
+            szablon z sekcji „Moje szablony”, „Przykładowe szablony” lub „Galeria szablonów online”
+            (albo wczytać plik <code>.kartyrpg-szablon</code> przez „Importuj szablon”). Projekt
+            dostaje własną kopię wybranego szablonu.
           </p>
           <h3 id="pl-edytor-szablonu">Edytor szablonu</h3>
           <figure>
@@ -382,19 +383,14 @@
               podczas przeciągania uchwytu, żeby zachować proporcje.
             </li>
             <li>
-              „Duplikuj” na pasku edytora (albo „Duplikuj szablon” w sekcji „Szablony projektu” w
-              panelu „Opcje druku i arkusza”) tworzy kopię szablonu.
+              Menu „Szablon” nad kartą pozwala duplikować szablon, zmienić jego rozmiar,
+              wyeksportować go do pliku <code>.kartyrpg-szablon</code>, zastąpić go innym plikiem
+              („Importuj (zastąp)…”) albo usunąć szablon.
             </li>
             <li>
               Zmiany zapisuje przycisk „Zapisz” albo <kbd>Ctrl</kbd> + <kbd>S</kbd> (na macOS
-              <kbd>Cmd</kbd> + <kbd>S</kbd>), tak jak w edytorze kart. Przy wyjściu z projektu z
-              niezapisanymi zmianami edytor zapyta, co zrobić. Dotyczy to także przycisku Wstecz w
-              przeglądarce.
-            </li>
-            <li>
-              „Eksport” na pasku zapisuje szablon do pliku <code>.kartyrpg-szablon</code>. „Import”
-              dodaje szablon z takiego pliku do projektu, także plik zapisany w edytorze tyłu, i
-              pokazuje link do niego.
+              <kbd>Cmd</kbd> + <kbd>S</kbd>). Przy wyjściu z edytora z niezapisanymi zmianami
+              aplikacja zapyta, co zrobić. Dotyczy to także przycisku Wstecz w przeglądarce.
             </li>
             <li>
               Panel „Właściwości” ma ustawienia treści („z danych karty” albo „stała (na każdej
@@ -413,9 +409,10 @@
             </li>
           </ul>
           <p>
-            Kliknij „Edytor kart”, żeby przejść do kartki dla rozmiaru szablonu. Kliknięcie slotu
-            dodaje kartę, a panel pokazuje pola z nazwami z szablonu. Do edytora szablonu wrócisz
-            przyciskiem „Powrót” na pasku albo linkiem na dole panelu zaznaczonej karty.
+            Edytor szablonu działa w sekcji „Moje szablony”, osobno od projektów. Po zapisaniu zmian
+            wróć przyciskiem „Szablony” albo przyciskiem powrotu do projektu (jeśli wszedłeś z karty
+            przez „Edytuj w Moich szablonach”). Istniejące projekty zachowują swoją kopię szablonu,
+            dopóki nie zaktualizujesz w nich kart.
           </p>
           <h3 id="pl-opcje-kontenera">Opcje kontenera</h3>
           <p>
@@ -1156,25 +1153,29 @@
           <h3 id="pl-moje-szablony">Moje projekty i Moje szablony</h3>
           <ul>
             <li>
-              Na ekranie startowym są dwie zakładki: „Moje projekty” i „Moje szablony”. „Moje
-              szablony” to wszystkie przody i tyły zapisane w tej przeglądarce i nie ma osobnej
-              biblioteki szablonów. „Użyj w projekcie” tworzy nowy projekt z kopią szablonu,
-              „Duplikuj” robi kopię z dopiskiem „(kopia)”.
+              Na ekranie startowym są dwie równorzędne zakładki: „Moje projekty” i „Moje szablony”
+              oraz przyciski tworzenia „+ NOWE KARTY” i „+ NOWY SZABLON”. Szablony (przody i tyły)
+              projektuje się osobno w zakładce „Moje szablony”, a w projektach składa się z nich
+              karty (kroki <strong>1 Karty</strong> i <strong>2 Druk</strong>).
             </li>
             <li>
-              Pole „Szukaj po nazwie…” zawęża listę, a „Sortuj” ustawia kolejność (data zmiany albo
-              nazwa).
+              Dodanie szablonu do projektu tworzy jego <strong>kopię w projekcie</strong>.
+              Późniejsze zmiany szablonu w zakładce „Moje szablony” nie zmieniają automatycznie
+              złożonych wcześniej talii. W kroku Karty pojawia się przy nich informacja „Jest nowsza
+              wersja szablonu” i przycisk aktualizacji kart z podglądem „Przed” i „Po”, listą
+              dopasowanych pól i paskiem „Cofnij”.
             </li>
             <li>
-              „Usuń” usuwa od razu. Na dole ekranu pojawia się pasek „Usunięto: … — Cofnij”;
-              „Cofnij” przywraca element w całości. Pasek znika po około 8 sekundach, ale nie wtedy,
-              gdy trzymasz nad nim kursor.
+              W kroku Karty lewy pasek ma dwie grupy: „W projekcie” oraz „Z Moich szablonów” (z
+              wyszukiwarką i przyciskiem „+ Nowy szablon”). Panel karty zawiera link „Edytuj w Moich
+              szablonach”, wybór tyłu z projektu albo z sekcji „Moje szablony” oraz przycisk
+              „Przenieś na szablon…” do przenoszenia danych zaznaczonych kart na inny szablon po
+              nazwach pól (z podglądem listy pól i „Cofnij”).
             </li>
             <li>
-              „Zaznacz…” włącza zaznaczanie: pola wyboru przy kafelkach i „Zaznacz wszystkie”. „Usuń
-              zaznaczone” usuwa je naraz, a jedno „Cofnij” przywraca wszystkie. Usunięcie projektu
-              zostawia jego szablony na liście „Moje szablony”. Szablonu, którego używają karty
-              projektu, nie da się usunąć. Usuń najpierw projekt.
+              Pole wyszukiwania zawęża listę, a „Sortuj” ustawia kolejność (data zmiany albo nazwa).
+              „Usuń” usuwa od razu i pokazuje na dole pasek „Cofnij”. Usunięcie szablonu z zakładki
+              „Moje szablony” nie psuje istniejących projektów, ponieważ zachowują one własne kopie.
             </li>
           </ul>
           <h3 id="pl-biblioteki">Biblioteki: obrazy, czcionki i ozdobniki</h3>
@@ -1385,8 +1386,8 @@
           <h3 id="en-kreator">A new template</h3>
           <ol>
             <li>
-              On the start screen, under “New template”, click “Front” or “Back”. The wizard opens;
-              fronts and backs use the same one.
+              On the start screen, click “+ NEW TEMPLATE” (or “+ New template” at the bottom of the
+              left sidebar in a project) and choose “Front” or “Back”.
             </li>
             <li>
               Type a “Template name” and choose the “Card format”: “Standard / Poker”, “Bridge”,
@@ -1395,24 +1396,24 @@
             <li>
               If the card should match another front or back, pick that template in “Size as in
               template” at the top of the format section. Width, height, orientation and corner
-              radius are copied and locked; “Make editable” lets you change them. When you pick a
-              back in the front wizard, “Assign this back to the template” (ticked by default)
-              assigns it to the new front right away.
+              radius are copied and locked; “Make editable” lets you change them. When creating a
+              front, you can also create a matching back right away or pick an existing one.
             </li>
             <li>Set the orientation, “Corner radius (mm)” and “Card color”.</li>
             <li>
               Under “Start from a layout” pick “Blank card”, “Title and description”, “Free-form:
               fields anywhere” or “Title, 2×2 grid, description and footer”.
             </li>
-            <li>Click “Next: field layout”. The template editor opens.</li>
+            <li>
+              Click “Create template”. The new template is saved in “My templates” and opens in the
+              template editor.
+            </li>
           </ol>
           <p>
-            Instead of starting from scratch, you can click “Create your own cards” on the start
-            screen. At the top are “My templates” (recently modified; “Show all” opens the “My
-            templates” tab on the start screen), below them “Sample templates” and the “Online
-            template gallery”. Clicking a tile creates a project with a copy of the template (a
-            sample comes with one card of sample data). “Import a template” loads a file from
-            another computer.
+            Instead of starting from scratch, you can click “+ NEW CARDS” on the start screen and
+            pick a ready-made template from “My templates”, “Sample templates” or the “Online
+            template gallery” (or load a <code>.kartyrpg-szablon</code> file via “Import a
+            template”). The project gets its own copy of the chosen template.
           </p>
           <h3 id="en-edytor-szablonu">The template editor</h3>
           <figure>
@@ -1465,18 +1466,14 @@
               <kbd>Shift</kbd> while dragging a handle to keep the proportions.
             </li>
             <li>
-              Use “Duplicate” in the editor toolbar (or “Duplicate template” in “Project templates”
-              in “Print &amp; sheet options”) to copy the template.
+              The “Template” menu above the card lets you duplicate the template, resize it, export
+              it to a <code>.kartyrpg-szablon</code> file, replace it from a file (“Import
+              (replace)…”) or delete it.
             </li>
             <li>
               Save changes with the “Save” button or <kbd>Ctrl</kbd> + <kbd>S</kbd> (on macOS
-              <kbd>Cmd</kbd> + <kbd>S</kbd>), as in the card editor. Leaving the project with
-              unsaved changes asks what to do, also with the browser's Back button.
-            </li>
-            <li>
-              “Export” in the toolbar saves the template to a <code>.kartyrpg-szablon</code> file.
-              “Import” adds a template from such a file to the project, including a file saved in
-              the card back editor, and shows a link to it.
+              <kbd>Cmd</kbd> + <kbd>S</kbd>). Leaving the editor with unsaved changes asks what to
+              do, also with the browser's Back button.
             </li>
             <li>
               The “Properties” panel covers content (“from card data” or “fixed (on every card)”),
@@ -1493,9 +1490,10 @@
             </li>
           </ul>
           <p>
-            Click “Card editor” to go to a sheet sized for the template. Clicking a slot adds a
-            card, and the panel shows the fields named as in the template. Use “Back” in the top bar
-            or the link at the bottom of the selected card’s panel to return to the template editor.
+            The template editor works in “My templates”, separately from projects. After saving,
+            return with “Templates” or the back-to-project button (when opened from a card via “Edit
+            in My templates”). Existing projects keep their own copy of the template until you
+            update their cards.
           </p>
           <h3 id="en-opcje-kontenera">Container options</h3>
           <p>
@@ -2241,25 +2239,28 @@
           <h3 id="en-moje-szablony">My projects and My templates</h3>
           <ul>
             <li>
-              The start screen has two tabs: “My projects” and “My templates”. “My templates” are
-              all fronts and backs saved in this browser; there is no separate template library.
-              “Use in a project” creates a new project with a copy of the template, “Duplicate”
-              makes a copy with “(copy)” added to the name.
+              The start screen has two equal tabs: “My projects” and “My templates”, along with “+
+              NEW CARDS” and “+ NEW TEMPLATE” buttons. Templates (fronts and backs) are designed
+              separately in “My templates”, while projects assemble cards from them (steps
+              <strong>1 Cards</strong> and <strong>2 Print</strong>).
             </li>
             <li>
-              The “Search by name…” field narrows the list, and “Sort” sets the order (date modified
-              or name).
+              Adding a template to a project creates a <strong>copy inside the project</strong>.
+              Later edits in “My templates” do not alter existing decks automatically. Instead, the
+              Cards step shows “A newer template version is available” and a button to update cards
+              with “Before” and “After” previews, a matched-field list and an “Undo” bar.
             </li>
             <li>
-              “Delete” deletes right away. A bar “Deleted: … — Undo” appears at the bottom of the
-              screen; “Undo” restores the item in full. The bar disappears after about 8 seconds,
-              but not while the pointer is over it.
+              In the Cards step, the left sidebar has two groups: “In project” and “From My
+              templates” (with search and a “+ New template” button). The card inspector offers an
+              “Edit in My templates” link, card-back selection from the project or “My templates”,
+              and “Move to template…” to transfer selected cards’ data by field name (with a field
+              preview and “Undo”).
             </li>
             <li>
-              “Select…” turns on selection: checkboxes on the tiles and “Select all”. “Delete
-              selected” deletes them at once, and a single “Undo” restores all of them. Deleting a
-              project keeps its templates in “My templates”. A template used by a project’s cards
-              cannot be deleted. Delete the project first.
+              The search box narrows the list and “Sort” changes the order (date modified or name).
+              “Delete” deletes right away with an “Undo” bar at the bottom. Deleting a template from
+              “My templates” never breaks existing projects because they keep their own copies.
             </li>
           </ul>
           <h3 id="en-biblioteki">Libraries: images, fonts and ornaments</h3>

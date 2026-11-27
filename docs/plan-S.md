@@ -146,3 +146,29 @@ Wzorce PNG kart i arkuszy nie mogą się zmienić. Wygląd kart po migracji jest
 - **D-S7** „Przenieś na szablon…” przenosi dane zaznaczonych kart na inny szablon po nazwach pól.
 - **D-S5** Pakiety gier (Mausritter) nie korzystają z biblioteki szablonów.
 - **D-S8** Wpis w tabeli `szablony` (`WpisSzablonu`) przechowuje także podzbiór ról czcionek używanych przez szablon/tył (`role`) oraz opcjonalny `domyslnyRewersId` (dla przodu); samodzielne projekty rewersowe (`czyProjektRewersowy`) i dawne schowki `tylkoSzablony` są usuwane z `projekty` po przeniesieniu ich szablonów i tyłów w migracji S1.
+- **D-S9** Bezpośrednie trasy `#/projekt/<id>/szablon/<sid>` i `#/projekt/<id>/rewers/<rid>` w `EdytorStrona.tsx` pozostają bez linków w UI projektu (krok „Szablony” i zakładki wielu szablonów zostały usunięte), aby nie zrywać starszych testów jednostkowych edytora opartych na `szablonUI.ts`; użytkownik edytuje szablony wyłącznie przez „Moje szablony” (`#/szablon/<id>`).
+
+## 8. Stan
+
+### Scalone etapy
+
+- **S1** (PR #135) — model `ZrodloSzablonu`, schemat v36, tabela `szablony` (Dexie v6), migracja z kopią bezpieczeństwa `kopiaMigracji`, łączenie duplikatów po `hash`, sufiksy `(2)`/`(3)`, usuwanie nieużywanych szablonów z projektów, pliki `.kartyrpg` i `.kartyrpg-szablon`, testy Vitest.
+- **S2** (PR #137) — `src/dane/aktualizacjaSzablonu.ts`, wykrywanie nowszej wersji po `hash`, baner „Jest nowsza wersja szablonu” i „Aktualizuj karty (N)” z podglądem Przed/Po (`OknoAktualizacjiSzablonu.tsx`) oraz paskiem „Cofnij”, testy Vitest.
+- **S3** (PR #138) — strona główna „Moje szablony” z miniaturami Przód+Tył i licznikiem kopii w projektach, okna „Nowy szablon” (`OknoNowySzablon.tsx`) i „Nowy projekt” (`OknoNowyProjekt.tsx`), przycisk `+ NOWY SZABLON`, test Playwright `testy/plan-s-s3.spec.ts`.
+- **S4** (PR #139) — samodzielny edytor szablonu poza projektem `#/szablon/<id>` (`EdytorSzablonuStrona.tsx`), powrót „← Szablony” / „← Wróć do projektu …”, dopisek o kopiach w projektach, przełącznik Przód | Tył (oraz „+ Dodaj tył”), menu „Szablon ▾” z „Importuj (zastąp)…” i „Usuń szablon” (z potwierdzeniem), test Playwright `testy/plan-s-s4.spec.ts`.
+- **S5** (PR #140) — kroki projektu **1 Karty → 2 Druk**, lewy pasek „W projekcie” / „Z Moich szablonów” z wyszukiwarką i „＋ Nowy szablon”, link „Edytuj w Moich szablonach ↗”, wybór tyłu karty także z „Moich szablonów”, okno „Przenieś na szablon…” (`OknoPrzeniesieniaKart.tsx`) z listą pól i „Cofnij”, test Playwright `testy/plan-s-s5.spec.ts`.
+- **S6** (bieżący PR) — zaktualizowana instrukcja PL/EN (`instrukcja/index.html`), usunięcie martwego kodu zakładek wielu szablonów projektu (`EdytorDrzewa.tsx`, `EdytorKarty.tsx`, `edytorUi2.css`), aktualizacja `CLAUDE.md` i sekcji „Stan” w `docs/plan-S.md`.
+- **Zrzuty / wzorce PNG**: w środowisku VM brak lokalnego Chromium, dlatego galeria zrzutów instrukcji nie była regenerowana w S6; wzorce PNG kart, arkuszy i przykładów pozostały w 100% bez zmian przez cały Plan S (S1–S6).
+
+### Otwarte PR
+
+- Brak otwartych/zablokowanych PR z poprzednich etapów (S1–S5 scalone przy zielonym CI; S6 w bieżącym PR).
+
+### Jak sprawdzić całość krok po kroku
+
+1. **Strona główna i „Moje szablony” (S3)**: otwórz ekran startowy, kliknij **+ NOWY SZABLON**, utwórz przód z przypiętym tyłem (np. „Zaklęcie”), a następnie drugi szablon (np. „Broń”) oraz osobny tył (np. „Rewers gildii”). Sprawdź zakładkę **Moje szablony** — widać miniatury, wymiary, liczbę kopii w projektach, **Edytuj**, **Duplikuj**, **Eksport** i **Usuń** z paskiem **Cofnij**.
+2. **Edytor szablonu poza projektem (S4)**: otwórz „Zaklęcie” przyciskiem **Edytuj** (`#/szablon/<id>`). Sprawdź nagłówek **← Szablony** bez mapy kroków, brak zakładek wielu szablonów, przełącznik **Przód | Tył** (a w szablonie bez tyłu przycisk **+ Dodaj tył**) oraz menu **Szablon ▾** (Duplikuj, Eksport, Importuj (zastąp)…, Układ ze zdjęcia, Zmień rozmiar, Usuń szablon). Dodaj pole tekstowe i zapisz (**Ctrl+S**).
+3. **Nowy projekt i kroki Karty → Druk (S3, S5)**: na Starcie kliknij **+ NOWE KARTY**, wybierz „Zaklęcie” i utwórz projekt. W nagłówku projektu widać wyłącznie **1 Karty → 2 Druk** (bez kroku „Szablony”). Dodaj kartę z grupy **W projekcie**, wpisz dane i zapisz projekt.
+4. **Niezależność kopii i „Aktualizuj karty” (S2, S4)**: w prawym panelu karty kliknij **Edytuj w Moich szablonach ↗** — nagłówek edytora pokazuje **← Wróć do projektu …** oraz dopisek „Kopia w 1 projekcie – zmiany nie zmienią jej, dopóki jej nie zaktualizujesz”. Dodaj kolejne pole i zapisz. Kliknij **← Wróć do projektu …**: karta zachowała stary wygląd, a nad listą widać **Jest nowsza wersja szablonu** i **Aktualizuj karty (1)**. Kliknij, obejrzyj podgląd **Przed / Po** i listę pól, zatwierdź — dane karty zostały zachowane, a na dole działa **Cofnij**.
+5. **Dodawanie z „Moich szablonów”, zmiana tyłu i „Przenieś na szablon…” (S5)**: w lewym pasku znajdź „Broń” w grupie **Z Moich szablonów** (przetestuj wyszukiwarkę) i kliknij — szablon trafi do grupy **W projekcie** i doda kartę. Zmień **Tył karty** na „Rewers gildii” z grupy **Z Moich szablonów**. Kliknij **Przenieś na szablon…**, sprawdź listę pól przeniesionych/pominiętych/nowych, zatwierdź i przetestuj **Cofnij**.
+6. **Druk i instrukcja (S5, S6)**: przejdź do kroku **2 Druk** i sprawdź podgląd arkusza. Otwórz instrukcję (⚙ → **Instrukcja ↗**) w PL i EN i sprawdź zaktualizowaną sekcję „Moje projekty i Moje szablony”.
