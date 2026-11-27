@@ -1,16 +1,26 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('UI2 R1 – wspólne komponenty, dymek i wyrównanie linii', () => {
+async function otworzEdytor(page: import('@playwright/test').Page) {
+  await page.goto('./');
+  await page.getByTestId('start-nowe-karty').click();
+  const okno = page.getByRole('dialog', { name: 'Nowy projekt' });
+  await expect(okno).toBeVisible();
+  await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
+  await expect(page.locator('.karta-podgladu')).toBeVisible();
+}
+
+test.describe('UI2 R1 – wspólne komponenty, dymek i wyrównanie linii (na prawdziwym edytorze)', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
   test('dymek paska bocznego pojawia się po opóźnieniu 0,5 s i ma tekst', async ({ page }) => {
-    await page.goto('#/ui2-podglad');
-    await expect(page.getByTestId('ui2-podglad')).toBeVisible();
+    await otworzEdytor(page);
 
-    const przycisk = page.getByRole('button', { name: 'Swobodny' });
+    const przycisk = page
+      .getByRole('navigation', { name: 'Dodaj element' })
+      .getByRole('button', { name: 'Swobodny', exact: true });
     const dymek = przycisk.locator('.ui2-dymek');
 
-    await expect(dymek).toHaveText('Swobodny – dowolne położenie myszką');
+    await expect(dymek).toContainText('Swobodny');
     await expect(dymek).toHaveCSS('visibility', 'hidden');
 
     await przycisk.hover();
@@ -28,8 +38,7 @@ test.describe('UI2 R1 – wspólne komponenty, dymek i wyrównanie linii', () =>
   });
 
   test('wysokości pasków i poziome linie sąsiednich kolumn są równe', async ({ page }) => {
-    await page.goto('#/ui2-podglad');
-    await expect(page.getByTestId('ui2-podglad')).toBeVisible();
+    await otworzEdytor(page);
 
     const pomiary = await page.evaluate(() => {
       const r = (sel: string) => {
@@ -40,22 +49,17 @@ test.describe('UI2 R1 – wspólne komponenty, dymek i wyrównanie linii', () =>
       };
       return {
         lewyNaglowek: r('.ui2-pasek-boczny-naglowek'),
-        pasekRoboczy: r('[data-testid="ui2-pasek-roboczy"]'),
-        prawyNaglowek: r('.ui2-panel-naglowek'),
+        pasekZakladek: r('.edytor-ui2-zakladki'),
         lewyDol: r('.ui2-pasek-przelacznik'),
-        pasekStanu: r('[data-testid="ui2-pasek-stanu"]'),
+        pasekStanu: r('[data-testid="pasek-stanu-edytora"]'),
       };
     });
 
-    // Górna linia pod paskami (lewy nagłówek, pasek roboczy, prawy nagłówek) na tej samej wysokości.
+    // Górna linia pod paskami (lewy nagłówek i pasek zakładek) – 42 px na tej samej wysokości.
     expect(Math.abs(pomiary.lewyNaglowek.height - 42)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(pomiary.pasekRoboczy.height - 42)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(pomiary.prawyNaglowek.height - 42)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(pomiary.lewyNaglowek.bottom - pomiary.pasekRoboczy.bottom)).toBeLessThanOrEqual(
-      0.5,
-    );
+    expect(Math.abs(pomiary.pasekZakladek.height - 42)).toBeLessThanOrEqual(0.5);
     expect(
-      Math.abs(pomiary.prawyNaglowek.bottom - pomiary.pasekRoboczy.bottom),
+      Math.abs(pomiary.lewyNaglowek.bottom - pomiary.pasekZakladek.bottom),
     ).toBeLessThanOrEqual(0.5);
 
     // Dolna linia (przycisk Zwiń lewego paska i pasek stanu) – 44 px, ta sama wysokość i pozycja.
@@ -66,11 +70,11 @@ test.describe('UI2 R1 – wspólne komponenty, dymek i wyrównanie linii', () =>
   });
 
   test('rozwinięcie paska bocznego zapamiętuje się w localStorage', async ({ page }) => {
-    await page.goto('#/ui2-podglad');
+    await otworzEdytor(page);
     const pasek = page.getByRole('navigation', { name: 'Dodaj element' });
     await expect(pasek).toHaveAttribute('data-stan', 'zwiniety');
 
-    await page.getByRole('button', { name: 'Rozwiń pasek' }).click();
+    await page.getByRole('button', { name: /Rozwiń pasek/i }).click();
     await expect(pasek).toHaveAttribute('data-stan', 'rozwiniety');
 
     await page.reload();

@@ -28,7 +28,6 @@ const Biblioteki = lazy(() =>
 const EdytorStrona = lazy(() =>
   import('./EdytorStrona').then((m) => ({ default: m.EdytorStrona })),
 );
-const PodgladUi2 = lazy(() => import('./ui2/PodgladUi2').then((m) => ({ default: m.PodgladUi2 })));
 
 const ADRES_REPOZYTORIUM = 'https://github.com/fronek82/karty-rpg';
 const ADRES_LICENCJI = `${ADRES_REPOZYTORIUM}/blob/main/LICENCJE.md`;
@@ -129,13 +128,6 @@ export function App() {
     trasa === '/wlasne/nowy/rewers';
 
   if (dawnaBiblioteka) return null;
-  if (trasa === '/ui2-podglad') {
-    return (
-      <Leniwa>
-        <PodgladUi2 />
-      </Leniwa>
-    );
-  }
   if (projekt) {
     // Edytor kartki zajmuje cały ekran (własny pasek górny).
     return (
