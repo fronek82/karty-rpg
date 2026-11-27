@@ -13,6 +13,7 @@ test('grupa zmienia dwa pola, tło zależy od przykładu, a odłączenie zachowu
     uklad: 'Tytuł i opis',
   });
   await zaznacz(page, 'Tytuł');
+  await page.getByRole('button', { name: 'Style', exact: true }).click();
   const grupyTytulu = await sekcja(page, 'Grupy stylów');
   await grupyTytulu.getByRole('button', { name: 'Nowa grupa z tego pola' }).click();
   await grupyTytulu.getByLabel('Nazwa grupy').fill('Wspólny');
@@ -41,6 +42,7 @@ test('grupa zmienia dwa pola, tło zależy od przykładu, a odłączenie zachowu
   await expect(podglad.locator('[fill="#7122a5"]').first()).toBeAttached();
   await expect(zielone.first()).toBeAttached();
 
+  await page.getByRole('button', { name: 'Właściwości elementu', exact: true }).click();
   await page.getByLabel('Wartość przykładowa', { exact: true }).fill('Noc');
   await karta(page);
   const kolor = await sekcja(page, 'Kolor z danych');

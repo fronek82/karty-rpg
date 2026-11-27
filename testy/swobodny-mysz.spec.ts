@@ -181,6 +181,7 @@ test('podkład: pokaż / ukryj, przezroczystość, nie łapie kliknięć i nie t
     'true',
   );
 
+  await page.getByTestId('stan-podklad').click();
   const suwak = page.getByLabel('Przezroczystość podkładu (%)');
   await suwak.fill('80');
   await expect(img).toHaveCSS('opacity', '0.2');
@@ -188,6 +189,7 @@ test('podkład: pokaż / ukryj, przezroczystość, nie łapie kliknięć i nie t
   await expect(img).toHaveCount(0);
   await page.getByLabel('Pokaż podkład').check();
   await expect(img).toBeVisible();
+  await page.keyboard.press('Escape');
 
   // Podkład to nakładka edytora: SVG karty go nie zawiera.
   expect(await podglad(page).locator('svg').first().innerHTML()).not.toContain('podklad');
@@ -200,7 +202,7 @@ test('podkład: pokaż / ukryj, przezroczystość, nie łapie kliknięć i nie t
   await expect(page.getByTestId('podklad-podgladu')).toHaveCSS('opacity', '0.2');
 
   // Na kartce (jak w PDF) podkładu nie ma.
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   await expect(page.getByTestId('podklad-podgladu')).toHaveCount(0);
   await expect(page.locator('svg image')).toHaveCount(0);
 });

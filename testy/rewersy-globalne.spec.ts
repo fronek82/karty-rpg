@@ -40,7 +40,7 @@ test('zaprojektowany rewers jest dostępny do wybrania przy dowolnej karcie w os
   await page.getByText('Tytuł i opis').click();
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: 'Edytor kart ►', exact: true }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →', exact: true }).click();
   await expect(slot(page, 1, 1, 1)).toBeVisible({ timeout: 15000 });
   await slot(page, 1, 1, 1).click();
   await page.getByRole('menuitem', { name: /Warlock! Czary/ }).click();

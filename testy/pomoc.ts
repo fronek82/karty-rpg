@@ -42,12 +42,14 @@ export async function dodajKarte(
 
 export async function zapisano(page: Page) {
   const przycisk = page
-    .locator('.pasek-gorny')
+    .locator('.pasek-gorny, header.ui2-naglowek')
     .getByRole('button', { name: 'Zapisz', exact: true });
   if (await przycisk.isVisible().catch(() => false)) {
     if (await przycisk.isEnabled().catch(() => false)) await przycisk.click();
   }
-  await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+  await expect(page.locator('.status-zapisu, .ui2-stan-zapisu')).toHaveText(
+    /^(Zapisano|✓ zapisano)$/,
+  );
 }
 
 /** Środek elementu w pikselach ekranu. */

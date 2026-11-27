@@ -175,17 +175,12 @@ for (const motyw of MOTYWY) {
     await zaznacz(page, 'Tytuł');
     const pan = panel(page);
 
-    // Drzewo: zaznaczony węzeł, zwykły węzeł, ikona.
+    // Drzewo: zaznaczony węzeł (tło --zaznaczenie i kontrastowy tekst), zwykły węzeł, ikona.
     const wybrany = drzewo(page).locator('.wezel-drzewa.wybrany > .wezel-etykieta').first();
     await tekst(wybrany, 'zaznaczony węzeł drzewa');
     await tekst(drzewo(page).locator('.ikona-wezla').first(), 'ikona węzła');
     const wezel0 = drzewo(page).getByRole('treeitem').first();
     await fokus(page, wezel0, 'fokus w drzewie', wezel0.locator(':scope > .wezel-etykieta'));
-    const ob = await pomiarFokusu(wybrany);
-    expect(
-      ob.kontrast,
-      `obrys zaznaczenia w drzewie: ${ob.tekst} na ${ob.tlo}`,
-    ).toBeGreaterThanOrEqual(3);
 
     // Panel właściwości.
     await tekst(pan.locator('h2'), 'nagłówek panelu');
@@ -201,7 +196,6 @@ for (const motyw of MOTYWY) {
       pol.locator('.przelacznik-segmentowy button[aria-pressed="true"]').first(),
       'segment zaznaczony',
     );
-    await tekst(pan.getByRole('button', { name: 'Wklej styl' }), 'przycisk wyłączony (Wklej styl)');
     await fokus(page, nazwa, 'fokus w polu panelu');
     await fokus(page, etykieta.locator(':scope > summary'), 'fokus na nagłówku sekcji');
 
@@ -209,12 +203,10 @@ for (const motyw of MOTYWY) {
     const kotwica = pol.locator('.siatka-kotwic button[aria-checked="false"]').first();
     await obrys(kotwica, 'obrys przycisku kotwicy');
 
-    // Menu „+ Dodaj”: tylko napisy.
-    await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
-    const poz = page.getByRole('menuitem', { name: 'Tekst', exact: true });
-    await tekst(poz, 'pozycja menu Dodaj');
-    await expect(page.locator('.menu-dodaj .menu-pozycja .ikona')).toHaveCount(0);
-    await page.keyboard.press('Escape');
+    // Zakładka Style: przycisk Wklej styl (wyłączony przed skopiowaniem).
+    await page.getByRole('button', { name: 'Style', exact: true }).click();
+    await tekst(pan.getByRole('button', { name: 'Wklej styl' }), 'przycisk wyłączony (Wklej styl)');
+    await page.getByRole('button', { name: 'Właściwości elementu', exact: true }).click();
 
     // Nakładki trybu swobodnego na podglądzie: uchwyt i obrys zaznaczenia.
     const uchwyt = page.locator('.karta-podgladu .uchwyt').first();
@@ -227,7 +219,7 @@ for (const motyw of MOTYWY) {
     );
   });
 
-  test(`sekcje paneli (${motyw}): zagnieżdżona ma cieńszy pasek w kolorze rodzica`, async ({
+  test(`sekcje paneli (${motyw}): w R10 sekcje mają linie rozdzielające bez kolorowych pasków z lewej`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: motyw });
@@ -237,23 +229,20 @@ for (const motyw of MOTYWY) {
       uklad: 'Tytuł i opis',
     });
     await dodaj(page, 'Etykieta + wartość', 'Siła');
-    // Pierwsza sekcja, która zawiera zagnieżdżoną sekcję (np. „Etykieta” ze „Stylem etykiety”).
     const rodzic = panel(page).locator('details.sekcja-panelu:has(details.sekcja-panelu)').first();
     await rodzic.evaluate((e: HTMLDetailsElement) => (e.open = true));
     const dziecko = rodzic.locator('details.sekcja-panelu').first();
     await dziecko.evaluate((e: HTMLDetailsElement) => (e.open = true));
     await expect(dziecko).toBeVisible();
-    const pasek = (l: Locator) =>
+    const stylSekcji = (l: Locator) =>
       l.evaluate((e) => {
         const cs = getComputedStyle(e);
-        return { szer: cs.borderLeftWidth, kolor: cs.borderLeftColor };
+        return { lewy: cs.borderLeftWidth, dol: cs.borderBottomWidth };
       });
-    const [r, d] = [await pasek(rodzic), await pasek(dziecko)];
-    expect(r.szer).toBe('4px');
-    expect(d.szer).toBe('2px');
-    expect(d.kolor, 'zagnieżdżona dziedziczy kolor paska rodzica').toBe(r.kolor);
-    // Kolor paska jest prawdziwym kolorem (nie przezroczysty ani wynik cyklu zmiennych).
-    expect(r.kolor).not.toMatch(/rgba\(0, 0, 0, 0\)|^$/);
+    const [r, d] = [await stylSekcji(rodzic), await stylSekcji(dziecko)];
+    expect(r.lewy).toBe('0px');
+    expect(d.lewy).toBe('0px');
+    expect(r.dol).toBe('1px');
   });
 
   test(`biblioteka ozdobników (${motyw}): panel, lista, pola, komunikaty`, async ({ page }) => {

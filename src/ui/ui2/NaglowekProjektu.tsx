@@ -27,15 +27,26 @@ export interface NaglowekProjektuProps {
   onCofnij?: () => void;
   onPonow?: () => void;
   stanZapisu?: StanZapisuUi2;
+  /** Kliknięcie przycisku „● Zapisz” przy niezapisanych zmianach (R10 11.1). */
+  onZapisz?: () => void;
+  tytulZapisu?: string;
+  /** Opcjonalna edycja nazwy bezpośrednio w nagłówku (np. nazwa szablonu w edytorze). */
+  edycjaNazwy?: {
+    wartosc: string;
+    etykieta: string;
+    onChange: (wartosc: string) => void;
+  };
   /** Dodatkowy element przed statusem zapisu (np. menu „Szablon ▾” w edytorze). */
   dodatkowe?: ReactNode;
   /** Główny przycisk kroku (np. „Przejdź do kart →”, „Do druku →”, „⤓ Pobierz PDF”). */
-  akcjaGlowna?: {
-    etykieta: string;
-    href?: string;
-    onClick?: () => void;
-    wylaczony?: boolean;
-  };
+  akcjaGlowna?:
+    | {
+        etykieta: string;
+        href?: string;
+        onClick?: () => void;
+        wylaczony?: boolean;
+      }
+    | ReactNode;
 }
 
 /**
@@ -54,6 +65,9 @@ export function NaglowekProjektu({
   onCofnij,
   onPonow,
   stanZapisu = 'zapisano',
+  onZapisz,
+  tytulZapisu,
+  edycjaNazwy,
   dodatkowe,
   akcjaGlowna,
 }: NaglowekProjektuProps) {
@@ -74,15 +88,16 @@ export function NaglowekProjektu({
     const klawisz = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopImmediatePropagation();
         ustawUstawieniaOtwarte(false);
         przyciskUstawien.current?.focus();
       }
     };
     document.addEventListener('mousedown', klikPoza);
-    window.addEventListener('keydown', klawisz);
+    window.addEventListener('keydown', klawisz, true);
     return () => {
       document.removeEventListener('mousedown', klikPoza);
-      window.removeEventListener('keydown', klawisz);
+      window.removeEventListener('keydown', klawisz, true);
     };
   }, [ustawieniaOtwarte]);
 
@@ -102,9 +117,19 @@ export function NaglowekProjektu({
       >
         {t('ui2.projektyPowrot')}
       </a>
-      <span className="ui2-naglowek-nazwa" title={nazwaProjektu}>
-        {nazwaProjektu}
-      </span>
+      {edycjaNazwy ? (
+        <input
+          className="ui2-naglowek-nazwa-input nazwa-projektu"
+          title={edycjaNazwy.wartosc}
+          aria-label={edycjaNazwy.etykieta}
+          value={edycjaNazwy.wartosc}
+          onChange={(e) => edycjaNazwy.onChange(e.target.value)}
+        />
+      ) : (
+        <span className="ui2-naglowek-nazwa" title={nazwaProjektu}>
+          {nazwaProjektu}
+        </span>
+      )}
       {mausritter && <span className="ui2-etykieta-mausritter">{t('ui2.mausritterEtykieta')}</span>}
 
       <nav aria-label={t('ui2.etapyProjektu')} className="ui2-kroki">
@@ -224,31 +249,47 @@ export function NaglowekProjektu({
 
         {dodatkowe}
 
-        <span className="ui2-stan-zapisu" aria-live="polite">
-          {tekstStanu}
-        </span>
+        {onZapisz && stanZapisu === 'niezapisane' ? (
+          <button
+            type="button"
+            className="ui2-stan-zapisu-btn"
+            title={tytulZapisu ?? t('projekt.zapiszPodpowiedz')}
+            onClick={onZapisz}
+          >
+            <span className="ui2-stan-zapisu-kropka" aria-hidden="true" />
+            {t('projekt.zapisz')}
+          </button>
+        ) : (
+          <span className="ui2-stan-zapisu" role="status" aria-live="polite">
+            {tekstStanu}
+          </span>
+        )}
 
         {akcjaGlowna &&
-          (akcjaGlowna.href && !akcjaGlowna.wylaczony ? (
-            <a
-              href={akcjaGlowna.href}
-              className="ui2-przycisk-glowny"
-              onClick={(e) => {
-                akcjaGlowna.onClick?.();
-                onNawiguj?.(e, akcjaGlowna.href!);
-              }}
-            >
-              {akcjaGlowna.etykieta}
-            </a>
+          (typeof akcjaGlowna === 'object' && akcjaGlowna !== null && 'etykieta' in akcjaGlowna ? (
+            akcjaGlowna.href && !akcjaGlowna.wylaczony ? (
+              <a
+                href={akcjaGlowna.href}
+                className="ui2-przycisk-glowny"
+                onClick={(e) => {
+                  akcjaGlowna.onClick?.();
+                  onNawiguj?.(e, akcjaGlowna.href!);
+                }}
+              >
+                {akcjaGlowna.etykieta}
+              </a>
+            ) : (
+              <button
+                type="button"
+                className="ui2-przycisk-glowny"
+                disabled={akcjaGlowna.wylaczony}
+                onClick={akcjaGlowna.onClick}
+              >
+                {akcjaGlowna.etykieta}
+              </button>
+            )
           ) : (
-            <button
-              type="button"
-              className="ui2-przycisk-glowny"
-              disabled={akcjaGlowna.wylaczony}
-              onClick={akcjaGlowna.onClick}
-            >
-              {akcjaGlowna.etykieta}
-            </button>
+            akcjaGlowna
           ))}
       </div>
     </header>

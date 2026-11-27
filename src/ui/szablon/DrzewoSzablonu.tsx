@@ -71,7 +71,7 @@ export function DrzewoSzablonu({
           wybierz(w.id, e.shiftKey);
         }}
       >
-        <span className="wezel-etykieta" style={{ paddingLeft: `${(poziom - 1) * 1.1}rem` }}>
+        <span className="wezel-etykieta" style={{ paddingLeft: `${(poziom - 1) * 14}px` }}>
           <span className="ikona-wezla" aria-hidden="true">
             {IKONY_WEZLOW[w.typ]}
           </span>

@@ -47,10 +47,12 @@ export async function zaznacz(page: Page, nazwa: string, nr = 0) {
   await expect(el).toHaveAttribute('aria-selected', 'true');
 }
 
-/** „+ Dodaj” – element do zaznaczonego kontenera (albo za zaznaczonym polem). */
+/** Dodaje element z lewego paska „Dodaj element” do zaznaczonego kontenera (albo za polem). */
 export async function dodaj(page: Page, rodzaj: string, nazwa?: string) {
-  await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
-  await page.getByRole('menuitem', { name: rodzaj, exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Dodaj element' })
+    .getByRole('button', { name: rodzaj, exact: true })
+    .click();
   if (nazwa) await nazwij(page, nazwa);
 }
 
@@ -196,7 +198,7 @@ export async function karta(page: Page) {
 
 /** Kartka: karta z menu w slocie, pola z panelu karty. */
 export async function kartaNaKartce(page: Page, szablon: string, dane: Record<string, string>) {
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   await page.getByRole('button', { name: /^Pusty slot – strona 1, kolumna 1, rząd 1/ }).click();
   await page.getByRole('menuitem', { name: new RegExp(dokladnie(szablon)) }).click();
   const p = page.getByRole('complementary', { name: 'Zaznaczone karty' });
@@ -210,7 +212,8 @@ export async function kartaNaKartce(page: Page, szablon: string, dane: Record<st
  * zmiany edytora – „Zapisz i wyjdź” w oknie straży wyjścia.
  */
 export async function doBibliotekiOzdobnikow(page: Page) {
-  await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
+  await page.getByRole('button', { name: 'Biblioteka', exact: true }).click();
+  await page.getByRole('link', { name: /Otwórz całą bibliotekę/ }).click();
   const zapisz = page.getByRole('button', { name: 'Zapisz i wyjdź' });
   await expect(
     page

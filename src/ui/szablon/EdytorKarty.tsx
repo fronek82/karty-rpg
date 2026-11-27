@@ -500,8 +500,8 @@ export function EdytorKarty({
         adresPowrotu={k.adresPowrotu(projekt, id)}
         plikSzablonu={plikSzablonu}
         akcjaGlowna={
-          <button type="button" className="glowny" onClick={robKarty}>
-            {t('szablon.robKarty')}
+          <button type="button" className="ui2-przycisk-glowny" onClick={robKarty}>
+            {t('edytor.przejdzDoKart')}
           </button>
         }
         wgrajStalyObraz={wgrajStalyObraz}

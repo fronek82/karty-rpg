@@ -142,7 +142,9 @@ test('pusta karta: zachęta na podglądzie i w drzewie tylko w edytorze, znika p
   await zaznacz(page, 'Tekst');
   await page.getByRole('button', { name: 'Usuń', exact: true }).click();
   await expect(zacheta).toBeVisible();
-  await page.getByTestId('dodaj-pusty-stan-drzewa').click();
-  await page.getByRole('menuitem', { name: 'Obraz', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Dodaj element' })
+    .getByRole('button', { name: 'Obraz', exact: true })
+    .click();
   await expect(zacheta).toHaveCount(0);
 });

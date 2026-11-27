@@ -154,7 +154,7 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
     uklad: 'Swobodny',
   });
   await dodaj(page, 'Tekst', 'Tytuł');
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   // Dodaj kartę z polskimi znakami.

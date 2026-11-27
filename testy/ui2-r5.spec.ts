@@ -73,7 +73,8 @@ test('R5: linijki w mm, pas zaznaczenia oraz dodawanie, przesuwanie i usuwanie l
   await page.mouse.up();
   await expect(linie).toHaveCount(1);
 
-  // Przycisk „Usuń linie” w pasku stanu usuwa pozostałe linie.
+  // Przycisk „Usuń wszystkie linie” w dymku paska stanu usuwa pozostałe linie.
+  await page.getByTestId('stan-linie').click();
   await page.getByTestId('usun-linie').click();
   await expect(linie).toHaveCount(0);
 

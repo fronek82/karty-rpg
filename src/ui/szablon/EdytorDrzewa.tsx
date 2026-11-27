@@ -23,11 +23,12 @@ import {
   type RodzajNowego,
   type SkopiowanyStyl,
 } from '../../dane/szablon';
-import { t, tJesliJest } from '../../i18n';
+import { formatujLiczbe, t, tJesliJest } from '../../i18n';
 import { zaokraglij } from '../../model/geometria';
 import type { DaneZasobow, Projekt } from '../../model/projekt';
 import {
   czyKontener,
+  maStylTekstu,
   rozwinOdstepy,
   wszystkieWezly,
   wymiaryKarty,
@@ -41,14 +42,14 @@ import type { KontekstRenderowania, WyrenderowanaKarta } from '../../silnik/kart
 import type { Scena } from '../../silnik/scena';
 import { scenaDoSvg } from '../../silnik/svg';
 import { PoleLiczby } from '../kartka/PoleLiczby';
-import { NarzedziaPaska } from '../NaglowekAplikacji';
 import { tekstOstrzezenia } from '../ostrzezenia';
 import { ACCEPT_PLIKU_SZABLONU } from '../../dane/archiwum';
 import { zapiszPlik } from '../pliki';
 import type { ProjektWEdycji } from '../useProjekt';
-import { PrzyciskZapisu, useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
+import { useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
 import { useCzcionkiGlobalne, useSynchronizujCzcionkiGlobalne } from '../zasobyGlobalne';
 import { DrzewoSzablonu, nazwaWezla } from './DrzewoSzablonu';
+import { GrupyStylow } from './GrupyStylow';
 import { ElementyWlasneKontekst } from './elementyWlasne';
 import { adresBiblioteki, biezacyAdres } from '../biblioteki/adresy';
 import { polaczElementy, useElementyOzdobne } from '../useBiblioteka';
@@ -71,6 +72,7 @@ import {
 import { upuscWezel } from './upuszczanie';
 import { useGestSwobodny } from './useGestSwobodny';
 import { PasekBoczny, type GrupaPaskaBocznego } from '../ui2/PasekBoczny';
+import { NaglowekProjektu, type DefinicjaKroku, type StanZapisuUi2 } from '../ui2/NaglowekProjektu';
 import { IkonaKreskowa } from '../ui2/Ikony';
 import { KLUCZ_WYSOKOSCI_STRUKTURY } from '../../wspolne/ustawienia';
 import { LinijkiKarty } from './LinijkiKarty';
@@ -378,11 +380,16 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   const kartaRef = useRef<HTMLDivElement>(null);
   // Stan tymczasowy gestu myszy (zapis dopiero na pointerup – jeden krok „Cofnij”).
   const [tmp, ustawTmp] = useState<Map<string, ZmianaPola> | undefined>();
-  const [przyciaganie, ustawPrzyciaganie] = useState({ siatka: SIATKA_DOMYSLNA, obiekty: true });
+  const [przyciaganie, ustawPrzyciaganie] = useState({
+    siatka: SIATKA_DOMYSLNA,
+    obiekty: true,
+    linie: true,
+  });
   const idProjektu = encodeURIComponent(projekt.id);
   useSkrotZapisu(edycja.zapiszTeraz);
   const { sprawdzWyjscie, okno: oknoWyjscia } = useStrazWyjscia(edycja);
   const plikImportu = useRef<HTMLInputElement>(null);
+  const plikPodkladuRef = useRef<HTMLInputElement>(null);
   const [oknoAi, ustawOknoAi] = useState(false);
   const przyciskAi = useRef<HTMLButtonElement>(null);
   // Komunikat eksportu/importu pliku szablonu (z linkiem do zaimportowanego) albo błąd.
@@ -443,8 +450,10 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   // Układ do konwersji kontenerów (swobodny ↔ kolumna / wiersz): ramki z bieżącego podglądu.
   const uklad = useMemo(() => (wezlyKarty ? ukladZWezlow(wezlyKarty) : undefined), [wezlyKarty]);
 
+  const szablonDoGestu =
+    szablon && !przyciaganie.linie ? { ...szablon, liniePomocnicze: undefined } : szablon;
   const gest = useGestSwobodny({
-    szablon,
+    szablon: szablonDoGestu,
     wezly: wezlyKarty,
     zaznaczone: aktywne,
     ustawZazn,
@@ -456,16 +465,45 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     zatwierdz: (zmiany, klucz) => zmienSz((s) => zastosujZmiany(s, zmiany), klucz),
   });
 
-  // Stan UI2 R4: przeciąganie z lewego paska, powiększenie, zwijana i przesuwana Struktura, prawy panel.
+  // Stan UI2 R4/R10: przeciąganie z lewego paska, powiększenie, Struktura, prawy panel, dymki stanu.
   const [przeciaganyRodzaj, ustawPrzeciaganyRodzaj] = useState<RodzajNowego>();
   const [nadKarta, ustawNadKarta] = useState(false);
   const [zoom, ustawZoom] = useState<'dopasuj' | number>('dopasuj');
   const [strukturaOtwarta, ustawStrukturaOtwarta] = useState(true);
   const [wysokoscStruktury, ustawWysokoscStruktury] = useState<number>(odczytajWysokoscStruktury);
   const [prawyPanelOtwarty, ustawPrawyPanelOtwarty] = useState(true);
-  const [prawaZakladka, ustawPrawaZakladka] = useState<'element' | 'karta'>('element');
+  const [prawaZakladka, ustawPrawaZakladka] = useState<
+    'element' | 'karta' | 'style' | 'biblioteka'
+  >('element');
   const [widoczneLinie, ustawWidoczneLinie] = useState(true);
+  const [menuSzablonOtwarte, ustawMenuSzablonOtwarte] = useState(false);
+  const [menuStrukturaOtwarte, ustawMenuStrukturaOtwarte] = useState(false);
+  const [aktywnyDymekStanu, ustawAktywnyDymekStanu] = useState<
+    'przyciaganie' | 'podklad' | 'linie' | 'skroty' | undefined
+  >();
+  const menuSzablonRef = useRef<HTMLDivElement>(null);
+  const menuStrukturaRef = useRef<HTMLDivElement>(null);
+  const pasekStanuRef = useRef<HTMLDivElement>(null);
   const gestGranicy = useRef<{ startY: number; startH: number } | undefined>(undefined);
+
+  // Zamykanie otwartych menu i dymków stanu kliknięciem obok (Esc obsługiwany w useKlawiszeEdytora).
+  useEffect(() => {
+    if (!menuSzablonOtwarte && !menuStrukturaOtwarte && !aktywnyDymekStanu) return;
+    const klikPoza = (e: MouseEvent) => {
+      const celKlik = e.target as Node;
+      if (menuSzablonOtwarte && !menuSzablonRef.current?.contains(celKlik)) {
+        ustawMenuSzablonOtwarte(false);
+      }
+      if (menuStrukturaOtwarte && !menuStrukturaRef.current?.contains(celKlik)) {
+        ustawMenuStrukturaOtwarte(false);
+      }
+      if (aktywnyDymekStanu && !pasekStanuRef.current?.contains(celKlik)) {
+        ustawAktywnyDymekStanu(undefined);
+      }
+    };
+    document.addEventListener('mousedown', klikPoza);
+    return () => document.removeEventListener('mousedown', klikPoza);
+  }, [menuSzablonOtwarte, menuStrukturaOtwarte, aktywnyDymekStanu]);
 
   // Operacje liczone w aktualizatorze (na najnowszym szablonie); nowe id przekazywane przez zmienną.
   const zajeteKlucze = (): Iterable<string> => (bezDanych ? [] : (u.zajeteKlucze?.() ?? []));
@@ -545,7 +583,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     zmienSz((s) => f(s, jeden.id));
     fokusWDrzewie(jeden.id);
   };
-  const opakujW = (typ: 'wiersz' | 'kolumna') => {
+  const opakujW = (typ: 'wiersz' | 'kolumna' | 'warstwy') => {
     if (aktywne.length === 0) return;
     let noweId = '';
     zmienSz((s) => {
@@ -557,6 +595,13 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   };
 
   useKlawiszeEdytora((e) => {
+    if (e.key === 'Escape' && (aktywnyDymekStanu || menuSzablonOtwarte || menuStrukturaOtwarte)) {
+      e.preventDefault();
+      ustawAktywnyDymekStanu(undefined);
+      ustawMenuSzablonOtwarte(false);
+      ustawMenuStrukturaOtwarte(false);
+      return;
+    }
     if (wPolu(document.activeElement)) return;
     // W trakcie gestu myszą działa tylko Escape (bez Cofnij, Delete, Ctrl+D i strzałek).
     if (gest.aktywny()) {
@@ -567,7 +612,10 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     const ctrl = e.ctrlKey || e.metaKey;
     const k = e.key.toLowerCase();
     const wDrzewie = !!drzewo.current?.contains(document.activeElement);
-    if (ctrl && k === 'z') {
+    if (!ctrl && !e.altKey && e.key === '?') {
+      e.preventDefault();
+      ustawAktywnyDymekStanu((d) => (d === 'skroty' ? undefined : 'skroty'));
+    } else if (ctrl && k === 'z') {
       e.preventDefault();
       if (e.shiftKey) edycja.ponow();
       else edycja.cofnij();
@@ -843,29 +891,33 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     }
   };
 
-  const krokiProjektu = [
+  const krokiProjektu: DefinicjaKroku[] = [
     {
       id: 'szablony',
       numer: 1,
       etykieta: t('ui2.krok.szablony'),
       href: adresPrzod,
-      aktywny: true,
     },
     {
       id: 'karty',
       numer: 2,
       etykieta: t('ui2.krok.karty'),
       href: `#/projekt/${idProjektu}/karty`,
-      aktywny: false,
     },
     {
       id: 'druk',
       numer: 3,
       etykieta: t('ui2.krok.druk'),
       href: `#/projekt/${idProjektu}/drukuj`,
-      aktywny: false,
     },
   ];
+
+  const stanZapisuUi2: StanZapisuUi2 =
+    edycja.zapis.stan === 'zapisywanie'
+      ? 'zapisywanie'
+      : edycja.niezapisane
+        ? 'niezapisane'
+        : 'zapisano';
 
   return (
     <ElementyWlasneKontekst.Provider
@@ -877,140 +929,53 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
       }}
     >
       <div className="edytor-szablonu">
-        <header className="pasek-gorny ui2-naglowek" role="banner">
-          <a
-            href="#/"
-            className="logo ui2-naglowek-powrot"
-            onClick={(e) => sprawdzWyjscie(e, '#/')}
-          >
-            {t('aplikacja.nazwa')}
-          </a>
-          <span className="grupa-paska">
-            <input
-              className="nazwa-projektu"
-              title={szablon.nazwa}
-              aria-label={u.teksty.nazwa}
-              value={szablon.nazwa}
-              onChange={(e) => u.zmienNazwe(e.target.value)}
-            />
-            <PrzyciskZapisu edycja={edycja} />
-          </span>
-          <nav aria-label={t('ui2.etapyProjektu')} className="ui2-kroki">
-            {krokiProjektu.map((krok, idx) => (
-              <span key={krok.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                {idx > 0 && (
-                  <span className="ui2-krok-strzalka" aria-hidden="true">
-                    →
-                  </span>
-                )}
-                {krok.aktywny ? (
-                  <span aria-current="page" className="ui2-krok ui2-krok-aktywny">
-                    <span className="ui2-krok-numer">{krok.numer}</span>
-                    {krok.etykieta}
-                  </span>
-                ) : (
-                  <a
-                    href={krok.href}
-                    className="ui2-krok"
-                    onClick={(e) => sprawdzWyjscie(e, krok.href)}
-                  >
-                    <span className="ui2-krok-numer">{krok.numer}</span>
-                    {krok.etykieta}
-                  </a>
-                )}
-              </span>
-            ))}
-          </nav>
-          <span className="odstep" />
-          <span className="grupa-paska">
-            <button
-              type="button"
-              className="ikonowy"
-              aria-label={t('kartka.cofnij')}
-              title={t('kartka.cofnij')}
-              disabled={!edycja.mozeCofnac}
-              onClick={edycja.cofnij}
-            >
-              ↶
-            </button>
-            <button
-              type="button"
-              className="ikonowy"
-              aria-label={t('kartka.ponow')}
-              title={t('kartka.ponow')}
-              disabled={!edycja.mozePonowic}
-              onClick={edycja.ponow}
-            >
-              ↷
-            </button>
-          </span>
-          <span className="grupa-paska">
-            <button
-              ref={przyciskAi}
-              type="button"
-              title={t('ai.przyciskOpis')}
-              onClick={() => ustawOknoAi(true)}
-            >
-              {t('ai.przycisk')}
-            </button>
-            <button
-              type="button"
-              aria-label={t('szablon.eksportujPlik')}
-              title={t('szablon.eksportujPlik')}
-              onClick={eksportujPlik}
-            >
-              {t('szablon.eksportujKrotko')}
-            </button>
-            <button
-              type="button"
-              aria-label={t('szablon.importujPlik')}
-              title={t('szablon.importujPlik')}
-              onClick={() => plikImportu.current?.click()}
-            >
-              {t('szablon.importujKrotko')}
-            </button>
-            <input
-              ref={plikImportu}
-              type="file"
-              hidden
-              accept={ACCEPT_PLIKU_SZABLONU}
-              aria-label={t('szablon.importujPlik')}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = '';
-                if (f) void importujPlik(f);
-              }}
-            />
-            <button
-              type="button"
-              aria-label={t('szablony.duplikuj')}
-              title={t('szablony.duplikuj')}
-              onClick={u.duplikuj}
-            >
-              {t('szablon.duplikujKrotko')}
-            </button>
-            <a
-              className="przycisk"
-              href={adresOzdobnikow}
-              onClick={(e) => sprawdzWyjscie(e, adresOzdobnikow)}
-              aria-label={t('biblioteka.tytul')}
-              title={t('biblioteka.tytul')}
-            >
-              {t('szablon.bibliotekaKrotko')}
-            </a>
-          </span>
-          <span className="grupa-paska">
-            <a
-              className="przycisk"
-              href={u.adresPowrotu}
-              onClick={(e) => sprawdzWyjscie(e, u.adresPowrotu)}
-            >
-              {t('pasek.powrot')}
-            </a>
-            {u.akcjaGlowna}
-          </span>
-          <NarzedziaPaska sprawdzWyjscie={sprawdzWyjscie} />
-        </header>
+        <NaglowekProjektu
+          nazwaProjektu={projekt.nazwa}
+          edycjaNazwy={{
+            wartosc: szablon.nazwa,
+            etykieta: u.teksty.nazwa,
+            onChange: u.zmienNazwe,
+          }}
+          aktywnyKrok="szablony"
+          kroki={krokiProjektu}
+          hrefPowrotu="#/"
+          onNawiguj={sprawdzWyjscie}
+          mozeCofnac={edycja.mozeCofnac}
+          mozePonowic={edycja.mozePonowic}
+          onCofnij={edycja.cofnij}
+          onPonow={edycja.ponow}
+          stanZapisu={stanZapisuUi2}
+          onZapisz={() => void edycja.zapiszTeraz().catch(() => undefined)}
+          akcjaGlowna={u.akcjaGlowna}
+        />
+        <input
+          ref={plikImportu}
+          type="file"
+          hidden
+          accept={ACCEPT_PLIKU_SZABLONU}
+          aria-label={t('szablon.importujPlik')}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = '';
+            if (f) void importujPlik(f);
+          }}
+        />
+        {podklad && (
+          <input
+            ref={plikPodkladuRef}
+            type="file"
+            accept="image/png,image/jpeg"
+            data-testid="plik-podkladu"
+            className="tylko-czytnik"
+            tabIndex={-1}
+            aria-label={t('podklad.wczytaj')}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (f) podklad.wczytaj(f);
+            }}
+          />
+        )}
         {oknoWyjscia}
         {oknoAi && (
           <Suspense fallback={null}>
@@ -1043,17 +1008,19 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
           </Suspense>
         )}
         <h1 className="tylko-czytnik">{u.teksty.tytul}</h1>
-        <div role="status">
-          {u.kopia && <a href={u.kopia.adres}>{u.kopia.tekst}</a>}
-          {komunikatPliku && !komunikatPliku.blad && (
-            <>
-              {komunikatPliku.link && (
-                <a href={komunikatPliku.link.adres}>{komunikatPliku.link.tekst}</a>
-              )}{' '}
-              {komunikatPliku.tekst}
-            </>
-          )}
-        </div>
+        {(u.kopia || (komunikatPliku && !komunikatPliku.blad)) && (
+          <div role="status" className="edytor-ui2-komunikat-pliku">
+            {u.kopia && <a href={u.kopia.adres}>{u.kopia.tekst}</a>}
+            {komunikatPliku && !komunikatPliku.blad && (
+              <>
+                {komunikatPliku.link && (
+                  <a href={komunikatPliku.link.adres}>{komunikatPliku.link.tekst}</a>
+                )}{' '}
+                {komunikatPliku.tekst}
+              </>
+            )}
+          </div>
+        )}
         {komunikatPliku?.blad && (
           <p role="alert" className="uwaga">
             {komunikatPliku.tekst}
@@ -1070,30 +1037,105 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
 
           <div className="edytor-ui2-srodek">
             <div className="edytor-ui2-zakladki" role="toolbar" aria-label={t('ui2.krok.szablony')}>
-              {projekt.szablony.map((sz) => {
-                const wSz = wymiaryKarty(sz);
-                const aktywna = stronaAktywna === 'przod' && sz.id === id;
-                const href = `#/projekt/${idProjektu}/szablon/${encodeURIComponent(sz.id)}`;
-                return (
-                  <a
-                    key={sz.id}
-                    href={href}
-                    className={`edytor-ui2-zakladka${aktywna ? ' aktywna' : ''}`}
-                    aria-current={aktywna ? 'page' : undefined}
-                    onClick={(e) => sprawdzWyjscie(e, href)}
-                  >
-                    <span>{sz.nazwa}</span>
-                    <span className="edytor-ui2-zakladka-rozmiar">
-                      {wSz.szer}×{wSz.wys}
-                    </span>
-                  </a>
-                );
-              })}
+              <div className="edytor-ui2-zakladki-lista">
+                {projekt.szablony.map((sz) => {
+                  const wSz = wymiaryKarty(sz);
+                  const aktywna = stronaAktywna === 'przod' && sz.id === id;
+                  const href = `#/projekt/${idProjektu}/szablon/${encodeURIComponent(sz.id)}`;
+                  return (
+                    <a
+                      key={sz.id}
+                      href={href}
+                      className={`edytor-ui2-zakladka${aktywna ? ' aktywna' : ''}`}
+                      aria-current={aktywna ? 'page' : undefined}
+                      onClick={(e) => sprawdzWyjscie(e, href)}
+                    >
+                      <span>{sz.nazwa}</span>
+                      <span className="edytor-ui2-zakladka-rozmiar">
+                        {wSz.szer}×{wSz.wys}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
               {u.nowySzablon && (
                 <button type="button" className="edytor-ui2-nowy-szablon" onClick={u.nowySzablon}>
                   {t('edytor.nowySzablon')}
                 </button>
               )}
+              <div className="edytor-ui2-menu-opakowanie" ref={menuSzablonRef}>
+                <button
+                  ref={przyciskAi}
+                  type="button"
+                  className="edytor-ui2-szablon-menu-btn"
+                  data-testid="menu-szablon-przycisk"
+                  aria-haspopup="menu"
+                  aria-expanded={menuSzablonOtwarte}
+                  onClick={() => ustawMenuSzablonOtwarte((v) => !v)}
+                >
+                  {t('edytor.menuSzablon')}
+                </button>
+                {menuSzablonOtwarte && (
+                  <div
+                    role="menu"
+                    className="edytor-ui2-menu-popup"
+                    data-testid="menu-szablon"
+                    aria-label={t('edytor.menuSzablon')}
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        ustawMenuSzablonOtwarte(false);
+                        u.duplikuj();
+                      }}
+                    >
+                      {t('edytor.menuSzablon.duplikuj')}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        ustawMenuSzablonOtwarte(false);
+                        eksportujPlik();
+                      }}
+                    >
+                      {t('edytor.menuSzablon.eksport')}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        ustawMenuSzablonOtwarte(false);
+                        plikImportu.current?.click();
+                      }}
+                    >
+                      {t('edytor.menuSzablon.import')}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        ustawMenuSzablonOtwarte(false);
+                        ustawOknoAi(true);
+                      }}
+                    >
+                      {t('edytor.menuSzablon.ai')}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        ustawMenuSzablonOtwarte(false);
+                        ustawPrawyPanelOtwarty(true);
+                        ustawPrawaZakladka('karta');
+                      }}
+                    >
+                      {t('edytor.menuSzablon.rozmiar')}
+                    </button>
+                  </div>
+                )}
+              </div>
               {maRewers && adresTyl && (
                 <div
                   className="edytor-ui2-strony"
@@ -1122,7 +1164,34 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
               )}
             </div>
 
-            <section className="podglad-szablonu edytor-ui2-robocze" aria-label={u.teksty.podglad}>
+            <LinijkiKarty
+              szer={szer}
+              wys={wys}
+              kartaRef={kartaRef}
+              linie={szablon.liniePomocnicze ?? []}
+              widoczne={widoczneLinie}
+              ariaLabel={u.teksty.podglad}
+              zaznaczenieMm={
+                prostokatUchwytow ??
+                (edytowany && wymiary(edytowany.id)
+                  ? {
+                      x: wymiary(edytowany.id)!.lokalne.x,
+                      y: wymiary(edytowany.id)!.lokalne.y,
+                      szer: wymiary(edytowany.id)!.lokalne.szer,
+                      wys: wymiary(edytowany.id)!.lokalne.wys,
+                    }
+                  : undefined)
+              }
+              zmienLinie={(nowe) =>
+                zmienSz(
+                  (s) =>
+                    nowe.length > 0
+                      ? { ...s, liniePomocnicze: nowe }
+                      : { ...s, liniePomocnicze: undefined },
+                  'linie-pomocnicze',
+                )
+              }
+            >
               {podglad && 'blad' in podglad ? (
                 <p role="alert" className="uwaga">
                   {t('szablon.bladPodgladu', { szczegoly: String(podglad.blad) })}
@@ -1130,168 +1199,139 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
               ) : (
                 podglad && (
                   <>
-                    <LinijkiKarty
-                      szer={szer}
-                      wys={wys}
-                      kartaRef={kartaRef}
-                      linie={szablon.liniePomocnicze ?? []}
-                      widoczne={widoczneLinie}
-                      zaznaczenieMm={
-                        prostokatUchwytow ??
-                        (edytowany && wymiary(edytowany.id)
+                    <div
+                      ref={kartaRef}
+                      className={`karta-podgladu${przeciaganyRodzaj || nadKarta ? ' edytor-ui2-upusc-cel' : ''}`}
+                      role="group"
+                      aria-label={t('nakladka.opis')}
+                      tabIndex={0}
+                      style={{
+                        aspectRatio: `${szer} / ${wys}`,
+                        width: szerokoscPodgladu,
+                        touchAction: 'none',
+                        ...(promienKarty > 0
                           ? {
-                              x: wymiary(edytowany.id)!.lokalne.x,
-                              y: wymiary(edytowany.id)!.lokalne.y,
-                              szer: wymiary(edytowany.id)!.lokalne.szer,
-                              wys: wymiary(edytowany.id)!.lokalne.wys,
+                              borderRadius: `${(promienKarty / szer) * 100}% / ${(promienKarty / wys) * 100}%`,
                             }
-                          : undefined)
-                      }
-                      zmienLinie={(nowe) =>
-                        zmienSz(
-                          (s) =>
-                            nowe.length > 0
-                              ? { ...s, liniePomocnicze: nowe }
-                              : { ...s, liniePomocnicze: undefined },
-                          'linie-pomocnicze',
-                        )
-                      }
+                          : {}),
+                      }}
+                      onPointerDown={gest.onPointerDown}
+                      onPointerMove={gest.onPointerMove}
+                      onPointerUp={gest.onPointerUp}
+                      onPointerCancel={gest.onPointerCancel}
+                      onLostPointerCapture={gest.onLostPointerCapture}
+                      onDragOver={(e) => {
+                        if (
+                          przeciaganyRodzaj ||
+                          e.dataTransfer.types.includes('application/x-karty-rodzaj') ||
+                          e.dataTransfer.types.includes('text/plain')
+                        ) {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'copy';
+                          if (!nadKarta) ustawNadKarta(true);
+                        }
+                      }}
+                      onDragLeave={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                          ustawNadKarta(false);
+                        }
+                      }}
+                      onDrop={onUpuscNaKarte}
                     >
                       <div
-                        ref={kartaRef}
-                        className={`karta-podgladu${przeciaganyRodzaj || nadKarta ? ' edytor-ui2-upusc-cel' : ''}`}
-                        role="group"
-                        aria-label={t('nakladka.opis')}
-                        tabIndex={0}
-                        style={{
-                          aspectRatio: `${szer} / ${wys}`,
-                          width: szerokoscPodgladu,
-                          touchAction: 'none',
-                          ...(promienKarty > 0
-                            ? {
-                                borderRadius: `${(promienKarty / szer) * 100}% / ${(promienKarty / wys) * 100}%`,
-                              }
-                            : {}),
-                        }}
-                        onPointerDown={gest.onPointerDown}
-                        onPointerMove={gest.onPointerMove}
-                        onPointerUp={gest.onPointerUp}
-                        onPointerCancel={gest.onPointerCancel}
-                        onLostPointerCapture={gest.onLostPointerCapture}
-                        onDragOver={(e) => {
-                          if (
-                            przeciaganyRodzaj ||
-                            e.dataTransfer.types.includes('application/x-karty-rodzaj') ||
-                            e.dataTransfer.types.includes('text/plain')
-                          ) {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'copy';
-                            if (!nadKarta) ustawNadKarta(true);
-                          }
-                        }}
-                        onDragLeave={(e) => {
-                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                            ustawNadKarta(false);
-                          }
-                        }}
-                        onDrop={onUpuscNaKarte}
-                      >
-                        <div
-                          className="svg-opakowanie"
-                          dangerouslySetInnerHTML={{ __html: podglad.svg }}
+                        className="svg-opakowanie"
+                        dangerouslySetInnerHTML={{ __html: podglad.svg }}
+                      />
+                      {/* Podkład ze wzoru: nad kartą (tło karty jest kryjące), nie łapie kliknięć. */}
+                      {podklad?.podklad?.widoczny && podklad.adres && (
+                        <img
+                          className="podklad-podgladu"
+                          data-testid="podklad-podgladu"
+                          src={podklad.adres}
+                          alt=""
+                          aria-hidden="true"
+                          draggable={false}
+                          style={{ opacity: 1 - podklad.podklad.przezroczystosc / 100 }}
                         />
-                        {/* Podkład ze wzoru: nad kartą (tło karty jest kryjące), nie łapie kliknięć. */}
-                        {podklad?.podklad?.widoczny && podklad.adres && (
-                          <img
-                            className="podklad-podgladu"
-                            data-testid="podklad-podgladu"
-                            src={podklad.adres}
-                            alt=""
-                            aria-hidden="true"
-                            draggable={false}
-                            style={{ opacity: 1 - podklad.podklad.przezroczystosc / 100 }}
-                          />
-                        )}
-                        {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
-                        {[...podglad.wezly]
-                          .sort(
-                            (a, b) =>
-                              b.lokalne.szer * b.lokalne.wys - a.lokalne.szer * a.lokalne.wys,
-                          )
-                          .map((w) => {
-                            const wezel = wezlyPoId.get(w.id);
-                            if (!wezel) return null;
-                            const r = w.obrys
-                              ? {
-                                  x: w.obrys.x - w.lokalne.szer / 2,
-                                  y: w.obrys.y - w.lokalne.wys / 2,
-                                  szer: w.lokalne.szer,
-                                  wys: w.lokalne.wys,
-                                }
-                              : w;
-                            return (
-                              <button
-                                key={w.id}
-                                type="button"
-                                tabIndex={-1}
-                                className={`obszar-wezla${aktywne.includes(w.id) ? ' zaznaczony' : ''}${czyKontener(wezel) ? ' kontener' : ''}`}
-                                data-obszar={w.id}
-                                aria-label={nazwaWezla(wezel)}
-                                style={{
-                                  left: `${(r.x / szer) * 100}%`,
-                                  top: `${(r.y / wys) * 100}%`,
-                                  width: `${(r.szer / szer) * 100}%`,
-                                  height: `${(r.wys / wys) * 100}%`,
-                                  ...(w.obrys ? { transform: `rotate(${w.obrys.kat}deg)` } : {}),
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Klik myszą obsługuje już `pointerdown` (zaznaczanie i przeciąganie);
-                                  // tu zostaje aktywacja z klawiatury i technologii asystujących.
-                                  if (e.detail === 0) wybierz(w.id, e.shiftKey);
-                                }}
-                              />
-                            );
-                          })}
-                        {/* Pusty stan tylko w edytorze: warstwa HTML nad sceną – nie trafia do SVG,
-                          PDF, PNG ani miniatur (te powstają ze sceny). */}
-                        {pustaKarta && (
-                          <div
-                            className="pusta-karta-podgladu"
-                            data-testid="pusty-stan-karty"
-                            onPointerDown={(e) => e.stopPropagation()}
-                          >
-                            <p>{t('szablon.pustaKartaPodglad')}</p>
-                            <MenuDodaj
-                              rodzaje={dozwoloneRodzaje}
-                              dodaj={dodaj}
-                              przycisk={{
-                                tresc: '＋',
-                                className: 'menu-dodaj-duzy',
-                                etykieta: t('szablon.dodajElement'),
-                                testId: 'dodaj-pusta-karta',
+                      )}
+                      {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
+                      {[...podglad.wezly]
+                        .sort(
+                          (a, b) => b.lokalne.szer * b.lokalne.wys - a.lokalne.szer * a.lokalne.wys,
+                        )
+                        .map((w) => {
+                          const wezel = wezlyPoId.get(w.id);
+                          if (!wezel) return null;
+                          const r = w.obrys
+                            ? {
+                                x: w.obrys.x - w.lokalne.szer / 2,
+                                y: w.obrys.y - w.lokalne.wys / 2,
+                                szer: w.lokalne.szer,
+                                wys: w.lokalne.wys,
+                              }
+                            : w;
+                          return (
+                            <button
+                              key={w.id}
+                              type="button"
+                              tabIndex={-1}
+                              className={`obszar-wezla${aktywne.includes(w.id) ? ' zaznaczony' : ''}${czyKontener(wezel) ? ' kontener' : ''}`}
+                              data-obszar={w.id}
+                              aria-label={nazwaWezla(wezel)}
+                              style={{
+                                left: `${(r.x / szer) * 100}%`,
+                                top: `${(r.y / wys) * 100}%`,
+                                width: `${(r.szer / szer) * 100}%`,
+                                height: `${(r.wys / wys) * 100}%`,
+                                ...(w.obrys ? { transform: `rotate(${w.obrys.kat}deg)` } : {}),
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Klik myszą obsługuje już `pointerdown` (zaznaczanie i przeciąganie);
+                                // tu zostaje aktywacja z klawiatury i technologii asystujących.
+                                if (e.detail === 0) wybierz(w.id, e.shiftKey);
                               }}
                             />
-                          </div>
-                        )}
-                        <NakladkaSwobodna
-                          szer={szer}
-                          wys={wys}
-                          stan={gest.stan}
-                          siatka={przyciaganie.siatka}
-                          prostokat={prostokatUchwytow}
-                          obrot={celUchwytow?.lokalne ? celUchwytow.obrot : 0}
-                          uchwytDown={gest.onUchwytDown}
-                          uchwytKlawisz={(uch, e) => {
-                            if (e.altKey || e.ctrlKey || e.metaKey) return;
-                            if (gest.strzalkiUchwytu(uch, e)) {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }
-                          }}
-                        />
-                      </div>
-                    </LinijkiKarty>
+                          );
+                        })}
+                      {/* Pusty stan tylko w edytorze: warstwa HTML nad sceną – nie trafia do SVG,
+                          PDF, PNG ani miniatur (te powstają ze sceny). */}
+                      {pustaKarta && (
+                        <div
+                          className="pusta-karta-podgladu"
+                          data-testid="pusty-stan-karty"
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <p>{t('szablon.pustaKartaPodglad')}</p>
+                          <MenuDodaj
+                            rodzaje={dozwoloneRodzaje}
+                            dodaj={dodaj}
+                            przycisk={{
+                              tresc: '＋',
+                              className: 'menu-dodaj-duzy',
+                              etykieta: t('szablon.dodajElement'),
+                              testId: 'dodaj-pusta-karta',
+                            }}
+                          />
+                        </div>
+                      )}
+                      <NakladkaSwobodna
+                        szer={szer}
+                        wys={wys}
+                        stan={gest.stan}
+                        siatka={przyciaganie.siatka}
+                        prostokat={prostokatUchwytow}
+                        obrot={celUchwytow?.lokalne ? celUchwytow.obrot : 0}
+                        uchwytDown={gest.onUchwytDown}
+                        uchwytKlawisz={(uch, e) => {
+                          if (e.altKey || e.ctrlKey || e.metaKey) return;
+                          if (gest.strzalkiUchwytu(uch, e)) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
+                      />
+                    </div>
                     {przeciaganyRodzaj && (
                       <div className="edytor-ui2-upusc-podpowiedz" role="status">
                         {t('edytor.upuscPodpowiedz', { nazwa: t(`wezel.${przeciaganyRodzaj}`) })}
@@ -1303,11 +1343,6 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                           {t('nakladka.uchwytyNiedostepne')}
                         </p>
                       )}
-                    <NarzedziaPodgladu
-                      przyciaganie={przyciaganie}
-                      ustawPrzyciaganie={ustawPrzyciaganie}
-                      podklad={podklad}
-                    />
                     {podglad.ostrzezenia.length > 0 && (
                       <ul className="ostrzezenia-karty">
                         {podglad.ostrzezenia.map((o, i) => {
@@ -1323,43 +1358,201 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                   </>
                 )
               )}
-              <p className="podpis">{u.teksty.pomocPodgladu}</p>
-            </section>
+            </LinijkiKarty>
 
-            <div className="ui2-pasek-stanu" data-testid="pasek-stanu-edytora">
-              <span className="edytor-ui2-stan-zoom">
+            <div
+              ref={pasekStanuRef}
+              className="ui2-pasek-stanu edytor-ui2-pasek-stanu"
+              data-testid="pasek-stanu-edytora"
+            >
+              <div className="edytor-ui2-stan-lewo">
                 <span>
-                  {szer} × {wys} mm · {t(`wezel.${szablon.korzen.typ}`)} ·{' '}
-                  {przyciaganie.siatka > 0
-                    ? `${t('edytor.przyciaganieWl')} (${przyciaganie.siatka} mm)`
-                    : t('edytor.przyciaganieWyl')}
+                  {szer} × {wys} mm
                 </span>
-                {(szablon.liniePomocnicze?.length ?? 0) > 0 && (
+                <span aria-hidden="true">·</span>
+                <span>{t(`wezel.${szablon.korzen.typ}`)}</span>
+                <span aria-hidden="true">·</span>
+                <button
+                  type="button"
+                  className={`edytor-ui2-stan-link${aktywnyDymekStanu === 'przyciaganie' ? ' aktywny' : ''}`}
+                  data-testid="stan-przyciaganie"
+                  aria-expanded={aktywnyDymekStanu === 'przyciaganie'}
+                  onClick={() =>
+                    ustawAktywnyDymekStanu((d) =>
+                      d === 'przyciaganie' ? undefined : 'przyciaganie',
+                    )
+                  }
+                >
+                  {t('edytor.stan.przyciaganie')}{' '}
+                  {przyciaganie.siatka > 0
+                    ? `${formatujLiczbe(przyciaganie.siatka, 1)} mm`
+                    : t('edytor.stan.przyciaganieWylKrotko')}{' '}
+                  ▾
+                </button>
+                {podklad && (
                   <>
-                    <span>
-                      · {t('edytor.linieLiczba', { n: szablon.liniePomocnicze?.length ?? 0 })}
-                    </span>
+                    <span aria-hidden="true">·</span>
                     <button
                       type="button"
-                      className="edytor-ui2-stan-btn"
-                      data-testid="przelacz-linie"
-                      onClick={() => ustawWidoczneLinie((v) => !v)}
-                    >
-                      {widoczneLinie ? t('edytor.ukryjLinie') : t('edytor.pokazLinie')}
-                    </button>
-                    <button
-                      type="button"
-                      className="edytor-ui2-stan-btn"
-                      data-testid="usun-linie"
+                      className={`edytor-ui2-stan-link${aktywnyDymekStanu === 'podklad' ? ' aktywny' : ''}`}
+                      data-testid="stan-podklad"
+                      aria-expanded={aktywnyDymekStanu === 'podklad'}
                       onClick={() =>
-                        zmienSz((s) => ({ ...s, liniePomocnicze: undefined }), 'linie-pomocnicze')
+                        ustawAktywnyDymekStanu((d) => (d === 'podklad' ? undefined : 'podklad'))
                       }
                     >
-                      {t('edytor.usunLinie')}
+                      {t('edytor.stan.podklad')}{' '}
+                      {podklad.podklad
+                        ? (projekt.zasoby.find((z) => z.id === podklad.podklad?.zasob)?.nazwa ??
+                          t('edytor.stan.podkladZaladowany'))
+                        : t('edytor.stan.podkladBrak')}{' '}
+                      ▾
                     </button>
                   </>
                 )}
-              </span>
+                <span aria-hidden="true">·</span>
+                <button
+                  type="button"
+                  className={`edytor-ui2-stan-link${aktywnyDymekStanu === 'linie' ? ' aktywny' : ''}`}
+                  data-testid="stan-linie"
+                  aria-expanded={aktywnyDymekStanu === 'linie'}
+                  onClick={() =>
+                    ustawAktywnyDymekStanu((d) => (d === 'linie' ? undefined : 'linie'))
+                  }
+                >
+                  {t('edytor.stan.linie')} {szablon.liniePomocnicze?.length ?? 0} ▾
+                </button>
+                <span aria-hidden="true">·</span>
+                <button
+                  type="button"
+                  className={`edytor-ui2-stan-link${aktywnyDymekStanu === 'skroty' ? ' aktywny' : ''}`}
+                  data-testid="stan-skroty"
+                  aria-expanded={aktywnyDymekStanu === 'skroty'}
+                  onClick={() =>
+                    ustawAktywnyDymekStanu((d) => (d === 'skroty' ? undefined : 'skroty'))
+                  }
+                >
+                  {t('edytor.stan.skroty')}
+                </button>
+              </div>
+
+              {aktywnyDymekStanu && (
+                <div
+                  role="dialog"
+                  className="edytor-ui2-dymek-stanu"
+                  data-testid="dymek-stanu"
+                  aria-label={
+                    aktywnyDymekStanu === 'przyciaganie'
+                      ? t('przyciaganie.tytul')
+                      : aktywnyDymekStanu === 'podklad'
+                        ? t('podklad.tytul')
+                        : aktywnyDymekStanu === 'linie'
+                          ? t('edytor.stan.linie')
+                          : t('edytor.stan.skrotyTytul')
+                  }
+                >
+                  {aktywnyDymekStanu === 'przyciaganie' && (
+                    <div className="edytor-ui2-dymek-tresc">
+                      <strong className="edytor-ui2-dymek-tytul">{t('przyciaganie.tytul')}</strong>
+                      <PoleLiczby
+                        id="przyciaganie-siatka"
+                        etykieta={t('przyciaganie.siatka')}
+                        wartosc={przyciaganie.siatka}
+                        min={0}
+                        max={20}
+                        krok={0.5}
+                        zmien={(v) => ustawPrzyciaganie({ ...przyciaganie, siatka: v })}
+                      />
+                      <label className="pole-wyboru">
+                        <input
+                          type="checkbox"
+                          checked={przyciaganie.obiekty}
+                          onChange={(e) =>
+                            ustawPrzyciaganie({ ...przyciaganie, obiekty: e.target.checked })
+                          }
+                        />{' '}
+                        {t('przyciaganie.obiekty')}
+                      </label>
+                      <label className="pole-wyboru">
+                        <input
+                          type="checkbox"
+                          checked={przyciaganie.linie}
+                          onChange={(e) =>
+                            ustawPrzyciaganie({ ...przyciaganie, linie: e.target.checked })
+                          }
+                        />{' '}
+                        {t('edytor.stan.doLinii')}
+                      </label>
+                      <p className="podpis">{t('przyciaganie.alt')}</p>
+                    </div>
+                  )}
+
+                  {aktywnyDymekStanu === 'podklad' && podklad && (
+                    <PolaPodkladu
+                      {...podklad}
+                      wybierzPlik={() => plikPodkladuRef.current?.click()}
+                    />
+                  )}
+
+                  {aktywnyDymekStanu === 'linie' && (
+                    <div className="edytor-ui2-dymek-tresc">
+                      <strong className="edytor-ui2-dymek-tytul">
+                        {t('edytor.linieLiczba', { n: szablon.liniePomocnicze?.length ?? 0 })}
+                      </strong>
+                      <label className="pole-wyboru">
+                        <input
+                          type="checkbox"
+                          data-testid="przelacz-linie"
+                          checked={widoczneLinie}
+                          onChange={(e) => ustawWidoczneLinie(e.target.checked)}
+                        />{' '}
+                        {t('edytor.stan.pokazLinie')} (Ctrl+;)
+                      </label>
+                      <button
+                        type="button"
+                        className="niebezpieczny"
+                        data-testid="usun-linie"
+                        disabled={(szablon.liniePomocnicze?.length ?? 0) === 0}
+                        onClick={() =>
+                          zmienSz((s) => ({ ...s, liniePomocnicze: undefined }), 'linie-pomocnicze')
+                        }
+                      >
+                        {t('edytor.stan.usunWszystkieLinie')}
+                      </button>
+                      <p className="podpis">{t('edytor.stan.linieOpis')}</p>
+                    </div>
+                  )}
+
+                  {aktywnyDymekStanu === 'skroty' && (
+                    <div className="edytor-ui2-dymek-tresc">
+                      <strong className="edytor-ui2-dymek-tytul">
+                        {t('edytor.stan.skrotyTytul')}
+                      </strong>
+                      <dl className="edytor-ui2-skroty-lista">
+                        <dt>{t('edytor.skrot.klik')}</dt>
+                        <dd>{t('edytor.skrot.klikOpis')}</dd>
+                        <dt>{t('edytor.skrot.shiftKlik')}</dt>
+                        <dd>{t('edytor.skrot.shiftKlikOpis')}</dd>
+                        <dt>{t('edytor.skrot.przeciagnij')}</dt>
+                        <dd>{t('edytor.skrot.przeciagnijOpis')}</dd>
+                        <dt>{t('edytor.skrot.uchwyty')}</dt>
+                        <dd>{t('edytor.skrot.uchwytyOpis')}</dd>
+                        <dt>← ↑ → ↓</dt>
+                        <dd>{t('edytor.skrot.strzalkiOpis')}</dd>
+                        <dt>Alt</dt>
+                        <dd>{t('edytor.skrot.altOpis')}</dd>
+                        <dt>Ctrl+Z / Y</dt>
+                        <dd>{t('edytor.skrot.cofnijOpis')}</dd>
+                        <dt>Ctrl+S</dt>
+                        <dd>{t('edytor.skrot.zapiszOpis')}</dd>
+                        <dt>Ctrl+;</dt>
+                        <dd>{t('edytor.skrot.linieOpis')}</dd>
+                      </dl>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <span className="edytor-ui2-stan-zoom">
                 <button
                   type="button"
@@ -1394,121 +1587,169 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
           {prawyPanelOtwarty && (
             <div className="edytor-ui2-prawa-kolumna">
               <aside
-                className="panel-edytora edytor-ui2-prawa-tresc"
+                className="edytor-ui2-prawy-panel-opakowanie"
                 aria-label={t('szablon.wlasciwosci')}
               >
-                {prawaZakladka === 'karta' ? (
-                  u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
-                ) : (
-                  <>
-                    {rozmiarZaznaczenia}
-                    {edytowany ? (
-                      <>
-                        <h2>
-                          {aktywne.length > 1
-                            ? t('szablon.zaznaczono', { liczba: aktywne.length })
-                            : nazwaWezla(edytowany)}
-                        </h2>
-                        <p className="akcje-stylu">
-                          <button
-                            type="button"
-                            onClick={() => ustawSchowek(skopiujStyl(edytowany, szablon))}
-                          >
-                            {t('wlasciwosci.kopiujStyl')}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!schowek}
-                            onClick={() =>
-                              schowek &&
+                <div className="edytor-ui2-prawa-naglowek">
+                  <h2 className="edytor-ui2-prawa-naglowek-h2">
+                    <span className="edytor-ui2-prawa-tytul">
+                      {prawaZakladka === 'karta'
+                        ? t('edytor.zakladka.karta')
+                        : prawaZakladka === 'style'
+                          ? t('edytor.zakladka.style')
+                          : prawaZakladka === 'biblioteka'
+                            ? t('edytor.zakladka.biblioteka')
+                            : t('szablon.wlasciwosci')}
+                    </span>
+                    {(prawaZakladka === 'element' || prawaZakladka === 'style') && edytowany && (
+                      <span className="edytor-ui2-prawa-podtytul" title={nazwaWezla(edytowany)}>
+                        · {t(`wezel.${edytowany.typ}`)} ·{' '}
+                        {aktywne.length > 1
+                          ? t('szablon.zaznaczono', { liczba: aktywne.length })
+                          : nazwaWezla(edytowany)}
+                      </span>
+                    )}
+                  </h2>
+                </div>
+                <div className="panel-edytora edytor-ui2-prawa-tresc">
+                  {prawaZakladka === 'karta' ? (
+                    u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
+                  ) : prawaZakladka === 'style' ? (
+                    <div className="edytor-ui2-panel-style">
+                      {edytowany ? (
+                        <>
+                          <p className="akcje-stylu">
+                            <button
+                              type="button"
+                              onClick={() => ustawSchowek(skopiujStyl(edytowany, szablon))}
+                            >
+                              {t('wlasciwosci.kopiujStyl')}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={!schowek}
+                              onClick={() =>
+                                schowek &&
+                                zmienSz((s) =>
+                                  aktywne.reduce(
+                                    (x, idW) => zmienWezel(x, idW, (w) => wklejStyl(w, schowek)),
+                                    s,
+                                  ),
+                                )
+                              }
+                            >
+                              {t('wlasciwosci.wklejStyl')}
+                            </button>
+                          </p>
+                        </>
+                      ) : (
+                        <p className="podpis">{t('edytor.zakladka.styleBrak')}</p>
+                      )}
+                      {!bezDanych && (
+                        <GrupyStylow
+                          szablon={szablon}
+                          czcionki={czcionki}
+                          zmien={zmienSz}
+                          {...(aktywne.length === 1 && edytowany && maStylTekstu(edytowany)
+                            ? { pole: edytowany }
+                            : {})}
+                        />
+                      )}
+                    </div>
+                  ) : prawaZakladka === 'biblioteka' ? (
+                    <div className="edytor-ui2-panel-biblioteka">
+                      <p className="podpis">{t('edytor.zakladka.bibliotekaOpis')}</p>
+                      <a
+                        className="przycisk"
+                        href={adresOzdobnikow}
+                        onClick={(e) => sprawdzWyjscie(e, adresOzdobnikow)}
+                      >
+                        {t('edytor.otworzCalaBiblioteke')} ↗
+                      </a>
+                    </div>
+                  ) : (
+                    <>
+                      {rozmiarZaznaczenia}
+                      {edytowany ? (
+                        <>
+                          <PanelWezla
+                            key={aktywne.join(',')}
+                            szablon={szablon}
+                            wezel={edytowany}
+                            zmienSzablon={zmienSz}
+                            wiele={aktywne.length > 1}
+                            wymiary={wymiary(edytowany.id)}
+                            czcionki={czcionki}
+                            obrazy={obrazy}
+                            {...(aktywne.length === 1
+                              ? {
+                                  wgrajStalyObraz: (plik: File, sygnal: AbortSignal) =>
+                                    u.wgrajStalyObraz(edytowany.id, plik, sygnal),
+                                }
+                              : {})}
+                            zajeteKlucze={zajeteKlucze}
+                            {...(bezDanych ? { bezDanych: true } : {})}
+                            {...(u.przodTylu ? { przodTylu: u.przodTylu } : {})}
+                            {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
+                            rozmiaryKotwicy={rozmiaryKotwicy}
+                            {...(wyrownanie ? { wyrownanie } : {})}
+                            mozeNaSwobodny={!!uklad}
+                            kolejnosc={(jak) =>
+                              zmienSz((s) => zmienKolejnoscRysowania(s, edytowany.id, jak))
+                            }
+                            // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
+                            zmienWezel={(f, klucz) =>
+                              zmienSz(
+                                (s) => aktywne.reduce((x, idW) => zmienWezel(x, idW, f), s),
+                                klucz && `${klucz}:${aktywne.join(',')}`,
+                              )
+                            }
+                            zmienTyp={(typ) =>
                               zmienSz((s) =>
                                 aktywne.reduce(
-                                  (x, idW) => zmienWezel(x, idW, (w) => wklejStyl(w, schowek)),
+                                  (x, idW) =>
+                                    czyKontener(edytowany)
+                                      ? zmienTypKontenera(x, idW, typ as Kontener['typ'], uklad)
+                                      : zmienTypPola(
+                                          x,
+                                          idW,
+                                          typ as Pole['typ'],
+                                          t(`wezel.${typ}`),
+                                          zajeteKlucze(),
+                                          bezDanych,
+                                        ),
                                   s,
                                 ),
                               )
                             }
-                          >
-                            {t('wlasciwosci.wklejStyl')}
-                          </button>
-                        </p>
-                        <PanelWezla
-                          key={aktywne.join(',')}
-                          szablon={szablon}
-                          wezel={edytowany}
-                          zmienSzablon={zmienSz}
-                          wiele={aktywne.length > 1}
-                          wymiary={wymiary(edytowany.id)}
-                          czcionki={czcionki}
-                          obrazy={obrazy}
-                          {...(aktywne.length === 1
-                            ? {
-                                wgrajStalyObraz: (plik: File, sygnal: AbortSignal) =>
-                                  u.wgrajStalyObraz(edytowany.id, plik, sygnal),
-                              }
-                            : {})}
-                          zajeteKlucze={zajeteKlucze}
-                          {...(bezDanych ? { bezDanych: true } : {})}
-                          {...(u.przodTylu ? { przodTylu: u.przodTylu } : {})}
-                          {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
-                          rozmiaryKotwicy={rozmiaryKotwicy}
-                          {...(wyrownanie ? { wyrownanie } : {})}
-                          mozeNaSwobodny={!!uklad}
-                          kolejnosc={(jak) =>
-                            zmienSz((s) => zmienKolejnoscRysowania(s, edytowany.id, jak))
-                          }
-                          // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
-                          zmienWezel={(f, klucz) =>
-                            zmienSz(
-                              (s) => aktywne.reduce((x, idW) => zmienWezel(x, idW, f), s),
-                              klucz && `${klucz}:${aktywne.join(',')}`,
-                            )
-                          }
-                          zmienTyp={(typ) =>
-                            zmienSz((s) =>
-                              aktywne.reduce(
-                                (x, idW) =>
-                                  czyKontener(edytowany)
-                                    ? zmienTypKontenera(x, idW, typ as Kontener['typ'], uklad)
-                                    : zmienTypPola(
-                                        x,
-                                        idW,
-                                        typ as Pole['typ'],
-                                        t(`wezel.${typ}`),
-                                        zajeteKlucze(),
-                                        bezDanych,
-                                      ),
-                                s,
-                              ),
-                            )
-                          }
-                          zmienPrzyklad={(klucz, v, grupuj = true) => {
-                            if (bezDanych) return;
-                            zmienSz(
-                              (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
-                              grupuj ? `przyklad:${klucz}` : undefined,
-                            );
-                          }}
-                        />
-                      </>
-                    ) : aktywne.length > 1 ? (
-                      <>
-                        <h2>{t('szablon.zaznaczono', { liczba: aktywne.length })}</h2>
-                        <p className="podpis">{t('szablon.wieleOpis')}</p>
-                        {wyrownanie && (
-                          <fieldset className="polozenie">
-                            <legend>
-                              <strong>{t('polozenie.tytul')}</strong>
-                            </legend>
-                            {wyrownanie}
-                          </fieldset>
-                        )}
-                      </>
-                    ) : (
-                      u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
-                    )}
-                  </>
-                )}
+                            zmienPrzyklad={(klucz, v, grupuj = true) => {
+                              if (bezDanych) return;
+                              zmienSz(
+                                (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
+                                grupuj ? `przyklad:${klucz}` : undefined,
+                              );
+                            }}
+                          />
+                        </>
+                      ) : aktywne.length > 1 ? (
+                        <>
+                          <h2>{t('szablon.zaznaczono', { liczba: aktywne.length })}</h2>
+                          <p className="podpis">{t('szablon.wieleOpis')}</p>
+                          {wyrownanie && (
+                            <fieldset className="polozenie">
+                              <legend>
+                                <strong>{t('polozenie.tytul')}</strong>
+                              </legend>
+                              {wyrownanie}
+                            </fieldset>
+                          )}
+                        </>
+                      ) : (
+                        u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
+                      )}
+                    </>
+                  )}
+                </div>
               </aside>
 
               {strukturaOtwarta && (
@@ -1566,6 +1807,135 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                       <span>{u.teksty.drzewo}</span>
                     </button>
                   </h2>
+                  <div className="edytor-ui2-struktura-akcje" data-testid="struktura-akcje">
+                    <button
+                      type="button"
+                      className="edytor-ui2-struktura-ikona ui2-z-dymkiem"
+                      aria-label={t('szablon.wyzej')}
+                      disabled={!moznaWyzej}
+                      onClick={() => ruch((s, x) => przesunWezel(s, x, -1))}
+                    >
+                      <span aria-hidden="true">↑</span>
+                      <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                        {t('szablon.wyzej')}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="edytor-ui2-struktura-ikona ui2-z-dymkiem"
+                      aria-label={t('szablon.nizej')}
+                      disabled={!moznaNizej}
+                      onClick={() => ruch((s, x) => przesunWezel(s, x, 1))}
+                    >
+                      <span aria-hidden="true">↓</span>
+                      <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                        {t('szablon.nizej')}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="edytor-ui2-struktura-ikona ui2-z-dymkiem"
+                      aria-label={t('kartka.duplikuj')}
+                      disabled={!jeden || korzenZazn}
+                      onClick={duplikuj}
+                    >
+                      <span aria-hidden="true">⧉</span>
+                      <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                        {t('kartka.duplikuj')}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="edytor-ui2-struktura-ikona niebezpieczny ui2-z-dymkiem"
+                      aria-label={t('kartka.usun')}
+                      disabled={aktywne.length === 0 || aktywne.includes(szablon.korzen.id)}
+                      onClick={usun}
+                    >
+                      <span aria-hidden="true">✕</span>
+                      <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                        {t('kartka.usun')}
+                      </span>
+                    </button>
+                    <div className="edytor-ui2-menu-opakowanie" ref={menuStrukturaRef}>
+                      <button
+                        type="button"
+                        className="edytor-ui2-struktura-ikona ui2-z-dymkiem"
+                        aria-label={t('edytor.struktura.wiecej')}
+                        aria-haspopup="menu"
+                        aria-expanded={menuStrukturaOtwarte}
+                        onClick={() => ustawMenuStrukturaOtwarte((v) => !v)}
+                      >
+                        <span aria-hidden="true">⋯</span>
+                        <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                          {t('edytor.struktura.wiecej')}
+                        </span>
+                      </button>
+                      {menuStrukturaOtwarte && (
+                        <div
+                          role="menu"
+                          className="edytor-ui2-menu-popup edytor-ui2-menu-gora-prawo"
+                          data-testid="menu-struktura-wiecej"
+                          aria-label={t('edytor.struktura.wiecej')}
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={!moznaDoKontenera}
+                            onClick={() => {
+                              ustawMenuStrukturaOtwarte(false);
+                              ruch(doPoprzedniegoKontenera);
+                            }}
+                          >
+                            {t('szablon.doKontenera')}
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={!moznaWyjac}
+                            onClick={() => {
+                              ustawMenuStrukturaOtwarte(false);
+                              ruch(wyzej);
+                            }}
+                          >
+                            {t('szablon.wyjmij')}
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={!moznaOpakowac}
+                            onClick={() => {
+                              ustawMenuStrukturaOtwarte(false);
+                              opakujW('wiersz');
+                            }}
+                          >
+                            {t('szablon.opakujWiersz')}
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={!moznaOpakowac}
+                            onClick={() => {
+                              ustawMenuStrukturaOtwarte(false);
+                              opakujW('kolumna');
+                            }}
+                          >
+                            {t('szablon.opakujKolumne')}
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={!moznaOpakowac}
+                            onClick={() => {
+                              ustawMenuStrukturaOtwarte(false);
+                              opakujW('warstwy');
+                            }}
+                          >
+                            {t('edytor.struktura.opakujWarstwy')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 {strukturaOtwarta && (
                   <div className="edytor-ui2-struktura-cialo">
@@ -1580,70 +1950,8 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                     {pustaKarta && (
                       <div className="pusta-lista-drzewa" data-testid="pusty-stan-drzewa">
                         <p className="podpis">{t('szablon.brakElementow')}</p>
-                        <MenuDodaj
-                          rodzaje={dozwoloneRodzaje}
-                          dodaj={dodaj}
-                          przycisk={{
-                            tresc: t('szablon.dodajPusta'),
-                            className: 'menu-dodaj-pusta',
-                            testId: 'dodaj-pusty-stan-drzewa',
-                          }}
-                        />
                       </div>
                     )}
-                    <div className="akcje-drzewa">
-                      <MenuDodaj rodzaje={dozwoloneRodzaje} dodaj={dodaj} />
-                      <button
-                        type="button"
-                        disabled={!moznaWyzej}
-                        onClick={() => ruch((s, x) => przesunWezel(s, x, -1))}
-                      >
-                        {t('szablon.wyzej')}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!moznaNizej}
-                        onClick={() => ruch((s, x) => przesunWezel(s, x, 1))}
-                      >
-                        {t('szablon.nizej')}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!moznaDoKontenera}
-                        onClick={() => ruch(doPoprzedniegoKontenera)}
-                      >
-                        {t('szablon.doKontenera')}
-                      </button>
-                      <button type="button" disabled={!moznaWyjac} onClick={() => ruch(wyzej)}>
-                        {t('szablon.wyjmij')}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!moznaOpakowac}
-                        onClick={() => opakujW('wiersz')}
-                      >
-                        {t('szablon.opakujWiersz')}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!moznaOpakowac}
-                        onClick={() => opakujW('kolumna')}
-                      >
-                        {t('szablon.opakujKolumne')}
-                      </button>
-                      <button type="button" disabled={!jeden || korzenZazn} onClick={duplikuj}>
-                        {t('kartka.duplikuj')}
-                      </button>
-                      <button
-                        type="button"
-                        className="niebezpieczny"
-                        disabled={aktywne.length === 0 || aktywne.includes(szablon.korzen.id)}
-                        onClick={usun}
-                      >
-                        {t('kartka.usun')}
-                      </button>
-                    </div>
-                    <p className="podpis">{t('szablon.pomocDrzewa')}</p>
                   </div>
                 )}
               </aside>
@@ -1666,7 +1974,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                 ustawPrawaZakladka('element');
               }}
             >
-              <IkonaKreskowa sciezka="M4 6h16M4 12h16M4 18h10" />
+              <IkonaKreskowa sciezka="M4 6h16M4 12h16M4 18h10" rozmiar={20} />
               <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
                 {t('edytor.zakladka.element')}
               </span>
@@ -1681,22 +1989,50 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                 ustawPrawaZakladka('karta');
               }}
             >
-              <IkonaKreskowa sciezka="M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+              <IkonaKreskowa
+                sciezka="M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"
+                rozmiar={20}
+              />
               <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
                 {t('edytor.zakladka.karta')}
               </span>
             </button>
-            <a
-              href={adresOzdobnikow}
+            <button
+              type="button"
               className="edytor-ui2-prawy-btn ui2-z-dymkiem"
-              aria-label={t('edytor.otworzCalaBiblioteke')}
-              onClick={(e) => sprawdzWyjscie(e, adresOzdobnikow)}
+              aria-label={t('edytor.zakladka.style')}
+              aria-pressed={prawyPanelOtwarty && prawaZakladka === 'style'}
+              onClick={() => {
+                ustawPrawyPanelOtwarty(true);
+                ustawPrawaZakladka('style');
+              }}
             >
-              <IkonaKreskowa sciezka="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              <IkonaKreskowa
+                sciezka="M12 2a10 10 0 1 0 10 10c0-1.5-1.2-2.5-2.5-2.5H17a2 2 0 0 1-2-2V5.5A3.5 3.5 0 0 0 12 2zM7.5 11.5h.01M10.5 7.5h.01M15.5 15.5h.01"
+                rozmiar={20}
+              />
+              <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
+                {t('edytor.zakladka.style')}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="edytor-ui2-prawy-btn ui2-z-dymkiem"
+              aria-label={t('edytor.zakladka.biblioteka')}
+              aria-pressed={prawyPanelOtwarty && prawaZakladka === 'biblioteka'}
+              onClick={() => {
+                ustawPrawyPanelOtwarty(true);
+                ustawPrawaZakladka('biblioteka');
+              }}
+            >
+              <IkonaKreskowa
+                sciezka="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                rozmiar={20}
+              />
               <span className="ui2-dymek ui2-dymek-lewo" aria-hidden="true">
                 {t('edytor.zakladka.biblioteka')}
               </span>
-            </a>
+            </button>
             <button
               type="button"
               className="edytor-ui2-prawy-btn edytor-ui2-prawy-zwin ui2-z-dymkiem"
@@ -1716,66 +2052,20 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   );
 }
 
-/** Pasek pod podglądem: przyciąganie (siatka, krawędzie) i – w awersie – podkład ze wzoru. */
-function NarzedziaPodgladu({
-  przyciaganie,
-  ustawPrzyciaganie,
+/** Podkład ze wzoru w dymku paska stanu: wczytanie, widoczność, przezroczystość. */
+function PolaPodkladu({
   podklad,
-}: {
-  przyciaganie: { siatka: number; obiekty: boolean };
-  ustawPrzyciaganie: (p: { siatka: number; obiekty: boolean }) => void;
-  podklad: PodkladEdytora | undefined;
-}) {
+  adres,
+  blad,
+  zmien,
+  usun,
+  wybierzPlik,
+}: PodkladEdytora & { wybierzPlik: () => void }) {
   return (
-    <div className="narzedzia-podgladu">
-      <fieldset>
-        <legend>{t('przyciaganie.tytul')}</legend>
-        <PoleLiczby
-          id="przyciaganie-siatka"
-          etykieta={t('przyciaganie.siatka')}
-          wartosc={przyciaganie.siatka}
-          min={0}
-          max={20}
-          krok={0.5}
-          zmien={(v) => ustawPrzyciaganie({ ...przyciaganie, siatka: v })}
-        />
-        <label className="pole-wyboru">
-          <input
-            type="checkbox"
-            checked={przyciaganie.obiekty}
-            onChange={(e) => ustawPrzyciaganie({ ...przyciaganie, obiekty: e.target.checked })}
-          />{' '}
-          {t('przyciaganie.obiekty')}
-        </label>
-        <p className="podpis">{t('przyciaganie.alt')}</p>
-      </fieldset>
-      {podklad && <PolaPodkladu {...podklad} />}
-    </div>
-  );
-}
-
-/** Podkład ze wzoru: wczytanie, widoczność, przezroczystość. */
-function PolaPodkladu({ podklad, adres, blad, wczytaj, zmien, usun }: PodkladEdytora) {
-  const plik = useRef<HTMLInputElement>(null);
-  return (
-    <fieldset>
-      <legend>{t('podklad.tytul')}</legend>
-      <input
-        ref={plik}
-        type="file"
-        accept="image/png,image/jpeg"
-        data-testid="plik-podkladu"
-        className="tylko-czytnik"
-        tabIndex={-1}
-        aria-label={t('podklad.wczytaj')}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          e.target.value = '';
-          if (f) wczytaj(f);
-        }}
-      />
+    <div className="edytor-ui2-dymek-tresc">
+      <strong className="edytor-ui2-dymek-tytul">{t('podklad.tytul')}</strong>
       <div className="wiersz-przyciskow">
-        <button type="button" onClick={() => plik.current?.click()}>
+        <button type="button" onClick={wybierzPlik}>
           {podklad ? t('podklad.zmien') : t('podklad.wczytaj')}
         </button>
         {podklad && (
@@ -1814,6 +2104,6 @@ function PolaPodkladu({ podklad, adres, blad, wczytaj, zmien, usun }: PodkladEdy
         </p>
       )}
       <p className="podpis">{t('podklad.opis')}</p>
-    </fieldset>
+    </div>
   );
 }

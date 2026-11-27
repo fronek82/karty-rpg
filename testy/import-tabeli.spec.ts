@@ -115,7 +115,7 @@ test('Pierwsza karta z „Przód dla wszystkich kart” da się zaznaczyć i usu
   page,
 }) => {
   await kreator(page, { nazwa: 'Wyprawa', format: 'Standard / Poker', uklad: 'Tytuł i opis' });
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   await page.getByLabel('Przód dla wszystkich kart').selectOption({ label: 'Wyprawa' });
   const karty = page.locator('.strona-kartki [data-karta]');
   await expect(karty).toHaveCount(1);
@@ -136,7 +136,7 @@ test('Pierwsza karta z „Przód dla wszystkich kart” da się zaznaczyć i usu
 
 test('Import CSV z opcją „Złącz łamane wiersze” łączy złamane wiersze', async ({ page }) => {
   await kreator(page, { nazwa: 'Czary', format: 'Standard / Poker', uklad: 'Tytuł i opis' });
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   await page.getByRole('button', { name: 'Importuj CSV lub XLSX' }).click();
   const okno = page.getByRole('dialog');
   await okno.getByLabel('Plik CSV lub XLSX').setInputFiles({

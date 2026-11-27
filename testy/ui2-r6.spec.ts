@@ -16,7 +16,10 @@ test('R6: Krok 2 Karty – dodawanie kart, Podgląd/Tabela, Przód/Tył/Obie, ko
   // Dodajemy pole Tekst w szablonie, zapisujemy i przechodzimy do kroku „2 Karty”.
   const pasekEdytora = page.getByRole('navigation', { name: 'Dodaj element' });
   await pasekEdytora.getByRole('button', { name: 'Tekst', exact: true }).click();
-  await page.locator('.pasek-gorny').getByRole('button', { name: 'Zapisz', exact: true }).click();
+  await page
+    .locator('header.ui2-naglowek')
+    .getByRole('button', { name: 'Zapisz', exact: true })
+    .click();
   await page
     .getByRole('navigation', { name: 'Etapy projektu' })
     .getByRole('link', { name: /Karty/ })

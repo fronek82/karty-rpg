@@ -263,8 +263,8 @@ test.describe('edytor szablonu po angielsku', () => {
     await page.getByRole('button', { name: /Next: field layout/ }).click();
     const drzewo = page.getByRole('tree', { name: 'Card structure' });
     await expect(drzewo).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole('button', { name: 'Card editor ►' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '＋ Add ▾' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Go to cards →' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Add element' })).toBeVisible();
 
     const tytul = drzewo.getByRole('treeitem', { name: /^Title – / });
     await tytul.locator(':scope > .wezel-etykieta').click();
@@ -281,7 +281,7 @@ test.describe('edytor szablonu po angielsku', () => {
     await expect(tytulPl).toHaveAttribute('aria-selected', 'true');
     const panelPl = page.getByRole('complementary', { name: 'Właściwości' });
     await expect(panelPl.getByLabel('Nazwa', { exact: true })).toHaveValue('Title');
-    await expect(page.getByRole('button', { name: 'Edytor kart ►' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Przejdź do kart →' })).toBeVisible();
   });
 });
 

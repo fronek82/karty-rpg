@@ -63,13 +63,13 @@ test('przepływ Szablon → Edytor kart → Drukuj karty oraz przycisk ← Powr�
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
 
-  // W edytorze szablonu: „← Powrót” i „Edytor kart ►” (bez dawnego „Rób karty” ani „← Kartki”).
-  await expect(page.getByRole('link', { name: '← Powrót', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Edytor kart ►', exact: true })).toBeVisible();
+  // W edytorze szablonu (R10): „← Projekty” i „Przejdź do kart →”.
+  await expect(page.getByRole('link', { name: '← Projekty', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Przejdź do kart →', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /Rób karty|← Kartki/ })).toHaveCount(0);
 
   // Przejście do „Edytor kart”.
-  await page.getByRole('button', { name: 'Edytor kart ►', exact: true }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →', exact: true }).click();
   await expect(slot(page, 1, 1, 1)).toBeVisible({ timeout: 15000 });
   await expect(page.getByRole('link', { name: '← Powrót', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Drukuj karty ►', exact: true })).toBeVisible();

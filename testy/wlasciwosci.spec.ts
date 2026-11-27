@@ -19,8 +19,10 @@ async function otworz(page: Page, nazwa: string) {
   return s;
 }
 async function dodaj(page: Page, rodzaj: string) {
-  await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
-  await page.getByRole('menuitem', { name: rodzaj, exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Dodaj element' })
+    .getByRole('button', { name: rodzaj, exact: true })
+    .click();
 }
 async function nowySzablon(page: Page) {
   await page.goto('./#/wlasne/nowy/awers');
@@ -53,7 +55,7 @@ test('tabela: kolumny, wiersze, nagłówki, linie; komórki to pola karty', asyn
   await expect(page.locator('.karta-podgladu svg line')).toHaveCount(0);
 
   // Na kartce: komórki 2 wierszy × 3 kolumn jako osobne pola.
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   // Kartka musi być gotowa (slot widoczny), zanim klikniemy; karta dodana i zaznaczona (panel
   // widoczny) – dopiero potem sprawdzamy pola. Dłuższe limity: wolne CI (rzadka niestabilność).
   await expect(slot(page, 1, 1, 1)).toBeVisible({ timeout: 15000 });
@@ -96,7 +98,7 @@ test('kształt z listy, styl tekstu, stały tekst, ramka pola i karty; kopiuj/wk
   // Ramka pola.
   const wyglad = await otworz(page, 'Wygląd (tło, ramka, rogi)');
   await wyglad.getByLabel('Tło', { exact: true }).locator('xpath=..').getByRole('checkbox').check();
-  // Drugi element: tekst; kopiuj styl z pierwszego i wklej.
+  // Drugi element: tekst; kopiuj styl z pierwszego i wklej (zakładka Style).
   await element(page, /^Karta – /)
     .locator('.wezel-etykieta')
     .first()
@@ -106,12 +108,14 @@ test('kształt z listy, styl tekstu, stały tekst, ramka pola i karty; kopiuj/wk
     .first()
     .locator('.wezel-etykieta')
     .click();
+  await page.getByRole('button', { name: 'Style', exact: true }).click();
   await panel(page).getByRole('button', { name: 'Kopiuj styl' }).click();
   await element(page, /^Wartość w kształcie – /)
     .nth(1)
     .locator('.wezel-etykieta')
     .click();
   await panel(page).getByRole('button', { name: 'Wklej styl' }).click();
+  await page.getByRole('button', { name: 'Właściwości elementu', exact: true }).click();
   await expect(panel(page).getByLabel('Kształt')).toHaveValue('tarcza');
   // Wiele naraz: oba elementy, zmiana kształtu dla obu.
   await element(page, /^Wartość w kształcie – /)

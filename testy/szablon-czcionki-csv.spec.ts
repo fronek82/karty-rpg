@@ -62,7 +62,7 @@ test('czcionka pobrana z Google Fonts w projekcie A jest od razu dostępna w ist
     format: 'Standard / Poker',
     uklad: 'Tytuł i opis',
   });
-  await page.getByRole('button', { name: 'Edytor kart ►', exact: true }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →', exact: true }).click();
   await expect(slot(page, 1, 1, 1)).toBeVisible({ timeout: 15000 });
   const drukA = await otworzDruk(page);
   const katalog = drukA.locator('details.katalog-google-fonts');
@@ -103,7 +103,7 @@ test('Edytor kart: eksport przygotowanego szablonu CSV u dołu prawego panelu', 
     uklad: 'Tytuł i opis',
   });
   await dodaj(page, 'Tekst', 'Koszt');
-  await page.getByRole('button', { name: 'Edytor kart ►', exact: true }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →', exact: true }).click();
   await expect(slot(page, 1, 1, 1)).toBeVisible({ timeout: 15000 });
 
   // Bez zaznaczonej karty: przycisk eksportu szablonu CSV jest u dołu prawego panelu.

@@ -13,7 +13,7 @@ test.describe('Zrzuty UI2 (jasny i ciemny motyw)', () => {
       test.setTimeout(90_000);
       mkdirSync(KATALOG, { recursive: true });
       await page.addInitScript((m) => {
-        window.localStorage.setItem('karty-rpg:motyw', m);
+        window.localStorage.setItem('karty.motyw', m);
       }, motyw);
 
       // 1. Start
@@ -39,7 +39,7 @@ test.describe('Zrzuty UI2 (jasny i ciemny motyw)', () => {
 
       // 4. Krok 2: Karty
       await page
-        .locator('.pasek-gorny')
+        .locator('header.ui2-naglowek')
         .getByRole('button', { name: 'Zapisz', exact: true })
         .click();
       await page
