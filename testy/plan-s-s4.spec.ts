@@ -54,7 +54,7 @@ test.describe('Plan S (S4) – Edytor szablonu poza projektem (#/szablon/<id>)',
       .click();
     await expect(page.locator('.karty-ui2-kafelek')).toHaveCount(1);
     await page.keyboard.press('Control+s');
-    await expect(page.locator('.ui2-naglowek')).toContainText('Zapisano');
+    await expect(page.locator('.ui2-naglowek')).toContainText(/zapisano/i);
 
     // 3) Wróć na Start → Moje szablony → Edytuj szablon „Czar (test)”.
     await page.goto('./#/');
@@ -80,18 +80,18 @@ test.describe('Plan S (S4) – Edytor szablonu poza projektem (#/szablon/<id>)',
       .locator('header.ui2-naglowek')
       .getByRole('button', { name: 'Zapisz', exact: true })
       .click();
-    await expect(page.locator('.ui2-naglowek')).toContainText('Zapisano');
+    await expect(page.locator('.ui2-naglowek')).toContainText(/zapisano/i);
 
     // 4) Wróć do projektu: karta NIE zmieniła się automatycznie, a w nagłówku pojawił się baner aktualizacji.
     await page.goto(urlProjektu);
     await expect(page.locator('.karty-ui2-kafelek')).toHaveCount(1);
-    const baner = page.getByTestId('baner-aktualizacji-szablonu');
+    const baner = page.getByTestId('pasek-nowszych-szablonow');
     await expect(baner).toBeVisible({ timeout: 10000 });
     await expect(baner).toContainText('Jest nowsza wersja szablonu');
 
     // Kliknij „Aktualizuj karty (1)” → otwiera się okno z podglądem Przed/Po; potwierdź.
     await baner.getByRole('button', { name: /Aktualizuj karty \(1\)/ }).click();
-    const oknoAkt = page.getByTestId('okno-aktualizacji-szablonu');
+    const oknoAkt = page.getByRole('dialog');
     await expect(oknoAkt).toBeVisible();
     await oknoAkt.getByRole('button', { name: /Aktualizuj/ }).click();
 
