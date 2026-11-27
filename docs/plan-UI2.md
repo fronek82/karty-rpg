@@ -505,3 +505,80 @@ roboczy i zachodzi na elementy pod kartą, a cyfry nakładają się na kreski.
 
 Od 27.11.2026 obowiązuje `docs/plan-S.md`: szablony są w osobnej bibliotece, projekt ma kroki
 Karty → Druk. Zmienia to sekcje 4.1 (mapa kroków), 5.1 (przyciski tworzenia), 5.2 i 5.3 tego planu.
+
+## 13. R11 – Mausritter w stylu UI2 (27.11.2026)
+
+Przegląd ekranów Mausrittera po R8 pokazał, że ekran startowy, nagłówek, lewy pasek i prawy panel
+mają jeszcze stary wygląd i stary układ przycisków. Wzór: `docs/makiety-ui2/Mausritter.dc.html`
+(siatka na makiecie jest pionowa 7 × 10 tylko poglądowo, bo obowiązuje rzeczywisty układ aplikacji:
+A4 poziomo, 10 × 7 kafelków po 25,75 mm). Etap robić **po zakończeniu planu S**, bo S5 zmienia
+wspólny nagłówek i kroki.
+
+### 13.1 Start
+
+- Usunąć osobną stronę „Start › Karty do Mausrittera” z kafelkami „Pusta kartka” / „Zacznij od
+  gotowego układu”.
+- Kliknięcie „Mausritter A4” na stronie głównej tworzy projekt i otwiera ekran arkusza z oknem
+  **„Od czego zaczynamy?”** (jak w makiecie): duży kafelek **„Pusty arkusz A4”** (opis: siatka
+  10 × 7 kafelków) oraz „Gotowe arkusze”: Broń i pancerze, Wyposażenie, Stany, Wszystkie trzy.
+  Pod spodem nota o grze (Isaac Williams, Losing Games). `Esc` i „×” zamykają okno z pustym arkuszem.
+
+### 13.2 Nagłówek
+
+Wspólny `NaglowekProjektu` (4.1): `← Projekty` · edytowalna nazwa · etykieta **MAUSRITTER** ·
+**1 Karty na arkuszach → 2 Druk** · ↶ ↷ (te same ikony co w edytorze) · ⚙ · stan zapisu
+(`● Zapisz` / `✓ zapisano`) · **Do druku →**.
+Usunąć: „Karty” (logo), osobne „Zapisz” + „Niezapisane zmiany”/„Zapisano”, „← Powrót”,
+„Drukuj karty ▶”, „Biblioteki”, „Ustawienia ▾”.
+
+### 13.3 Lewy pasek „Dodaj kartę”
+
+- Wspólny `PasekBoczny` (4.2) z nagłówkiem wyrównanym do paska nad arkuszem (3.3).
+- **Sześć różnych ikon**, zamiast sześciu jednakowych ikon dokumentu: Broń (miecz), Zbroja
+  (tarcza), Ekwipunek (torba), Zaklęcie (gwiazda), Stan (krzyżyk/plus), Pusta karta (prostokąt).
+  Ikony takie jak w makiecie.
+- Zwinięty: dymek po 0,5 s z nazwą i rozmiarami (np. „Zbroja · 1×2 ciężka · 2×1 lekka”).
+  Rozwinięty: nazwa + rozmiary + podpowiedź „Przeciągnij na wolny kafelek albo kliknij”.
+
+### 13.4 Środek
+
+- Nad arkuszem **pasek zakładek arkuszy** zamiast tekstu „Strona 1 z 1”: „Arkusz 1”, „Arkusz 2”…,
+  „＋ Arkusz” oraz licznik „N / 70 kafelków zajętych” po prawej.
+- Obszar roboczy jak w edytorze (`--tlo-robocze` + siatka kropek), arkusz biały z cieniem.
+- **Pasek stanu 44 px** na dole jak w edytorze: `A4 poziomo · 10 × 7 · ? Skróty` oraz
+  `− 100% + Dopasuj`. Powiększenie przenieść z prawej góry na pasek stanu. Tekst „Ctrl + kółko
+  myszy – przybliżanie” i skróty klawiszowe przenieść do dymka „? Skróty”.
+- Usunąć czarny pływający pasek nad zaznaczoną kartą („Duplikuj / Rozmiar / Usuń”). Te akcje są
+  w nagłówku prawego panelu.
+- Pusta karta na arkuszu (bez nazwy) pokazuje szarą nazwę typu (np. „Przedmiot”, „Broń”), żeby
+  dało się odróżnić puste karty.
+
+### 13.5 Prawy panel
+
+- Nagłówek na wysokości paska zakładek arkuszy (3.3): nazwa typu karty + przyciski **⧉ Duplikuj**,
+  **✕ Usuń**. Bez osobnego „×”.
+- Karta zaznaczona – sekcje jak w makiecie (bez kolorowych pasków z lewej, ramki 1,5 px):
+  **Rozmiar w kafelkach** (przyciski z zarysem, niemieszczące się wyszarzone), Wariant (jeśli jest),
+  Nazwa, pola typu (obrażenia / obrona / pojemność / usunięcie), **Kropki użycia** (− N +),
+  **Obraz**: „Z biblioteki…” / „＋ Wgraj”, a skala, obrót, X, Y, dopasowanie i „Resetuj” w zwijanej
+  podsekcji „Położenie obrazu ▸”.
+- Nic nie zaznaczone: nagłówek „Arkusz”, pole **Tytuł arkusza** i jedna linijka podpowiedzi
+  („Kliknij kartę, żeby ją edytować, albo przeciągnij nową z lewej”). Długi tekst pomocy przenieść
+  do „? Skróty”.
+- Pole „Przód dla wszystkich kart – wybierz szablon przodu” w projekcie Mausrittera usunąć (pakiet nie
+  ma szablonów przodu). Jeśli spełnia inną rolę, przenieść je do sekcji „Arkusz” z jasną etykietą
+  i opisać decyzję w 13.7.
+
+### 13.6 Testy
+
+- Playwright: „Mausritter A4” otwiera ekran arkusza z oknem „Od czego zaczynamy?”; „Pusty arkusz A4”
+  zamyka okno; nie ma trasy ze starą stroną startową.
+- Playwright: nagłówek nie zawiera „Powrót”, „Drukuj karty”, „Biblioteki”; jest „Do druku →”.
+- Playwright: 6 przycisków lewego paska ma różne ikony (różne `d` ścieżek SVG).
+- Playwright: zaznaczona karta nie pokazuje pływającego paska; w nagłówku panelu są Duplikuj i Usuń.
+- Wzorce PNG arkuszy i PDF Mausrittera bez zmian.
+
+### 13.7 Decyzje
+
+- **D19** Mausritter korzysta z tych samych komponentów UI2 co reszta (nagłówek, pasek boczny, pasek
+  stanu, panel z sekcjami). Start to okno na ekranie arkusza, a nie osobna strona.
