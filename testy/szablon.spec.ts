@@ -297,7 +297,7 @@ test('Edytor szablonu: zapis ręczny (Ctrl+S), okno przy wyjściu, eksport i imp
   await page.goto('./#/wlasne/nowy/rewers');
   await page.getByRole('button', { name: /Dalej: edytor tyłu/ }).click();
   await expect(page.getByLabel('Nazwa tyłu')).toBeVisible({ timeout: 15000 });
-  await page.locator('.pasek-gorny input[type=file]').setInputFiles(plik);
+  await page.locator('input[type="file"][aria-label="Importuj szablon"]').setInputFiles(plik);
   const linkRewersu = page.getByRole('link', { name: /^Dodano tył „Karta z pliku 2/ });
   await expect(linkRewersu).toBeVisible();
   await linkRewersu.click();

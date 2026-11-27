@@ -122,8 +122,10 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
   expect(elementyPo).not.toEqual(elementyPrzed);
   expect(elementyPo[1]).toContain('Znak SVG');
 
-  // Przyciąganie i przesunięcie na siatce + cofanie.
+  // Przyciąganie (dymek w pasku stanu) i przesunięcie na siatce + cofanie.
+  await page.getByTestId('stan-przyciaganie').click();
   await page.getByLabel('Siatka (mm, 0 = wyłączona)').fill('2');
+  await page.keyboard.press('Escape');
   const xPole = panel(page).getByLabel('X (mm)');
   const xStart = await xPole.inputValue();
   await zaznacz(page, 'Znak SVG');
@@ -173,14 +175,20 @@ test('przypisania rewersu na 3 poziomach (talia -> szablon -> karta), duplikowan
   await sekcja(page, 'Tło karty');
   await page.locator('#karta-tlo-kolor').fill('#112233');
   await zapisano(page);
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page
+    .getByRole('navigation', { name: 'Etapy projektu' })
+    .getByRole('link', { name: /Druk/ })
+    .click();
 
   await ust.getByRole('button', { name: 'Nowy tył' }).click();
   await page.getByLabel('Nazwa tyłu').fill('Rewers B');
   await sekcja(page, 'Tło karty');
   await page.locator('#karta-tlo-kolor').fill('#445566');
   await zapisano(page);
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page
+    .getByRole('navigation', { name: 'Etapy projektu' })
+    .getByRole('link', { name: /Druk/ })
+    .click();
 
   // 1. Poziom talii: przypisz Rewers A jako domyślny talii.
   await ust.getByLabel('Domyślny tył talii').selectOption({ label: 'Rewers A' });

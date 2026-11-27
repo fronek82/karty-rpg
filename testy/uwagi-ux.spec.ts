@@ -116,7 +116,7 @@ test('panel właściwości pola: Położenie i rozmiar (#1), Wygląd (#2), Styl 
   });
   await dodaj(page, 'Tekst', 'Opis');
 
-  const sekcje = panel(page).locator(':scope > details.sekcja-panelu > summary');
+  const sekcje = panel(page).locator('.panel-edytora > details.sekcja-panelu > summary');
   await expect(sekcje.nth(0)).toHaveText('Położenie i rozmiar');
   await expect(sekcje.nth(1)).toHaveText('Wygląd (tło, ramka, rogi)');
   await expect(sekcje.nth(2)).toHaveText('Styl tekstu');
@@ -124,7 +124,7 @@ test('panel właściwości pola: Położenie i rozmiar (#1), Wygląd (#2), Styl 
 
   // Pola wyboru (Wiele wierszy, Formatowanie itd.) leżą na samym dole panelu – poniżej Stylu tekstu i Odstępów.
   const pudelkoStylu = (await panel(page)
-    .locator(':scope > details.sekcja-panelu')
+    .locator('.panel-edytora > details.sekcja-panelu')
     .nth(2)
     .boundingBox())!;
   const pudelkoWyboru = (await panel(page)
@@ -133,7 +133,7 @@ test('panel właściwości pola: Położenie i rozmiar (#1), Wygląd (#2), Styl 
   expect(pudelkoWyboru.y).toBeGreaterThan(pudelkoStylu.y + pudelkoStylu.height - 1);
 
   // Pierwsza sekcja jest domyślnie zwinięta i po rozwinięciu zawiera jednocześnie położenie i rozmiar.
-  const pierwsza = panel(page).locator(':scope > details.sekcja-panelu').nth(0);
+  const pierwsza = panel(page).locator('.panel-edytora > details.sekcja-panelu').nth(0);
   await expect(pierwsza).not.toHaveAttribute('open', '');
   await pierwsza.locator(':scope > summary').click();
   await expect(pierwsza.getByLabel('X (mm)')).toBeVisible();
@@ -148,10 +148,9 @@ test('panel właściwości pola: Położenie i rozmiar (#1), Wygląd (#2), Styl 
   await expect(sekcje.nth(1)).toHaveText('Wygląd (tło, ramka, rogi)');
   await expect(sekcje.nth(2)).toHaveText('Styl tekstu');
   await expect(sekcje.nth(3)).toHaveText('Odstępy');
-  await expect(panel(page).locator(':scope > details.sekcja-panelu').nth(0)).not.toHaveAttribute(
-    'open',
-    '',
-  );
+  await expect(
+    panel(page).locator('.panel-edytora > details.sekcja-panelu').nth(0),
+  ).not.toHaveAttribute('open', '');
 
   // Przełączenie na angielski zachowuje kolejność i etykiety w obu wariantach.
   const menuUst = await otworzUstawieniaAplikacji(page);
@@ -162,7 +161,7 @@ test('panel właściwości pola: Położenie i rozmiar (#1), Wygląd (#2), Styl 
   await page.keyboard.press('Escape');
   const sekcjeEn = page
     .getByRole('complementary', { name: 'Properties' })
-    .locator(':scope > details.sekcja-panelu > summary');
+    .locator('.panel-edytora > details.sekcja-panelu > summary');
   await expect(sekcjeEn.nth(0)).toHaveText('Size');
   await expect(sekcjeEn.nth(1)).toHaveText('Appearance (background, frame, corners)');
   await expect(sekcjeEn.nth(2)).toHaveText('Text style');

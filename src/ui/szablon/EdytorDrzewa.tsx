@@ -1586,166 +1586,170 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
 
           {prawyPanelOtwarty && (
             <div className="edytor-ui2-prawa-kolumna">
-              <div className="edytor-ui2-prawa-naglowek">
-                <span className="edytor-ui2-prawa-tytul">
-                  {prawaZakladka === 'karta'
-                    ? t('edytor.zakladka.karta')
-                    : prawaZakladka === 'style'
-                      ? t('edytor.zakladka.style')
-                      : prawaZakladka === 'biblioteka'
-                        ? t('edytor.zakladka.biblioteka')
-                        : t('szablon.wlasciwosci')}
-                </span>
-                {(prawaZakladka === 'element' || prawaZakladka === 'style') && edytowany && (
-                  <span className="edytor-ui2-prawa-podtytul" title={nazwaWezla(edytowany)}>
-                    · {t(`wezel.${edytowany.typ}`)} ·{' '}
-                    {aktywne.length > 1
-                      ? t('szablon.zaznaczono', { liczba: aktywne.length })
-                      : nazwaWezla(edytowany)}
-                  </span>
-                )}
-              </div>
               <aside
-                className="panel-edytora edytor-ui2-prawa-tresc"
+                className="edytor-ui2-prawy-panel-opakowanie"
                 aria-label={t('szablon.wlasciwosci')}
               >
-                {prawaZakladka === 'karta' ? (
-                  u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
-                ) : prawaZakladka === 'style' ? (
-                  <div className="edytor-ui2-panel-style">
-                    {edytowany ? (
-                      <>
-                        <p className="akcje-stylu">
-                          <button
-                            type="button"
-                            onClick={() => ustawSchowek(skopiujStyl(edytowany, szablon))}
-                          >
-                            {t('wlasciwosci.kopiujStyl')}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!schowek}
-                            onClick={() =>
-                              schowek &&
+                <div className="edytor-ui2-prawa-naglowek">
+                  <h2 className="edytor-ui2-prawa-naglowek-h2">
+                    <span className="edytor-ui2-prawa-tytul">
+                      {prawaZakladka === 'karta'
+                        ? t('edytor.zakladka.karta')
+                        : prawaZakladka === 'style'
+                          ? t('edytor.zakladka.style')
+                          : prawaZakladka === 'biblioteka'
+                            ? t('edytor.zakladka.biblioteka')
+                            : t('szablon.wlasciwosci')}
+                    </span>
+                    {(prawaZakladka === 'element' || prawaZakladka === 'style') && edytowany && (
+                      <span className="edytor-ui2-prawa-podtytul" title={nazwaWezla(edytowany)}>
+                        · {t(`wezel.${edytowany.typ}`)} ·{' '}
+                        {aktywne.length > 1
+                          ? t('szablon.zaznaczono', { liczba: aktywne.length })
+                          : nazwaWezla(edytowany)}
+                      </span>
+                    )}
+                  </h2>
+                </div>
+                <div className="panel-edytora edytor-ui2-prawa-tresc">
+                  {prawaZakladka === 'karta' ? (
+                    u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
+                  ) : prawaZakladka === 'style' ? (
+                    <div className="edytor-ui2-panel-style">
+                      {edytowany ? (
+                        <>
+                          <p className="akcje-stylu">
+                            <button
+                              type="button"
+                              onClick={() => ustawSchowek(skopiujStyl(edytowany, szablon))}
+                            >
+                              {t('wlasciwosci.kopiujStyl')}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={!schowek}
+                              onClick={() =>
+                                schowek &&
+                                zmienSz((s) =>
+                                  aktywne.reduce(
+                                    (x, idW) => zmienWezel(x, idW, (w) => wklejStyl(w, schowek)),
+                                    s,
+                                  ),
+                                )
+                              }
+                            >
+                              {t('wlasciwosci.wklejStyl')}
+                            </button>
+                          </p>
+                        </>
+                      ) : (
+                        <p className="podpis">{t('edytor.zakladka.styleBrak')}</p>
+                      )}
+                      {!bezDanych && (
+                        <GrupyStylow
+                          szablon={szablon}
+                          czcionki={czcionki}
+                          zmien={zmienSz}
+                          {...(aktywne.length === 1 && edytowany && maStylTekstu(edytowany)
+                            ? { pole: edytowany }
+                            : {})}
+                        />
+                      )}
+                    </div>
+                  ) : prawaZakladka === 'biblioteka' ? (
+                    <div className="edytor-ui2-panel-biblioteka">
+                      <p className="podpis">{t('edytor.zakladka.bibliotekaOpis')}</p>
+                      <a
+                        className="przycisk"
+                        href={adresOzdobnikow}
+                        onClick={(e) => sprawdzWyjscie(e, adresOzdobnikow)}
+                      >
+                        {t('edytor.otworzCalaBiblioteke')} ↗
+                      </a>
+                    </div>
+                  ) : (
+                    <>
+                      {rozmiarZaznaczenia}
+                      {edytowany ? (
+                        <>
+                          <PanelWezla
+                            key={aktywne.join(',')}
+                            szablon={szablon}
+                            wezel={edytowany}
+                            zmienSzablon={zmienSz}
+                            wiele={aktywne.length > 1}
+                            wymiary={wymiary(edytowany.id)}
+                            czcionki={czcionki}
+                            obrazy={obrazy}
+                            {...(aktywne.length === 1
+                              ? {
+                                  wgrajStalyObraz: (plik: File, sygnal: AbortSignal) =>
+                                    u.wgrajStalyObraz(edytowany.id, plik, sygnal),
+                                }
+                              : {})}
+                            zajeteKlucze={zajeteKlucze}
+                            {...(bezDanych ? { bezDanych: true } : {})}
+                            {...(u.przodTylu ? { przodTylu: u.przodTylu } : {})}
+                            {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
+                            rozmiaryKotwicy={rozmiaryKotwicy}
+                            {...(wyrownanie ? { wyrownanie } : {})}
+                            mozeNaSwobodny={!!uklad}
+                            kolejnosc={(jak) =>
+                              zmienSz((s) => zmienKolejnoscRysowania(s, edytowany.id, jak))
+                            }
+                            // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
+                            zmienWezel={(f, klucz) =>
+                              zmienSz(
+                                (s) => aktywne.reduce((x, idW) => zmienWezel(x, idW, f), s),
+                                klucz && `${klucz}:${aktywne.join(',')}`,
+                              )
+                            }
+                            zmienTyp={(typ) =>
                               zmienSz((s) =>
                                 aktywne.reduce(
-                                  (x, idW) => zmienWezel(x, idW, (w) => wklejStyl(w, schowek)),
+                                  (x, idW) =>
+                                    czyKontener(edytowany)
+                                      ? zmienTypKontenera(x, idW, typ as Kontener['typ'], uklad)
+                                      : zmienTypPola(
+                                          x,
+                                          idW,
+                                          typ as Pole['typ'],
+                                          t(`wezel.${typ}`),
+                                          zajeteKlucze(),
+                                          bezDanych,
+                                        ),
                                   s,
                                 ),
                               )
                             }
-                          >
-                            {t('wlasciwosci.wklejStyl')}
-                          </button>
-                        </p>
-                      </>
-                    ) : (
-                      <p className="podpis">{t('edytor.zakladka.styleBrak')}</p>
-                    )}
-                    {!bezDanych && (
-                      <GrupyStylow
-                        szablon={szablon}
-                        czcionki={czcionki}
-                        zmien={zmienSz}
-                        {...(aktywne.length === 1 && edytowany && maStylTekstu(edytowany)
-                          ? { pole: edytowany }
-                          : {})}
-                      />
-                    )}
-                  </div>
-                ) : prawaZakladka === 'biblioteka' ? (
-                  <div className="edytor-ui2-panel-biblioteka">
-                    <p className="podpis">{t('edytor.zakladka.bibliotekaOpis')}</p>
-                    <a
-                      className="przycisk"
-                      href={adresOzdobnikow}
-                      onClick={(e) => sprawdzWyjscie(e, adresOzdobnikow)}
-                    >
-                      {t('edytor.otworzCalaBiblioteke')} ↗
-                    </a>
-                  </div>
-                ) : (
-                  <>
-                    {rozmiarZaznaczenia}
-                    {edytowany ? (
-                      <>
-                        <PanelWezla
-                          key={aktywne.join(',')}
-                          szablon={szablon}
-                          wezel={edytowany}
-                          zmienSzablon={zmienSz}
-                          wiele={aktywne.length > 1}
-                          wymiary={wymiary(edytowany.id)}
-                          czcionki={czcionki}
-                          obrazy={obrazy}
-                          {...(aktywne.length === 1
-                            ? {
-                                wgrajStalyObraz: (plik: File, sygnal: AbortSignal) =>
-                                  u.wgrajStalyObraz(edytowany.id, plik, sygnal),
-                              }
-                            : {})}
-                          zajeteKlucze={zajeteKlucze}
-                          {...(bezDanych ? { bezDanych: true } : {})}
-                          {...(u.przodTylu ? { przodTylu: u.przodTylu } : {})}
-                          {...(rodzicSw ? { rodzicSwobodny: rodzicSw } : {})}
-                          rozmiaryKotwicy={rozmiaryKotwicy}
-                          {...(wyrownanie ? { wyrownanie } : {})}
-                          mozeNaSwobodny={!!uklad}
-                          kolejnosc={(jak) =>
-                            zmienSz((s) => zmienKolejnoscRysowania(s, edytowany.id, jak))
-                          }
-                          // Kilka zaznaczonych (ten sam typ) – zmiana dla każdego z nich.
-                          zmienWezel={(f, klucz) =>
-                            zmienSz(
-                              (s) => aktywne.reduce((x, idW) => zmienWezel(x, idW, f), s),
-                              klucz && `${klucz}:${aktywne.join(',')}`,
-                            )
-                          }
-                          zmienTyp={(typ) =>
-                            zmienSz((s) =>
-                              aktywne.reduce(
-                                (x, idW) =>
-                                  czyKontener(edytowany)
-                                    ? zmienTypKontenera(x, idW, typ as Kontener['typ'], uklad)
-                                    : zmienTypPola(
-                                        x,
-                                        idW,
-                                        typ as Pole['typ'],
-                                        t(`wezel.${typ}`),
-                                        zajeteKlucze(),
-                                        bezDanych,
-                                      ),
-                                s,
-                              ),
-                            )
-                          }
-                          zmienPrzyklad={(klucz, v, grupuj = true) => {
-                            if (bezDanych) return;
-                            zmienSz(
-                              (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
-                              grupuj ? `przyklad:${klucz}` : undefined,
-                            );
-                          }}
-                        />
-                      </>
-                    ) : aktywne.length > 1 ? (
-                      <>
-                        <h2>{t('szablon.zaznaczono', { liczba: aktywne.length })}</h2>
-                        <p className="podpis">{t('szablon.wieleOpis')}</p>
-                        {wyrownanie && (
-                          <fieldset className="polozenie">
-                            <legend>
-                              <strong>{t('polozenie.tytul')}</strong>
-                            </legend>
-                            {wyrownanie}
-                          </fieldset>
-                        )}
-                      </>
-                    ) : (
-                      u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
-                    )}
-                  </>
-                )}
+                            zmienPrzyklad={(klucz, v, grupuj = true) => {
+                              if (bezDanych) return;
+                              zmienSz(
+                                (s) => ({ ...s, przyklad: { ...s.przyklad, [klucz]: v } }),
+                                grupuj ? `przyklad:${klucz}` : undefined,
+                              );
+                            }}
+                          />
+                        </>
+                      ) : aktywne.length > 1 ? (
+                        <>
+                          <h2>{t('szablon.zaznaczono', { liczba: aktywne.length })}</h2>
+                          <p className="podpis">{t('szablon.wieleOpis')}</p>
+                          {wyrownanie && (
+                            <fieldset className="polozenie">
+                              <legend>
+                                <strong>{t('polozenie.tytul')}</strong>
+                              </legend>
+                              {wyrownanie}
+                            </fieldset>
+                          )}
+                        </>
+                      ) : (
+                        u.panelKarty({ szablon, zmienSz, czcionki, obrazy, wymiary, uklad })
+                      )}
+                    </>
+                  )}
+                </div>
               </aside>
 
               {strukturaOtwarta && (

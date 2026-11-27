@@ -19,8 +19,9 @@ test('ramka 9-slice z PNG: edytor wcięć, podglądy, dpi i użycie w panelu Ram
   const rodzaj = (await sekcja(page, 'Ramka karty')).getByLabel('Ramka karty', { exact: true });
   await expect(rodzaj.locator('option[value="obraz"]')).toBeDisabled();
 
-  // N8: biblioteka użytkownika – strona Biblioteki → Ozdobniki z powrotem do edytora.
-  await page.getByRole('link', { name: 'Biblioteka ozdobników', exact: true }).click();
+  // N8/R10: biblioteka użytkownika z zakładki Biblioteka w prawym pasku.
+  await page.getByRole('button', { name: 'Biblioteka', exact: true }).click();
+  await page.getByRole('link', { name: /Otwórz całą bibliotekę/ }).click();
   await expect(page).toHaveURL(/#\/biblioteki\/ozdobniki\?powrot=/);
   await page.getByTestId('plik-png').setInputFiles('testy/zasoby/ramka-testowa.png');
   const siatka = page.getByTestId('siatka-biblioteki');

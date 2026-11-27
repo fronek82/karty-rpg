@@ -151,18 +151,21 @@ test('separator ozdobny: trzy wzory z menu, zakończenia, środek, motyw, długo
   const podglad = page.locator('.karta-podgladu svg');
 
   // Wzór 1: sama linia – bez symboli.
-  await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
-  await expect(page.getByRole('menuitem', { name: 'Separator z zakończeniami' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Separator z motywem' })).toBeVisible();
-  await page.getByRole('menuitem', { name: 'Separator', exact: true }).click();
+  const pasekDodaj = page.getByRole('navigation', { name: 'Dodaj element' });
+  await expect(
+    pasekDodaj.getByRole('button', { name: 'Separator z zakończeniami', exact: true }),
+  ).toBeVisible();
+  await expect(
+    pasekDodaj.getByRole('button', { name: 'Separator z motywem', exact: true }),
+  ).toBeVisible();
+  await pasekDodaj.getByRole('button', { name: 'Separator', exact: true }).click();
   await expect(podglad.locator('use[color]')).toHaveCount(0);
 
   // Wzór 2: linia z zakończeniami i środkiem (grot + romb) – trzy użycia dwóch rysunków.
   await karta(page);
-  await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
-  await page.getByRole('menuitem', { name: 'Separator z zakończeniami' }).click();
+  await pasekDodaj.getByRole('button', { name: 'Separator z zakończeniami', exact: true }).click();
   const p = panel(page);
-  await expect(p.getByRole('heading', { name: 'Separator z zakończeniami' })).toBeVisible();
+  await expect(p.getByRole('heading', { name: /Separator z zakończeniami/ })).toBeVisible();
   await expect(podglad.locator('use[color]')).toHaveCount(3);
   await expect(podglad.locator('defs g[id]')).toHaveCount(2);
   await sekcja(page, 'Separator');

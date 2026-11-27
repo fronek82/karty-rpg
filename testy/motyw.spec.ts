@@ -136,7 +136,11 @@ test('pasek w edytorze szablonu', async ({ page }) => {
   await page.getByText('Tytuł i opis').click();
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
-  await pasek(page);
+  const panel = await otworzUstawieniaAplikacji(page);
+  await expect(panel.getByRole('link', { name: /Instrukcja/ })).toBeVisible();
+  await expect(panel.getByRole('group', { name: 'Język' })).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Ciemny' })).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Jasny' })).toBeVisible();
 });
 
 /** Kontrast WCAG dwóch kolorów „rgb(r, g, b)”. */

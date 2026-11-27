@@ -88,15 +88,16 @@ export function NaglowekProjektu({
     const klawisz = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopImmediatePropagation();
         ustawUstawieniaOtwarte(false);
         przyciskUstawien.current?.focus();
       }
     };
     document.addEventListener('mousedown', klikPoza);
-    window.addEventListener('keydown', klawisz);
+    window.addEventListener('keydown', klawisz, true);
     return () => {
       document.removeEventListener('mousedown', klikPoza);
-      window.removeEventListener('keydown', klawisz);
+      window.removeEventListener('keydown', klawisz, true);
     };
   }, [ustawieniaOtwarte]);
 
@@ -118,7 +119,7 @@ export function NaglowekProjektu({
       </a>
       {edycjaNazwy ? (
         <input
-          className="ui2-naglowek-nazwa-input"
+          className="ui2-naglowek-nazwa-input nazwa-projektu"
           title={edycjaNazwy.wartosc}
           aria-label={edycjaNazwy.etykieta}
           value={edycjaNazwy.wartosc}

@@ -109,7 +109,11 @@ test('układ ze zdjęcia (AI) w edytorze szablonu: błąd klucza, podgląd, zast
     .getByRole('button', { name: 'EN', exact: true })
     .click();
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Layout from photo', exact: true }).click();
+  await page.getByTestId('menu-szablon-przycisk').click();
+  await page
+    .getByTestId('menu-szablon')
+    .getByRole('menuitem', { name: /Layout from photo/ })
+    .click();
   const oknoEn = page.getByRole('dialog', { name: 'Layout from photo (AI)' });
   await oknoEn.getByRole('button', { name: 'Remove saved key' }).click();
   expect(await page.evaluate((k) => localStorage.getItem(k), KLUCZ_STORAGE_AI)).toBeNull();

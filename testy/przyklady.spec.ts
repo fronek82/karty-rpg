@@ -837,7 +837,9 @@ test('F. karta swobodna: ilustracja, tytuł na pasku, koło w rogu, napis obróc
 
   // Kolumna z opisem w środku: przeciągnięcie i uchwyt, potem pole w kolumnie.
   // Przyciąganie do krawędzi wyłączone (prawy brzeg 59 leży blisko środka napisu) – zostaje siatka 0,5 mm.
+  await page.getByTestId('stan-przyciaganie').click();
   await page.getByLabel('Do krawędzi i środków innych pól i karty').uncheck();
+  await page.keyboard.press('Escape');
   await karta(page);
   await dodaj(page, 'Kolumna', 'Opis');
   await przesun(page, 'Opis', 1, 47);
