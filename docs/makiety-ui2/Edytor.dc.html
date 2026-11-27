@@ -39,8 +39,8 @@ summary::-webkit-details-marker{display:none}
       <button type="button" aria-label="Ponów" title="Ponów (Ctrl+Y)" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"></path><path d="M20 9H9a5 5 0 0 0 0 10h3"></path></svg></button>
       <span style="width: 1px; height: 28px; background: #C9C4B8; margin: 0 4px"></span>
       <button type="button" aria-label="Ustawienia" title="Ustawienia aplikacji" style="width: 40px; height: 40px; background: transparent; border: 1.5px solid #111111; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3 M12 19v3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M2 12h3 M19 12h3 M4.9 19.1 7 17 M17 7l2.1-2.1"></path></svg></button>
-      <button type="button" style="height: 40px; padding: 0 14px; background: transparent; border: 1.5px solid #111111; font-weight: 700">Szablon ▾</button>
-      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5A5852; padding: 0 8px">✓ zapisano</span>
+      <sc-if value="{{ dirty }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ save }}" title="Zapisz (Ctrl+S)" style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; background: transparent; border: 1.5px solid #111111; font-weight: 700"><span style="width: 8px; height: 8px; border-radius: 50%; background: #D98C8C"></span>Zapisz</button></sc-if>
+      <sc-if value="{{ clean }}" hint-placeholder-val="{{ true }}"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5A5852; padding: 0 8px">✓ zapisano</span></sc-if>
       <button type="button" style="height: 40px; padding: 0 18px; background: #111111; color: #F3F0E8; border: 1.5px solid #111111; font-weight: 700">Przejdź do kart →</button>
     </div>
   </header>
@@ -78,6 +78,14 @@ summary::-webkit-details-marker{display:none}
         <span style="height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: #DCD8CE; border: 1.5px solid #111111; border-bottom: none; margin-bottom: -1.5px; font-weight: 700"><span style="width: 10px; height: 14px; border: 2px solid #D98C8C"></span>Zaklęcie<span style="font-size: 11px; color: #5A5852">63×88</span></span>
         <span style="height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 14px; color: #5A5852; font-weight: 500"><span style="width: 10px; height: 14px; border: 2px solid #C9A75A"></span>Zaklęcie – rytuał</span>
         <button type="button" title="Nowy szablon – inny rodzaj karty w tym projekcie (np. rytuał, przedmiot)" style="height: 30px; margin: 0 0 2px 6px; padding: 0 10px; background: transparent; border: 1.5px dashed #111111; font-weight: 700">＋ Nowy szablon</button>
+        <span style="position: relative; margin: 0 0 2px 6px">
+          <button type="button" onClick="{{ popTpl }}" aria-expanded="{{ tplOpenStr }}" style="height: 30px; padding: 0 10px; background: transparent; border: 1.5px solid #111111; font-weight: 700">Szablon ▾</button>
+          <sc-if value="{{ tplOpen }}" hint-placeholder-val="{{ false }}">
+            <span role="menu" style="position: absolute; left: 0; top: 34px; z-index: 40; width: 230px; display: flex; flex-direction: column; background: #FFFFFF; border: 1.5px solid #111111; box-shadow: 4px 4px 0 #5D7FA3">
+              <sc-for list="{{ tplItems }}" as="m" hint-placeholder-count="5"><button type="button" role="menuitem" onClick="{{ closePop }}" style="display: flex; justify-content: space-between; height: 36px; padding: 0 12px; align-items: center; background: transparent; border: none; border-bottom: 1px solid #E6E2D8; text-align: left; color: #111111; font-weight: 500"><span>{{ m.n }}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5A5852">{{ m.k }}</span></button></sc-for>
+            </span>
+          </sc-if>
+        </span>
         <div role="tablist" aria-label="Strona karty" style="margin-left: auto; margin-bottom: 4px; display: flex">
           <button type="button" role="tab" onClick="{{ toFront }}" aria-selected="{{ frontSel }}" style="height: 30px; padding: 0 14px; background: {{ frontBg }}; color: {{ frontFg }}; border: 1.5px solid #111111; font-weight: 700">Przód</button>
           <button type="button" role="tab" onClick="{{ toBack }}" aria-selected="{{ backSel }}" style="height: 30px; padding: 0 14px; background: {{ backBg }}; color: {{ backFg }}; border: 1.5px solid #111111; border-left: none; font-weight: 700">Tył</button>
@@ -141,13 +149,19 @@ summary::-webkit-details-marker{display:none}
           </div>
         </div>
       </div>
-      <div style="height: 44px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-top: 1.5px solid #111111; background: #EDE9E0; font-family: 'IBM Plex Mono', monospace; font-size: 11px">
-        <span style="display: flex; align-items: center; gap: 12px"><span>63 × 88 mm · układ swobodny · przyciąganie wł.</span><span style="color: #1A9BB5; font-weight: 600">linie pomocnicze: {{ guideCount }}</span><sc-if value="{{ hasGuides }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ clearGuides }}" style="height: 26px; padding: 0 8px; background: transparent; border: 1px solid #111; font-family: inherit; font-size: 11px">Usuń linie</button></sc-if></span>
-        <div style="display: flex; align-items: center; gap: 6px">
+      <div style="position: relative; height: 44px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 14px; border-top: 1.5px solid #111111; background: #EDE9E0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5A5852">
+        <span style="display: flex; align-items: center; gap: 4px">
+          <span style="padding-right: 4px">63 × 88 mm</span><span style="color: #A9A498">·</span><span style="padding: 0 4px">Swobodny</span><span style="color: #A9A498">·</span>
+          <span style="position: relative"><button type="button" onClick="{{ popSnap }}" aria-expanded="{{ snapOpenStr }}" style="height: 30px; padding: 0 8px; background: {{ snapOpenBg }}; border: none; font-family: inherit; font-size: 11px; color: #111111; cursor: pointer">Przyciąganie: <b>0,5 mm</b> ▾</button><sc-if value="{{ snapOpen }}" hint-placeholder-val="{{ false }}"><span role="dialog" style="position: absolute; left: 0; bottom: 38px; z-index: 40; width: 290px; box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #FFFFFF; border: 1.5px solid #111111; box-shadow: 4px 4px 0 #5D7FA3; font-family: Archivo, sans-serif; font-size: 12px; color: #111111"><span style="font-weight: 700">Przyciąganie</span><label style="display: flex; align-items: center; justify-content: space-between; gap: 8px">Siatka (mm, 0 = wyłączona)<input type="number" value="0.5" step="0.5" min="0" style="width: 70px; height: 30px; padding: 0 6px; border: 1.5px solid #111111"></label><label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked>Do krawędzi i środków innych pól i karty</label><label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked>Do linii pomocniczych</label><span style="color: #5A5852">Alt przy przeciąganiu wyłącza przyciąganie.</span></span></sc-if></span><span style="color: #A9A498">·</span>
+          <span style="position: relative"><button type="button" onClick="{{ popBg }}" aria-expanded="{{ bgOpenStr }}" style="height: 30px; padding: 0 8px; background: {{ bgOpenBg }}; border: none; font-family: inherit; font-size: 11px; color: #111111; cursor: pointer">Podkład: <b>brak</b> ▾</button><sc-if value="{{ bgOpen }}" hint-placeholder-val="{{ false }}"><span role="dialog" style="position: absolute; left: 0; bottom: 38px; z-index: 40; width: 290px; box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #FFFFFF; border: 1.5px solid #111111; box-shadow: 4px 4px 0 #5D7FA3; font-family: Archivo, sans-serif; font-size: 12px; color: #111111"><span style="font-weight: 700">Podkład ze wzoru</span><span style="color: #5A5852; line-height: 1.45">Zdjęcie lub skan wzoru leży pod kartą jako pomoc przy układaniu pól. Nie drukuje się i nie trafia do pliku szablonu.</span><button type="button" style="height: 34px; background: #111111; color: #F3F0E8; border: 1.5px solid #111111; font-weight: 700">Wybierz obraz…</button><label style="display: flex; align-items: center; justify-content: space-between; gap: 8px">Przezroczystość<input type="range" min="0" max="100" value="50" style="width: 120px"></label></span></sc-if></span><span style="color: #A9A498">·</span>
+          <span style="position: relative"><button type="button" onClick="{{ popGuides }}" aria-expanded="{{ guidesOpenStr }}" style="height: 30px; padding: 0 8px; background: {{ guidesOpenBg }}; border: none; font-family: inherit; font-size: 11px; color: #111111; cursor: pointer">Linie: <b>{{ guideCount }}</b> ▾</button><sc-if value="{{ guidesOpen }}" hint-placeholder-val="{{ false }}"><span role="dialog" style="position: absolute; left: 0; bottom: 38px; z-index: 40; width: 270px; box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #FFFFFF; border: 1.5px solid #111111; box-shadow: 4px 4px 0 #5D7FA3; font-family: Archivo, sans-serif; font-size: 12px; color: #111111"><span style="font-weight: 700">Linie pomocnicze</span><span style="color: #5A5852; line-height: 1.45">Przeciągnij z linijki na kartę. Upuszczenie z powrotem na linijce usuwa linię.</span><label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked>Pokaż linie <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; color: #5A5852">Ctrl+;</span></label><button type="button" onClick="{{ clearGuides }}" style="height: 32px; background: transparent; border: 1.5px solid #111111; font-weight: 700">Usuń wszystkie linie</button></span></sc-if></span><span style="color: #A9A498">·</span>
+          <span style="position: relative"><button type="button" onClick="{{ popKeys }}" aria-expanded="{{ keysOpenStr }}" style="height: 30px; padding: 0 8px; background: {{ keysOpenBg }}; border: none; font-family: inherit; font-size: 11px; color: #111111">? Skróty</button><sc-if value="{{ keysOpen }}" hint-placeholder-val="{{ false }}"><span role="dialog" style="position: absolute; left: 0; bottom: 38px; z-index: 40; width: 320px; box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #FFFFFF; border: 1.5px solid #111111; box-shadow: 4px 4px 0 #5D7FA3; font-family: Archivo, sans-serif; font-size: 12px; color: #111111"><span style="font-weight: 700">Skróty</span><span style="display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; line-height: 1.35"><b style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">Klik</b><span>zaznacz element</span><b style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">Shift+klik</b><span>dodaj do zaznaczenia</span><b style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">Przeciągnij</b><span>przesuń pole (układ swobodny)</span><b style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">Uchwyty</b><span>rozmiar, z Shift – proporcje</span><b style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">← ↑ → ↓</b><span>przesuń o 0,5 mm (Shift – 5 mm)</span><b style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">Alt</b><span>wyłącz przyciąganie</span><b style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">Ctrl+Z / Y</b><span>cofnij / ponów</span><b style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">Ctrl+S</b><span>zapisz</span><b style="font-family: 'IBM Plex Mono', monospace; font-size: 11px">Ctrl+;</b><span>pokaż / ukryj linie pomocnicze</span></span></span></sc-if></span>
+        </span>
+        <div style="display: flex; align-items: center; gap: 6px; color: #111111">
           <button type="button" aria-label="Pomniejsz" style="width: 26px; height: 26px; background: transparent; border: 1px solid #111; font-weight: 700">−</button>
           <span style="min-width: 44px; text-align: center">180%</span>
           <button type="button" aria-label="Powiększ" style="width: 26px; height: 26px; background: transparent; border: 1px solid #111; font-weight: 700">+</button>
-          <button type="button" style="height: 26px; padding: 0 8px; background: transparent; border: 1px solid #111">Dopasuj</button>
+          <button type="button" style="height: 26px; padding: 0 8px; background: transparent; border: 1px solid #111; font-family: inherit; font-size: 11px">Dopasuj</button>
         </div>
       </div>
     </main>
@@ -201,10 +215,14 @@ summary::-webkit-details-marker{display:none}
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 14px 4px 6px; border-bottom: 1px solid #C9C4B8">
             <button type="button" onClick="{{ toggleStruct }}" aria-expanded="{{ structOpenStr }}" style="height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 8px; background: transparent; border: none; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 14px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{ structArrow }}</span>Struktura</button>
             <div style="display: flex; gap: 4px">
-              <button type="button" aria-label="Wyżej" title="Wyżej" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">↑</button>
-              <button type="button" aria-label="Niżej" title="Niżej" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">↓</button>
-              <button type="button" aria-label="Duplikuj" title="Duplikuj" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">⧉</button>
-              <button type="button" aria-label="Usuń" title="Usuń" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">✕</button>
+              <button type="button" aria-label="Wyżej" class="tip tip-l" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">↑<span class="tipbox">Wyżej</span></button><button type="button" aria-label="Niżej" class="tip tip-l" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">↓<span class="tipbox">Niżej</span></button><button type="button" aria-label="Duplikuj" class="tip tip-l" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">⧉<span class="tipbox">Duplikuj</span></button><button type="button" aria-label="Usuń" class="tip tip-l" style="width: 28px; height: 28px; background: transparent; border: 1px solid #111">✕<span class="tipbox">Usuń</span></button>
+              <span style="position: relative"><button type="button" onClick="{{ popTree }}" aria-label="Więcej" aria-expanded="{{ treeOpenStr }}" style="width: 28px; height: 28px; background: {{ treeOpenBg }}; border: 1px solid #111">⋯</button>
+                <sc-if value="{{ treeOpen }}" hint-placeholder-val="{{ false }}">
+                  <span role="menu" style="position: absolute; right: 0; bottom: 32px; z-index: 40; width: 220px; display: flex; flex-direction: column; background: #FFFFFF; border: 1.5px solid #111111; box-shadow: 4px 4px 0 #5D7FA3">
+                    <sc-for list="{{ treeItems }}" as="m" hint-placeholder-count="5"><button type="button" role="menuitem" onClick="{{ closePop }}" style="height: 34px; padding: 0 12px; background: transparent; border: none; border-bottom: 1px solid #E6E2D8; text-align: left; color: #111111; font-size: 12px">{{ m }}</button></sc-for>
+                  </span>
+                </sc-if>
+              </span>
             </div>
           </div>
           <div style="overflow-y: auto; padding: 6px 0; font-size: 12px">
@@ -231,10 +249,10 @@ summary::-webkit-details-marker{display:none}
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
-  constructor(p) { super(p); this.state = { left: false, right: true, tab: 'el', side: 'front', drag: null, added: [], structH: 250, structOpen: true, guides: [{ id: 1, dir: 'h', mm: 44 }, { id: 2, dir: 'v', mm: 31.5 }], gdrag: null, gnext: 3 }; }
+  constructor(p) { super(p); this.state = { left: false, right: true, tab: 'el', side: 'front', drag: null, added: [], structH: 250, structOpen: true, pop: null, dirty: true, guides: [{ id: 1, dir: 'h', mm: 44 }, { id: 2, dir: 'v', mm: 31.5 }], gdrag: null, gnext: 3 }; }
   renderVals() {
     const L = this.state.left, front = this.state.side === 'front';
-    const addAt = (name, x, y) => this.setState({ added: [...this.state.added, { name, x: Math.round(x) + 'px', y: Math.round(y) + 'px' }], drag: null, side: 'front' });
+    const addAt = (name, x, y) => this.setState({ added: [...this.state.added, { name, x: Math.round(x) + 'px', y: Math.round(y) + 'px' }], drag: null, side: 'front', dirty: true });
     const I = (name, tip, d) => ({ name, tip, d, def: name === 'Swobodny',
       drag: (e) => { try { e.dataTransfer.setData('text/plain', name); e.dataTransfer.effectAllowed = 'copy'; } catch (_) {} this.setState({ drag: name }); },
       add: () => addAt(name, 90 + (this.state.added.length % 4) * 12, 170 + (this.state.added.length % 4) * 22) });
@@ -249,8 +267,7 @@ class Component extends DCLogic {
       T('el','Właściwości elementu','M4 6h9 M17 6h3 M15 4v4 M4 12h3 M11 12h9 M9 10v4 M4 18h11 M19 18h1 M17 16v4'),
       T('card','Karta: rozmiar, ramka, tło','M6 3h12v18H6z M9 7h6 M9 11h6'),
       T('styles','Style','M4 20l6-6 M14 4l6 6-8 8-6-6z'),
-      T('lib','Biblioteka','M4 4h4v16H4z M10 4h4v16h-4z M16 5l4 1-3 14-4-1z'),
-      T('snap','Przyciąganie i siatka','M6 3v8a6 6 0 0 0 12 0V3 M6 7h4 M14 7h4')
+      T('lib','Biblioteka','M4 4h4v16H4z M10 4h4v16h-4z M16 5l4 1-3 14-4-1z')
     ];
     const F = (l, v) => ({ l, v });
     const S = (name, fields, open) => ({ name, fields, open });
@@ -318,6 +335,20 @@ class Component extends DCLogic {
           showGuideLabel: !!(cur && toPx(cur.mm) > R), guideLabel: cur ? String(cur.mm).replace('.', ',') + ' mm' : '',
           glX: cur ? (cur.dir === 'v' ? (toPx(cur.mm) + 6) + 'px' : (R + 6) + 'px') : '0', glY: cur ? (cur.dir === 'h' ? (toPx(cur.mm) + 6) + 'px' : (R + 6) + 'px') : '0',
           guideCount: gs.filter(g => toPx(g.mm) > R).length, hasGuides: gs.length > 0, clearGuides: () => this.setState({ guides: [] })
+        };
+      })(),
+      ...(() => {
+        const P = this.state.pop;
+        const tog = (k) => () => this.setState({ pop: P === k ? null : k });
+        const f = (k) => ({ [k + 'Open']: P === k, [k + 'OpenStr']: P === k ? 'true' : 'false', [k + 'OpenBg']: P === k ? '#FFFFFF' : 'transparent' });
+        return {
+          ...f('snap'), ...f('bg'), ...f('guides'), ...f('keys'), ...f('tree'), ...f('tpl'),
+          snapOpenBg: P === 'snap' ? '#FFFFFF' : 'transparent', bgOpenBg: P === 'bg' ? '#FFFFFF' : 'transparent', guidesOpenBg: P === 'guides' ? '#FFFFFF' : 'transparent',
+          popSnap: tog('snap'), popBg: tog('bg'), popGuides: tog('guides'), popKeys: tog('keys'), popTree: tog('tree'), popTpl: tog('tpl'),
+          closePop: () => this.setState({ pop: null }),
+          tplItems: [{ n: 'Duplikuj szablon', k: '' }, { n: 'Eksport do pliku', k: '.json' }, { n: 'Import z pliku…', k: '' }, { n: 'Układ ze zdjęcia (AI)…', k: '' }, { n: 'Zmień rozmiar karty…', k: '' }],
+          treeItems: ['Do kontenera powyżej', 'Wyjmij z kontenera', 'Opakuj w wiersz', 'Opakuj w kolumnę', 'Opakuj w warstwy'],
+          dirty: this.state.dirty, clean: !this.state.dirty, save: () => this.setState({ dirty: false })
         };
       })(),
       leftOpen: L, leftW: L ? '230px' : '60px', padX: L ? '8px' : '0', justify: L ? 'flex-start' : 'center',

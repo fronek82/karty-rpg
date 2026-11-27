@@ -401,3 +401,99 @@ Nowe decyzje podjęte w trakcie realizacji dopisuj tutaj z numerem etapu.
    - Przeciągnij `Broń` z lewego paska na dowolny wolny kafelek siatki i kliknij `Stan` (trafi na kolejne wolne miejsce); sprawdź, że licznik kafelków się aktualizuje.
 7. **Zrzuty poglądowe**:
    - Obejrzyj wygenerowane zrzuty obu motywów w katalogu `docs/obrazy/ui2/`.
+
+## 11. R10 – poprawki edytora szablonu po przeglądzie (27.11.2026)
+
+Przegląd zrzutu edytora po nocy (`#/projekt/<id>/szablon/szablon`) pokazał, że nagłówek, dolna belka,
+prawy panel i Struktura nie odpowiadają makiecie, a linijki nachodzą na siebie i na inne elementy.
+Makieta `docs/makiety-ui2/Edytor.dc.html` została zaktualizowana i jest wzorem dla tego etapu.
+
+### 11.1 Górny pasek edytora
+
+Ma wyglądać dokładnie tak (4.1):
+`← Projekty` · nazwa projektu · **1 Szablony → 2 Karty → 3 Druk** ··· ↶ ↷ · ⚙ · stan zapisu ·
+**Przejdź do kart →**
+
+- **Usunąć z paska:** „Karty” (logo/start), „Nowy projekt”, „Powrót” (to samo co `← Projekty`),
+  „Edytor kart” (to krok 2), „Biblioteka” i „Biblioteki” (D8), osobne „Zapisz” + „Niezapisane zmiany”.
+- **Stan zapisu jako jeden element:** gdy są niezapisane zmiany – przycisk `● Zapisz`
+  (kropka `--riso-roz`, `Ctrl+S`); po zapisie – szary napis `✓ zapisano`.
+- **„Układ ze zdjęcia”, „Eksport”, „Import”, „Duplikuj”** przenieść do menu **„Szablon ▾”** na pasku
+  zakładek szablonów (obok „＋ Nowy szablon”): Duplikuj szablon, Eksport do pliku, Import z pliku…,
+  Układ ze zdjęcia (AI)…, Zmień rozmiar karty….
+- „Ustawienia” jako sama ikona zębatki (z dymkiem), bez strzałki menu.
+
+### 11.2 Dolna belka (pasek stanu)
+
+Duże ramki „Przyciąganie” i „Podkład ze wzoru” pod kartą oraz długi tekst pomocy **usunąć z obszaru
+roboczego**. Obszar roboczy jest tylko dla karty i linijek.
+
+Pasek stanu (44 px, IBM Plex Mono 11 px, kolor `--tekst-2`, separatory `·`) z delikatnymi,
+klikalnymi napisami:
+
+`63 × 88 mm · Swobodny · Przyciąganie: 0,5 mm ▾ · Podkład: brak ▾ · Linie: 2 ▾ · ? Skróty`
+··· `− 180% + Dopasuj`
+
+- Kliknięcie napisu otwiera **dymek nad belką** (biały, ramka 1,5 px, cień `4px 4px 0
+--riso-niebieski`), zamykany kliknięciem obok lub `Esc`:
+  - **Przyciąganie:** siatka w mm (0 = wyłączona), „Do krawędzi i środków innych pól i karty”,
+    „Do linii pomocniczych”, podpowiedź o `Alt`;
+  - **Podkład:** opis, „Wybierz obraz…”, przezroczystość, „Usuń”; po wczytaniu napis pokazuje nazwę
+    pliku zamiast „brak”;
+  - **Linie:** pokaż/ukryj (`Ctrl+;`), „Usuń wszystkie linie”, podpowiedź o przeciąganiu z linijki;
+  - **? Skróty:** tabela skrótów (klik, Shift+klik, przeciąganie, uchwyty, strzałki 0,5/5 mm, Alt,
+    Ctrl+Z/Y, Ctrl+S, Ctrl+;) – zastępuje dawny tekst pomocy; otwiera się też klawiszem `?`.
+- Ikona „Przyciąganie” znika z prawego paska (jedno miejsce na tę funkcję).
+
+### 11.3 Prawy panel i prawy pasek ikon
+
+- Prawy pasek ikon (52 px): **Właściwości elementu, Karta, Style, Biblioteka** – cztery wyraźne ikony
+  20 px w przyciskach 40 × 40, aktywna z czarnym tłem, dymki po lewej (4.2).
+- Nagłówek panelu na wysokości paska zakładek (3.3): tytuł zakładki + podtytuł z typem i nazwą
+  zaznaczonego elementu (np. „Właściwości · Tekst · nazwa”).
+- Sekcje jak w makiecie: pogrubiony nagłówek i strzałka ▾/▸, **bez kolorowych pasków z lewej**,
+  linie między sekcjami `--linia-2`. Pola: etykieta 11 px nad polem, pole z ramką 1–1,5 px.
+- „Kopiuj styl / Wklej styl” i „Grupy stylów” należą do zakładki **Style**, nie do Właściwości.
+
+### 11.4 Struktura
+
+- Nagłówek: „▾ Struktura” (zwija) i **same ikony** z dymkami: ↑ Wyżej, ↓ Niżej, ⧉ Duplikuj, ✕ Usuń,
+  **⋯ Więcej** (menu: Do kontenera powyżej, Wyjmij z kontenera, Opakuj w wiersz / kolumnę / warstwy).
+- **Usunąć** z dołu Struktury przycisk „+ Dodaj” (dodawanie jest w lewym pasku i przez przeciąganie)
+  oraz rzędy przycisków tekstowych.
+- Wiersz drzewa: 26 px, znak typu w IBM Plex Mono + nazwa, wcięcie 14 px na poziom; zaznaczony
+  wiersz – tło `--zaznaczenie`, biały tekst.
+
+### 11.5 Linijki – nie mogą na siebie nachodzić
+
+Obecnie linijki są częścią opakowania karty liczonego w procentach: lewa linijka wychodzi poza obszar
+roboczy i zachodzi na elementy pod kartą, a cyfry nakładają się na kreski.
+
+- Linijki są **przypięte do krawędzi obszaru roboczego** (jak w Photoshopie): górna pod paskiem
+  zakładek na całą szerokość obszaru, lewa przy lewym pasku na całą wysokość obszaru, róg 22 × 22 px.
+  Zero zawsze w lewym górnym rogu karty; linijki przesuwają się i skalują z przewijaniem
+  i powiększeniem, ale **nigdy nie wychodzą poza obszar roboczy** i nie przykrywają innych elementów
+  (`overflow: hidden` na linijce, linijka nie jest dzieckiem przewijanej sceny).
+- Linijka ma 22 px: kreski przy krawędzi od strony karty (mm 4 px, 5 mm 8 px, cm 13 px),
+  **cyfry w pozostałym pasie** (9 px, IBM Plex Mono), obok długiej kreski: na górnej z prawej strony
+  kreski, na lewej pod kreską. Cyfra nie może przecinać kresek ani innej cyfry. Przy małym
+  powiększeniu, gdy odstęp między cm < 18 px, pokazuj co drugą cyfrę.
+- Pas zaznaczenia i linie pomocnicze liczone z tej samej skali co linijka (jedna funkcja mm ↔ px).
+
+### 11.6 Testy R10
+
+- Playwright: w nagłówku edytora nie ma przycisków „Powrót”, „Edytor kart”, „Biblioteka”,
+  „Biblioteki”, „Nowy projekt”; menu „Szablon ▾” zawiera 5 pozycji.
+- Playwright: pod kartą nie ma ramek przyciągania i podkładu; kliknięcie „Przyciąganie” w pasku stanu
+  otwiera dymek, `Esc` go zamyka.
+- Playwright: prostokąty (`getBoundingClientRect`) linijek nie przecinają paska stanu, lewego paska
+  ani prawego panelu; prostokąty cyfr na każdej linijce nie przecinają się nawzajem – przy 100 %,
+  przy „Dopasuj” i przy największym powiększeniu.
+- Playwright: Struktura ma w nagłówku 5 przycisków ikon i nie ma przycisku „+ Dodaj”.
+- Zrzuty edytora w obu motywach do `docs/obrazy/ui2/` po etapie.
+
+### 11.7 Decyzje
+
+- **D15** Przyciąganie, podkład, linie pomocnicze i pomoc są w pasku stanu jako dymki, nie w obszarze
+  roboczym ani w prawym pasku.
+- **D16** Linijki przypięte do krawędzi obszaru roboczego, nie do opakowania karty.
