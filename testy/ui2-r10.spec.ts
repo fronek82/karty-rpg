@@ -133,23 +133,27 @@ test('R10: przypięte linijki nie nachodzą na panele ani na siebie, cyfry nie p
     }
   }
 
-  // 1. Dopasuj (domyślny stan)
-  await expect(page.getByTestId('zoom-wartosc')).toHaveText('Dopasuj');
+  // 1. Dopasuj (domyślny stan – między − i + aktualne powiększenie w procentach)
+  const zoomEl = page.getByTestId('zoom-wartosc');
+  await expect(zoomEl).toHaveText(/^\d+%$/);
   await sprawdzGeometrieLinijek();
 
   // 2. 100 %
   const pomniejsz = page.getByRole('button', { name: 'Pomniejsz' });
   const powieksz = page.getByRole('button', { name: 'Powiększ' });
-  await pomniejsz.click(); // z Dopasuj przechodzi na 75 %
-  await powieksz.click(); // 100 %
-  await expect(page.getByTestId('zoom-wartosc')).toHaveText('100%');
+  for (let k = 0; k < 10 && (await zoomEl.textContent())?.trim() !== '100%'; k++) {
+    const val = Number.parseInt((await zoomEl.textContent()) ?? '100', 10);
+    if (val > 100) await pomniejsz.click();
+    else await powieksz.click();
+  }
+  await expect(zoomEl).toHaveText('100%');
   await sprawdzGeometrieLinijek();
 
   // 3. Największe powiększenie (200 %)
   for (let k = 0; k < 4; k++) {
     await powieksz.click();
   }
-  await expect(page.getByTestId('zoom-wartosc')).toHaveText('200%');
+  await expect(zoomEl).toHaveText('200%');
   await sprawdzGeometrieLinijek();
 });
 

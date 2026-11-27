@@ -135,13 +135,15 @@ Wzór: `Riso.dc.html`.
   „GOTOWE UKŁADY” z jednym przyciskiem **„Mausritter A4”**, na dole „Postaw kawę twórcy”
   (Buy Me a Coffee, `fronek82`). **Nie ma** przycisków „Szablon: przód/tył” (D1).
 - Środek: „Moje projekty 03”, linki „Szablony (n)” i „Arkusze do druku”, szukaj.
-  Siatka kafelków projektów: podgląd na „arkuszu” ze znacznikami cięcia w rogach, etykieta
-  wymiarów **pod podglądem** (nie na nim), format + data, nazwa (Archivo Black 20 px,
-  **zawsze 2 linie** – `min-height` + ucięcie wielokropkiem), liczba kart i arkuszy, przyciski
-  „Otwórz” / „Drukuj” przyklejone do dołu kafelka (kafelki w rzędzie równe – D2).
-- Podgląd projektu = **miniatura prawdziwej karty** (domyślnie pierwszej; opcja „Ustaw jako
-  okładkę” w edytorze kart), pod nią przesunięty kolorowy prostokąt riso. Pusty projekt –
-  zastępczy prostokąt z symbolem (D3).
+  Siatka kafelków projektów: podgląd na tle strony (`--tlo`), bez białego arkusza, ramki i znaczników
+  cięcia (D17), etykieta formatu i wymiarów **pod podglądem** (nie na nim), format + data, nazwa
+  (Archivo Black 20 px, **zawsze 2 linie** – `min-height` + ucięcie wielokropkiem), liczba kart
+  i arkuszy, przyciski „Otwórz” / „Drukuj” przyklejone do dołu kafelka (kafelki w rzędzie równe – D2).
+- Podgląd projektu = **miniatury prawdziwej karty: przód i tył obok siebie** (przód z lewej,
+  odstęp ok. 14 px, ta sama skala, wysokość ok. 60 % obszaru o wysokości 220 px, wyśrodkowane;
+  projekt bez tyłu – sam przód, projekt z samym tyłem – sam tył), każda karta z małym przesuniętym
+  cieniem riso (`box-shadow 4px 4px 0`, bez `mix-blend`). Pusty projekt – zastępczy prostokąt
+  z symbolem (D3, D17).
 - Zakładka „Szablony” = przegląd szablonów ze wszystkich projektów + eksport/import pliku;
   bez tworzenia od zera.
 
@@ -350,6 +352,7 @@ Każdy etap: gałąź od aktualnego `main`, commit po każdym kroku, PR, przegl�
   (dane kart, kopie, przypisania tyłów) i `projekt.arkusze` (układ druku) były już rozdzielone.
   Dotychczasowa trasa `#/projekt/<id>` i `#/projekt/<id>/kartka/<aid>` pozostaje dla projektów
   arkuszowych i zgodności wstecznej.
+- **D17** Miniatura projektu to przód i tył karty na tle strony, bez arkusza i znaczników cięcia.
 
 Nowe decyzje podjęte w trakcie realizacji dopisuj tutaj z numerem etapu.
 

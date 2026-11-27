@@ -60,14 +60,17 @@ test('R4: zwijana i przesuwana Struktura w prawej kolumnie + pasek stanu z zoome
   await expect(przelacz).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByTestId('granica-struktury')).toBeVisible();
 
-  // Pasek stanu i powiększenie.
+  // Pasek stanu i powiększenie (między − i + wartość w procentach, np. 180%).
   const stan = page.getByTestId('pasek-stanu-edytora');
   await expect(stan).toContainText('63 × 88 mm');
-  await expect(page.getByTestId('zoom-wartosc')).toHaveText('Dopasuj');
-  await stan.getByRole('button', { name: 'Powiększ' }).click();
-  await expect(page.getByTestId('zoom-wartosc')).toHaveText('125%');
+  const zoomWartosc = page.getByTestId('zoom-wartosc');
+  await expect(zoomWartosc).toHaveText(/^\d+%$/);
+  const poczatkowyZoom = await zoomWartosc.textContent();
+  await stan.getByRole('button', { name: 'Pomniejsz' }).click();
+  await expect(zoomWartosc).toHaveText(/^\d+%$/);
+  await expect(zoomWartosc).not.toHaveText(poczatkowyZoom!);
   await stan.getByRole('button', { name: 'Dopasuj' }).click();
-  await expect(page.getByTestId('zoom-wartosc')).toHaveText('Dopasuj');
+  await expect(zoomWartosc).toHaveText(poczatkowyZoom!);
 });
 
 test('R4: zakładki szablonów i dodanie nowego szablonu w projekcie', async ({ page }) => {

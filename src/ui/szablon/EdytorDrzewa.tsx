@@ -469,6 +469,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   const [przeciaganyRodzaj, ustawPrzeciaganyRodzaj] = useState<RodzajNowego>();
   const [nadKarta, ustawNadKarta] = useState(false);
   const [zoom, ustawZoom] = useState<'dopasuj' | number>('dopasuj');
+  const [procentDopasuj, ustawProcentDopasuj] = useState(100);
   const [strukturaOtwarta, ustawStrukturaOtwarta] = useState(true);
   const [wysokoscStruktury, ustawWysokoscStruktury] = useState<number>(odczytajWysokoscStruktury);
   const [prawyPanelOtwarty, ustawPrawyPanelOtwarty] = useState(true);
@@ -504,6 +505,26 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     document.addEventListener('mousedown', klikPoza);
     return () => document.removeEventListener('mousedown', klikPoza);
   }, [menuSzablonOtwarte, menuStrukturaOtwarte, aktywnyDymekStanu]);
+
+  // Pomiar rzeczywistego powiększenia karty (w %) w trybie „Dopasuj”.
+  const wymiaryDoZoom = szablon ? wymiaryKarty(szablon) : undefined;
+  const szerDoZoom = wymiaryDoZoom?.szer ?? 0;
+  const wysDoZoom = wymiaryDoZoom?.wys ?? 0;
+  const maPodglad = Boolean(scenaPodgladu);
+  useEffect(() => {
+    if (zoom !== 'dopasuj') return;
+    const el = kartaRef.current;
+    if (!el || szerDoZoom <= 0) return;
+    const zmierz = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w > 0) ustawProcentDopasuj(Math.max(10, Math.round((w / (szerDoZoom * 3.78)) * 100)));
+    };
+    zmierz();
+    if (typeof ResizeObserver === 'undefined') return;
+    const obs = new ResizeObserver(zmierz);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [szerDoZoom, wysDoZoom, zoom, maPodglad]);
 
   // Operacje liczone w aktualizatorze (na najnowszym szablonie); nowe id przekazywane przez zmienną.
   const zajeteKlucze = (): Iterable<string> => (bezDanych ? [] : (u.zajeteKlucze?.() ?? []));
@@ -857,11 +878,14 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
 
   const zmienZoomKrok = (delta: -1 | 1) => {
     ustawZoom((poprzedni) => {
-      const biezacy = poprzedni === 'dopasuj' ? 100 : poprzedni;
-      const idx = POZIOMY_ZOOM.findIndex((p) => p >= biezacy);
-      const start = idx === -1 ? POZIOMY_ZOOM.length - 1 : idx;
-      const nast = Math.max(0, Math.min(POZIOMY_ZOOM.length - 1, start + delta));
-      return POZIOMY_ZOOM[nast]!;
+      const biezacy = poprzedni === 'dopasuj' ? procentDopasuj : poprzedni;
+      if (delta > 0) {
+        return POZIOMY_ZOOM.find((p) => p > biezacy) ?? POZIOMY_ZOOM[POZIOMY_ZOOM.length - 1]!;
+      }
+      for (let i = POZIOMY_ZOOM.length - 1; i >= 0; i--) {
+        if (POZIOMY_ZOOM[i]! < biezacy) return POZIOMY_ZOOM[i]!;
+      }
+      return POZIOMY_ZOOM[0]!;
     });
   };
 
@@ -1563,7 +1587,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
                   −
                 </button>
                 <span data-testid="zoom-wartosc">
-                  {zoom === 'dopasuj' ? t('edytor.dopasuj') : `${zoom}%`}
+                  {`${zoom === 'dopasuj' ? procentDopasuj : zoom}%`}
                 </span>
                 <button
                   type="button"
