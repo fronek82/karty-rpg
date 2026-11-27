@@ -368,7 +368,8 @@
   align-items: stretch;
 }
 
-.riso-kafelek {
+.riso-kafelek,
+.riso-kafelek.kafelek-projektu {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -376,7 +377,10 @@
   height: 100%;
   background: transparent;
   border: none;
+  border-radius: 0;
+  box-shadow: none;
   padding: 0;
+  overflow: visible;
 }
 
 .riso-kafelek.zaznaczony .riso-podglad {
@@ -384,105 +388,70 @@
   outline-offset: 2px;
 }
 
-.riso-podglad {
+.riso-kafelek .riso-podglad,
+.riso-kafelek .riso-podglad.miniatura {
   position: relative;
   height: 220px;
+  aspect-ratio: auto;
+  padding: 0 12px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--powierzchnia);
-  border: 2px solid var(--tekst);
+  background: var(--tlo);
+  border: none;
+  border-bottom: none;
   text-decoration: none;
   overflow: hidden;
 }
 
-/* Znaczniki cięcia w 4 rogach podglądu */
-.riso-rog {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  pointer-events: none;
-}
-
-.riso-rog-lg {
-  left: 10px;
-  top: 10px;
-  border-left: 1.5px solid var(--tekst);
-  border-top: 1.5px solid var(--tekst);
-}
-
-.riso-rog-pg {
-  right: 10px;
-  top: 10px;
-  border-right: 1.5px solid var(--tekst);
-  border-top: 1.5px solid var(--tekst);
-}
-
-.riso-rog-ld {
-  left: 10px;
-  bottom: 10px;
-  border-left: 1.5px solid var(--tekst);
-  border-bottom: 1.5px solid var(--tekst);
-}
-
-.riso-rog-pd {
-  right: 10px;
-  bottom: 10px;
-  border-right: 1.5px solid var(--tekst);
-  border-bottom: 1.5px solid var(--tekst);
-}
-
-.riso-karta-okladka {
-  position: relative;
-  display: inline-flex;
+.riso-kafelek .riso-karta-okladka {
+  display: flex;
   align-items: center;
   justify-content: center;
-  max-width: 150px;
-  max-height: 168px;
-}
-
-.riso-karta-cien {
-  position: absolute;
-  left: 8px;
-  top: 6px;
+  gap: 14px;
   width: 100%;
   height: 100%;
-  background: var(--riso-niebieski);
-  mix-blend-mode: var(--riso-mieszanie);
-  pointer-events: none;
 }
 
-.riso-kafelek:nth-child(3n + 2) .riso-karta-cien {
-  background: var(--riso-ochra);
-}
-
-.riso-kafelek:nth-child(3n) .riso-karta-cien {
-  background: var(--riso-roz);
-}
-
-.riso-karta-okladka img {
-  position: relative;
+.riso-kafelek .riso-podglad .riso-karta-okladka img {
   display: block;
-  max-width: 150px;
-  max-height: 168px;
   width: auto;
   height: auto;
+  max-width: 100%;
+  max-height: 132px;
+  min-width: 0;
   border: 1.5px solid var(--tekst);
   background: var(--papier);
+  box-shadow: 4px 4px 0 var(--riso-niebieski);
 }
 
-.riso-karta-zastepcza {
-  position: relative;
-  width: 96px;
-  height: 134px;
+.riso-kafelek .riso-podglad .riso-karta-okladka.riso-karta-para img {
+  max-width: calc((100% - 14px) / 2);
+}
+
+.riso-kafelek .riso-karta-zastepcza {
+  width: 94px;
+  height: 132px;
   background: var(--riso-ochra);
-  mix-blend-mode: var(--riso-mieszanie);
+  border: 1.5px solid var(--tekst);
+  box-shadow: 4px 4px 0 var(--riso-niebieski);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--czcionka-naglowek);
   font-size: 32px;
   color: var(--na-jasnym);
+}
+
+.riso-kafelek:nth-child(3n + 2) .riso-podglad .riso-karta-okladka img,
+.riso-kafelek:nth-child(3n + 2) .riso-karta-zastepcza {
+  box-shadow: 4px 4px 0 var(--riso-ochra);
+}
+
+.riso-kafelek:nth-child(3n) .riso-podglad .riso-karta-okladka img,
+.riso-kafelek:nth-child(3n) .riso-karta-zastepcza {
+  box-shadow: 4px 4px 0 var(--riso-roz);
 }
 
 /* Pasek pod podglądem: etykieta wymiarów (nie na podglądzie!), format i data */

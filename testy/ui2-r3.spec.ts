@@ -40,7 +40,9 @@ test.describe('UI2 R3 – okno Nowy projekt (3 ścieżki startu)', () => {
     await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
 
     await expect(page).toHaveURL(/#\/projekt\/[^/]+\/szablon\//, { timeout: 15000 });
-    await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Moje zaklęcia', {
+    await expect(page.locator('.edytor-ui2-zakladka.aktywna')).toContainText('Moja karta');
+    await expect(page.locator('.edytor-ui2-zakladka.aktywna')).not.toContainText('Moje zaklęcia');
+    await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Moja karta', {
       timeout: 15000,
     });
   });

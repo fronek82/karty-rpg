@@ -537,7 +537,6 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                 ? (miniaturyUrl.get(kluczMiniaturyRewersu(p.id, p.aktywnyRewersId)) ??
                   (czyRewersowy ? miniaturyUrl.get(p.id) : undefined))
                 : undefined;
-              const urlOkladki = urlAwersu ?? urlRewersu;
               const href = `#/projekt/${encodeURIComponent(p.id)}`;
               return (
                 <li key={p.id} className={klasaKafelka(p.id)}>
@@ -557,14 +556,14 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                     aria-hidden="true"
                     tabIndex={-1}
                   >
-                    <span className="riso-rog riso-rog-lg" />
-                    <span className="riso-rog riso-rog-pg" />
-                    <span className="riso-rog riso-rog-ld" />
-                    <span className="riso-rog riso-rog-pd" />
-                    <div className="riso-karta-okladka">
-                      <div className="riso-karta-cien" />
-                      {urlOkladki ? (
-                        <img alt="" src={urlOkladki} />
+                    <div
+                      className={`riso-karta-okladka${urlAwersu && urlRewersu ? ' riso-karta-para' : ''}`}
+                    >
+                      {urlAwersu || urlRewersu ? (
+                        <>
+                          {urlAwersu && <img alt="" src={urlAwersu} />}
+                          {urlRewersu && <img alt="" src={urlRewersu} />}
+                        </>
                       ) : (
                         <div className="riso-karta-zastepcza">✦</div>
                       )}
@@ -652,12 +651,7 @@ export function ListaProjektow({ odswiezenie = 0 }: { odswiezenie?: number }) {
                   aria-hidden="true"
                   tabIndex={-1}
                 >
-                  <span className="riso-rog riso-rog-lg" />
-                  <span className="riso-rog riso-rog-pg" />
-                  <span className="riso-rog riso-rog-ld" />
-                  <span className="riso-rog riso-rog-pd" />
                   <div className="riso-karta-okladka">
-                    <div className="riso-karta-cien" />
                     {urlMiniatury ? (
                       <img alt="" src={urlMiniatury} />
                     ) : (

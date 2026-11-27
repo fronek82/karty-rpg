@@ -68,4 +68,95 @@ test.describe('UI2 R2 – strona główna drukarnia riso', () => {
     });
     expect(nakladanie).toBe(true);
   });
+
+  test('miniatury projektów bez znaczników cięcia: para przód+tył wyśrodkowana (≤ 4 px) i 1 miniatura bez tyłu (D17)', async ({
+    page,
+  }) => {
+    // 1. Projekt z przodem i tyłem.
+    await page.goto('./');
+    await page.getByTestId('start-nowe-karty').click();
+    let okno = page.getByRole('dialog', { name: 'Nowy projekt' });
+    await okno.getByPlaceholder(/Zaklęcia/).fill('Dwustronny');
+    await okno.getByRole('button', { name: /Tył \(rewers\)/ }).click();
+    await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
+    await expect(page.locator('.karta-podgladu')).toBeVisible({ timeout: 15000 });
+    await page
+      .getByRole('navigation', { name: 'Dodaj element' })
+      .getByRole('button', { name: 'Tekst', exact: true })
+      .click();
+    await page
+      .locator('header.ui2-naglowek')
+      .getByRole('button', { name: 'Zapisz', exact: true })
+      .click();
+    await expect(page.locator('header.ui2-naglowek')).toContainText(/zapisano/i, {
+      timeout: 10000,
+    });
+
+    // 2. Projekt bez tyłu (sam przód).
+    await page.goto('./#/');
+    await page.getByTestId('start-nowe-karty').click();
+    okno = page.getByRole('dialog', { name: 'Nowy projekt' });
+    await okno.getByPlaceholder(/Zaklęcia/).fill('Jednostronny');
+    await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
+    await expect(page.locator('.karta-podgladu')).toBeVisible({ timeout: 15000 });
+    await page
+      .getByRole('navigation', { name: 'Dodaj element' })
+      .getByRole('button', { name: 'Tekst', exact: true })
+      .click();
+    await page
+      .locator('header.ui2-naglowek')
+      .getByRole('button', { name: 'Zapisz', exact: true })
+      .click();
+    await expect(page.locator('header.ui2-naglowek')).toContainText(/zapisano/i, {
+      timeout: 10000,
+    });
+
+    // Powrót na stronę główną.
+    await page.goto('./#/');
+    await expect(page.locator('.riso-kafelek')).toHaveCount(2);
+
+    // Brak znaczników cięcia w rogach.
+    await expect(page.locator('.riso-rog')).toHaveCount(0);
+
+    const kafelekDwustronny = page.locator('.riso-kafelek', { hasText: 'Dwustronny' });
+    const kafelekJednostronny = page.locator('.riso-kafelek', { hasText: 'Jednostronny' });
+
+    // Projekt z tyłem pokazuje 2 miniatury (przód i tył obok siebie), bez tyłu – 1 miniaturę.
+    await expect(kafelekDwustronny.locator('.riso-podglad img')).toHaveCount(2, {
+      timeout: 15000,
+    });
+    await expect(kafelekJednostronny.locator('.riso-podglad img')).toHaveCount(1, {
+      timeout: 15000,
+    });
+
+    // Para miniatur jest wyśrodkowana w obszarze podglądu (różnica marginesów ≤ 4 px).
+    const paraMarginesy = await kafelekDwustronny.locator('.riso-podglad').evaluate((podglad) => {
+      const p = podglad.getBoundingClientRect();
+      const imgs = [...podglad.querySelectorAll('img')].map((i) => i.getBoundingClientRect());
+      const left = Math.min(...imgs.map((r) => r.left));
+      const right = Math.max(...imgs.map((r) => r.right));
+      const top = Math.min(...imgs.map((r) => r.top));
+      const bottom = Math.max(...imgs.map((r) => r.bottom));
+      return {
+        roznicaPoziom: Math.abs(left - p.left - (p.right - right)),
+        roznicaPion: Math.abs(top - p.top - (p.bottom - bottom)),
+        odstep: imgs[1]!.left - imgs[0]!.right,
+      };
+    });
+    expect(paraMarginesy.roznicaPoziom).toBeLessThanOrEqual(4);
+    expect(paraMarginesy.roznicaPion).toBeLessThanOrEqual(4);
+    expect(paraMarginesy.odstep).toBeGreaterThanOrEqual(10);
+
+    // Pojedyncza miniatura również jest wyśrodkowana (różnica marginesów ≤ 4 px).
+    const soloMarginesy = await kafelekJednostronny.locator('.riso-podglad').evaluate((podglad) => {
+      const p = podglad.getBoundingClientRect();
+      const r = podglad.querySelector('img')!.getBoundingClientRect();
+      return {
+        roznicaPoziom: Math.abs(r.left - p.left - (p.right - r.right)),
+        roznicaPion: Math.abs(r.top - p.top - (p.bottom - r.bottom)),
+      };
+    });
+    expect(soloMarginesy.roznicaPoziom).toBeLessThanOrEqual(4);
+    expect(soloMarginesy.roznicaPion).toBeLessThanOrEqual(4);
+  });
 });

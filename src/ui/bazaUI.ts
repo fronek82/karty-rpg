@@ -314,7 +314,7 @@ export async function nowyProjektPustaKarta(
   ]);
   const nazwa = opcje.nazwa.trim() || t('nowyProjekt.nazwaDomyslna');
   const szablon = szablonZKreatora({
-    nazwa,
+    nazwa: t('kreator.nazwaDomyslna'),
     szer: opcje.szer,
     wys: opcje.wys,
     promien: 3,
