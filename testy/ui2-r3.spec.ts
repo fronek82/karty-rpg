@@ -34,7 +34,7 @@ test.describe('UI2 R3 / Plan S S3 – okna Nowy szablon i Nowy projekt', () => {
     await okno.getByLabel('Nazwa szablonu').fill('Moje zaklęcia');
     await okno.getByRole('button', { name: 'Utwórz szablon' }).click();
 
-    await expect(page.getByRole('tab', { name: /Moje szablony/ })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: /^Szablony/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );

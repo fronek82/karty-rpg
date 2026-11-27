@@ -31,7 +31,7 @@ test.describe('Plan S (S3) – Moje szablony, Nowy szablon i Nowy projekt', () =
     await oknoSzablon.getByRole('button', { name: 'Utwórz szablon' }).click();
 
     // Automatycznie przełącza na zakładkę Moje szablony i pokazuje nowy szablon (+ przypięty tył).
-    await expect(page.getByRole('tab', { name: /Moje szablony/ })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: /^Szablony/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -50,12 +50,12 @@ test.describe('Plan S (S3) – Moje szablony, Nowy szablon i Nowy projekt', () =
     await expect(kafelkiSzablonow).toHaveCount(3, { timeout: 10000 });
 
     // 3) Duplikuj i Usuń z „Cofnij” w Moich szablonach.
-    const kafelekZaklecie = kafelkiSzablonow.filter({ hasText: /^.*Zaklęcie/ }).first();
-    await kafelekZaklecie.getByRole('button', { name: 'Duplikuj' }).click();
+    const kafelekZaklecie = kafelkiSzablonow.filter({ hasText: 'Zaklęcie' }).first();
+    await kafelekZaklecie.getByRole('button', { name: /Duplikuj/ }).click();
     await expect(kafelkiSzablonow).toHaveCount(4, { timeout: 10000 });
     await kafelkiSzablonow
       .filter({ hasText: 'Zaklęcie (2)' })
-      .getByRole('button', { name: 'Usuń' })
+      .getByRole('button', { name: /Usuń/ })
       .click();
     await expect(kafelkiSzablonow).toHaveCount(3, { timeout: 10000 });
     await expect(page.getByTestId('pasek-komunikatu')).toBeVisible();
@@ -84,7 +84,7 @@ test.describe('Plan S (S3) – Moje szablony, Nowy szablon i Nowy projekt', () =
 
     // Powrót na start: przy szablonach widać „kopia w 1 projekcie”.
     await page.goto('./#/');
-    await page.getByRole('tab', { name: /Moje szablony/ }).click();
+    await page.getByRole('tab', { name: /^Szablony/ }).click();
     await expect(
       page.getByTestId('kafelek-szablonu').filter({ hasText: 'Czar' }).first(),
     ).toContainText('kopia w 1 projekcie');

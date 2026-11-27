@@ -74,7 +74,7 @@ export async function nowyProjektZSzablonu(
   const { projekt, zasoby } = await nowyProjektWlasny(importujSzablon(bajty), (plik) =>
     pobierz(`${bazaUrl}czcionki/${plik}`),
   );
-  return zapiszNowyProjekt(projekt, zasoby);
+  return zapiszNowyProjekt(projekt, zasoby, true);
 }
 
 /** Nowy projekt własnych kart z szablonu z kreatora – zapisany w bazie; zwraca id. */

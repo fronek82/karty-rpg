@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { unzipSync } from 'fflate';
-import { zapisano } from './pomoc';
 import { eksportujSzablon } from '../src/dane/archiwum';
 import { projektZPakietu } from '../src/dane/pakiet';
 import { pakietWlasny } from '../src/dane/wlasneKarty';
@@ -96,36 +95,38 @@ test.describe('układ', () => {
     );
   });
 
-  test('menu: tylko 2 przyciski tworzenia (+ NOWE KARTY i Mausritter A4)', async ({ page }) => {
+  test('menu: 3 przyciski tworzenia (+ NOWE KARTY, + NOWY SZABLON i Mausritter A4)', async ({
+    page,
+  }) => {
     await page.goto('./');
     const linki = page.locator('.riso-lewa button, .riso-lewa a[href^="#/"]');
-    await expect(linki).toHaveCount(2);
+    await expect(linki).toHaveCount(3);
     await expect(linki.nth(0)).toContainText('+ NOWE KARTY');
-    await expect(linki.nth(1)).toContainText('Mausritter A4');
-    await expect(linki.nth(1)).toHaveAttribute('href', '#/gra/mausritter');
-    await linki.nth(1).click();
+    await expect(linki.nth(1)).toContainText('+ NOWY SZABLON');
+    await expect(linki.nth(2)).toContainText('Mausritter A4');
+    await expect(linki.nth(2)).toHaveAttribute('href', '#/gra/mausritter');
+    await linki.nth(2).click();
     await expect(page).toHaveURL(/#\/gra\/mausritter$/);
   });
 
-  test('Tył (kreator) i Użyj w projekcie z zakładki Szablony', async ({ page }) => {
-    await page.goto('./#/wlasne/nowy/rewers');
-    await page.getByRole('button', { name: /Dalej: edytor tyłu/ }).click();
-    await expect(page).toHaveURL(/#\/projekt\/([^/]+)\/rewers\//, { timeout: 15000 });
-    const idOryginalu = /#\/projekt\/([^/]+)\/rewers\//.exec(page.url())![1]!;
-    const poleNazwy = page.getByLabel('Nazwa tyłu');
-    await expect(poleNazwy).toBeVisible({ timeout: 15000 });
-    await poleNazwy.fill('Rewers ze startu');
-    await zapisano(page);
-
+  test('Tył w Moich szablonach: utworzenie i duplikacja z zakładki Szablony', async ({ page }) => {
     await page.goto('./');
-    await page.getByRole('tab', { name: /^Szablony/ }).click();
+    await page.getByTestId('start-nowy-szablon').click();
+    const okno = page.getByTestId('okno-nowy-szablon');
+    await okno.getByLabel(/NAZWA SZABLONU/i).fill('Rewers ze startu');
+    await okno.getByRole('button', { name: /Tył/ }).click();
+    await okno.getByRole('button', { name: /Przód/ }).click();
+    await okno.getByRole('button', { name: 'Utwórz szablon' }).click();
+
+    await expect(page.getByRole('tab', { name: /^Szablony/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     const kafelek = page.locator('.kafelek-projektu', { hasText: 'Rewers ze startu' });
     await expect(kafelek).toBeVisible();
-    await kafelek.getByRole('button', { name: 'Użyj w projekcie' }).click();
-    await expect(page).toHaveURL(/#\/projekt\/[^/]+$/, { timeout: 15000 });
-    const idNowego = /#\/projekt\/([^/]+)$/.exec(page.url())![1]!;
-    expect(idNowego).not.toBe(idOryginalu);
-    await expect(page.locator('input.nazwa-projektu')).toHaveValue('Rewers ze startu');
+    await expect(kafelek).toContainText('Tył');
+    await kafelek.getByRole('button', { name: /Duplikuj/ }).click();
+    await expect(page.locator('.kafelek-projektu', { hasText: 'Rewers ze startu' })).toHaveCount(2);
   });
 
   test('stopka: wersja i linki do licencji oraz kodu', async ({ page }) => {
