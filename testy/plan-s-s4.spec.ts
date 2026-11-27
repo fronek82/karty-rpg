@@ -73,10 +73,13 @@ test.describe('Plan S (S4) – Edytor szablonu poza projektem (#/szablon/<id>)',
 
     // Zmień szablon (dodaj nowe pole tekstowe) i zapisz.
     await page
-      .getByRole('button', { name: /Pole tekstowe/i })
-      .first()
+      .getByRole('navigation', { name: 'Dodaj element' })
+      .getByRole('button', { name: 'Tekst', exact: true })
       .click();
-    await page.keyboard.press('Control+s');
+    await page
+      .locator('header.ui2-naglowek')
+      .getByRole('button', { name: 'Zapisz', exact: true })
+      .click();
     await expect(page.locator('.ui2-naglowek')).toContainText('Zapisano');
 
     // 4) Wróć do projektu: karta NIE zmieniła się automatycznie, a w nagłówku pojawił się baner aktualizacji.
