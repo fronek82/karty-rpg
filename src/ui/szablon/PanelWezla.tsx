@@ -29,7 +29,6 @@ import { PanelStylu } from './PanelStylu';
 import { PanelTypu } from './PanelTypu';
 import { PanelWygladu } from './PanelWygladu';
 import { PoleRozmiaru } from './PoleRozmiaru';
-import { GrupyStylow } from './GrupyStylow';
 import { KolorZDanych } from './KolorZDanych';
 import { TloDekoracyjne } from './PolaDekoracji';
 import { PoleWielowierszowe } from '../PoleWielowierszowe';
@@ -568,9 +567,6 @@ export function PanelWezla({
         </Sekcja>
       )}
 
-      {!wiele && !bezDanych && maStylTekstu(wezel) && (
-        <GrupyStylow szablon={szablon} czcionki={czcionki} zmien={zmienSzablon} pole={wezel} />
-      )}
       {pole && pole.typ !== 'tekst' && (
         <PanelTypu
           szablon={szablon}

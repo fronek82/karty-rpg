@@ -1,5 +1,5 @@
 /*
- * Style układu edytora szablonu UI2 „drukarnia riso” (etap R4, wzór: docs/makiety-ui2/Edytor.dc.html).
+ * Style układu edytora szablonu UI2 „drukarnia riso” (R4 + R10, wzór: docs/makiety-ui2/Edytor.dc.html).
  * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
  */
 
@@ -10,13 +10,11 @@
   flex-direction: column;
 }
 
-.edytor-szablonu > .pasek-gorny.ui2-naglowek {
-  height: auto;
-  min-height: var(--ui2-naglowek-h);
-  flex-wrap: wrap;
-  row-gap: 4px;
-  padding-top: 6px;
-  padding-bottom: 6px;
+.edytor-ui2-komunikat-pliku {
+  padding: 4px 14px;
+  font-size: 12px;
+  background: var(--tlo-pasek);
+  border-bottom: 1px solid var(--linia-2);
   flex-shrink: 0;
 }
 
@@ -38,18 +36,32 @@
   background: var(--tlo-robocze);
 }
 
-/* Pasek zakładek szablonów + przełącznik Przód | Tył (wysokość 42 px z linią – sekcja 3.3) */
+/* Pasek zakładek szablonów + menu Szablon ▾ + przełącznik Przód | Tył (wysokość 42 px) */
 .edytor-ui2-zakladki {
   height: var(--ui2-pasek-h);
   flex-shrink: 0;
   box-sizing: border-box;
   display: flex;
   align-items: flex-end;
-  gap: 2px;
+  gap: 4px;
   padding: 0 12px;
   background: var(--tlo-pasek);
   border-bottom: 1.5px solid var(--tekst);
+  position: relative;
+  z-index: 30;
+}
+
+.edytor-ui2-zakladki-lista {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.edytor-ui2-zakladki-lista::-webkit-scrollbar {
+  display: none;
 }
 
 .edytor-ui2-zakladka {
@@ -86,17 +98,20 @@
 
 .edytor-ui2-nowy-szablon {
   height: 30px;
-  margin: 0 0 3px 6px;
+  margin: 0 0 4px 4px;
   padding: 0 10px;
   background: transparent;
   color: var(--tekst);
   border: 1.5px dashed var(--tekst);
   border-radius: 0;
   font-weight: 700;
+  font-size: 12px;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .edytor-ui2-nowy-szablon:hover {
@@ -104,10 +119,82 @@
   color: var(--tekst);
 }
 
+.edytor-ui2-menu-opakowanie {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.edytor-ui2-szablon-menu-btn {
+  height: 30px;
+  margin: 0 0 4px 4px;
+  padding: 0 10px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.edytor-ui2-szablon-menu-btn:hover {
+  background: var(--tlo);
+}
+
+.edytor-ui2-menu-popup {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 60;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+  background: var(--powierzchnia);
+  border: 1.5px solid var(--tekst);
+  box-shadow: 4px 4px 0 var(--riso-niebieski);
+  padding: 4px 0;
+}
+
+.edytor-ui2-menu-gora-prawo {
+  top: auto;
+  bottom: calc(100% + 4px);
+  left: auto;
+  right: 0;
+}
+
+.edytor-ui2-menu-popup [role='menuitem'] {
+  width: 100%;
+  padding: 7px 12px;
+  background: transparent;
+  color: var(--tekst);
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.edytor-ui2-menu-popup [role='menuitem']:hover:not(:disabled) {
+  background: var(--tlo-pasek);
+}
+
+.edytor-ui2-menu-popup [role='menuitem']:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .edytor-ui2-strony {
   margin-left: auto;
   margin-bottom: 4px;
   display: inline-flex;
+  flex-shrink: 0;
 }
 
 .edytor-ui2-strona-btn {
@@ -118,6 +205,7 @@
   border: 1.5px solid var(--tekst);
   border-radius: 0;
   font-weight: 700;
+  font-size: 12px;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -133,19 +221,227 @@
   color: var(--tlo);
 }
 
-/* Obszar roboczy z siatką kropek */
+/* Przypięte linijki i obszar roboczy (11.5, D16) */
+.edytor-ui2-rama-robocza {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-rows: 22px minmax(0, 1fr);
+  user-select: none;
+}
+
+.edytor-ui2-linijka-rog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tlo-pasek);
+  border-right: 1px solid var(--tekst);
+  border-bottom: 1px solid var(--tekst);
+  color: var(--tekst-2);
+  font-family: var(--czcionka-mono);
+  font-size: 9px;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+.edytor-ui2-linijka-pozioma {
+  position: relative;
+  height: 22px;
+  overflow: hidden;
+  background: var(--tlo-pasek);
+  border-bottom: 1px solid var(--tekst);
+  cursor: row-resize;
+  touch-action: none;
+  box-sizing: border-box;
+}
+
+.edytor-ui2-linijka-pionowa {
+  position: relative;
+  width: 22px;
+  overflow: hidden;
+  background: var(--tlo-pasek);
+  border-right: 1px solid var(--tekst);
+  cursor: col-resize;
+  touch-action: none;
+  box-sizing: border-box;
+}
+
+.edytor-ui2-linijka-zazn-x {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--zaznaczenie) 24%, transparent);
+  border-bottom: 2px solid var(--zaznaczenie);
+  pointer-events: none;
+}
+
+.edytor-ui2-linijka-zazn-y {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--zaznaczenie) 24%, transparent);
+  border-right: 2px solid var(--zaznaczenie);
+  pointer-events: none;
+}
+
+.edytor-ui2-kreska-x {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  background: var(--linia-2);
+  pointer-events: none;
+}
+
+.edytor-ui2-kreska-x.mm {
+  height: 4px;
+}
+
+.edytor-ui2-kreska-x.polcm {
+  height: 8px;
+  background: var(--tekst-2);
+}
+
+.edytor-ui2-kreska-x.cm {
+  height: 13px;
+  background: var(--tekst);
+}
+
+.edytor-ui2-kreska-etykieta-x {
+  position: absolute;
+  top: 1px;
+  font-family: var(--czcionka-mono);
+  font-size: 9px;
+  line-height: 9px;
+  color: var(--tekst-2);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.edytor-ui2-kreska-y {
+  position: absolute;
+  right: 0;
+  height: 1px;
+  background: var(--linia-2);
+  pointer-events: none;
+}
+
+.edytor-ui2-kreska-y.mm {
+  width: 4px;
+}
+
+.edytor-ui2-kreska-y.polcm {
+  width: 8px;
+  background: var(--tekst-2);
+}
+
+.edytor-ui2-kreska-y.cm {
+  width: 13px;
+  background: var(--tekst);
+}
+
+.edytor-ui2-kreska-etykieta-y {
+  position: absolute;
+  left: 1px;
+  font-family: var(--czcionka-mono);
+  font-size: 9px;
+  line-height: 9px;
+  color: var(--tekst-2);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.edytor-ui2-robocze-opakowanie {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Przewijany obszar roboczy z siatką kropek */
 .edytor-ui2-robocze {
   flex: 1 1 0;
   min-height: 0;
+  min-width: 0;
   overflow: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 20px 24px;
+  padding: 24px 28px;
   background-color: var(--tlo-robocze);
   background-image: radial-gradient(var(--kropki-robocze) 1px, transparent 1px);
   background-size: 16px 16px;
+}
+
+.edytor-ui2-linie-warstwa {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.edytor-ui2-linia {
+  position: absolute;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.edytor-ui2-linia.pozioma {
+  left: 0;
+  right: 0;
+  height: 9px;
+  margin-top: -4px;
+  cursor: row-resize;
+}
+
+.edytor-ui2-linia.pozioma::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
+  border-top: 1px dashed var(--linia-pomocnicza);
+}
+
+.edytor-ui2-linia.pionowa {
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  margin-left: -4px;
+  cursor: col-resize;
+}
+
+.edytor-ui2-linia.pionowa::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  border-left: 1px dashed var(--linia-pomocnicza);
+}
+
+.edytor-ui2-linia.aktywna::after {
+  border-style: solid;
+  border-width: 1.5px;
+}
+
+.edytor-ui2-linia-etykieta {
+  position: absolute;
+  padding: 2px 6px;
+  background: var(--zaznaczenie);
+  color: var(--tlo);
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
 }
 
 /* Podświetlenie karty podczas przeciągania elementu z lewego paska */
@@ -158,17 +454,103 @@
   margin-top: 14px;
   padding: 6px 12px;
   background: var(--zaznaczenie);
-  color: var(--papier);
+  color: var(--tlo);
   font-weight: 700;
   font-size: 12px;
   white-space: nowrap;
 }
 
-/* Pasek stanu na dole (44 px z linią – wyrównany z przyciskiem Zwiń lewego paska) */
+/* Pasek stanu na dole (44 px, IBM Plex Mono 11 px – 11.2, D15) */
+.edytor-ui2-pasek-stanu {
+  position: relative;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  color: var(--tekst-2);
+  gap: 8px;
+}
+
+.edytor-ui2-stan-lewo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.edytor-ui2-stan-link {
+  padding: 3px 6px;
+  background: transparent;
+  color: var(--tekst-2);
+  border: 1px solid transparent;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.edytor-ui2-stan-link:hover,
+.edytor-ui2-stan-link.aktywny {
+  color: var(--tekst);
+  background: var(--tlo);
+  border-color: var(--linia-2);
+}
+
+.edytor-ui2-dymek-stanu {
+  position: absolute;
+  left: 12px;
+  bottom: calc(100% + 6px);
+  z-index: 60;
+  min-width: 260px;
+  max-width: 360px;
+  padding: 12px 14px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  box-shadow: 4px 4px 0 var(--riso-niebieski);
+  font-family: var(--czcionka-tekst);
+  font-size: 13px;
+}
+
+.edytor-ui2-dymek-tresc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edytor-ui2-dymek-tytul {
+  font-family: var(--czcionka-naglowek);
+  font-size: 14px;
+  color: var(--tekst);
+}
+
+.edytor-ui2-skroty-lista {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 12px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.edytor-ui2-skroty-lista dt {
+  font-family: var(--czcionka-mono);
+  font-weight: 700;
+  color: var(--tekst);
+  white-space: nowrap;
+}
+
+.edytor-ui2-skroty-lista dd {
+  margin: 0;
+  color: var(--tekst-2);
+}
+
 .edytor-ui2-stan-zoom {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .edytor-ui2-stan-btn {
@@ -189,9 +571,9 @@
   background: var(--tlo);
 }
 
-/* Prawa kolumna: Właściwości (góra) + przesuwana granica + zwijana Struktura (dół) */
+/* Prawa kolumna (300 px): nagłówek 42 px + Właściwości + przesuwana granica + zwijana Struktura (11.3, 11.4) */
 .edytor-ui2-prawa-kolumna {
-  width: 340px;
+  width: 300px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -206,26 +588,79 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 0 14px;
+  background: var(--tlo-pasek);
   border-bottom: 1.5px solid var(--tekst);
+  overflow: hidden;
 }
 
 .edytor-ui2-prawa-tytul {
   font-family: var(--czcionka-naglowek);
   font-size: 15px;
+  white-space: nowrap;
+}
+
+.edytor-ui2-prawa-podtytul {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  color: var(--tekst-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .panel-edytora.edytor-ui2-prawa-tresc {
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: none;
   border-radius: 0;
   position: static;
   max-height: none;
   background: var(--tlo);
+}
+
+/* Sekcje w prawym panelu bez kolorowych pasków z lewej (11.3) */
+.edytor-ui2-prawa-tresc details.sekcja-panelu {
+  border: none;
+  border-left: none;
+  border-bottom: 1px solid var(--linia-2);
+  border-radius: 0;
+  background: transparent;
+  padding: 6px 0;
+  margin: 0;
+}
+
+.edytor-ui2-prawa-tresc details.sekcja-panelu > summary {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--tekst);
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.edytor-ui2-prawa-tresc label {
+  font-size: 11px;
+  color: var(--tekst-2);
+}
+
+.edytor-ui2-prawa-tresc input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.edytor-ui2-prawa-tresc select,
+.edytor-ui2-prawa-tresc textarea {
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+}
+
+.edytor-ui2-panel-style,
+.edytor-ui2-panel-biblioteka {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
 }
 
 .edytor-ui2-granica {
@@ -258,7 +693,7 @@
   border: none;
   border-top: 2px solid var(--tekst);
   border-radius: 0;
-  overflow: hidden;
+  overflow: visible;
   background: var(--tlo);
 }
 
@@ -270,38 +705,117 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 10px 4px 6px;
+  gap: 4px;
+  padding: 4px 8px 4px 6px;
   border-bottom: 1px solid var(--linia-2);
+  background: var(--tlo-pasek);
   flex-shrink: 0;
 }
 
 .edytor-ui2-struktura-tytul {
   margin: 0;
   font-size: inherit;
+  min-width: 0;
 }
 
 .edytor-ui2-struktura-przelacz {
-  height: 34px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 8px;
+  padding: 0 6px;
   background: transparent;
   border: none;
   color: var(--tekst);
   font-family: var(--czcionka-naglowek);
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+.edytor-ui2-struktura-akcje {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.edytor-ui2-struktura-ikona {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--tekst);
+  border: 1px solid transparent;
+  border-radius: 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.edytor-ui2-struktura-ikona:hover:not(:disabled) {
+  background: var(--tlo);
+  border-color: var(--tekst);
+}
+
+.edytor-ui2-struktura-ikona:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .edytor-ui2-struktura-cialo {
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 8px 10px;
+  padding: 6px 6px;
 }
 
-/* Skrajny prawy pasek ikon (52 px, dymki po lewej) */
+/* Wiersze drzewa w Strukturze: 26 px, mono ikona typu, zaznaczenie --zaznaczenie + biały tekst (11.4) */
+.edytor-ui2-struktura-cialo .drzewo-szablonu,
+.edytor-ui2-struktura-cialo .drzewo-szablonu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.edytor-ui2-struktura-cialo .wezel-drzewa > .wezel-etykieta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-right: 6px;
+  border-radius: 0;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.edytor-ui2-struktura-cialo .ikona-wezla {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.edytor-ui2-struktura-cialo .wezel-drzewa.wybrany > .wezel-etykieta {
+  background: var(--zaznaczenie);
+  color: var(--tlo);
+}
+
+.edytor-ui2-struktura-cialo .wezel-drzewa.wybrany > .wezel-etykieta .podpis,
+.edytor-ui2-struktura-cialo .wezel-drzewa.wybrany > .wezel-etykieta .znacznik-polozenia {
+  color: var(--tlo);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--tlo) 45%, transparent);
+  opacity: 0.9;
+}
+
+/* Skrajny prawy pasek ikon (52 px, 4 ikony 20 px w przyciskach 40×40, dymki po lewej – 11.3) */
 .edytor-ui2-prawy-pasek {
   width: var(--ui2-prawy-pasek);
   flex-shrink: 0;
@@ -342,210 +856,4 @@
 .edytor-ui2-prawy-zwin {
   margin-top: auto;
   font-family: var(--czcionka-naglowek);
-}
-
-/* Linijki w mm i linie pomocnicze (UI2 R5) */
-.edytor-ui2-scena-z-linijkami {
-  display: grid;
-  grid-template-columns: 22px auto;
-  grid-template-rows: 22px auto;
-  gap: 10px;
-  align-items: stretch;
-  justify-items: stretch;
-  user-select: none;
-}
-
-.edytor-ui2-linijka-rog {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--tlo-pasek);
-  border: 1px solid var(--tekst);
-  color: var(--tekst-2);
-  font-family: var(--czcionka-mono);
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.edytor-ui2-linijka-pozioma {
-  position: relative;
-  height: 22px;
-  background: var(--tlo-pasek);
-  border-bottom: 1px solid var(--tekst);
-  cursor: row-resize;
-  touch-action: none;
-}
-
-.edytor-ui2-linijka-pionowa {
-  position: relative;
-  width: 22px;
-  background: var(--tlo-pasek);
-  border-right: 1px solid var(--tekst);
-  cursor: col-resize;
-  touch-action: none;
-}
-
-.edytor-ui2-linijka-tor-x {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  pointer-events: none;
-  background: var(--tlo-pasek);
-  border-bottom: 1px solid var(--tekst);
-}
-
-.edytor-ui2-linijka-tor-y {
-  position: absolute;
-  left: 0;
-  right: 0;
-  pointer-events: none;
-  background: var(--tlo-pasek);
-  border-right: 1px solid var(--tekst);
-}
-
-.edytor-ui2-linijka-zazn-x {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: color-mix(in srgb, var(--zaznaczenie) 24%, transparent);
-  border-bottom: 2px solid var(--zaznaczenie);
-}
-
-.edytor-ui2-linijka-zazn-y {
-  position: absolute;
-  left: 0;
-  right: 0;
-  background: color-mix(in srgb, var(--zaznaczenie) 24%, transparent);
-  border-right: 2px solid var(--zaznaczenie);
-}
-
-.edytor-ui2-kreska-x {
-  position: absolute;
-  bottom: 0;
-  width: 1px;
-  background: var(--linia-2);
-}
-
-.edytor-ui2-kreska-x.mm {
-  height: 4px;
-}
-
-.edytor-ui2-kreska-x.polcm {
-  height: 7px;
-  background: var(--tekst-2);
-}
-
-.edytor-ui2-kreska-x.cm {
-  height: 11px;
-  background: var(--tekst);
-}
-
-.edytor-ui2-kreska-etykieta-x {
-  position: absolute;
-  top: -10px;
-  left: 2px;
-  font-family: var(--czcionka-mono);
-  font-size: 9px;
-  line-height: 1;
-  color: var(--tekst-2);
-}
-
-.edytor-ui2-kreska-y {
-  position: absolute;
-  right: 0;
-  height: 1px;
-  background: var(--linia-2);
-}
-
-.edytor-ui2-kreska-y.mm {
-  width: 4px;
-}
-
-.edytor-ui2-kreska-y.polcm {
-  width: 7px;
-  background: var(--tekst-2);
-}
-
-.edytor-ui2-kreska-y.cm {
-  width: 11px;
-  background: var(--tekst);
-}
-
-.edytor-ui2-kreska-etykieta-y {
-  position: absolute;
-  left: -9px;
-  top: 2px;
-  font-family: var(--czcionka-mono);
-  font-size: 9px;
-  line-height: 1;
-  color: var(--tekst-2);
-}
-
-.edytor-ui2-karta-obszar {
-  position: relative;
-}
-
-.edytor-ui2-linie-warstwa {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 15;
-}
-
-.edytor-ui2-linia {
-  position: absolute;
-  pointer-events: auto;
-  touch-action: none;
-}
-
-.edytor-ui2-linia.pozioma {
-  left: -14px;
-  right: -14px;
-  height: 9px;
-  margin-top: -4px;
-  cursor: row-resize;
-}
-
-.edytor-ui2-linia.pozioma::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 4px;
-  border-top: 1px dashed var(--zaznaczenie);
-}
-
-.edytor-ui2-linia.pionowa {
-  top: -14px;
-  bottom: -14px;
-  width: 9px;
-  margin-left: -4px;
-  cursor: col-resize;
-}
-
-.edytor-ui2-linia.pionowa::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 4px;
-  border-left: 1px dashed var(--zaznaczenie);
-}
-
-.edytor-ui2-linia.aktywna::after {
-  border-style: solid;
-  border-width: 1.5px;
-}
-
-.edytor-ui2-linia-etykieta {
-  position: absolute;
-  padding: 2px 6px;
-  background: var(--zaznaczenie);
-  color: var(--papier);
-  font-family: var(--czcionka-mono);
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 20;
 }

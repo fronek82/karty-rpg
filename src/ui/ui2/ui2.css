@@ -111,6 +111,30 @@
   white-space: nowrap;
 }
 
+.ui2-naglowek input.ui2-naglowek-nazwa-input {
+  font-family: var(--czcionka-naglowek);
+  font-size: 16px;
+  line-height: 1.1;
+  width: 170px;
+  max-width: 220px;
+  padding: 4px 6px;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px solid transparent;
+  border-radius: 0;
+}
+
+.ui2-naglowek input.ui2-naglowek-nazwa-input:hover {
+  border-color: var(--linia-2);
+  background: var(--tlo-pasek);
+}
+
+.ui2-naglowek input.ui2-naglowek-nazwa-input:focus {
+  border-color: var(--tekst);
+  background: var(--powierzchnia);
+  outline: none;
+}
+
 .ui2-etykieta-mausritter {
   display: inline-flex;
   align-items: center;
@@ -221,6 +245,35 @@ a.ui2-krok:hover {
   color: var(--tekst-2);
   padding: 0 6px;
   white-space: nowrap;
+}
+
+.ui2-stan-zapisu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ui2-stan-zapisu-btn:hover {
+  background: var(--tlo-pasek);
+}
+
+.ui2-stan-zapisu-kropka {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--riso-roz);
+  flex-shrink: 0;
 }
 
 .ui2-przycisk-glowny {
