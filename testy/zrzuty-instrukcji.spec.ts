@@ -12,6 +12,7 @@ import {
 /**
  * Generator zrzutów ekranu do instrukcji (D9). Domyślnie pomijany; uruchom:
  *   ZRZUTY_INSTRUKCJI=1 npx playwright test testy/zrzuty-instrukcji.spec.ts
+ *   python3 narzedzia/kwantyzuj-zrzuty.py
  * Zapisuje `public/instrukcja-zrzuty/<język>/<nazwa>.png` (1440×900, skala 1, jasny motyw, świeża
  * przeglądarka bez zapisanych projektów, więc dane są zawsze takie same). Napisy interfejsu bierze
  * ze słowników, więc test nie psuje się po zmianie brzmienia przycisku.
@@ -26,14 +27,9 @@ const LOCALE: Record<JezykZrzutu, string> = { pl: 'pl-PL', en: 'en-US' };
 const podstaw = (tekst: string, p: Record<string, string | number> = {}) =>
   tekst.replace(/\{(\w+)\}/g, (c, n: string) => (n in p ? String(p[n]) : c));
 
-/** Tekst bez ozdobnych znaków z początku i końca (＋, ⤒, ✎, ►, ▾, …). */
-const goly = (tekst: string) =>
-  tekst
-    .replace(/^[^\p{L}\p{N}]+/u, '')
-    .replace(/[^\p{L}\p{N})%]+$/u, '')
-    .trim();
-
 const dokladnie = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const PLIK_SZABLONU = 'public/galeria/przedmiot-z-rewersem.kartyrpg-szablon';
 
 for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j, m] as const))) {
   const S = SLOWNIKI[jezyk];
@@ -61,14 +57,24 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
 
     const zapisz = async (page: Page, nazwa: string) => {
       await page.evaluate(() => document.fonts.ready);
-      // W edytorze kart zapis jest ręczny – utrwal zmiany, żeby pasek zawsze pokazywał „Zapisano”.
-      const przyciskZapisu = page.locator('.pasek-gorny .przycisk-zapisz');
+      // Utrwal niezapisane zmiany, żeby nagłówek zawsze pokazywał stan „✓ zapisano”.
+      const zapiszUi2 = page.locator('.ui2-stan-przycisk');
+      if (await zapiszUi2.isVisible().catch(() => false)) {
+        await zapiszUi2.click();
+      }
+      const przyciskZapisu = page.locator('.przycisk-zapisz').first();
       if (await przyciskZapisu.isVisible().catch(() => false)) {
         if (await przyciskZapisu.isEnabled().catch(() => false)) await przyciskZapisu.click();
       }
       const status = page.locator('.status-zapisu');
       if (await status.count()) await expect(status).toHaveText(t('projekt.zapisano'));
-      // Bez numeru wersji w stopce (zrzut ma być taki sam po każdej zmianie wersji).
+      // Bez numeru wersji w podtytule i stopce (zrzut nie zmienia się przy zmianie wersji).
+      const podtytul = page.locator('.riso-podtytul');
+      if (await podtytul.count()) {
+        await podtytul.evaluate((el) => {
+          el.textContent = (el.textContent ?? '').replace(/\s*·\s*v\S+.*$/i, '');
+        });
+      }
       const stopka = page.locator('.stopka span').first();
       if (await stopka.count())
         await stopka.evaluate((el, nazwa) => (el.textContent = nazwa), t('aplikacja.nazwa'));
@@ -80,29 +86,83 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
       });
     };
 
-    const nowaKartka = async (page: Page) => {
+    /** Importuje przykładowy szablon z przodem i tyłem do „Moich szablonów” i otwiera jego edytor. */
+    const importujSzablonDoBiblioteki = async (page: Page) => {
       await page.goto('./#/');
-      await page
-        .getByRole('link', {
-          name: new RegExp(dokladnie(t('start.stworzDo', { gra: t('gra.mausritter.nazwaDo') }))),
-        })
-        .click();
-      await page
-        .getByRole('button', { name: new RegExp(dokladnie(t('start.pustaKartkaA4'))) })
-        .click();
-      await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
+      await page.getByTestId('start-nowy-szablon').click();
+      await expect(page.getByTestId('okno-nowy-szablon')).toBeVisible();
+      await page.getByRole('button', { name: t('nowySzablon.sciezka.import') }).click();
+      await page.getByTestId('ns-plik-szablonu').setInputFiles(PLIK_SZABLONU);
+      await page.getByRole('button', { name: t('nowySzablon.utworz') }).click();
+      await expect(page.locator('.karta-podgladu')).toBeVisible({ timeout: 15000 });
     };
 
-    const slot = (page: Page, kolumna: number) =>
-      page.getByRole('button', {
-        name: t('kartka.pustySlot', { strona: 1, kolumna, rzad: 1 }),
-        exact: true,
+    /** Tworzy projekt z zaimportowanego szablonu, dodaje dwie karty i otwiera krok „1 Karty”. */
+    const utworzProjektZKartami = async (page: Page) => {
+      await importujSzablonDoBiblioteki(page);
+      await page.goto('./#/');
+      await page.getByTestId('start-nowe-karty').click();
+      const okno = page.getByTestId('okno-nowy-projekt');
+      await expect(okno).toBeVisible();
+      await okno
+        .locator('#np-nazwa')
+        .fill(jezyk === 'pl' ? 'Ekwipunek drużyny' : 'Party equipment');
+      await okno.locator('.np-kafelek-szablonu').first().click();
+      await okno.getByRole('button', { name: t('nowyProjekt.utworz') }).click();
+      await expect(page.getByRole('heading', { level: 1, name: t('karty.tytul') })).toBeVisible({
+        timeout: 15000,
       });
+      // Dodaj drugą kartę z szablonu w lewym pasku, żeby na podglądzie było widać kilka kart.
+      await page.locator('.ui2-pasek-boczny .ui2-pasek-pozycja').first().click();
+      await page.locator('.ui2-pasek-boczny .ui2-pasek-pozycja').first().click();
+      await expect(page.locator('.karty-ui2-kafelek').first()).toBeVisible({ timeout: 15000 });
+      await page.locator('.karty-ui2-kafelek').first().click();
+    };
 
     test('start', async ({ page }) => {
       await page.goto('./');
-      await expect(page.getByRole('heading', { name: t('start.mojeProjekty') })).toBeVisible();
+      await expect(page.getByTestId('start-nowe-karty')).toBeVisible();
       await zapisz(page, 'start');
+    });
+
+    test('nowy szablon', async ({ page }) => {
+      await page.goto('./');
+      await page.getByTestId('start-nowy-szablon').click();
+      const okno = page.getByTestId('okno-nowy-szablon');
+      await expect(okno).toBeVisible();
+      await okno.locator('#ns-nazwa').fill(jezyk === 'pl' ? 'Przedmiot' : 'Item');
+      await okno.getByRole('button', { name: new RegExp(dokladnie(t('nowyProjekt.tyl'))) }).click();
+      await zapisz(page, 'nowy-szablon');
+    });
+
+    test('edytor szablonu z panelem właściwości', async ({ page }) => {
+      await importujSzablonDoBiblioteki(page);
+      const drzewo = page.getByRole('tree', { name: t('szablon.struktura') });
+      await expect(drzewo).toBeVisible({ timeout: 15000 });
+      // Zaznacz pierwszy element wewnątrz karty, żeby prawy panel pokazał jego właściwości.
+      await drzewo.getByRole('treeitem').nth(1).locator(':scope > .wezel-etykieta').click();
+      await expect(
+        page.getByRole('complementary', { name: t('szablon.wlasciwosci') }),
+      ).toBeVisible();
+      await expect(page.locator('.karta-podgladu')).toBeVisible();
+      await zapisz(page, 'edytor-szablonu');
+    });
+
+    test('ekran kart (krok 1 Karty)', async ({ page }) => {
+      await utworzProjektZKartami(page);
+      await zapisz(page, 'ekran-kart');
+    });
+
+    test('ustawienia druku (krok 2 Druk)', async ({ page }) => {
+      await utworzProjektZKartami(page);
+      await page
+        .getByRole('link', { name: new RegExp(dokladnie(t('ui2.krok.druk'))) })
+        .first()
+        .click();
+      const panel = page.getByRole('complementary', { name: t('kartka.opcjeDruku') });
+      await expect(panel).toBeVisible({ timeout: 15000 });
+      await expect(page.locator('.strona-kartki svg').first()).toBeVisible({ timeout: 15000 });
+      await zapisz(page, 'ustawienia');
     });
 
     test('mausritter', async ({ page }) => {
@@ -112,67 +172,21 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
       await zapisz(page, 'mausritter');
     });
 
-    test('edytor kartki z menu typów', async ({ page }) => {
-      await nowaKartka(page);
-      await slot(page, 1).click();
-      await page
-        .getByRole('menuitem', { name: new RegExp(`^${dokladnie(t('pakiet.typ.bron'))}`) })
-        .click();
+    test('edytor kartki Mausrittera', async ({ page }) => {
+      await page.goto('./#/');
+      await page.getByTestId('start-mausritter').click();
+      const okno = page.getByTestId('okno-startu-mausritter');
+      await expect(okno).toBeVisible({ timeout: 15000 });
+      await okno.locator('[data-uklad="bron"]').click();
+      await expect(okno).toBeHidden({ timeout: 15000 });
+      await expect(page.locator('.strona-kartki .karta-na-kartce').first()).toBeVisible({
+        timeout: 15000,
+      });
+      await page.locator('.strona-kartki .karta-na-kartce').first().click();
       await expect(page.getByRole('complementary', { name: t('kartka.panelKart') })).toBeVisible();
-      if (galeria) await zapisz(page, 'karta-zaznaczona');
-      await slot(page, 4).click();
-      await expect(page.getByRole('menu')).toBeVisible();
       await zapisz(page, 'edytor-kartki');
     });
 
-    test('edytor szablonu z panelem właściwości', async ({ page }) => {
-      await page.goto('./#/wlasne/nowy/awers');
-      if (galeria) {
-        await expect(page.getByRole('heading', { name: t('kreator.tytul') })).toBeVisible();
-        await zapisz(page, 'kreator');
-      }
-      await page.locator('label.format', { hasText: t('kreator.format.mini-euro') }).click();
-      await page
-        .locator('label.uklad', { hasText: t('kreator.uklad.tytul-siatka-opis-stopka') })
-        .click();
-      await page
-        .getByRole('button', { name: new RegExp(dokladnie(goly(t('kreator.dalej')))) })
-        .click();
-      const drzewo = page.getByRole('tree', { name: t('szablon.struktura') });
-      await expect(drzewo).toBeVisible({ timeout: 15000 });
-      const tytul = drzewo.getByRole('treeitem', {
-        name: new RegExp(`^${dokladnie(t('start.uklad.tytul'))} – `),
-      });
-      await tytul.locator(':scope > .wezel-etykieta').click();
-      await expect(tytul).toHaveAttribute('aria-selected', 'true');
-      await expect(
-        page.getByRole('complementary', { name: t('szablon.wlasciwosci') }),
-      ).toBeVisible();
-      await expect(page.locator('.karta-podgladu')).toBeVisible();
-      await zapisz(page, 'edytor-szablonu');
-      if (galeria) {
-        await page.getByRole('link', { name: t('biblioteka.tytul'), exact: true }).click();
-        const zapiszIWyjdz = page.getByRole('button', { name: t('projekt.zapiszIWyjdz') });
-        if (await zapiszIWyjdz.isVisible().catch(() => false)) await zapiszIWyjdz.click();
-        await expect(
-          page.getByRole('heading', { level: 1, name: t('biblioteki.tytul') }),
-        ).toBeVisible();
-        await zapisz(page, 'biblioteka');
-      }
-    });
-
-    test('ustawienia kartki: kalibracja drukarki', async ({ page }) => {
-      await nowaKartka(page);
-      await page
-        .getByRole('link', { name: new RegExp(dokladnie(goly(t('kartka.drukujKarty')))) })
-        .click();
-      const panel = page.getByRole('complementary', { name: t('kartka.opcjeDruku') });
-      await expect(panel).toBeVisible();
-      await panel
-        .locator('legend', { hasText: t('uklad.kalibracja') })
-        .evaluate((el) => el.scrollIntoView({ block: 'start' }));
-      await zapisz(page, 'ustawienia');
-    });
     test('biblioteki z zaimportowanym ozdobnikiem', async ({ page }) => {
       const nazwa = jezyk === 'pl' ? 'Gwiazdka' : 'Star';
       await page.goto('./#/biblioteki/ozdobniki');
@@ -187,15 +201,8 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
       ).toBeVisible();
       await zapisz(page, 'biblioteki');
     });
-    if (galeria) {
-      test('własne karty', async ({ page }) => {
-        await page.goto('./#/wlasne');
-        await expect(page.locator('[data-podglad] .papier-svg svg')).toHaveCount(6, {
-          timeout: 15000,
-        });
-        await zapisz(page, 'wlasne');
-      });
 
+    if (galeria) {
       test('instrukcja', async ({ page }) => {
         await page.goto(`./instrukcja/?lang=${jezyk}`);
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(
