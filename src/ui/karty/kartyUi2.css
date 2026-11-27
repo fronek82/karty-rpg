@@ -362,3 +362,119 @@
   font-family: var(--czcionka-mono);
   font-weight: 700;
 }
+
+/* Plan S (S2): pasek nowszych wersji szablonów i okno porównania Przed / Po */
+.karty-ui2-aktualizacje {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--zaznaczenie) 10%, var(--powierzchnia));
+  border-bottom: 1.5px solid var(--tekst);
+}
+
+.karty-ui2-aktualizacja-wiersz {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.karty-ui2-aktualizacja-odznaka {
+  padding: 2px 6px;
+  background: var(--zaznaczenie);
+  color: var(--tlo);
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.karty-ui2-aktualizacja-nazwa {
+  font-weight: 700;
+}
+
+.karty-ui2-aktualizacja-przycisk {
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.karty-ui2-aktualizacja-przycisk:hover {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.karty-ui2-modal-tresc {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.karty-ui2-modal-opis {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tekst-2);
+}
+
+.karty-ui2-porownanie {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.karty-ui2-porownanie-kol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.karty-ui2-porownanie-etykieta {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--tekst-2);
+}
+
+.karty-ui2-dopasowanie {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--tlo-pasek);
+  border: 1px solid var(--linia-2);
+  font-size: 12px;
+}
+
+.karty-ui2-dopasowanie .ostrzezenie {
+  color: var(--blad, #b91c1c);
+}
+
+.karty-ui2-modal-akcje {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.karty-ui2-przycisk {
+  padding: 6px 14px;
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.karty-ui2-przycisk.glowny {
+  background: var(--tekst);
+  color: var(--tlo);
+}

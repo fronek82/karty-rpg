@@ -1938,6 +1938,21 @@ export const pl = {
   'edytor.skrot.cofnijOpis': 'cofnij / ponów',
   'edytor.skrot.zapiszOpis': 'zapisz',
   'edytor.skrot.linieOpis': 'pokaż / ukryj linie pomocnicze',
+  // Plan S (S2): aktualizacja kopii szablonu w projekcie
+  'karty.nowszaWersja': 'Jest nowsza wersja szablonu',
+  'karty.aktualizujKarty': 'Aktualizuj karty ({n})',
+  'karty.aktualizujSzablon': 'Aktualizuj szablon',
+  'karty.aktualizacja.tytul': 'Aktualizacja szablonu „{nazwa}”',
+  'karty.aktualizacja.opis':
+    'Nowa wersja z „Moich szablonów” podmieni kopię w projekcie. Dane kart ({n}) zostaną zachowane.',
+  'karty.aktualizacja.opisBezKart': 'Nowa wersja z „Moich szablonów” podmieni kopię w projekcie.',
+  'karty.aktualizacja.przed': 'Przed',
+  'karty.aktualizacja.po': 'Po',
+  'karty.aktualizacja.polaPrzeniesione': 'Pola zachowane',
+  'karty.aktualizacja.polaPominiete': 'Pola bez odpowiednika (pominięte)',
+  'karty.aktualizacja.polaNowe': 'Nowe pola (puste)',
+  'karty.aktualizacja.zaktualizowano': 'Zaktualizowano karty ({n}) według szablonu „{nazwa}”.',
+  'karty.aktualizacja.zaktualizowanoSzablon': 'Zaktualizowano kopię szablonu „{nazwa}”.',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;
