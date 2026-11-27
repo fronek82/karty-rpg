@@ -1,4 +1,4 @@
-# Plan S – biblioteka szablonów osobno od projektów
+# Plan S – „Moje szablony” osobno od projektów
 
 Decyzja właściciela z 27.11.2026: **szablony projektuje się osobno, a w projektach składa się
 z nich karty**. Projekt nie zmienia szablonów. Dotychczasowy model, w którym każdy projekt miał
@@ -8,6 +8,13 @@ biblioteką szablonów (przody i tyły).
 Plan zmienia model danych, bazę, przepływ UI z planu UI2 i format plików. Realizacja etapami
 S1…S6, każdy etap osobnym PR. Zasady pracy i oszczędzania limitu jak w `docs/plan-UI2.md`
 (sekcja 8) i w `CLAUDE.md`.
+
+## 0. Nazewnictwo w interfejsie
+
+W interfejsie miejsce na szablony nazywa się zawsze **„Moje szablony”**. Słowo „biblioteka” jest
+zarezerwowane dla obrazów, czcionek i ozdobników (N8). W kodzie i w tym planie „biblioteka szablonów”
+oznacza tabelę `szablony`. Teksty dla użytkownika nie używają słowa „biblioteka” dla szablonów,
+np. „Edytuj w Moich szablonach ↗”, „Z Moich szablonów”.
 
 ## 1. Pojęcia
 
@@ -28,13 +35,13 @@ więc raz złożona i wydrukowana talia zawsze wygląda tak samo.
 - Kopia w projekcie pamięta, skąd pochodzi: `zrodlo: { id, hash }` (id szablonu w bibliotece i skrót
   wersji, z której zrobiono kopię).
 - Gdy szablon w bibliotece ma inny `hash` niż kopia w projekcie, w kroku Karty przy tym szablonie
-  pojawia się znaczek **„Nowsza wersja w bibliotece”** i przycisk **„Aktualizuj karty (N)”**.
+  pojawia się znaczek **„Jest nowsza wersja szablonu”** i przycisk **„Aktualizuj karty (N)”**.
   Aktualizacja podmienia kopię i zostawia dane kart; pola dopasowuje po nazwie, jak dziś przy zmianie
   szablonu. Przed aktualizacją pokazuje się podgląd „przed / po” jednej karty i jest pasek „Cofnij”.
 - Usunięcie szablonu z biblioteki nie psuje projektów, bo mają swoje kopie. Ostrzeżenie mówi tylko,
   w ilu projektach jest kopia.
 - „Edytuj szablon ↗” z projektu otwiera **szablon w bibliotece**. Po zapisie i powrocie do projektu
-  widać przy nim „Nowsza wersja w bibliotece”, więc to użytkownik decyduje, czy przenieść zmiany.
+  widać przy nim „Jest nowsza wersja szablonu”, więc to użytkownik decyduje, czy przenieść zmiany.
 
 ## 3. Model i baza (S1)
 
@@ -79,7 +86,7 @@ Przycisk **„Utwórz szablon”** otwiera edytor szablonu.
 
 ### 5.3 Okno „Nowy projekt” (S3)
 
-Nazwa, **wybór szablonów z biblioteki** (kafelki z miniaturami, wielokrotny wybór, szukaj; można też
+Nazwa, **wybór z „Moich szablonów”** (kafelki z miniaturami, wielokrotny wybór, szukaj; można też
 nie wybrać żadnego i dodać później) albo **import pliku projektu**. Przycisk **„Utwórz projekt”**
 otwiera krok Karty. Gdy biblioteka jest pusta, okno podpowiada najpierw „+ Nowy szablon”.
 
@@ -99,11 +106,14 @@ otwiera krok Karty. Gdy biblioteka jest pusta, okno podpowiada najpierw „+ Now
 - Lewy pasek kroku Karty, dwie grupy:
   - **„W projekcie”**: kopie szablonów, z których są karty. Przeciągnięcie albo kliknięcie dodaje kartę.
     Przy kopii, dla której biblioteka ma nowszą wersję, jest znaczek i „Aktualizuj karty (N)” (sekcja 2).
-  - **„Z biblioteki”**: pozostałe szablony z szukaniem. Przeciągnięcie albo kliknięcie robi kopię
+  - **„Z Moich szablonów”**: pozostałe szablony z szukaniem. Przeciągnięcie albo kliknięcie robi kopię
     w projekcie i dodaje kartę.
   - Na dole „＋ Nowy szablon” otwiera okno 5.2, a po zapisie wraca do projektu.
-- Panel karty: „Szablon: X · Edytuj w bibliotece ↗”. „Tył karty”: wybór z tyłów projektu
-  i biblioteki (wybór z biblioteki robi kopię) albo „brak”.
+- Panel karty: „Szablon: X · Edytuj w Moich szablonach ↗”. „Tył karty”: wybór z tyłów projektu
+  i z „Moich szablonów” (wybór stamtąd robi kopię) albo „brak”.
+- **„Przenieś na szablon…”** (zaznaczone karty → inny szablon projektu, np. nowy „Zaklęcie z obrazkiem”):
+  dane kart przechodzą po nazwach pól, a pola bez odpowiednika zostają puste. Przed zmianą jest lista
+  pól przeniesionych i pominiętych, po zmianie pasek „Cofnij”. Szablony się przy tym nie zmieniają.
 - Druk bez zmian.
 
 ### 5.6 Mausritter
@@ -112,14 +122,14 @@ Bez zmian. Typy kart są wbudowane, kroki: Karty na arkuszach → Druk.
 
 ## 6. Etapy
 
-| Etap | Zakres                                                                                       | Testy                                                                                  |
-| ---- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| S1   | Model, tabela `szablony` (Dexie 6), schemat 36, migracja z łączeniem duplikatów, pliki       | Vitest: migracja (duplikaty, sufiksy nazw, odwołania kart), import/eksport             |
-| S2   | Kopie i aktualizacja: `zrodlo`, wykrywanie nowszej wersji, „Aktualizuj karty (N)” z „Cofnij” | Vitest: wykrycie zmiany `hash`, aktualizacja zachowuje dane kart                       |
-| S3   | Strona główna (Moje szablony), okna „Nowy szablon” i „Nowy projekt”                          | Playwright: utworzenie szablonu, projekt z wybranych szablonów                         |
-| S4   | Edytor szablonu poza projektem (`#/szablon/<id>`), menu, dopisek o kopiach                   | Playwright: edycja w bibliotece nie zmienia karty w projekcie, dopóki nie „Aktualizuj” |
-| S5   | Projekt: kroki Karty → Druk, lewy pasek „Szablony z biblioteki”, edycja szablonu z projektu  | Playwright: dodanie karty z biblioteki, zmiana tyłu karty                              |
-| S6   | Instrukcja PL/EN, zrzuty, porządki (usunięcie martwego kodu zakładek szablonów projektu)     | Galeria zrzutów                                                                        |
+| Etap | Zakres                                                                                              | Testy                                                                                         |
+| ---- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| S1   | Model, tabela `szablony` (Dexie 6), schemat 36, migracja z łączeniem duplikatów, pliki              | Vitest: migracja (duplikaty, sufiksy nazw, odwołania kart), import/eksport                    |
+| S2   | Kopie i aktualizacja: `zrodlo`, wykrywanie nowszej wersji, „Aktualizuj karty (N)” z „Cofnij”        | Vitest: wykrycie zmiany `hash`, aktualizacja zachowuje dane kart                              |
+| S3   | Strona główna (Moje szablony), okna „Nowy szablon” i „Nowy projekt”                                 | Playwright: utworzenie szablonu, projekt z wybranych szablonów                                |
+| S4   | Edytor szablonu poza projektem (`#/szablon/<id>`), menu, dopisek o kopiach                          | Playwright: edycja w bibliotece nie zmienia karty w projekcie, dopóki nie „Aktualizuj”        |
+| S5   | Projekt: kroki Karty → Druk, lewy pasek „W projekcie” / „Z Moich szablonów”, „Przenieś na szablon…” | Playwright: dodanie karty z Moich szablonów, zmiana tyłu karty, przeniesienie kart z „Cofnij” |
+| S6   | Instrukcja PL/EN, zrzuty, porządki (usunięcie martwego kodu zakładek szablonów projektu)            | Galeria zrzutów                                                                               |
 
 Wzorce PNG kart i arkuszy nie mogą się zmienić. Wygląd kart po migracji jest identyczny.
 
@@ -132,4 +142,6 @@ Wzorce PNG kart i arkuszy nie mogą się zmienić. Wygląd kart po migracji jest
 - **D-S3** Tyły są w bibliotece tak samo jak przody.
 - **D-S4** Projekt ma kroki Karty → Druk. Krok „Szablony” znika z projektu (zmienia UI2 5.3 i mapę
   kroków z 4.1).
+- **D-S6** Nazwa w interfejsie: „Moje szablony”, napis „Jest nowsza wersja szablonu”; słowo „biblioteka” tylko dla obrazów, czcionek i ozdobników.
+- **D-S7** „Przenieś na szablon…” przenosi dane zaznaczonych kart na inny szablon po nazwach pól.
 - **D-S5** Pakiety gier (Mausritter) nie korzystają z biblioteki szablonów.
