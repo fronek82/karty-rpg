@@ -21,6 +21,8 @@ export interface PozycjaPaskaBocznego {
 export interface GrupaPaskaBocznego {
   id: string;
   nazwa?: string;
+  /** Dodatkowy element pod tytułem grupy w stanie rozwiniętym (np. wyszukiwarka). */
+  naglowekDodatkowy?: ReactNode;
   pozycje: readonly PozycjaPaskaBocznego[];
 }
 
@@ -102,10 +104,11 @@ export function PasekBoczny({
 
       <div className="ui2-pasek-boczny-lista">
         {grupy.map((grupa) => (
-          <div key={grupa.id} className="ui2-pasek-grupa">
+          <div key={grupa.id} className="ui2-pasek-grupa" data-grupa={grupa.id}>
             {rozwiniety && grupa.nazwa && (
               <span className="ui2-pasek-grupa-tytul">{grupa.nazwa}</span>
             )}
+            {rozwiniety && grupa.naglowekDodatkowy}
             {grupa.pozycje.map((poz) => {
               const tekstDymku = poz.podpowiedz ? `${poz.nazwa} – ${poz.podpowiedz}` : poz.nazwa;
               return (

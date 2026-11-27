@@ -2000,6 +2000,17 @@ export const pl = {
   'edytor.menuSzablon.usun': 'Usuń szablon',
   'szablony.usunPotwierdzTytul': 'Usunąć szablon „{nazwa}”?',
   'szablony.usunPotwierdzOpis': 'Szablon zniknie z „Moich szablonów”.',
+  // Plan S (S5): kroki Karty → Druk, lewy pasek Z Moich szablonów, Przenieś na szablon…
+  'karty.grupaWProjekcie': 'W projekcie',
+  'karty.grupaZMoichSzablonow': 'Z Moich szablonów',
+  'karty.szukajZMoichSzablonow': 'Szukaj szablonu…',
+  'karty.edytujWMoichSzablonach': 'Edytuj w Moich szablonach ↗',
+  'karty.przeniesNaSzablon': 'Przenieś na szablon…',
+  'karty.przenies.tytul': 'Przenieś zaznaczone karty ({n})',
+  'karty.przenies.wybierzCel': 'Docelowy szablon',
+  'karty.przenies.zatwierdz': 'Przenieś karty ({n})',
+  'karty.przenies.przeniesiono': 'Przeniesiono karty ({n}) na szablon „{nazwa}”.',
+  'karty.przenies.brakInnych': 'Dodaj najpierw inny szablon z „Moich szablonów”.',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;

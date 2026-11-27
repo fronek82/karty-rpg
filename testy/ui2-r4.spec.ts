@@ -8,16 +8,6 @@ async function otworzNowyEdytor(page: import('@playwright/test').Page) {
     .getByRole('button', { name: 'Utwórz szablon' })
     .click();
   await expect(page).toHaveURL(/#\/szablon\/[^/]+$/, { timeout: 15000 });
-  await page.getByRole('link', { name: '← Szablony' }).click();
-  await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(1, { timeout: 10000 });
-  await page.getByTestId('start-nowe-karty').click();
-  const okno = page.getByTestId('okno-nowy-projekt');
-  await okno.getByTestId('np-lista-szablonow').locator('button').first().click();
-  await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
-  await page
-    .getByRole('navigation', { name: 'Etapy projektu' })
-    .getByRole('link', { name: /Szablony/ })
-    .click();
   await expect(page.locator('.karta-podgladu')).toBeVisible();
 }
 
@@ -85,12 +75,12 @@ test('R4: zwijana i przesuwana Struktura w prawej kolumnie + pasek stanu z zoome
   await expect(zoomWartosc).toHaveText(poczatkowyZoom!);
 });
 
-test('R4: zakładki szablonów i dodanie nowego szablonu w projekcie', async ({ page }) => {
+test('R4 / Plan S: pasek nad kartą bez zakładek wielu szablonów, z menu Szablon ▾', async ({
+  page,
+}) => {
   await otworzNowyEdytor(page);
 
   const pasekZakladek = page.getByRole('toolbar', { name: 'Szablony' });
-  await expect(pasekZakladek.locator('.edytor-ui2-zakladka')).toHaveCount(1);
-
-  await pasekZakladek.getByRole('button', { name: '＋ Nowy szablon' }).click();
-  await expect(pasekZakladek.locator('.edytor-ui2-zakladka')).toHaveCount(2);
+  await expect(pasekZakladek.locator('.edytor-ui2-zakladka')).toHaveCount(0);
+  await expect(pasekZakladek.getByTestId('menu-szablon-przycisk')).toBeVisible();
 });
