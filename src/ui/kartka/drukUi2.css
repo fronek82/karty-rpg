@@ -1,0 +1,129 @@
+/*
+ * Style UI2 R7 dla ekranu druku i sekcji „Linie cięcia” (wzór: docs/makiety-ui2/Druk.dc.html).
+ * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
+ */
+
+/* Dokładna wysokość paska jak przed UI-1 (55,78 px) chroni podpikselową pozycję wzorców PNG kartek. */
+.edytor-kartki > .pasek-gorny {
+  height: 3.486328125rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.edytor-kartki > .pasek-gorny .ui2-kroki {
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.edytor-kartki > .pasek-gorny .ui2-krok {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  gap: 5px;
+}
+
+.druk-ui2-linie-cialo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.druk-ui2-grubosci {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.druk-ui2-grubosc-btn {
+  padding: 4px 8px;
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.druk-ui2-grubosc-btn[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.druk-ui2-kolory {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.druk-ui2-probka {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.druk-ui2-probka[aria-pressed='true'] {
+  outline: 2px solid var(--zaznaczenie);
+  outline-offset: 2px;
+}
+
+.druk-ui2-kolor-input {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 1.5px solid var(--tekst);
+  background: transparent;
+  cursor: pointer;
+}
+
+.druk-ui2-podglad-linii {
+  padding: 4px 6px;
+  border: 1.5px solid var(--tekst);
+  background: var(--papier);
+}
+
+.druk-ui2-podglad-linii.ciemne {
+  background: var(--tekst);
+}
+
+/* Lista kart w druku (lewy pasek w trybie druku) */
+.druk-ui2-lista-kart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 6px;
+}
+
+.druk-ui2-karta-wiersz {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 1px solid var(--linia-2);
+  background: var(--powierzchnia);
+  cursor: pointer;
+}
+
+.druk-ui2-karta-nazwa {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.druk-ui2-karta-kopie {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tekst-2);
+}
