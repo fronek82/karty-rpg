@@ -4,19 +4,21 @@ import { t } from '../i18n';
 import { AktywnyProjektKontekst } from './AktywnyProjektKontekst';
 import { dolaczTyl, paczkaTyluZProjektu } from './bazaUI';
 import { EdytorKartki } from './kartka/EdytorKartki';
+import { EkranKart } from './karty/EkranKart';
 import { EdytorKarty } from './szablon/EdytorKarty';
 import { Kreator } from './szablon/Kreator';
 import { szablonZKreatora } from './szablon/nowySzablonUI';
 import { useProjekt } from './useProjekt';
 
 /**
- * Strona projektu: edytor kart (domyślnie), widok drukowania (`drukuj`), edytor szablonu
- * (`szablon/<id>`), edytor rewersu (`rewers/<id>`) albo kreator nowego szablonu w projekcie
- * (`nowy-szablon`). Projekt wczytany raz – przejścia nie przeładowują.
+ * Strona projektu: edytor kart (domyślnie), widok kart UI2 (`karty`), widok drukowania (`drukuj`),
+ * edytor szablonu (`szablon/<id>`), edytor rewersu (`rewers/<id>`) albo kreator nowego szablonu
+ * w projekcie (`nowy-szablon`). Projekt wczytany raz – przejścia nie przeładowują.
  */
 export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: string }) {
   const czyEdytorKart =
     !podtrasa ||
+    podtrasa === 'karty' ||
     podtrasa === 'drukuj' ||
     podtrasa.startsWith('drukuj/') ||
     podtrasa.startsWith('kartka/');
@@ -99,6 +101,7 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
           />
         </div>
       );
+    if (podtrasa === 'karty') return <EkranKart edycja={stan} />;
     if (podtrasa === 'drukuj') return <EdytorKartki edycja={stan} tryb="drukuj" />;
     const drukujKartka = /^drukuj\/(.+)$/.exec(podtrasa)?.[1];
     if (drukujKartka)

@@ -1,0 +1,364 @@
+/*
+ * Style ekranu „Krok 2: Karty” UI2 „drukarnia riso” (etap R6, wzór: docs/makiety-ui2/Karty.dc.html).
+ * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
+ */
+
+.karty-ui2-ekran {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo);
+  color: var(--tekst);
+}
+
+.karty-ui2-uklad {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+
+.karty-ui2-srodek {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo-robocze);
+}
+
+.karty-ui2-pasek {
+  height: var(--ui2-pasek-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--tlo-pasek);
+  border-bottom: 1.5px solid var(--tekst);
+  overflow-x: auto;
+}
+
+.karty-ui2-segmenty {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.karty-ui2-seg {
+  height: 28px;
+  padding: 0 10px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.karty-ui2-seg + .karty-ui2-seg {
+  border-left: none;
+}
+
+.karty-ui2-seg[aria-selected='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.karty-ui2-szukaj {
+  margin-left: auto;
+  height: 28px;
+  min-width: 150px;
+  padding: 0 8px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 12px;
+}
+
+.karty-ui2-filtr {
+  height: 28px;
+  padding: 0 8px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 12px;
+}
+
+.karty-ui2-obszar {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+  background-color: var(--tlo-robocze);
+  background-image: radial-gradient(var(--kropki-robocze) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Siatka podglądu kart */
+.karty-ui2-siatka {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.karty-ui2-siatka.obie {
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+}
+
+.karty-ui2-kafelek {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--powierzchnia);
+  border: 1.5px solid var(--tekst);
+  cursor: pointer;
+  text-align: left;
+  color: var(--tekst);
+}
+
+.karty-ui2-kafelek:hover {
+  border-color: var(--zaznaczenie);
+}
+
+.karty-ui2-kafelek.wybrany {
+  outline: 2.5px solid var(--zaznaczenie);
+  outline-offset: 2px;
+}
+
+.karty-ui2-kafelek-obrazy {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.karty-ui2-svg-box {
+  width: 100%;
+  background: var(--papier);
+  border: 1px solid var(--linia-2);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.karty-ui2-svg-box svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.karty-ui2-brak-tylu {
+  padding: 16px 8px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--tekst-2);
+}
+
+.karty-ui2-kafelek-stopka {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.karty-ui2-kafelek-nazwa {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.karty-ui2-odznaka-kopii {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  background: var(--tekst);
+  color: var(--tlo);
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.karty-ui2-upusc {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  border: 2px dashed var(--tekst-2);
+  color: var(--tekst-2);
+  font-size: 12px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--powierzchnia) 50%, transparent);
+}
+
+.karty-ui2-upusc.nad {
+  border-color: var(--zaznaczenie);
+  color: var(--zaznaczenie);
+  background: color-mix(in srgb, var(--zaznaczenie) 10%, transparent);
+}
+
+/* Widok Tabeli */
+.karty-ui2-tabela-opak {
+  background: var(--powierzchnia);
+  border: 1.5px solid var(--tekst);
+  overflow-x: auto;
+}
+
+.karty-ui2-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.karty-ui2-tabela th,
+.karty-ui2-tabela td {
+  border: 1px solid var(--linia-2);
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.karty-ui2-tabela th {
+  background: var(--tlo-pasek);
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.karty-ui2-tabela tr.wybrany td {
+  background: color-mix(in srgb, var(--zaznaczenie) 12%, transparent);
+}
+
+.karty-ui2-komorka-input {
+  width: 100%;
+  min-width: 90px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--tekst);
+  font-size: 12px;
+}
+
+.karty-ui2-komorka-input:focus {
+  outline: none;
+  border-color: var(--zaznaczenie);
+  background: var(--powierzchnia);
+}
+
+/* Prawy panel szczegółów karty */
+.karty-ui2-prawa {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--tlo);
+  border-left: 2px solid var(--tekst);
+}
+
+.karty-ui2-prawa-naglowek {
+  height: var(--ui2-pasek-h);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1.5px solid var(--tekst);
+  background: var(--tlo-pasek);
+}
+
+.karty-ui2-prawa-tytul {
+  margin: 0;
+  font-family: var(--czcionka-naglowek);
+  font-size: 15px;
+}
+
+.karty-ui2-prawa-akcje {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.karty-ui2-prawa-tresc {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.karty-ui2-podglad-pary {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.karty-ui2-podglad-przod {
+  flex: 1 1 0;
+  max-width: 180px;
+}
+
+.karty-ui2-podglad-tyl {
+  width: 88px;
+  flex-shrink: 0;
+}
+
+.karty-ui2-pole {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.karty-ui2-pole > span {
+  font-weight: 700;
+  color: var(--tekst-2);
+}
+
+.karty-ui2-pole input,
+.karty-ui2-pole textarea,
+.karty-ui2-pole select {
+  padding: 6px 8px;
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  font-size: 13px;
+}
+
+.karty-ui2-kopie {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.karty-ui2-kopie button {
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.karty-ui2-kopie-liczba {
+  min-width: 28px;
+  text-align: center;
+  font-family: var(--czcionka-mono);
+  font-weight: 700;
+}

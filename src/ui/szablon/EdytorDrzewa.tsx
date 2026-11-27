@@ -855,7 +855,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
       id: 'karty',
       numer: 2,
       etykieta: t('ui2.krok.karty'),
-      href: `#/projekt/${idProjektu}`,
+      href: `#/projekt/${idProjektu}/karty`,
       aktywny: false,
     },
     {
