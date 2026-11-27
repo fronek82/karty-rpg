@@ -4,8 +4,14 @@ import { useJezyk } from '../../i18n/react';
 import { useMotyw } from '../motyw';
 import { ADRES_BIBLIOTEK, adresInstrukcji } from '../NaglowekAplikacji';
 import { OknoModalne } from '../OknoModalne';
-import { ListaProjektow } from './ListaProjektow';
+import {
+  ListaProjektow,
+  odczytajZakladkeStart,
+  zapiszZakladkeStart,
+  type ZakladkaStart,
+} from './ListaProjektow';
 import { OknoNowyProjekt } from './OknoNowyProjekt';
+import { OknoNowySzablon } from './OknoNowySzablon';
 import { PanelImportu } from './PanelImportu';
 import { ADRES_WSPARCIA } from './wsparcie';
 import './startRiso.css';
@@ -13,10 +19,10 @@ import './startRiso.css';
 const wersja = import.meta.env.VITE_WERSJA ?? '0.1.0';
 
 /**
- * Strona główna „drukarnia riso” (UI2, etap R2, wzór: docs/makiety-ui2/Riso.dc.html):
+ * Strona główna „drukarnia riso” (Plan S, S3, sekcja 5.1):
  * - nagłówek z logo riso, tytułem KARTY RPG oraz przyciskami Biblioteka, Ustawienia, Kopia i import;
- * - lewa kolumna z dokładnie dwoma przyciskami tworzenia (+ NOWE KARTY i Mausritter A4) oraz wsparciem;
- * - środek z siatką równych kafelków projektów / szablonów.
+ * - lewa kolumna: + NOWE KARTY (nowy projekt), + NOWY SZABLON, Mausritter A4 oraz wsparcie;
+ * - środek z równorzędnymi zakładkami „Moje projekty” | „Moje szablony”.
  */
 export function Start({
   trescRef,
@@ -24,9 +30,15 @@ export function Start({
   trescRef?: React.RefObject<HTMLElement | null>;
 } = {}) {
   const [odswiezenie, ustawOdswiezenie] = useState(0);
+  const [zakladka, ustawZakladkeStan] = useState<ZakladkaStart>(odczytajZakladkeStart);
   const [importOtwarty, ustawImportOtwarty] = useState(false);
   const [nowyProjektOtwarty, ustawNowyProjektOtwarty] = useState(false);
+  const [nowySzablonOtwarty, ustawNowySzablonOtwarty] = useState(false);
   const [ustawieniaOtwarte, ustawUstawieniaOtwarte] = useState(false);
+  const ustawZakladke = (z: ZakladkaStart) => {
+    ustawZakladkeStan(z);
+    zapiszZakladkeStart(z);
+  };
   const opakowanieUstawien = useRef<HTMLDivElement>(null);
   const przyciskUstawien = useRef<HTMLButtonElement>(null);
   const idPaneluUstawien = useId();
@@ -183,6 +195,16 @@ export function Start({
             <span className="riso-nowe-karty-opis">{t('start.noweKartyOpis')}</span>
           </button>
 
+          <button
+            type="button"
+            className="riso-nowy-szablon"
+            data-testid="start-nowy-szablon"
+            onClick={() => ustawNowySzablonOtwarty(true)}
+          >
+            <span className="riso-nowy-szablon-tytul">{t('start.nowySzablonBtn')}</span>
+            <span className="riso-nowy-szablon-opis">{t('start.nowySzablonOpis')}</span>
+          </button>
+
           <div className="riso-gotowe">
             <span className="riso-etykieta-mono">{t('start.risoGotoweUklady')}</span>
             <a href="#/gra/mausritter" className="riso-kafelek-gry" data-testid="start-mausritter">
@@ -211,7 +233,11 @@ export function Start({
         </aside>
 
         <main ref={trescRef} id="tresc-aplikacji" tabIndex={-1} className="riso-glowna">
-          <ListaProjektow odswiezenie={odswiezenie} />
+          <ListaProjektow
+            odswiezenie={odswiezenie}
+            zakladka={zakladka}
+            onZmienZakladke={ustawZakladke}
+          />
         </main>
       </div>
 
@@ -221,7 +247,22 @@ export function Start({
         </OknoModalne>
       )}
 
-      {nowyProjektOtwarty && <OknoNowyProjekt zamknij={() => ustawNowyProjektOtwarty(false)} />}
+      {nowyProjektOtwarty && (
+        <OknoNowyProjekt
+          zamknij={() => ustawNowyProjektOtwarty(false)}
+          onOtworzNowySzablon={() => ustawNowySzablonOtwarty(true)}
+        />
+      )}
+
+      {nowySzablonOtwarty && (
+        <OknoNowySzablon
+          zamknij={() => ustawNowySzablonOtwarty(false)}
+          onUtworzono={() => {
+            ustawOdswiezenie((n) => n + 1);
+            ustawZakladke('szablony');
+          }}
+        />
+      )}
     </div>
   );
 }

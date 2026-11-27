@@ -3,14 +3,22 @@ import { expect, test } from '@playwright/test';
 test('R6: Krok 2 Karty – dodawanie kart, Podgląd/Tabela, Przód/Tył/Obie, kopie i tył karty', async ({
   page,
 }) => {
-  // Utworzenie projektu z przodem i tyłem w oknie Nowy projekt.
+  // Utworzenie szablonu (przód + tył) i projektu z tego szablonu (Plan S S3).
   await page.goto('./');
+  await page.getByTestId('start-nowy-szablon').click();
+  const oknoSz = page.getByTestId('okno-nowy-szablon');
+  await oknoSz.getByRole('button', { name: /Tył \(rewers\)/ }).click();
+  await oknoSz.getByRole('button', { name: 'Utwórz szablon' }).click();
+  await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(2, { timeout: 10000 });
+
   await page.getByTestId('start-nowe-karty').click();
-  const okno = page.getByRole('dialog', { name: 'Nowy projekt' });
-  await expect(okno).toBeVisible();
-  // Zaznaczamy także Tył, żeby przetestować przełącznik Przód / Tył / Obie i wybór tyłu karty.
-  await okno.getByRole('button', { name: /Tył \(rewers\)/ }).click();
+  const okno = page.getByTestId('okno-nowy-projekt');
+  await okno.getByTestId('np-lista-szablonow').locator('button').first().click();
   await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
+  await page
+    .getByRole('navigation', { name: 'Etapy projektu' })
+    .getByRole('link', { name: /Szablony/ })
+    .click();
   await expect(page.locator('.karta-podgladu')).toBeVisible();
 
   // Dodajemy pole Tekst w szablonie, zapisujemy i przechodzimy do kroku „2 Karty”.

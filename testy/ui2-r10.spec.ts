@@ -20,10 +20,20 @@ function przecinajaSie(a: Prostokat, b: Prostokat, margines = 0.5): boolean {
 
 async function otworzNowyEdytor(page: Page) {
   await page.goto('./');
+  await page.getByTestId('start-nowy-szablon').click();
+  await page
+    .getByTestId('okno-nowy-szablon')
+    .getByRole('button', { name: 'Utwórz szablon' })
+    .click();
+  await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(1, { timeout: 10000 });
   await page.getByTestId('start-nowe-karty').click();
-  const okno = page.getByRole('dialog', { name: 'Nowy projekt' });
-  await expect(okno).toBeVisible();
+  const okno = page.getByTestId('okno-nowy-projekt');
+  await okno.getByTestId('np-lista-szablonow').locator('button').first().click();
   await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
+  await page
+    .getByRole('navigation', { name: 'Etapy projektu' })
+    .getByRole('link', { name: /Szablony/ })
+    .click();
   await expect(page.locator('.karta-podgladu')).toBeVisible();
 }
 

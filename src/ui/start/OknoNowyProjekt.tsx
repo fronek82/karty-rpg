@@ -1,73 +1,48 @@
-import { useEffect, useRef, useState, type DragEvent } from 'react';
-import { importujRewers, importujSzablon } from '../../dane/archiwum';
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { importujProjekt, jakoKopia, ROZSZERZENIE_PROJEKTU } from '../../dane/archiwum';
+import type { WpisSzablonu } from '../../dane/bibliotekaSzablonow';
 import { t } from '../../i18n';
-import {
-  baza,
-  nowyProjektPustaKarta,
-  nowyProjektZAwersuZProjektu,
-  nowyProjektZRewersuZProjektu,
-} from '../bazaUI';
-import { adresProjektu, importujPlikSzablonu } from './importSzablonu';
-import { adresMiniatury, pozycjeSzablonow, type PozycjaSzablonu } from './mojeSzablony';
-import {
-  czyMoznaUtworzyc,
-  FORMATY_NOWEGO_PROJEKTU,
-  ikonaDlaOrientacji,
-  kluczPodpowiedziDolnej,
-  MAKS_WYMIAR_MM,
-  MIN_WYMIAR_MM,
-  przelaczStrone,
-  wymiaryDlaOrientacji,
-  type IdFormatuKarty,
-  type OrientacjaKarty,
-  type TrybStartu,
-  type WyborStron,
-} from './nowyProjektLogika';
+import { baza, nowyProjektZSzablonowBiblioteki } from '../bazaUI';
+import { kluczMiniaturyBiblioteki } from '../miniaturaRewersu';
+import { adresMiniatury } from './mojeSzablony';
 import './oknoNowyProjekt.css';
 
-interface WczytanyPlik {
+interface WczytanyPlikProjektu {
   nazwaPliku: string;
   bajty: Uint8Array;
   tytul: string;
   opis: string;
 }
 
-function etykietaFormatu(id: IdFormatuKarty): string {
-  switch (id) {
-    case 'poker':
-      return t('kreator.format.poker');
-    case 'mini-euro':
-      return t('kreator.format.mini-euro');
-    case 'mini-us':
-      return t('kreator.format.mini-american');
-    case 'tarot':
-      return t('kreator.format.tarot');
-    case 'kwadrat':
-      return t('nowyProjekt.format.kwadrat');
-    case 'wlasny':
-      return t('nowyProjekt.format.wlasny');
+function wymiaryWpisu(w: WpisSzablonu): string {
+  const r = w.szablon?.rozmiar ?? w.rewers?.rozmiar;
+  if (!r) return '';
+  if (r.tryb === 'sloty') {
+    return `${Math.round(r.slot.szerokosc * r.kolumny)}×${Math.round(r.slot.wysokosc * r.rzedy)} mm`;
   }
+  return `${Math.round(r.szerokosc)}×${Math.round(r.wysokosc)} mm`;
+}
+
+export interface OknoNowyProjektProps {
+  zamknij: () => void;
+  /** Przełączenie do okna „Nowy szablon”, gdy „Moje szablony” są puste. */
+  onOtworzNowySzablon?: () => void;
 }
 
 /**
- * Okno modalne „Nowy projekt” (UI2 R3, sekcja 5.2 planu, wzór: NowyProjekt.dc.html):
- * 3 ścieżki startu: Pusta karta (format, orientacja Pionowo/Poziomo, Przód/Tył),
- * Z szablonu (kopia szablonu z innego projektu) oraz Import pliku (.kartyrpg-szablon).
+ * Okno modalne „Nowy projekt” (Plan S, S3, sekcja 5.3):
+ * nazwa projektu, wielokrotny wybór szablonów z „Moich szablonów” (z wyszukiwarką, opcjonalny)
+ * albo import pliku projektu `.kartyrpg`. Przycisk „Utwórz projekt” otwiera krok Karty.
  */
-export function OknoNowyProjekt({ zamknij }: { zamknij: () => void }) {
+export function OknoNowyProjekt({ zamknij, onOtworzNowySzablon }: OknoNowyProjektProps) {
   const [nazwa, ustawNazwe] = useState('');
-  const [tryb, ustawTryb] = useState<TrybStartu>('pusta');
-  const [format, ustawFormat] = useState<IdFormatuKarty>('poker');
-  const [orientacja, ustawOrientacje] = useState<OrientacjaKarty>('pion');
-  const [wlasnaSzer, ustawWlasnaSzer] = useState(63);
-  const [wlasnaWys, ustawWlasnaWys] = useState(88);
-  const [strony, ustawStrony] = useState<WyborStron>({ przod: true, tyl: false });
-
-  const [szablony, ustawSzablony] = useState<PozycjaSzablonu[]>([]);
+  const [tryb, ustawTryb] = useState<'szablony' | 'import'>('szablony');
+  const [szablony, ustawSzablony] = useState<WpisSzablonu[]>([]);
   const [miniatury, ustawMiniatury] = useState<Map<string, string>>(new Map());
-  const [wybranySzablon, ustawWybranySzablon] = useState<string>();
+  const [szukaj, ustawSzukaj] = useState('');
+  const [wybrane, ustawWybrane] = useState<ReadonlySet<string>>(new Set());
 
-  const [plik, ustawPlik] = useState<WczytanyPlik>();
+  const [plik, ustawPlik] = useState<WczytanyPlikProjektu>();
   const [blad, ustawBlad] = useState<string>();
   const [trwa, ustawTrwa] = useState(false);
 
@@ -88,16 +63,10 @@ export function OknoNowyProjekt({ zamknij }: { zamknij: () => void }) {
 
   useEffect(() => {
     let aktywny = true;
-    Promise.all([
-      baza().szablonyAwersowZProjektow(),
-      baza().rewersyZProjektow(),
-      baza().miniatury(),
-    ])
-      .then(([a, r, m]) => {
+    Promise.all([baza().szablonyBiblioteki('awers'), baza().miniatury()])
+      .then(([lista, m]) => {
         if (!aktywny) return;
-        const poz = pozycjeSzablonow(a, r);
-        ustawSzablony(poz);
-        if (poz[0]) ustawWybranySzablon(poz[0].klucz);
+        ustawSzablony(lista);
         const mapa = new Map<string, string>();
         for (const [k, svg] of m) mapa.set(k, adresMiniatury(svg));
         ustawMiniatury(mapa);
@@ -108,48 +77,43 @@ export function OknoNowyProjekt({ zamknij }: { zamknij: () => void }) {
     };
   }, []);
 
-  const biezacyFormat =
-    FORMATY_NOWEGO_PROJEKTU.find((f) => f.id === format) ?? FORMATY_NOWEGO_PROJEKTU[0]!;
-  const wymiary =
-    format === 'wlasny'
-      ? { szer: wlasnaSzer, wys: wlasnaWys }
-      : wymiaryDlaOrientacji(biezacyFormat.szer, biezacyFormat.wys, orientacja);
+  const widoczne = useMemo(() => {
+    const f = szukaj.trim().toLocaleLowerCase('pl');
+    if (!f) return szablony;
+    return szablony.filter((s) => s.nazwa.toLocaleLowerCase('pl').includes(f));
+  }, [szablony, szukaj]);
 
-  const zmienOrientacje = (nowa: OrientacjaKarty) => {
-    ustawOrientacje(nowa);
-    if (format === 'wlasny') {
-      const po = wymiaryDlaOrientacji(wlasnaSzer, wlasnaWys, nowa);
-      ustawWlasnaSzer(po.szer);
-      ustawWlasnaWys(po.wys);
-    }
+  const przelaczWybor = (id: string) => {
+    ustawWybrane((pop) => {
+      const nowe = new Set(pop);
+      if (nowe.has(id)) nowe.delete(id);
+      else nowe.add(id);
+      return nowe;
+    });
   };
 
   const wczytajPlik = async (f: File) => {
     ustawBlad(undefined);
     try {
       const bajty = new Uint8Array(await f.arrayBuffer());
-      let tytul = f.name;
-      let opis = f.name;
-      try {
-        const p = importujSzablon(bajty);
-        const r = p.szablon.rozmiar;
-        const mm =
-          r.tryb === 'sloty'
-            ? `${Math.round(r.slot.szerokosc * r.kolumny)}×${Math.round(r.slot.wysokosc * r.rzedy)} mm`
-            : `${Math.round(r.szerokosc)}×${Math.round(r.wysokosc)} mm`;
-        tytul = p.szablon.nazwa;
-        opis = `${f.name} · ${mm}`;
-      } catch {
-        const p = importujRewers(bajty);
-        const mm = `${Math.round(p.rewers.rozmiar.szerokosc)}×${Math.round(p.rewers.rozmiar.wysokosc)} mm`;
-        tytul = p.rewers.nazwa;
-        opis = `${f.name} · ${mm} · ${t('projekty.stronaRewers')}`;
-      }
-      ustawPlik({ nazwaPliku: f.name, bajty, tytul, opis });
+      const { projekt } = importujProjekt(bajty);
+      const liczbaKart = projekt.talie.reduce((s, tl) => s + tl.karty.length, 0);
+      ustawPlik({
+        nazwaPliku: f.name,
+        bajty,
+        tytul: projekt.nazwa,
+        opis: t('nowyProjekt.opisPlikuProjektu', {
+          plik: f.name,
+          szablony: projekt.szablony.length,
+          karty: liczbaKart,
+        }),
+      });
     } catch (e) {
       ustawPlik(undefined);
       ustawBlad(
-        t('nowyProjekt.bladPliku', { szczegoly: e instanceof Error ? e.message : String(e) }),
+        t('nowyProjekt.bladPlikuProjektu', {
+          szczegoly: e instanceof Error ? e.message : String(e),
+        }),
       );
     }
   };
@@ -160,62 +124,34 @@ export function OknoNowyProjekt({ zamknij }: { zamknij: () => void }) {
     if (pierwszy) void wczytajPlik(pierwszy);
   };
 
-  const moznaUtworzyc =
-    !trwa &&
-    czyMoznaUtworzyc({
-      tryb,
-      strony,
-      szer: wymiary.szer,
-      wys: wymiary.wys,
-      wybranySzablon,
-      maPlik: Boolean(plik),
-    });
+  const moznaUtworzyc = !trwa && (tryb === 'szablony' || Boolean(plik));
 
   const utworz = async () => {
     if (!moznaUtworzyc) return;
     ustawTrwa(true);
     ustawBlad(undefined);
     try {
-      if (tryb === 'pusta') {
-        const hash = await nowyProjektPustaKarta({
+      if (tryb === 'szablony') {
+        const id = await nowyProjektZSzablonowBiblioteki({
           nazwa,
-          szer: wymiary.szer,
-          wys: wymiary.wys,
-          przod: strony.przod,
-          tyl: strony.tyl,
+          szablonIds: [...wybrane],
         });
         zamknij();
-        window.location.hash = hash;
-        return;
-      }
-      if (tryb === 'szablon') {
-        const poz = szablony.find((s) => s.klucz === wybranySzablon);
-        if (!poz) return;
-        const id =
-          poz.rodzaj === 'rewers'
-            ? await nowyProjektZRewersuZProjektu(poz.rewers.projektId, poz.rewers.rewersId)
-            : await nowyProjektZAwersuZProjektu(poz.awers.projektId, poz.awers.szablonId);
-        if (nazwa.trim()) {
-          const { projekt, zasoby } = await baza().wczytaj(id);
-          await baza().zapisz({ ...projekt, nazwa: nazwa.trim() }, zasoby);
-        }
-        zamknij();
-        window.location.hash = adresProjektu(id);
+        window.location.hash = `#/projekt/${encodeURIComponent(id)}/karty`;
         return;
       }
       if (plik) {
-        const wynik = await importujPlikSzablonu(plik.bajty);
-        if ('blad' in wynik) {
-          ustawBlad(wynik.blad);
-          ustawTrwa(false);
-          return;
+        const { projekt: wczytany, zasoby } = importujProjekt(plik.bajty);
+        let projekt = wczytany;
+        if (await baza().istnieje(projekt.id)) {
+          projekt = jakoKopia(projekt, nazwa.trim() || projekt.nazwa);
+        } else if (nazwa.trim()) {
+          projekt = { ...projekt, nazwa: nazwa.trim() };
         }
-        if (nazwa.trim()) {
-          const { projekt, zasoby } = await baza().wczytaj(wynik.id);
-          await baza().zapisz({ ...projekt, nazwa: nazwa.trim() }, zasoby);
-        }
+        await baza().zapisz(projekt, zasoby, { rejestrujSzablony: true });
+        await baza().usunMiniature(projekt.id);
         zamknij();
-        window.location.hash = adresProjektu(wynik.id);
+        window.location.hash = `#/projekt/${encodeURIComponent(projekt.id)}/karty`;
       }
     } catch (e) {
       ustawBlad(e instanceof Error ? e.message : String(e));
@@ -223,7 +159,12 @@ export function OknoNowyProjekt({ zamknij }: { zamknij: () => void }) {
     }
   };
 
-  const brakSzablonow = szablony.length === 0;
+  const podpowiedzDolna =
+    tryb === 'import'
+      ? t('nowyProjekt.importProjektuOpis')
+      : wybrane.size > 0
+        ? t('nowyProjekt.wybranoSzablonow', { n: wybrane.size })
+        : t('nowyProjekt.bezSzablonowInfo');
 
   return (
     <div
@@ -232,309 +173,184 @@ export function OknoNowyProjekt({ zamknij }: { zamknij: () => void }) {
         if (e.target === e.currentTarget) zamknij();
       }}
     >
-      <div role="dialog" aria-modal="true" aria-label={t('nowyProjekt.tytul')} className="np-okno">
+      <div
+        className="np-okno"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('nowyProjekt.tytul')}
+        data-testid="okno-nowy-projekt"
+      >
         <div className="np-naglowek">
           <div className="np-naglowek-lewa">
             <div className="np-logo" aria-hidden="true">
-              <div className="np-logo-a" />
-              <div className="np-logo-b" />
+              <span className="np-logo-a" />
+              <span className="np-logo-b" />
             </div>
-            <h1 className="np-tytul">{t('nowyProjekt.tytul')}</h1>
+            <div>
+              <h2 className="np-tytul">{t('nowyProjekt.tytul')}</h2>
+            </div>
           </div>
           <button
             type="button"
             className="np-zamknij"
-            aria-label={t('nowyProjekt.zamknij')}
+            aria-label={t('pasek.zamknij')}
             onClick={zamknij}
           >
-            ✕
+            ×
           </button>
         </div>
 
         <div className="np-cialo">
-          <label className="np-sekcja">
-            <span className="np-etykieta">{t('nowyProjekt.krok1')}</span>
+          <div className="np-sekcja">
+            <label htmlFor="np-nazwa" className="np-etykieta">
+              {t('nowyProjekt.krok1')}
+            </label>
             <input
               ref={poleNazwyRef}
+              id="np-nazwa"
               type="text"
               className="np-pole-tekstu"
               value={nazwa}
               onChange={(e) => ustawNazwe(e.target.value)}
               placeholder={t('nowyProjekt.nazwaPlaceholder')}
             />
-          </label>
-
-          <div className="np-sekcja">
-            <span className="np-etykieta">{t('nowyProjekt.krok2')}</span>
-            <div className="np-siatka-3">
-              <button
-                type="button"
-                className="np-karta-wyboru"
-                aria-pressed={tryb === 'pusta'}
-                onClick={() => ustawTryb('pusta')}
-              >
-                <span className="np-karta-wyboru-tytul">{t('nowyProjekt.pusta')}</span>
-                <span className="np-karta-wyboru-opis">{t('nowyProjekt.pustaOpis')}</span>
-              </button>
-
-              <button
-                type="button"
-                className="np-karta-wyboru"
-                disabled={brakSzablonow}
-                aria-pressed={tryb === 'szablon'}
-                onClick={() => ustawTryb('szablon')}
-              >
-                <span className="np-karta-wyboru-tytul">{t('nowyProjekt.zSzablonu')}</span>
-                <span className="np-karta-wyboru-opis">
-                  {brakSzablonow ? t('nowyProjekt.brakSzablonow') : t('nowyProjekt.zSzablonuOpis')}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className="np-karta-wyboru"
-                aria-pressed={tryb === 'import'}
-                onClick={() => ustawTryb('import')}
-              >
-                <span className="np-karta-wyboru-tytul">{t('nowyProjekt.importPliku')}</span>
-                <span className="np-karta-wyboru-opis">{t('nowyProjekt.importPlikuOpis')}</span>
-              </button>
-            </div>
           </div>
 
-          {tryb === 'pusta' && (
-            <>
-              <div className="np-sekcja">
-                <div className="np-sekcja-naglowek">
-                  <span className="np-etykieta">{t('nowyProjekt.krok3Rozmiar')}</span>
-                  <div
-                    role="group"
-                    aria-label={t('nowyProjekt.orientacja')}
-                    className="np-orientacja"
-                  >
-                    <button
-                      type="button"
-                      className="np-orientacja-btn"
-                      aria-pressed={orientacja === 'pion'}
-                      onClick={() => zmienOrientacje('pion')}
-                    >
-                      <span
-                        className="np-orientacja-ikona"
-                        style={{ width: 10, height: 15 }}
-                        aria-hidden="true"
-                      />
-                      {t('nowyProjekt.pionowo')}
-                    </button>
-                    <button
-                      type="button"
-                      className="np-orientacja-btn"
-                      aria-pressed={orientacja === 'poziom'}
-                      onClick={() => zmienOrientacje('poziom')}
-                    >
-                      <span
-                        className="np-orientacja-ikona"
-                        style={{ width: 15, height: 10 }}
-                        aria-hidden="true"
-                      />
-                      {t('nowyProjekt.poziomo')}
-                    </button>
-                  </div>
-                </div>
+          <div className="np-siatka-2">
+            <button
+              type="button"
+              className="np-karta-wyboru"
+              aria-pressed={tryb === 'szablony'}
+              onClick={() => ustawTryb('szablony')}
+            >
+              <span className="np-karta-wyboru-tytul">{t('nowyProjekt.sciezka.mojeSzablony')}</span>
+            </button>
+            <button
+              type="button"
+              className="np-karta-wyboru"
+              aria-pressed={tryb === 'import'}
+              onClick={() => ustawTryb('import')}
+            >
+              <span className="np-karta-wyboru-tytul">
+                {t('nowyProjekt.sciezka.importProjektu')}
+              </span>
+            </button>
+          </div>
 
-                <div className="np-siatka-6">
-                  {FORMATY_NOWEGO_PROJEKTU.map((f) => {
-                    const aktywny = format === f.id;
-                    const ik = ikonaDlaOrientacji(f, orientacja);
-                    const w = wymiaryDlaOrientacji(f.szer, f.wys, orientacja);
-                    const mm = f.id === 'wlasny' ? '… mm' : `${w.szer}×${w.wys}`;
-                    return (
-                      <button
-                        key={f.id}
-                        type="button"
-                        className="np-format-btn"
-                        aria-pressed={aktywny}
-                        onClick={() => ustawFormat(f.id)}
-                      >
-                        <span
-                          className={`np-format-zarys${f.id === 'wlasny' ? ' przerywany' : ''}`}
-                          style={{ width: ik.szer, height: ik.wys }}
-                          aria-hidden="true"
-                        />
-                        <span className="np-format-nazwa">{etykietaFormatu(f.id)}</span>
-                        <span className="np-format-mm">{mm}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {format === 'wlasny' && (
-                  <div className="np-wlasny-wiersz">
-                    <label className="np-wlasny-pole">
-                      {t('nowyProjekt.szerokoscMm')}
-                      <input
-                        type="number"
-                        min={MIN_WYMIAR_MM}
-                        max={MAKS_WYMIAR_MM}
-                        value={wlasnaSzer}
-                        onChange={(e) => ustawWlasnaSzer(Number(e.target.value))}
-                      />
-                    </label>
-                    <span className="np-wlasny-x" aria-hidden="true">
-                      ×
-                    </span>
-                    <label className="np-wlasny-pole">
-                      {t('nowyProjekt.wysokoscMm')}
-                      <input
-                        type="number"
-                        min={MIN_WYMIAR_MM}
-                        max={MAKS_WYMIAR_MM}
-                        value={wlasnaWys}
-                        onChange={(e) => ustawWlasnaWys(Number(e.target.value))}
-                      />
-                    </label>
-                  </div>
+          {tryb === 'szablony' && (
+            <div className="np-sekcja">
+              <div className="np-wiersz-etykiety">
+                <span className="np-etykieta">{t('nowyProjekt.wybierzSzablony')}</span>
+                {szablony.length > 0 && (
+                  <input
+                    type="search"
+                    className="np-pole-tekstu"
+                    style={{
+                      maxWidth: '220px',
+                      height: '34px',
+                      padding: '0 8px',
+                      fontSize: '12px',
+                    }}
+                    aria-label={t('nowyProjekt.szukajSzablonow')}
+                    placeholder={t('nowyProjekt.szukajSzablonow')}
+                    value={szukaj}
+                    onChange={(e) => ustawSzukaj(e.target.value)}
+                  />
                 )}
               </div>
 
-              <div className="np-sekcja">
-                <span className="np-etykieta">{t('nowyProjekt.krok4Strony')}</span>
-                <div className="np-siatka-2">
-                  <button
-                    type="button"
-                    className="np-strona-btn"
-                    aria-pressed={strony.przod}
-                    onClick={() => ustawStrony((s) => przelaczStrone(s, 'przod'))}
-                  >
-                    <span className="np-strona-ikona" aria-hidden="true">
-                      A
-                    </span>
-                    <span className="np-strona-tekst">
-                      <span className="np-karta-wyboru-tytul">{t('nowyProjekt.przod')}</span>
-                      <span className="np-karta-wyboru-opis">{t('nowyProjekt.przodOpis')}</span>
-                    </span>
-                    <span className="np-strona-ptaszek" aria-hidden="true">
-                      {strony.przod ? '✓' : ''}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="np-strona-btn"
-                    aria-pressed={strony.tyl}
-                    onClick={() => ustawStrony((s) => przelaczStrone(s, 'tyl'))}
-                  >
-                    <span className="np-strona-ikona tyl" aria-hidden="true">
-                      R
-                    </span>
-                    <span className="np-strona-tekst">
-                      <span className="np-karta-wyboru-tytul">{t('nowyProjekt.tyl')}</span>
-                      <span className="np-karta-wyboru-opis">{t('nowyProjekt.tylOpis')}</span>
-                    </span>
-                    <span className="np-strona-ptaszek" aria-hidden="true">
-                      {strony.tyl ? '✓' : ''}
-                    </span>
-                  </button>
-                </div>
-                <span className="np-karta-wyboru-opis">{t('nowyProjekt.stronyPodpowiedz')}</span>
-              </div>
-            </>
-          )}
-
-          {tryb === 'szablon' && (
-            <div className="np-sekcja">
-              <span className="np-etykieta">{t('nowyProjekt.krok3Szablon')}</span>
-              <div className="np-siatka-3">
-                {szablony.map((poz) => {
-                  const sel = wybranySzablon === poz.klucz;
-                  const url = miniatury.get(poz.klucz);
-                  return (
+              {szablony.length === 0 ? (
+                <div className="np-pusty-stan">
+                  <p>{t('nowyProjekt.brakSzablonowPodpowiedz')}</p>
+                  {onOtworzNowySzablon && (
                     <button
-                      key={poz.klucz}
                       type="button"
-                      className="np-szablon-btn"
-                      aria-pressed={sel}
-                      onClick={() => ustawWybranySzablon(poz.klucz)}
+                      className="np-btn"
+                      onClick={() => {
+                        zamknij();
+                        onOtworzNowySzablon();
+                      }}
                     >
-                      <span className="np-szablon-miniatura">
-                        {url ? <img alt="" src={url} /> : <span>◆</span>}
-                      </span>
-                      <span className="np-karta-wyboru-tytul">{poz.nazwa}</span>
-                      <span className="np-karta-wyboru-opis">
-                        {poz.rodzaj === 'rewers'
-                          ? t('projekty.stronaRewers')
-                          : t('projekty.stronaAwers')}
-                      </span>
+                      {t('nowyProjekt.utworzPierwszySzablon')}
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {tryb === 'import' && (
-            <div className="np-sekcja">
-              <span className="np-etykieta">{t('nowyProjekt.krok3Plik')}</span>
-              <input
-                ref={plikInputRef}
-                type="file"
-                accept=".kartyrpg-szablon,.zip"
-                data-testid="np-plik-szablonu"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void wczytajPlik(f);
-                  e.target.value = '';
-                }}
-              />
-              {!plik ? (
-                <div
-                  className="np-strefa-pliku"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={onDropPliku}
-                >
-                  <strong>{t('nowyProjekt.strefaPliku')}</strong>
-                  <button
-                    type="button"
-                    className="ui2-przycisk-glowny"
-                    onClick={() => plikInputRef.current?.click()}
-                  >
-                    {t('nowyProjekt.wybierzZDysku')}
-                  </button>
+                  )}
                 </div>
+              ) : widoczne.length === 0 ? (
+                <p className="podpis">{t('lista.brakWynikow', { fraza: szukaj.trim() })}</p>
               ) : (
-                <div className="np-podglad-pliku">
-                  <div style={{ flexGrow: 1 }}>
-                    <div className="np-karta-wyboru-tytul">{plik.tytul}</div>
-                    <div className="np-karta-wyboru-opis">{plik.opis}</div>
-                  </div>
-                  <button
-                    type="button"
-                    className="ui2-przycisk-kontur"
-                    onClick={() => ustawPlik(undefined)}
-                  >
-                    {t('nowyProjekt.zmienPlik')}
-                  </button>
+                <div className="np-lista-szablonow" data-testid="np-lista-szablonow">
+                  {widoczne.map((w) => {
+                    const zaznaczony = wybrane.has(w.id);
+                    const url = miniatury.get(kluczMiniaturyBiblioteki(w.id));
+                    return (
+                      <button
+                        key={w.id}
+                        type="button"
+                        className={`np-kafelek-szablonu${zaznaczony ? ' aktywny' : ''}`}
+                        aria-pressed={zaznaczony}
+                        data-testid={`wybor-szablonu-${w.id}`}
+                        onClick={() => przelaczWybor(w.id)}
+                      >
+                        <div className="np-kafelek-podglad">
+                          {url ? <img src={url} alt="" /> : <span>{wymiaryWpisu(w)}</span>}
+                        </div>
+                        <span className="np-kafelek-nazwa">{w.nazwa}</span>
+                        <span className="np-format-mm">{wymiaryWpisu(w)}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
           )}
 
+          {tryb === 'import' && (
+            <div className="np-sekcja">
+              <div
+                className="np-strefa-pliku strefa-upuszczania"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={onDropPliku}
+                onClick={() => plikInputRef.current?.click()}
+              >
+                <input
+                  ref={plikInputRef}
+                  type="file"
+                  accept={`${ROZSZERZENIE_PROJEKTU},.zip`}
+                  hidden
+                  data-testid="np-plik-projektu"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void wczytajPlik(f);
+                  }}
+                />
+                {plik ? (
+                  <div>
+                    <strong>{plik.tytul}</strong>
+                    <div className="np-karta-wyboru-opis">{plik.opis}</div>
+                  </div>
+                ) : (
+                  <span>{t('nowyProjekt.importProjektuOpis')}</span>
+                )}
+              </div>
+            </div>
+          )}
+
           {blad && (
-            <p role="alert" className="uwaga" style={{ margin: 0 }}>
+            <div className="np-blad" role="alert">
               {blad}
-            </p>
+            </div>
           )}
         </div>
 
         <div className="np-stopka">
-          <span className="np-podpowiedz">{t(kluczPodpowiedziDolnej(tryb, strony))}</span>
+          <span className="np-podpowiedz">{podpowiedzDolna}</span>
           <div className="np-akcje">
-            <button type="button" className="np-btn-anuluj" onClick={zamknij}>
+            <button type="button" className="np-btn" onClick={zamknij}>
               {t('nowyProjekt.anuluj')}
             </button>
             <button
               type="button"
-              className="np-btn-utworz"
+              className="np-btn glowny"
               disabled={!moznaUtworzyc}
               onClick={() => void utworz()}
             >

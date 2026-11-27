@@ -177,3 +177,85 @@ export async function zapiszMiniatureSzablonu(
   }
   return svg;
 }
+
+/** Stabilny klucz miniatury SVG wpisu biblioteki szablonów w tabeli `miniatury`. */
+export const kluczMiniaturyBiblioteki = (id: string): string => `bib-szablon:${id}`;
+
+/** Renderuje i zapisuje miniaturę SVG pojedynczego wpisu z „Moich szablonów” (przód albo tył). */
+export async function zapiszMiniatureWpisuSzablonu(
+  wpis: import('../dane/bibliotekaSzablonow').WpisSzablonu,
+  bazaUrl: string = import.meta.env.BASE_URL,
+): Promise<string | undefined> {
+  const { WERSJA_SCHEMATU } = await import('../model/projekt');
+  const { opisZWpisu, elementZWpisu } = await import('../dane/bibliotekaUzytkownika');
+  const wpisyBib = await baza().wpisyBiblioteki();
+  const zasobyOpisy: OpisZasobu[] = [];
+  const dane: DaneZasobow = new Map();
+  const elementy = [];
+  for (const w of wpisyBib) {
+    const o = opisZWpisu(w);
+    if (o) {
+      const b = await baza().bajtyBiblioteki(w.id);
+      if (b) {
+        zasobyOpisy.push(o);
+        dane.set(o.id, b);
+      }
+    }
+    const e = elementZWpisu(w);
+    if (e) elementy.push(e);
+  }
+  // Domyślna czcionka wbudowana (EB Garamond), jeśli nie ma jej w bibliotece.
+  if (!zasobyOpisy.some((z) => z.rodzaj === 'czcionka' && z.rodzina === 'EB Garamond')) {
+    try {
+      const odp = await fetch(`${bazaUrl}czcionki/EBGaramond-Regular.ttf`);
+      if (odp.ok) {
+        const bajty = new Uint8Array(await odp.arrayBuffer());
+        zasobyOpisy.push({
+          rodzaj: 'czcionka',
+          id: 'eb-garamond-regular',
+          nazwa: 'EBGaramond-Regular.ttf',
+          rodzina: 'EB Garamond',
+          wariant: 'normalny',
+          format: 'ttf',
+          zrodlo: 'wbudowana',
+        });
+        dane.set('eb-garamond-regular', bajty);
+      }
+    } catch {
+      // Brak czcionki zapasowej – silnik użyje domyślnej metryki.
+    }
+  }
+  const syntetyczny: Projekt = {
+    wersja: WERSJA_SCHEMATU,
+    id: `min-${wpis.id}`,
+    nazwa: wpis.nazwa,
+    utworzono: wpis.zmieniono,
+    zmieniono: wpis.zmieniono,
+    role: { tytul: 'EB Garamond', tresc: 'EB Garamond', ...wpis.role },
+    zasoby: zasobyOpisy,
+    szablony: wpis.szablon ? [wpis.szablon] : [],
+    ...(wpis.rewers ? { rewersy: [wpis.rewers] } : {}),
+    talie: [],
+    arkusze: [],
+    ...(elementy.length > 0 ? { biblioteka: { ozdobniki: elementy } } : {}),
+  };
+  const ctx = zbudujKontekstMiniatury(syntetyczny, dane);
+  let svg: string | undefined;
+  if (wpis.rodzaj === 'awers' && wpis.szablon) {
+    const karta = {
+      id: 'podglad',
+      szablonId: wpis.szablon.id,
+      dane: danePodgladu(wpis.szablon),
+      ilosc: 1,
+    };
+    svg = scenaSzablonuDoMiniaturySvg(
+      renderujKarte(wpis.szablon, karta, ctx).scena,
+      syntetyczny,
+      dane,
+    );
+  } else if (wpis.rodzaj === 'rewers' && wpis.rewers) {
+    svg = scenaRewersuDoMiniaturySvg(renderujRewers(wpis.rewers, ctx).scena, syntetyczny, dane);
+  }
+  if (svg) await baza().zapiszMiniature(kluczMiniaturyBiblioteki(wpis.id), svg);
+  return svg;
+}

@@ -452,3 +452,151 @@
   border-color: var(--tekst-2);
   cursor: not-allowed;
 }
+.np-pusty-stan {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  background: var(--tlo-pasek);
+  border: 1.5px dashed var(--tekst-2);
+  font-size: 13px;
+}
+
+.np-pusty-stan p {
+  margin: 0;
+  color: var(--tekst-2);
+}
+
+.np-lista-szablonow {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.np-kafelek-szablonu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.np-kafelek-szablonu.aktywny,
+.np-kafelek-szablonu[aria-pressed='true'] {
+  background: var(--akcent-jasny);
+  color: var(--na-jasnym);
+  box-shadow: 4px 4px 0 var(--riso-niebieski);
+}
+
+.np-kafelek-podglad {
+  aspect-ratio: 63 / 88;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--papier);
+  border: 1px solid var(--linia-2);
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--tekst-2);
+}
+
+.np-kafelek-podglad img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.np-kafelek-nazwa {
+  font-weight: 700;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.np-strony {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.np-strona {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.np-strona.aktywna,
+.np-strona[aria-pressed='true'] {
+  background: var(--akcent-jasny);
+  color: var(--na-jasnym);
+  box-shadow: 4px 4px 0 var(--riso-niebieski);
+}
+
+.np-strona-tytul {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.np-strona-opis {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.np-wiersz-etykiety {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.np-blad {
+  padding: 10px 14px;
+  border: 2px solid var(--blad);
+  color: var(--blad);
+  background: var(--powierzchnia);
+  font-size: 13px;
+}
+
+.np-btn {
+  padding: 8px 16px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.np-btn + .np-btn {
+  margin-left: 8px;
+}
+
+.np-btn.glowny {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.np-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

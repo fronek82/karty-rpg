@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test.describe('UI2 R2 – strona główna drukarnia riso', () => {
   test.use({ viewport: { width: 1440, height: 960 } });
 
-  test('tylko dwa przyciski tworzenia (+ NOWE KARTY i Mausritter A4), bez Nowy szablon (D1)', async ({
+  test('trzy przyciski tworzenia (+ NOWE KARTY, + NOWY SZABLON i Mausritter A4 – Plan S 5.1)', async ({
     page,
   }) => {
     await page.goto('./');
@@ -11,10 +11,10 @@ test.describe('UI2 R2 – strona główna drukarnia riso', () => {
 
     const lewa = page.locator('aside.riso-lewa');
     await expect(lewa.getByTestId('start-nowe-karty')).toBeVisible();
+    await expect(lewa.getByTestId('start-nowy-szablon')).toBeVisible();
     await expect(lewa.getByTestId('start-mausritter')).toBeVisible();
-    // W lewej kolumnie są tylko 2 kontrolki tworzenia (+ 1 link wsparcia na dole).
-    await expect(lewa.locator('button, a[href^="#/"]')).toHaveCount(2);
-    await expect(page.getByText(/Nowy szablon/i)).toHaveCount(0);
+    // W lewej kolumnie są 3 kontrolki tworzenia (+ 1 link wsparcia na dole).
+    await expect(lewa.locator('button, a[href^="#/"]')).toHaveCount(3);
     await expect(page.getByRole('link', { name: /Przód \(awers\)/i })).toHaveCount(0);
     await expect(page.getByRole('link', { name: /Tył \(rewers\)/i })).toHaveCount(0);
   });
@@ -72,13 +72,34 @@ test.describe('UI2 R2 – strona główna drukarnia riso', () => {
   test('miniatury projektów bez znaczników cięcia: para przód+tył wyśrodkowana (≤ 4 px) i 1 miniatura bez tyłu (D17)', async ({
     page,
   }) => {
-    // 1. Projekt z przodem i tyłem.
+    // 1. Szablon dwustronny + szablon jednostronny w Moich szablonach.
     await page.goto('./');
+    await page.getByTestId('start-nowy-szablon').click();
+    let oknoSz = page.getByTestId('okno-nowy-szablon');
+    await oknoSz.getByLabel('Nazwa szablonu').fill('SzDwustronny');
+    await oknoSz.getByRole('button', { name: /Tył \(rewers\)/ }).click();
+    await oknoSz.getByRole('button', { name: 'Utwórz szablon' }).click();
+    await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(2, { timeout: 10000 });
+
+    await page.getByTestId('start-nowy-szablon').click();
+    oknoSz = page.getByTestId('okno-nowy-szablon');
+    await oknoSz.getByLabel('Nazwa szablonu').fill('SzJednostronny');
+    await oknoSz.getByRole('button', { name: 'Utwórz szablon' }).click();
+    await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(3, { timeout: 10000 });
+
+    // 2. Projekt dwustronny z szablonu SzDwustronny (dodajemy pole Tekst i zapisujemy).
     await page.getByTestId('start-nowe-karty').click();
-    let okno = page.getByRole('dialog', { name: 'Nowy projekt' });
+    let okno = page.getByTestId('okno-nowy-projekt');
     await okno.getByPlaceholder(/Zaklęcia/).fill('Dwustronny');
-    await okno.getByRole('button', { name: /Tył \(rewers\)/ }).click();
+    await okno
+      .getByTestId('np-lista-szablonow')
+      .getByRole('button', { name: /SzDwustronny/ })
+      .click();
     await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
+    await page
+      .getByRole('navigation', { name: 'Etapy projektu' })
+      .getByRole('link', { name: /Szablony/ })
+      .click();
     await expect(page.locator('.karta-podgladu')).toBeVisible({ timeout: 15000 });
     await page
       .getByRole('navigation', { name: 'Dodaj element' })
@@ -92,12 +113,20 @@ test.describe('UI2 R2 – strona główna drukarnia riso', () => {
       timeout: 10000,
     });
 
-    // 2. Projekt bez tyłu (sam przód).
+    // 3. Projekt jednostronny z szablonu SzJednostronny.
     await page.goto('./#/');
     await page.getByTestId('start-nowe-karty').click();
-    okno = page.getByRole('dialog', { name: 'Nowy projekt' });
+    okno = page.getByTestId('okno-nowy-projekt');
     await okno.getByPlaceholder(/Zaklęcia/).fill('Jednostronny');
+    await okno
+      .getByTestId('np-lista-szablonow')
+      .getByRole('button', { name: /SzJednostronny/ })
+      .click();
     await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
+    await page
+      .getByRole('navigation', { name: 'Etapy projektu' })
+      .getByRole('link', { name: /Szablony/ })
+      .click();
     await expect(page.locator('.karta-podgladu')).toBeVisible({ timeout: 15000 });
     await page
       .getByRole('navigation', { name: 'Dodaj element' })
@@ -111,8 +140,9 @@ test.describe('UI2 R2 – strona główna drukarnia riso', () => {
       timeout: 10000,
     });
 
-    // Powrót na stronę główną.
+    // Powrót na stronę główną (zakładka Moje projekty).
     await page.goto('./#/');
+    await page.getByRole('tab', { name: 'Moje projekty' }).click();
     await expect(page.locator('.riso-kafelek')).toHaveCount(2);
 
     // Brak znaczników cięcia w rogach.

@@ -3,18 +3,19 @@ import { expect, test } from '@playwright/test';
 test('R7: Krok 3 Druk – sekcja Linie cięcia (grubość, kolor, kreska, przerwa, podgląd na żywo)', async ({
   page,
 }) => {
-  // Utworzenie nowego projektu, dodanie karty w Kroku 2 i przejście do Kroku 3 (Druk).
+  // Utworzenie szablonu i projektu (otwiera bezpośrednio Krok Karty), dodanie karty i przejście do Druku.
   await page.goto('./');
-  await page.getByTestId('start-nowe-karty').click();
-  const okno = page.getByRole('dialog', { name: 'Nowy projekt' });
-  await expect(okno).toBeVisible();
-  await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
-  await expect(page.locator('.karta-podgladu')).toBeVisible();
-
+  await page.getByTestId('start-nowy-szablon').click();
   await page
-    .getByRole('navigation', { name: 'Etapy projektu' })
-    .getByRole('link', { name: /Karty/ })
+    .getByTestId('okno-nowy-szablon')
+    .getByRole('button', { name: 'Utwórz szablon' })
     .click();
+  await expect(page.getByTestId('kafelek-szablonu')).toHaveCount(1, { timeout: 10000 });
+  await page.getByTestId('start-nowe-karty').click();
+  const okno = page.getByTestId('okno-nowy-projekt');
+  await okno.getByTestId('np-lista-szablonow').locator('button').first().click();
+  await okno.getByRole('button', { name: 'Utwórz projekt' }).click();
+  await expect(page).toHaveURL(/#\/projekt\/[^/]+\/karty$/, { timeout: 15000 });
   const pasekKart = page.getByRole('navigation', { name: 'Dodaj karty' });
   await pasekKart.locator('.ui2-pasek-grupa').first().locator('button').first().click();
   await page.getByRole('button', { name: 'Zapisz', exact: true }).click();
