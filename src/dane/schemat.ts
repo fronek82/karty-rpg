@@ -380,6 +380,9 @@ const szablon = obj({
       widoczny: z.boolean(),
     }),
   ),
+  liniePomocnicze: opc(
+    z.array(obj({ id: identyfikator, os: z.enum(['h', 'v']), mm: liczba.min(-500).max(1000) })),
+  ),
   parametry: opc(z.array(obj({ klucz: z.string(), nazwa: z.string(), domyslnie: z.string() }))),
   warianty: opc(z.array(obj({ ...rozmiarSlotow, korzen: kontener }))),
 });
@@ -394,6 +397,7 @@ export const schematRewersu = z.strictObject({
     ramka: true,
     promienRogow: true,
     postrzepienie: true,
+    liniePomocnicze: true,
   }).shape,
   teksturaTryb: opc(z.enum(['wypelnij', 'dopasuj', 'rozciagnij', 'kafelki'])),
   teksturaKrycie: opc(liczba.min(0).max(1)),
@@ -878,6 +882,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     31: (d) => d,
     32: (d) => d,
     33: (d) => d,
+    // 34→35: opcjonalne linie pomocnicze szablonu i rewersu (`liniePomocnicze`) – bez zmian danych.
+    34: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -918,6 +924,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     31: (d) => d,
     32: (d) => d,
     33: (d) => d,
+    // 34→35: opcjonalne linie pomocnicze szablonu – bez zmian danych.
+    34: (d) => d,
   },
 };
 

@@ -1833,6 +1833,14 @@ export const en: Slownik = {
   'edytor.tip.separator': 'simple line',
   'edytor.tip.separator-zakonczenia': 'line with ornamental ends',
   'edytor.tip.separator-motyw': 'line with center motif',
+  'edytor.linijkaPozioma': 'Horizontal ruler (mm) – drag down to add a guide',
+  'edytor.linijkaPionowa': 'Vertical ruler (mm) – drag right to add a guide',
+  'edytor.liniaPomocnicza': 'Guide {os} at {mm}',
+  'edytor.liniaUsunUpusc': 'Drop on ruler to remove',
+  'edytor.linieLiczba': 'Guides: {n}',
+  'edytor.usunLinie': 'Clear guides',
+  'edytor.pokazLinie': 'Show guides (Ctrl+;)',
+  'edytor.ukryjLinie': 'Hide guides (Ctrl+;)',
 };
 
 /** Plural forms (`tn`): English has `one` (1) and `other`. */

@@ -230,6 +230,7 @@ export function rewersJakoSzablon(r: Rewers): Szablon {
     ...(r.postrzepienie !== undefined ? { postrzepienie: structuredClone(r.postrzepienie) } : {}),
     // Teksty przykładowe tyłu (id pola → tekst) – w widoku szablonu jako `przyklad`.
     ...(r.przyklad ? { przyklad: { ...r.przyklad } } : {}),
+    ...(r.liniePomocnicze?.length ? { liniePomocnicze: structuredClone(r.liniePomocnicze) } : {}),
   };
 }
 
@@ -256,6 +257,7 @@ export function szablonDoRewersu(oryginal: Rewers, s: Szablon): Rewers {
   if (s.ramka !== undefined) wynik.ramka = s.ramka;
   if (s.promienRogow !== undefined) wynik.promienRogow = s.promienRogow;
   if (s.postrzepienie !== undefined) wynik.postrzepienie = structuredClone(s.postrzepienie);
+  if (s.liniePomocnicze?.length) wynik.liniePomocnicze = structuredClone(s.liniePomocnicze);
   // Przykłady tylko niepuste i tylko istniejących pól tekstu/wartości (bez martwych wpisów).
   const ids = new Set(
     wszystkieWezly(wynik)

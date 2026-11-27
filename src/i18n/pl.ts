@@ -1832,6 +1832,15 @@ export const pl = {
   'edytor.tip.separator': 'prosta linia',
   'edytor.tip.separator-zakonczenia': 'linia z ozdobnymi końcami',
   'edytor.tip.separator-motyw': 'linia z ozdobą w środku',
+  'edytor.linijkaPozioma': 'Linijka pozioma (mm) – przeciągnij w dół, żeby dodać linię pomocniczą',
+  'edytor.linijkaPionowa':
+    'Linijka pionowa (mm) – przeciągnij w prawo, żeby dodać linię pomocniczą',
+  'edytor.liniaPomocnicza': 'Linia pomocnicza {os} na {mm}',
+  'edytor.liniaUsunUpusc': 'Upuść na linijce, żeby usunąć',
+  'edytor.linieLiczba': 'Linie: {n}',
+  'edytor.usunLinie': 'Usuń linie',
+  'edytor.pokazLinie': 'Pokaż linie (Ctrl+;)',
+  'edytor.ukryjLinie': 'Ukryj linie (Ctrl+;)',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;
