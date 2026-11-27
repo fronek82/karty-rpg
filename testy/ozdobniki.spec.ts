@@ -201,8 +201,7 @@ test('separator ozdobny: trzy wzory z menu, zakończenia, środek, motyw, długo
 
   // Wzór 3: motyw (łańcuch) z zakończeniami; lista motywów, zmiana motywu.
   await karta(page);
-  await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
-  await page.getByRole('menuitem', { name: 'Separator z motywem' }).click();
+  await pasekDodaj.getByRole('button', { name: 'Separator z motywem', exact: true }).click();
   await sekcja(page, 'Separator');
   const motywy = p.getByRole('group', { name: 'Motyw', exact: true });
   await expect(motywy.getByRole('button')).toHaveCount(6);

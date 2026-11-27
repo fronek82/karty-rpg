@@ -300,7 +300,7 @@ for (const motyw of ['light', 'dark'] as const) {
       `Layers heading EN (${motyw})`,
     );
 
-    await page.getByRole('button', { name: /Card editor/ }).click();
+    await page.getByRole('button', { name: /Go to cards/ }).click();
     const ustEn = await otworzDruk(page, true);
     await ustEn
       .getByRole('button', { name: /Delete card back/ })
