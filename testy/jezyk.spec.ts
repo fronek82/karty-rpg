@@ -23,7 +23,7 @@ test.describe('język domyślny według przeglądarki (D8)', () => {
       await page.goto('./');
       expect(await jezykDokumentu(page)).toBe('en');
       await expect(page.locator('.riso-tytul')).toHaveText('RPG CARDS');
-      await expect(page.getByRole('link', { name: /Mausritter A4/ })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Mausritter A4/ })).toBeVisible();
       await expect(page.getByRole('button', { name: /\+ NEW CARDS/ })).toBeVisible();
       await expect(page.getByRole('heading', { name: /My projects/ })).toBeVisible();
       await expect(page.getByText('You have no projects yet.')).toBeVisible();
@@ -97,7 +97,7 @@ test('przełączenie PL → EN → PL bez przeładowania, język zapamiętany po
   );
   await wybierz(page, 'EN');
   await expect(page.getByRole('heading', { name: 'My projects' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Mausritter A4/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Mausritter A4/ })).toBeVisible();
   expect(await jezykDokumentu(page)).toBe('en');
   expect(await zapamietany(page)).toBe('en');
   expect(
@@ -170,11 +170,11 @@ test.describe('edytor kartki po angielsku', () => {
     page,
   }) => {
     await page.goto('./#/');
-    await page.getByRole('link', { name: /Mausritter A4/ }).click();
-    await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
+    await page.getByTestId('start-mausritter').click();
+    await page.getByTestId('start-pusty-arkusz').click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole('link', { name: /^Print cards/ })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Nothing selected' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Go to print/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sheet' })).toBeVisible();
     // Nazwa projektu powstała w języku z chwili utworzenia.
     await expect(page.getByRole('textbox', { name: 'Project name' })).toHaveValue('My cards');
 
@@ -192,7 +192,7 @@ test.describe('edytor kartki po angielsku', () => {
     const panel = page.getByRole('complementary', { name: 'Selected cards' });
     await expect(panel).toBeVisible();
     await expect(panel.getByLabel('Number of copies')).toBeVisible();
-    await expect(panel.getByRole('button', { name: 'Duplicate', exact: true })).toBeVisible();
+    await expect(panel.getByRole('button', { name: /Duplicate/ })).toBeVisible();
     await expect(panel.getByRole('button', { name: /1×2 heavy/ })).toBeVisible();
   });
 
@@ -200,8 +200,8 @@ test.describe('edytor kartki po angielsku', () => {
     page,
   }) => {
     await page.goto('./#/');
-    await page.getByRole('link', { name: /Mausritter A4/ }).click();
-    await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
+    await page.getByTestId('start-mausritter').click();
+    await page.getByTestId('start-pusty-arkusz').click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     await page
       .getByRole('button', {
@@ -231,18 +231,19 @@ test.describe('edytor kartki po angielsku', () => {
     // Edycja po zmianie języka działa, a przycisk „Zapisz” zapisuje zmiany.
     await panel.getByLabel('Nazwa', { exact: true }).fill('Kula ognia');
     await expect(page.locator('[data-karta][aria-label^="Kula ognia – strona 1"]')).toHaveCount(1);
-    await expect(page.locator('.status-zapisu')).toHaveText('Niezapisane zmiany');
-    await page.getByRole('button', { name: 'Zapisz', exact: true }).click();
-    await expect(page.locator('.status-zapisu')).toHaveText('Zapisano');
+    const zapiszBtn = page.locator('header.ui2-naglowek .ui2-stan-zapisu-btn');
+    await expect(zapiszBtn).toHaveText('Zapisz');
+    await zapiszBtn.click();
+    await expect(page.locator('header.ui2-naglowek .ui2-stan-zapisu')).toHaveText('✓ zapisano');
     await wybierz(page, 'EN');
-    await expect(page.locator('.status-zapisu')).toHaveText('Saved');
+    await expect(page.locator('header.ui2-naglowek .ui2-stan-zapisu')).toHaveText('✓ saved');
     await expect(page.locator('[data-karta][aria-label^="Kula ognia – page 1"]')).toHaveCount(1);
   });
 
   test('opcje druku po angielsku: tytuł, papier, kalibracja', async ({ page }) => {
     await page.goto('./#/');
-    await page.getByRole('link', { name: /Mausritter A4/ }).click();
-    await page.getByRole('button', { name: /Blank A4 sheet/ }).click();
+    await page.getByTestId('start-mausritter').click();
+    await page.getByTestId('start-pusty-arkusz').click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     const opcje = await otworzDruk(page, true);
     await expect(opcje.getByLabel('Sheet title')).toHaveValue('My cards');

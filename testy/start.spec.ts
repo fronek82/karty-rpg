@@ -4,7 +4,7 @@ test('start: wybór gry po polsku, pusta lista projektów', async ({ page }) => 
   await page.goto('./');
   await expect(page.locator('html')).toHaveAttribute('lang', 'pl');
   await expect(page.locator('.riso-tytul')).toHaveText('KARTY RPG');
-  await expect(page.getByRole('link', { name: /Mausritter A4/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Mausritter A4/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /\+ NOWE KARTY/ })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: /Moje projekty/ })).toBeVisible();
   await expect(page.getByText('Nie masz jeszcze żadnych projektów.')).toBeVisible();
@@ -25,16 +25,17 @@ test('własne karty: menu z importem, kafelki przykładów, bez listy gier; star
   await expect(naglowek).toBeVisible();
 });
 
-test('Mausritter: drugi ekran z pustą kartką i gotowymi układami', async ({ page }) => {
+test('Mausritter: okno „Od czego zaczynamy?” z pustym arkuszem i gotowymi arkuszami', async ({
+  page,
+}) => {
   await page.goto('./');
-  await page.getByRole('link', { name: /Mausritter A4/ }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Karty do Mausrittera' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Pusta kartka A4/ })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Broń i pancerze', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: /^Zacznij od gotowego układu/ }).click();
-  await expect(page.getByRole('button', { name: /Pusta kartka A4/ })).toHaveCount(0);
+  await page.getByTestId('start-mausritter').click();
+  const okno = page.getByTestId('okno-startu-mausritter');
+  await expect(okno).toBeVisible();
+  await expect(okno.getByRole('heading', { name: 'Od czego zaczynamy?' })).toBeVisible();
+  await expect(okno.getByTestId('start-pusty-arkusz')).toBeEnabled();
   for (const u of ['Broń i pancerze', 'Wyposażenie', 'Stany', 'Wszystkie trzy'])
-    await expect(page.getByRole('button', { name: u, exact: true })).toBeVisible();
+    await expect(okno.getByRole('button', { name: new RegExp(`^${u}`) })).toBeVisible();
 });
 
 test('nieznana trasa i dawne trasy', async ({ page }) => {
@@ -59,11 +60,11 @@ test('odnośnik pomija pasek, a przejścia klawiaturą przenoszą fokus do głó
   await expect(pomin).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(main.getByRole('heading', { level: 1 })).toBeFocused();
-  await page.getByRole('link', { name: /Mausritter A4/ }).press('Enter');
-  await expect(main.getByRole('heading', { level: 1, name: 'Karty do Mausrittera' })).toBeFocused();
-  await page.getByRole('button', { name: /Pusta kartka A4/ }).press('Enter');
-  const edytor = main.getByRole('heading', { level: 1 });
-  await expect(edytor).toBeFocused();
+  await page.getByTestId('start-mausritter').press('Enter');
+  const przyciskPusty = page.getByTestId('start-pusty-arkusz');
+  await expect(przyciskPusty).toBeFocused();
+  await przyciskPusty.press('Enter');
+  await expect(page.getByTestId('okno-startu-mausritter')).toHaveCount(0);
   await expect(main).toHaveCount(1);
   await expect(page.getByRole('banner')).toHaveCount(1);
 });

@@ -24,6 +24,14 @@
   font-weight: 700;
 }
 
+.mausritter-ui2-ekran > .ostrzezenia-projektu {
+  margin: 0;
+  padding: 6px 14px;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  line-height: 20px;
+}
+
 /* --- Pasek zakładek arkuszy nad obszarem roboczym (sekcja 13.4) --- */
 .mausritter-ui2-zakladki {
   align-items: flex-end;

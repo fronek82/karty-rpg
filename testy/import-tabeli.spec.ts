@@ -105,7 +105,7 @@ test('projekt Mausrittera nie oferuje importu CSV/XLSX, także na kartce własne
     buffer: Buffer.from(zipSync({ 'szablon.json': strToU8(JSON.stringify(szablonWlasny)) })),
   });
   await expect(kartki).toHaveCount(2);
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.getByRole('link', { name: /Karty na arkuszach/ }).click();
   // Projekt Mausrittera: karty wypełnia się w edytorze – bez importu CSV/XLSX na żadnej kartce (N1).
   await expect(kartki.first().locator('[data-karta]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Importuj CSV lub XLSX' })).toHaveCount(0);

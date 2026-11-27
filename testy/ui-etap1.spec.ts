@@ -63,7 +63,7 @@ for (const motyw of ['light', 'dark'] as const) {
     await page.goto('./#/');
     await page.mouse.move(0, 0);
     const startWlasne = page.getByRole('button', { name: /\+ NOWE KARTY/ });
-    const startGra = page.getByRole('link', { name: /Mausritter A4/ });
+    const startGra = page.getByRole('button', { name: /Mausritter A4/ });
     const kWlasne1 = await kolory(startWlasne);
     const kGra1 = await kolory(startGra);
     if (motyw === 'dark') {
@@ -71,21 +71,21 @@ for (const motyw of ['light', 'dark'] as const) {
       expect(kontrastRgb(kGra1.tekst, kGra1.tlo)).toBeGreaterThanOrEqual(4.5);
     }
 
-    // 2) Mausritter: krok 2 ma jednolite kolory i filtrowanie środka.
+    // 2) Mausritter: okno „Od czego zaczynamy?” ma jednolite kolory kafelków gotowych arkuszy.
     await startGra.click();
     await page.mouse.move(0, 0);
-    const menuGry = page.getByRole('navigation', { name: 'Od czego zacząć' });
-    const btnPusta = menuGry.getByRole('button', { name: /^Pusta kartka/ });
-    const btnUklady = menuGry.getByRole('button', { name: /^Zacznij od gotowego układu/ });
-    const kGra2 = await kolory(btnPusta);
-    expect(kGra2.tlo).toBe((await kolory(btnUklady)).tlo);
-    if (motyw === 'dark') expect(kontrastRgb(kGra2.tekst, kGra2.tlo)).toBeGreaterThanOrEqual(4.5);
-
-    await expect(page.locator('[data-grupa="pusta"]')).toBeVisible();
-    await expect(page.locator('[data-grupa="uklady"]')).toHaveCount(0);
-    await btnUklady.click();
-    await expect(page.locator('[data-grupa="uklady"]')).toBeVisible();
-    await expect(page.locator('[data-grupa="pusta"]')).toHaveCount(0);
+    const oknoGry = page.getByTestId('okno-startu-mausritter');
+    await expect(oknoGry).toBeVisible();
+    const btnPusty = oknoGry.getByTestId('start-pusty-arkusz');
+    const btnBron = oknoGry.locator('[data-uklad="bron"]');
+    const btnStany = oknoGry.locator('[data-uklad="stany"]');
+    const kUklad1 = await kolory(btnBron);
+    expect(kUklad1.tlo).toBe((await kolory(btnStany)).tlo);
+    if (motyw === 'dark') {
+      const kPusty = await kolory(btnPusty);
+      expect(kontrastRgb(kPusty.tekst, kPusty.tlo)).toBeGreaterThanOrEqual(4.5);
+      expect(kontrastRgb(kUklad1.tekst, kUklad1.tlo)).toBeGreaterThanOrEqual(4.5);
+    }
 
     // 3) Własne karty: stała szerokość kafelków menu i kontrast.
     await page.goto('./#/wlasne');

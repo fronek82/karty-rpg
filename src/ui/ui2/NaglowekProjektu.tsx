@@ -115,7 +115,7 @@ export function NaglowekProjektu({
         : t('ui2.stan.zapisano');
 
   return (
-    <header className="ui2-naglowek">
+    <header className="ui2-naglowek" role="banner">
       <a
         href={hrefPowrotu}
         className="ui2-naglowek-powrot"
@@ -222,6 +222,7 @@ export function NaglowekProjektu({
                   <button
                     type="button"
                     className="ui2-segment"
+                    aria-label={t('motyw.jasny')}
                     aria-pressed={motyw === 'light'}
                     onClick={() => ustawMotyw('light')}
                   >
@@ -230,6 +231,7 @@ export function NaglowekProjektu({
                   <button
                     type="button"
                     className="ui2-segment"
+                    aria-label={t('motyw.ciemny')}
                     aria-pressed={motyw === 'dark'}
                     onClick={() => ustawMotyw('dark')}
                   >
