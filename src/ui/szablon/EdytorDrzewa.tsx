@@ -73,6 +73,7 @@ import { useGestSwobodny } from './useGestSwobodny';
 import { PasekBoczny, type GrupaPaskaBocznego } from '../ui2/PasekBoczny';
 import { IkonaKreskowa } from '../ui2/Ikony';
 import { KLUCZ_WYSOKOSCI_STRUKTURY } from '../../wspolne/ustawienia';
+import { LinijkiKarty } from './LinijkiKarty';
 import './edytorUi2.css';
 
 // Okno AI ładowane dopiero po kliknięciu „Układ ze zdjęcia”.
@@ -463,6 +464,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
   const [wysokoscStruktury, ustawWysokoscStruktury] = useState<number>(odczytajWysokoscStruktury);
   const [prawyPanelOtwarty, ustawPrawyPanelOtwarty] = useState(true);
   const [prawaZakladka, ustawPrawaZakladka] = useState<'element' | 'karta'>('element');
+  const [widoczneLinie, ustawWidoczneLinie] = useState(true);
   const gestGranicy = useRef<{ startY: number; startH: number } | undefined>(undefined);
 
   // Operacje liczone w aktualizatorze (na najnowszym szablonie); nowe id przekazywane przez zmienną.
@@ -575,6 +577,9 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
     } else if (ctrl && k === 'd') {
       e.preventDefault();
       duplikuj();
+    } else if (ctrl && e.key === ';') {
+      e.preventDefault();
+      ustawWidoczneLinie((v) => !v);
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
       usun();
@@ -814,7 +819,7 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
 
   const szerokoscPodgladu =
     zoom === 'dopasuj'
-      ? `min(100%, ${(szer / wys) * 70}vh)`
+      ? `clamp(180px, ${(szer / wys) * 64}vh, calc(100vw - 500px))`
       : `${Math.round((szer * 3.78 * zoom) / 100)}px`;
 
   const onUpuscNaKarte = (e: React.DragEvent<HTMLDivElement>) => {
@@ -1125,139 +1130,168 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
               ) : (
                 podglad && (
                   <>
-                    <div
-                      ref={kartaRef}
-                      className={`karta-podgladu${przeciaganyRodzaj || nadKarta ? ' edytor-ui2-upusc-cel' : ''}`}
-                      role="group"
-                      aria-label={t('nakladka.opis')}
-                      tabIndex={0}
-                      style={{
-                        aspectRatio: `${szer} / ${wys}`,
-                        width: szerokoscPodgladu,
-                        touchAction: 'none',
-                        ...(promienKarty > 0
+                    <LinijkiKarty
+                      szer={szer}
+                      wys={wys}
+                      kartaRef={kartaRef}
+                      linie={szablon.liniePomocnicze ?? []}
+                      widoczne={widoczneLinie}
+                      zaznaczenieMm={
+                        prostokatUchwytow ??
+                        (edytowany && wymiary(edytowany.id)
                           ? {
-                              borderRadius: `${(promienKarty / szer) * 100}% / ${(promienKarty / wys) * 100}%`,
+                              x: wymiary(edytowany.id)!.lokalne.x,
+                              y: wymiary(edytowany.id)!.lokalne.y,
+                              szer: wymiary(edytowany.id)!.lokalne.szer,
+                              wys: wymiary(edytowany.id)!.lokalne.wys,
                             }
-                          : {}),
-                      }}
-                      onPointerDown={gest.onPointerDown}
-                      onPointerMove={gest.onPointerMove}
-                      onPointerUp={gest.onPointerUp}
-                      onPointerCancel={gest.onPointerCancel}
-                      onLostPointerCapture={gest.onLostPointerCapture}
-                      onDragOver={(e) => {
-                        if (
-                          przeciaganyRodzaj ||
-                          e.dataTransfer.types.includes('application/x-karty-rodzaj') ||
-                          e.dataTransfer.types.includes('text/plain')
-                        ) {
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = 'copy';
-                          if (!nadKarta) ustawNadKarta(true);
-                        }
-                      }}
-                      onDragLeave={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                          ustawNadKarta(false);
-                        }
-                      }}
-                      onDrop={onUpuscNaKarte}
+                          : undefined)
+                      }
+                      zmienLinie={(nowe) =>
+                        zmienSz(
+                          (s) =>
+                            nowe.length > 0
+                              ? { ...s, liniePomocnicze: nowe }
+                              : { ...s, liniePomocnicze: undefined },
+                          'linie-pomocnicze',
+                        )
+                      }
                     >
                       <div
-                        className="svg-opakowanie"
-                        dangerouslySetInnerHTML={{ __html: podglad.svg }}
-                      />
-                      {/* Podkład ze wzoru: nad kartą (tło karty jest kryjące), nie łapie kliknięć. */}
-                      {podklad?.podklad?.widoczny && podklad.adres && (
-                        <img
-                          className="podklad-podgladu"
-                          data-testid="podklad-podgladu"
-                          src={podklad.adres}
-                          alt=""
-                          aria-hidden="true"
-                          draggable={false}
-                          style={{ opacity: 1 - podklad.podklad.przezroczystosc / 100 }}
-                        />
-                      )}
-                      {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
-                      {[...podglad.wezly]
-                        .sort(
-                          (a, b) => b.lokalne.szer * b.lokalne.wys - a.lokalne.szer * a.lokalne.wys,
-                        )
-                        .map((w) => {
-                          const wezel = wezlyPoId.get(w.id);
-                          if (!wezel) return null;
-                          const r = w.obrys
+                        ref={kartaRef}
+                        className={`karta-podgladu${przeciaganyRodzaj || nadKarta ? ' edytor-ui2-upusc-cel' : ''}`}
+                        role="group"
+                        aria-label={t('nakladka.opis')}
+                        tabIndex={0}
+                        style={{
+                          aspectRatio: `${szer} / ${wys}`,
+                          width: szerokoscPodgladu,
+                          touchAction: 'none',
+                          ...(promienKarty > 0
                             ? {
-                                x: w.obrys.x - w.lokalne.szer / 2,
-                                y: w.obrys.y - w.lokalne.wys / 2,
-                                szer: w.lokalne.szer,
-                                wys: w.lokalne.wys,
+                                borderRadius: `${(promienKarty / szer) * 100}% / ${(promienKarty / wys) * 100}%`,
                               }
-                            : w;
-                          return (
-                            <button
-                              key={w.id}
-                              type="button"
-                              tabIndex={-1}
-                              className={`obszar-wezla${aktywne.includes(w.id) ? ' zaznaczony' : ''}${czyKontener(wezel) ? ' kontener' : ''}`}
-                              data-obszar={w.id}
-                              aria-label={nazwaWezla(wezel)}
-                              style={{
-                                left: `${(r.x / szer) * 100}%`,
-                                top: `${(r.y / wys) * 100}%`,
-                                width: `${(r.szer / szer) * 100}%`,
-                                height: `${(r.wys / wys) * 100}%`,
-                                ...(w.obrys ? { transform: `rotate(${w.obrys.kat}deg)` } : {}),
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Klik myszą obsługuje już `pointerdown` (zaznaczanie i przeciąganie);
-                                // tu zostaje aktywacja z klawiatury i technologii asystujących.
-                                if (e.detail === 0) wybierz(w.id, e.shiftKey);
-                              }}
-                            />
-                          );
-                        })}
-                      {/* Pusty stan tylko w edytorze: warstwa HTML nad sceną – nie trafia do SVG,
-                          PDF, PNG ani miniatur (te powstają ze sceny). */}
-                      {pustaKarta && (
-                        <div
-                          className="pusta-karta-podgladu"
-                          data-testid="pusty-stan-karty"
-                          onPointerDown={(e) => e.stopPropagation()}
-                        >
-                          <p>{t('szablon.pustaKartaPodglad')}</p>
-                          <MenuDodaj
-                            rodzaje={dozwoloneRodzaje}
-                            dodaj={dodaj}
-                            przycisk={{
-                              tresc: '＋',
-                              className: 'menu-dodaj-duzy',
-                              etykieta: t('szablon.dodajElement'),
-                              testId: 'dodaj-pusta-karta',
-                            }}
-                          />
-                        </div>
-                      )}
-                      <NakladkaSwobodna
-                        szer={szer}
-                        wys={wys}
-                        stan={gest.stan}
-                        siatka={przyciaganie.siatka}
-                        prostokat={prostokatUchwytow}
-                        obrot={celUchwytow?.lokalne ? celUchwytow.obrot : 0}
-                        uchwytDown={gest.onUchwytDown}
-                        uchwytKlawisz={(uch, e) => {
-                          if (e.altKey || e.ctrlKey || e.metaKey) return;
-                          if (gest.strzalkiUchwytu(uch, e)) {
+                            : {}),
+                        }}
+                        onPointerDown={gest.onPointerDown}
+                        onPointerMove={gest.onPointerMove}
+                        onPointerUp={gest.onPointerUp}
+                        onPointerCancel={gest.onPointerCancel}
+                        onLostPointerCapture={gest.onLostPointerCapture}
+                        onDragOver={(e) => {
+                          if (
+                            przeciaganyRodzaj ||
+                            e.dataTransfer.types.includes('application/x-karty-rodzaj') ||
+                            e.dataTransfer.types.includes('text/plain')
+                          ) {
                             e.preventDefault();
-                            e.stopPropagation();
+                            e.dataTransfer.dropEffect = 'copy';
+                            if (!nadKarta) ustawNadKarta(true);
                           }
                         }}
-                      />
-                    </div>
+                        onDragLeave={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            ustawNadKarta(false);
+                          }
+                        }}
+                        onDrop={onUpuscNaKarte}
+                      >
+                        <div
+                          className="svg-opakowanie"
+                          dangerouslySetInnerHTML={{ __html: podglad.svg }}
+                        />
+                        {/* Podkład ze wzoru: nad kartą (tło karty jest kryjące), nie łapie kliknięć. */}
+                        {podklad?.podklad?.widoczny && podklad.adres && (
+                          <img
+                            className="podklad-podgladu"
+                            data-testid="podklad-podgladu"
+                            src={podklad.adres}
+                            alt=""
+                            aria-hidden="true"
+                            draggable={false}
+                            style={{ opacity: 1 - podklad.podklad.przezroczystosc / 100 }}
+                          />
+                        )}
+                        {/* Obszary elementów – większe pod spodem, żeby mniejsze dało się kliknąć. */}
+                        {[...podglad.wezly]
+                          .sort(
+                            (a, b) =>
+                              b.lokalne.szer * b.lokalne.wys - a.lokalne.szer * a.lokalne.wys,
+                          )
+                          .map((w) => {
+                            const wezel = wezlyPoId.get(w.id);
+                            if (!wezel) return null;
+                            const r = w.obrys
+                              ? {
+                                  x: w.obrys.x - w.lokalne.szer / 2,
+                                  y: w.obrys.y - w.lokalne.wys / 2,
+                                  szer: w.lokalne.szer,
+                                  wys: w.lokalne.wys,
+                                }
+                              : w;
+                            return (
+                              <button
+                                key={w.id}
+                                type="button"
+                                tabIndex={-1}
+                                className={`obszar-wezla${aktywne.includes(w.id) ? ' zaznaczony' : ''}${czyKontener(wezel) ? ' kontener' : ''}`}
+                                data-obszar={w.id}
+                                aria-label={nazwaWezla(wezel)}
+                                style={{
+                                  left: `${(r.x / szer) * 100}%`,
+                                  top: `${(r.y / wys) * 100}%`,
+                                  width: `${(r.szer / szer) * 100}%`,
+                                  height: `${(r.wys / wys) * 100}%`,
+                                  ...(w.obrys ? { transform: `rotate(${w.obrys.kat}deg)` } : {}),
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Klik myszą obsługuje już `pointerdown` (zaznaczanie i przeciąganie);
+                                  // tu zostaje aktywacja z klawiatury i technologii asystujących.
+                                  if (e.detail === 0) wybierz(w.id, e.shiftKey);
+                                }}
+                              />
+                            );
+                          })}
+                        {/* Pusty stan tylko w edytorze: warstwa HTML nad sceną – nie trafia do SVG,
+                          PDF, PNG ani miniatur (te powstają ze sceny). */}
+                        {pustaKarta && (
+                          <div
+                            className="pusta-karta-podgladu"
+                            data-testid="pusty-stan-karty"
+                            onPointerDown={(e) => e.stopPropagation()}
+                          >
+                            <p>{t('szablon.pustaKartaPodglad')}</p>
+                            <MenuDodaj
+                              rodzaje={dozwoloneRodzaje}
+                              dodaj={dodaj}
+                              przycisk={{
+                                tresc: '＋',
+                                className: 'menu-dodaj-duzy',
+                                etykieta: t('szablon.dodajElement'),
+                                testId: 'dodaj-pusta-karta',
+                              }}
+                            />
+                          </div>
+                        )}
+                        <NakladkaSwobodna
+                          szer={szer}
+                          wys={wys}
+                          stan={gest.stan}
+                          siatka={przyciaganie.siatka}
+                          prostokat={prostokatUchwytow}
+                          obrot={celUchwytow?.lokalne ? celUchwytow.obrot : 0}
+                          uchwytDown={gest.onUchwytDown}
+                          uchwytKlawisz={(uch, e) => {
+                            if (e.altKey || e.ctrlKey || e.metaKey) return;
+                            if (gest.strzalkiUchwytu(uch, e)) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }
+                          }}
+                        />
+                      </div>
+                    </LinijkiKarty>
                     {przeciaganyRodzaj && (
                       <div className="edytor-ui2-upusc-podpowiedz" role="status">
                         {t('edytor.upuscPodpowiedz', { nazwa: t(`wezel.${przeciaganyRodzaj}`) })}
@@ -1293,11 +1327,38 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
             </section>
 
             <div className="ui2-pasek-stanu" data-testid="pasek-stanu-edytora">
-              <span>
-                {szer} × {wys} mm · {t(`wezel.${szablon.korzen.typ}`)} ·{' '}
-                {przyciaganie.siatka > 0
-                  ? `${t('edytor.przyciaganieWl')} (${przyciaganie.siatka} mm)`
-                  : t('edytor.przyciaganieWyl')}
+              <span className="edytor-ui2-stan-zoom">
+                <span>
+                  {szer} × {wys} mm · {t(`wezel.${szablon.korzen.typ}`)} ·{' '}
+                  {przyciaganie.siatka > 0
+                    ? `${t('edytor.przyciaganieWl')} (${przyciaganie.siatka} mm)`
+                    : t('edytor.przyciaganieWyl')}
+                </span>
+                {(szablon.liniePomocnicze?.length ?? 0) > 0 && (
+                  <>
+                    <span>
+                      · {t('edytor.linieLiczba', { n: szablon.liniePomocnicze?.length ?? 0 })}
+                    </span>
+                    <button
+                      type="button"
+                      className="edytor-ui2-stan-btn"
+                      data-testid="przelacz-linie"
+                      onClick={() => ustawWidoczneLinie((v) => !v)}
+                    >
+                      {widoczneLinie ? t('edytor.ukryjLinie') : t('edytor.pokazLinie')}
+                    </button>
+                    <button
+                      type="button"
+                      className="edytor-ui2-stan-btn"
+                      data-testid="usun-linie"
+                      onClick={() =>
+                        zmienSz((s) => ({ ...s, liniePomocnicze: undefined }), 'linie-pomocnicze')
+                      }
+                    >
+                      {t('edytor.usunLinie')}
+                    </button>
+                  </>
+                )}
               </span>
               <span className="edytor-ui2-stan-zoom">
                 <button

@@ -181,7 +181,8 @@ export const STRONY: Record<StronaKarty, KonfiguracjaStrony> = {
     ustawStalyObraz,
     // Zależy tylko od tego, co widać na karcie – zmiana nazwy nie rysuje karty od nowa.
     // Podkład ze wzoru nie bierze udziału w rysunku (jest tylko pod podglądem w edytorze).
-    kluczRysunku: (_p, _id, w) => JSON.stringify({ ...w, nazwa: '', podklad: undefined }),
+    kluczRysunku: (_p, _id, w) =>
+      JSON.stringify({ ...w, nazwa: '', podklad: undefined, liniePomocnicze: undefined }),
     rysuj: rysujPrzod,
     przedrostekSvg: 'sz-',
     miniatura: 'szablon',

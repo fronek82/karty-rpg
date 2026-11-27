@@ -88,6 +88,8 @@ export interface Cel {
   rodzenstwo: { id: string; rect: Prostokat }[];
   /** Osie, w których wolno zmieniać rozmiar (w układzie widocznym): separator ma tylko długość. */
   osie: { szer: boolean; wys: boolean };
+  /** Linie pomocnicze szablonu (v → x, h → y) do przyciągania krawędzi i środków. */
+  linie?: { x: number[]; y: number[] };
 }
 
 const katSumy = (k: number): ObrotSwobodny => ((k % 360) + 360) % 360;
@@ -112,6 +114,12 @@ export function budujCel(szablon: Szablon, wezly: WezlyKarty, id: string): Cel |
   const bok = w.obrot === 90 || w.obrot === 270;
   const poziomaDlugosc = separator ? !pionowy : true;
   const pionowaDlugosc = separator ? pionowy : true;
+  const linie = szablon.liniePomocnicze?.length
+    ? {
+        x: szablon.liniePomocnicze.filter((l) => l.os === 'v').map((l) => l.mm),
+        y: szablon.liniePomocnicze.filter((l) => l.os === 'h').map((l) => l.mm),
+      }
+    : undefined;
   return {
     id,
     rodzicId: r.rodzic.id,
@@ -136,6 +144,7 @@ export function budujCel(szablon: Szablon, wezly: WezlyKarty, id: string): Cel |
     osie: bok
       ? { szer: pionowaDlugosc, wys: poziomaDlugosc }
       : { szer: poziomaDlugosc, wys: pionowaDlugosc },
+    ...(linie ? { linie } : {}),
   };
 }
 
@@ -221,6 +230,10 @@ export function kandydaciPrzyciagania(
   dodaj(cel.kontener);
   dodaj(cel.ramka);
   for (const s of cel.rodzenstwo) if (!wyklucz.has(s.id)) dodaj(s.rect);
+  if (cel.linie) {
+    x.push(...cel.linie.x);
+    y.push(...cel.linie.y);
+  }
   return { x, y };
 }
 

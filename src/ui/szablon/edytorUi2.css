@@ -343,3 +343,209 @@
   margin-top: auto;
   font-family: var(--czcionka-naglowek);
 }
+
+/* Linijki w mm i linie pomocnicze (UI2 R5) */
+.edytor-ui2-scena-z-linijkami {
+  display: grid;
+  grid-template-columns: 22px auto;
+  grid-template-rows: 22px auto;
+  gap: 10px;
+  align-items: stretch;
+  justify-items: stretch;
+  user-select: none;
+}
+
+.edytor-ui2-linijka-rog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tlo-pasek);
+  border: 1px solid var(--tekst);
+  color: var(--tekst-2);
+  font-family: var(--czcionka-mono);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.edytor-ui2-linijka-pozioma {
+  position: relative;
+  height: 22px;
+  background: var(--tlo-pasek);
+  border-bottom: 1px solid var(--tekst);
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.edytor-ui2-linijka-pionowa {
+  position: relative;
+  width: 22px;
+  background: var(--tlo-pasek);
+  border-right: 1px solid var(--tekst);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.edytor-ui2-linijka-tor-x {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: var(--tlo-pasek);
+  border-bottom: 1px solid var(--tekst);
+}
+
+.edytor-ui2-linijka-tor-y {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  background: var(--tlo-pasek);
+  border-right: 1px solid var(--tekst);
+}
+
+.edytor-ui2-linijka-zazn-x {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--zaznaczenie) 24%, transparent);
+  border-bottom: 2px solid var(--zaznaczenie);
+}
+
+.edytor-ui2-linijka-zazn-y {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--zaznaczenie) 24%, transparent);
+  border-right: 2px solid var(--zaznaczenie);
+}
+
+.edytor-ui2-kreska-x {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  background: var(--linia-2);
+}
+
+.edytor-ui2-kreska-x.mm {
+  height: 4px;
+}
+
+.edytor-ui2-kreska-x.polcm {
+  height: 7px;
+  background: var(--tekst-2);
+}
+
+.edytor-ui2-kreska-x.cm {
+  height: 11px;
+  background: var(--tekst);
+}
+
+.edytor-ui2-kreska-etykieta-x {
+  position: absolute;
+  top: -10px;
+  left: 2px;
+  font-family: var(--czcionka-mono);
+  font-size: 9px;
+  line-height: 1;
+  color: var(--tekst-2);
+}
+
+.edytor-ui2-kreska-y {
+  position: absolute;
+  right: 0;
+  height: 1px;
+  background: var(--linia-2);
+}
+
+.edytor-ui2-kreska-y.mm {
+  width: 4px;
+}
+
+.edytor-ui2-kreska-y.polcm {
+  width: 7px;
+  background: var(--tekst-2);
+}
+
+.edytor-ui2-kreska-y.cm {
+  width: 11px;
+  background: var(--tekst);
+}
+
+.edytor-ui2-kreska-etykieta-y {
+  position: absolute;
+  left: -9px;
+  top: 2px;
+  font-family: var(--czcionka-mono);
+  font-size: 9px;
+  line-height: 1;
+  color: var(--tekst-2);
+}
+
+.edytor-ui2-karta-obszar {
+  position: relative;
+}
+
+.edytor-ui2-linie-warstwa {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.edytor-ui2-linia {
+  position: absolute;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.edytor-ui2-linia.pozioma {
+  left: -14px;
+  right: -14px;
+  height: 9px;
+  margin-top: -4px;
+  cursor: row-resize;
+}
+
+.edytor-ui2-linia.pozioma::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
+  border-top: 1px dashed var(--zaznaczenie);
+}
+
+.edytor-ui2-linia.pionowa {
+  top: -14px;
+  bottom: -14px;
+  width: 9px;
+  margin-left: -4px;
+  cursor: col-resize;
+}
+
+.edytor-ui2-linia.pionowa::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  border-left: 1px dashed var(--zaznaczenie);
+}
+
+.edytor-ui2-linia.aktywna::after {
+  border-style: solid;
+  border-width: 1.5px;
+}
+
+.edytor-ui2-linia-etykieta {
+  position: absolute;
+  padding: 2px 6px;
+  background: var(--zaznaczenie);
+  color: var(--papier);
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
+}

@@ -632,6 +632,15 @@ export interface WzorTla {
   odstepY?: Mm;
 }
 
+/** Linia pomocnicza w edytorze szablonu/rewersu (tylko do projektowania – nigdy nie trafia do sceny ani PDF). */
+export interface LiniaPomocnicza {
+  id: string;
+  /** Oś linii: `h` – pozioma (pozycja Y w mm), `v` – pionowa (pozycja X w mm). */
+  os: 'h' | 'v';
+  /** Położenie od górnej (`h`) lub lewej (`v`) krawędzi karty w mm (krok 0,5 mm). */
+  mm: Mm;
+}
+
 /** Samodzielny układ graficzny rewersu. Wymiary są formatem odniesienia warstw. */
 export interface Rewers {
   id: string;
@@ -658,6 +667,8 @@ export interface Rewers {
    * tam jest stały tekst albo wartość pola przodu o tej samej nazwie.
    */
   przyklad?: Record<string, string>;
+  /** Linie pomocnicze w edytorze – zapisywane w rewersie, nigdy nie drukowane. */
+  liniePomocnicze?: LiniaPomocnicza[];
 }
 
 /** Brak pola dziedziczy, null jawnie wyłącza rewers. */
@@ -689,6 +700,8 @@ export interface Szablon {
    * do pliku szablonu (tylko do eksportu całego projektu – zasób jest w `Projekt.zasoby`).
    */
   podklad?: PodkladSzablonu;
+  /** Linie pomocnicze w edytorze – zapisywane w szablonie, nigdy nie drukowane. */
+  liniePomocnicze?: LiniaPomocnicza[];
   /**
    * Inny układ dla wybranego rozmiaru karty w slotach (np. ciężka broń 1×2 z ilustracją na całą
    * szerokość). Bez pasującego wariantu karta używa `korzen`.
