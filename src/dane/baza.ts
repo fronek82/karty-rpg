@@ -1,8 +1,19 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { t } from '../i18n';
 import type { PresetUkladu } from '../model/arkusz';
-import type { DaneZasobow, OpisZasobu, Projekt, ZrodloCzcionki } from '../model/projekt';
-import { kluczTresciSzablonu, type WariantCzcionki } from '../model/szablon';
+import {
+  WERSJA_SCHEMATU,
+  type DaneZasobow,
+  type OpisZasobu,
+  type Projekt,
+  type ZrodloCzcionki,
+} from '../model/projekt';
+import {
+  kluczTresciSzablonu,
+  type Rewers,
+  type Szablon,
+  type WariantCzcionki,
+} from '../model/szablon';
 import type { ElementOzdobny } from '../ozdobniki/typy';
 import {
   elementyProjektu,
@@ -11,6 +22,16 @@ import {
   zasobyElementow,
   zasobyObrazowSzablonu,
 } from './biblioteka';
+import {
+  MAKS_SZABLONOW_BIBLIOTEKI,
+  oczyscRewersDoBiblioteki,
+  oczyscSzablonDoBiblioteki,
+  roleSzablonu,
+  skrotSzablonu,
+  unikalnaNazwaSzablonu,
+  type RodzajSzablonu,
+  type WpisSzablonu,
+} from './bibliotekaSzablonow';
 import {
   czyZasobProjektu,
   elementZWpisu,
@@ -221,6 +242,7 @@ const RODZAJE_BIBLIOTEKI = new Set<string>(['ozdobnik', 'obraz', 'czcionka']);
 export class BazaDexie extends Dexie {
   biblioteka!: EntityTable<WpisBiblioteki, 'id'>;
   bajtyBiblioteki!: EntityTable<{ id: string; dane: BajtyWBazie }, 'id'>;
+  szablony!: EntityTable<WpisSzablonu, 'id'>;
   meta!: EntityTable<{ klucz: string; wartosc: string }, 'klucz'>;
   kopiaMigracji!: EntityTable<WpisProjektu, 'id'>;
   bibliotekaGlobalna!: EntityTable<WpisBibliotekiGlobalnej, 'id'>;
@@ -261,10 +283,15 @@ export class BazaDexie extends Dexie {
       meta: 'klucz',
       kopiaMigracji: 'id',
     });
+    // Wersja 6 (Plan S, S1): biblioteka szablonów i tyłów osobno od projektów.
+    // Dane przenosi `migrujSzablonyDoBiblioteki` po otwarciu bazy.
+    this.version(6).stores({
+      szablony: 'id, rodzaj, zmieniono, hash',
+    });
   }
 }
 
-export type { WpisProjektu };
+export type { WpisProjektu, WpisSzablonu };
 
 /** Projekty z zasobami i globalne paczki zapisane lokalnie w IndexedDB. */
 export class BazaProjektow {
@@ -282,19 +309,23 @@ export class BazaProjektow {
   constructor(nazwa = 'karty-rpg', opcje: { bezMigracji?: boolean } = {}) {
     this.db = new BazaDexie(nazwa);
     if (opcje.bezMigracji) return;
-    // Jednorazowe przeniesienie danych do biblioteki użytkownika – operacje tego połączenia
-    // czekają na koniec. Migracja idzie przez osobne połączenie: w `on('ready')` operacje po
-    // `await` na obietnice spoza Dexie straciłyby pierwszeństwo i czekały na samo otwarcie.
-    // Błąd migracji nie blokuje aplikacji: stan zostaje „w toku” i migracja rusza przy
-    // następnym otwarciu, a do tego czasu projekty używają własnych zasobów.
+    // Jednorazowe przeniesienie danych do biblioteki użytkownika (N8) i biblioteki szablonów (S1) –
+    // operacje tego połączenia czekają na koniec. Migracja idzie przez osobne połączenie:
+    // w `on('ready')` operacje po `await` na obietnice spoza Dexie straciłyby pierwszeństwo
+    // i czekały na samo otwarcie. Błąd migracji nie blokuje aplikacji.
     this.db.on('ready', async () => {
       const pomocnicza = new BazaProjektow(nazwa, { bezMigracji: true });
       try {
-        if ((await pomocnicza.db.meta.get('migracjaN8'))?.wartosc === 'gotowa') return;
-        const { migrujDoBiblioteki } = await import('./migracjaBiblioteki');
-        await migrujDoBiblioteki(pomocnicza.db, pomocnicza);
+        if ((await pomocnicza.db.meta.get('migracjaN8'))?.wartosc !== 'gotowa') {
+          const { migrujDoBiblioteki } = await import('./migracjaBiblioteki');
+          await migrujDoBiblioteki(pomocnicza.db, pomocnicza);
+        }
+        if ((await pomocnicza.db.meta.get('migracjaS1'))?.wartosc !== 'gotowa') {
+          const { migrujSzablonyDoBiblioteki } = await import('./migracjaSzablonow');
+          await migrujSzablonyDoBiblioteki(pomocnicza.db, pomocnicza);
+        }
       } catch (e) {
-        console.error('Migracja do biblioteki użytkownika nie powiodła się', e);
+        console.error('Migracja bazy danych nie powiodła się', e);
       } finally {
         pomocnicza.zamknij();
       }
@@ -968,19 +999,354 @@ export class BazaProjektow {
     return (await this.db.projekty.get(id))?.tylkoSzablony === true;
   }
 
+  // -------------------------------------------------------------------------------------------
+  // Biblioteka szablonów (Plan S, S1)
+
+  /** Wpisy biblioteki szablonów (przody i/lub tyły), od ostatnio zmienianych. */
+  async szablonyBiblioteki(rodzaj?: RodzajSzablonu): Promise<WpisSzablonu[]> {
+    const lista = rodzaj
+      ? await this.db.szablony.where('rodzaj').equals(rodzaj).toArray()
+      : await this.db.szablony.toArray();
+    return lista.sort((a, b) => b.zmieniono.localeCompare(a.zmieniono));
+  }
+
+  /** Pojedynczy wpis biblioteki szablonów albo `undefined`. */
+  async szablonBiblioteki(id: string): Promise<WpisSzablonu | undefined> {
+    return this.db.szablony.get(id);
+  }
+
+  private async sprawdzLimitSzablonow(): Promise<void> {
+    if ((await this.db.szablony.count()) >= MAKS_SZABLONOW_BIBLIOTEKI)
+      throw new BladDanych(t('dane.zaDuzoSzablonow', { limit: MAKS_SZABLONOW_BIBLIOTEKI }));
+  }
+
+  /**
+   * Dodaje szablon przodu do biblioteki szablonów. Przy identycznej treści (`hash`) zwraca
+   * istniejący rekord (chyba że `bezDeduplikacji: true`, np. przy ręcznym duplikowaniu).
+   * Powtórzona nazwa innego szablonu dostaje sufiks „(2)”, „(3)”…
+   */
+  async dodajSzablonDoBiblioteki(
+    szablon: Szablon,
+    roleProjektu: Record<string, string>,
+    opcje: { zmieniono?: string; domyslnyRewersId?: string; bezDeduplikacji?: boolean } = {},
+  ): Promise<{ id: string; hash: string; nowy: boolean }> {
+    const hash = await skrotSzablonu(szablon);
+    const role = roleSzablonu(szablon, roleProjektu);
+    return this.db.transaction('rw', this.db.szablony, async () => {
+      if (!opcje.bezDeduplikacji) {
+        const istniejacy = (await this.db.szablony.where('hash').equals(hash).toArray()).find(
+          (w) => w.rodzaj === 'awers',
+        );
+        if (istniejacy) {
+          if (!istniejacy.domyslnyRewersId && opcje.domyslnyRewersId) {
+            await this.db.szablony.put({
+              ...istniejacy,
+              domyslnyRewersId: opcje.domyslnyRewersId,
+            });
+          }
+          return { id: istniejacy.id, hash: istniejacy.hash, nowy: false };
+        }
+      }
+      await this.sprawdzLimitSzablonow();
+      const obecne = await this.db.szablony.where('rodzaj').equals('awers').toArray();
+      const nazwa = unikalnaNazwaSzablonu(szablon.nazwa, new Set(obecne.map((w) => w.nazwa)));
+      const id = crypto.randomUUID();
+      const zmieniono = opcje.zmieniono ?? new Date().toISOString();
+      await this.db.szablony.put({
+        id,
+        rodzaj: 'awers',
+        nazwa,
+        zmieniono,
+        hash,
+        role,
+        szablon: oczyscSzablonDoBiblioteki(szablon, id, nazwa),
+        ...(opcje.domyslnyRewersId ? { domyslnyRewersId: opcje.domyslnyRewersId } : {}),
+      });
+      return { id, hash, nowy: true };
+    });
+  }
+
+  /**
+   * Dodaje tył (rewers) do biblioteki szablonów. Przy identycznej treści (`hash`) zwraca
+   * istniejący rekord (chyba że `bezDeduplikacji: true`). Powtórzona nazwa dostaje sufiks „(2)”…
+   */
+  async dodajRewersDoBiblioteki(
+    rewers: Rewers,
+    roleProjektu: Record<string, string>,
+    opcje: { zmieniono?: string; bezDeduplikacji?: boolean } = {},
+  ): Promise<{ id: string; hash: string; nowy: boolean }> {
+    const hash = await skrotSzablonu(rewers);
+    const role = roleSzablonu(rewers, roleProjektu);
+    return this.db.transaction('rw', this.db.szablony, async () => {
+      if (!opcje.bezDeduplikacji) {
+        const istniejacy = (await this.db.szablony.where('hash').equals(hash).toArray()).find(
+          (w) => w.rodzaj === 'rewers',
+        );
+        if (istniejacy) return { id: istniejacy.id, hash: istniejacy.hash, nowy: false };
+      }
+      await this.sprawdzLimitSzablonow();
+      const obecne = await this.db.szablony.where('rodzaj').equals('rewers').toArray();
+      const nazwa = unikalnaNazwaSzablonu(rewers.nazwa, new Set(obecne.map((w) => w.nazwa)));
+      const id = crypto.randomUUID();
+      const zmieniono = opcje.zmieniono ?? new Date().toISOString();
+      await this.db.szablony.put({
+        id,
+        rodzaj: 'rewers',
+        nazwa,
+        zmieniono,
+        hash,
+        role,
+        rewers: oczyscRewersDoBiblioteki(rewers, id, nazwa),
+      });
+      return { id, hash, nowy: true };
+    });
+  }
+
+  /** Zapisuje zmiany istniejącego wpisu biblioteki szablonów i przelicza jego `hash` oraz datę. */
+  async zapiszSzablonWBibliotece(wpis: WpisSzablonu): Promise<WpisSzablonu> {
+    const dokument = wpis.rodzaj === 'awers' ? wpis.szablon : wpis.rewers;
+    if (!dokument) throw new BladDanych(t('dane.brakSzablonu', { id: wpis.id }));
+    const nazwa = wpis.nazwa.trim() || dokument.nazwa.trim() || 'Szablon';
+    const hash = await skrotSzablonu(dokument);
+    const zmieniono = new Date().toISOString();
+    const zapisany: WpisSzablonu =
+      wpis.rodzaj === 'awers'
+        ? {
+            id: wpis.id,
+            rodzaj: 'awers',
+            nazwa,
+            zmieniono,
+            hash,
+            role: roleSzablonu(wpis.szablon!, wpis.role),
+            szablon: oczyscSzablonDoBiblioteki(wpis.szablon!, wpis.id, nazwa),
+            ...(wpis.domyslnyRewersId ? { domyslnyRewersId: wpis.domyslnyRewersId } : {}),
+          }
+        : {
+            id: wpis.id,
+            rodzaj: 'rewers',
+            nazwa,
+            zmieniono,
+            hash,
+            role: roleSzablonu(wpis.rewers!, wpis.role),
+            rewers: oczyscRewersDoBiblioteki(wpis.rewers!, wpis.id, nazwa),
+          };
+    await this.db.szablony.put(zapisany);
+    return zapisany;
+  }
+
+  /** Usuwa wpis z biblioteki szablonów (zwraca usunięty rekord do „Cofnij”). */
+  async usunSzablonZBiblioteki(id: string): Promise<WpisSzablonu | undefined> {
+    const wpis = await this.db.szablony.get(id);
+    if (!wpis) return undefined;
+    await this.db.transaction('rw', [this.db.szablony, this.db.miniatury], async () => {
+      await this.db.szablony.delete(id);
+      await this.db.miniatury.delete(`bib-szablon:${id}`);
+    });
+    return wpis;
+  }
+
+  /** Przywraca usunięty wpis biblioteki szablonów (np. po kliknięciu „Cofnij”). */
+  async przywrocSzablonWBibliotece(wpis: WpisSzablonu): Promise<void> {
+    await this.db.szablony.put(wpis);
+  }
+
+  /** Projekty, które mają kopię danego szablonu lub tyłu (`zrodlo.id === id`). */
+  async projektyZKopiaSzablonu(id: string): Promise<{ id: string; nazwa: string }[]> {
+    const wynik: { id: string; nazwa: string }[] = [];
+    for (const w of await this.db.projekty.toArray()) {
+      if (w.tylkoSzablony) continue;
+      const p = w.projekt;
+      const ma =
+        p.szablony.some((s) => s.zrodlo?.id === id) ||
+        (p.rewersy ?? []).some((r) => r.zrodlo?.id === id);
+      if (ma) wynik.push({ id: w.id, nazwa: p.nazwa });
+    }
+    return wynik;
+  }
+
+  /**
+   * Rejestruje szablony i tyły projektu własnego w bibliotece szablonów (łączenie po `hash`,
+   * sufiks przy zajętej nazwie) i wpisuje `zrodlo` w kopie w projekcie. Pakiety gier bez zmian.
+   */
+  async rejestrujSzablonyProjektuWBibliotece(projekt: Projekt): Promise<Projekt> {
+    const { czyProjektWlasny } = await import('./wlasneKarty');
+    if (!czyProjektWlasny(projekt)) return projekt;
+    const rewersowy = czyProjektRewersowy(projekt);
+    const mapaRewersow = new Map<string, { id: string; hash: string }>();
+    const rewersy: Rewers[] = [];
+    for (const r of projekt.rewersy ?? []) {
+      const wynik = await this.dodajRewersDoBiblioteki(r, projekt.role, {
+        zmieniono: projekt.zmieniono,
+      });
+      mapaRewersow.set(r.id, { id: wynik.id, hash: wynik.hash });
+      rewersy.push({ ...r, zrodlo: { id: wynik.id, hash: wynik.hash } });
+    }
+    const szablony: Szablon[] = [];
+    for (const s of projekt.szablony) {
+      if (rewersowy) {
+        szablony.push(s);
+        continue;
+      }
+      const domyslnyRewersId =
+        typeof s.rewersId === 'string' ? mapaRewersow.get(s.rewersId)?.id : undefined;
+      const wynik = await this.dodajSzablonDoBiblioteki(s, projekt.role, {
+        zmieniono: projekt.zmieniono,
+        ...(domyslnyRewersId ? { domyslnyRewersId } : {}),
+      });
+      szablony.push({ ...s, zrodlo: { id: wynik.id, hash: wynik.hash } });
+    }
+    const { rewersy: _r, ...bez } = projekt;
+    void _r;
+    return {
+      ...bez,
+      szablony,
+      ...(rewersy.length > 0 ? { rewersy } : {}),
+    };
+  }
+
+  /**
+   * Eksportuje pojedynczy szablon lub tył wprost z biblioteki szablonów do pliku `.kartyrpg-szablon`
+   * (z użytymi obrazami, czcionkami i ozdobnikami z biblioteki użytkownika).
+   */
+  async eksportujSzablonZBiblioteki(id: string): Promise<{
+    bajty: Uint8Array;
+    ostrzezenia: string[];
+  }> {
+    const wpis = await this.db.szablony.get(id);
+    if (!wpis) throw new BladDanych(t('dane.brakSzablonu', { id }));
+    const { czcionkiSzablonu, eksportujRewers, eksportujSzablon } = await import('./archiwum');
+    const wpisRewersu =
+      wpis.rodzaj === 'awers' && wpis.domyslnyRewersId
+        ? await this.db.szablony.get(wpis.domyslnyRewersId)
+        : undefined;
+    const domyslnyRewers = wpisRewersu?.rewers;
+    const szablon =
+      wpis.rodzaj === 'awers' && wpis.szablon
+        ? {
+            ...wpis.szablon,
+            ...(domyslnyRewers ? { rewersId: domyslnyRewers.id } : {}),
+          }
+        : undefined;
+    const rewers = wpis.rodzaj === 'rewers' ? wpis.rewers : domyslnyRewers;
+    const teraz = wpis.zmieniono;
+    const syntetyczny: Projekt = {
+      wersja: WERSJA_SCHEMATU,
+      id: `eksport-${wpis.id}`,
+      nazwa: wpis.nazwa,
+      utworzono: teraz,
+      zmieniono: teraz,
+      role: { ...(wpisRewersu?.role ?? {}), ...wpis.role },
+      zasoby: [],
+      szablony: szablon ? [szablon] : [],
+      ...(rewers ? { rewersy: [rewers] } : {}),
+      talie: [],
+      arkusze: [],
+    };
+    const { projekt, zasoby } = await this.widokProjektu(syntetyczny, new Map());
+    if (wpis.rodzaj === 'awers' && szablon) {
+      return eksportujSzablon(projekt, zasoby, szablon.id);
+    }
+    if (wpis.rodzaj === 'rewers' && rewers) {
+      const bajty = eksportujRewers(projekt, zasoby, rewers.id);
+      const rodziny = new Set(czcionkiSzablonu(rewers).map((n) => projekt.role[n] ?? n));
+      const ostrzezenia = [
+        ...new Set(
+          projekt.zasoby.flatMap((o) =>
+            o.rodzaj === 'czcionka' && o.zrodlo === 'wlasna' && rodziny.has(o.rodzina)
+              ? [t('dane.licencjaCzcionki', { rodzina: o.rodzina })]
+              : [],
+          ),
+        ),
+      ];
+      return { bajty, ostrzezenia };
+    }
+    throw new BladDanych(t('dane.brakSzablonu', { id }));
+  }
+
+  /**
+   * Importuje plik `.kartyrpg-szablon` (albo dawny `.kartyrpg-rewers`) bezpośrednio do biblioteki
+   * szablonów; jego zasoby (obrazy, czcionki, ozdobniki) trafiają do biblioteki użytkownika.
+   */
+  async importujSzablonDoBiblioteki(
+    bajty: Uint8Array,
+    opcje: { jako?: RodzajSzablonu } = {},
+  ): Promise<{
+    id: string;
+    rodzaj: RodzajSzablonu;
+    hash: string;
+    nowy: boolean;
+    rewersId?: string;
+  }> {
+    const { odczytajPlikSzablonu, rewersZSzablonu, szablonZRewersu } = await import('./archiwum');
+    const paczka = odczytajPlikSzablonu(bajty);
+    const teraz = new Date().toISOString();
+    let szablon = paczka.szablon;
+    let rewers = paczka.rewers;
+    if (opcje.jako === 'awers' && !szablon && rewers) {
+      szablon = szablonZRewersu(rewers);
+      rewers = undefined;
+    } else if (opcje.jako === 'rewers') {
+      if (!rewers && szablon) rewers = rewersZSzablonu(szablon);
+      szablon = undefined;
+    }
+    // Przeniesienie zasobów i ozdobników paczki do biblioteki użytkownika z przepisaniem odwołań.
+    const syntetyczny: Projekt = {
+      wersja: WERSJA_SCHEMATU,
+      id: `import-${crypto.randomUUID()}`,
+      nazwa: szablon?.nazwa ?? rewers?.nazwa ?? 'Szablon',
+      utworzono: teraz,
+      zmieniono: teraz,
+      role: paczka.role,
+      zasoby: paczka.zasoby,
+      szablony: szablon ? [szablon] : [],
+      ...(rewers ? { rewersy: [rewers] } : {}),
+      talie: [],
+      arkusze: [],
+      ...(paczka.biblioteka && paczka.biblioteka.length > 0
+        ? { biblioteka: { ozdobniki: paczka.biblioteka } }
+        : {}),
+    };
+    const { projekt: przepisany } = await this.przeniesDoBiblioteki(
+      syntetyczny,
+      (id) => paczka.dane.get(id),
+      { nowe: true },
+    );
+    const nowySzablon = przepisany.szablony[0];
+    const nowyRewers = przepisany.rewersy?.[0];
+    let zapisanyRewers: { id: string; hash: string; nowy: boolean } | undefined;
+    if (nowyRewers) {
+      zapisanyRewers = await this.dodajRewersDoBiblioteki(nowyRewers, przepisany.role);
+    }
+    if (nowySzablon) {
+      const wynik = await this.dodajSzablonDoBiblioteki(nowySzablon, przepisany.role, {
+        ...(zapisanyRewers ? { domyslnyRewersId: zapisanyRewers.id } : {}),
+      });
+      return {
+        ...wynik,
+        rodzaj: 'awers',
+        ...(zapisanyRewers ? { rewersId: zapisanyRewers.id } : {}),
+      };
+    }
+    if (zapisanyRewers) {
+      return { ...zapisanyRewers, rodzaj: 'rewers' };
+    }
+    throw new BladDanych(t('dane.pustyPlikSzablonu'));
+  }
+
   /**
    * Zapisuje projekt (po walidacji – do bazy nie trafi projekt, którego nie da się otworzyć).
    * Obrazy, czcionki (poza wbudowanymi) i ozdobniki trafiają do biblioteki użytkownika.
    * Z `zasoby` – zmiana zasobów: zastępuje bajty zasobów projektu, a wszystkie zasoby widoku
    * (także jeszcze nieużyte) trafiają do biblioteki; bez – zmienia tylko dokument, a do biblioteki
    * wraca tylko to, czego dokument używa (`opcje.dane` – bajty z pamięci edytora).
+   * Z `rejestrujSzablony` – szablony i tyły trafiają też do biblioteki szablonów (import `.kartyrpg`).
    * Wpis „tylko szablony” (po usunięciu projektu) zachowuje ten stan, dopóki projekt nie dostanie
    * znowu kart – wtedy wraca do „Moich projektów”. Zwraca przemapowania odwołań.
    */
   async zapisz(
     projekt: Projekt,
     zasoby?: DaneZasobow,
-    opcje: { tylkoSzablony?: boolean; dane?: DaneZasobow } = {},
+    opcje: { tylkoSzablony?: boolean; dane?: DaneZasobow; rejestrujSzablony?: boolean } = {},
   ): Promise<MapyZapisu> {
     przygotujProjekt(projekt);
     // Obrazy, czcionki (poza wbudowanymi) i ozdobniki należą do biblioteki użytkownika (N8).
@@ -989,7 +1355,9 @@ export class BazaProjektow {
       (id) => zasoby?.get(id) ?? opcje.dane?.get(id),
       { nowe: zasoby !== undefined },
     );
-    const dokument = przeniesiony.projekt;
+    const dokument = opcje.rejestrujSzablony
+      ? await this.rejestrujSzablonyProjektuWBibliotece(przeniesiony.projekt)
+      : przeniesiony.projekt;
     const opisane = new Set(dokument.zasoby.map((z) => z.id));
     if (zasoby) {
       for (const id of opisane) {

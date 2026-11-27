@@ -37,8 +37,9 @@ import type { Kolor, Rewers, Szablon, Talia, WariantCzcionki } from './szablon';
  * 33 – N11: kolory zapisane w projekcie (`Projekt.paleta`).
  * 34 – N12: przełącznik odmian kontenera (`Kontener.przelacznik`, `odmiana` węzła).
  * 35 – UI2 R5: linie pomocnicze szablonu i rewersu (`liniePomocnicze` – tylko edytor, nigdy nie drukowane).
+ * 36 – S1: źródło kopii szablonu i tyłu w projekcie (`zrodlo: { id, hash }`).
  */
-export const WERSJA_SCHEMATU = 35;
+export const WERSJA_SCHEMATU = 36;
 
 export type ZrodloCzcionki = 'wbudowana' | 'google' | 'wlasna';
 

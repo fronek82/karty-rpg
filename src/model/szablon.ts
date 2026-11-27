@@ -641,6 +641,12 @@ export interface LiniaPomocnicza {
   mm: Mm;
 }
 
+/** Źródło kopii szablonu lub tyłu w bibliotece szablonów (id rekordu + skrót treści z chwili skopiowania). */
+export interface ZrodloSzablonu {
+  id: string;
+  hash: string;
+}
+
 /** Samodzielny układ graficzny rewersu. Wymiary są formatem odniesienia warstw. */
 export interface Rewers {
   id: string;
@@ -669,6 +675,8 @@ export interface Rewers {
   przyklad?: Record<string, string>;
   /** Linie pomocnicze w edytorze – zapisywane w rewersie, nigdy nie drukowane. */
   liniePomocnicze?: LiniaPomocnicza[];
+  /** Źródło kopii w bibliotece szablonów (schemat 36). */
+  zrodlo?: ZrodloSzablonu;
 }
 
 /** Brak pola dziedziczy, null jawnie wyłącza rewers. */
@@ -702,6 +710,8 @@ export interface Szablon {
   podklad?: PodkladSzablonu;
   /** Linie pomocnicze w edytorze – zapisywane w szablonie, nigdy nie drukowane. */
   liniePomocnicze?: LiniaPomocnicza[];
+  /** Źródło kopii w bibliotece szablonów (schemat 36). */
+  zrodlo?: ZrodloSzablonu;
   /**
    * Inny układ dla wybranego rozmiaru karty w slotach (np. ciężka broń 1×2 z ilustracją na całą
    * szerokość). Bez pasującego wariantu karta używa `korzen`.
@@ -860,6 +870,7 @@ export function kluczTresciSzablonu(s: Szablon | Rewers): string {
   delete kopia.id;
   delete kopia.rewersId;
   delete kopia.podklad;
+  delete kopia.zrodlo;
   return stabilnyJson(kopia);
 }
 

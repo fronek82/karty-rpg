@@ -342,6 +342,8 @@ const wzorTla = obj({
 
 const przypisanieRewersu = opc(z.union([identyfikator, z.null()]));
 
+const zrodloSzablonu = obj({ id: identyfikator, hash: z.string().min(1) });
+
 const szablon = obj({
   id: identyfikator,
   rewersId: przypisanieRewersu,
@@ -383,6 +385,7 @@ const szablon = obj({
   liniePomocnicze: opc(
     z.array(obj({ id: identyfikator, os: z.enum(['h', 'v']), mm: liczba.min(-500).max(1000) })),
   ),
+  zrodlo: opc(zrodloSzablonu),
   parametry: opc(z.array(obj({ klucz: z.string(), nazwa: z.string(), domyslnie: z.string() }))),
   warianty: opc(z.array(obj({ ...rozmiarSlotow, korzen: kontener }))),
 });
@@ -398,6 +401,7 @@ export const schematRewersu = z.strictObject({
     promienRogow: true,
     postrzepienie: true,
     liniePomocnicze: true,
+    zrodlo: true,
   }).shape,
   teksturaTryb: opc(z.enum(['wypelnij', 'dopasuj', 'rozciagnij', 'kafelki'])),
   teksturaKrycie: opc(liczba.min(0).max(1)),
@@ -884,6 +888,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     33: (d) => d,
     // 34→35: opcjonalne linie pomocnicze szablonu i rewersu (`liniePomocnicze`) – bez zmian danych.
     34: (d) => d,
+    // 35→36: opcjonalne źródło kopii szablonu i tyłu (`zrodlo`) – bez zmian danych.
+    35: (d) => d,
   },
   szablon: {
     1: (d) => d,
@@ -926,6 +932,8 @@ export const MIGRACJE: { projekt: Record<number, Migracja>; szablon: Record<numb
     33: (d) => d,
     // 34→35: opcjonalne linie pomocnicze szablonu – bez zmian danych.
     34: (d) => d,
+    // 35→36: opcjonalne źródło kopii szablonu i tyłu (`zrodlo`) – bez zmian danych.
+    35: (d) => d,
   },
 };
 

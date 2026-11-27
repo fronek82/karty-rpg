@@ -53,7 +53,7 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
 - Następny etap: **S – „Moje szablony” osobno od projektów** (`docs/plan-S.md`, etapy S1…S6):
   szablony i tyły w osobnej bibliotece, projekty składają z nich karty (kroki Karty → Druk).
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
-- Schemat projektu: `WERSJA_SCHEMATU = 35` (`src/model/projekt.ts`), baza Dexie w wersji 5.
+- Schemat projektu: `WERSJA_SCHEMATU = 36` (`src/model/projekt.ts`), baza Dexie w wersji 6.
 
 ## Gdzie co jest
 
