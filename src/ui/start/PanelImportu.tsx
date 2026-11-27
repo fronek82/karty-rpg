@@ -128,7 +128,7 @@ export function PanelImportu({ onZmiana }: { onZmiana: () => void }) {
       if (wybor === 'kopia')
         projekt = jakoKopia(projekt, t('projekty.nazwaKopii', { nazwa: projekt.nazwa }));
     }
-    await baza().zapisz(projekt, wynik.zasoby);
+    await baza().zapisz(projekt, wynik.zasoby, { rejestrujSzablony: true });
     // Zastąpiony projekt – stara miniatura nieaktualna (nowa powstanie przy otwarciu).
     await baza().usunMiniature(projekt.id);
     return {

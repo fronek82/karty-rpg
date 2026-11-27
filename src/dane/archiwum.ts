@@ -347,13 +347,20 @@ export function eksportujSzablon(
     ).values(),
   ];
   sprawdzRewersPaczki({ szablon, zasoby: uzyte, biblioteka, ...(rewers ? { rewers } : {}) });
-  // Podkład ze wzoru zostaje w projekcie: bywa duży i dotyczy pracy nad wzorem, nie samego szablonu.
-  const { podklad: _podklad, ...szablonBezPodkladu } = szablon;
-  void _podklad;
+  // Podkład ze wzoru i lokalne źródło kopii zostają w projekcie: nie należą do udostępnianego pliku szablonu.
+  const { podklad: _podklad, zrodlo: _zrodlo, ...szablonBezPodkladu } = szablon;
+  void [_podklad, _zrodlo];
+  const rewersDoPliku = rewers
+    ? (() => {
+        const { zrodlo: _zr, ...r } = rewers;
+        void _zr;
+        return r;
+      })()
+    : undefined;
   const plik = {
     wersja: projekt.wersja,
     szablon: szablonBezPodkladu,
-    ...(rewers ? { rewers } : {}),
+    ...(rewersDoPliku ? { rewers: rewersDoPliku } : {}),
     role,
     zasoby: uzyte,
     ...(biblioteka.length > 0 ? { biblioteka } : {}),
@@ -369,7 +376,7 @@ export function eksportujSzablon(
 }
 
 /** Treść wspólnego pliku szablonu: awers (z opcjonalnym rewersem) albo sam rewers. */
-interface TrescPlikuSzablonu extends Omit<PaczkaSzablonu, 'szablon'> {
+export interface TrescPlikuSzablonu extends Omit<PaczkaSzablonu, 'szablon'> {
   szablon?: Szablon;
 }
 
@@ -391,7 +398,7 @@ function odczytajDawnyPlikRewersu(bajty: Uint8Array): TrescPlikuSzablonu {
  * Odczyt i walidacja pliku szablonu w obu postaciach (`szablon.json` z awersem i/lub rewersem
  * oraz dawny `rewers.json`). Rozpoznaje je po wpisach archiwum, nie po rozszerzeniu.
  */
-function odczytajPlikSzablonu(bajty: Uint8Array): TrescPlikuSzablonu {
+export function odczytajPlikSzablonu(bajty: Uint8Array): TrescPlikuSzablonu {
   const nazwy = nazwyWpisowArchiwum(bajty);
   if (nazwy?.includes(PLIK_REWERSU_DAWNY) && !nazwy.includes(PLIK_SZABLONU))
     return odczytajDawnyPlikRewersu(bajty);
@@ -768,10 +775,12 @@ export function eksportujRewers(projekt: Projekt, dane: DaneZasobow, rewersId: s
   // Te same kontrole co przy imporcie – plik, którego import by się nie udał, nie powstaje.
   sprawdzBibliotekePaczki(biblioteka, uzyte);
   sprawdzRewers(rewers, uzyte, biblioteka);
+  const { zrodlo: _zr, ...rewersDoPliku } = rewers;
+  void _zr;
   return spakuj(
     {
       wersja: projekt.wersja,
-      rewers,
+      rewers: rewersDoPliku,
       role,
       zasoby: uzyte,
       ...(biblioteka.length > 0 ? { biblioteka } : {}),

@@ -1327,6 +1327,8 @@ export const en: Slownik = {
   'globalna.brakWpisu': 'This entry is missing from the library.',
   'dane.zaDuzoWpisowBiblioteki':
     'The library already has {limit} entries – remove unused ones before adding more.',
+  'dane.zaDuzoSzablonow':
+    '“My templates” already has {limit} templates – remove unused ones before adding more.',
   'globalna.brakObrazu': 'Frame package “{id}” is missing image “{zasob}”.',
   'globalna.zlyObraz': 'Image “{id}” is unreadable or does not match the frame dimensions.',
   'dane.nieznanySzablonArkusza': 'Sheet “{arkusz}” references unknown template “{szablon}”.',

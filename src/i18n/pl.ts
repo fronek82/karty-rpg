@@ -1322,6 +1322,8 @@ export const pl = {
   'globalna.brakWpisu': 'Brak tego wpisu w bibliotece.',
   'dane.zaDuzoWpisowBiblioteki':
     'Biblioteka ma już {limit} wpisów – usuń nieużywane, zanim dodasz nowe.',
+  'dane.zaDuzoSzablonow':
+    'W „Moich szablonach” jest już {limit} szablonów – usuń nieużywane, zanim dodasz nowe.',
   'globalna.brakObrazu': 'W paczce ramki „{id}” brakuje obrazu „{zasob}”.',
   'globalna.zlyObraz': 'Obraz „{id}” jest nieczytelny lub nie pasuje do wymiarów ramki.',
   'dane.nieznanySzablonArkusza': 'Arkusz „{arkusz}” wskazuje nieznany szablon „{szablon}”.',

@@ -145,3 +145,4 @@ Wzorce PNG kart i arkuszy nie mogą się zmienić. Wygląd kart po migracji jest
 - **D-S6** Nazwa w interfejsie: „Moje szablony”, napis „Jest nowsza wersja szablonu”; słowo „biblioteka” tylko dla obrazów, czcionek i ozdobników.
 - **D-S7** „Przenieś na szablon…” przenosi dane zaznaczonych kart na inny szablon po nazwach pól.
 - **D-S5** Pakiety gier (Mausritter) nie korzystają z biblioteki szablonów.
+- **D-S8** Wpis w tabeli `szablony` (`WpisSzablonu`) przechowuje także podzbiór ról czcionek używanych przez szablon/tył (`role`) oraz opcjonalny `domyslnyRewersId` (dla przodu); samodzielne projekty rewersowe (`czyProjektRewersowy`) i dawne schowki `tylkoSzablony` są usuwane z `projekty` po przeniesieniu ich szablonów i tyłów w migracji S1.
