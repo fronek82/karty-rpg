@@ -18,6 +18,7 @@ import { useProjekt } from './useProjekt';
 export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: string }) {
   const czyEdytorKart =
     !podtrasa ||
+    podtrasa === 'start' ||
     podtrasa === 'karty' ||
     podtrasa === 'drukuj' ||
     podtrasa.startsWith('drukuj/') ||
@@ -113,6 +114,7 @@ export function EdytorStrona({ id, podtrasa = '' }: { id: string; podtrasa?: str
       <EdytorKartki
         edycja={stan}
         tryb="edycja"
+        {...(podtrasa === 'start' ? { pokazWyborStartu: true } : {})}
         {...(kartka ? { pokazKartke: decodeURIComponent(kartka) } : {})}
       />
     );

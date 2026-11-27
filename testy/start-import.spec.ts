@@ -104,9 +104,9 @@ test.describe('układ', () => {
     await expect(linki.nth(0)).toContainText('+ NOWE KARTY');
     await expect(linki.nth(1)).toContainText('+ NOWY SZABLON');
     await expect(linki.nth(2)).toContainText('Mausritter A4');
-    await expect(linki.nth(2)).toHaveAttribute('href', '#/gra/mausritter');
     await linki.nth(2).click();
-    await expect(page).toHaveURL(/#\/gra\/mausritter$/);
+    await expect(page).toHaveURL(/#\/projekt\/[^/]+\/start$/);
+    await expect(page.getByTestId('okno-startu-mausritter')).toBeVisible();
   });
 
   test('Tył w Moich szablonach: utworzenie i duplikacja z zakładki Szablony', async ({ page }) => {

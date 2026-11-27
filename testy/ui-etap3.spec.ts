@@ -110,8 +110,9 @@ test('przepływ Szablon → Edytor kart → Drukuj karty oraz przycisk ← Powr�
 test('projekt gry (Mausritter): karty jednostronne – bez rewersów i druku dwustronnego', async ({
   page,
 }) => {
-  await page.goto('./#/gra/mausritter');
-  await page.getByRole('button', { name: /Pusta kartka A4/ }).click();
+  await page.goto('./#/');
+  await page.getByTestId('start-mausritter').click();
+  await page.getByTestId('start-pusty-arkusz').click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   const panel = await otworzDruk(page);

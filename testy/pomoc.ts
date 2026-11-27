@@ -4,15 +4,16 @@ import { expect, type Page } from '@playwright/test';
 
 export async function nowaPustaKartka(page: Page) {
   await page.goto('./#/');
-  await page.getByRole('link', { name: /Mausritter A4/ }).click();
-  await page.getByRole('button', { name: /Pusta kartka A4/ }).click();
+  await page.getByTestId('start-mausritter').click();
+  await page.getByTestId('start-pusty-arkusz').click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 }
 
 export async function gotowyUklad(page: Page, nazwa: string) {
-  await page.goto('./#/gra/mausritter');
-  await page.getByRole('button', { name: /^Zacznij od gotowego układu/ }).click();
-  await page.getByRole('button', { name: nazwa, exact: true }).click();
+  await page.goto('./#/');
+  await page.getByTestId('start-mausritter').click();
+  const wzorzec = new RegExp(`^${nazwa.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+  await page.getByTestId('okno-startu-mausritter').getByRole('button', { name: wzorzec }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 }
 
@@ -79,7 +80,9 @@ export const panelDruku = (page: Page, en = false) =>
 export async function otworzDruk(page: Page, en = false) {
   const panel = panelDruku(page, en);
   if (!(await panel.isVisible())) {
-    await page.getByRole('link', { name: en ? /^Print cards/ : /^Drukuj karty/ }).click();
+    await page
+      .getByRole('link', { name: en ? /^(Print cards|Go to print)/ : /^(Drukuj karty|Do druku)/ })
+      .click();
     await expect(panel).toBeVisible({ timeout: 15000 });
   }
   return panel;

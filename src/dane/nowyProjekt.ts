@@ -126,3 +126,32 @@ export async function nowyProjektGry(
     zasoby,
   };
 }
+
+/**
+ * Zastępuje arkusze, talie i nazwę projektu wybranym gotowym układem z pakietu
+ * (zachowuje id, datę utworzenia, zasoby i szablony projektu).
+ */
+export function zastosujGotowyUklad(
+  projekt: Projekt,
+  pakiet: Pakiet,
+  ukladId: string,
+  kontekst: Parameters<typeof normalizujKartki>[1],
+): Projekt {
+  const uklad = pakiet.gotoweUklady.find((u) => u.id === ukladId);
+  if (!uklad) throw new Error(`Nieznany układ „${ukladId}”.`);
+  const arkusze = structuredClone(pakiet.arkusze.filter((a) => uklad.arkusze.includes(a.id)));
+  const talie = structuredClone(
+    pakiet.talie.filter((t) => arkusze.some((a) => a.taliaId === t.id)),
+  );
+  const wybrany: Projekt = lokalizujNazwy(
+    {
+      ...projekt,
+      pakiet: pakiet.id,
+      zmieniono: new Date().toISOString(),
+      arkusze,
+      talie,
+    },
+    tJesliJest(`pakiet.uklad.${uklad.id}`) ?? uklad.nazwa,
+  );
+  return normalizujKartki(wybrany, kontekst).projekt;
+}

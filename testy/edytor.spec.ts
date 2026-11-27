@@ -60,7 +60,7 @@ test('łączna liczba kopii, Cofnij i skróty klawiszowe', async ({ page }) => {
   await page.keyboard.press('Control+Shift+z');
   await expect(karta(page, 'Kula ognia')).toHaveCount(5);
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('heading', { name: 'Nic nie zaznaczono' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Arkusz' })).toBeVisible();
   await karta(page, 'Kula ognia').first().click();
   const przed = await karta(page, 'Kula ognia').first().getAttribute('aria-label');
   await page.keyboard.press('ArrowDown');
@@ -127,7 +127,7 @@ test('strony: dodaj, przeciągnij kartę na drugą, usuń pustą', async ({ page
     'Ranny – strona 2, kolumna 3, rząd 3',
   );
   await page.getByRole('button', { name: 'Usuń pustą stronę' }).click();
-  await expect(page.getByText('Strona 1 z 1')).toBeVisible();
+  await expect(page.locator('.strona-kartki')).toHaveCount(1);
   await expect(karta(page, 'Ranny')).toHaveAttribute(
     'aria-label',
     'Ranny – strona 1, kolumna 3, rząd 3',
@@ -163,14 +163,13 @@ test('klawiatura: Tab na slot, strzałki, Enter → menu, Escape; rozmiar z pask
   await expect(nowa).toHaveAttribute('aria-label', /kolumna 3, rząd 2/);
   await expect(nowa).toBeFocused();
 
-  // „Rozmiar” na pasku nad kartą przełącza na następny mieszczący się rozmiar.
-  await page
-    .locator('.pasek-karty')
-    .getByRole('button', { name: /Rozmiar: 1×2/ })
-    .click();
+  // „Rozmiar (kafelki)” w prawym panelu przełącza na 1×2 i z powrotem.
+  const panelKarty = page.getByRole('complementary', { name: 'Zaznaczone karty' });
+  await panelKarty.getByRole('button', { name: /1×2/ }).click();
   const r = (await nowa.boundingBox())!;
   expect(r.height / r.width).toBeCloseTo(2, 1);
-  await expect(
-    page.locator('.pasek-karty').getByRole('button', { name: /Rozmiar: 1×1/ }),
-  ).toBeVisible();
+  await expect(panelKarty.getByRole('button', { name: '1×1', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
 });

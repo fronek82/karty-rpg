@@ -139,13 +139,15 @@ test('klawiatura: przycisk języka działa spacją i Enter, fokus zostaje na nim
 });
 
 test('ekran Mausrittera i nazwy gotowych układów po angielsku', async ({ page }) => {
-  await page.goto('./#/gra/mausritter');
+  await page.goto('./#/');
   await wybierz(page, 'EN');
-  await expect(page.getByRole('heading', { level: 1, name: 'Cards for Mausritter' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Blank A4 sheet/ })).toBeEnabled();
-  await page.getByRole('button', { name: /^Start from a ready-made layout/ }).click();
+  await page.getByTestId('start-mausritter').click();
+  const okno = page.getByTestId('okno-startu-mausritter');
+  await expect(okno).toBeVisible();
+  await expect(okno.getByRole('heading', { name: 'Where do we start?' })).toBeVisible();
+  await expect(okno.getByTestId('start-pusty-arkusz')).toContainText('Empty A4 sheet');
   for (const u of ['Weapons and armor', 'Gear', 'Conditions', 'All three'])
-    await expect(page.getByRole('button', { name: u, exact: true })).toBeVisible();
+    await expect(okno.getByRole('button', { name: new RegExp(`^${u}`) })).toBeVisible();
 });
 
 test('kreator szablonu: napisy po angielsku, bez przeładowania i z zachowaniem wpisanych wartości', async ({

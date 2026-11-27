@@ -59,6 +59,14 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   szablonu `#/szablon/<id>` (`EdytorSzablonuStrona.tsx`), kroki projektu **1 Karty → 2 Druk**,
   lewy pasek „W projekcie” / „Z Moich szablonów”, wybór tyłu z „Moich szablonów”, „Przenieś na
   szablon…” (`OknoPrzeniesieniaKart.tsx`) oraz zaktualizowana instrukcja PL/EN.
+- Ukończone **R11 – Mausritter w stylu UI2** (`docs/plan-UI2.md` sekcja 13): usunięta osobna strona
+  `#/gra/mausritter` (`WyborGry`), „Mausritter A4” ze Startu otwiera ekran arkusza z oknem
+  „Od czego zaczynamy?” (`OknoStartuMausritter.tsx`, `zastosujGotowyUklad` w `dane/nowyProjekt.ts`),
+  wspólny `NaglowekProjektu`, `PasekBoczny` z 6 różnymi ikonami SVG i opisami rozmiarów
+  (`mausritterIkony.ts`), pasek zakładek arkuszy + licznik zajętych kafelków, pasek stanu 44 px
+  z dymkiem „? Skróty” i powiększeniem, prawy `PanelSekcji` (Duplikuj/Usuń w nagłówku, rozmiar
+  z zarysem, wariant, zwijane „Położenie obrazu”, panel „Arkusz” bez „Przód dla wszystkich kart”),
+  szara nazwa typu na pustych kartach i usunięty pływający pasek `.pasek-karty`.
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 36` (`src/model/projekt.ts`), baza Dexie w wersji 6.
 

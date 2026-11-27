@@ -36,6 +36,7 @@ import { czyWklejanieWToku, obsluzWklejenieZPdf } from '../wklejaniePdfUI';
 import { EksportCsvSzablonu } from './EksportCsvSzablonu';
 import { SekcjaObrazu } from './SekcjaObrazu';
 import { OpcjeRewersowGlobalnych, wybranaOpcja } from '../zrodloOpcji';
+import { PanelSekcji } from '../ui2/PanelSekcji';
 
 /** Pola szablonu według klucza (wszystkie warianty układu). */
 function polaSzablonu(s: Szablon): Map<string, Pole> {
@@ -81,9 +82,12 @@ export function PanelKart({
   zamknij,
   ostrzezenia = [],
   bezRewersu = false,
+  mausritterUi2 = false,
 }: {
   /** Gra z kartami jednostronnymi – bez wyboru rewersu karty. */
   bezRewersu?: boolean;
+  /** Tryb UI2 dla Mausrittera (sekcja 13.5 planu UI2): PanelSekcji, akcje w nagłówku, rozmiar na górze, wariant. */
+  mausritterUi2?: boolean;
   /** Ostrzeżenia silnika dla zaznaczonych kart (np. tekst się nie mieści). */
   ostrzezenia?: string[];
   edycja: ProjektWEdycji;
@@ -166,6 +170,289 @@ export function PanelKart({
       t('karta.bezNazwy')
     : t('kartka.zaznaczono', { liczba: karty.length });
 
+  const renderujPola = (ui2: boolean) =>
+    szablon &&
+    kolumny.map((kol) => {
+      const pole = polaMapa.get(kol.klucz);
+      if (pole?.typ === 'obraz') {
+        return (
+          <SekcjaObrazu
+            key={kol.klucz}
+            edycja={edycja}
+            taliaId={arkusz.taliaId}
+            karty={karty.map((k) => k.karta)}
+            pole={pole as PoleObraz}
+            mausritterUi2={ui2}
+          />
+        );
+      }
+      // Nazwa nadana w edytorze szablonu ma pierwszeństwo przed nazwami pól pakietu gry.
+      const nazwa =
+        pole?.nazwa || (kol.typPola === 'tabela' ? kol.nazwa : nazwaPola(kol.klucz, kol.nazwa));
+      const w = wspolna(kol.klucz);
+      const id = `pole-${kol.klucz}`;
+      const klasaPola = ui2 ? 'mausritter-ui2-pole' : 'pole-panelu';
+      if (pole?.typ === 'znaczniki') {
+        const z = pole as PoleZnaczniki;
+        const domyslnie = z.kolumny * z.rzedy;
+        const n = w === undefined ? undefined : w === '' ? domyslnie : Number(w) || 0;
+        return (
+          <div key={kol.klucz} className={klasaPola}>
+            <span id={id} className={ui2 ? 'mausritter-ui2-etykieta' : undefined}>
+              {nazwa}
+            </span>
+            <div className="licznik" role="group" aria-labelledby={id}>
+              <button
+                type="button"
+                aria-label={t('kartka.mniej', { pole: nazwa })}
+                disabled={n === 0}
+                onClick={() => ustaw(kol.klucz, String(Math.max(0, (n ?? domyslnie) - 1)))}
+              >
+                −
+              </button>
+              <output aria-live="polite">{n ?? t('kartka.rozne')}</output>
+              <button
+                type="button"
+                aria-label={t('kartka.wiecej', { pole: nazwa })}
+                disabled={(n ?? 0) >= MAKS_ZNACZNIKOW}
+                onClick={() =>
+                  ustaw(kol.klucz, String(Math.min(MAKS_ZNACZNIKOW, (n ?? domyslnie) + 1)))
+                }
+              >
+                +
+              </button>
+            </div>
+          </div>
+        );
+      }
+      if (kol.opcje) {
+        // Przełącznik odmian: wybór z listy; wartość spoza listy (np. literówka z CSV) też widać.
+        const pasujaca = w
+          ? kol.opcje.find((o) => normalizujOdmiane(o.wartosc) === normalizujOdmiane(w))
+          : undefined;
+        const spoza = w && !pasujaca ? w : undefined;
+        return (
+          <div key={kol.klucz} className={klasaPola}>
+            <label htmlFor={id}>{nazwa}</label>
+            <select
+              id={id}
+              value={w === undefined ? ROZNE : (pasujaca?.wartosc ?? w)}
+              onChange={(e) => ustaw(kol.klucz, e.target.value)}
+            >
+              {w === undefined && (
+                <option value={ROZNE} disabled>
+                  {t('kartka.rozne')}
+                </option>
+              )}
+              <option value="">{t('odmiany.domyslnaKarty')}</option>
+              {kol.opcje.map((o) => (
+                <option key={o.wartosc} value={o.wartosc}>
+                  {o.nazwa ? `${o.wartosc} – ${o.nazwa}` : o.wartosc}
+                </option>
+              ))}
+              {spoza && <option value={spoza}>{spoza}</option>}
+            </select>
+          </div>
+        );
+      }
+      const dlugi = pole?.typ === 'tekst' && pole.wieleWierszy !== false && kol.klucz !== 'nazwa';
+      const lista = podpowiedzi.get(kol.klucz);
+      const wspolne = {
+        id,
+        value: w ?? '',
+        // Podpowiedź: wartość domyślna pola z szablonu (gdy karta jej nie nadpisuje).
+        placeholder:
+          w === undefined
+            ? t('kartka.rozne')
+            : (kol.domyslnie ??
+              (pole &&
+              (pole.typ === 'tekst' || pole.typ === 'wartosc') &&
+              typeof pole.tekst === 'string'
+                ? pole.tekst
+                : undefined)),
+        onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+          ustaw(kol.klucz, e.target.value),
+      };
+      return (
+        <div key={kol.klucz} className={klasaPola}>
+          <label htmlFor={id}>{nazwa}</label>
+          {dlugi ? (
+            <PoleWielowierszowe
+              kluczRozmiaru={`kartka:${szablon.id}:${kol.klucz}`}
+              rows={2}
+              {...wspolne}
+              onPaste={(e) =>
+                obsluzWklejenieZPdf(e, (v) =>
+                  zmien((p) => ustawDaneKart(p, arkusz.id, ids, kol.klucz, v)),
+                )
+              }
+            />
+          ) : (
+            <input type="text" list={lista ? `${id}-lista` : undefined} {...wspolne} />
+          )}
+          {lista && !dlugi && (
+            <datalist id={`${id}-lista`}>
+              {[...lista].sort().map((v) => (
+                <option key={v} value={v} />
+              ))}
+            </datalist>
+          )}
+        </div>
+      );
+    });
+
+  if (mausritterUi2) {
+    const tytulPanelu = jedna
+      ? (typ ? nazwaWariantu(typ.wariant) : szablon?.nazwa) || t('karta.bezNazwy')
+      : t('kartka.zaznaczono', { liczba: karty.length });
+    return (
+      <PanelSekcji
+        tytul={tytulPanelu}
+        etykietaAria={t('kartka.panelKart')}
+        akcjeNaglowka={
+          <>
+            <button type="button" className="mausritter-ui2-akcja" onClick={() => duplikuj(1)}>
+              ⧉ {t('kartka.duplikuj')}
+            </button>
+            <button type="button" className="mausritter-ui2-akcja" onClick={usun}>
+              ✕ {t('kartka.usun')}
+            </button>
+          </>
+        }
+      >
+        {oknoZgodnosci}
+        <div className="mausritter-ui2-panel-cialo">
+          {ostrzezenia.length > 0 && (
+            <ul className="ostrzezenia-karty">
+              {ostrzezenia.map((o, i) => (
+                <li key={i}>{o}</li>
+              ))}
+            </ul>
+          )}
+
+          {jedna && rozmiary.length > 1 && (
+            <div className="mausritter-ui2-pole">
+              <span id="rozmiar-karty" className="mausritter-ui2-etykieta">
+                {t('mausritter.rozmiarKafelki')}
+              </span>
+              <div className="mausritter-ui2-rozmiary" role="group" aria-labelledby="rozmiar-karty">
+                {rozmiary.map((r, i) => {
+                  const aktywny = jedna.kolumny === r.kolumny && jedna.rzedy === r.rzedy;
+                  return (
+                    <button
+                      key={opisRozmiaru(r)}
+                      type="button"
+                      className="mausritter-ui2-rozmiar-btn"
+                      aria-pressed={aktywny}
+                      disabled={!aktywny && !mozliwe[i]}
+                      title={!aktywny && !mozliwe[i] ? t('kartka.nieMiesci') : undefined}
+                      onClick={() => {
+                        const w = zmienRozmiarKarty(projekt, arkusz.id, jedna.karta.id, r, ctx);
+                        if ('blad' in w) ustawBladRozmiaru(t('kartka.nieMiesci'));
+                        else {
+                          ustawBladRozmiaru(undefined);
+                          zmien((p) => {
+                            const x = zmienRozmiarKarty(p, arkusz.id, jedna.karta.id, r, ctx);
+                            return 'projekt' in x ? x.projekt : p;
+                          });
+                        }
+                      }}
+                    >
+                      <span
+                        className="mausritter-ui2-rozmiar-ikona"
+                        style={{ width: r.kolumny * 10, height: r.rzedy * 10 }}
+                        aria-hidden="true"
+                      />
+                      {opisRozmiaru(r)}
+                    </button>
+                  );
+                })}
+              </div>
+              {bladRozmiaru && <p className="blad-pola">{bladRozmiaru}</p>}
+            </div>
+          )}
+
+          {jedna && typ && typ.typ.warianty.length > 1 && (
+            <div className="mausritter-ui2-pole">
+              <label htmlFor="mausritter-wariant">{t('mausritter.wariant')}</label>
+              <select
+                id="mausritter-wariant"
+                value={jedna.karta.szablonId}
+                onChange={(e) => {
+                  const nowySzablonId = e.target.value;
+                  zmien((p) => ({
+                    ...p,
+                    zmieniono: new Date().toISOString(),
+                    talie: p.talie.map((tl) =>
+                      tl.id !== arkusz.taliaId
+                        ? tl
+                        : {
+                            ...tl,
+                            karty: tl.karty.map((k) =>
+                              k.id === jedna.karta.id ? { ...k, szablonId: nowySzablonId } : k,
+                            ),
+                          },
+                    ),
+                  }));
+                }}
+              >
+                {typ.typ.warianty.map((w) => (
+                  <option key={w.szablonId} value={w.szablonId}>
+                    {nazwaWariantu(w)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {renderujPola(true)}
+
+          {jedna && (
+            <div className="mausritter-ui2-pole">
+              <label htmlFor="mausritter-liczba-kopii">{t('kartka.ileKopii')}</label>
+              <input
+                id="mausritter-liczba-kopii"
+                type="number"
+                min={1}
+                max={Math.max(liczbaKopii, MAKS_EGZEMPLARZY)}
+                value={wpisaneKopie ?? liczbaKopii}
+                onChange={(e) => {
+                  if (e.nativeEvent instanceof InputEvent && e.nativeEvent.inputType)
+                    ustawWpisaneKopie(e.target.value);
+                  else zatwierdzKopie(e.target.valueAsNumber);
+                }}
+                onBlur={(e) => {
+                  if (wpisaneKopie !== undefined) zatwierdzKopie(e.target.valueAsNumber);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    ustawWpisaneKopie(undefined);
+                  } else if (e.key === 'Enter' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const aktualna = e.currentTarget.valueAsNumber;
+                    const krok = e.key === 'ArrowUp' ? 1 : e.key === 'ArrowDown' ? -1 : 0;
+                    zatwierdzKopie(
+                      (krok && !Number.isFinite(aktualna) ? liczbaKopii : aktualna) + krok,
+                    );
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {dodajNaglowek && (
+            <button type="button" className="mausritter-ui2-akcja" onClick={dodajNaglowek}>
+              {t('kartka.dodajNaglowek')}
+            </button>
+          )}
+
+          <p className="mausritter-ui2-podpowiedz">{t('mausritter.podpowiedzPrzesuwanie')}</p>
+        </div>
+      </PanelSekcji>
+    );
+  }
+
   return (
     <aside className="panel-edytora" aria-label={t('kartka.panelKart')}>
       {oknoZgodnosci}
@@ -192,133 +479,7 @@ export function PanelKart({
           ))}
         </ul>
       )}
-      {szablon &&
-        kolumny.map((kol) => {
-          const pole = polaMapa.get(kol.klucz);
-          if (pole?.typ === 'obraz') {
-            return (
-              <SekcjaObrazu
-                key={kol.klucz}
-                edycja={edycja}
-                taliaId={arkusz.taliaId}
-                karty={karty.map((k) => k.karta)}
-                pole={pole as PoleObraz}
-              />
-            );
-          }
-          // Nazwa nadana w edytorze szablonu ma pierwszeństwo przed nazwami pól pakietu gry.
-          const nazwa =
-            pole?.nazwa || (kol.typPola === 'tabela' ? kol.nazwa : nazwaPola(kol.klucz, kol.nazwa));
-          const w = wspolna(kol.klucz);
-          const id = `pole-${kol.klucz}`;
-          if (pole?.typ === 'znaczniki') {
-            const z = pole as PoleZnaczniki;
-            const domyslnie = z.kolumny * z.rzedy;
-            const n = w === undefined ? undefined : w === '' ? domyslnie : Number(w) || 0;
-            return (
-              <div key={kol.klucz} className="pole-panelu">
-                <span id={id}>{nazwa}</span>
-                <div className="licznik" role="group" aria-labelledby={id}>
-                  <button
-                    type="button"
-                    aria-label={t('kartka.mniej', { pole: nazwa })}
-                    disabled={n === 0}
-                    onClick={() => ustaw(kol.klucz, String(Math.max(0, (n ?? domyslnie) - 1)))}
-                  >
-                    −
-                  </button>
-                  <output aria-live="polite">{n ?? t('kartka.rozne')}</output>
-                  <button
-                    type="button"
-                    aria-label={t('kartka.wiecej', { pole: nazwa })}
-                    disabled={(n ?? 0) >= MAKS_ZNACZNIKOW}
-                    onClick={() =>
-                      ustaw(kol.klucz, String(Math.min(MAKS_ZNACZNIKOW, (n ?? domyslnie) + 1)))
-                    }
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            );
-          }
-          if (kol.opcje) {
-            // Przełącznik odmian: wybór z listy; wartość spoza listy (np. literówka z CSV) też widać.
-            // Wartość pasująca do odmiany (bez wielkości liter i spacji) – jak w silniku – to ta odmiana.
-            const pasujaca = w
-              ? kol.opcje.find((o) => normalizujOdmiane(o.wartosc) === normalizujOdmiane(w))
-              : undefined;
-            const spoza = w && !pasujaca ? w : undefined;
-            return (
-              <div key={kol.klucz} className="pole-panelu">
-                <label htmlFor={id}>{nazwa}</label>
-                <select
-                  id={id}
-                  value={w === undefined ? ROZNE : (pasujaca?.wartosc ?? w)}
-                  onChange={(e) => ustaw(kol.klucz, e.target.value)}
-                >
-                  {w === undefined && (
-                    <option value={ROZNE} disabled>
-                      {t('kartka.rozne')}
-                    </option>
-                  )}
-                  <option value="">{t('odmiany.domyslnaKarty')}</option>
-                  {kol.opcje.map((o) => (
-                    <option key={o.wartosc} value={o.wartosc}>
-                      {o.nazwa ? `${o.wartosc} – ${o.nazwa}` : o.wartosc}
-                    </option>
-                  ))}
-                  {spoza && <option value={spoza}>{spoza}</option>}
-                </select>
-              </div>
-            );
-          }
-          const dlugi =
-            pole?.typ === 'tekst' && pole.wieleWierszy !== false && kol.klucz !== 'nazwa';
-          const lista = podpowiedzi.get(kol.klucz);
-          const wspolne = {
-            id,
-            value: w ?? '',
-            // Podpowiedź: wartość domyślna pola z szablonu (gdy karta jej nie nadpisuje).
-            placeholder:
-              w === undefined
-                ? t('kartka.rozne')
-                : (kol.domyslnie ??
-                  (pole &&
-                  (pole.typ === 'tekst' || pole.typ === 'wartosc') &&
-                  typeof pole.tekst === 'string'
-                    ? pole.tekst
-                    : undefined)),
-            onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-              ustaw(kol.klucz, e.target.value),
-          };
-          return (
-            <div key={kol.klucz} className="pole-panelu">
-              <label htmlFor={id}>{nazwa}</label>
-              {dlugi ? (
-                <PoleWielowierszowe
-                  kluczRozmiaru={`kartka:${szablon.id}:${kol.klucz}`}
-                  rows={2}
-                  {...wspolne}
-                  onPaste={(e) =>
-                    obsluzWklejenieZPdf(e, (v) =>
-                      zmien((p) => ustawDaneKart(p, arkusz.id, ids, kol.klucz, v)),
-                    )
-                  }
-                />
-              ) : (
-                <input type="text" list={lista ? `${id}-lista` : undefined} {...wspolne} />
-              )}
-              {lista && !dlugi && (
-                <datalist id={`${id}-lista`}>
-                  {[...lista].sort().map((v) => (
-                    <option key={v} value={v} />
-                  ))}
-                </datalist>
-              )}
-            </div>
-          );
-        })}
+      {renderujPola(false)}
 
       {jedna && rozmiary.length > 1 && (
         <div className="pole-panelu">

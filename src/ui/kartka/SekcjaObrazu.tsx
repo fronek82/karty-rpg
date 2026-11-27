@@ -18,11 +18,14 @@ export function SekcjaObrazu({
   taliaId,
   karty,
   pole,
+  mausritterUi2 = false,
 }: {
   edycja: ProjektWEdycji;
   taliaId: string;
   karty: Karta[];
   pole: PoleObraz;
+  /** Tryb UI2 (Mausritter): bez ramki fieldset, skala/obrót/X/Y w zwijanej podsekcji „Położenie obrazu”. */
+  mausritterUi2?: boolean;
 }) {
   const { projekt, zmien } = edycja;
   const [blad, ustawBlad] = useState<string>();
@@ -40,6 +43,147 @@ export function SekcjaObrazu({
     zmien((p) => zmienObrazKarty(p, taliaId, jedna.id, pole.id, f), {
       klucz: `obraz:${jedna.id}:${kl}`,
     });
+
+  const ukrytyInput = klucz && (
+    <input
+      ref={plik}
+      type="file"
+      accept="image/png,image/jpeg"
+      hidden
+      data-testid="plik-obrazu"
+      onChange={(e) => {
+        const f = e.target.files?.[0];
+        e.target.value = '';
+        if (!f) return;
+        ustawBlad(undefined);
+        void wgrajObrazDoKart(edycja, f, taliaId, ids, klucz).catch((err: unknown) =>
+          ustawBlad(
+            err instanceof BladDanych
+              ? err.message
+              : String(err instanceof Error ? err.message : err),
+          ),
+        );
+      }}
+    />
+  );
+
+  if (mausritterUi2) {
+    return (
+      <div className="mausritter-ui2-pole">
+        <span className="mausritter-ui2-etykieta">{t('pole.obraz')}</span>
+        {klucz && (
+          <div className="mausritter-ui2-obraz-wiersz">
+            <select
+              aria-label={t('kartka.plikObrazu')}
+              value={wspolna ?? ''}
+              onChange={(e) =>
+                zmien((p) =>
+                  ids.reduce((x, id) => ustawDane(x, taliaId, id, klucz, e.target.value), p),
+                )
+              }
+            >
+              {wspolna === undefined && <option value="">{t('kartka.rozne')}</option>}
+              <option value="">{t('mausritter.zBiblioteki')}</option>
+              {obrazy.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.nazwa}
+                </option>
+              ))}
+              {wspolna && !obrazy.some((o) => o.id === wspolna) && (
+                <option value={wspolna}>{t('karta.nieznanyObraz', { id: wspolna })}</option>
+              )}
+            </select>
+            <button
+              type="button"
+              className="mausritter-ui2-obraz-wgraj"
+              onClick={() => plik.current?.click()}
+            >
+              ＋ {t('karta.wgrajObraz')}
+            </button>
+            {ukrytyInput}
+          </div>
+        )}
+        {blad && (
+          <p role="alert" className="uwaga">
+            {blad}
+          </p>
+        )}
+        {jedna && (
+          <details className="mausritter-ui2-obraz-szczegoly">
+            <summary>{t('mausritter.polozenieObrazu')}</summary>
+            <div className="mausritter-ui2-obraz-szczegoly-cialo">
+              <div className="mausritter-ui2-obraz-grid">
+                <Liczba
+                  etykieta={t('karta.skala')}
+                  wartosc={u.skala ?? 1}
+                  krok={0.05}
+                  min={SKALA_MIN}
+                  zmiana={(v) => zmienObraz((x) => ({ ...x, skala: v }), 'skala')}
+                />
+                <Liczba
+                  etykieta={t('karta.obrot')}
+                  wartosc={u.obrot ?? 0}
+                  krok={1}
+                  zmiana={(v) => zmienObraz((x) => ({ ...x, obrot: v }), 'obrot')}
+                />
+                <Liczba
+                  etykieta={t('karta.przesuniecieX')}
+                  wartosc={u.przesuniecie?.x ?? 0}
+                  krok={0.5}
+                  zmiana={(v) =>
+                    zmienObraz(
+                      (x) => ({ ...x, przesuniecie: { x: v, y: x.przesuniecie?.y ?? 0 } }),
+                      'x',
+                    )
+                  }
+                />
+                <Liczba
+                  etykieta={t('karta.przesuniecieY')}
+                  wartosc={u.przesuniecie?.y ?? 0}
+                  krok={0.5}
+                  zmiana={(v) =>
+                    zmienObraz(
+                      (x) => ({ ...x, przesuniecie: { x: x.przesuniecie?.x ?? 0, y: v } }),
+                      'y',
+                    )
+                  }
+                />
+              </div>
+              <label className="mausritter-ui2-pole">
+                <span className="mausritter-ui2-etykieta">{t('karta.dopasowanie')}</span>
+                <select
+                  value={ustawienia?.dopasowanie ?? ''}
+                  onChange={(e) =>
+                    zmienObraz((x) => {
+                      const { dopasowanie: _d, ...reszta } = x;
+                      void _d;
+                      const v = e.target.value as UstawieniaObrazu['dopasowanie'] | '';
+                      return v ? { ...reszta, dopasowanie: v } : reszta;
+                    }, 'dopasowanie')
+                  }
+                >
+                  <option value="">
+                    {t('karta.dopasowanieSzablonu', { tryb: t(`karta.tryb.${pole.dopasowanie}`) })}
+                  </option>
+                  <option value="dopasuj">{t('karta.tryb.dopasuj')}</option>
+                  <option value="wypelnij">{t('karta.tryb.wypelnij')}</option>
+                  <option value="rozciagnij">{t('karta.tryb.rozciagnij')}</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                className="mausritter-ui2-obraz-reset"
+                disabled={!ustawienia}
+                onClick={() => zmienObraz(() => undefined, 'reset')}
+              >
+                {t('karta.resetuj')}
+              </button>
+            </div>
+          </details>
+        )}
+      </div>
+    );
+  }
 
   return (
     <fieldset className="sekcja-obrazu">
@@ -69,26 +213,7 @@ export function SekcjaObrazu({
           <button type="button" onClick={() => plik.current?.click()}>
             {t('karta.wgrajObraz')}
           </button>
-          <input
-            ref={plik}
-            type="file"
-            accept="image/png,image/jpeg"
-            hidden
-            data-testid="plik-obrazu"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = '';
-              if (!f) return;
-              ustawBlad(undefined);
-              void wgrajObrazDoKart(edycja, f, taliaId, ids, klucz).catch((err: unknown) =>
-                ustawBlad(
-                  err instanceof BladDanych
-                    ? err.message
-                    : String(err instanceof Error ? err.message : err),
-                ),
-              );
-            }}
-          />
+          {ukrytyInput}
         </div>
       )}
       {blad && (

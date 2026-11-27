@@ -106,11 +106,9 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
     });
 
     test('mausritter', async ({ page }) => {
-      await page.goto('./#/gra/mausritter');
-      await expect(
-        page.getByRole('button', { name: new RegExp(dokladnie(t('start.pustaKartkaA4'))) }),
-      ).toBeEnabled({ timeout: 15000 });
-      await expect(page.locator('.szkielet')).toHaveCount(0, { timeout: 15000 });
+      await page.goto('./#/');
+      await page.getByTestId('start-mausritter').click();
+      await expect(page.getByTestId('okno-startu-mausritter')).toBeVisible({ timeout: 15000 });
       await zapisz(page, 'mausritter');
     });
 

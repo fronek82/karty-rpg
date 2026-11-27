@@ -1,0 +1,634 @@
+/*
+ * Style UI2 R11 dla ekranu Mausrittera (wzór: docs/makiety-ui2/Mausritter.dc.html, sekcja 13 planu UI2).
+ * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
+ */
+
+.mausritter-ui2-ekran {
+  height: 100vh;
+  min-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: var(--czcionka-tekst);
+  font-size: 13px;
+}
+
+.edytor-kartki .ui2-naglowek .menu-pobierz > button.glowny {
+  height: 40px;
+  padding: 0 18px;
+  background: var(--tekst);
+  color: var(--tlo);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+}
+
+/* --- Pasek zakładek arkuszy nad obszarem roboczym (sekcja 13.4) --- */
+.mausritter-ui2-zakladki {
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0 12px;
+}
+
+.mausritter-ui2-zakladka {
+  height: 34px;
+  padding: 0 14px;
+  margin-bottom: -1.5px;
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-bottom: none;
+  border-radius: 0;
+  color: var(--tekst);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mausritter-ui2-zakladka:hover {
+  background: var(--tlo);
+}
+
+.mausritter-ui2-zakladka.aktywna {
+  background: var(--tlo-robocze);
+  border-color: var(--tekst);
+  font-weight: 700;
+}
+
+.mausritter-ui2-dodaj-arkusz {
+  height: 28px;
+  margin: 0 0 5px 6px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1.5px dashed var(--tekst);
+  border-radius: 0;
+  color: var(--tekst);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mausritter-ui2-dodaj-arkusz:hover {
+  background: var(--tlo);
+}
+
+.mausritter-ui2-licznik-pasek {
+  margin-left: auto;
+  margin-bottom: 10px;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tekst);
+  white-space: nowrap;
+}
+
+/* --- Obszar roboczy arkusza (sekcja 13.4) --- */
+.mausritter-ui2-obszar {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  /* 1440 - 60 (lewy) - 300 (prawy) - 44 (padding 22px * 2) = 1036 px – zachowuje wzorzec PNG arkusza. */
+  padding: 16px 22px;
+  box-sizing: border-box;
+  background-color: var(--tlo-robocze);
+  background-image: radial-gradient(var(--kropki-robocze) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.mausritter-ui2-obszar[data-powiekszone] {
+  align-items: flex-start;
+}
+
+.mausritter-ui2-obszar > .kartka {
+  width: calc(100% * var(--powiekszenie, 1));
+  max-width: calc(72rem * var(--powiekszenie, 1));
+}
+
+.mausritter-ui2-obszar .strona-kartki {
+  background: var(--papier);
+  box-shadow: 5px 5px 0 color-mix(in srgb, var(--tekst) 20%, transparent);
+}
+
+/* Szara nazwa typu na pustej karcie (bez nazwy) – w pasku tytułu, tylko w edytorze (nie w SVG/PDF). */
+.mausritter-karta-typ-pusta {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 2px 5px;
+  font-family: var(--czcionka-tekst);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--tekst-2);
+  opacity: 0.72;
+  text-align: left;
+  pointer-events: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Pasek stanu 44 px na dole (sekcja 13.4) --- */
+.mausritter-ui2-pasek-stanu {
+  position: relative;
+  z-index: 25;
+}
+
+.mausritter-ui2-stan-lewo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--tekst);
+}
+
+.mausritter-ui2-stan-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 7px;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px solid transparent;
+  border-radius: 0;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mausritter-ui2-stan-link:hover,
+.mausritter-ui2-stan-link.aktywny {
+  border-color: var(--tekst);
+  background: var(--powierzchnia);
+}
+
+.mausritter-ui2-dymek-stanu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 14px;
+  z-index: 50;
+  min-width: 280px;
+  max-width: 360px;
+  padding: 12px 14px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  box-shadow: 4px 4px 0 var(--riso-niebieski);
+  font-family: var(--czcionka-tekst);
+  font-size: 12px;
+}
+
+.mausritter-ui2-dymek-tytul {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mausritter-ui2-skroty-lista {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.mausritter-ui2-skroty-lista dt {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tekst);
+  white-space: nowrap;
+}
+
+.mausritter-ui2-skroty-lista dd {
+  margin: 0;
+  color: var(--tekst-2);
+}
+
+.mausritter-ui2-stan-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mausritter-ui2-stan-btn {
+  height: 26px;
+  min-width: 26px;
+  padding: 0 7px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mausritter-ui2-stan-btn:hover:not(:disabled) {
+  background: var(--tlo);
+}
+
+.mausritter-ui2-stan-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* --- Okno startowe „Od czego zaczynamy?” (sekcja 13.1) --- */
+.mausritter-ui2-start-tlo {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  overflow: auto;
+  background: color-mix(in srgb, var(--tlo) 86%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.mausritter-ui2-start-okno {
+  width: min(520px, 100%);
+  margin: auto;
+  background: var(--tlo);
+  color: var(--tekst);
+  border: 3px solid var(--tekst);
+  box-shadow: 8px 8px 0 var(--tekst);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mausritter-ui2-start-naglowek {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mausritter-ui2-start-naglowek h2 {
+  margin: 0;
+  font-family: var(--czcionka-naglowek);
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.mausritter-ui2-start-zamknij {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mausritter-ui2-start-zamknij:hover {
+  background: var(--tlo-pasek);
+}
+
+.mausritter-ui2-start-pusty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--akcent);
+  color: var(--na-akcencie);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  box-shadow: 5px 5px 0 var(--riso-niebieski);
+  cursor: pointer;
+}
+
+.mausritter-ui2-start-pusty:hover {
+  filter: brightness(0.97);
+}
+
+.mausritter-ui2-start-pusty-tytul {
+  font-family: var(--czcionka-naglowek);
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.mausritter-ui2-start-pusty-opis {
+  font-size: 12px;
+}
+
+.mausritter-ui2-start-sekcja {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tekst);
+}
+
+.mausritter-ui2-start-siatka {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mausritter-ui2-start-uklad {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  padding: 12px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.mausritter-ui2-start-uklad:hover {
+  background: var(--tlo-pasek);
+}
+
+.mausritter-ui2-start-uklad-nazwa {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.mausritter-ui2-start-uklad-opis {
+  font-size: 11px;
+  color: var(--tekst-2);
+}
+
+.mausritter-ui2-start-nota {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--tekst-2);
+}
+
+/* --- Prawy panel Mausrittera (sekcja 13.5) --- */
+.mausritter-ui2-akcja {
+  height: 30px;
+  padding: 0 9px;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mausritter-ui2-akcja:hover {
+  background: var(--tlo-pasek);
+}
+
+.mausritter-ui2-panel-cialo {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mausritter-ui2-pole {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mausritter-ui2-pole > label,
+.mausritter-ui2-pole > .mausritter-ui2-etykieta {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tekst);
+}
+
+.mausritter-ui2-panel-cialo input[type='text'],
+.mausritter-ui2-panel-cialo input[type='number'],
+.mausritter-ui2-panel-cialo select,
+.mausritter-ui2-panel-cialo textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-family: var(--czcionka-tekst);
+  font-size: 13px;
+}
+
+.mausritter-ui2-rozmiary {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mausritter-ui2-rozmiar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mausritter-ui2-rozmiar-btn[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.mausritter-ui2-rozmiar-btn:disabled {
+  color: var(--tekst-2);
+  border-color: var(--linia-2);
+  background: var(--tlo);
+  cursor: not-allowed;
+}
+
+.mausritter-ui2-rozmiar-ikona {
+  display: inline-block;
+  border: 1.5px solid currentColor;
+  flex-shrink: 0;
+}
+
+.mausritter-ui2-panel-cialo .licznik {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  align-self: flex-start;
+}
+
+.mausritter-ui2-panel-cialo .licznik button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mausritter-ui2-panel-cialo .licznik button:hover:not(:disabled) {
+  background: var(--tlo-pasek);
+}
+
+.mausritter-ui2-panel-cialo .licznik button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mausritter-ui2-panel-cialo .licznik output {
+  min-width: 40px;
+  height: 34px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border-top: 1.5px solid var(--tekst);
+  border-bottom: 1.5px solid var(--tekst);
+  background: var(--powierzchnia);
+  font-family: var(--czcionka-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mausritter-ui2-obraz-wiersz {
+  display: flex;
+  gap: 6px;
+}
+
+.mausritter-ui2-obraz-wiersz select {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.mausritter-ui2-obraz-wgraj {
+  height: 34px;
+  padding: 0 10px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mausritter-ui2-obraz-wgraj:hover {
+  background: var(--tlo-pasek);
+}
+
+.mausritter-ui2-obraz-szczegoly {
+  margin-top: 4px;
+  border: 1.5px solid var(--linia-2);
+  padding: 6px 8px;
+}
+
+.mausritter-ui2-obraz-szczegoly > summary {
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mausritter-ui2-obraz-szczegoly > summary::-webkit-details-marker {
+  display: none;
+}
+
+.mausritter-ui2-obraz-szczegoly > summary::after {
+  content: '▸';
+  font-family: var(--czcionka-mono);
+  color: var(--tekst-2);
+}
+
+.mausritter-ui2-obraz-szczegoly[open] > summary::after {
+  content: '▾';
+}
+
+.mausritter-ui2-obraz-szczegoly-cialo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mausritter-ui2-obraz-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mausritter-ui2-obraz-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mausritter-ui2-obraz-reset {
+  height: 30px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.mausritter-ui2-obraz-reset:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mausritter-ui2-podpowiedz {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--linia-2);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--tekst-2);
+}
+
+.mausritter-ui2-podpowiedz-arkusz {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--tekst-2);
+}
