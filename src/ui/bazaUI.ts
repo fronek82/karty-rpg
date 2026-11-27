@@ -285,3 +285,74 @@ export async function nowyProjektZRewersuZProjektu(
   await zapiszMiniatureRewersu(projekt, zRewersem.dane, zRewersem.rewersId).catch(() => undefined);
   return id;
 }
+
+/**
+ * Nowy projekt z okna „Nowy projekt → Pusta karta” (UI2 R3):
+ * domyślny układ swobodny (D7), wybrane wymiary w mm oraz strony przód i/lub tył (D5).
+ * Zwraca docelowy adres hasha (edytor przodu albo edytor tyłu).
+ */
+export async function nowyProjektPustaKarta(
+  opcje: {
+    nazwa: string;
+    szer: number;
+    wys: number;
+    przod: boolean;
+    tyl: boolean;
+  },
+  bazaUrl: string = import.meta.env.BASE_URL,
+): Promise<string> {
+  const [
+    { nowyProjektWlasny },
+    { dodajRewers, nowyTyl, przypiszRewers },
+    { DOMYSLNE_TLO_KARTY },
+    { szablonZKreatora },
+  ] = await Promise.all([
+    import('../dane/wlasneKarty'),
+    import('../dane/rewers'),
+    import('../model/szablon'),
+    import('./szablon/nowySzablonUI'),
+  ]);
+  const nazwa = opcje.nazwa.trim() || t('nowyProjekt.nazwaDomyslna');
+  const szablon = szablonZKreatora({
+    nazwa,
+    szer: opcje.szer,
+    wys: opcje.wys,
+    promien: 3,
+    tlo: DOMYSLNE_TLO_KARTY,
+    uklad: 'swobodny',
+  });
+  const { projekt: bazowy, zasoby } = await nowyProjektWlasny(
+    { szablon, role: {}, zasoby: [], dane: new Map() },
+    (plik) => pobierz(`${bazaUrl}czcionki/${plik}`),
+  );
+  let projekt = { ...bazowy, nazwa };
+  let rewersId: string | undefined;
+  if (opcje.tyl) {
+    const zTylem = dodajRewers(
+      projekt,
+      nowyTyl(
+        'rewers',
+        {
+          nazwa: t('projekty.stronaRewers'),
+          szer: opcje.szer,
+          wys: opcje.wys,
+          promien: 3,
+          tlo: DOMYSLNE_TLO_KARTY,
+          uklad: 'pusty',
+        },
+        t('kreator.grafikaTylu'),
+      ),
+    );
+    rewersId = zTylem.id;
+    const taliaId = zTylem.projekt.talie[0]?.id;
+    projekt = taliaId
+      ? przypiszRewers(zTylem.projekt, { rodzaj: 'talia', id: taliaId }, rewersId)
+      : zTylem.projekt;
+  }
+  const id = await zapiszNowyProjekt(projekt, zasoby);
+  if (!opcje.przod && rewersId) {
+    return `#/projekt/${encodeURIComponent(id)}/rewers/${encodeURIComponent(rewersId)}`;
+  }
+  const szablonId = projekt.szablony[0]?.id ?? 'szablon-1';
+  return `#/projekt/${encodeURIComponent(id)}/szablon/${encodeURIComponent(szablonId)}`;
+}
