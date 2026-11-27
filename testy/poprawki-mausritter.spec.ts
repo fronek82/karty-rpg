@@ -23,9 +23,6 @@ import {
 test.use({ viewport: { width: 1440, height: 1150 } });
 
 const panel = (page: Page) => page.getByRole('complementary', { name: 'Zaznaczone karty' });
-const pasek = (page: Page) => page.locator('.pasek-karty');
-const nastepny = (page: Page, rozmiar: string) =>
-  pasek(page).getByRole('button', { name: `Rozmiar: ${rozmiar}`, exact: true });
 
 async function przedmiot(page: Page, kolumna: number, rzad: number, nazwa: string) {
   await dodajKarte(page, 1, kolumna, rzad, 'Ekwipunek', 'Przedmiot');
@@ -39,7 +36,7 @@ test('zewnętrzne nożyczki na ręcznej kartce 1×1, 1×2 i 2×1 omijają karty'
   await panel(page).getByRole('button', { name: '1×2', exact: true }).click();
   await przedmiot(page, 3, 2, 'Mała');
   await przedmiot(page, 4, 1, 'Pozioma');
-  await nastepny(page, '2×1').click();
+  await panel(page).getByRole('button', { name: '2×1', exact: true }).click();
   await page.keyboard.press('Escape');
 
   const arkusz = page.locator('.strona-kartki').first();
@@ -129,20 +126,23 @@ test('zewnętrzne nożyczki na ręcznej kartce 1×1, 1×2 i 2×1 omijają karty'
   }
 });
 
+const przyciskRozmiaru = (page: Page, rozmiar: string) =>
+  panel(page).getByRole('button', { name: new RegExp(`^${rozmiar}`) });
+
 for (const operacja of ['przeciągnięcie', 'usunięcie'] as const) {
   test(`rozmiar 2×1 wraca do cyklu po zwolnieniu slotu przez ${operacja}`, async ({ page }) => {
     await nowaPustaKartka(page);
     await przedmiot(page, 3, 2, 'Rozkładana');
-    await expect(nastepny(page, '2×1')).toBeVisible();
-    await nastepny(page, '2×1').click();
-    await nastepny(page, '1×2').click();
-    await nastepny(page, '1×1').click();
+    await expect(przyciskRozmiaru(page, '2×1')).toBeEnabled();
+    await przyciskRozmiaru(page, '2×1').click();
+    await przyciskRozmiaru(page, '1×2').click();
+    await przyciskRozmiaru(page, '1×1').click();
 
     await przedmiot(page, 4, 2, 'Sąsiednia');
     await karta(page, 'Rozkładana').click();
-    await expect(nastepny(page, '2×1')).toHaveCount(0);
-    await nastepny(page, '1×2').click();
-    await expect(nastepny(page, '1×1')).toBeVisible();
+    await expect(przyciskRozmiaru(page, '2×1')).toBeDisabled();
+    await przyciskRozmiaru(page, '1×2').click();
+    await expect(przyciskRozmiaru(page, '1×1')).toBeEnabled();
 
     const sasiad = karta(page, 'Sąsiednia');
     if (operacja === 'przeciągnięcie') {
@@ -150,13 +150,13 @@ for (const operacja of ['przeciągnięcie', 'usunięcie'] as const) {
       await expect(sasiad).toHaveAttribute('aria-label', /kolumna 6, rząd 2/);
     } else {
       await sasiad.click();
-      await pasek(page).getByRole('button', { name: 'Usuń' }).click();
+      await panel(page).getByRole('button', { name: /Usuń/ }).click();
       await expect(sasiad).toHaveCount(0);
     }
     await karta(page, 'Rozkładana').click();
-    await nastepny(page, '1×1').click();
-    await expect(nastepny(page, '2×1')).toBeVisible();
-    await nastepny(page, '2×1').click();
+    await przyciskRozmiaru(page, '1×1').click();
+    await expect(przyciskRozmiaru(page, '2×1')).toBeEnabled();
+    await przyciskRozmiaru(page, '2×1').click();
     const wynik = (await karta(page, 'Rozkładana').boundingBox())!;
     expect(wynik.width / wynik.height).toBeCloseTo(2, 1);
   });
@@ -224,12 +224,12 @@ test('zwolnione 2×1 jest pierwszym dostępnym wyborem dla zbroi zapisanej jako 
   await page.getByRole('link', { name: 'Próba rozmiarów', exact: true }).first().click();
   const zbroja = karta(page, 'Stara zbroja');
   await zbroja.click();
-  const poziomy = pasek(page).getByRole('button', { name: /Rozmiar: 2×1/ });
-  await expect(poziomy).toHaveCount(0);
+  const poziomy = przyciskRozmiaru(page, '2×1');
+  await expect(poziomy).toBeDisabled();
   await karta(page, 'Obok').click();
-  await pasek(page).getByRole('button', { name: 'Usuń' }).click();
+  await panel(page).getByRole('button', { name: /Usuń/ }).click();
   await zbroja.click();
-  await expect(poziomy).toBeVisible();
+  await expect(poziomy).toBeEnabled();
   await poziomy.click();
   const obwiednia = (await zbroja.boundingBox())!;
   expect(obwiednia.width / obwiednia.height).toBeCloseTo(2, 1);

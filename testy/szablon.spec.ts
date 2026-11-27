@@ -154,11 +154,12 @@ test('nowy szablon w istniejącym projekcie: kreator z kartki, siatka 2×2', asy
 test('edytor szablonu nie otwiera się dla projektu gry ani nieznanego szablonu', async ({
   page,
 }) => {
-  await page.goto('./#/gra/mausritter');
-  await page.getByRole('button', { name: /Pusta kartka A4/ }).click();
+  await page.goto('./#/');
+  await page.getByTestId('start-mausritter').click();
+  await page.getByTestId('start-pusty-arkusz').click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   const adres = page.url().replace(/#.*$/, '');
-  const id = page.url().split('/projekt/')[1]!;
+  const id = page.url().split('/projekt/')[1]!.split('/')[0]!;
   await page.goto(`${adres}#/projekt/${id}/szablon/mausritter-bron`);
   await expect(page.getByRole('alert')).toContainText('Szablony z pakietu gry');
   await page.goto('./#/wlasne/nowy/awers');

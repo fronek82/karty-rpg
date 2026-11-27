@@ -26,7 +26,9 @@ export function PanelSekcji({
   return (
     <aside aria-label={etykietaAria ?? tytul} className="ui2-panel-sekcji">
       <div className="ui2-panel-naglowek">
-        <span className="ui2-panel-tytul">{tytul}</span>
+        <h2 className="ui2-panel-tytul" style={{ margin: 0 }}>
+          {tytul}
+        </h2>
         {podtytul && <span className="ui2-panel-podtytul">{podtytul}</span>}
         {akcjeNaglowka && (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>

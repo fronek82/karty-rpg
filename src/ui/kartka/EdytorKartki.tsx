@@ -138,9 +138,16 @@ import { PanelKart, typDlaSzablonu } from './PanelKart';
 import { PanelNaglowka } from './PanelNaglowka';
 import { PanelRewersuIAwersu } from './PanelRewersuIAwersu';
 import { PanelUstawien } from './PanelUstawien';
+import { zastosujGotowyUklad } from '../../dane/nowyProjekt';
+import { nazwaWariantu } from '../nazwyPakietu';
 import { pierwszeWolneMiejsce, zajeteKafelki } from './siatkaMausritter';
+import { ikonaTypuMausritter, opisRozmiarowTypu } from './mausritterIkony';
+import { OknoStartuMausritter } from './OknoStartuMausritter';
+import { NaglowekProjektu } from '../ui2/NaglowekProjektu';
+import { PanelSekcji } from '../ui2/PanelSekcji';
 import { PasekBoczny, type GrupaPaskaBocznego } from '../ui2/PasekBoczny';
 import { zaokraglij } from '../../model/geometria';
+import './mausritterUi2.css';
 
 type Zaznaczenie =
   | { rodzaj: 'karty'; arkuszId: string; ids: string[] }
@@ -252,15 +259,26 @@ export function EdytorKartki({
   edycja,
   pokazKartke,
   tryb = 'edycja',
+  pokazWyborStartu = false,
 }: {
   edycja: ProjektWEdycji;
   /** Kartka do pokazania po wejściu (np. po „Edytor kart” z edytora szablonu). */
   pokazKartke?: string;
   /** Tryb pracy: „edycja” (tylko edycja kart) albo „drukuj” (podgląd druku i stałe opcje po prawej). */
   tryb?: 'edycja' | 'drukuj';
+  /** Pokazuje okno „Od czego zaczynamy?” nad arkuszem Mausrittera (sekcja 13.1 planu UI2). */
+  pokazWyborStartu?: boolean;
 }) {
   const { projekt, zmien } = edycja;
   const druk = tryb === 'drukuj';
+  const czyMausritter = !czyProjektWlasny(projekt);
+  const mausritterEdycja = czyMausritter && !druk;
+  const [wyborStartuOtwarty, ustawWyborStartuOtwarty] = useState(pokazWyborStartu);
+  const [aktywnyArkuszMausritter, ustawAktywnyArkuszMausritter] = useState<string | undefined>(
+    pokazKartke,
+  );
+  const [skrotyOtwarte, ustawSkrotyOtwarte] = useState(false);
+  const pasekStanuRef = useRef<HTMLDivElement>(null);
   // Zmiana języka przerysowuje edytor, ale wynik useMemo się nie przelicza sam: KAŻDY nowy
   // useMemo, który woła t() / tn() / tJesliJest() (także pośrednio), musi mieć `jezykUi` w zależnościach.
   const jezykUi = useJezyk();
@@ -413,9 +431,9 @@ export function EdytorKartki({
     // Zmierzone wymiary po zmianie (max-width i wyśrodkowanie nie skalują się proporcjonalnie).
     const kr = k.kartka.getBoundingClientRect();
     el.scrollLeft += kr.left + k.fx * kr.width - k.ekranX;
-    // Pionowo przewija się okno.
-    window.scrollBy(0, kr.top + k.fy * kr.height - k.ekranY);
-  }, [powiekszenie]);
+    if (mausritterEdycja) el.scrollTop += kr.top + k.fy * kr.height - k.ekranY;
+    else window.scrollBy(0, kr.top + k.fy * kr.height - k.ekranY);
+  }, [powiekszenie, mausritterEdycja]);
 
   // --- Budowa stron (ta sama scena co w PDF), z pamięcią kart i kartek między renderami.
   // Nowa pamięć kart przy każdej zmianie zasobów (czcionki, obrazy, szablony).
@@ -1543,9 +1561,60 @@ export function EdytorKartki({
   const arkuszDruku =
     projekt.arkusze.find((a) => a.id === (wybranyArkuszDruku ?? pokazKartke)) ?? projekt.arkusze[0];
   const arkuszBiezacy = druk ? arkuszDruku : arkuszZazn;
+  const aktywnaKartkaM =
+    aktualneKartki.find((k) => k.arkusz.id === aktywnyArkuszMausritter) ?? aktualneKartki[0];
+
+  const zamknijWyborStartu = useCallback(() => {
+    ustawWyborStartuOtwarty(false);
+    const docelowy = `#/projekt/${encodeURIComponent(projekt.id)}`;
+    if (window.location.hash !== docelowy) {
+      window.history.replaceState(null, '', docelowy);
+    }
+  }, [projekt.id]);
+
+  const wybierzGotowyUklad = useCallback(
+    (ukladId: string) => {
+      if (!pakietGry || !zasoby) return;
+      const nowy = zastosujGotowyUklad(projekt, pakietGry, ukladId, {
+        czcionki: zasoby.czcionki,
+        obraz: (id) => zasoby.obrazy.get(id)?.info,
+      });
+      zmien(() => nowy);
+      ustawAktywnyArkuszMausritter(nowy.arkusze[0]?.id);
+      ustawZazn(undefined);
+      zamknijWyborStartu();
+      void edycja.zapiszTeraz().catch(() => undefined);
+    },
+    [pakietGry, zasoby, projekt, zmien, ustawZazn, zamknijWyborStartu, edycja],
+  );
+
+  useEffect(() => {
+    if (!skrotyOtwarte) return;
+    const klikPoza = (e: globalThis.MouseEvent) => {
+      if (pasekStanuRef.current && !pasekStanuRef.current.contains(e.target as Node)) {
+        ustawSkrotyOtwarte(false);
+      }
+    };
+    const klawisz = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        ustawSkrotyOtwarte(false);
+      }
+    };
+    document.addEventListener('mousedown', klikPoza);
+    window.addEventListener('keydown', klawisz, true);
+    return () => {
+      document.removeEventListener('mousedown', klikPoza);
+      window.removeEventListener('keydown', klawisz, true);
+    };
+  }, [skrotyOtwarte]);
+
   const nowaKartka = pakiet
     ? () => {
-        const nazwa = t('kartka.nazwaKartki', { numer: projekt.arkusze.length + 1 });
+        const nazwa = mausritterEdycja
+          ? t('mausritter.arkuszNumer', { numer: projekt.arkusze.length + 1 })
+          : t('kartka.nazwaKartki', { numer: projekt.arkusze.length + 1 });
         // Własne karty: nowa kartka bez tytułu, z ustawieniami zaznaczonej (ten sam rozmiar kart).
         const wzor =
           bezGry && arkuszBiezacy
@@ -1554,6 +1623,10 @@ export function EdytorKartki({
         const w = dodajKartke(projekt, wzor, nazwa, !bezGry);
         zmien((p) => dodajKartke(p, wzor, nazwa, !bezGry).projekt);
         ustawWybranyArkuszDruku(w.arkuszId);
+        if (mausritterEdycja) {
+          ustawAktywnyArkuszMausritter(w.arkuszId);
+          ustawZazn(undefined);
+        }
       }
     : undefined;
   // Własne karty: nowa kartka dopasowana do rozmiaru szablonu (bez tytułu, papier jak zaznaczona).
@@ -1662,6 +1735,7 @@ export function EdytorKartki({
       <PanelKart
         key={aktywne.ids.join(',')}
         bezRewersu={bezRewersow}
+        mausritterUi2={mausritterEdycja}
         edycja={edycja}
         arkusz={arkuszZazn}
         karty={zaznaczoneKarty}
@@ -1752,7 +1826,67 @@ export function EdytorKartki({
     ...new Map(projekt.arkusze.flatMap((a) => szablonyDoImportu(a)).map((s) => [s.id, s])).values(),
   ];
   const taliaDomyslna = projekt.talie.find((x) => x.id === arkuszZazn?.taliaId) ?? projekt.talie[0];
-  panel ??= (
+  const biezacyArkuszM = aktywnaKartkaM
+    ? (projekt.arkusze.find((a) => a.id === aktywnaKartkaM.arkusz.id) ?? aktywnaKartkaM.arkusz)
+    : undefined;
+  panel ??= mausritterEdycja ? (
+    <PanelSekcji tytul={t('mausritter.panelArkusz')}>
+      <div className="mausritter-ui2-panel-cialo">
+        {biezacyArkuszM && (
+          <div className="mausritter-ui2-pole">
+            <label htmlFor="mausritter-tytul-arkusza">{t('mausritter.tytulArkusza')}</label>
+            <input
+              id="mausritter-tytul-arkusza"
+              type="text"
+              value={biezacyArkuszM.ustawienia.tytul?.tekst ?? biezacyArkuszM.nazwa}
+              onChange={(e) => {
+                const tekst = e.target.value;
+                const arkuszId = biezacyArkuszM.id;
+                zmienUklad(
+                  (p) => ({
+                    ...p,
+                    zmieniono: new Date().toISOString(),
+                    arkusze: p.arkusze.map((a) =>
+                      a.id !== arkuszId
+                        ? a
+                        : {
+                            ...a,
+                            nazwa: tekst,
+                            ustawienia: {
+                              ...a.ustawienia,
+                              tytul: a.ustawienia.tytul
+                                ? { ...a.ustawienia.tytul, tekst }
+                                : pakiet?.nowaKartka.ustawienia.tytul
+                                  ? { ...pakiet.nowaKartka.ustawienia.tytul, tekst }
+                                  : {
+                                      tekst,
+                                      polozenie: 'lewo' as const,
+                                      styl: {
+                                        czcionka: 'tytul',
+                                        rozmiar: 11,
+                                        waga: 'pogrubiona' as const,
+                                      },
+                                      odstep: 4,
+                                    },
+                            },
+                          },
+                    ),
+                  }),
+                  `tytul-arkusza:${arkuszId}`,
+                );
+              }}
+            />
+            {bladUkladu && (
+              <p role="alert" className="blad-pola">
+                {bladUkladu}
+              </p>
+            )}
+          </div>
+        )}
+        <p className="mausritter-ui2-podpowiedz-arkusz">{t('mausritter.podpowiedzArkusz')}</p>
+      </div>
+    </PanelSekcji>
+  ) : (
     <aside className="panel-edytora" aria-label={t('kartka.pomoc')}>
       <h2>{t('kartka.nicNieZaznaczono')}</h2>
       <PanelRewersuIAwersu edycja={edycja} talia={taliaDomyslna} bezRewersu={bezRewersow} />
@@ -1849,14 +1983,94 @@ export function EdytorKartki({
       : `#/projekt/${idProjektuUrl}`
     : bezGry && szablonPowrotu
       ? `#/projekt/${idProjektuUrl}/szablon/${encodeURIComponent(szablonPowrotu)}`
-      : idPakietu && idPakietu !== PAKIET_WLASNY
-        ? `#/gra/${encodeURIComponent(idPakietu)}`
-        : '#/wlasne';
+      : '#/';
   const adresDruku = pokazKartke
     ? `#/projekt/${idProjektuUrl}/drukuj/${encodeURIComponent(pokazKartke)}`
     : `#/projekt/${idProjektuUrl}/drukuj`;
 
-  const naglowekProjektu = (
+  const stanZapisuUi2 =
+    edycja.zapis.stan === 'zapisywanie'
+      ? 'zapisywanie'
+      : edycja.niezapisane
+        ? 'niezapisane'
+        : 'zapisano';
+
+  const naglowekProjektu = czyMausritter ? (
+    <NaglowekProjektu
+      nazwaProjektu={projekt.nazwa}
+      edycjaNazwy={{
+        wartosc: projekt.nazwa,
+        etykieta: t('kartka.nazwaProjektu'),
+        onChange: (wartosc) =>
+          zmien((p) => ({ ...p, nazwa: wartosc, zmieniono: new Date().toISOString() }), {
+            klucz: 'nazwa',
+          }),
+      }}
+      mausritter
+      aktywnyKrok={druk ? 'druk' : 'mausritter'}
+      kroki={[
+        {
+          id: 'mausritter',
+          numer: 1,
+          etykieta: t('ui2.krok.kartyNaArkuszach'),
+          href: `#/projekt/${idProjektuUrl}`,
+        },
+        {
+          id: 'druk',
+          numer: 2,
+          etykieta: t('ui2.krok.druk'),
+          href: adresDruku,
+        },
+      ]}
+      hrefPowrotu="#/"
+      onNawiguj={sprawdzWyjscie}
+      mozeCofnac={edycja.mozeCofnac}
+      mozePonowic={edycja.mozePonowic}
+      onCofnij={edycja.cofnij}
+      onPonow={edycja.ponow}
+      stanZapisu={stanZapisuUi2}
+      onZapisz={edycja.zapiszTeraz}
+      dodatkowe={
+        druk ? (
+          <>
+            <button
+              type="button"
+              className="ui2-przycisk-kontur"
+              onClick={() =>
+                zapiszPlik(
+                  eksportujProjekt(projekt, edycja.dane),
+                  'application/zip',
+                  nazwaPliku(projekt.nazwa, ROZSZERZENIE_PROJEKTU),
+                )
+              }
+            >
+              ⤓ {t('projekty.eksportuj')}
+            </button>
+            {statusPdf && (
+              <span role="status" aria-live="polite" className="status-pdf">
+                {statusPdf}
+              </span>
+            )}
+          </>
+        ) : undefined
+      }
+      akcjaGlowna={
+        druk ? (
+          <MenuPobierz
+            wylaczone={!zasoby || zajete}
+            pobierz={(co) =>
+              wTle(() => (co.rodzaj === 'pdf' ? pobierzPdf() : pobierzObrazy(co.rodzaj, co.format)))
+            }
+          />
+        ) : (
+          {
+            etykieta: t('ui2.akcja.doDruku'),
+            href: adresDruku,
+          }
+        )
+      }
+    />
+  ) : (
     <header className="pasek-gorny" role="banner">
       <a href="#/" className="logo" onClick={(e) => sprawdzWyjscie(e, '#/')}>
         {t('aplikacja.nazwa')}
@@ -1873,78 +2087,31 @@ export function EdytorKartki({
             })
           }
         />
-        {!czyProjektWlasny(projekt) && (
-          <span className="ui2-etykieta-mausritter">{t('ui2.mausritterEtykieta')}</span>
-        )}
         <PrzyciskZapisu edycja={edycja} />
       </span>
       <nav aria-label={t('ui2.etapyProjektu')} className="ui2-kroki">
-        {czyProjektWlasny(projekt) ? (
-          <>
-            <a
-              href={`#/projekt/${idProjektuUrl}/karty`}
-              className={`ui2-krok${!druk ? ' ui2-krok-aktywny' : ''}`}
-              aria-current={!druk ? 'page' : undefined}
-              onClick={(e) => sprawdzWyjscie(e, `#/projekt/${idProjektuUrl}/karty`)}
-            >
-              <span className="ui2-krok-numer">1</span>
-              {t('ui2.krok.karty')}
-            </a>
-            <span className="ui2-krok-strzalka" aria-hidden="true">
-              →
-            </span>
-            {druk ? (
-              <span aria-current="page" className="ui2-krok ui2-krok-aktywny">
-                <span className="ui2-krok-numer">2</span>
-                {t('ui2.krok.druk')}
-              </span>
-            ) : (
-              <a
-                href={adresDruku}
-                className="ui2-krok"
-                onClick={(e) => sprawdzWyjscie(e, adresDruku)}
-              >
-                <span className="ui2-krok-numer">2</span>
-                {t('ui2.krok.druk')}
-              </a>
-            )}
-          </>
+        <a
+          href={`#/projekt/${idProjektuUrl}/karty`}
+          className={`ui2-krok${!druk ? ' ui2-krok-aktywny' : ''}`}
+          aria-current={!druk ? 'page' : undefined}
+          onClick={(e) => sprawdzWyjscie(e, `#/projekt/${idProjektuUrl}/karty`)}
+        >
+          <span className="ui2-krok-numer">1</span>
+          {t('ui2.krok.karty')}
+        </a>
+        <span className="ui2-krok-strzalka" aria-hidden="true">
+          →
+        </span>
+        {druk ? (
+          <span aria-current="page" className="ui2-krok ui2-krok-aktywny">
+            <span className="ui2-krok-numer">2</span>
+            {t('ui2.krok.druk')}
+          </span>
         ) : (
-          <>
-            {!druk ? (
-              <span aria-current="page" className="ui2-krok ui2-krok-aktywny">
-                <span className="ui2-krok-numer">1</span>
-                {t('ui2.krok.kartyNaArkuszach')}
-              </span>
-            ) : (
-              <a
-                href={`#/projekt/${idProjektuUrl}`}
-                className="ui2-krok"
-                onClick={(e) => sprawdzWyjscie(e, `#/projekt/${idProjektuUrl}`)}
-              >
-                <span className="ui2-krok-numer">1</span>
-                {t('ui2.krok.kartyNaArkuszach')}
-              </a>
-            )}
-            <span className="ui2-krok-strzalka" aria-hidden="true">
-              →
-            </span>
-            {druk ? (
-              <span aria-current="page" className="ui2-krok ui2-krok-aktywny">
-                <span className="ui2-krok-numer">2</span>
-                {t('ui2.krok.druk')}
-              </span>
-            ) : (
-              <a
-                href={adresDruku}
-                className="ui2-krok"
-                onClick={(e) => sprawdzWyjscie(e, adresDruku)}
-              >
-                <span className="ui2-krok-numer">2</span>
-                {t('ui2.krok.druk')}
-              </a>
-            )}
-          </>
+          <a href={adresDruku} className="ui2-krok" onClick={(e) => sprawdzWyjscie(e, adresDruku)}>
+            <span className="ui2-krok-numer">2</span>
+            {t('ui2.krok.druk')}
+          </a>
         )}
       </nav>
       <span className="odstep" />
@@ -2014,8 +2181,154 @@ export function EdytorKartki({
     </header>
   );
 
+  const renderujWidokKartki = (k: Kartka, wiele: boolean) => (
+    <WidokKartki
+      key={k.arkusz.id}
+      podgladDruku={druk}
+      mausritter={czyMausritter}
+      upuscTypNaSlot={
+        mausritterEdycja
+          ? (typId, celSlot) => {
+              const typ = typyDlaKartki(k.arkusz).find((x) => x.id === typId);
+              const ctx = kontekst(k.arkusz.id);
+              if (!typ || !ctx) return;
+              const w = typ.warianty[0]!;
+              const opis = {
+                szablonId: w.szablonId,
+                rozmiary: typ.rozmiary,
+                ...(w.dane ? { dane: w.dane } : {}),
+              };
+              const proba = dodajKarteWSlocie(projekt, k.arkusz.id, celSlot, opis, ctx);
+              if ('blad' in proba) {
+                ustawToast({ tekst: t('kartka.nieMiesci') });
+                return;
+              }
+              zmien((p) => {
+                const x = dodajKarteWSlocie(p, k.arkusz.id, celSlot, opis, ctx);
+                return 'projekt' in x ? x.projekt : p;
+              });
+              ustawZazn({ rodzaj: 'karty', arkuszId: k.arkusz.id, ids: [proba.kartaId] });
+            }
+          : undefined
+      }
+      tylkoRewers={czyProjektRewersowy(projekt)}
+      bezRewersow={bezRewersow}
+      onWybierzKartke={
+        druk && aktualneKartki.length > 1
+          ? () => {
+              ustawWybranyArkuszDruku(k.arkusz.id);
+              ustawBladUkladu(undefined);
+            }
+          : undefined
+      }
+      szablony={zasoby?.szablony}
+      importujDane={
+        !druk && !bezImportuTabeli && k.wynik && szablonyDoImportu(k.arkusz).length
+          ? () => ustawImportTabeli(k.arkusz.id)
+          : undefined
+      }
+      k={k}
+      wiele={wiele}
+      karty={kartyNaKartkach.get(k.arkusz.id) ?? []}
+      liczbaStron={
+        czyMieszane(k.arkusz) || k.arkusz.ustawienia.drukarnia?.wlaczony
+          ? (k.wynik?.strony.length ?? 1)
+          : Math.max(liczbaStronKartki(projekt, k.arkusz.id), k.svg.length)
+      }
+      zazn={aktywne}
+      gest={gest}
+      menu={menu?.arkuszId === k.arkusz.id ? menu : undefined}
+      typy={typyDlaKartki(k.arkusz)}
+      uwaga={(typ) => {
+        // Mieszane: typ, który nie zmieści się w klikniętym wolnym miejscu (nadal klikalny).
+        const w = menu?.arkuszId === k.arkusz.id && k.wynik?.mieszane?.wolne[menu.kolumna];
+        const s = zasoby?.szablony.get(typ.warianty[0]!.szablonId);
+        if (!w || !s || !czyMieszane(k.arkusz)) return undefined;
+        const r = wymiaryKarty(s);
+        return r.szer > w.szer + 1e-6 || r.wys > w.wys + 1e-6
+          ? t('mieszane.nieZmiesciSieTu')
+          : undefined;
+      }}
+      przesun={(kierunek) => przesunZaznaczone({ strona: 0, kolumna: kierunek, rzad: 0 })}
+      blokada={(typ) => {
+        if (czyMieszane(k.arkusz)) return undefined;
+        const ctx = kontekst(k.arkusz.id);
+        const s = ctx?.szablony.get(typ.warianty[0]!.szablonId);
+        // Własne karty: jedna kartka = jeden rozmiar karty.
+        const slotK = k.wynik?.slot ?? k.arkusz.ustawienia.slot;
+        if (
+          (bezGry || k.arkusz.wlasnySzablonId) &&
+          s &&
+          slotK &&
+          !pasujeDoSlotu(s, slotK, k.arkusz.ustawienia.dopasowanie)
+        )
+          return t('kartka.innyRozmiar', { rozmiar: opisRozmiaruSzablonu(s) });
+        const ok =
+          !!menu &&
+          !!ctx &&
+          !(
+            'blad' in
+            dodajKarteWSlocie(
+              projekt,
+              k.arkusz.id,
+              menu,
+              { szablonId: typ.warianty[0]!.szablonId, rozmiary: typ.rozmiary },
+              ctx,
+            )
+          );
+        return ok ? undefined : t('kartka.nieMiesci');
+      }}
+      dodaj={dodajZMenu}
+      dodatkoweAwersy={awersyInne.map((a) => ({
+        klucz: kluczAwersuZProjektu(a),
+        etykieta: etykietaAwersuZProjektu(a),
+      }))}
+      dodajZInnegoProjektu={(klucz) => void dodajZInnegoProjektu(klucz)}
+      rewersyLokalne={projekt.rewersy ?? []}
+      rewersyGlobalne={rewersyGlobalne}
+      wybierzRewersKarty={(kartaId, rid) => wybierzRewersKarty(k.talia.id, kartaId, rid)}
+      wybierzRewersGlobalnyKarty={(kartaId, wpis) =>
+        wybierzRewersGlobalnyKarty(k.talia.id, kartaId, wpis)
+      }
+      zamknijMenu={zamknijMenu}
+      poczatekGestu={poczatekGestu}
+      duplikuj={() => duplikuj(1)}
+      usun={usunZaznaczone}
+      rozmiar={aktywne?.arkuszId === k.arkusz.id ? nastepnyRozmiar : undefined}
+      dodajStrone={() => zmien((p) => dodajStrone(p, k.arkusz.id))}
+      otworzMenu={(p) => {
+        ustawZazn(undefined);
+        ustawMenu({ arkuszId: k.arkusz.id, ...p });
+      }}
+      wybierzNaglowek={(id) => {
+        ustawMenu(undefined);
+        ustawZazn({ rodzaj: 'naglowek', arkuszId: k.arkusz.id, id });
+      }}
+      wybierzKarte={(id, shift) => {
+        const obecne =
+          aktywne?.rodzaj === 'karty' && aktywne.arkuszId === k.arkusz.id ? aktywne.ids : [];
+        const ids = shift
+          ? obecne.includes(id)
+            ? obecne.filter((x) => x !== id)
+            : [...obecne, id]
+          : [id];
+        ustawZazn(ids.length ? { rodzaj: 'karty', arkuszId: k.arkusz.id, ids } : undefined);
+      }}
+      usunStrone={(s) =>
+        zmien((p) => {
+          const w = usunStrone(p, k.arkusz.id, s);
+          return 'projekt' in w ? w.projekt : p;
+        })
+      }
+    />
+  );
+
   return (
-    <div className="edytor-kartki">
+    <div
+      className={
+        mausritterEdycja ? 'edytor-kartki ui2-ekran mausritter-ui2-ekran' : 'edytor-kartki'
+      }
+    >
       {naglowekProjektu}
       {oknoWyjscia}
       {oknoZgodnosci}
@@ -2082,62 +2395,65 @@ export function EdytorKartki({
           </ul>
         </details>
       )}
-      <div className="uklad-edytora">
-        {!druk &&
-          !czyProjektWlasny(projekt) &&
-          aktualneKartki[0] &&
-          (() => {
-            const celKartka = aktualneKartki[0]!;
-            const typyM = typyDlaKartki(celKartka.arkusz);
-            const dodajWTymTypie = (typId: string) => {
-              const typ = typyM.find((x) => x.id === typId);
-              const ctx = kontekst(celKartka.arkusz.id);
-              const geom = celKartka.geometria;
-              if (!typ || !ctx || !geom) return;
-              const kartyStrony0 = (kartyNaKartkach.get(celKartka.arkusz.id) ?? []).filter(
-                (x) => x.strona === 0,
-              );
-              const zajete = zajeteKafelki(kartyStrony0);
-              const wolne = pierwszeWolneMiejsce(geom.siatka, { kolumny: 1, rzedy: 1 }, zajete);
-              const celSlot = {
-                strona: 0,
-                kolumna: wolne?.kolumna ?? 0,
-                rzad: wolne?.rzad ?? 0,
+      {mausritterEdycja ? (
+        <div className="ui2-tresc">
+          {aktywnaKartkaM &&
+            (() => {
+              const celKartka = aktywnaKartkaM;
+              const typyM = typyDlaKartki(celKartka.arkusz);
+              const dodajWTymTypie = (typId: string) => {
+                const typ = typyM.find((x) => x.id === typId);
+                const ctx = kontekst(celKartka.arkusz.id);
+                const geom = celKartka.geometria;
+                if (!typ || !ctx || !geom) return;
+                const kartyStrony0 = (kartyNaKartkach.get(celKartka.arkusz.id) ?? []).filter(
+                  (x) => x.strona === 0,
+                );
+                const zajete = zajeteKafelki(kartyStrony0);
+                const domyslnyRozmiar = typ.rozmiary[0] ?? { kolumny: 1, rzedy: 1 };
+                const wolne = pierwszeWolneMiejsce(geom.siatka, domyslnyRozmiar, zajete);
+                const celSlot = {
+                  strona: 0,
+                  kolumna: wolne?.kolumna ?? 0,
+                  rzad: wolne?.rzad ?? 0,
+                };
+                const w = typ.warianty[0]!;
+                const opis = {
+                  szablonId: w.szablonId,
+                  rozmiary: typ.rozmiary,
+                  ...(w.dane ? { dane: w.dane } : {}),
+                };
+                const proba = dodajKarteWSlocie(projekt, celKartka.arkusz.id, celSlot, opis, ctx);
+                if ('blad' in proba) {
+                  ustawToast({ tekst: t('kartka.nieMiesci') });
+                  return;
+                }
+                if (wyborStartuOtwarty) zamknijWyborStartu();
+                zmien((p) => {
+                  const x = dodajKarteWSlocie(p, celKartka.arkusz.id, celSlot, opis, ctx);
+                  return 'projekt' in x ? x.projekt : p;
+                });
+                ustawZazn({ rodzaj: 'karty', arkuszId: celKartka.arkusz.id, ids: [proba.kartaId] });
               };
-              const w = typ.warianty[0]!;
-              const opis = {
-                szablonId: w.szablonId,
-                rozmiary: typ.rozmiary,
-                ...(w.dane ? { dane: w.dane } : {}),
-              };
-              const proba = dodajKarteWSlocie(projekt, celKartka.arkusz.id, celSlot, opis, ctx);
-              if ('blad' in proba) return;
-              zmien((p) => {
-                const x = dodajKarteWSlocie(p, celKartka.arkusz.id, celSlot, opis, ctx);
-                return 'projekt' in x ? x.projekt : p;
-              });
-              ustawZazn({ rodzaj: 'karty', arkuszId: celKartka.arkusz.id, ids: [proba.kartaId] });
-            };
-            const grupyM: GrupaPaskaBocznego[] = [
-              {
-                id: 'mausritter-typy',
-                pozycje: typyM.map((typ) => ({
-                  id: typ.id,
-                  nazwa: tJesliJest(`typ.${typ.id}`) ?? typ.nazwa,
-                  ikona:
-                    'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 8h8M8 12h8M8 16h5',
-                  przeciagane: true,
-                  onKlik: () => dodajWTymTypie(typ.id),
-                  onPoczatekPrzeciagania: (e) => {
-                    e.dataTransfer.setData('application/x-karty-typ', typ.id);
-                    e.dataTransfer.setData('text/plain', typ.id);
-                    e.dataTransfer.effectAllowed = 'copy';
-                  },
-                })),
-              },
-            ];
-            return (
-              <div className="mausritter-ui2-pasek-opak">
+              const grupyM: GrupaPaskaBocznego[] = [
+                {
+                  id: 'mausritter-typy',
+                  pozycje: typyM.map((typ) => ({
+                    id: typ.id,
+                    nazwa: tJesliJest(`typ.${typ.id}`) ?? typ.nazwa,
+                    podtytul: opisRozmiarowTypu(typ),
+                    ikona: ikonaTypuMausritter(typ.id),
+                    przeciagane: true,
+                    onKlik: () => dodajWTymTypie(typ.id),
+                    onPoczatekPrzeciagania: (e) => {
+                      e.dataTransfer.setData('application/x-karty-typ', typ.id);
+                      e.dataTransfer.setData('text/plain', typ.id);
+                      e.dataTransfer.effectAllowed = 'copy';
+                    },
+                  })),
+                },
+              ];
+              return (
                 <PasekBoczny
                   ekranId="mausritter"
                   tytul={t('mausritter.dodajKarte')}
@@ -2145,205 +2461,228 @@ export function EdytorKartki({
                   wskazowka={t('mausritter.wskazowkaDodaj')}
                   domyslnieRozwiniety={false}
                 />
-              </div>
-            );
-          })()}
-        <div
-          className="kartki"
-          ref={kartkiRef}
-          style={{ '--powiekszenie': powiekszenie } as React.CSSProperties}
-          data-powiekszone={powiekszenie > 1 || undefined}
-        >
-          {!zasoby && <p>{t('arkusze.wczytywanie')}</p>}
-          {zasoby && projekt.arkusze.length === 0 && (
-            <p className="uwaga">
-              {t('kartka.brakKartek')}{' '}
+              );
+            })()}
+
+          <div className="ui2-srodek">
+            <div className="ui2-pasek-roboczy mausritter-ui2-zakladki">
+              {projekt.arkusze.map((a, idx) => {
+                const aktywna = a.id === aktywnaKartkaM?.arkusz.id;
+                const etykieta = a.nazwa || t('mausritter.arkuszNumer', { numer: idx + 1 });
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    aria-current={aktywna ? 'page' : undefined}
+                    className={`mausritter-ui2-zakladka${aktywna ? ' aktywna' : ''}`}
+                    onClick={() => {
+                      ustawAktywnyArkuszMausritter(a.id);
+                      ustawZazn(undefined);
+                      ustawMenu(undefined);
+                    }}
+                  >
+                    {etykieta}
+                  </button>
+                );
+              })}
               {nowaKartka && (
-                <button type="button" onClick={nowaKartka}>
-                  {t('kartka.nowaKartka')}
+                <button type="button" className="mausritter-ui2-dodaj-arkusz" onClick={nowaKartka}>
+                  ＋ {t('mausritter.dodajArkusz')}
                 </button>
               )}
-            </p>
-          )}
-          {aktualneKartki.map((k) => (
-            <WidokKartki
-              key={k.arkusz.id}
-              podgladDruku={druk}
-              mausritter={!czyProjektWlasny(projekt)}
-              upuscTypNaSlot={
-                !druk && !czyProjektWlasny(projekt)
-                  ? (typId, celSlot) => {
-                      const typ = typyDlaKartki(k.arkusz).find((x) => x.id === typId);
-                      const ctx = kontekst(k.arkusz.id);
-                      if (!typ || !ctx) return;
-                      const w = typ.warianty[0]!;
-                      const opis = {
-                        szablonId: w.szablonId,
-                        rozmiary: typ.rozmiary,
-                        ...(w.dane ? { dane: w.dane } : {}),
-                      };
-                      const proba = dodajKarteWSlocie(projekt, k.arkusz.id, celSlot, opis, ctx);
-                      if ('blad' in proba) return;
-                      zmien((p) => {
-                        const x = dodajKarteWSlocie(p, k.arkusz.id, celSlot, opis, ctx);
-                        return 'projekt' in x ? x.projekt : p;
-                      });
-                      ustawZazn({ rodzaj: 'karty', arkuszId: k.arkusz.id, ids: [proba.kartaId] });
-                    }
-                  : undefined
-              }
-              tylkoRewers={czyProjektRewersowy(projekt)}
-              bezRewersow={bezRewersow}
-              onWybierzKartke={
-                druk && aktualneKartki.length > 1
-                  ? () => {
-                      ustawWybranyArkuszDruku(k.arkusz.id);
-                      ustawBladUkladu(undefined);
-                    }
-                  : undefined
-              }
-              szablony={zasoby?.szablony}
-              importujDane={
-                !druk && !bezImportuTabeli && k.wynik && szablonyDoImportu(k.arkusz).length
-                  ? () => ustawImportTabeli(k.arkusz.id)
-                  : undefined
-              }
-              k={k}
-              wiele={aktualneKartki.length > 1}
-              karty={kartyNaKartkach.get(k.arkusz.id) ?? []}
-              liczbaStron={
-                czyMieszane(k.arkusz) || k.arkusz.ustawienia.drukarnia?.wlaczony
-                  ? (k.wynik?.strony.length ?? 1)
-                  : Math.max(liczbaStronKartki(projekt, k.arkusz.id), k.svg.length)
-              }
-              zazn={aktywne}
-              gest={gest}
-              menu={menu?.arkuszId === k.arkusz.id ? menu : undefined}
-              typy={typyDlaKartki(k.arkusz)}
-              uwaga={(typ) => {
-                // Mieszane: typ, który nie zmieści się w klikniętym wolnym miejscu (nadal klikalny).
-                const w = menu?.arkuszId === k.arkusz.id && k.wynik?.mieszane?.wolne[menu.kolumna];
-                const s = zasoby?.szablony.get(typ.warianty[0]!.szablonId);
-                if (!w || !s || !czyMieszane(k.arkusz)) return undefined;
-                const r = wymiaryKarty(s);
-                return r.szer > w.szer + 1e-6 || r.wys > w.wys + 1e-6
-                  ? t('mieszane.nieZmiesciSieTu')
-                  : undefined;
-              }}
-              przesun={(kierunek) => przesunZaznaczone({ strona: 0, kolumna: kierunek, rzad: 0 })}
-              blokada={(typ) => {
-                if (czyMieszane(k.arkusz)) return undefined;
-                const ctx = kontekst(k.arkusz.id);
-                const s = ctx?.szablony.get(typ.warianty[0]!.szablonId);
-                // Własne karty: jedna kartka = jeden rozmiar karty.
-                const slotK = k.wynik?.slot ?? k.arkusz.ustawienia.slot;
-                if (
-                  (bezGry || k.arkusz.wlasnySzablonId) &&
-                  s &&
-                  slotK &&
-                  !pasujeDoSlotu(s, slotK, k.arkusz.ustawienia.dopasowanie)
-                )
-                  return t('kartka.innyRozmiar', { rozmiar: opisRozmiaruSzablonu(s) });
-                const ok =
-                  !!menu &&
-                  !!ctx &&
-                  !(
-                    'blad' in
-                    dodajKarteWSlocie(
-                      projekt,
-                      k.arkusz.id,
-                      menu,
-                      { szablonId: typ.warianty[0]!.szablonId, rozmiary: typ.rozmiary },
-                      ctx,
-                    )
+              {aktywnaKartkaM?.geometria &&
+                (() => {
+                  const g = aktywnaKartkaM.geometria;
+                  const kartyArkusza = (kartyNaKartkach.get(aktywnaKartkaM.arkusz.id) ?? []).filter(
+                    (x) => x.strona === 0,
                   );
-                return ok ? undefined : t('kartka.nieMiesci');
-              }}
-              dodaj={dodajZMenu}
-              dodatkoweAwersy={awersyInne.map((a) => ({
-                klucz: kluczAwersuZProjektu(a),
-                etykieta: etykietaAwersuZProjektu(a),
-              }))}
-              dodajZInnegoProjektu={(klucz) => void dodajZInnegoProjektu(klucz)}
-              rewersyLokalne={projekt.rewersy ?? []}
-              rewersyGlobalne={rewersyGlobalne}
-              wybierzRewersKarty={(kartaId, rid) => wybierzRewersKarty(k.talia.id, kartaId, rid)}
-              wybierzRewersGlobalnyKarty={(kartaId, wpis) =>
-                wybierzRewersGlobalnyKarty(k.talia.id, kartaId, wpis)
-              }
-              zamknijMenu={zamknijMenu}
-              poczatekGestu={poczatekGestu}
-              duplikuj={() => duplikuj(1)}
-              usun={usunZaznaczone}
-              rozmiar={aktywne?.arkuszId === k.arkusz.id ? nastepnyRozmiar : undefined}
-              dodajStrone={() => zmien((p) => dodajStrone(p, k.arkusz.id))}
-              otworzMenu={(p) => {
-                ustawZazn(undefined);
-                ustawMenu({ arkuszId: k.arkusz.id, ...p });
-              }}
-              wybierzNaglowek={(id) => {
-                ustawMenu(undefined);
-                ustawZazn({ rodzaj: 'naglowek', arkuszId: k.arkusz.id, id });
-              }}
-              wybierzKarte={(id, shift) => {
-                const obecne =
-                  aktywne?.rodzaj === 'karty' && aktywne.arkuszId === k.arkusz.id
-                    ? aktywne.ids
-                    : [];
-                const ids = shift
-                  ? obecne.includes(id)
-                    ? obecne.filter((x) => x !== id)
-                    : [...obecne, id]
-                  : [id];
-                ustawZazn(ids.length ? { rodzaj: 'karty', arkuszId: k.arkusz.id, ids } : undefined);
-              }}
-              usunStrone={(s) =>
-                zmien((p) => {
-                  const w = usunStrone(p, k.arkusz.id, s);
-                  return 'projekt' in w ? w.projekt : p;
-                })
-              }
-            />
-          ))}
-        </div>
-        <div className="kolumna-panelu">
-          <div className="pasek-powiekszenia" role="group" aria-label={t('kartka.powiekszenie')}>
-            <button
-              type="button"
-              className="ikonowy"
-              onClick={() => zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, -1))}
-              disabled={powiekszenie <= MIN_POWIEKSZENIA}
-              aria-label={t('kartka.oddal')}
-              title={t('kartka.oddal')}
+                  const zajete = zajeteKafelki(kartyArkusza).size;
+                  const razem = g.siatka.kolumny * g.siatka.rzedy;
+                  return (
+                    <span className="mausritter-ui2-licznik-pasek" data-testid="licznik-kafelkow">
+                      {t('mausritter.licznikKafelkow', { zajete, razem })}
+                    </span>
+                  );
+                })()}
+            </div>
+
+            <div
+              className="kartki mausritter-ui2-obszar"
+              ref={kartkiRef}
+              style={{ '--powiekszenie': powiekszenie } as React.CSSProperties}
+              data-powiekszone={powiekszenie > 1 || undefined}
             >
-              −
-            </button>
-            <button
-              type="button"
-              className="wartosc-powiekszenia"
-              onClick={() => zmienPowiekszenie(1)}
-              title={t('kartka.dopasujPowiekszenie')}
-              aria-label={t('kartka.powiekszenieWartosc', {
-                procent: Math.round(powiekszenie * 100),
-              })}
+              {!zasoby && <p>{t('arkusze.wczytywanie')}</p>}
+              {aktywnaKartkaM && renderujWidokKartki(aktywnaKartkaM, false)}
+              {wyborStartuOtwarty && pakietGry && (
+                <OknoStartuMausritter
+                  pakiet={pakietGry}
+                  kolumny={aktywnaKartkaM?.geometria?.siatka.kolumny ?? 10}
+                  rzedy={aktywnaKartkaM?.geometria?.siatka.rzedy ?? 7}
+                  onPusty={zamknijWyborStartu}
+                  onWybierzUklad={wybierzGotowyUklad}
+                />
+              )}
+            </div>
+
+            <div
+              ref={pasekStanuRef}
+              className="ui2-pasek-stanu mausritter-ui2-pasek-stanu"
+              data-testid="pasek-stanu-mausritter"
             >
-              {Math.round(powiekszenie * 100)}%
-            </button>
-            <button
-              type="button"
-              className="ikonowy"
-              onClick={() => zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, 1))}
-              disabled={powiekszenie >= MAX_POWIEKSZENIA}
-              aria-label={t('kartka.przybliz')}
-              title={t('kartka.przybliz')}
-            >
-              +
-            </button>
-            <span className="podpis">{t('kartka.powiekszenieKolko')}</span>
+              <div className="mausritter-ui2-stan-lewo">
+                <span>{t('mausritter.stanFormat')}</span>
+                <span aria-hidden="true">·</span>
+                <span>
+                  {aktywnaKartkaM?.geometria
+                    ? `${aktywnaKartkaM.geometria.siatka.kolumny} × ${aktywnaKartkaM.geometria.siatka.rzedy}`
+                    : '10 × 7'}
+                </span>
+                <span aria-hidden="true">·</span>
+                <button
+                  type="button"
+                  className={`mausritter-ui2-stan-link${skrotyOtwarte ? ' aktywny' : ''}`}
+                  data-testid="stan-skroty"
+                  aria-expanded={skrotyOtwarte}
+                  onClick={() => ustawSkrotyOtwarte((v) => !v)}
+                >
+                  {t('edytor.stan.skroty')}
+                </button>
+              </div>
+
+              {skrotyOtwarte && (
+                <div
+                  role="dialog"
+                  className="mausritter-ui2-dymek-stanu"
+                  data-testid="dymek-skrotow-mausritter"
+                  aria-label={t('edytor.stan.skrotyTytul')}
+                >
+                  <strong className="mausritter-ui2-dymek-tytul">
+                    {t('edytor.stan.skrotyTytul')}
+                  </strong>
+                  <dl className="mausritter-ui2-skroty-lista">
+                    <dt>{t('mausritter.skrot.kolko')}</dt>
+                    <dd>{t('mausritter.skrot.kolkoOpis')}</dd>
+                    <dt>{t('mausritter.skrot.klik')}</dt>
+                    <dd>{t('mausritter.skrot.klikOpis')}</dd>
+                    <dt>{t('mausritter.skrot.przeciagnij')}</dt>
+                    <dd>{t('mausritter.skrot.przeciagnijOpis')}</dd>
+                    <dt>← ↑ → ↓</dt>
+                    <dd>{t('mausritter.skrot.strzalkiOpis')}</dd>
+                    <dt>Ctrl+D</dt>
+                    <dd>{t('mausritter.skrot.duplikujOpis')}</dd>
+                    <dt>Del / Backspace</dt>
+                    <dd>{t('mausritter.skrot.usunOpis')}</dd>
+                    <dt>Ctrl+Z / Y</dt>
+                    <dd>{t('edytor.skrot.cofnijOpis')}</dd>
+                    <dt>Ctrl+S</dt>
+                    <dd>{t('edytor.skrot.zapiszOpis')}</dd>
+                    <dt>{t('mausritter.skrot.obraz')}</dt>
+                    <dd>{t('mausritter.skrot.obrazOpis')}</dd>
+                  </dl>
+                </div>
+              )}
+
+              <div
+                className="mausritter-ui2-stan-zoom"
+                role="group"
+                aria-label={t('kartka.powiekszenie')}
+              >
+                <button
+                  type="button"
+                  className="mausritter-ui2-stan-btn"
+                  onClick={() => zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, -1))}
+                  disabled={powiekszenie <= MIN_POWIEKSZENIA}
+                  aria-label={t('kartka.oddal')}
+                  title={t('kartka.oddal')}
+                >
+                  −
+                </button>
+                <span data-testid="zoom-wartosc">{Math.round(powiekszenie * 100)}%</span>
+                <button
+                  type="button"
+                  className="mausritter-ui2-stan-btn"
+                  onClick={() => zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, 1))}
+                  disabled={powiekszenie >= MAX_POWIEKSZENIA}
+                  aria-label={t('kartka.przybliz')}
+                  title={t('kartka.przybliz')}
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  className="mausritter-ui2-stan-btn"
+                  onClick={() => zmienPowiekszenie(1)}
+                  title={t('kartka.dopasujPowiekszenie')}
+                >
+                  {t('mausritter.dopasuj')}
+                </button>
+              </div>
+            </div>
           </div>
+
           {panel}
         </div>
-      </div>
+      ) : (
+        <div className="uklad-edytora">
+          <div
+            className="kartki"
+            ref={kartkiRef}
+            style={{ '--powiekszenie': powiekszenie } as React.CSSProperties}
+            data-powiekszone={powiekszenie > 1 || undefined}
+          >
+            {!zasoby && <p>{t('arkusze.wczytywanie')}</p>}
+            {zasoby && projekt.arkusze.length === 0 && (
+              <p className="uwaga">
+                {t('kartka.brakKartek')}{' '}
+                {nowaKartka && (
+                  <button type="button" onClick={nowaKartka}>
+                    {t('kartka.nowaKartka')}
+                  </button>
+                )}
+              </p>
+            )}
+            {aktualneKartki.map((k) => renderujWidokKartki(k, aktualneKartki.length > 1))}
+          </div>
+          <div className="kolumna-panelu">
+            <div className="pasek-powiekszenia" role="group" aria-label={t('kartka.powiekszenie')}>
+              <button
+                type="button"
+                className="ikonowy"
+                onClick={() => zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, -1))}
+                disabled={powiekszenie <= MIN_POWIEKSZENIA}
+                aria-label={t('kartka.oddal')}
+                title={t('kartka.oddal')}
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className="wartosc-powiekszenia"
+                onClick={() => zmienPowiekszenie(1)}
+                title={t('kartka.dopasujPowiekszenie')}
+                aria-label={t('kartka.powiekszenieWartosc', {
+                  procent: Math.round(powiekszenie * 100),
+                })}
+              >
+                {Math.round(powiekszenie * 100)}%
+              </button>
+              <button
+                type="button"
+                className="ikonowy"
+                onClick={() => zmienPowiekszenie(kolejnePowiekszenie(powiekszenie, 1))}
+                disabled={powiekszenie >= MAX_POWIEKSZENIA}
+                aria-label={t('kartka.przybliz')}
+                title={t('kartka.przybliz')}
+              >
+                +
+              </button>
+              <span className="podpis">{t('kartka.powiekszenieKolko')}</span>
+            </div>
+            {panel}
+          </div>
+        </div>
+      )}
       {toastAktualny && (
         <div className="toast" role="status">
           <span>{toastAktualny.tekst}</span>
@@ -2788,6 +3127,17 @@ function WidokKartki({
                 {naStronie.map((c) => {
                   const podnoszona =
                     gestTu?.rodzaj === 'karty' && gestTu.ruch && gestTu.ids.includes(c.karta.id);
+                  const sz = szablony?.get(c.karta.szablonId);
+                  const nazwa = nazwaKarty(c.karta.dane, sz);
+                  const pusteDane = Object.values(c.karta.dane).every((v) => !v.trim());
+                  const etykietaTypu = (() => {
+                    if (!mausritter || nazwa || !pusteDane) return undefined;
+                    for (const typ of typy) {
+                      const w = typ.warianty.find((x) => x.szablonId === c.karta.szablonId);
+                      if (w) return nazwaWariantu(w);
+                    }
+                    return sz?.nazwa;
+                  })();
                   return (
                     <button
                       key={c.karta.id}
@@ -2798,14 +3148,18 @@ function WidokKartki({
                       aria-pressed={zaznaczone.has(c.karta.id)}
                       onClick={(e) => e.detail === 0 && wybierzKarte(c.karta.id, e.shiftKey)}
                       aria-label={t('kartka.kartaEtykieta', {
-                        nazwa:
-                          nazwaKarty(c.karta.dane, szablony?.get(c.karta.szablonId)) ||
-                          t('karta.bezNazwy'),
+                        nazwa: nazwa || t('karta.bezNazwy'),
                         strona: s + 1,
                         kolumna: c.kolumna + 1,
                         rzad: c.rzad + 1,
                       })}
-                    />
+                    >
+                      {etykietaTypu && (
+                        <span className="mausritter-karta-typ-pusta" aria-hidden="true">
+                          {etykietaTypu}
+                        </span>
+                      )}
+                    </button>
                   );
                 })}
                 {gestTu?.rodzaj === 'karty' &&
@@ -2846,7 +3200,7 @@ function WidokKartki({
                       )}
                     />
                   )}
-                {pierwsza && pierwsza.strona === s && !gestTu && (
+                {!mausritter && pierwsza && pierwsza.strona === s && !gestTu && (
                   <div
                     className="pasek-karty"
                     style={{
@@ -2969,20 +3323,22 @@ function WidokKartki({
         })();
         return (
           <div key={s} className="strona-opakowanie">
-            <div className="etykieta-strony">
-              {mieszane && !drukarniaAktywna
-                ? tn('mieszane.zajete', kartyMieszane.length, {
-                    numer: s + 1,
-                    liczba: liczbaStron,
-                    procent: polePol > 0 ? Math.round((zajetePole / polePol) * 100) : 0,
-                  })
-                : t('kartka.strona', { numer: s + 1, liczba: liczbaStron })}
-              {!podgladDruku && !drukarniaAktywna && pusta && liczbaStron > 1 && (
-                <button type="button" className="usun-strone" onClick={() => usunStrone(s)}>
-                  {t('kartka.usunStrone')}
-                </button>
-              )}
-            </div>
+            {!(mausritter && !podgladDruku && liczbaStron === 1) && (
+              <div className="etykieta-strony">
+                {mieszane && !drukarniaAktywna
+                  ? tn('mieszane.zajete', kartyMieszane.length, {
+                      numer: s + 1,
+                      liczba: liczbaStron,
+                      procent: polePol > 0 ? Math.round((zajetePole / polePol) * 100) : 0,
+                    })
+                  : t('kartka.strona', { numer: s + 1, liczba: liczbaStron })}
+                {!podgladDruku && !drukarniaAktywna && pusta && liczbaStron > 1 && (
+                  <button type="button" className="usun-strone" onClick={() => usunStrone(s)}>
+                    {t('kartka.usunStrone')}
+                  </button>
+                )}
+              </div>
+            )}
             {tylkoRewers && maRewersy ? (
               <div
                 className="strona-kartki strona-rewersu"
@@ -3026,14 +3382,6 @@ function WidokKartki({
               </div>
             ) : (
               stronaPrzodu
-            )}
-            {mausritter && !podgladDruku && g && (
-              <p className="mausritter-ui2-licznik" data-testid="licznik-kafelkow">
-                {t('mausritter.licznikKafelkow', {
-                  zajete: zajete.size,
-                  razem: g.siatka.kolumny * g.siatka.rzedy,
-                })}
-              </p>
             )}
           </div>
         );

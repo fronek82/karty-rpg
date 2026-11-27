@@ -12,7 +12,6 @@ import './ui2/ui2.css';
 
 // Strony ładowane leniwie: silnik (fontkit) i pakiet dopiero przy kartce; PDF – przy pobraniu.
 const Start = lazy(() => import('./start/Start').then((m) => ({ default: m.Start })));
-const WyborGry = lazy(() => import('./start/WyborGry').then((m) => ({ default: m.WyborGry })));
 const WlasneKarty = lazy(() =>
   import('./start/WlasneKarty').then((m) => ({ default: m.WlasneKarty })),
 );
@@ -104,7 +103,6 @@ export function App() {
   const projekt = dopasowanie?.[1];
   const podtrasa = dopasowanie?.[2] ?? '';
   const szablonTrasa = /^\/szablon\/([^/?]+)(?:\?(.*))?$/.exec(trasa);
-  const gra = /^\/gra\/([^/]+)$/.exec(trasa)?.[1];
   // „Biblioteki” (N7): `#/biblioteki` = pierwsza zakładka (Obrazy).
   const biblioteka = /^\/biblioteki(?:\/([^/?]*))?(?:\?(.*))?$/.exec(trasa);
   // Dawne trasy (lista projektów, arkusze pakietu) – teraz wszystko jest na starcie.
@@ -119,13 +117,12 @@ export function App() {
       window.location.replace(adresBiblioteki('ozdobniki', `#/projekt/${projekt}`));
   }, [dawnaBiblioteka, projekt]);
 
-  // Ekrany z lewym menu (start, gra, własne karty, kreator, AI) mają szeroką treść z jedną linią menu.
+  // Ekrany z lewym menu (start, własne karty, kreator, AI) mają szeroką treść z jedną linią menu.
   // `/wlasne/ai` – dawny ekran „Układ ze zdjęcia” (teraz w edytorze szablonu).
   const wlasne = trasa === '/wlasne' || trasa === '/gry/inne' || trasa === '/wlasne/ai';
   const szerokaTresc =
     trasa === '/' ||
     dawna ||
-    !!gra ||
     wlasne ||
     trasa === '/wlasne/nowy' ||
     trasa === '/wlasne/nowy/awers' ||
@@ -198,11 +195,7 @@ export function App() {
         tabIndex={-1}
         className={szerokaTresc ? 'tresc tresc-start' : 'tresc'}
       >
-        {gra ? (
-          <Leniwa>
-            <WyborGry id={decodeURIComponent(gra)} />
-          </Leniwa>
-        ) : trasa === '/wlasne/nowy' ? (
+        {trasa === '/wlasne/nowy' ? (
           <Leniwa>
             <WybierzStroneSzablonu />
           </Leniwa>

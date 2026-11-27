@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ustawJezyk } from '../i18n';
 import { czyKartkaZnormalizowana } from '../druk/normalizacja';
 import { pakietMausritter } from '../pakiety/mausritter';
-import { nowyProjektGry } from './nowyProjekt';
+import { nowyProjektGry, zastosujGotowyUklad } from './nowyProjekt';
+import { rejestrZProjektu } from './pakiet';
 import { przygotujProjekt } from './schemat';
 
 const czytaj = async (plik: string) => new Uint8Array(readFileSync(plik));
@@ -86,5 +87,21 @@ describe('nowy projekt gry', () => {
     expect(() => przygotujProjekt(zly)).toThrow('custom paper needs dimensions');
     ustawJezyk('pl');
     expect(() => przygotujProjekt(zly)).toThrow('własny papier wymaga wymiarów');
+  });
+
+  it('zastosujGotowyUklad zachowuje id projektu i podmienia arkusze na wybrany układ', async () => {
+    const { projekt, zasoby } = await nowyProjektGry(pakietMausritter, ...pobierz, { id: 'p1' });
+    const { rejestr } = rejestrZProjektu(projekt, zasoby);
+    const obrazy = new Map(pakietMausritter.zasoby.map((z) => [z.id, z]));
+    const zUkladem = zastosujGotowyUklad(projekt, pakietMausritter, 'wszystkie', {
+      czcionki: rejestr,
+      obraz: (id) => obrazy.get(id),
+    });
+    expect(zUkladem.id).toBe('p1');
+    expect(zUkladem.utworzono).toBe(projekt.utworzono);
+    expect(zUkladem.nazwa).toBe('Wszystkie trzy');
+    expect(zUkladem.arkusze).toHaveLength(3);
+    expect(czyKartkaZnormalizowana(zUkladem)).toBe(true);
+    expect(() => przygotujProjekt(zUkladem)).not.toThrow();
   });
 });

@@ -3,22 +3,19 @@ import { expect, test } from '@playwright/test';
 test('R8: Mausritter – wybór startu, lewy pasek Dodaj kartę, przeciągnięcie na wolny kafelek i licznik kafelków', async ({
   page,
 }) => {
-  // Ekran startowy → kliknięcie Mausritter A4 otwiera wybór startu (Pusta kartka / Gotowe układy).
+  // Ekran startowy → kliknięcie Mausritter A4 otwiera arkusz z oknem „Od czego zaczynamy?”.
   await page.goto('./');
-  await page.getByRole('link', { name: /Mausritter A4/ }).click();
-  await expect(page).toHaveURL(/#\/gra\/mausritter/);
-  await expect(page.getByRole('button', { name: 'Pusta kartka', exact: true })).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Zacznij od gotowego układu', exact: true }),
-  ).toBeVisible();
+  await page.getByTestId('start-mausritter').click();
+  await expect(page).toHaveURL(/#\/projekt\/[^/]+\/start$/);
+  await expect(page.getByTestId('okno-startu-mausritter')).toBeVisible();
 
-  // Otwarcie pustej kartki A4 (7×10 = 70 kafelków).
-  await page.locator('[data-podglad="pusta"]').click();
-  await expect(page).toHaveURL(/#\/projekt\//);
+  // Otwarcie pustego arkusza A4 (10×7 = 70 kafelków).
+  await page.getByTestId('start-pusty-arkusz').click();
+  await expect(page).toHaveURL(/#\/projekt\/[^/]+$/);
 
-  // Etykieta MAUSRITTER, kroki 1 Karty na arkuszach → 2 Druk oraz licznik 0 / 70 kafelków.
+  // Etykieta MAUSRITTER, kroki 1 Karty na arkuszach → 2 Druk oraz licznik 0 / 70 kafelków zajętych.
   await expect(page.locator('.ui2-etykieta-mausritter')).toHaveText('MAUSRITTER');
-  await expect(page.getByTestId('licznik-kafelkow')).toHaveText('0 / 70 kafelków');
+  await expect(page.getByTestId('licznik-kafelkow')).toHaveText('0 / 70 kafelków zajętych');
 
   // Lewy pasek „Dodaj kartę” ma 6 typów kart Mausrittera.
   const pasek = page.getByRole('navigation', { name: 'Dodaj kartę' });

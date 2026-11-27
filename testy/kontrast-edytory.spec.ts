@@ -59,44 +59,34 @@ for (const motyw of MOTYWY) {
     await expect(p).toBeVisible();
 
     // Panel: nagłówek, podpisy, etykiety, pola, przyciski.
-    await tekst(p.locator('h2'), 'nagłówek panelu');
-    await tekst(p.locator('.podpis').first(), 'podpis panelu (przygaszony)');
-    await tekst(p.locator('.pole-panelu > label').first(), 'etykieta pola');
-    const pole = p.locator('.pole-panelu input').first();
+    await tekst(p.locator('.ui2-panel-tytul'), 'nagłówek panelu');
+    await tekst(p.locator('.mausritter-ui2-podpowiedz').first(), 'podpis panelu (przygaszony)');
+    await tekst(p.locator('.mausritter-ui2-pole > label').first(), 'etykieta pola');
+    const pole = p.locator('.pole-panelu input, .mausritter-ui2-pole input').first();
     await tekst(pole, 'tekst w polu');
     await obrys(pole, 'obrys pola formularza');
-    await tekst(p.getByRole('button', { name: 'Duplikuj', exact: true }), 'przycisk zwykły');
-    await tekst(p.locator('button.niebezpieczny'), 'przycisk niebezpieczny');
+    await tekst(p.getByRole('button', { name: /Duplikuj/ }), 'przycisk zwykły');
+    await tekst(p.getByRole('button', { name: /Usuń/ }), 'przycisk usuń');
     await tekst(
-      p.locator('.przelacznik-segmentowy button[aria-pressed="true"]').first(),
+      p.locator('.mausritter-ui2-rozmiar-btn[aria-pressed="true"]').first(),
       'segment zaznaczony',
     );
     await tekst(
-      p.locator('.przelacznik-segmentowy button[aria-pressed="false"]').first(),
+      p.locator('.mausritter-ui2-rozmiar-btn[aria-pressed="false"]').first(),
       'segment niezaznaczony',
     );
     await fokus(page, pole, 'fokus w polu panelu');
-    await fokus(
-      page,
-      p.getByRole('button', { name: 'Duplikuj', exact: true }),
-      'fokus na przycisku panelu',
+    await fokus(page, p.getByRole('button', { name: /Duplikuj/ }), 'fokus na przycisku panelu');
+
+    // Pasek górny UI2 (Mausritter).
+    const pasek = page.locator('header.ui2-naglowek');
+    await tekst(
+      pasek.locator('.ui2-stan-zapisu, .ui2-stan-zapisu-btn').first(),
+      'status zapisu na pasku',
     );
-
-    // Pasek akcji nad zaznaczoną kartą (ciemna etykietka): zwykły i niebezpieczny przycisk.
-    const pasekKarty = page.locator('.pasek-karty');
-    await tekst(pasekKarty.locator('button:not(.niebezpieczny)').first(), 'pasek karty: zwykły');
-    await tekst(pasekKarty.locator('button.niebezpieczny'), 'pasek karty: niebezpieczny');
-
-    // Pasek górny (Edytor kart).
-    const pasek = page.locator('.pasek-gorny');
-    await tekst(pasek.locator('.status-zapisu'), 'status zapisu na pasku');
     await tekst(pasek.locator('.nazwa-projektu'), 'nazwa projektu na pasku');
-    await tekst(pasek.getByRole('button', { name: /Ustawienia/ }), 'przycisk na pasku');
-    await tekst(pasek.getByRole('link', { name: /^Drukuj karty/ }), 'przycisk główny na pasku');
-    // „Cofnij” jest wyłączone, dopóki nic nie zmieniono – test wymaga takiego przycisku.
-    const wylaczony = pasek.locator('button:disabled').first();
-    await expect(wylaczony).toBeDisabled();
-    await tekst(wylaczony, 'przycisk wyłączony na pasku');
+    await tekst(pasek.getByRole('link', { name: /Projekty/ }), 'przycisk powrotu na pasku');
+    await tekst(pasek.getByRole('link', { name: /^Do druku/ }), 'przycisk główny na pasku');
     await fokus(page, pasek.getByRole('button', { name: /Ustawienia/ }), 'fokus na pasku');
 
     // Zaznaczenie karty na papierze (biały w obu motywach): obrys >= 3:1 z bielą.

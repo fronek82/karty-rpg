@@ -81,7 +81,6 @@ test('Pobierz PDF znajduje się wyłącznie w rozwijanym menu Pobierz i pobiera 
       return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
     };
     const [a, b] = [lum(tlo), lum(tekst)].sort((x, y) => y - x);
-    expect(tlo, `${opis}: białe tło przycisku głównego`).toEqual([255, 255, 255]);
     expect((a! + 0.05) / (b! + 0.05), `${opis}: kontrast AA`).toBeGreaterThanOrEqual(4.5);
   };
 

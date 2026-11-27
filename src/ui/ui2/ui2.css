@@ -540,6 +540,33 @@ a.ui2-krok:hover {
   text-overflow: ellipsis;
 }
 
+.ui2-pasek-boczny.rozwiniety .ui2-pasek-pozycja.z-podtytulem {
+  height: auto;
+  min-height: 44px;
+  padding: 5px 8px;
+}
+
+.ui2-pasek-pozycja-tekst {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.ui2-pasek-pozycja.z-podtytulem .ui2-pasek-pozycja-nazwa {
+  font-weight: 700;
+}
+
+.ui2-pasek-pozycja-podtytul {
+  font-family: var(--czcionka-mono);
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--tekst-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ui2-pasek-odznaka {
   margin-left: auto;
   padding: 1px 5px;

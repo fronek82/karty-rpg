@@ -33,7 +33,7 @@ test('stany: nagłówki grup z odstępami, edycja nagłówka', async ({ page }) 
 test('wszystkie trzy: trzy kartki; PDF z nazwą projektu ma trzy strony', async ({ page }) => {
   await gotowyUklad(page, 'Wszystkie trzy');
   for (const t of ['Karty broni i pancerzy', 'Karty niezbędnego wyposażenia', 'Karty stanów'])
-    await expect(page.getByRole('heading', { level: 2, name: t })).toBeVisible();
+    await expect(page.locator('.mausritter-ui2-zakladka', { hasText: t })).toBeVisible();
   const [pobranie] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   expect(pobranie.suggestedFilename()).toBe('wszystkie-trzy.pdf');
   const pdf = await PDFDocument.load(readFileSync(await pobranie.path()));
@@ -50,7 +50,7 @@ test('eksport → import jako kopia → lista z miniaturą → usunięcie', asyn
   ]);
   expect(eksport.suggestedFilename()).toBe('bron-i-pancerze.kartyrpg');
   await page.waitForTimeout(1800); // miniatura zapisywana po chwili
-  await page.getByRole('link', { name: 'Karty', exact: true }).click();
+  await page.getByRole('link', { name: /Projekty/ }).click();
   // Plik z pobrania ma w katalogu tymczasowym losową nazwę bez rozszerzenia – nadajemy tę z pobrania.
   await page.getByRole('button', { name: 'Kopia i import' }).click();
   await page.getByTestId('plik-importu').setInputFiles({
@@ -130,8 +130,19 @@ test('projekt sprzed edytora (ilości, bez przypięć, grupy) otwiera się jako 
   await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
   await page.keyboard.press('Escape');
   await page.getByRole('link', { name: 'Stary projekt' }).first().click();
-  await expect(page.locator('[data-karta]')).toHaveCount(sztuk, { timeout: 15000 });
-  await expect(page.locator('[data-naglowek]')).toHaveCount(6);
+  const zakladki = page.locator('.mausritter-ui2-zakladka');
+  await expect(zakladki).toHaveCount(3, { timeout: 15000 });
+  let sumaKart = 0;
+  let sumaNaglowkow = 0;
+  for (let i = 0; i < 3; i++) {
+    await zakladki.nth(i).click();
+    await expect(page.locator('[data-karta]').first()).toBeVisible();
+    sumaKart += await page.locator('[data-karta]').count();
+    sumaNaglowkow += await page.locator('[data-naglowek]').count();
+  }
+  expect(sumaKart).toBe(sztuk);
+  expect(sumaNaglowkow).toBe(6);
+  await zakladki.first().click();
   await zapisano(page);
   await karta(page, 'Igła').first().click();
   await expect(page.getByRole('complementary', { name: 'Zaznaczone karty' })).toContainText('Broń');

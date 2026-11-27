@@ -6,6 +6,8 @@ import { IkonaKreskowa } from './Ikony';
 export interface PozycjaPaskaBocznego {
   id: string;
   nazwa: string;
+  /** Podtytuł pod nazwą w stanie rozwiniętym (i w dymku po „ · ” w stanie zwiniętym). */
+  podtytul?: string;
   /** Krótka podpowiedź wyświetlana w dymku obok nazwy w stanie zwiniętym. */
   podpowiedz?: string;
   /** Ścieżka SVG (viewBox 0 0 24 24) albo własny element ikony. */
@@ -110,7 +112,11 @@ export function PasekBoczny({
             )}
             {rozwiniety && grupa.naglowekDodatkowy}
             {grupa.pozycje.map((poz) => {
-              const tekstDymku = poz.podpowiedz ? `${poz.nazwa} – ${poz.podpowiedz}` : poz.nazwa;
+              const tekstDymku = poz.podpowiedz
+                ? `${poz.nazwa} – ${poz.podpowiedz}`
+                : poz.podtytul
+                  ? `${poz.nazwa} · ${poz.podtytul}`
+                  : poz.nazwa;
               return (
                 <button
                   key={poz.id}
@@ -121,7 +127,7 @@ export function PasekBoczny({
                   onClick={poz.onKlik}
                   aria-label={poz.nazwa}
                   aria-pressed={poz.aktywna}
-                  className={`ui2-pasek-pozycja${!rozwiniety ? ' ui2-ma-dymek' : ''}${poz.aktywna ? ' aktywna' : ''}`}
+                  className={`ui2-pasek-pozycja${!rozwiniety ? ' ui2-ma-dymek' : ''}${poz.aktywna ? ' aktywna' : ''}${poz.podtytul ? ' z-podtytulem' : ''}`}
                 >
                   {!rozwiniety && (
                     <span className="ui2-dymek" role="tooltip">
@@ -135,7 +141,14 @@ export function PasekBoczny({
                   )}
                   {rozwiniety && (
                     <>
-                      <span className="ui2-pasek-pozycja-nazwa">{poz.nazwa}</span>
+                      {poz.podtytul ? (
+                        <span className="ui2-pasek-pozycja-tekst">
+                          <span className="ui2-pasek-pozycja-nazwa">{poz.nazwa}</span>
+                          <span className="ui2-pasek-pozycja-podtytul">{poz.podtytul}</span>
+                        </span>
+                      ) : (
+                        <span className="ui2-pasek-pozycja-nazwa">{poz.nazwa}</span>
+                      )}
                       {poz.odznaka && <span className="ui2-pasek-odznaka">{poz.odznaka}</span>}
                     </>
                   )}

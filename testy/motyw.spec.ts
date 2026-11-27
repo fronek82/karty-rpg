@@ -116,7 +116,7 @@ test('pasek górny w edytorze kartki i szablonu; motyw trzyma się między ekran
 }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await nowaPustaKartka(page);
-  const panel = await pasek(page);
+  const panel = await otworzUstawieniaAplikacji(page);
   await panel.getByRole('button', { name: 'Motyw ciemny' }).click();
   // Karta na podglądzie zawsze na białym papierze, niezależnie od motywu aplikacji.
   const papier = await page

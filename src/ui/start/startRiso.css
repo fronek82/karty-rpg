@@ -206,6 +206,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
   padding: 14px 16px;
   background: var(--powierzchnia);
   color: var(--tekst);
@@ -213,6 +214,7 @@
   border-radius: 0;
   text-align: left;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .riso-kafelek-gry:hover {

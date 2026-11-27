@@ -12,6 +12,8 @@ import {
 } from './ListaProjektow';
 import { OknoNowyProjekt } from './OknoNowyProjekt';
 import { OknoNowySzablon } from './OknoNowySzablon';
+import { gry } from '../../pakiety/gry';
+import { nowyProjektZPakietu } from '../bazaUI';
 import { PanelImportu } from './PanelImportu';
 import { ADRES_WSPARCIA } from './wsparcie';
 import './startRiso.css';
@@ -34,10 +36,30 @@ export function Start({
   const [importOtwarty, ustawImportOtwarty] = useState(false);
   const [nowyProjektOtwarty, ustawNowyProjektOtwarty] = useState(false);
   const [nowySzablonOtwarty, ustawNowySzablonOtwarty] = useState(false);
+  const [tworzeMausritter, ustawTworzeMausritter] = useState(false);
+  const [bladMausritter, ustawBladMausritter] = useState<string>();
   const [ustawieniaOtwarte, ustawUstawieniaOtwarte] = useState(false);
   const ustawZakladke = (z: ZakladkaStart) => {
     ustawZakladkeStan(z);
     zapiszZakladkeStart(z);
+  };
+  const otworzMausritter = async () => {
+    if (tworzeMausritter) return;
+    const gra = gry.find((g) => g.id === 'mausritter');
+    if (!gra?.pakiet) return;
+    ustawTworzeMausritter(true);
+    ustawBladMausritter(undefined);
+    try {
+      const pakiet = await gra.pakiet();
+      const id = await nowyProjektZPakietu(pakiet);
+      window.location.hash = `#/projekt/${encodeURIComponent(id)}/start`;
+    } catch (e) {
+      ustawBladMausritter(
+        t('start.bladPakietu', { szczegoly: String(e instanceof Error ? e.message : e) }),
+      );
+    } finally {
+      ustawTworzeMausritter(false);
+    }
   };
   const opakowanieUstawien = useRef<HTMLDivElement>(null);
   const przyciskUstawien = useRef<HTMLButtonElement>(null);
@@ -207,7 +229,13 @@ export function Start({
 
           <div className="riso-gotowe">
             <span className="riso-etykieta-mono">{t('start.risoGotoweUklady')}</span>
-            <a href="#/gra/mausritter" className="riso-kafelek-gry" data-testid="start-mausritter">
+            <button
+              type="button"
+              className="riso-kafelek-gry"
+              data-testid="start-mausritter"
+              disabled={tworzeMausritter}
+              onClick={() => void otworzMausritter()}
+            >
               <span>
                 <span className="riso-kafelek-gry-nazwa">{t('start.mausritterTytul')}</span>
                 <span className="riso-kafelek-gry-opis">{t('start.mausritterOpis')}</span>
@@ -215,7 +243,12 @@ export function Start({
               <span className="riso-kafelek-gry-strzalka" aria-hidden="true">
                 →
               </span>
-            </a>
+            </button>
+            {bladMausritter && (
+              <p role="alert" className="uwaga">
+                {bladMausritter}
+              </p>
+            )}
           </div>
 
           {ADRES_WSPARCIA && (

@@ -77,8 +77,9 @@ test.describe('Zrzuty UI2 (jasny i ciemny motyw)', () => {
       });
 
       // 6. Mausritter
-      await page.goto('./#/gra/mausritter');
-      await page.locator('[data-podglad="pusta"]').click();
+      await page.goto('./#/');
+      await page.getByTestId('start-mausritter').click();
+      await page.getByTestId('start-pusty-arkusz').click();
       await expect(page.getByTestId('licznik-kafelkow')).toBeVisible();
       await page.screenshot({ path: join(KATALOG, `mausritter-${motyw}.png`) });
 

@@ -63,8 +63,9 @@ test('zaprojektowany rewers jest dostępny do wybrania przy dowolnej karcie w os
   await expect(druk.locator('strong', { hasText: 'Rewers Warlock' })).toBeVisible();
 
   // 5) Projekt Mausrittera ma karty jednostronne – bez wyboru rewersów (etap N1).
-  await page.goto('./#/gra/mausritter');
-  await page.getByRole('button', { name: /Pusta kartka A4/ }).click();
+  await page.goto('./#/');
+  await page.getByTestId('start-mausritter').click();
+  await page.getByTestId('start-pusty-arkusz').click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   const drukMaus = await otworzDruk(page);
   await expect(drukMaus.getByLabel('Domyślny tył talii')).toHaveCount(0);
