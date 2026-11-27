@@ -44,6 +44,12 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   pomocniczymi (schemat v35), ekran „Krok 2: Karty” (`src/ui/karty/EkranKart.tsx`), sekcja „Linie
   cięcia” w druku (`SekcjaLiniiCiecia.tsx`) oraz lewy pasek i licznik kafelków w Mausritterze
   (`siatkaMausritter.ts`).
+- Ukończone **R10 – poprawki edytora szablonu po przeglądzie** (`docs/plan-UI2.md` sekcja 11):
+  wspólny górny pasek (`NaglowekProjektu.tsx`) z jednym elementem stanu zapisu (`● Zapisz` /
+  `✓ zapisano`) i przyciskiem `Przejdź do kart →`, menu `Szablon ▾` na pasku zakładek, dymki
+  paska stanu (Przyciąganie, Podkład, Linie, `? Skróty` — D15), 4-ikonowy prawy pasek
+  (Właściwości, Karta, Style, Biblioteka), 5 ikon + menu `⋯` w nagłówku Struktury oraz przypięte
+  do krawędzi obszaru roboczego linijki (`LinijkiKarty.tsx`, D16).
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 35` (`src/model/projekt.ts`), baza Dexie w wersji 5.
 

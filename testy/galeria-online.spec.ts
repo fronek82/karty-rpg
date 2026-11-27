@@ -68,7 +68,7 @@ test('galeria online: filtry, podgląd awers+rewers, zapis do biblioteki, pobran
   await expect(page.getByRole('heading', { level: 1, name: 'Edytor szablonu' })).toBeVisible({
     timeout: 15000,
   });
-  await page.getByRole('button', { name: 'Edytor kart ►', exact: true }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →', exact: true }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await context.setOffline(false);
 });

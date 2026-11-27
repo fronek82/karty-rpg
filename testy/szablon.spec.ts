@@ -11,8 +11,10 @@ const element = (page: Page, nazwa: string | RegExp) =>
 const wlasciwosci = (page: Page) => page.getByRole('complementary', { name: 'Właściwości' });
 
 async function dodaj(page: Page, rodzaj: string) {
-  await page.getByRole('button', { name: '＋ Dodaj ▾' }).click();
-  await page.getByRole('menuitem', { name: rodzaj, exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Dodaj element' })
+    .getByRole('button', { name: rodzaj, exact: true })
+    .click();
 }
 
 test('kreator domyślnie tworzy kartę swobodną, a pusty układ jest ostatni', async ({ page }) => {
@@ -109,7 +111,7 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   await zapisano(page);
 
   // Edytor kart: kartka dla rozmiaru 68×44, karta z menu, pola z nazwami z szablonu.
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible();
   await slot(page, 1, 1, 1).click();
   await page.getByRole('menuitem', { name: /Karta testowa/ }).click();
@@ -128,7 +130,7 @@ test('kreator → edytor: drzewo, dodawanie, przesuwanie, podgląd; Rób karty i
   await expect(element(page, /^Siła – /)).toHaveCount(0);
   await page.keyboard.press('Control+z');
   await expect(element(page, /^Siła – /)).toBeVisible();
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   await page.locator('[data-karta]').click();
   await expect(panel.getByLabel('Siła', { exact: true })).toHaveValue('7');
 });
@@ -137,7 +139,7 @@ test('nowy szablon w istniejącym projekcie: kreator z kartki, siatka 2×2', asy
   await page.goto('./#/wlasne/nowy/awers');
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   await otworzDruk(page);
   await page.getByRole('link', { name: '＋ Nowy szablon' }).click();
   await page.getByLabel('Nazwa szablonu').fill('Druga');
@@ -176,8 +178,11 @@ test('duplikuje szablon z paska i opcji druku, a Cofnij pozostawia oryginał w e
   await page.getByLabel('Nazwa szablonu').fill('Oryginał');
   await page.getByText('Tytuł i opis').click();
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
-  const duplikuj = page.getByRole('button', { name: 'Duplikuj szablon', exact: true });
-  await duplikuj.click();
+  await page.getByTestId('menu-szablon-przycisk').click();
+  await page
+    .getByTestId('menu-szablon')
+    .getByRole('menuitem', { name: 'Duplikuj szablon' })
+    .click();
   const otworz = page.getByRole('link', { name: 'Otwórz kopię „Oryginał (kopia)”' });
   await expect(otworz).toBeVisible();
   await page.getByRole('button', { name: 'Cofnij', exact: true }).click();
@@ -185,7 +190,7 @@ test('duplikuje szablon z paska i opcji druku, a Cofnij pozostawia oryginał w e
   await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Oryginał');
   await page.getByRole('button', { name: 'Ponów', exact: true }).click();
   await expect(otworz).toBeVisible();
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
   await otworzDruk(page);
   const lista = page.getByRole('group', { name: 'Szablony projektu' });
   await lista.getByRole('button', { name: 'Duplikuj szablon Oryginał', exact: true }).click();
@@ -202,7 +207,9 @@ test('Edytor szablonu: „Wstecz” przeglądarki przy niezapisanych zmianach py
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
   const adresEdytora = page.url();
-  const status = page.locator('.status-zapisu');
+  const zapisz = page
+    .locator('header.ui2-naglowek')
+    .getByRole('button', { name: 'Zapisz', exact: true });
   const okno = page.getByRole('dialog', { name: 'Niezapisane zmiany' });
 
   // Bez zmian „Wstecz” po prostu wraca do kreatora.
@@ -213,7 +220,7 @@ test('Edytor szablonu: „Wstecz” przeglądarki przy niezapisanych zmianach py
 
   // Ze zmianami: okno, „Zostań” zostawia edytor i zmiany.
   await page.getByLabel('Nazwa szablonu').fill('Karta wstecz 2');
-  await expect(status).toHaveText('Niezapisane zmiany');
+  await expect(zapisz).toBeVisible();
   await page.goBack();
   await expect(okno).toBeVisible();
   await expect(page).toHaveURL(adresEdytora);
@@ -222,7 +229,7 @@ test('Edytor szablonu: „Wstecz” przeglądarki przy niezapisanych zmianach py
   await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Karta wstecz 2');
 
   // Przejście w obrębie projektu (Edytor kart i z powrotem) – bez okna, zmiany zostają w pamięci.
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
   await expect(page).toHaveURL(/#\/projekt\/[^/]+\/kartka\//);
   await expect(okno).toHaveCount(0);
   await page.goBack();
@@ -247,38 +254,39 @@ test('Edytor szablonu: zapis ręczny (Ctrl+S), okno przy wyjściu, eksport i imp
   await page.getByLabel('Nazwa szablonu').fill('Karta do pliku');
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
-  const status = page.locator('.status-zapisu');
-  const zapisz = page.locator('.pasek-gorny').getByRole('button', { name: 'Zapisz', exact: true });
+  const naglowek = page.locator('header.ui2-naglowek');
+  const statusZapisany = naglowek.locator('.ui2-stan-zapisu');
+  const zapisz = naglowek.getByRole('button', { name: 'Zapisz', exact: true });
 
   // Zmiana czeka na zapis; Ctrl+S (także w polu tekstowym) zapisuje.
   await page.getByLabel('Nazwa szablonu').fill('Karta z pliku');
-  await expect(status).toHaveText('Niezapisane zmiany');
-  await expect(zapisz).toBeEnabled();
+  await expect(zapisz).toBeVisible();
   await page.keyboard.press('ControlOrMeta+s');
-  await expect(status).toHaveText('Zapisano');
-  await expect(zapisz).toBeDisabled();
+  await expect(statusZapisany).toContainText('zapisano');
+  await expect(zapisz).toHaveCount(0);
 
   // Wyjście z projektu z niezapisanymi zmianami pyta o zapis.
   await page.getByLabel('Nazwa szablonu').fill('Karta z pliku 2');
-  await page.locator('.pasek-gorny a.logo').click();
+  await naglowek.getByRole('link', { name: '← Projekty' }).click();
   const okno = page.getByRole('dialog', { name: 'Niezapisane zmiany' });
   await expect(okno).toBeVisible();
   await okno.getByRole('button', { name: 'Zostań' }).click();
   await expect(drzewo(page)).toBeVisible();
   await zapisz.click();
-  await expect(status).toHaveText('Zapisano');
+  await expect(statusZapisany).toContainText('zapisano');
 
-  // Eksport do wspólnego pliku szablonu.
+  // Eksport do wspólnego pliku szablonu (menu Szablon ▾).
+  await page.getByTestId('menu-szablon-przycisk').click();
   const [pobranie] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button', { name: 'Eksportuj szablon' }).click(),
+    page.getByTestId('menu-szablon').getByRole('menuitem', { name: 'Eksport do pliku' }).click(),
   ]);
   expect(pobranie.suggestedFilename()).toMatch(/\.kartyrpg-szablon$/);
   const plik = info.outputPath(pobranie.suggestedFilename());
   await pobranie.saveAs(plik);
 
   // Import w Edytorze szablonu: nowy szablon w projekcie, link do niego.
-  await page.locator('.pasek-gorny input[type=file]').setInputFiles(plik);
+  await page.locator('input[type="file"][aria-label="Importuj szablon"]').setInputFiles(plik);
   const link = page.getByRole('link', { name: /^Dodano szablon „Karta z pliku 2/ });
   await expect(link).toBeVisible();
   await link.click();

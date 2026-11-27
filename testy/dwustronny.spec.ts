@@ -139,7 +139,7 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
     format: 'Poker',
     uklad: 'Swobodny',
   });
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   // Utwórz niesymetryczny rewers.
@@ -151,7 +151,7 @@ test('druk dwustronny E2E: podgląd pary, zmiana krawędzi, korekta X/Y, PDF i w
   await zapisano(page);
 
   // Przejdź do Edytora kart, dodaj kartę i włącz druk dwustronny w widoku drukowania.
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   // Dodaj jedną kartę na arkuszu (w pierwszym wolnym slocie).

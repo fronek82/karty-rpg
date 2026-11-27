@@ -281,7 +281,7 @@ test.describe('edytor szablonu po angielsku', () => {
     await expect(tytulPl).toHaveAttribute('aria-selected', 'true');
     const panelPl = page.getByRole('complementary', { name: 'Właściwości' });
     await expect(panelPl.getByLabel('Nazwa', { exact: true })).toHaveValue('Title');
-    await expect(page.getByRole('button', { name: 'Edytor kart ►' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Przejdź do kart →' })).toBeVisible();
   });
 });
 

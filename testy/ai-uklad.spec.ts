@@ -58,8 +58,12 @@ test('układ ze zdjęcia (AI) w edytorze szablonu: błąd klucza, podgląd, zast
     });
   });
 
-  // Przycisk w górnym pasku edytora otwiera okno.
-  await page.getByRole('button', { name: 'Układ ze zdjęcia', exact: true }).click();
+  // Pozycja w menu „Szablon ▾” otwiera okno AI.
+  await page.getByTestId('menu-szablon-przycisk').click();
+  await page
+    .getByTestId('menu-szablon')
+    .getByRole('menuitem', { name: /Układ ze zdjęcia/ })
+    .click();
   const okno = page.getByRole('dialog', { name: 'Układ ze zdjęcia (AI)' });
   await expect(okno).toBeVisible();
   await okno.getByLabel('Klucz Claude API').fill('sk-ant-test-local');
@@ -87,7 +91,11 @@ test('układ ze zdjęcia (AI) w edytorze szablonu: błąd klucza, podgląd, zast
   await expect(page.getByTestId('podklad-podgladu')).toBeVisible();
 
   // „Zastąp elementy”: zostają tylko rozpoznane pola (korzeń + 4).
-  await page.getByRole('button', { name: 'Układ ze zdjęcia', exact: true }).click();
+  await page.getByTestId('menu-szablon-przycisk').click();
+  await page
+    .getByTestId('menu-szablon')
+    .getByRole('menuitem', { name: /Układ ze zdjęcia/ })
+    .click();
   await okno.getByTestId('plik-zdjecia-ai').setInputFiles('testy/zasoby/podklad-testowy.png');
   await okno.getByRole('button', { name: 'Rozpoznaj układ' }).click();
   await okno.getByRole('button', { name: 'Zastąp elementy' }).click();

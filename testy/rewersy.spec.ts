@@ -40,7 +40,7 @@ test('edytor rewersu: 4 tryby tła, czcionki, ramka, grafika SVG, przyciąganie,
     format: 'Poker',
     uklad: 'Swobodny',
   });
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   const ust = await otworzDruk(page);
@@ -154,7 +154,7 @@ test('przypisania rewersu na 3 poziomach (talia -> szablon -> karta), duplikowan
     format: 'Poker',
     uklad: 'Swobodny',
   });
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   // Dodaj dwie karty na arkusz.
@@ -262,7 +262,7 @@ for (const motyw of ['light', 'dark'] as const) {
       format: 'Poker',
       uklad: 'Swobodny',
     });
-    await page.getByRole('button', { name: /Edytor kart/ }).click();
+    await page.getByRole('button', { name: /Przejdź do kart/ }).click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
     const ust = await otworzDruk(page);

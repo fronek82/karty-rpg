@@ -133,7 +133,7 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
     uklad: 'Swobodny',
   });
   await dodaj(page, 'Obraz', 'Ilustracja');
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   // Dodaj kartę z rastrem 640×480 px (litera-f.png) i powiększ kadr 3×, żeby efektywne DPI spadło poniżej 300.

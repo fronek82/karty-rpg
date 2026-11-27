@@ -337,9 +337,17 @@ test('C. karta wroga: zagnieżdżony nagłówek, wartości w rombach z etykietą
     await nazwij(page, nazwa);
   }
   // Poziom do nagłówka: wyjmij z wiersza, wyżej, do kontenera powyżej (Nagłówek).
-  await struktura.getByRole('button', { name: '← Wyjmij z kontenera' }).click();
+  await struktura.getByRole('button', { name: 'Więcej', exact: true }).click();
+  await page
+    .getByTestId('menu-struktura-wiecej')
+    .getByRole('menuitem', { name: '← Wyjmij z kontenera' })
+    .click();
   await struktura.getByRole('button', { name: '↑ Wyżej' }).click();
-  await struktura.getByRole('button', { name: '→ Do kontenera powyżej' }).click();
+  await struktura.getByRole('button', { name: 'Więcej', exact: true }).click();
+  await page
+    .getByTestId('menu-struktura-wiecej')
+    .getByRole('menuitem', { name: '→ Do kontenera powyżej' })
+    .click();
   // Poziom jest ostatnim dzieckiem Nagłówka, za kolumną Tytuł.
   const wNaglowku = drzewo(page)
     .getByRole('treeitem', { name: /^Nagłówek – / })
@@ -566,7 +574,7 @@ test('D. ozdobna karta: motyw z narożnikami, separator ozdobny, podwójna linia
   const ramkaPng = page.locator('.karta-podgladu svg image');
   await expect(ramkaPng.first()).toBeVisible();
   await expect(r2.getByRole('group', { name: 'Ramka 9-slice z biblioteki' })).toBeVisible();
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   await page.getByRole('button', { name: /^Pusty slot – strona 1, kolumna 2, rząd 1/ }).click();
   await page.getByRole('menuitem', { name: /Ozdobna PNG/ }).click();
   const dane = page.getByRole('complementary', { name: 'Zaznaczone karty' });

@@ -60,7 +60,7 @@ test('nagłówek panelu karty nie pokazuje opisu, wysokość textarea zostaje mi
     .toBe('196px');
 
   // 3) W „Edytor kart”: pusty tytuł + długi opis → opis NIE trafia w nagłówek panelu.
-  await page.getByRole('button', { name: 'Edytor kart ►' }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await slot(page, 1, 1, 1).click();
   await page.getByRole('menuitem', { name: /Karta zaklęcia/ }).click();

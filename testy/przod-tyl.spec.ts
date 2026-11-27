@@ -79,7 +79,7 @@ test('nowy tył przez kreator → nowy przód z rozmiarem tego tyłu (pola zablo
   await zapisano(page);
 
   // Przypisany tył widać w Edytorze kart (karta dziedziczy tył szablonu).
-  await page.getByRole('button', { name: 'Edytor kart ►', exact: true }).click();
+  await page.getByRole('button', { name: 'Przejdź do kart →', exact: true }).click();
   const druk = await otworzDruk(page);
   await expect(druk.getByLabel('Drukuj tyły (przód i tył w parach stron)')).toBeVisible();
   await expect(

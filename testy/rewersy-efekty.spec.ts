@@ -133,7 +133,7 @@ test('edytor rewersu: tekst po łuku, krycie warstw oraz krycie i zabarwienie te
     format: 'Poker',
     uklad: 'Swobodny',
   });
-  await page.getByRole('button', { name: /Edytor kart/ }).click();
+  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
 
   const ust = await otworzDruk(page);
