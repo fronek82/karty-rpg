@@ -1892,6 +1892,11 @@ export const pl = {
   'druk.linieCiecia.podglad': 'Podgląd linii cięcia',
   'druk.linieCiecia.trybDrukarni':
     'W trybie drukarni zamiast linii cięcia drukowane są znaczniki cięcia.',
+  'mausritter.odCzegoZaczynamy': 'Od czego zaczynamy?',
+  'mausritter.dodajKarte': 'Dodaj kartę',
+  'mausritter.wskazowkaDodaj':
+    'Przeciągnij kartę na wolny kafelek arkusza albo kliknij, żeby wstawić w pierwsze wolne miejsce.',
+  'mausritter.licznikKafelkow': '{zajete} / {razem} kafelków',
 } as const;
 
 export type KluczTekstu = keyof typeof pl;

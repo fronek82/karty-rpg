@@ -138,6 +138,8 @@ import { PanelKart, typDlaSzablonu } from './PanelKart';
 import { PanelNaglowka } from './PanelNaglowka';
 import { PanelRewersuIAwersu } from './PanelRewersuIAwersu';
 import { PanelUstawien } from './PanelUstawien';
+import { pierwszeWolneMiejsce, zajeteKafelki } from './siatkaMausritter';
+import { PasekBoczny, type GrupaPaskaBocznego } from '../ui2/PasekBoczny';
 import { zaokraglij } from '../../model/geometria';
 
 type Zaznaczenie =
@@ -2103,6 +2105,71 @@ export function EdytorKartki({
         </details>
       )}
       <div className="uklad-edytora">
+        {!druk &&
+          !czyProjektWlasny(projekt) &&
+          aktualneKartki[0] &&
+          (() => {
+            const celKartka = aktualneKartki[0]!;
+            const typyM = typyDlaKartki(celKartka.arkusz);
+            const dodajWTymTypie = (typId: string) => {
+              const typ = typyM.find((x) => x.id === typId);
+              const ctx = kontekst(celKartka.arkusz.id);
+              const geom = celKartka.geometria;
+              if (!typ || !ctx || !geom) return;
+              const kartyStrony0 = (kartyNaKartkach.get(celKartka.arkusz.id) ?? []).filter(
+                (x) => x.strona === 0,
+              );
+              const zajete = zajeteKafelki(kartyStrony0);
+              const wolne = pierwszeWolneMiejsce(geom.siatka, { kolumny: 1, rzedy: 1 }, zajete);
+              const celSlot = {
+                strona: 0,
+                kolumna: wolne?.kolumna ?? 0,
+                rzad: wolne?.rzad ?? 0,
+              };
+              const w = typ.warianty[0]!;
+              const opis = {
+                szablonId: w.szablonId,
+                rozmiary: typ.rozmiary,
+                ...(w.dane ? { dane: w.dane } : {}),
+              };
+              const proba = dodajKarteWSlocie(projekt, celKartka.arkusz.id, celSlot, opis, ctx);
+              if ('blad' in proba) return;
+              zmien((p) => {
+                const x = dodajKarteWSlocie(p, celKartka.arkusz.id, celSlot, opis, ctx);
+                return 'projekt' in x ? x.projekt : p;
+              });
+              ustawZazn({ rodzaj: 'karty', arkuszId: celKartka.arkusz.id, ids: [proba.kartaId] });
+            };
+            const grupyM: GrupaPaskaBocznego[] = [
+              {
+                id: 'mausritter-typy',
+                pozycje: typyM.map((typ) => ({
+                  id: typ.id,
+                  nazwa: tJesliJest(`typ.${typ.id}`) ?? typ.nazwa,
+                  ikona:
+                    'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 8h8M8 12h8M8 16h5',
+                  przeciagane: true,
+                  onKlik: () => dodajWTymTypie(typ.id),
+                  onPoczatekPrzeciagania: (e) => {
+                    e.dataTransfer.setData('application/x-karty-typ', typ.id);
+                    e.dataTransfer.setData('text/plain', typ.id);
+                    e.dataTransfer.effectAllowed = 'copy';
+                  },
+                })),
+              },
+            ];
+            return (
+              <div className="mausritter-ui2-pasek-opak">
+                <PasekBoczny
+                  ekranId="mausritter"
+                  tytul={t('mausritter.dodajKarte')}
+                  grupy={grupyM}
+                  wskazowka={t('mausritter.wskazowkaDodaj')}
+                  domyslnieRozwiniety={false}
+                />
+              </div>
+            );
+          })()}
         <div
           className="kartki"
           ref={kartkiRef}
@@ -2124,6 +2191,29 @@ export function EdytorKartki({
             <WidokKartki
               key={k.arkusz.id}
               podgladDruku={druk}
+              mausritter={!czyProjektWlasny(projekt)}
+              upuscTypNaSlot={
+                !druk && !czyProjektWlasny(projekt)
+                  ? (typId, celSlot) => {
+                      const typ = typyDlaKartki(k.arkusz).find((x) => x.id === typId);
+                      const ctx = kontekst(k.arkusz.id);
+                      if (!typ || !ctx) return;
+                      const w = typ.warianty[0]!;
+                      const opis = {
+                        szablonId: w.szablonId,
+                        rozmiary: typ.rozmiary,
+                        ...(w.dane ? { dane: w.dane } : {}),
+                      };
+                      const proba = dodajKarteWSlocie(projekt, k.arkusz.id, celSlot, opis, ctx);
+                      if ('blad' in proba) return;
+                      zmien((p) => {
+                        const x = dodajKarteWSlocie(p, k.arkusz.id, celSlot, opis, ctx);
+                        return 'projekt' in x ? x.projekt : p;
+                      });
+                      ustawZazn({ rodzaj: 'karty', arkuszId: k.arkusz.id, ids: [proba.kartaId] });
+                    }
+                  : undefined
+              }
               tylkoRewers={czyProjektRewersowy(projekt)}
               bezRewersow={bezRewersow}
               onWybierzKartke={
@@ -2306,6 +2396,8 @@ export function EdytorKartki({
 /** Jedna kartka: jej strony (SVG z silnika) z warstwą slotów, kart, nagłówków i podglądów. */
 function WidokKartki({
   podgladDruku = false,
+  mausritter = false,
+  upuscTypNaSlot,
   tylkoRewers = false,
   bezRewersow = false,
   onWybierzKartke,
@@ -2341,6 +2433,8 @@ function WidokKartki({
   wybierzNaglowek,
 }: {
   podgladDruku?: boolean;
+  mausritter?: boolean;
+  upuscTypNaSlot?: (typId: string, cel: Polozenie) => void;
   tylkoRewers?: boolean;
   /** Gra z kartami jednostronnymi – bez warstwy rewersów na kartce. */
   bezRewersow?: boolean;
@@ -2656,6 +2750,28 @@ function WidokKartki({
                         onClick={(e) =>
                           e.detail === 0 && otworzMenu({ strona: s, kolumna: c, rzad: r })
                         }
+                        onDragOver={
+                          upuscTypNaSlot
+                            ? (e) => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'copy';
+                              }
+                            : undefined
+                        }
+                        onDrop={
+                          upuscTypNaSlot
+                            ? (e) => {
+                                e.preventDefault();
+                                const typId = (
+                                  e.dataTransfer.getData('application/x-karty-typ') ||
+                                  e.dataTransfer.getData('text/plain') ||
+                                  ''
+                                ).trim();
+                                if (typId)
+                                  upuscTypNaSlot(typId, { strona: s, kolumna: c, rzad: r });
+                              }
+                            : undefined
+                        }
                       />
                     ),
                   ),
@@ -2932,6 +3048,14 @@ function WidokKartki({
               </div>
             ) : (
               stronaPrzodu
+            )}
+            {mausritter && !podgladDruku && g && (
+              <p className="mausritter-ui2-licznik" data-testid="licznik-kafelkow">
+                {t('mausritter.licznikKafelkow', {
+                  zajete: zajete.size,
+                  razem: g.siatka.kolumny * g.siatka.rzedy,
+                })}
+              </p>
             )}
           </div>
         );
