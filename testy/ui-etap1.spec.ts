@@ -62,7 +62,7 @@ for (const motyw of ['light', 'dark'] as const) {
     // 1) Start: przyciski tworzenia UI2 R2 (+ NOWE KARTY i Mausritter A4).
     await page.goto('./#/');
     await page.mouse.move(0, 0);
-    const startWlasne = page.getByRole('link', { name: /\+ NOWE KARTY/ });
+    const startWlasne = page.getByRole('button', { name: /\+ NOWE KARTY/ });
     const startGra = page.getByRole('link', { name: /Mausritter A4/ });
     const kWlasne1 = await kolory(startWlasne);
     const kGra1 = await kolory(startGra);

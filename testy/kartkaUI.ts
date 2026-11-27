@@ -27,8 +27,7 @@ export function plikSzablonu() {
 }
 
 export async function kartkaCzaru(page: Page) {
-  await page.goto('./#/');
-  await page.getByRole('link', { name: /\+ NOWE KARTY/i }).click();
+  await page.goto('./#/wlasne');
   await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu());
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   await slot(page, 1, 1, 1).click();

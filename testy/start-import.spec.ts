@@ -98,7 +98,7 @@ test.describe('układ', () => {
 
   test('menu: tylko 2 przyciski tworzenia (+ NOWE KARTY i Mausritter A4)', async ({ page }) => {
     await page.goto('./');
-    const linki = page.locator('.riso-lewa a[href^="#/"]');
+    const linki = page.locator('.riso-lewa button, .riso-lewa a[href^="#/"]');
     await expect(linki).toHaveCount(2);
     await expect(linki.nth(0)).toContainText('+ NOWE KARTY');
     await expect(linki.nth(1)).toContainText('Mausritter A4');

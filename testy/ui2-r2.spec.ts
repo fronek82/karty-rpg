@@ -12,8 +12,8 @@ test.describe('UI2 R2 – strona główna drukarnia riso', () => {
     const lewa = page.locator('aside.riso-lewa');
     await expect(lewa.getByTestId('start-nowe-karty')).toBeVisible();
     await expect(lewa.getByTestId('start-mausritter')).toBeVisible();
-    // W lewej kolumnie są tylko 2 linki tworzenia (+ 1 link wsparcia na dole).
-    await expect(lewa.locator('a[href^="#/"]')).toHaveCount(2);
+    // W lewej kolumnie są tylko 2 kontrolki tworzenia (+ 1 link wsparcia na dole).
+    await expect(lewa.locator('button, a[href^="#/"]')).toHaveCount(2);
     await expect(page.getByText(/Nowy szablon/i)).toHaveCount(0);
     await expect(page.getByRole('link', { name: /Przód \(awers\)/i })).toHaveCount(0);
     await expect(page.getByRole('link', { name: /Tył \(rewers\)/i })).toHaveCount(0);

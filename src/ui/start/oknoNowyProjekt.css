@@ -1,0 +1,454 @@
+/*
+ * Okno modalne „Nowy projekt” (UI2 R3, wzór: docs/makiety-ui2/NowyProjekt.dc.html).
+ * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
+ */
+
+.np-zaslona {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: color-mix(in srgb, var(--tlo-zaslonki) 62%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.np-okno {
+  position: relative;
+  width: min(780px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: var(--tlo);
+  color: var(--tekst);
+  border: 3px solid var(--tekst);
+  box-shadow: 10px 10px 0 var(--tekst);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--czcionka-tekst);
+  font-size: 14px;
+}
+
+.np-naglowek {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  border-bottom: 2px solid var(--tekst);
+}
+
+.np-naglowek-lewa {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.np-logo {
+  position: relative;
+  width: 30px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.np-logo-a {
+  position: absolute;
+  left: 5px;
+  top: 0;
+  width: 24px;
+  height: 33px;
+  background: var(--riso-roz);
+  mix-blend-mode: var(--riso-mieszanie);
+}
+
+.np-logo-b {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 24px;
+  height: 33px;
+  background: var(--riso-niebieski);
+  mix-blend-mode: var(--riso-mieszanie);
+}
+
+.np-tytul {
+  margin: 0;
+  font-family: var(--czcionka-naglowek);
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.np-zamknij {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  color: var(--tekst);
+  font-family: var(--czcionka-naglowek);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.np-zamknij:hover {
+  background: var(--tlo-pasek);
+}
+
+.np-cialo {
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.np-sekcja {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.np-sekcja-naglowek {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.np-etykieta {
+  font-family: var(--czcionka-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.np-pole-tekstu {
+  height: 46px;
+  padding: 0 14px;
+  background: var(--powierzchnia);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  font-size: 16px;
+  color: var(--tekst);
+}
+
+.np-siatka-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.np-siatka-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.np-siatka-6 {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.np-karta-wyboru {
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.np-karta-wyboru[aria-pressed='true'] {
+  background: var(--akcent-jasny);
+  color: var(--na-jasnym);
+  box-shadow: 5px 5px 0 var(--riso-niebieski);
+}
+
+.np-karta-wyboru:disabled {
+  background: transparent;
+  color: var(--tekst-2);
+  border-style: dashed;
+  border-color: var(--tekst-2);
+  cursor: not-allowed;
+}
+
+.np-karta-wyboru-tytul {
+  font-family: var(--czcionka-naglowek);
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.np-karta-wyboru-opis {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.np-orientacja {
+  display: flex;
+}
+
+.np-orientacja-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.np-orientacja-btn + .np-orientacja-btn {
+  border-left: none;
+}
+
+.np-orientacja-btn[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.np-orientacja-ikona {
+  display: inline-block;
+  border: 1.5px solid currentColor;
+}
+
+.np-format-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 4px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.np-format-btn[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.np-format-zarys {
+  display: inline-block;
+  border: 1.5px solid currentColor;
+}
+
+.np-format-zarys.przerywany {
+  border-style: dashed;
+}
+
+.np-format-nazwa {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.np-format-mm {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+}
+
+.np-wlasny-wiersz {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.np-wlasny-pole {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.np-wlasny-pole input {
+  width: 110px;
+  height: 42px;
+  padding: 0 10px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+}
+
+.np-wlasny-x {
+  font-family: var(--czcionka-naglowek);
+  padding-bottom: 10px;
+}
+
+.np-strona-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 12px 16px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.np-strona-btn[aria-pressed='true'] {
+  background: var(--akcent-jasny);
+  color: var(--na-jasnym);
+  box-shadow: 5px 5px 0 var(--riso-niebieski);
+}
+
+.np-strona-ikona {
+  width: 28px;
+  height: 38px;
+  flex-shrink: 0;
+  border: 2px solid var(--tekst);
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--czcionka-naglowek);
+}
+
+.np-strona-ikona.tyl {
+  border-style: dashed;
+}
+
+.np-strona-tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-grow: 1;
+}
+
+.np-strona-ptaszek {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: 2px solid var(--tekst);
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.np-szablon-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  padding: 12px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.np-szablon-btn[aria-pressed='true'] {
+  background: var(--akcent-jasny);
+  color: var(--na-jasnym);
+  box-shadow: 5px 5px 0 var(--riso-niebieski);
+}
+
+.np-szablon-miniatura {
+  height: 120px;
+  align-self: stretch;
+  background: var(--powierzchnia);
+  border: 1.5px solid var(--tekst);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 6px;
+}
+
+.np-szablon-miniatura img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+.np-strefa-pliku {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px;
+  background: var(--powierzchnia);
+  border: 2px dashed var(--tekst);
+}
+
+.np-podglad-pliku {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  background: var(--powierzchnia);
+  border: 2px solid var(--tekst);
+}
+
+.np-stopka {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 28px;
+  border-top: 2px solid var(--tekst);
+}
+
+.np-podpowiedz {
+  font-size: 12px;
+  max-width: 340px;
+  line-height: 1.45;
+  color: var(--tekst-2);
+}
+
+.np-akcje {
+  display: flex;
+  gap: 0;
+}
+
+.np-btn-anuluj {
+  height: 48px;
+  padding: 0 20px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 2px solid var(--tekst);
+  border-right: none;
+  border-radius: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.np-btn-anuluj:hover {
+  background: var(--tlo-pasek);
+}
+
+.np-btn-utworz {
+  height: 48px;
+  padding: 0 26px;
+  background: var(--tekst);
+  color: var(--tlo);
+  border: 2px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.np-btn-utworz:disabled {
+  background: var(--tekst-2);
+  border-color: var(--tekst-2);
+  cursor: not-allowed;
+}

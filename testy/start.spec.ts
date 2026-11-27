@@ -5,7 +5,7 @@ test('start: wybór gry po polsku, pusta lista projektów', async ({ page }) => 
   await expect(page.locator('html')).toHaveAttribute('lang', 'pl');
   await expect(page.locator('.riso-tytul')).toHaveText('KARTY RPG');
   await expect(page.getByRole('link', { name: /Mausritter A4/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /\+ NOWE KARTY/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /\+ NOWE KARTY/ })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: /Moje projekty/ })).toBeVisible();
   await expect(page.getByText('Nie masz jeszcze żadnych projektów.')).toBeVisible();
 });
@@ -13,10 +13,7 @@ test('start: wybór gry po polsku, pusta lista projektów', async ({ page }) => 
 test('własne karty: menu z importem, kafelki przykładów, bez listy gier; stara trasa działa', async ({
   page,
 }) => {
-  await page.goto('./');
-  await expect(page.getByText('Dowolny rozmiar, pola, ramki i wzory')).toBeVisible();
-  await page.getByRole('link', { name: /\+ NOWE KARTY/ }).click();
-  await expect(page).toHaveURL(/#\/wlasne$/);
+  await page.goto('./#/wlasne');
   const naglowek = page.getByRole('heading', { level: 1, name: 'Stwórz własne karty' });
   await expect(naglowek).toBeVisible();
   await expect(page.getByRole('link', { name: /Nowy szablon od zera/ })).toHaveCount(0);

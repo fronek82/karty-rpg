@@ -5,6 +5,7 @@ import { useMotyw } from '../motyw';
 import { ADRES_BIBLIOTEK, adresInstrukcji } from '../NaglowekAplikacji';
 import { OknoModalne } from '../OknoModalne';
 import { ListaProjektow } from './ListaProjektow';
+import { OknoNowyProjekt } from './OknoNowyProjekt';
 import { PanelImportu } from './PanelImportu';
 import { ADRES_WSPARCIA } from './wsparcie';
 import './startRiso.css';
@@ -24,6 +25,7 @@ export function Start({
 } = {}) {
   const [odswiezenie, ustawOdswiezenie] = useState(0);
   const [importOtwarty, ustawImportOtwarty] = useState(false);
+  const [nowyProjektOtwarty, ustawNowyProjektOtwarty] = useState(false);
   const [ustawieniaOtwarte, ustawUstawieniaOtwarte] = useState(false);
   const opakowanieUstawien = useRef<HTMLDivElement>(null);
   const przyciskUstawien = useRef<HTMLButtonElement>(null);
@@ -171,10 +173,15 @@ export function Start({
 
       <div className="riso-cialo">
         <aside className="riso-lewa" aria-label={t('start.nowyProjekt')}>
-          <a href="#/wlasne" className="riso-nowe-karty" data-testid="start-nowe-karty">
+          <button
+            type="button"
+            className="riso-nowe-karty"
+            data-testid="start-nowe-karty"
+            onClick={() => ustawNowyProjektOtwarty(true)}
+          >
             <span className="riso-nowe-karty-tytul">{t('start.noweKarty')}</span>
             <span className="riso-nowe-karty-opis">{t('start.noweKartyOpis')}</span>
-          </a>
+          </button>
 
           <div className="riso-gotowe">
             <span className="riso-etykieta-mono">{t('start.risoGotoweUklady')}</span>
@@ -213,6 +220,8 @@ export function Start({
           <PanelImportu onZmiana={() => ustawOdswiezenie((n) => n + 1)} />
         </OknoModalne>
       )}
+
+      {nowyProjektOtwarty && <OknoNowyProjekt zamknij={() => ustawNowyProjektOtwarty(false)} />}
     </div>
   );
 }
