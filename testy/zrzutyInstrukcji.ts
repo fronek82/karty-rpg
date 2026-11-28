@@ -6,11 +6,12 @@ export type JezykZrzutu = (typeof JEZYKI_ZRZUTOW)[number];
 /** Nazwy plików (bez rozszerzenia) w `public/instrukcja-zrzuty/<język>/`. */
 export const NAZWY_ZRZUTOW = [
   'start',
+  'nowy-szablon',
+  'edytor-szablonu',
+  'ekran-kart',
+  'ustawienia',
   'mausritter',
   'edytor-kartki',
-  'ekran-kart',
-  'edytor-szablonu',
-  'ustawienia',
   'biblioteki',
 ] as const;
 
