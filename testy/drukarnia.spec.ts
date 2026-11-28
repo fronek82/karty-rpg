@@ -15,6 +15,7 @@ import {
   otworzDruk,
   otworzUstawieniaAplikacji,
   panelDruku,
+  rozwinSekcje,
   zapisano,
 } from './pomoc';
 import { dodaj, kreator } from './szablonUI';
@@ -147,6 +148,7 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
 
   // Otwórz widok drukowania i włącz Tryb drukarni.
   const ust = await otworzDruk(page);
+  await rozwinSekcje(ust, 'Tryb drukarni');
   const wlacz = ust.getByLabel('Przygotuj do drukarni (spad i znaczniki cięcia)');
   await expect(wlacz).not.toBeChecked();
   await wlacz.check();
@@ -172,7 +174,7 @@ test('tryb drukarni E2E: spad, znaczniki, ostrzeżenie DPI, układ pojedynczej k
   expect(height / PT_NA_MM).toBeCloseTo(108, 1);
 
   // Powrót do Edytora kart: kliknięcie karty w układzie pojedynczej karty otwiera panel z dokładnym ostrzeżeniem DPI.
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   await page.locator('.strona-kartki .karta-na-kartce').first().click();
   await expect(
     page.getByRole('complementary', { name: 'Zaznaczone karty' }).getByText(/dpi/i),

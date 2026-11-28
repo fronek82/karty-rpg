@@ -88,6 +88,17 @@ export async function otworzDruk(page: Page, en = false) {
   return panel;
 }
 
+/** Rozwija zwijaną sekcję `SekcjaPanelu` (`<details>`) w panelu UI2, jeśli jest zwinięta. */
+export async function rozwinSekcje(panel: ReturnType<Page['locator']>, nazwa: string | RegExp) {
+  const sekcja = panel
+    .locator('details.ui2-sekcja')
+    .filter({ has: panel.page().locator('summary', { hasText: nazwa }) });
+  if ((await sekcja.getAttribute('open')) === null) {
+    await sekcja.locator(':scope > summary').click();
+  }
+  return sekcja;
+}
+
 /** Otwiera górne rozwijane menu „Ustawienia” / „Settings” i zwraca jego panel. */
 export async function otworzUstawieniaAplikacji(page: Page) {
   const przycisk = page.getByRole('button', { name: /^(⚙\s*)?(Ustawienia|Settings)(\s*▾)?$/ });

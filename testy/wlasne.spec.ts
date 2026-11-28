@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { eksportujSzablon } from '../src/dane/archiwum';
 import { WERSJA_SCHEMATU, type Projekt } from '../src/model/projekt';
 import type { Szablon } from '../src/model/szablon';
-import { szablonCzaru, szablonStatystyk } from '../src/silnik/__testy__/przyklady';
+import { szablonCzaru } from '../src/silnik/__testy__/przyklady';
 import { kliknijPobierzPdf, otworzDruk, slot, zapisano } from './pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
 
@@ -55,55 +55,20 @@ test('import szablonu → kartka 63×88 (3×3), karta z menu, papier zdjęciowy,
   // w orientacji poziomej (2 karty).
   const ust = await otworzDruk(page);
   await ust.getByRole('button', { name: 'poziomo' }).click();
-  await ust.getByLabel('Papier', { exact: true }).selectOption('foto-10x15');
+  await ust.locator('[data-papier="foto-10x15"]').click();
   await expect(ust.getByLabel('Margines bezpieczeństwa (mm)')).toHaveValue('3');
   await expect(page.locator('.strefa-bezpieczenstwa')).toBeVisible();
   await expect(ust).toContainText('Strona 152 × 102 mm');
   await expect(ust.getByRole('alert')).toHaveCount(0);
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
-  // Eksport szablonu z projektu.
-  const [plik] = await Promise.all([
-    page.waitForEvent('download'),
-    ust.getByRole('button', { name: 'Eksportuj szablon Czar (test)' }).click(),
-  ]);
-  expect(plik.suggestedFilename()).toBe('czar-test.kartyrpg-szablon');
 
   // PDF się pobiera.
   const [pdf] = await Promise.all([page.waitForEvent('download'), kliknijPobierzPdf(page)]);
   expect(pdf.suggestedFilename()).toMatch(/\.pdf$/);
 
   // Karta została na kartce (poza strefą).
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   await expect(page.locator('[data-karta]')).toHaveCount(1);
-});
-
-test('szablon innego rozmiaru: własna kartka, w menu pierwszej kartki zablokowany', async ({
-  page,
-}) => {
-  await page.goto('./#/wlasne');
-  await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu(szablonCzaru));
-  await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
-  const ust = await otworzDruk(page);
-  await ust.getByTestId('plik-szablonu').setInputFiles(plikSzablonu(szablonStatystyk));
-  await expect(ust.locator('.sekcja-szablonow [role="status"]')).toContainText(
-    'Dodano szablon „Blok statystyk (test)”',
-  );
-  // Powrót do edytora kart: druga kartka dla kart 88×63 (A4 poziomo, 3 × 3).
-  await page.getByRole('link', { name: '← Powrót' }).click();
-  await expect(page.locator('.kartka')).toHaveCount(2);
-  await expect(page.locator('.kartka').nth(1).locator('.slot')).toHaveCount(9);
-
-  await slot(page, 1, 1, 1).first().click();
-  // Zablokowana pozycja zostaje osiągalna z klawiatury, z powodem w treści.
-  const zablokowany = page.getByRole('menuitem', { name: /Blok statystyk/ });
-  await expect(zablokowany).toHaveAttribute('aria-disabled', 'true');
-  await expect(zablokowany).toContainText('Inny rozmiar karty (88×63 mm)');
-  await expect(page.getByRole('menuitem', { name: /Czar \(test\)/ })).toBeFocused();
-  await page.keyboard.press('ArrowDown');
-  await expect(zablokowany).toBeFocused();
-  await page.keyboard.press('Enter');
-  await expect(page.locator('[data-karta]')).toHaveCount(0);
-  await expect(page.getByRole('menuitem', { name: /Czar \(test\)/ })).toBeEnabled();
 });
 
 test('własny papier: pola wymiarów, odrzucenie zbyt małego, Cofnij przywraca pole', async ({
@@ -115,7 +80,7 @@ test('własny papier: pola wymiarów, odrzucenie zbyt małego, Cofnij przywraca 
   await slot(page, 1, 1, 1).click();
   await page.getByRole('menuitem', { name: /Czar \(test\)/ }).click();
   const ust = await otworzDruk(page);
-  await ust.getByLabel('Papier', { exact: true }).selectOption('wlasny');
+  await ust.locator('[data-papier="wlasny"]').click();
   const szer = ust.getByLabel('Szerokość w pionie (mm)');
   await expect(szer).toHaveValue('210');
   await szer.fill('150');

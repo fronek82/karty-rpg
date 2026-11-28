@@ -77,15 +77,20 @@ test('przepływ Szablon → Edytor kart → Drukuj karty oraz przycisk ← Powr�
   await expect(page.getByRole('button', { name: 'Pobierz', exact: true })).toHaveCount(0);
   await expect(panelDruku(page)).toHaveCount(0);
 
-  // Przejście do „Drukuj karty”: stały prawy panel opcji druku bez przycisku ✕, Pobierz i Eksportuj.
+  // Przejście do „Drukuj karty”: stały prawy panel Ustawienia druku bez przycisku ✕, z Pobierz PDF i bez Eksportuj.
   await otworzDruk(page);
   await expect(page).toHaveURL(/#\/projekt\/.+\/drukuj/);
   const panel = panelDruku(page);
   await expect(panel).toBeVisible();
-  await expect(panel.getByRole('heading', { name: 'Opcje druku i arkusza' })).toBeVisible();
+  await expect(panel.getByRole('heading', { name: 'Ustawienia druku' })).toBeVisible();
   await expect(panel.getByRole('button', { name: /Zamknij/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Pobierz', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^⤓ Eksportuj$/ })).toBeVisible();
+  await expect(
+    page.locator('header.ui2-naglowek').getByRole('button', { name: /Pobierz PDF/ }),
+  ).toBeVisible();
+  await expect(
+    page.locator('header.ui2-naglowek').getByRole('button', { name: /Eksportuj/ }),
+  ).toHaveCount(0);
   // Na podglądzie arkusza w widoku druku nie ma interaktywnych slotów ani przycisku „Dodaj stronę”.
   await expect(page.getByRole('button', { name: /Dodaj stronę/ })).toHaveCount(0);
 
@@ -95,8 +100,8 @@ test('przepływ Szablon → Edytor kart → Drukuj karty oraz przycisk ← Powr�
   await expect(pionowo).toHaveAttribute('aria-pressed', 'true');
   await zapisano(page);
 
-  // „← Powrót” z widoku druku wraca do „Edytor kart”.
-  await page.getByRole('link', { name: '← Powrót', exact: true }).click();
+  // Powrót przeglądarki z widoku druku wraca do „Edytor kart”.
+  await page.goBack();
   await expect(slot(page, 1, 1, 1)).toBeVisible();
   await expect(page).not.toHaveURL(/\/drukuj/);
 

@@ -8,6 +8,7 @@ export const NAZWY_ZRZUTOW = [
   'start',
   'mausritter',
   'edytor-kartki',
+  'ekran-kart',
   'edytor-szablonu',
   'ustawienia',
   'biblioteki',
