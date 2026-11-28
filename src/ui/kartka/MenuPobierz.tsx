@@ -16,9 +16,12 @@ const POZYCJE: { klucz: KluczTekstu; co: CoPobrac }[] = [
 export function MenuPobierz({
   wylaczone,
   pobierz,
+  podzielony = true,
 }: {
   wylaczone: boolean;
   pobierz: (co: CoPobrac) => void;
+  /** Tryb UI2 (R12 14.1): główny przycisk „⤓ Pobierz PDF” + przycisk menu „▾” obok. */
+  podzielony?: boolean;
 }) {
   const [otwarte, ustawOtwarte] = useState(false);
   const przycisk = useRef<HTMLButtonElement>(null);
@@ -60,25 +63,58 @@ export function MenuPobierz({
     }
   };
   return (
-    <div className="menu-pobierz">
-      <button
-        ref={przycisk}
-        type="button"
-        className="glowny"
-        disabled={wylaczone}
-        aria-haspopup="menu"
-        aria-expanded={otwarte}
-        aria-controls={otwarte ? 'menu-pobierz' : undefined}
-        onClick={() => ustawOtwarte((x) => !x)}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            ustawOtwarte(true);
-          }
-        }}
-      >
-        {t('pobierz.menu')} <span aria-hidden="true">▾</span>
-      </button>
+    <div className={podzielony ? 'menu-pobierz menu-pobierz-podzielony' : 'menu-pobierz'}>
+      {podzielony ? (
+        <>
+          <button
+            type="button"
+            className="ui2-przycisk-glowny"
+            disabled={wylaczone}
+            onClick={() => pobierz({ rodzaj: 'pdf' })}
+          >
+            {t('druk.pobierzPdf')}
+          </button>
+          <button
+            ref={przycisk}
+            type="button"
+            className="ui2-przycisk-glowny menu-pobierz-strzalka"
+            disabled={wylaczone}
+            aria-label={t('pobierz.menu')}
+            title={t('pobierz.menu')}
+            aria-haspopup="menu"
+            aria-expanded={otwarte}
+            aria-controls={otwarte ? 'menu-pobierz' : undefined}
+            onClick={() => ustawOtwarte((x) => !x)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                ustawOtwarte(true);
+              }
+            }}
+          >
+            <span aria-hidden="true">▾</span>
+          </button>
+        </>
+      ) : (
+        <button
+          ref={przycisk}
+          type="button"
+          className="glowny"
+          disabled={wylaczone}
+          aria-haspopup="menu"
+          aria-expanded={otwarte}
+          aria-controls={otwarte ? 'menu-pobierz' : undefined}
+          onClick={() => ustawOtwarte((x) => !x)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              ustawOtwarte(true);
+            }
+          }}
+        >
+          {t('pobierz.menu')} <span aria-hidden="true">▾</span>
+        </button>
+      )}
       {otwarte && (
         <div
           ref={menu}

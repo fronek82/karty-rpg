@@ -1,34 +1,421 @@
 /*
- * Style UI2 R7 dla ekranu druku i sekcji „Linie cięcia” (wzór: docs/makiety-ui2/Druk.dc.html).
+ * Style UI2 R12 dla ekranu Druk i sekcji „Linie cięcia” (wzór: docs/makiety-ui2/Druk.dc.html).
  * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
  */
 
-/* Dokładna wysokość paska jak przed UI-1 (55,78 px) chroni podpikselową pozycję wzorców PNG kartek. */
-.edytor-kartki > .pasek-gorny {
-  height: 3.486328125rem;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
+/* --- Ekran Druk w stylu UI2 (R12, sekcja 14.1) --- */
+.druk-ui2-ekran {
+  height: 100vh;
+  min-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: var(--czcionka-tekst);
+  font-size: 13px;
 }
 
-.edytor-kartki > .pasek-gorny .ui2-kroki {
-  gap: 4px;
+.druk-ui2-ekran > .ostrzezenia-projektu {
+  margin: 0;
+  padding: 6px 14px;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  line-height: 20px;
+}
+
+/* Podzielony przycisk główny „⤓ Pobierz PDF” + „▾” w NaglowekProjektu */
+.menu-pobierz-podzielony {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.menu-pobierz-podzielony > .ui2-przycisk-glowny:first-child {
+  border-right: none;
+}
+
+.menu-pobierz-podzielony > .menu-pobierz-strzalka {
+  padding: 0 10px;
+  min-width: 34px;
+  border-left: 1px solid color-mix(in srgb, var(--tlo) 35%, transparent);
+}
+
+.menu-pobierz-podzielony > .menu-typu {
+  right: 0;
+  left: auto;
+  top: calc(100% + 4px);
+  z-index: 60;
+}
+
+/* --- Lewy pasek „Karty w druku” (PasekBoczny) --- */
+.druk-ui2-ekran .ui2-pasek-boczny-naglowek {
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.druk-ui2-licznik-sztuk {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tekst-2);
+  white-space: nowrap;
+}
+
+.druk-ui2-check {
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--tekst);
+  background: var(--powierzchnia);
+  color: var(--tlo);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.edytor-kartki > .pasek-gorny .ui2-krok {
-  height: 26px;
-  padding: 0 8px;
+.druk-ui2-check[data-zaznaczone='1'] {
+  background: var(--tekst);
+}
+
+.druk-ui2-ekran .ui2-pasek-boczny.rozwiniety .ui2-pasek-pozycja {
+  border: 1px solid var(--linia-2);
+  background: transparent;
+  color: var(--tekst-2);
+  margin-bottom: 2px;
+}
+
+.druk-ui2-ekran .ui2-pasek-boczny.rozwiniety .ui2-pasek-pozycja.aktywna {
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border-color: var(--tekst);
+}
+
+.druk-ui2-ekran .ui2-pasek-boczny:not(.rozwiniety) .ui2-pasek-pozycja.aktywna {
+  background: transparent;
+  color: var(--tekst);
+}
+
+.druk-ui2-ekran .ui2-pasek-boczny .ui2-pasek-pozycja.aktywna .ui2-pasek-odznaka {
+  background: transparent;
+  color: var(--tekst-2);
+  border: none;
+  padding: 0;
+}
+
+/* --- Pasek nad podglądem (Pokaż: Przody | Tyły | Przód + tył + podsumowanie) --- */
+.druk-ui2-pasek {
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.druk-ui2-pokaz-etykieta {
   font-size: 12px;
-  gap: 5px;
+  color: var(--tekst-2);
+  white-space: nowrap;
 }
 
+.druk-ui2-segmenty {
+  display: inline-flex;
+  padding-left: 1.5px;
+}
+
+.druk-ui2-seg {
+  height: 30px;
+  padding: 0 11px;
+  margin-left: -1.5px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.druk-ui2-seg[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.druk-ui2-seg:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.druk-ui2-podsumowanie {
+  margin-left: auto;
+  font-family: var(--czcionka-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tekst);
+  white-space: nowrap;
+}
+
+/* --- Obszar roboczy druku --- */
+.druk-ui2-obszar {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 16px 22px;
+  box-sizing: border-box;
+  background-color: var(--tlo-robocze);
+  background-image: radial-gradient(var(--kropki-robocze) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.druk-ui2-obszar[data-powiekszone] {
+  align-items: flex-start;
+}
+
+.druk-ui2-obszar > .kartka {
+  width: calc(100% * var(--powiekszenie, 1));
+  max-width: calc(68rem * var(--powiekszenie, 1));
+}
+
+.druk-ui2-obszar .strona-kartki {
+  background: var(--papier);
+  box-shadow: 5px 5px 0 color-mix(in srgb, var(--tekst) 20%, transparent);
+}
+
+/* --- Pasek stanu 44 px (numery stron + ? Skróty + zoom) --- */
+.druk-ui2-strona-etykieta {
+  font-size: 11px;
+  color: var(--tekst-2);
+  white-space: nowrap;
+}
+
+.druk-ui2-strony-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.druk-ui2-strona-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.druk-ui2-strona-btn[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+/* --- Prawy panel „Ustawienia druku” (PanelSekcji) --- */
+.druk-ui2-ekran .ui2-panel-sekcji {
+  width: 340px;
+}
+
+.druk-ui2-wybor-arkusza {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--linia-2);
+}
+
+.druk-ui2-blad-panelu {
+  margin: 8px 14px 0;
+}
+
+.druk-ui2-sekcja-tresc {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji .pole-panelu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji .pole-panelu.dwa-pola {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji .pole-panelu.wybor,
+.druk-ui2-ekran .ui2-panel-sekcji label.wybor {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji input[type='text'],
+.druk-ui2-ekran .ui2-panel-sekcji input[type='number'],
+.druk-ui2-ekran .ui2-panel-sekcji select {
+  height: 30px;
+  padding: 0 8px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 12px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji .sekcja-ukladu {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji .przelacznik-segmentowy {
+  display: flex;
+  gap: 0;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji .przelacznik-segmentowy > button {
+  flex: 1 1 0;
+  min-height: 30px;
+  padding: 3px 5px;
+  line-height: 1.15;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji .przelacznik-segmentowy > button + button {
+  border-left: none;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji .przelacznik-segmentowy > button[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji .podpis {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--tekst-2);
+  font-weight: 400;
+}
+
+/* Siatka kafelków formatów papieru (Druk.dc.html) */
+.druk-ui2-papiery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.druk-ui2-papier-kafelek {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 7px 2px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.druk-ui2-papier-kafelek[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.druk-ui2-papier-ikona {
+  display: block;
+  border: 1.5px solid currentColor;
+  box-sizing: border-box;
+}
+
+.druk-ui2-papier-nazwa {
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1.1;
+}
+
+.druk-ui2-papier-mm {
+  font-family: var(--czcionka-mono);
+  font-size: 10px;
+  line-height: 1.1;
+  opacity: 0.85;
+}
+
+/* Przyciski w sekcji Pobierz i Kalibracja */
+.druk-ui2-pobierz-glowny {
+  height: 40px;
+  width: 100%;
+  background: var(--tekst);
+  color: var(--tlo);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.druk-ui2-pobierz-glowny:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.druk-ui2-pobierz-para {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.druk-ui2-przycisk-kontur {
+  height: 32px;
+  padding: 0 8px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.druk-ui2-przycisk-kontur:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Sekcja Linie cięcia */
 .druk-ui2-linie-cialo {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-top: 6px;
 }
 
 .druk-ui2-grubosci {
@@ -38,7 +425,9 @@
 }
 
 .druk-ui2-grubosc-btn {
-  padding: 4px 8px;
+  flex: 1 1 0;
+  height: 30px;
+  padding: 0 6px;
   border: 1.5px solid var(--tekst);
   border-radius: 0;
   background: var(--powierzchnia);
@@ -62,8 +451,8 @@
 }
 
 .druk-ui2-probka {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 1.5px solid var(--tekst);
   border-radius: 0;
@@ -76,8 +465,8 @@
 }
 
 .druk-ui2-kolor-input {
-  width: 28px;
-  height: 24px;
+  width: 30px;
+  height: 26px;
   padding: 0;
   border: 1.5px solid var(--tekst);
   background: transparent;
@@ -85,7 +474,7 @@
 }
 
 .druk-ui2-podglad-linii {
-  padding: 4px 6px;
+  padding: 6px 8px;
   border: 1.5px solid var(--tekst);
   background: var(--papier);
 }
@@ -94,67 +483,23 @@
   background: var(--tekst);
 }
 
-/* Lista kart w druku (lewy pasek w trybie druku) */
-.druk-ui2-lista-kart {
-  display: flex;
-  flex-direction: column;
+/* Zachowana wysokość starego paska górnego (tylko tryb edycji bez UI2) */
+.edytor-kartki > .pasek-gorny {
+  height: 3.486328125rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.edytor-kartki > .pasek-gorny .ui2-kroki {
   gap: 4px;
-  padding: 4px 6px;
-}
-
-.druk-ui2-karta-wiersz {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 4px 6px;
-  border: 1px solid var(--linia-2);
-  background: var(--powierzchnia);
-  cursor: pointer;
-}
-
-.druk-ui2-karta-nazwa {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.druk-ui2-karta-kopie {
-  font-family: var(--czcionka-mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--tekst-2);
-}
-
-/* Mausritter R8: lewy pasek „Dodaj kartę” obok arkusza (3 kolumny: 60px + arkusz + panel) */
-.mausritter-ui2-pasek-opak {
-  position: sticky;
-  top: 3.486328125rem;
-  height: calc(100vh - 3.486328125rem);
   flex-shrink: 0;
-  z-index: 20;
-  display: flex;
 }
 
-.uklad-edytora:has(> .mausritter-ui2-pasek-opak) {
-  grid-template-columns: auto minmax(0, 1fr) 21rem;
-  gap: 0;
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.uklad-edytora:has(> .mausritter-ui2-pasek-opak) > .kartki {
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-.mausritter-ui2-licznik {
-  margin: 6px 0 0;
-  text-align: center;
-  font-family: var(--czcionka-mono);
+.edytor-kartki > .pasek-gorny .ui2-krok {
+  height: 26px;
+  padding: 0 8px;
   font-size: 12px;
-  font-weight: 700;
-  color: var(--tekst-2);
+  gap: 5px;
 }
