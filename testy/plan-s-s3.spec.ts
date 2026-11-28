@@ -1,8 +1,28 @@
 import { expect, test } from '@playwright/test';
 import { plikSzablonu } from './kartkaUI';
+import { dodaj, sekcja } from './szablonUI';
 
 test.describe('Plan S (S3) – Moje szablony, Nowy szablon i Nowy projekt', () => {
   test.use({ viewport: { width: 1440, height: 960 } });
+
+  test('samodzielny szablon pokazuje nazwę domyślnej czcionki', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('start-nowy-szablon').click();
+    const okno = page.getByTestId('okno-nowy-szablon');
+    await okno.getByLabel('Nazwa szablonu').fill('Czcionka domyślna');
+    await okno.getByRole('button', { name: 'Utwórz szablon' }).click();
+    await expect(page).toHaveURL(/#\/szablon\/[^/]+$/);
+    await dodaj(page, 'Tekst');
+
+    const styl = await sekcja(page, 'Styl tekstu');
+    const wybor = styl.getByLabel('Czcionka', { exact: true });
+    await expect(wybor.locator('option:checked')).toHaveText('Domyślna (EB Garamond)');
+    await expect(wybor).toHaveValue('tresc');
+    await wybor.selectOption('EB Garamond');
+    await expect(wybor).toHaveValue('EB Garamond');
+    await wybor.selectOption({ label: 'Domyślna (EB Garamond)' });
+    await expect(wybor).toHaveValue('tresc');
+  });
 
   test('utworzenie szablonu w Moich szablonach i projektu z wybranych szablonów', async ({
     page,

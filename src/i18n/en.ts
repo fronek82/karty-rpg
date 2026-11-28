@@ -991,6 +991,8 @@ export const en: Slownik = {
   'kolory.usun': 'Remove {kolor} from saved colors',
   'kolory.zapiszBiezacy': 'Save this color',
   'wlasciwosci.rola': '{rola} (role)',
+  'wlasciwosci.czcionkaDomyslna': 'Default',
+  'wlasciwosci.czcionkaDomyslnaRodzina': 'Default ({rodzina})',
   'wlasciwosci.kopiujStyl': 'Copy style',
   'wlasciwosci.wklejStyl': 'Paste style',
   'grupy.tytul': 'Style groups',
