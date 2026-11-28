@@ -11,7 +11,7 @@ import {
 
 /**
  * Generator zrzutów ekranu do instrukcji (D9). Domyślnie pomijany; uruchom:
- *   ZRZUTY_INSTRUKCJI=1 npx playwright test testy/zrzuty-instrukcji.spec.ts
+ *   ZRZUTY=1 npx playwright test testy/zrzuty-instrukcji.spec.ts
  *   python3 narzedzia/kwantyzuj-zrzuty.py
  * Zapisuje `public/instrukcja-zrzuty/<język>/<nazwa>.png` (1440×900, skala 1, jasny motyw, świeża
  * przeglądarka bez zapisanych projektów, więc dane są zawsze takie same). Napisy interfejsu bierze
@@ -36,7 +36,10 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
   const t = (k: keyof Slownik, p?: Record<string, string | number>) => podstaw(S[k], p);
 
   test.describe(`zrzuty ${galeria ? 'UI' : 'instrukcji'} (${jezyk}, ${motyw})`, () => {
-    test.skip(!galeria && !process.env.ZRZUTY_INSTRUKCJI, 'tylko przy włączonym generatorze');
+    test.skip(
+      !galeria && !process.env.ZRZUTY && !process.env.ZRZUTY_INSTRUKCJI,
+      'tylko przy włączonym generatorze',
+    );
     test.use({
       viewport: ROZMIAR_ZRZUTU,
       deviceScaleFactor: 1,
@@ -98,7 +101,7 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
       await expect(page.locator('.karta-podgladu')).toBeVisible({ timeout: 15000 });
     };
 
-    /** Tworzy projekt z zaimportowanego szablonu, dodaje dwie karty i otwiera krok „1 Karty”. */
+    /** Tworzy projekt z zaimportowanego szablonu, uzupełnia trzy karty i otwiera krok „1 Karty”. */
     const utworzProjektZKartami = async (page: Page) => {
       await importujSzablonDoBiblioteki(page);
       await page.goto('./#/');
@@ -113,11 +116,34 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
       await expect(page.getByRole('heading', { level: 1, name: t('karty.tytul') })).toBeVisible({
         timeout: 15000,
       });
-      // Dodaj drugą kartę z szablonu w lewym pasku, żeby na podglądzie było widać kilka kart.
-      await page.locator('.ui2-pasek-boczny .ui2-pasek-pozycja').first().click();
-      await page.locator('.ui2-pasek-boczny .ui2-pasek-pozycja').first().click();
-      await expect(page.locator('.karty-ui2-kafelek').first()).toBeVisible({ timeout: 15000 });
-      await page.locator('.karty-ui2-kafelek').first().click();
+      const dane =
+        jezyk === 'pl'
+          ? [
+              ['Latarnia', 'Oświetla drogę przez podziemia.'],
+              ['Lina', 'Dziesięć metrów mocnej liny.'],
+              ['Kompas', 'Wskazuje drogę na północ.'],
+            ]
+          : [
+              ['Lantern', 'Lights the way through the tunnels.'],
+              ['Rope', 'Ten metres of sturdy rope.'],
+              ['Compass', 'Points the way north.'],
+            ];
+      const szablon = page.locator('.ui2-pasek-boczny .ui2-pasek-pozycja').first();
+      const karty = page.getByTestId('kafelek-karty');
+      const panel = page.getByRole('complementary', { name: t('karty.panelTytul') });
+      for (const [i, [tytul, opis]] of dane.entries()) {
+        await szablon.click();
+        await expect(karty).toHaveCount(i + 1);
+        const karta = karty.nth(i);
+        await karta.click();
+        await panel.getByLabel('Tytul', { exact: true }).fill(tytul);
+        await panel.getByLabel('Opis', { exact: true }).fill(opis);
+        await expect(karta).toContainText(tytul);
+        await expect(karta.getByTestId('podglad-przod').locator('svg use').first()).toBeVisible();
+      }
+      await karty.first().click();
+      await page.locator('header.ui2-naglowek .ui2-stan-zapisu-btn').click();
+      await expect(page.locator('header.ui2-naglowek .ui2-stan-zapisu')).toBeVisible();
     };
 
     test('start', async ({ page }) => {
@@ -162,7 +188,9 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
         .click();
       const panel = page.getByRole('complementary', { name: t('kartka.opcjeDruku') });
       await expect(panel).toBeVisible({ timeout: 15000 });
-      await expect(page.locator('.strona-kartki svg').first()).toBeVisible({ timeout: 15000 });
+      const kartyWDruku = page.getByRole('navigation', { name: t('druk.kartyWDruku') });
+      await expect(kartyWDruku.getByRole('button', { pressed: true })).toHaveCount(3);
+      await expect(page.locator('.strona-kartki[data-strona] svg use').first()).toBeVisible();
       await zapisz(page, 'ustawienia');
     });
 
