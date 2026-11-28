@@ -67,6 +67,14 @@ Pages (`/karty-rpg/`, routing przez `location.hash`).
   z dymkiem „? Skróty” i powiększeniem, prawy `PanelSekcji` (Duplikuj/Usuń w nagłówku, rozmiar
   z zarysem, wariant, zwijane „Położenie obrazu”, panel „Arkusz” bez „Przód dla wszystkich kart”),
   szara nazwa typu na pustych kartach i usunięty pływający pasek `.pasek-karty`.
+- Ukończone **R12 – ekran Druk w stylu UI2, import CSV w kroku Karty i porządki** (`docs/plan-UI2.md`
+  sekcja 14): wspólny `NaglowekProjektu` z podzielonym przyciskiem `⤓ Pobierz PDF` + `▾` (`MenuPobierz`),
+  lewy `PasekBoczny` „Karty w druku” z odznaczaniem kart bez zmiany danych, pasek „Pokaż: Przody | Tyły |
+  Przód + tył” z podsumowaniem, pasek stanu 44 px z numerami stron, dymkiem „? Skróty” i powiększeniem,
+  prawy `PanelSekcji` „Ustawienia druku” (kafelki formatów papieru, sekcje z 5.6/14.1, tyły z „Moich
+  szablonów”, bez „Nowy tył” i „Katalog Google Fonts”); w kroku Karty dodany „Import z CSV / Excela”,
+  jeden element stanu zapisu i poprawione „Nowy szablon”; zaktualizowana instrukcja PL/EN i zrzuty
+  `ustawienia.png` oraz `ekran-kart.png`.
 - Kolejne etapy ustala właściciel – plan i decyzje zapisuj w `docs/plan-<nazwa>.md`.
 - Schemat projektu: `WERSJA_SCHEMATU = 36` (`src/model/projekt.ts`), baza Dexie w wersji 6.
 

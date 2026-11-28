@@ -407,12 +407,13 @@ describe('zrzuty ekranu w treści', () => {
     'start',
     'mausritter',
     'edytor-kartki',
+    'ekran-kart',
     'edytor-szablonu',
     'ustawienia',
     'biblioteki',
   ];
 
-  it.each(JEZYKI)('(%s) sześć rysunków z alt, podpisem, wymiarami i loading=lazy', (j) => {
+  it.each(JEZYKI)('(%s) siedem rysunków z alt, podpisem, wymiarami i loading=lazy', (j) => {
     const rysunki = [...artykul(j).querySelectorAll('figure')];
     expect(rysunki.map((f) => f.querySelector('img')!.getAttribute('src'))).toEqual(
       NAZWY.map((n) => `/instrukcja-zrzuty/${j}/${n}.png`).sort(

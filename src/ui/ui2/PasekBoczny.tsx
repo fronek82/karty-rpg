@@ -42,6 +42,8 @@ export interface PasekBocznyProps {
   strona?: 'lewy' | 'prawy';
   /** Dodatkowa zawartość pod grupami (np. gdy ekran renderuje własne kafelki). */
   dzieci?: ReactNode;
+  /** Opcjonalny element po prawej stronie nagłówka paska w stanie rozwiniętym (np. licznik „12 szt.”). */
+  prawyNaglowek?: ReactNode;
 }
 
 function odczytajStanPaska(ekranId: string, domyslny: boolean): boolean {
@@ -78,6 +80,7 @@ export function PasekBoczny({
   domyslnieRozwiniety = false,
   strona = 'lewy',
   dzieci,
+  prawyNaglowek,
 }: PasekBocznyProps) {
   const [rozwiniety, ustawRozwiniety] = useState<boolean>(() =>
     odczytajStanPaska(ekranId, domyslnieRozwiniety),
@@ -102,6 +105,7 @@ export function PasekBoczny({
     >
       <div className="ui2-pasek-boczny-naglowek">
         {rozwiniety && <span className="ui2-pasek-boczny-tytul">{tytul}</span>}
+        {rozwiniety && prawyNaglowek}
       </div>
 
       <div className="ui2-pasek-boczny-lista">

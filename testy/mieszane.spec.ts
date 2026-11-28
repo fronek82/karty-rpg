@@ -1,17 +1,30 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { projektZPakietu } from '../src/dane/pakiet';
-import { PAKIET_WLASNY, pakietWlasny } from '../src/dane/wlasneKarty';
-import { eksportujProjekt, eksportujSzablon } from '../src/dane/archiwum';
+import {
+  dodajSzablonZKartka,
+  nowyProjektWlasny,
+  PAKIET_WLASNY,
+  pakietWlasny,
+} from '../src/dane/wlasneKarty';
+import { eksportujProjekt } from '../src/dane/archiwum';
 import { zbudujArkusz } from '../src/druk/arkusz';
 import { scenyDoPdf } from '../src/druk/pdf';
-import { WERSJA_SCHEMATU, type Projekt } from '../src/model/projekt';
-import type { Szablon, Talia } from '../src/model/szablon';
+import type { Talia } from '../src/model/szablon';
 import { konturIkony } from '../src/silnik/ikony';
 import { konturNaD, scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { kliknijPobierzPdf, otworzDruk, przeciagnij, slot, srodek, zapisano } from './pomoc';
+import {
+  kliknijPobierzPdf,
+  otworzDruk,
+  panelDruku,
+  przeciagnij,
+  rozwinSekcje,
+  slot,
+  srodek,
+  zapisano,
+} from './pomoc';
 import {
   SZABLONY,
   TALIA,
@@ -120,40 +133,35 @@ test('przeciąganie zmienia kolejność, „Dodaj w to miejsce” wstawia kartę
   );
 });
 
-/** Plik szablonu (.kartyrpg-szablon) z szablonu zbudowanego w kodzie. */
-function plikSzablonu(s: Szablon) {
-  const projekt: Projekt = {
-    wersja: WERSJA_SCHEMATU,
-    id: 'zrodlo',
-    nazwa: 'źródło',
-    utworzono: '2026-01-01T00:00:00.000Z',
-    zmieniono: '2026-01-01T00:00:00.000Z',
-    role: {},
-    zasoby: [],
-    szablony: [s],
-    talie: [],
-    arkusze: [],
-  };
-  return {
-    name: `${s.id}.kartyrpg-szablon`,
-    mimeType: 'application/zip',
-    buffer: Buffer.from(eksportujSzablon(projekt, new Map(), s.id).bajty),
-  };
-}
-
 test('przełącznik w opcjach druku: jeden rozmiar ↔ mieszane, własny układ zablokowany', async ({
   page,
 }) => {
-  await page.goto('./#/wlasne');
-  await page.getByTestId('plik-szablonu-start').setInputFiles(plikSzablonu(SZABLONY[0]!));
+  const { projekt: p1, zasoby: z1 } = await nowyProjektWlasny(
+    { szablon: SZABLONY[0]!, role: {}, zasoby: [], dane: new Map() },
+    async (f) => new Uint8Array(await readFile(`public/czcionki/${f}`)),
+    'dwa-szablony',
+  );
+  const { projekt, zasoby } = dodajSzablonZKartka(p1, z1, {
+    szablon: SZABLONY[1]!,
+    role: {},
+    zasoby: [],
+    dane: new Map(),
+  });
+  await page.goto('./#/');
+  await page.getByRole('button', { name: 'Kopia i import' }).click();
+  await page.getByTestId('plik-importu').setInputFiles({
+    name: 'dwa-szablony.kartyrpg',
+    mimeType: 'application/zip',
+    buffer: Buffer.from(eksportujProjekt({ ...projekt, nazwa: 'Dwa szablony' }, zasoby)),
+  });
+  await expect(page.locator('.kafelek-projektu')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await page.getByRole('link', { name: 'Dwa szablony', exact: true }).first().click();
   await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
   // Karta 70×120 w slocie (A4: 2 × 2 sloty).
-  await slot(page, 1, 1, 1).click();
+  await slot(page, 1, 1, 1).first().click();
   await page.getByRole('menuitem', { name: /Arkana/ }).click();
   const ust = await otworzDruk(page);
-  // Drugi szablon (63×88) powstaje jako osobna kartka – przełączamy wybór na pierwszą kartkę.
-  await ust.getByTestId('plik-szablonu').setInputFiles(plikSzablonu(SZABLONY[1]!));
-  await expect(page.locator('.kartka')).toHaveCount(2);
   await ust.getByLabel('Arkusz do ustawień').selectOption({ index: 0 });
   const rozmiary = ust.getByLabel('Rozmiary kart na kartce');
   const uklad = ust.getByLabel('Układ kart na kartce');
@@ -176,7 +184,7 @@ test('przełącznik w opcjach druku: jeden rozmiar ↔ mieszane, własny układ 
   await ust.getByLabel('Odstęp między kartami (mm)').fill('2');
 
   // Powrót do Edytora kart: karta innego rozmiaru na tej samej kartce (wolne miejsce → Czar 63×88).
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   const kartka = page.locator('.kartka').first();
   await kartka
     .getByRole('button', { name: /Wolne miejsce/ })
@@ -195,7 +203,7 @@ test('przełącznik w opcjach druku: jeden rozmiar ↔ mieszane, własny układ 
   await expect(
     ustPo.getByLabel('Układ kart na kartce').locator('option[value="wlasny"]'),
   ).toBeEnabled();
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   await expect(kartka.locator('.slot')).not.toHaveCount(0);
   await expect(kartka.locator('[data-karta]')).toHaveCount(2);
 });
@@ -212,7 +220,7 @@ test('MaxRects jest opcjonalny, zachowuje wszystkie karty i trafia do wydruku', 
     page.getByText('MaxRects wypełnia wolne prostokąty.', { exact: false }),
   ).toBeVisible();
   if (process.env.ZRZUTY_M3_6) await page.screenshot({ path: 'docs/obrazy/m3-6-maxrects.png' });
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   await expect(page.locator('.strona-kartki [data-karta]')).toHaveCount(10);
 
   const a = arkuszMieszany({
@@ -277,8 +285,9 @@ test('na mieszanej kartce 1×1, 1×2 i 2×1 kalibracja chroni początki linii', 
   const ikony = svg.locator(`path[d="${d}"]`);
   await expect(ikony).toHaveCount(6);
   await otworzDruk(page);
-  await page.getByLabel('Przesunięcie X (mm)').fill('-7');
-  await page.getByLabel('Przesunięcie Y (mm)').fill('6');
+  const kal = await rozwinSekcje(panelDruku(page), 'Kalibracja drukarki');
+  await kal.getByLabel('Przesunięcie X (mm)').fill('-7');
+  await kal.getByLabel('Przesunięcie Y (mm)').fill('6');
   // Ikona przy lewym początku słabiej odstaje od linii, gdy liczy się kalibracja.
   await expect(svg.locator('g[transform="translate(14.75 18)"]')).toHaveCount(1);
   await expect(ikony).toHaveCount(6);

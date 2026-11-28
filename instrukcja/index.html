@@ -769,20 +769,33 @@
           <h3 id="pl-import-tabel">Import z tabeli i wklejanie z PDF</h3>
           <p>
             Większe zestawy kart wczytasz z arkusza kalkulacyjnego (Excel, LibreOffice Calc, Arkusze
-            Google). Jeden wiersz tabeli to jedna karta, a jedna kolumna to jedno pole karty.
+            Google) bezpośrednio w kroku „Karty”. Jeden wiersz tabeli to jedna karta, a jedna
+            kolumna to jedno pole karty.
           </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/pl/ekran-kart.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Ekran kroku Karty z lewym paskiem szablonów i sekcją Dane (Import z CSV / Excela, Eksport do CSV)"
+            />
+            <figcaption>
+              Krok „Karty” z lewym paskiem szablonów i sekcją „Dane” (import i eksport CSV/XLSX).
+            </figcaption>
+          </figure>
           <ol>
             <li>
-              Przygotuj plik. Najprościej kliknąć „Eksportuj szablon CSV” w panelu po prawej. Plik
-              ma w pierwszym wierszu nazwy pól szablonu i kolumnę „Ilość”. Uzupełnij go w arkuszu i
-              zapisz jako CSV (UTF-8) albo XLSX.
+              Przygotuj plik. Najprościej kliknąć „Eksport do CSV” w sekcji „Dane” lewego paska w
+              kroku „Karty”. Plik ma w pierwszym wierszu nazwy pól szablonu i kolumnę „Kopie”.
+              Uzupełnij go w arkuszu i zapisz jako CSV (UTF-8) albo XLSX.
             </li>
             <li>
-              W edytorze kartki kliknij „Importuj CSV lub XLSX” i wybierz plik. Pierwszy niepusty
-              wiersz pliku to nagłówki kolumn. W pliku XLSX z kilkoma arkuszami wybierz arkusz w
-              polu „Arkusz z pliku XLSX”.
+              W kroku „Karty” kliknij „Import z CSV / Excela” w sekcji „Dane” lewego paska i wybierz
+              plik. Pierwszy niepusty wiersz pliku to nagłówki kolumn. W pliku XLSX z kilkoma
+              arkuszami wybierz arkusz w polu „Arkusz z pliku XLSX”.
             </li>
-            <li>Wybierz „Szablon nowych kart”.</li>
+            <li>Wybierz „Szablon nowych kart” spośród szablonów projektu.</li>
             <li>
               W sekcji „Przypisz kolumny do pól” sprawdź, która kolumna trafia do którego pola.
               Kolumny o nazwach takich jak pola są przypisane od razu. Kolumnę, której nie chcesz
@@ -967,8 +980,10 @@
               „Zdjęcie 10 × 15 cm”, „Zdjęcie 13 × 18 cm”, „Zdjęcie 15 × 21 cm” i „Własny rozmiar…”.
             </li>
             <li>
-              Otwórz menu „Pobierz” na górnym pasku w widoku „Drukuj karty” i kliknij „Pobierz PDF
-              (do druku)”. PDF powstaje w przeglądarce, plik trafia do pobranych.
+              W kroku „Druk” kliknij „Pobierz PDF” na górnym pasku (albo „PDF do druku” w sekcji
+              „Pobierz” panelu „Ustawienia druku”). PDF powstaje w przeglądarce, plik trafia do
+              pobranych. Po lewej stronie w pasku „Karty w druku” możesz odznaczyć karty, których
+              nie chcesz włączyć do tego wydruku (bez zmiany danych projektu).
             </li>
             <li>Otwórz PDF i wybierz drukowanie. Włóż papier zgodny z ustawionym.</li>
             <li>Ustaw skalę 100% albo „Rzeczywisty rozmiar”.</li>
@@ -980,10 +995,11 @@
           </ol>
           <p>Przy czarno-białej drukarce przełącz w „Druk” opcję „czarno-biały”.</p>
           <p>
-            Menu „Pobierz” ma „Pobierz PDF (do druku)” i obrazy. Obrazy stron to „Obrazy stron –
-            JPG, 300 dpi” i „Obrazy stron – PNG, 300 dpi”. Karty osobno to „Karty osobno – ZIP z
-            JPG, 300 dpi” i „Karty osobno – ZIP z PNG, 300 dpi”. Przydadzą się w punkcie
-            fotograficznym.
+            Menu strzałki obok „Pobierz PDF” daje dostęp do obrazów: „Obrazy stron – JPG, 300 dpi”,
+            „Obrazy stron – PNG, 300 dpi”, „Karty osobno – ZIP z JPG, 300 dpi” i „Karty osobno – ZIP
+            z PNG, 300 dpi”. Przydadzą się w punkcie fotograficznym. Na pasku nad podglądem
+            przełączasz widok „Przody”, „Tyły” albo „Przód + tył”, a w pasku stanu na dole wybierasz
+            numer strony, powiększenie i dymek „? Skróty”.
           </p>
           <p>
             Strefa bezpieczeństwa to pas przy krawędzi kartki, w który karty nie powinny wchodzić.
@@ -1001,19 +1017,19 @@
           <h3 id="pl-rewersy">Tyły kart</h3>
           <ol>
             <li>
-              Kliknij „Drukuj karty”, znajdź sekcję „Tyły” w panelu „Opcje druku i arkusza” i
-              kliknij „Nowy tył”.
+              Nowy tył zaprojektujesz na stronie głównej w sekcji „Moje szablony”: kliknij „+ NOWY
+              SZABLON” i wybierz „Tył (rewers)” (albo przód z przypiętym tyłem).
             </li>
             <li>
-              Na ekranie „Edytor tyłu” ułóż warstwy z kształtów, obrazów, ozdobników i napisów.
-              Zmiany zapisuje „Zapisz” albo <kbd>Ctrl</kbd> + <kbd>S</kbd>. „Eksport” i „Import”
-              działają jak w edytorze szablonu (import dodaje nowy tył). Do edycji kart przejdziesz
-              przyciskiem „Edytor kart”, a do poprzedniego ekranu przyciskiem „Powrót”.
+              W edytorze tyłu ułóż warstwy z kształtów, obrazów, ozdobników i napisów. Zmiany
+              zapisuje „Zapisz” albo <kbd>Ctrl</kbd> + <kbd>S</kbd>. Eksport i import znajdziesz w
+              menu „Szablon”.
             </li>
             <li>
-              Przypisz tył na jednym z trzech poziomów: „Domyślny tył talii” w „Opcje druku i
-              arkusza”, „Tył szablonu” na elemencie „Karta” w edytorze szablonu albo „Tył” w panelu
-              zaznaczonej karty. Opcja „Bez tyłu” wyłącza tył dla wybranego szablonu lub karty.
+              Przypisz tył na jednym z trzech poziomów: „Domyślny tył talii” w sekcji „Tyły talii”
+              panelu „Ustawienia druku” (z tyłów projektu lub z sekcji „Moje szablony”), „Tył
+              szablonu” w edytorze szablonu albo „Tył karty” w prawym panelu kroku „Karty”. Opcja
+              „Brak tyłu” wyłącza tył dla wybranej karty.
             </li>
             <li>
               Przód i tył powinny mieć ten sam rozmiar, orientację i rogi. Przy przypisaniu tyłu o
@@ -1026,8 +1042,8 @@
           <h3 id="pl-druk-dwustronny">Druk dwustronny</h3>
           <ol>
             <li>
-              W „Opcje druku i arkusza” otwórz sekcję „Druk dwustronny” i zaznacz „Drukuj tyły
-              (przód i tył w parach stron)”.
+              W „Ustawienia druku” otwórz sekcję „Druk dwustronny” i zaznacz „Drukuj tyły (przód i
+              tył w parach stron)”.
             </li>
             <li>
               Wybierz „Krawędź odwracania”: „Długa krawędź” (na pionowej kartce jak kartki książki)
@@ -1051,7 +1067,7 @@
           <h3 id="pl-tryb-drukarni">Tryb drukarni (spad i znaczniki)</h3>
           <ol>
             <li>
-              W „Opcje druku i arkusza” otwórz sekcję „Tryb drukarni” i włącz „Przygotuj do drukarni
+              W „Ustawienia druku” otwórz sekcję „Tryb drukarni” i włącz „Przygotuj do drukarni
               (spad i znaczniki cięcia)”.
             </li>
             <li>
@@ -1067,15 +1083,15 @@
           <h3 id="pl-czcionki-i-pdf">Katalog czcionek i wyszukiwanie w PDF</h3>
           <ul>
             <li>
-              Sekcja „Katalog Google Fonts” jest w panelu „Opcje druku i arkusza” i na stronie
-              „Biblioteki” (zakładka „Czcionki”). Przeglądasz w niej kroje z polskimi znakami i
-              dodajesz je przyciskiem „Pobierz”. Pobrana czcionka trafia do biblioteki, jest
-              dostępna we wszystkich projektach i działa później bez dostępu do sieci.
+              Sekcja „Katalog Google Fonts” jest na stronie „Biblioteki” (zakładka „Czcionki”).
+              Przeglądasz w niej kroje z polskimi znakami i dodajesz je przyciskiem „Pobierz”.
+              Pobrana czcionka trafia do biblioteki, jest dostępna we wszystkich projektach i działa
+              później bez dostępu do sieci.
             </li>
             <li>
-              W sekcji „Opcje PDF” przełącznik „Niewidoczna warstwa tekstowa w PDF (wyszukiwanie i
-              kopiowanie)” dodaje warstwę tekstu pod krzywymi liter, więc w przeglądarce PDF działa
-              wyszukiwanie i kopiowanie bez zmiany wyglądu kart.
+              W sekcji „Pobierz” panelu „Ustawienia druku” przełącznik „Niewidoczna warstwa tekstowa
+              w PDF (wyszukiwanie i kopiowanie)” dodaje warstwę tekstu pod krzywymi liter, więc w
+              przeglądarce PDF działa wyszukiwanie i kopiowanie bez zmiany wyglądu kart.
             </li>
           </ul>
           <h2 id="pl-kalibracja">Kalibracja drukarki i wydruk testowy</h2>
@@ -1089,16 +1105,16 @@
               width="1440"
               height="900"
               loading="lazy"
-              alt="Widok druku z panelem opcji druku i arkusza przewiniętym do sekcji kalibracji drukarki"
+              alt="Ekran Druk z lewym paskiem Karty w druku, podglądem arkusza i panelem Ustawienia druku"
             />
             <figcaption>
-              Panel „Opcje druku i arkusza” przewinięty do sekcji „Kalibracja drukarki”.
+              Ekran „Druk” z paskiem „Karty w druku”, podglądem stron i panelem „Ustawienia druku”.
             </figcaption>
           </figure>
           <ol>
             <li>
-              Kliknij „Drukuj karty” i znajdź sekcję „Kalibracja drukarki” w panelu „Opcje druku i
-              arkusza”.
+              Przejdź do kroku „Druk” i rozwiń sekcję „Kalibracja drukarki” w panelu „Ustawienia
+              druku”.
             </li>
             <li>
               Kliknij „Wydruk testowy (PDF)”. Dostaniesz arkusz z samymi obrysami kart, numerami i
@@ -1854,20 +1870,34 @@
           <h3 id="en-import-tabel">Spreadsheet import and pasting from PDF</h3>
           <p>
             You can load larger card sets from a spreadsheet (Excel, LibreOffice Calc, Google
-            Sheets). Each row of the table becomes one card, and each column fills one card field.
+            Sheets) directly in the “Cards” step. Each row of the table becomes one card, and each
+            column fills one card field.
           </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/en/ekran-kart.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The Cards step screen with the left template sidebar and Data section (Import CSV / Excel, Export CSV)"
+            />
+            <figcaption>
+              The “Cards” step with the left template sidebar and the “Data” section (CSV/XLSX
+              import and export).
+            </figcaption>
+          </figure>
           <ol>
             <li>
-              Prepare the file. The easiest way is “Export CSV template” in the right-hand panel.
-              Its first row holds the template's field names and a “Quantity” column. Fill it in
-              your spreadsheet and save it as CSV (UTF-8) or XLSX.
+              Prepare the file. The easiest way is “Export CSV” in the “Data” section of the left
+              sidebar in the “Cards” step. Its first row holds the template's field names and a
+              “Copies” column. Fill it in your spreadsheet and save it as CSV (UTF-8) or XLSX.
             </li>
             <li>
-              In the sheet editor click “Import CSV or XLSX” and pick the file. The first non-empty
-              row is read as column headers. If an XLSX file has several worksheets, choose one in
-              “Worksheet from the XLSX file”.
+              In the “Cards” step, click “Import CSV / Excel” in the “Data” section of the left
+              sidebar and pick the file. The first non-empty row is read as column headers. If an
+              XLSX file has several worksheets, choose one in “Worksheet from the XLSX file”.
             </li>
-            <li>Choose the “Template for new cards”.</li>
+            <li>Choose the “Template for new cards” from the project's templates.</li>
             <li>
               Under “Map columns to fields”, check which column goes into which field. Columns named
               like the fields are matched automatically. Set any column you don't want to load to
@@ -2050,8 +2080,10 @@
               “Photo 10 × 15 cm”, “Photo 13 × 18 cm”, “Photo 15 × 21 cm” and “Custom size…”.
             </li>
             <li>
-              Open the “Download” menu in the top bar of “Print cards” and click “Download PDF (for
-              printing)”. The PDF is made in the browser, and the file goes to your downloads.
+              In the “Print” step click “Download PDF” in the top bar (or “PDF for printing” in the
+              “Download” section of “Print settings”). The PDF is made in the browser, and the file
+              goes to your downloads. On the left in “Cards in print”, you can uncheck cards to skip
+              them in this print without changing project data.
             </li>
             <li>Open the PDF and start printing. Load the paper you chose.</li>
             <li>Set the scale to 100% or “Actual size”.</li>
@@ -2063,10 +2095,11 @@
           </ol>
           <p>For a black-and-white printer, switch “Print” to “black and white”.</p>
           <p>
-            The “Download” menu has “Download PDF (for printing)” and images. The page images are
-            “Page images – JPG, 300 dpi” and “Page images – PNG, 300 dpi”. The single cards are
-            “Cards separately – ZIP of JPGs, 300 dpi” and “Cards separately – ZIP of PNGs, 300 dpi”.
-            They come in handy at a photo lab.
+            The arrow menu next to “Download PDF” exports images: “Page images – JPG, 300 dpi”,
+            “Page images – PNG, 300 dpi”, “Cards separately – ZIP of JPGs, 300 dpi” and “Cards
+            separately – ZIP of PNGs, 300 dpi”. They come in handy at a photo lab. Above the preview
+            you can switch “Fronts”, “Backs” or “Front + back”, and in the bottom status bar you
+            pick page numbers, zoom and “? Shortcuts”.
           </p>
           <p>
             The safe margin is a strip along the sheet edge that cards should stay out of. It is
@@ -2083,20 +2116,19 @@
           <h3 id="en-rewersy">Card backs</h3>
           <ol>
             <li>
-              Click “Print cards”, find the “Card backs” section in “Print &amp; sheet options” and
-              click “New card back”.
+              Design a new card back on the start screen under “My templates”: click “+ NEW
+              TEMPLATE” and pick “Back” (or front with a linked back).
             </li>
             <li>
-              In the “Card back editor”, build layers from shapes, images, ornaments and text. Save
-              changes with “Save” or <kbd>Ctrl</kbd> + <kbd>S</kbd>. “Export” and “Import” work as
-              in the template editor (import adds a new card back). Click “Card editor” to edit
-              cards, or “Back” to return to the previous screen.
+              In the card back editor, build layers from shapes, images, ornaments and text. Save
+              changes with “Save” or <kbd>Ctrl</kbd> + <kbd>S</kbd>. Export and import live in the
+              “Template” menu.
             </li>
             <li>
-              Assign a back on one of three levels: “Default deck back” in “Print &amp; sheet
-              options”, “Template card back” on the “Card” node in the template editor, or “Card
-              back” in the selected card panel. Pick “No back” to switch it off for a specific
-              template or card.
+              Assign a back on one of three levels: “Default deck back” in the “Deck backs” section
+              of “Print settings” (from the project or “My templates”), “Template card back” in the
+              template editor, or “Card back” in the right panel of the “Cards” step. Pick “No back”
+              to switch it off for a specific card.
             </li>
             <li>
               Front and back should share size, orientation and corners. When you assign a back of a
@@ -2109,8 +2141,8 @@
           <h3 id="en-druk-dwustronny">Double-sided printing</h3>
           <ol>
             <li>
-              In “Print &amp; sheet options” open “Double-sided printing” and check “Print both
-              sides (front and back page pairs)”.
+              In “Print settings” open “Double-sided printing” and check “Print both sides (front
+              and back page pairs)”.
             </li>
             <li>
               Pick “Flip edge”: “Long edge” (on a portrait sheet, like pages of a book) or “Short
@@ -2135,8 +2167,8 @@
           <h3 id="en-tryb-drukarni">Print-shop mode (bleed and crop marks)</h3>
           <ol>
             <li>
-              In “Print &amp; sheet options” open “Print-shop mode” and turn on “Prepare for print
-              shop (bleed and crop marks)”.
+              In “Print settings” open “Print-shop mode” and turn on “Prepare for print shop (bleed
+              and crop marks)”.
             </li>
             <li>
               Set “Bleed (mm)” (usually 2 or 3 mm) and keep “Crop marks” enabled if the print shop
@@ -2151,15 +2183,14 @@
           <h3 id="en-czcionki-i-pdf">Font catalog and searchable PDF</h3>
           <ul>
             <li>
-              The “Google Fonts catalog” section is in the “Print &amp; sheet options” panel and on
-              the “Libraries” page (the “Fonts” tab). It lists typefaces with Polish glyphs that you
-              can add with “Download”. A downloaded typeface goes to the library, is available in
-              all projects and works offline.
+              The “Google Fonts catalog” section is on the “Libraries” page (the “Fonts” tab). It
+              lists typefaces with Polish glyphs that you can add with “Download”. A downloaded
+              typeface goes to the library, is available in all projects and works offline.
             </li>
             <li>
-              Under “PDF options”, “Invisible text layer in PDF (search and copy)” places searchable
-              text behind the glyph outlines, so search and copy work in a PDF viewer without
-              altering how the cards look.
+              Under “Download” in “Print settings”, “Invisible text layer in PDF (search and copy)”
+              places searchable text behind the glyph outlines, so search and copy work in a PDF
+              viewer without altering how the cards look.
             </li>
           </ul>
           <h2 id="en-kalibracja">Printer calibration and the test print</h2>
@@ -2173,16 +2204,17 @@
               width="1440"
               height="900"
               loading="lazy"
-              alt="The print view with the print and sheet options panel scrolled to the printer calibration section"
+              alt="The Print screen with Cards in print sidebar, sheet preview, and Print settings panel"
             />
             <figcaption>
-              The “Print &amp; sheet options” panel scrolled to the “Printer calibration” section.
+              The “Print” screen with the “Cards in print” sidebar, page preview, and “Print
+              settings” panel.
             </figcaption>
           </figure>
           <ol>
             <li>
-              Click “Print cards” and find the “Printer calibration” section in “Print &amp; sheet
-              options”.
+              Go to the “Print” step and expand the “Printer calibration” section in “Print
+              settings”.
             </li>
             <li>
               Click “Test print (PDF)”. You get a sheet with only card outlines, numbers and crosses

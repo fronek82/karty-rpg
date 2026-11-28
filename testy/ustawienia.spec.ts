@@ -6,6 +6,7 @@ import {
   nowaPustaKartka,
   otworzDruk,
   przeciagnij,
+  rozwinSekcje,
   slot,
   srodek,
   zapisano,
@@ -20,8 +21,9 @@ test('tytuł, położenie tytułu, czarno-biały, czcionki; zmiana papieru odrzu
 }) => {
   await gotowyUklad(page, 'Broń i pancerze');
   const ust = await otworzDruk(page);
-  await expect(ust.getByRole('heading', { name: 'Opcje druku i arkusza' })).toBeVisible();
+  await expect(ust.getByRole('heading', { name: 'Ustawienia druku' })).toBeVisible();
   await expect(ust.getByRole('button', { name: 'Zamknij ustawienia' })).toHaveCount(0);
+  await rozwinSekcje(ust, 'Tytuł arkusza');
   await ust.getByLabel('Tytuł kartki').fill('Moja broń');
   await zapisano(page);
   await ust.getByLabel('Położenie tytułu').selectOption('brak');
@@ -30,10 +32,9 @@ test('tytuł, położenie tytułu, czarno-biały, czcionki; zmiana papieru odrzu
   await expect(ust.getByLabel('Tytuł kartki')).toHaveValue('Moja broń');
 
   // Letter jest węższy – pełna siatka 10 kolumn się nie zmieści.
-  const papier = ust.getByLabel('Papier', { exact: true });
-  await papier.selectOption('Letter');
+  await ust.locator('[data-papier="Letter"]').click();
   await expect(ust.getByRole('alert')).toContainText('nie zmieściłyby się');
-  await expect(papier).toHaveValue('A4');
+  await expect(ust.locator('[data-papier="A4"]')).toHaveAttribute('aria-pressed', 'true');
 
   // Czarno-biały: ilustracje w skali szarości.
   const obraz = page.locator('.strona-kartki image').first();
@@ -42,12 +43,13 @@ test('tytuł, położenie tytułu, czarno-biały, czcionki; zmiana papieru odrzu
   await expect(obraz).not.toHaveAttribute('href', kolorowy!);
 
   // Własna czcionka i rola.
+  await rozwinSekcje(ust, 'Czcionki');
   await page.getByTestId('plik-czcionki').setInputFiles({
     name: 'Moja.ttf',
     mimeType: 'font/ttf',
     buffer: readFileSync('public/czcionki/EBGaramond-Bold.ttf'),
   });
-  await expect(ust.getByRole('group', { name: 'Czcionki' }).getByRole('status')).toContainText(
+  await expect(ust.locator('.sekcja-czcionek [role="status"]')).toContainText(
     'Wgrano: EB Garamond',
   );
   await ust.getByLabel('Rodzina dla roli „Tytuł”').selectOption('EB Garamond');

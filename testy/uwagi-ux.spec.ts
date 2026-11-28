@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { dodaj, kreator, panel, sekcja, zaznacz } from './szablonUI';
-import { otworzDruk, otworzUstawieniaAplikacji, slot, zapisano } from './pomoc';
+import { otworzUstawieniaAplikacji, slot, zapisano } from './pomoc';
 
 /**
  * Poprawki UX po uwagach użytkownika:
@@ -89,9 +89,10 @@ test('nagłówek panelu karty nie pokazuje opisu, wysokość textarea zostaje mi
     .poll(() => poleOpisu2.evaluate((el: HTMLTextAreaElement) => el.style.height))
     .toBe('224px');
 
-  // 4) Katalog Google Fonts: ≥ 50 krojów, filtr rozwijany i próbka podglądu przed pobraniem.
-  const ust = await otworzDruk(page);
-  const katalog = ust.locator('details.katalog-google-fonts');
+  // 4) Katalog Google Fonts w Bibliotekach: ≥ 50 krojów, filtr rozwijany i próbka podglądu przed pobraniem.
+  await zapisano(page);
+  await page.goto('./#/biblioteki/czcionki');
+  const katalog = page.locator('details.katalog-google-fonts');
   await expect(page.locator('link[data-google-fonts-podglad]')).toHaveCount(0);
   await katalog.locator('summary').click();
   await expect

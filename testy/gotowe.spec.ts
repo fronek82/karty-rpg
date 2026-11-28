@@ -7,7 +7,7 @@ import { arkuszeMausrittera } from '../src/pakiety/mausritter/arkusze';
 import { szablonyMausrittera } from '../src/pakiety/mausritter/szablony';
 import { OBRAZ_ZASTEPCZY, talieMausrittera } from '../src/pakiety/mausritter/talie';
 import type { Pakiet } from '../src/pakiety/typy';
-import { gotowyUklad, karta, kliknijPobierzPdf, otworzDruk, zapisano } from './pomoc';
+import { gotowyUklad, karta, kliknijPobierzPdf, zapisano } from './pomoc';
 
 /** Gotowe układy z pakietu, nagłówki grup, PDF, eksport/import i projekty sprzed edytora. */
 
@@ -43,14 +43,15 @@ test('wszystkie trzy: trzy kartki; PDF z nazwą projektu ma trzy strony', async 
 test('eksport → import jako kopia → lista z miniaturą → usunięcie', async ({ page }) => {
   await gotowyUklad(page, 'Broń i pancerze');
   await zapisano(page);
-  await otworzDruk(page);
-  const [eksport] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Eksportuj/ }).click(),
-  ]);
-  expect(eksport.suggestedFilename()).toBe('bron-i-pancerze.kartyrpg');
   await page.waitForTimeout(1800); // miniatura zapisywana po chwili
   await page.getByRole('link', { name: /Projekty/ }).click();
+  const kafelek = page.locator('.kafelek-projektu').first();
+  await expect(kafelek).toBeVisible();
+  const [eksport] = await Promise.all([
+    page.waitForEvent('download'),
+    kafelek.getByRole('button', { name: 'Eksportuj', exact: true }).click(),
+  ]);
+  expect(eksport.suggestedFilename()).toBe('bron-i-pancerze.kartyrpg');
   // Plik z pobrania ma w katalogu tymczasowym losową nazwę bez rozszerzenia – nadajemy tę z pobrania.
   await page.getByRole('button', { name: 'Kopia i import' }).click();
   await page.getByTestId('plik-importu').setInputFiles({

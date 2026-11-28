@@ -1,9 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { utils, write } from 'xlsx';
-import { strToU8, zipSync } from 'fflate';
-import { WERSJA_SCHEMATU } from '../src/model/projekt';
 import { kartaNaKartce, kreator, dodaj as dodajPole } from './szablonUI';
-import { nowaPustaKartka, otworzDruk, zapisano } from './pomoc';
+import { nowaPustaKartka, zapisano } from './pomoc';
 
 test('CSV: ręczne mapowanie, blokada błędnej partii i cofnięcie w jednym kroku', async ({
   page,
@@ -81,34 +79,14 @@ test('XLSX: wybór drugiego arkusza, ilość i dane trafiają na kartkę', async
   await expect(page.getByRole('button', { name: /Przystań/ })).toHaveCount(2);
 });
 
-test('projekt Mausrittera nie oferuje importu CSV/XLSX, także na kartce własnego szablonu', async ({
-  page,
-}) => {
+test('projekt Mausrittera nie oferuje importu CSV/XLSX', async ({ page }) => {
   await nowaPustaKartka(page);
   const kartki = page.locator('.kartka');
   await expect(kartki).toHaveCount(1);
-  await otworzDruk(page);
-  const szablonWlasny = {
-    wersja: WERSJA_SCHEMATU,
-    szablon: {
-      id: 'pomiar',
-      nazwa: 'Pomiar terenowy',
-      rozmiar: { tryb: 'mm', szerokosc: 25.75, wysokosc: 25.75 },
-      korzen: { id: 'karta', typ: 'kolumna', dzieci: [] },
-    },
-    role: {},
-    zasoby: [],
-  };
-  await page.getByTestId('plik-szablonu').setInputFiles({
-    name: 'pomiar.kartyrpg-szablon',
-    mimeType: 'application/zip',
-    buffer: Buffer.from(zipSync({ 'szablon.json': strToU8(JSON.stringify(szablonWlasny)) })),
-  });
-  await expect(kartki).toHaveCount(2);
-  await page.getByRole('link', { name: /Karty na arkuszach/ }).click();
-  // Projekt Mausrittera: karty wypełnia się w edytorze – bez importu CSV/XLSX na żadnej kartce (N1).
+  // Projekt Mausrittera: karty wypełnia się w edytorze – bez importu CSV/XLSX (N1).
   await expect(kartki.first().locator('[data-karta]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Importuj CSV lub XLSX' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Import z CSV / Excela' })).toHaveCount(0);
 });
 
 test('Pierwsza karta z „Przód dla wszystkich kart” da się zaznaczyć i usunąć także po imporcie CSV', async ({

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { unzipSync } from 'fflate';
 import { kartkaCzaru } from './kartkaUI';
-import { nowaPustaKartka, otworzDruk, panelDruku, slot, zapisano } from './pomoc';
+import { nowaPustaKartka, otworzDruk, panelDruku, rozwinSekcje, slot, zapisano } from './pomoc';
 
 /** M2-6: własny układ arkusza, „Moje układy”, kalibracja, wydruk testowy, eksport obrazów. */
 
@@ -72,7 +72,7 @@ test('diagram wymiarów pokazuje całą siatkę i prowadzi do edycji pola', asyn
     await podglad.screenshot({ path: 'docs/obrazy/m2c-2-podglad-wymiarow.png' });
   }
 
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   await slot(page, 1, 3, 1).click();
   await page.getByRole('menuitem', { name: /Czar \(test\)/ }).click();
   await otworzDruk(page);
@@ -82,7 +82,7 @@ test('diagram wymiarów pokazuje całą siatkę i prowadzi do edycji pola', asyn
   await expect(podglad).toContainText('Siatka 3 × 3 · 199 × 272 mm');
   await expect(wymiar('Margines prawy')).toContainText('6 mm');
 
-  await ust.getByLabel('Papier', { exact: true }).selectOption('wlasny');
+  await ust.locator('[data-papier="wlasny"]').click();
   await ust.getByRole('button', { name: 'poziomo', exact: true }).click();
   await podglad
     .getByRole('button', { name: 'Szerokość papieru, 297 mm. Przejdź do pola.' })
@@ -139,7 +139,7 @@ test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem,
   await ust.getByLabel('Odstęp pionowy (mm)').fill('3');
   await expect(ust).toContainText('Kart na stronie: 9 · prawy margines 5 mm · dolny 15 mm');
   // Slot (2, 1) w Edytorze kart przesunięty o kartę i odstęp: (8 + 63 + 4) / 210.
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   const s21 = slot(page, 1, 2, 1);
   const s11 = page.locator('[data-karta]');
   const [a, b] = [await s11.boundingBox(), await s21.boundingBox()];
@@ -181,10 +181,12 @@ test('kalibracja zapamiętana w przeglądarce, wydruk testowy, eksport PNG/JPG 3
   page,
 }) => {
   const ust = await kartkaCzaru(page);
+  await rozwinSekcje(ust, 'Kalibracja drukarki');
   await ust.getByLabel('Przesunięcie X (mm)').fill('1.5');
   await ust.getByLabel('Przesunięcie Y (mm)').fill('-0.5');
   await zapisano(page);
   await page.reload();
+  await rozwinSekcje(panelDruku(page), 'Kalibracja drukarki');
   await expect(panelDruku(page).getByLabel('Przesunięcie X (mm)')).toHaveValue('1.5');
   await expect(panelDruku(page).getByLabel('Przesunięcie Y (mm)')).toHaveValue('-0.5');
 
@@ -215,7 +217,7 @@ test('kalibracja zapamiętana w przeglądarce, wydruk testowy, eksport PNG/JPG 3
   expect(wymiaryPng(readFileSync(await png.path()))).toEqual([2480, 3508]);
 
   // Karty osobno: powrót do Edytora kart, druga karta → ZIP z dwoma JPG.
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   await slot(page, 1, 2, 1).click();
   await page.getByRole('menuitem', { name: /Czar \(test\)/ }).click();
   await page
@@ -235,6 +237,7 @@ test('luz karty w slocie (M2b-1): 63×88 w slocie 63,5×89 bez ostrzeżeń, luz 
 }) => {
   const ust = await kartkaCzaru(page);
   await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
+  await rozwinSekcje(ust, 'Karta w slocie');
   const sekcja = ust.getByRole('group', { name: 'Karta w slocie' });
   // Nowa kartka: luz 1 mm.
   await expect(sekcja.getByLabel('Luz (mm)')).toHaveValue('1');
@@ -262,6 +265,7 @@ test('luz karty w slocie (M2b-1): 63×88 w slocie 63,5×89 bez ostrzeżeń, luz 
   await ust.getByRole('button', { name: 'Użyj układu Perforacja 63,5×89' }).click();
   await expect(sekcja.getByLabel('Luz (mm)')).toHaveValue('1.5');
   await ust.getByRole('button', { name: 'Usuń układ Perforacja 63,5×89' }).click();
+  await rozwinSekcje(ust, 'Kalibracja drukarki');
   const [test] = await Promise.all([
     page.waitForEvent('download'),
     ust.getByRole('button', { name: 'Wydruk testowy (PDF)' }).click(),
@@ -271,25 +275,22 @@ test('luz karty w slocie (M2b-1): 63×88 w slocie 63,5×89 bez ostrzeżeń, luz 
 
 test('kolor i wzór linii cięcia – np. białe linie dla czarnych kart', async ({ page }) => {
   const ust = await kartkaCzaru(page);
-  const sekcja = ust.getByRole('group', { name: 'Linie cięcia', exact: true });
+  const sekcja = ust.getByTestId('sekcja-linii-ciecia');
   const strona = page.locator('.strona-kartki .svg-strony').first();
   await expect(strona.locator('line[stroke="#ffffff"][stroke-dasharray]')).toHaveCount(0);
-  await sekcja.getByLabel('Kolor linii').fill('#ffffff');
+  await sekcja.getByTestId('linia-kolor').fill('#ffffff');
   await expect(strona.locator('line[stroke="#ffffff"][stroke-dasharray]').first()).toBeAttached();
   await expect(strona.locator('line[stroke="#000000"][stroke-dasharray]')).toHaveCount(0);
   // Przerwa 0 – linia ciągła (bez wzoru kreski).
   await sekcja.getByLabel('Przerwa (mm)').fill('0');
   await expect(strona.locator('line[stroke="#ffffff"][stroke-dasharray]')).toHaveCount(0);
-  await sekcja.getByLabel('Grubość (mm)').fill('0.5');
+  await sekcja.getByTestId('linia-grubosc-0.5').click();
   await expect(strona.locator('line[stroke="#ffffff"][stroke-width="0.5"]').first()).toBeAttached();
-  // Cofnij (przycisk aplikacji, nie natywne cofanie w polu) przywraca poprzednią grubość.
-  await sekcja.getByLabel('Grubość (mm)').blur();
+  // Cofnij przywraca poprzednią grubość.
   await page.getByRole('button', { name: 'Cofnij', exact: true }).first().click();
   await expect(strona.locator('line[stroke="#ffffff"][stroke-width="0.5"]')).toHaveCount(0);
   await expect(strona.locator('line[stroke="#ffffff"]').first()).toBeAttached();
-  // Własny układ bez linii cięcia – sekcja wyłączona z wyjaśnieniem.
-  await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
-  await ust.getByLabel('Linie cięcia wokół kart').uncheck();
-  await expect(sekcja.getByLabel('Kolor linii')).toBeDisabled();
-  await expect(sekcja).toContainText('wyłączone w układzie kartki');
+  // Wyłączenie linii cięcia chowa kontrolki.
+  await sekcja.getByTestId('linie-wlacz').uncheck();
+  await expect(sekcja.getByTestId('linia-kolor')).toHaveCount(0);
 });

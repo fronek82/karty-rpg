@@ -39,9 +39,12 @@ export function SekcjaLiniiCiecia({
   };
 
   return (
-    <details open className="sekcja-panelu druk-ui2-linie" data-testid="sekcja-linii-ciecia">
-      <summary>{t('druk.linieCiecia.tytul')}</summary>
-      <div className="druk-ui2-linie-cialo">
+    <details open className="ui2-sekcja druk-ui2-linie" data-testid="sekcja-linii-ciecia">
+      <summary className="ui2-sekcja-naglowek">
+        <span>{t('druk.linieCiecia.tytul')}</span>
+        <span className="ui2-sekcja-strzalka" aria-hidden="true" />
+      </summary>
+      <div className="ui2-sekcja-cialo druk-ui2-linie-cialo">
         {trybDrukarni ? (
           <p className="podpis" data-testid="linie-tryb-drukarni">
             {t('druk.linieCiecia.trybDrukarni')}

@@ -48,12 +48,14 @@ test('Nowy szablon od zera: krok Przód / Tył (PL i EN), Tył przez kreator otw
   await expect(page.getByRole('tree', { name: 'Card structure' })).toBeVisible({ timeout: 15000 });
 });
 
-test('Pobierz PDF znajduje się wyłącznie w rozwijanym menu Pobierz i pobiera poprawny PDF', async ({
+test('Pobierz PDF i rozwijane menu Pobierz mają kontrast AA i pobierają poprawny PDF', async ({
   page,
 }) => {
   await nowaPustaKartka(page);
   await otworzDruk(page);
-  await expect(page.getByRole('button', { name: /Pobierz PDF/ })).toHaveCount(0);
+  await expect(
+    page.locator('header.ui2-naglowek').getByRole('button', { name: /Pobierz PDF/ }),
+  ).toBeVisible();
 
   const przyciskPobierz = page.getByRole('button', { name: 'Pobierz', exact: true });
   await expect(przyciskPobierz).toHaveClass(/glowny/);
