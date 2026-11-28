@@ -93,7 +93,7 @@ for (const format of ['png', 'jpg'] as const) {
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15_000 });
     await otworzDruk(page);
     await page.getByRole('button', { name: 'pionowo', exact: true }).click();
-    await page.getByRole('link', { name: /Powrót/ }).click();
+    await page.goBack();
 
     const piksele = await page.evaluate(() => {
       const canvas = document.createElement('canvas');
@@ -131,7 +131,7 @@ for (const format of ['png', 'jpg'] as const) {
     expect(jednaKarta.nazwa).toBe(`1-${NAZWA_PLIKU}.${format}`);
     await sprawdzObraz(page, format, jednaKarta.bajty, karta);
 
-    await page.getByRole('link', { name: /Powrót/ }).click();
+    await page.goBack();
     await page.getByRole('button', { name: /Dodaj stronę/ }).click();
     await dodajZObrazem(2);
     for (const [rodzaj, docelowyRozmiar] of [

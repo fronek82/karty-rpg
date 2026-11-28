@@ -96,7 +96,7 @@ for (const motyw of MOTYWY) {
 
     // Opcje druku i arkusza w widoku „Drukuj karty”: legendy sekcji i opisy.
     const u = await otworzDruk(page);
-    await tekst(u.locator('legend').first(), 'legenda sekcji');
+    await tekst(u.locator('summary.ui2-sekcja-naglowek').first(), 'nagłówek sekcji');
     await tekst(u.locator('.podpis').first(), 'opis w opcjach druku');
     await tekst(u.locator('label').first(), 'etykieta w opcjach druku');
 

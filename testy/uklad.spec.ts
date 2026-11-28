@@ -139,7 +139,7 @@ test('własny układ: siatka z odstępami, wynik pod formularzem, poza papierem,
   await ust.getByLabel('Odstęp pionowy (mm)').fill('3');
   await expect(ust).toContainText('Kart na stronie: 9 · prawy margines 5 mm · dolny 15 mm');
   // Slot (2, 1) w Edytorze kart przesunięty o kartę i odstęp: (8 + 63 + 4) / 210.
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   const s21 = slot(page, 1, 2, 1);
   const s11 = page.locator('[data-karta]');
   const [a, b] = [await s11.boundingBox(), await s21.boundingBox()];
@@ -275,25 +275,22 @@ test('luz karty w slocie (M2b-1): 63×88 w slocie 63,5×89 bez ostrzeżeń, luz 
 
 test('kolor i wzór linii cięcia – np. białe linie dla czarnych kart', async ({ page }) => {
   const ust = await kartkaCzaru(page);
-  const sekcja = ust.getByRole('group', { name: 'Linie cięcia', exact: true });
+  const sekcja = ust.getByTestId('sekcja-linii-ciecia');
   const strona = page.locator('.strona-kartki .svg-strony').first();
   await expect(strona.locator('line[stroke="#ffffff"][stroke-dasharray]')).toHaveCount(0);
-  await sekcja.getByLabel('Kolor linii').fill('#ffffff');
+  await sekcja.getByTestId('linia-kolor').fill('#ffffff');
   await expect(strona.locator('line[stroke="#ffffff"][stroke-dasharray]').first()).toBeAttached();
   await expect(strona.locator('line[stroke="#000000"][stroke-dasharray]')).toHaveCount(0);
   // Przerwa 0 – linia ciągła (bez wzoru kreski).
   await sekcja.getByLabel('Przerwa (mm)').fill('0');
   await expect(strona.locator('line[stroke="#ffffff"][stroke-dasharray]')).toHaveCount(0);
-  await sekcja.getByLabel('Grubość (mm)').fill('0.5');
+  await sekcja.getByTestId('linia-grubosc-0.5').click();
   await expect(strona.locator('line[stroke="#ffffff"][stroke-width="0.5"]').first()).toBeAttached();
-  // Cofnij (przycisk aplikacji, nie natywne cofanie w polu) przywraca poprzednią grubość.
-  await sekcja.getByLabel('Grubość (mm)').blur();
+  // Cofnij przywraca poprzednią grubość.
   await page.getByRole('button', { name: 'Cofnij', exact: true }).first().click();
   await expect(strona.locator('line[stroke="#ffffff"][stroke-width="0.5"]')).toHaveCount(0);
   await expect(strona.locator('line[stroke="#ffffff"]').first()).toBeAttached();
-  // Własny układ bez linii cięcia – sekcja wyłączona z wyjaśnieniem.
-  await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
-  await ust.getByLabel('Linie cięcia wokół kart').uncheck();
-  await expect(sekcja.getByLabel('Kolor linii')).toBeDisabled();
-  await expect(sekcja).toContainText('wyłączone w układzie kartki');
+  // Wyłączenie linii cięcia chowa kontrolki.
+  await sekcja.getByTestId('linie-wlacz').uncheck();
+  await expect(sekcja.getByTestId('linia-kolor')).toHaveCount(0);
 });

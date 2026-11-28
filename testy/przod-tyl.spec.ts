@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { otworzDruk, zapisano } from './pomoc';
+import { kliknijPobierzPdf, otworzDruk, rozwinSekcje, zapisano } from './pomoc';
 import { dodaj, drzewo, kartaNaKartce, nazwij, panel, sekcja, zaznacz } from './szablonUI';
 
 /*
@@ -81,9 +81,11 @@ test('nowy tył przez kreator → nowy przód z rozmiarem tego tyłu (pola zablo
   // Przypisany tył widać w Edytorze kart (karta dziedziczy tył szablonu).
   await page.getByRole('button', { name: 'Przejdź do kart →', exact: true }).click();
   const druk = await otworzDruk(page);
+  await rozwinSekcje(druk, 'Druk dwustronny');
   await expect(druk.getByLabel('Drukuj tyły (przód i tył w parach stron)')).toBeVisible();
+  const tyly = await rozwinSekcje(druk, 'Tyły talii');
   await expect(
-    druk.getByLabel('Domyślny tył talii').locator('option', { hasText: 'Tył talii A' }),
+    tyly.getByLabel('Domyślny tył talii').locator('option', { hasText: 'Tył talii A' }),
   ).toHaveCount(1);
 });
 
@@ -161,7 +163,8 @@ test('przypisanie tyłu o innym rozmiarze: ostrzeżenie z różnicą, „Anuluj�
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
   await kartaNaKartce(page, 'Duży przód', {});
   const druk = await otworzDruk(page);
-  const wybor = druk.getByLabel('Domyślny tył talii');
+  const tyly = await rozwinSekcje(druk, 'Tyły talii');
+  const wybor = tyly.getByLabel('Domyślny tył talii');
   const wybierz = async () => {
     const opcja = wybor.locator('optgroup[label="Zapisane tyły"] option', { hasText: 'Tył mały' });
     await wybor.selectOption({ value: (await opcja.getAttribute('value'))! });
@@ -177,11 +180,11 @@ test('przypisanie tyłu o innym rozmiarze: ostrzeżenie z różnicą, „Anuluj�
   await expect(wybor.locator('option:checked')).toHaveText('Tył mały');
 
   // Druk dwustronny z niezgodnymi rozmiarami – wyraźny komunikat w opcjach i przed PDF.
+  await rozwinSekcje(druk, 'Druk dwustronny');
   await expect(druk.getByTestId('niezgodne-rozmiary-druku')).toContainText(
     'Duży przód: przód 63×88, tył 57×89',
   );
-  await page.getByRole('button', { name: 'Pobierz', exact: true }).click();
-  await page.getByRole('menuitem', { name: /PDF/ }).first().click();
+  await kliknijPobierzPdf(page);
   const oknoDruku = page.getByRole('dialog', { name: 'Rozmiary przodu i tyłu się różnią' });
   await expect(oknoDruku).toContainText('tyły zostaną rozciągnięte');
   await oknoDruku.getByRole('button', { name: 'Anuluj' }).click();

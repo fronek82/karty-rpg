@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { otworzDruk, otworzUstawieniaAplikacji } from './pomoc';
+import { otworzDruk, otworzUstawieniaAplikacji, rozwinSekcje } from './pomoc';
 
 /** Język interfejsu PL | EN (UI-2): domyślny z przeglądarki, przełączanie bez przeładowania, pamięć. */
 
@@ -246,9 +246,10 @@ test.describe('edytor kartki po angielsku', () => {
     await page.getByTestId('start-pusty-arkusz').click();
     await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
     const opcje = await otworzDruk(page, true);
+    await rozwinSekcje(opcje, 'Sheet title');
     await expect(opcje.getByLabel('Sheet title')).toHaveValue('My cards');
-    await expect(opcje.getByLabel('Paper')).toHaveValue('A4');
-    await expect(opcje.getByRole('option', { name: 'Photo 10 × 15 cm' })).toBeAttached();
+    await expect(opcje.locator('[data-papier="A4"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(opcje.locator('[data-papier="foto-10x15"]')).toBeVisible();
     await expect(opcje.getByText('Printer calibration')).toBeVisible();
   });
 });

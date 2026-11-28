@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
-import { kliknijPobierzPdf, otworzDruk, zapisano } from './pomoc';
+import { kliknijPobierzPdf, otworzDruk, rozwinSekcje, zapisano } from './pomoc';
 import { kartkaCzaru } from './kartkaUI';
 import { SZABLONY, TALIA, arkuszMieszany, bliskie, otworzProjekt, polozenia } from './mieszaneUI';
 import {
@@ -80,11 +80,16 @@ const poziomo = (s: Scena) =>
 
 /** Eksport projektu z interfejsu → projekt odczytany w Node. */
 async function eksportZInterfejsu(page: Page) {
-  await otworzDruk(page);
+  await zapisano(page);
+  const url = page.url();
+  await page.goto('./#/');
+  const kafelek = page.locator('.kafelek-projektu').first();
+  await expect(kafelek).toBeVisible({ timeout: 15000 });
   const [plik] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button', { name: /^⤓ Eksportuj$/ }).click(),
+    kafelek.getByRole('button', { name: 'Eksportuj', exact: true }).click(),
   ]);
+  await page.goto(url);
   return importujProjekt(new Uint8Array(readFileSync(await plik.path())));
 }
 
@@ -695,10 +700,10 @@ test('E(1): A4 z 2× 70×120, 3× 63×88, 5× 44×68 na jednej stronie – pasy,
 test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło do slotu, wydruk testowy', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 1800 });
+  await page.setViewportSize({ width: 1644, height: 1800 });
   await kartkaCzaru(page);
   // Cała siatka 3×3: w Edytorze kart karta i osiem kopii.
-  await page.getByRole('link', { name: '← Powrót' }).click();
+  await page.goBack();
   await page.locator('[data-karta]').first().click();
   const dane = page.getByRole('complementary', { name: 'Zaznaczone karty' });
   await dane.getByLabel('Liczba kopii').fill('9');
@@ -709,7 +714,7 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
   await ust.getByLabel('Układ kart na kartce').selectOption('wlasny');
   await ust.getByLabel('Szerokość karty (mm)').fill('63.5');
   await ust.getByLabel('Wysokość karty (mm)').fill('89');
-  const luz = ust.getByRole('group', { name: 'Karta w slocie' });
+  const luz = await rozwinSekcje(ust, 'Karta w slocie');
   await luz.getByLabel('Luz (mm)').fill('1.5');
   await luz.getByLabel('Tło do krawędzi slotu').check();
   await expect(page.locator('.ostrzezenia-projektu')).toHaveCount(0);
@@ -762,9 +767,10 @@ test('E(2). własny układ 3×3: slot 63,5×89, karty 63×88, luz 1,5 mm, tło d
     (e) => e.typ === 'prostokat' && e.szer === 63.5 && e.wys === 89,
   );
   expect(obrysy).toHaveLength(9);
+  const kal = await rozwinSekcje(ust, 'Kalibracja drukarki');
   const [pobranie] = await Promise.all([
     page.waitForEvent('download'),
-    ust.getByRole('button', { name: 'Wydruk testowy (PDF)' }).click(),
+    kal.getByRole('button', { name: 'Wydruk testowy (PDF)' }).click(),
   ]);
   expect(pobranie.suggestedFilename()).toMatch(/wydruk-testowy.*\.pdf$/);
   const pdf = await PDFDocument.load(readFileSync(await pobranie.path()));

@@ -7,8 +7,8 @@ import { renderujRewers } from '../src/silnik/karta';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { rejestrTestowy } from '../src/silnik/__testy__/pomoc';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { dodaj, kreator, panel, sekcja } from './szablonUI';
-import { otworzDruk, otworzUstawieniaAplikacji, zapisano } from './pomoc';
+import { dodaj, panel, sekcja } from './szablonUI';
+import { otworzUstawieniaAplikacji, zapisano } from './pomoc';
 
 /**
  * M4-3: Zgodność PDF i SVG dla tekstu po łuku (góra/dół, polskie znaki, obwódka),
@@ -128,17 +128,11 @@ test('edytor rewersu: tekst po łuku, krycie warstw oraz krycie i zabarwienie te
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1050 });
-  await kreator(page, {
-    nazwa: 'Karta łuku',
-    format: 'Poker',
-    uklad: 'Swobodny',
+  await page.goto('./#/wlasne/nowy/rewers');
+  await page.getByRole('button', { name: /Dalej: edytor tyłu/ }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Edytor tyłu' })).toBeVisible({
+    timeout: 15000,
   });
-  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
-  await expect(page.locator('.strona-kartki .warstwa').first()).toBeVisible({ timeout: 15000 });
-
-  const ust = await otworzDruk(page);
-  await ust.getByRole('button', { name: 'Nowy tył' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Edytor tyłu' })).toBeVisible();
 
   // Tekstura tła + krycie tekstury + zabarwienie kolorem.
   await sekcja(page, 'Tło karty');

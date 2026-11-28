@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { otworzDruk, panelDruku, slot, zapisano } from './pomoc';
+import { otworzDruk, panelDruku, rozwinSekcje, slot, zapisano } from './pomoc';
 
 /**
  * Globalna biblioteka rewersów + wyrównanie lewego menu na ekranie startowym:
@@ -57,10 +57,13 @@ test('zaprojektowany rewers jest dostępny do wybrania przy dowolnej karcie w os
   await expect(wyborRewersu).toHaveValue('rewers');
   await expect(panelKarty.locator('.podglad-rewersu-mini svg')).toBeVisible();
 
-  // 4) W „Drukuj karty” rewers jest widoczny w sekcji Rewersy projektu.
+  // 4) W „Druk” rewers jest dostępny w sekcji „Tyły talii”.
   await otworzDruk(page);
   const druk = panelDruku(page);
-  await expect(druk.locator('strong', { hasText: 'Rewers Warlock' })).toBeVisible();
+  const tyly = await rozwinSekcje(druk, 'Tyły talii');
+  await expect(
+    tyly.getByLabel('Domyślny tył talii').locator('option', { hasText: 'Rewers Warlock' }),
+  ).toHaveCount(1);
 
   // 5) Projekt Mausrittera ma karty jednostronne – bez wyboru rewersów (etap N1).
   await page.goto('./#/');

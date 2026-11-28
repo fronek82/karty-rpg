@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
-import { otworzDruk, slot, zapisano } from './pomoc';
+import { slot, zapisano } from './pomoc';
 import { dodaj, kreator, sekcja, zaznacz } from './szablonUI';
 
 /**
@@ -56,16 +56,9 @@ test('czcionka pobrana z Google Fonts w projekcie A jest od razu dostępna w ist
   await zapisano(page);
   const urlProjektuB = page.url();
 
-  // 2) Utwórz projekt A, pobierz krój z katalogu (MedievalSharp) oraz dowolny po nazwie (Cinzel).
-  await kreator(page, {
-    nazwa: 'Projekt A',
-    format: 'Standard / Poker',
-    uklad: 'Tytuł i opis',
-  });
-  await page.getByRole('button', { name: 'Przejdź do kart →', exact: true }).click();
-  await expect(slot(page, 1, 1, 1)).toBeVisible({ timeout: 15000 });
-  const drukA = await otworzDruk(page);
-  const katalog = drukA.locator('details.katalog-google-fonts');
+  // 2) W Bibliotece czcionek pobierz krój z katalogu (MedievalSharp) oraz dowolny po nazwie (Cinzel).
+  await page.goto('./#/biblioteki/czcionki');
+  const katalog = page.locator('details.katalog-google-fonts');
   await katalog.locator('summary').click();
   await expect
     .poll(() => katalog.locator('.pozycja-google-font').count())
@@ -78,13 +71,9 @@ test('czcionka pobrana z Google Fonts w projekcie A jest od razu dostępna w ist
   // Pobierz też dowolny krój spoza katalogu po nazwie.
   await katalog.getByLabel('Inny krój z Google Fonts (ponad 1700 rodzin)').fill('Cinzel');
   await katalog.locator('.katalog-google-dowolny button').click();
-  await expect(drukA.locator('fieldset.sekcja-czcionek [role="status"]')).toContainText(
-    /Pobrano krój/,
-  );
+  await expect(page.getByRole('status')).toContainText(/Pobrano krój/);
 
   // 3) Wróć do istniejącego projektu B – MedievalSharp jest od razu do wyboru w Stylu tekstu!
-  // (Najpierw zapis projektu A – inaczej wyjście zatrzymuje okno „Niezapisane zmiany”.)
-  await zapisano(page);
   await page.goto(urlProjektuB);
   await expect(page.getByRole('tree', { name: 'Struktura karty' })).toBeVisible({ timeout: 15000 });
   await zaznacz(page, 'Opis');

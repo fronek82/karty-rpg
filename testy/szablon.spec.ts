@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { otworzDruk, slot, zapisano } from './pomoc';
+import { slot, zapisano } from './pomoc';
 
 /** Edytor szablonu od zera: kreator, drzewo, podgląd z zaznaczaniem, „Edytor kart”, powrót. */
 
@@ -140,8 +140,8 @@ test('nowy szablon w istniejącym projekcie: kreator z kartki, siatka 2×2', asy
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
   await expect(drzewo(page)).toBeVisible({ timeout: 15000 });
   await page.getByRole('button', { name: 'Przejdź do kart →' }).click();
-  await otworzDruk(page);
-  await page.getByRole('link', { name: '＋ Nowy szablon' }).click();
+  const idProjektu = /#\/projekt\/([^/]+)/.exec(page.url())![1]!;
+  await page.goto(`./#/projekt/${idProjektu}/nowy-szablon`);
   await page.getByLabel('Nazwa szablonu').fill('Druga');
   await page.getByText('Tytuł, siatka 2×2, opis i stopka').click();
   await page.getByRole('button', { name: /Dalej: układ pól/ }).click();
@@ -172,7 +172,7 @@ test('edytor szablonu nie otwiera się dla projektu gry ani nieznanego szablonu'
   ).toBeVisible();
 });
 
-test('duplikuje szablon z paska i opcji druku, a Cofnij pozostawia oryginał w edytorze', async ({
+test('duplikuje szablon z paska edytora, a Cofnij pozostawia oryginał w edytorze', async ({
   page,
 }) => {
   await page.goto('./#/wlasne/nowy/awers');
@@ -191,13 +191,6 @@ test('duplikuje szablon z paska i opcji druku, a Cofnij pozostawia oryginał w e
   await expect(page.getByLabel('Nazwa szablonu')).toHaveValue('Oryginał');
   await page.getByRole('button', { name: 'Ponów', exact: true }).click();
   await expect(otworz).toBeVisible();
-  await page.getByRole('button', { name: /Przejdź do kart/ }).click();
-  await otworzDruk(page);
-  const lista = page.getByRole('group', { name: 'Szablony projektu' });
-  await lista.getByRole('button', { name: 'Duplikuj szablon Oryginał', exact: true }).click();
-  await expect(
-    lista.getByRole('link', { name: 'Edytuj szablon Oryginał (kopia 2)' }),
-  ).toBeVisible();
 });
 
 test('Edytor szablonu: „Wstecz” przeglądarki przy niezapisanych zmianach pyta o zapis', async ({

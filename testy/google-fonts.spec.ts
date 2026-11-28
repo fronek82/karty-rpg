@@ -10,7 +10,7 @@ import type { Karta, Szablon, Talia } from '../src/model/szablon';
 import { RejestrCzcionek, wczytajCzcionke } from '../src/silnik/czcionki';
 import { scenaDoSvg } from '../src/silnik/svg';
 import { porownaj, przygotujStrone } from './pdfSvg';
-import { otworzDruk, otworzUstawieniaAplikacji, panelDruku, zapisano } from './pomoc';
+import { otworzDruk, otworzUstawieniaAplikacji, panelDruku, rozwinSekcje, zapisano } from './pomoc';
 import { dodaj, kreator } from './szablonUI';
 
 /**
@@ -181,9 +181,11 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
     await route.fulfill({ status: 200, contentType: 'text/css; charset=utf-8', body: '' });
   });
 
-  // Otwórz widok drukowania i rozwiń katalog Google Fonts.
-  const ust = await otworzDruk(page);
-  const katalog = ust.locator('details.katalog-google-fonts');
+  const urlProjektu = page.url();
+
+  // Otwórz Biblioteki → Czcionki i rozwiń katalog Google Fonts.
+  await page.goto('./#/biblioteki/czcionki');
+  const katalog = page.locator('details.katalog-google-fonts');
   await katalog.locator('summary').click();
 
   // Filtr kategorii (lista rozwijana), podgląd kroju i wyszukiwanie.
@@ -220,9 +222,8 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
     },
   );
 
-  const sekcjaCzcionek = ust.locator('fieldset.sekcja-czcionek');
   await katalog.getByRole('button', { name: 'Pobierz krój Almendra z Google Fonts' }).click();
-  await expect(sekcjaCzcionek.getByRole('alert')).toContainText(/Almendra.*503/);
+  await expect(page.getByRole('alert')).toContainText(/Almendra.*503/);
   await expect(
     katalog.getByRole('button', { name: 'Pobierz krój Almendra z Google Fonts' }),
   ).toBeEnabled();
@@ -230,13 +231,14 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
   // 2) Poprawne pobranie z zapisanych bajtów TTF → zapis lokalny i pojawienie się w rolach.
   trybSieci = 'ok';
   await katalog.getByRole('button', { name: 'Pobierz krój Almendra z Google Fonts' }).click();
-  await expect(sekcjaCzcionek.getByRole('status')).toContainText(
-    'Pobrano krój „Almendra” (4 warianty) i zapisano lokalnie w projekcie.',
-  );
+  await expect(page.getByRole('status')).toContainText(/Pobrano krój „Almendra”/);
   await expect(katalog.getByRole('button', { name: 'Almendra – dodano' })).toBeDisabled();
 
-  // Przypisz Almendrę do pierwszej roli czcionki projektu.
-  const selectRoli = ust.locator('fieldset.sekcja-czcionek select').first();
+  // Wróć do projektu i przypisz Almendrę do pierwszej roli czcionki projektu.
+  await page.goto(urlProjektu);
+  const ust = await otworzDruk(page);
+  const czcionki = await rozwinSekcje(ust, 'Czcionki');
+  const selectRoli = czcionki.locator('select').first();
   await selectRoli.selectOption('Almendra');
   await zapisano(page);
 
@@ -254,8 +256,11 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
     .poll(() => page.locator('.strona-kartki svg path').count(), { timeout: 15000 })
     .toBeGreaterThan(20);
 
-  await expect(ustPo.locator('fieldset.sekcja-czcionek select').first()).toHaveValue('Almendra');
-  const katalogPo = ustPo.locator('details.katalog-google-fonts');
+  const czcionkiPo = await rozwinSekcje(ustPo, 'Czcionki');
+  await expect(czcionkiPo.locator('select').first()).toHaveValue('Almendra');
+
+  await page.goto('./#/biblioteki/czcionki');
+  const katalogPo = page.locator('details.katalog-google-fonts');
   await katalogPo.locator('summary').click();
   await expect(katalogPo.locator('.podglad-google-font').first()).toBeVisible();
   await expect(katalogPo.getByRole('button', { name: 'Almendra – dodano' })).toBeDisabled();
@@ -269,8 +274,7 @@ test('katalog Google Fonts E2E: błąd sieci, zapis lokalny, polskie znaki, prac
     .click();
   await menuUst.getByRole('button', { name: /Dark theme|Motyw ciemny/ }).click();
   await page.keyboard.press('Escape');
-  const ustEn = panelDruku(page, true);
-  const katalogEn = ustEn.locator('details.katalog-google-fonts');
+  const katalogEn = page.locator('details.katalog-google-fonts');
   await expect(katalogEn.locator('summary')).toHaveText('Google Fonts catalog');
   await expect(katalogEn.getByLabel('Search typeface')).toBeVisible();
   await expect(katalogEn.getByLabel('Typeface category')).toHaveValue('wszystkie');
