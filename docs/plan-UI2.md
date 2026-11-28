@@ -582,3 +582,66 @@ Usunąć: „Karty” (logo), osobne „Zapisz” + „Niezapisane zmiany”/„
 
 - **D19** Mausritter korzysta z tych samych komponentów UI2 co reszta (nagłówek, pasek boczny, pasek
   stanu, panel z sekcjami). Start to okno na ekranie arkusza, a nie osobna strona.
+
+## 14. R12 – ekran Druk w stylu UI2, import CSV w kroku Karty i porządki (28.11.2026)
+
+Przegląd instrukcji (PR #143) pokazał, że ekran **Druk** ma jeszcze stary wygląd, a import kart
+z CSV/XLSX nie ma przycisku w kroku **Karty** (okno importu zostało w starym widoku edycji kartki,
+do którego nie prowadzi żaden przycisk). Wzór ekranu druku: `docs/makiety-ui2/Druk.dc.html`
+i opis 5.6. Etap robić po scaleniu PR #143.
+
+### 14.1 Ekran Druk
+
+- **Nagłówek:** wspólny `NaglowekProjektu` jak w kroku Karty: `← Projekty` · nazwa · **1 Karty → 2 Druk**
+  (oba kroki czytelne w obu motywach) · ↶ ↷ · ⚙ · stan zapisu · główny przycisk **⤓ Pobierz PDF**
+  z menu obok (strony JPG/PNG, karty osobno ZIP). Usunąć „Karty” (logo), „Eksportuj”, „← Powrót”,
+  „Biblioteki”, „Ustawienia ▾” i osobne „Zapisz” + „Zapisano”. Eksport projektu `.kartyrpg` zostaje
+  na kafelku projektu na stronie głównej.
+- **Lewy pasek „Karty w druku”** (`PasekBoczny`): lista kart z liczbą kopii i polem wyboru
+  (odznaczona = pominięta w tym druku, bez zmiany danych).
+- **Środek:** pasek nad podglądem „Pokaż: Przody | Tyły | Przód + tył” i podsumowanie
+  „N kart · M na stronę · K strony”, obszar roboczy jak w edytorze, numery stron w pasku stanu 44 px,
+  powiększenie (− % + Dopasuj) w pasku stanu, a nie u góry po prawej. Tekst „Ctrl + kółko myszy”
+  przenieść do dymka „? Skróty”.
+- **Prawy panel „Ustawienia druku”** (`PanelSekcji`, nagłówek wyrównany do paska nad podglądem),
+  sekcje jak w 5.6: Papier, Układ kart na arkuszu (z „Moje układy”), Linie cięcia, Druk dwustronny,
+  Karta w slocie, Tryb drukarni, Tytuł arkusza, Kalibracja drukarki, Opcje PDF, Tyły talii
+  („Domyślny tył talii” – wybór z tyłów projektu i z „Moich szablonów”).
+- **Usunąć z panelu druku:**
+  - przycisk „Nowy tył” – tyły projektuje się w „Moich szablonach”, zgodnie z planem S;
+  - „Katalog Google Fonts” – jest na stronie „Biblioteki” (zakładka „Czcionki”);
+  - długie teksty pomocy, które przechodzą do dymka „? Skróty” albo do instrukcji.
+
+### 14.2 Krok Karty
+
+- W lewym pasku, w sekcji **„Dane”**, dodać **„Import z CSV / Excela”**. Przycisk otwiera dotychczasowe okno
+  `ImportDanych` (mapowanie kolumn, „Złącz łamane wiersze”, podgląd 5 wierszy). Nowe karty trafiają
+  do projektu, a szablon nowych kart wybiera się z szablonów projektu.
+- Usunąć zdublowany napis zapisu („Zapisano” obok „✓ zapisano”). Zostaje jeden element stanu zapisu
+  z `NaglowekProjektu`.
+- Poprawić „+ + Nowy szablon” na „＋ Nowy szablon” (jeden znak plus).
+- Stary widok edycji kartki (`EdytorKartki` w trybie `edycja` dla zwykłych projektów) – jeśli po tych
+  zmianach nic do niego nie prowadzi, usunąć trasę i martwy kod. Mausritter zostaje bez zmian.
+
+### 14.3 Instrukcja
+
+Po zmianach zaktualizować w `instrukcja/index.html` (PL i EN) opisy ekranów Druk i Karty oraz sekcję
+„Import z tabeli”: import uruchamia się przyciskiem „Import z CSV / Excela” w kroku Karty. Odświeżyć
+zrzuty `ustawienia.png` i `ekran-kart.png` (PL i EN) generatorem zrzutów instrukcji.
+
+### 14.4 Testy
+
+- Playwright: na ekranie Druk nagłówek nie zawiera „Eksportuj”, „Powrót”, „Biblioteki”; jest
+  „Pobierz PDF”; w panelu nie ma „Nowy tył” ani „Katalog Google Fonts”.
+- Playwright: odznaczenie karty w „Karty w druku” zmniejsza liczbę kart w podsumowaniu.
+- Playwright: w kroku Karty przycisk „Import z CSV / Excela” otwiera okno importu i dodaje karty
+  z małego pliku CSV.
+- Playwright: w nagłówku kroku Karty jest dokładnie jeden element stanu zapisu.
+- Wzorce PNG arkuszy i PDF bez zmian.
+
+### 14.5 Decyzje
+
+- **D20** Ekran Druk korzysta z tych samych komponentów UI2 (nagłówek, pasek boczny, pasek stanu, panel
+  z sekcjami). Eksport projektu tylko na stronie głównej.
+- **D21** Import CSV/XLSX jest w kroku Karty. Tworzenie tyłów i katalog czcionek nie występują
+  w ekranie druku.
