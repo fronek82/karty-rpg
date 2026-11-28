@@ -441,9 +441,9 @@ export function EdytorKartki({
     // Zmierzone wymiary po zmianie (max-width i wyśrodkowanie nie skalują się proporcjonalnie).
     const kr = k.kartka.getBoundingClientRect();
     el.scrollLeft += kr.left + k.fx * kr.width - k.ekranX;
-    if (mausritterEdycja) el.scrollTop += kr.top + k.fy * kr.height - k.ekranY;
+    if (mausritterEdycja || druk) el.scrollTop += kr.top + k.fy * kr.height - k.ekranY;
     else window.scrollBy(0, kr.top + k.fy * kr.height - k.ekranY);
-  }, [powiekszenie, mausritterEdycja]);
+  }, [powiekszenie, mausritterEdycja, druk]);
 
   // --- Budowa stron (ta sama scena co w PDF), z pamięcią kart i kartek między renderami.
   // Nowa pamięć kart przy każdej zmianie zasobów (czcionki, obrazy, szablony).
@@ -509,6 +509,17 @@ export function EdytorKartki({
       const talia = pominieteAktywne
         ? { ...taliaOryg, karty: taliaOryg.karty.filter((k) => !pominieteAktywne.has(k.id)) }
         : taliaOryg;
+      const arkuszDoBudowy: Arkusz = pominieteAktywne
+        ? {
+            ...arkusz,
+            ...(arkusz.przypiete
+              ? { przypiete: arkusz.przypiete.filter((p) => !pominieteAktywne.has(p.kartaId)) }
+              : {}),
+            ...(arkusz.kolejnosc
+              ? { kolejnosc: arkusz.kolejnosc.filter((id) => !pominieteAktywne.has(id)) }
+              : {}),
+          }
+        : arkusz;
       // Gry z kartami jednostronnymi: bez stron rewersów, nawet gdy dane mają przypisania.
       const dwustronny =
         !bezRewersow && czyDwustronnyWlaczony(arkusz, talia, zasoby.szablony, rewersyMapa);
@@ -555,11 +566,11 @@ export function EdytorKartki({
                 ],
               }
             : talia;
-        const wynik = zbudujArkusz(arkusz, taliaDoBudowy, ctxArkusza);
+        const wynik = zbudujArkusz(arkuszDoBudowy, taliaDoBudowy, ctxArkusza);
         let svgRewersow: string[] | undefined;
         let pusteRewersy: boolean[] | undefined;
         if (dwustronny) {
-          const wRev = zbudujStronyRewersow(arkusz, taliaDoBudowy, wynik, {
+          const wRev = zbudujStronyRewersow(arkuszDoBudowy, taliaDoBudowy, wynik, {
             ...ctxArkusza,
             rewersy: rewersyMapa,
           });
@@ -1429,10 +1440,21 @@ export function EdytorKartki({
           karty: tl.karty.filter((k) => !pominieteAktywne.has(k.id)),
         }))
       : projekt.talie;
+    const arkuszeDoPdf = pominieteAktywne
+      ? projekt.arkusze.map((a) => ({
+          ...a,
+          ...(a.przypiete
+            ? { przypiete: a.przypiete.filter((p) => !pominieteAktywne.has(p.kartaId)) }
+            : {}),
+          ...(a.kolejnosc
+            ? { kolejnosc: a.kolejnosc.filter((id) => !pominieteAktywne.has(id)) }
+            : {}),
+        }))
+      : projekt.arkusze;
     return {
       tytul: projekt.nazwa,
       dopisekKontynuacji: t('kartka.ciagDalszy'),
-      arkusze: projekt.arkusze,
+      arkusze: arkuszeDoPdf,
       talie: talieDoPdf,
       szablony: [...z.szablony.values()],
       ...(projekt.rewersy?.length ? { rewersy: projekt.rewersy } : {}),
@@ -1473,18 +1495,27 @@ export function EdytorKartki({
     if (!zasoby) return;
     // Druk dwustronny z niezgodnymi rozmiarami przodu i tyłu – wyraźne pytanie przed generowaniem.
     const rewersyMapa = new Map((projekt.rewersy ?? []).map((r) => [r.id, r] as const));
+    const projektDoZgodnosci = pominieteAktywne
+      ? {
+          ...projekt,
+          talie: projekt.talie.map((tl) => ({
+            ...tl,
+            karty: tl.karty.filter((k) => !pominieteAktywne.has(k.id)),
+          })),
+        }
+      : projekt;
     const niezgodne = bezRewersow
       ? []
       : [
           ...new Set(
-            projekt.arkusze.flatMap((a) =>
+            projektDoZgodnosci.arkusze.flatMap((a) =>
               czyDwustronnyWlaczony(
                 a,
-                projekt.talie.find((x) => x.id === a.taliaId),
+                projektDoZgodnosci.talie.find((x) => x.id === a.taliaId),
                 zasoby.szablony,
                 rewersyMapa,
               )
-                ? niezgodnosciDruku(projekt, a.taliaId)
+                ? niezgodnosciDruku(projektDoZgodnosci, a.taliaId)
                 : [],
             ),
           ),

@@ -32,7 +32,10 @@ export function MenuPobierz({
     if (!otwarte) return;
     menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     const poza = (e: PointerEvent) => {
-      if (!menu.current?.contains(e.target as Node) && e.target !== przycisk.current)
+      if (
+        !menu.current?.contains(e.target as Node) &&
+        !przycisk.current?.contains(e.target as Node)
+      )
         ustawOtwarte(false);
     };
     window.addEventListener('pointerdown', poza);

@@ -282,16 +282,20 @@
               naraz.
             </li>
             <li>
-              Kliknij „Drukuj karty” na górnym pasku. W stałym prawym panelu „Opcje druku i arkusza”
-              wybierzesz tytuł kartki, tryb „czarno-biały”, papier i czcionki, także własne.
+              Kliknij „Do druku →” na górnym pasku. Na ekranie Druk po lewej znajdziesz listę „Karty
+              w druku” (możesz odznaczyć karty, których nie chcesz teraz drukować), a po prawej
+              panel „Ustawienia druku” z sekcjami: Papier, Układ kart na arkuszu, Linie cięcia, Druk
+              dwustronny, Karta w slocie, Tryb drukarni, Tytuł arkusza, Kalibracja drukarki oraz
+              Pobierz.
             </li>
             <li>
-              W tym samym widoku otwórz menu „Pobierz”, kliknij „Pobierz PDF (do druku)” i drukuj w
-              skali 100%. Szczegóły są w sekcji <a href="#pl-druk">Druk w skali 100%</a>.
+              Kliknij „⤓ Pobierz PDF” w prawym górnym rogu (albo strzałkę obok, żeby pobrać obrazy
+              stron JPG/PNG lub karty osobno w ZIP) i drukuj w skali 100%. Szczegóły są w sekcji
+              <a href="#pl-druk">Druk w skali 100%</a>.
             </li>
             <li>
-              Przycisk „Eksportuj” w widoku „Drukuj karty” zapisuje projekt do pliku
-              <code>.kartyrpg</code>. To kopia zapasowa i sposób na przeniesienie projektu na inny
+              Projekt zapiszesz do pliku <code>.kartyrpg</code> z menu na kafelku projektu na
+              stronie głównej. To kopia zapasowa i sposób na przeniesienie projektu na inny
               komputer.
             </li>
           </ol>
@@ -771,18 +775,30 @@
             Większe zestawy kart wczytasz z arkusza kalkulacyjnego (Excel, LibreOffice Calc, Arkusze
             Google). Jeden wiersz tabeli to jedna karta, a jedna kolumna to jedno pole karty.
           </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/pl/ekran-kart.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Krok Karty z lewym paskiem szablonów i sekcją Dane (Import z CSV / Excela i Eksport do CSV)"
+            />
+            <figcaption>
+              Krok „Karty”: po lewej szablony projektu i sekcja „Dane” z importem i eksportem CSV.
+            </figcaption>
+          </figure>
           <ol>
             <li>
-              Przygotuj plik. Najprościej kliknąć „Eksportuj szablon CSV” w panelu po prawej. Plik
-              ma w pierwszym wierszu nazwy pól szablonu i kolumnę „Ilość”. Uzupełnij go w arkuszu i
-              zapisz jako CSV (UTF-8) albo XLSX.
+              Przygotuj plik. Najprościej kliknąć „Eksport do CSV” w sekcji „Dane” lewego paska w
+              kroku „Karty”. Plik ma w pierwszym wierszu nazwy pól szablonu i kolumnę „Kopie”.
+              Uzupełnij go w arkuszu i zapisz jako CSV (UTF-8) albo XLSX.
             </li>
             <li>
-              W edytorze kartki kliknij „Importuj CSV lub XLSX” i wybierz plik. Pierwszy niepusty
-              wiersz pliku to nagłówki kolumn. W pliku XLSX z kilkoma arkuszami wybierz arkusz w
-              polu „Arkusz z pliku XLSX”.
+              W kroku „Karty” kliknij „Import z CSV / Excela” w sekcji „Dane” lewego paska i wybierz
+              plik. Pierwszy niepusty wiersz pliku to nagłówki kolumn. W pliku XLSX z kilkoma
+              arkuszami wybierz arkusz w polu „Arkusz z pliku XLSX”.
             </li>
-            <li>Wybierz „Szablon nowych kart”.</li>
+            <li>Wybierz „Szablon nowych kart” spośród szablonów projektu.</li>
             <li>
               W sekcji „Przypisz kolumny do pól” sprawdź, która kolumna trafia do którego pola.
               Kolumny o nazwach takich jak pola są przypisane od razu. Kolumnę, której nie chcesz
@@ -1067,15 +1083,15 @@
           <h3 id="pl-czcionki-i-pdf">Katalog czcionek i wyszukiwanie w PDF</h3>
           <ul>
             <li>
-              Sekcja „Katalog Google Fonts” jest w panelu „Opcje druku i arkusza” i na stronie
-              „Biblioteki” (zakładka „Czcionki”). Przeglądasz w niej kroje z polskimi znakami i
-              dodajesz je przyciskiem „Pobierz”. Pobrana czcionka trafia do biblioteki, jest
-              dostępna we wszystkich projektach i działa później bez dostępu do sieci.
+              Sekcja „Katalog Google Fonts” jest na stronie „Biblioteki” (zakładka „Czcionki”).
+              Przeglądasz w niej kroje z polskimi znakami i dodajesz je przyciskiem „Pobierz”.
+              Pobrana czcionka trafia do biblioteki, jest dostępna we wszystkich projektach i działa
+              później bez dostępu do sieci.
             </li>
             <li>
-              W sekcji „Opcje PDF” przełącznik „Niewidoczna warstwa tekstowa w PDF (wyszukiwanie i
-              kopiowanie)” dodaje warstwę tekstu pod krzywymi liter, więc w przeglądarce PDF działa
-              wyszukiwanie i kopiowanie bez zmiany wyglądu kart.
+              W sekcji „Pobierz” w panelu „Ustawienia druku” przełącznik „Niewidoczna warstwa
+              tekstowa w PDF (wyszukiwanie i kopiowanie)” dodaje warstwę tekstu pod krzywymi liter,
+              więc w przeglądarce PDF działa wyszukiwanie i kopiowanie bez zmiany wyglądu kart.
             </li>
           </ul>
           <h2 id="pl-kalibracja">Kalibracja drukarki i wydruk testowy</h2>
@@ -1089,16 +1105,16 @@
               width="1440"
               height="900"
               loading="lazy"
-              alt="Widok druku z panelem opcji druku i arkusza przewiniętym do sekcji kalibracji drukarki"
+              alt="Ekran Druk z panelem Ustawienia druku i otwartą sekcją Kalibracja drukarki"
             />
             <figcaption>
-              Panel „Opcje druku i arkusza” przewinięty do sekcji „Kalibracja drukarki”.
+              Ekran „Druk” z panelem „Ustawienia druku” i otwartą sekcją „Kalibracja drukarki”.
             </figcaption>
           </figure>
           <ol>
             <li>
-              Kliknij „Drukuj karty” i znajdź sekcję „Kalibracja drukarki” w panelu „Opcje druku i
-              arkusza”.
+              Kliknij „Do druku →” i otwórz sekcję „Kalibracja drukarki” w panelu „Ustawienia
+              druku”.
             </li>
             <li>
               Kliknij „Wydruk testowy (PDF)”. Dostaniesz arkusz z samymi obrysami kart, numerami i
@@ -1364,17 +1380,20 @@
               Then edit their shared fields together.
             </li>
             <li>
-              Click “Print cards” in the top bar. In the permanent right panel “Print &amp; sheet
-              options” you set the sheet title, the “black and white” mode, the paper and the fonts,
-              including your own.
+              Click “To print →” in the top bar. On the Print screen you have “Cards in print” on
+              the left (uncheck cards you want to skip in this print) and the “Print settings” panel
+              on the right with Paper, Sheet layout, Cut lines, Double-sided printing, Card in slot,
+              Print-shop mode, Sheet title, Printer calibration and Download.
             </li>
             <li>
-              In the same view open the “Download” menu, click “Download PDF (for printing)” and
-              print at 100% scale. The details are in <a href="#en-druk">Printing at 100% scale</a>.
+              Click “⤓ Download PDF” in the top right (or the arrow next to it for JPG/PNG page
+              images or individual cards in a ZIP) and print at 100% scale. The details are in
+              <a href="#en-druk">Printing at 100% scale</a>.
             </li>
             <li>
-              “Export” in the “Print cards” view saves the project to a <code>.kartyrpg</code> file.
-              It works as a backup and as a way to move the project to another computer.
+              Save the project to a <code>.kartyrpg</code> file from the project card menu on the
+              start screen. It works as a backup and as a way to move the project to another
+              computer.
             </li>
           </ol>
           <h2 id="en-wlasne-szablony">Your own templates</h2>
@@ -1856,18 +1875,31 @@
             You can load larger card sets from a spreadsheet (Excel, LibreOffice Calc, Google
             Sheets). Each row of the table becomes one card, and each column fills one card field.
           </p>
+          <figure>
+            <img
+              src="/instrukcja-zrzuty/en/ekran-kart.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The Cards step with the left templates sidebar and the Data section (Import from CSV / Excel and Export to CSV)"
+            />
+            <figcaption>
+              The “Cards” step: project templates on the left and the “Data” section with CSV import
+              and export.
+            </figcaption>
+          </figure>
           <ol>
             <li>
-              Prepare the file. The easiest way is “Export CSV template” in the right-hand panel.
-              Its first row holds the template's field names and a “Quantity” column. Fill it in
-              your spreadsheet and save it as CSV (UTF-8) or XLSX.
+              Prepare the file. The easiest way is “Export to CSV” in the “Data” section of the left
+              sidebar in the “Cards” step. Its first row holds the template's field names and a
+              “Copies” column. Fill it in your spreadsheet and save it as CSV (UTF-8) or XLSX.
             </li>
             <li>
-              In the sheet editor click “Import CSV or XLSX” and pick the file. The first non-empty
-              row is read as column headers. If an XLSX file has several worksheets, choose one in
-              “Worksheet from the XLSX file”.
+              In the “Cards” step click “Import from CSV / Excel” in the “Data” section of the left
+              sidebar and pick the file. The first non-empty row is read as column headers. If an
+              XLSX file has several worksheets, choose one in “Worksheet from the XLSX file”.
             </li>
-            <li>Choose the “Template for new cards”.</li>
+            <li>Choose the “Template for new cards” from the project's templates.</li>
             <li>
               Under “Map columns to fields”, check which column goes into which field. Columns named
               like the fields are matched automatically. Set any column you don't want to load to
@@ -2151,15 +2183,14 @@
           <h3 id="en-czcionki-i-pdf">Font catalog and searchable PDF</h3>
           <ul>
             <li>
-              The “Google Fonts catalog” section is in the “Print &amp; sheet options” panel and on
-              the “Libraries” page (the “Fonts” tab). It lists typefaces with Polish glyphs that you
-              can add with “Download”. A downloaded typeface goes to the library, is available in
-              all projects and works offline.
+              The “Google Fonts catalog” section is on the “Libraries” page (the “Fonts” tab). It
+              lists typefaces with Polish glyphs that you can add with “Download”. A downloaded
+              typeface goes to the library, is available in all projects and works offline.
             </li>
             <li>
-              Under “PDF options”, “Invisible text layer in PDF (search and copy)” places searchable
-              text behind the glyph outlines, so search and copy work in a PDF viewer without
-              altering how the cards look.
+              Under “Download” in the “Print settings” panel, “Invisible text layer in PDF (search
+              and copy)” places searchable text behind the glyph outlines, so search and copy work
+              in a PDF viewer without altering how the cards look.
             </li>
           </ul>
           <h2 id="en-kalibracja">Printer calibration and the test print</h2>
@@ -2173,16 +2204,16 @@
               width="1440"
               height="900"
               loading="lazy"
-              alt="The print view with the print and sheet options panel scrolled to the printer calibration section"
+              alt="The Print screen with the Print settings panel and the Printer calibration section open"
             />
             <figcaption>
-              The “Print &amp; sheet options” panel scrolled to the “Printer calibration” section.
+              The “Print” screen with the “Print settings” panel and the “Printer calibration”
+              section open.
             </figcaption>
           </figure>
           <ol>
             <li>
-              Click “Print cards” and find the “Printer calibration” section in “Print &amp; sheet
-              options”.
+              Click “To print →” and open the “Printer calibration” section in “Print settings”.
             </li>
             <li>
               Click “Test print (PDF)”. You get a sheet with only card outlines, numbers and crosses

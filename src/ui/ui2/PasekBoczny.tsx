@@ -14,6 +14,7 @@ export interface PozycjaPaskaBocznego {
   ikona: string | ReactNode;
   odznaka?: string;
   aktywna?: boolean;
+  wylaczona?: boolean;
   przeciagane?: boolean;
   onKlik?: () => void;
   onPoczatekPrzeciagania?: (e: DragEvent<HTMLButtonElement>) => void;
@@ -132,7 +133,8 @@ export function PasekBoczny({
                 <button
                   key={poz.id}
                   type="button"
-                  draggable={poz.przeciagane}
+                  disabled={poz.wylaczona}
+                  draggable={!poz.wylaczona && poz.przeciagane}
                   onDragStart={poz.onPoczatekPrzeciagania}
                   onDragEnd={poz.onKoniecPrzeciagania}
                   onClick={poz.onKlik}

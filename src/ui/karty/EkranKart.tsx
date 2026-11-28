@@ -616,6 +616,7 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
           id: 'import-csv',
           nazwa: t('karty.importCsv'),
           ikona: 'M12 15V3m0 0L8 7m4-4l4 4M4 19h16',
+          wylaczona: projekt.szablony.length === 0,
           onKlik: () => {
             if (projekt.szablony.length > 0) ustawOknoImportu(true);
           },

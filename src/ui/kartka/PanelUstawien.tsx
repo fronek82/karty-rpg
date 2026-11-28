@@ -254,41 +254,39 @@ export function PanelUstawien({
           </div>
         )}
 
-        <div className="druk-ui2-wiersz-2">
-          <div className="pole-panelu">
-            <span id="orientacja">{t('kartka.orientacja')}</span>
-            <div className="przelacznik-segmentowy" role="group" aria-labelledby="orientacja">
-              {(['pionowa', 'pozioma'] as const).map((x) => (
-                <button
-                  key={x}
-                  type="button"
-                  aria-pressed={u.orientacja === x}
-                  onClick={() => zmienUklad((p) => ustawUstawieniaArkusza(p, A, { orientacja: x }))}
-                >
-                  {t(`kartka.orientacja.${x}`)}
-                </button>
-              ))}
-            </div>
+        <div className="pole-panelu">
+          <span id="orientacja">{t('kartka.orientacja')}</span>
+          <div className="przelacznik-segmentowy" role="group" aria-labelledby="orientacja">
+            {(['pionowa', 'pozioma'] as const).map((x) => (
+              <button
+                key={x}
+                type="button"
+                aria-pressed={u.orientacja === x}
+                onClick={() => zmienUklad((p) => ustawUstawieniaArkusza(p, A, { orientacja: x }))}
+              >
+                {t(`kartka.orientacja.${x}`)}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div className="pole-panelu">
-            <span id="druk-kolor">{t('kartka.druk')}</span>
-            <div className="przelacznik-segmentowy" role="group" aria-labelledby="druk-kolor">
-              <button
-                type="button"
-                aria-pressed={!u.czarnoBialy}
-                onClick={() => zmien((p) => ustawUstawieniaArkusza(p, A, { czarnoBialy: false }))}
-              >
-                {t('kartka.kolor')}
-              </button>
-              <button
-                type="button"
-                aria-pressed={!!u.czarnoBialy}
-                onClick={() => zmien((p) => ustawUstawieniaArkusza(p, A, { czarnoBialy: true }))}
-              >
-                {t('kartka.czarnoBialy')}
-              </button>
-            </div>
+        <div className="pole-panelu">
+          <span id="druk-kolor">{t('kartka.druk')}</span>
+          <div className="przelacznik-segmentowy" role="group" aria-labelledby="druk-kolor">
+            <button
+              type="button"
+              aria-pressed={!u.czarnoBialy}
+              onClick={() => zmien((p) => ustawUstawieniaArkusza(p, A, { czarnoBialy: false }))}
+            >
+              {t('kartka.kolor')}
+            </button>
+            <button
+              type="button"
+              aria-pressed={!!u.czarnoBialy}
+              onClick={() => zmien((p) => ustawUstawieniaArkusza(p, A, { czarnoBialy: true }))}
+            >
+              {t('kartka.czarnoBialy')}
+            </button>
           </div>
         </div>
 

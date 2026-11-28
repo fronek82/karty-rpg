@@ -83,7 +83,9 @@ export async function otworzDruk(page: Page, en = false) {
   const panel = panelDruku(page, en);
   if (!(await panel.isVisible())) {
     await page
-      .getByRole('link', { name: en ? /^(Print cards|Go to print|To print)/ : /^(Drukuj karty|Do druku)/ })
+      .getByRole('link', {
+        name: en ? /^(Print cards|Go to print|To print)/ : /^(Drukuj karty|Do druku)/,
+      })
       .click();
     await expect(panel).toBeVisible({ timeout: 15000 });
   }

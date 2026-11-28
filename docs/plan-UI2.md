@@ -645,3 +645,6 @@ zrzuty `ustawienia.png` i `ekran-kart.png` (PL i EN) generatorem zrzutów instru
   z sekcjami). Eksport projektu tylko na stronie głównej.
 - **D21** Import CSV/XLSX jest w kroku Karty. Tworzenie tyłów i katalog czcionek nie występują
   w ekranie druku.
+- **D22 (R12)** Trasa `edycja` (`#/projekt/<id>` i `#/projekt/<id>/kartka/<aid>`) została na razie
+  zachowana ze względu na linki kafelków projektów (`ListaProjektow.tsx`) i istniejące testy E2E
+  siatki kartki; pełne przełączenie na krok Karty można wykonać osobnym porządkiem testów.
