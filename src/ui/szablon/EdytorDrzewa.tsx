@@ -822,10 +822,20 @@ export function EdytorDrzewa(u: UstawieniaEdytoraDrzewa) {
       z.rodzaj === 'czcionka' && z.zrodlo === 'wbudowana' ? [z.rodzina] : [],
     ),
   );
+  const rodzinaTresci = zasoby.role.tresc ?? 'tresc';
+  const domyslna = zasoby.czcionki.nazwyRodzin.includes(rodzinaTresci)
+    ? rodzinaTresci
+    : zasoby.zapasowa;
+  const etykietaDomyslnej = domyslna
+    ? t('wlasciwosci.czcionkaDomyslnaRodzina', { rodzina: domyslna })
+    : t('wlasciwosci.czcionkaDomyslna');
   const czcionki = [
     ...roleProjektu(projekt).map((r) => ({
       wartosc: r,
-      tekst: t('wlasciwosci.rola', { rola: tJesliJest(`rola.${r}`) ?? r }),
+      tekst:
+        r === 'tresc'
+          ? etykietaDomyslnej
+          : t('wlasciwosci.rola', { rola: tJesliJest(`rola.${r}`) ?? r }),
     })),
     ...rodziny
       .filter((r) => wbudowane.has(r))

@@ -983,6 +983,8 @@ export const pl = {
   'kolory.usun': 'Usuń {kolor} z zapisanych',
   'kolory.zapiszBiezacy': 'Zapisz ten kolor',
   'wlasciwosci.rola': '{rola} (rola)',
+  'wlasciwosci.czcionkaDomyslna': 'Domyślna',
+  'wlasciwosci.czcionkaDomyslnaRodzina': 'Domyślna ({rodzina})',
   'wlasciwosci.kopiujStyl': 'Kopiuj styl',
   'wlasciwosci.wklejStyl': 'Wklej styl',
   'grupy.tytul': 'Grupy stylów',
