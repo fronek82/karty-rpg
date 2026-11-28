@@ -10,6 +10,7 @@ import {
 } from '../../dane/aktualizacjaSzablonu';
 import { roleSzablonu, type WpisSzablonu } from '../../dane/bibliotekaSzablonow';
 import { kolumnySzablonu, ustawDane } from '../../dane/edycja';
+import type { WartosciImportu } from '../../dane/importTabeli';
 import { przypiszRewers, rewersKarty } from '../../dane/rewers';
 import { nazwaKarty } from '../../dane/szablon';
 import { t } from '../../i18n';
@@ -17,6 +18,7 @@ import type { Karta, PrzypisanieRewersu, Rewers, Szablon, Talia } from '../../mo
 import { renderujKarte, renderujRewers, type KontekstRenderowania } from '../../silnik/karta';
 import { scenaDoSvg } from '../../silnik/svg';
 import { baza } from '../bazaUI';
+import { ImportDanych } from '../kartka/ImportDanych';
 import { zapiszMiniatureWpisuSzablonu } from '../miniaturaRewersu';
 import { usePasekKomunikatu } from '../PasekKomunikatu';
 import { nazwaPliku, zapiszPlik } from '../pliki';
@@ -24,7 +26,7 @@ import { OknoNowySzablon } from '../start/OknoNowySzablon';
 import { NaglowekProjektu, type DefinicjaKroku, type StanZapisuUi2 } from '../ui2/NaglowekProjektu';
 import { PasekBoczny, type GrupaPaskaBocznego } from '../ui2/PasekBoczny';
 import type { ProjektWEdycji } from '../useProjekt';
-import { PrzyciskZapisu, useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
+import { useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
 import { OknoAktualizacjiSzablonu } from './OknoAktualizacjiSzablonu';
 import { OknoPrzeniesieniaKart } from './OknoPrzeniesieniaKart';
 import './kartyUi2.css';
@@ -70,6 +72,7 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
   const [szukajBiblioteki, ustawSzukajBiblioteki] = useState('');
   const [oknoNowegoSzablonu, ustawOknoNowegoSzablonu] = useState(false);
   const [oknoPrzeniesienia, ustawOknoPrzeniesienia] = useState(false);
+  const [oknoImportu, ustawOknoImportu] = useState(false);
   const [wpisySzablonow, ustawWpisySzablonow] = useState<WpisSzablonu[]>([]);
   const [aktualizowanyCel, ustawAktualizowanyCel] = useState<
     { rodzaj: 'awers' | 'rewers'; idWProjekcie: string } | undefined
@@ -599,7 +602,7 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
         })),
         {
           id: 'nowy-szablon',
-          nazwa: t('edytor.nowySzablon'),
+          nazwa: t('karty.nowySzablon'),
           ikona: 'M12 5v14M5 12h14',
           onKlik: () => ustawOknoNowegoSzablonu(true),
         },
@@ -609,6 +612,16 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
       id: 'dane',
       nazwa: t('karty.grupaDane'),
       pozycje: [
+        ...(projekt.szablony.length > 0
+          ? [
+              {
+                id: 'import-csv',
+                nazwa: t('karty.importCsv'),
+                ikona: 'M12 15V3m0 0l-4 4m4-4l4 4M4 19h16',
+                onKlik: () => ustawOknoImportu(true),
+              },
+            ]
+          : []),
         {
           id: 'eksport-csv',
           nazwa: t('karty.eksportCsv'),
@@ -618,6 +631,58 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
       ],
     },
   ];
+
+  const importujKarty = (szablonId: string, wiersze: WartosciImportu[]): boolean => {
+    const sz = szablonyPoId.get(szablonId);
+    if (!sz || wiersze.length === 0) return false;
+    const noweIds: string[] = [];
+    const docelowaWersja = edycja.wersja + 1;
+    zmien((p) => {
+      noweIds.length = 0;
+      let aktualneTalie = p.talie;
+      const noweKarty: Karta[] = [];
+      for (const w of wiersze) {
+        const noweId = unikalneIdKarty(
+          aktualneTalie.length > 0
+            ? aktualneTalie.map((tl, idx) =>
+                idx === 0 ? { ...tl, karty: [...tl.karty, ...noweKarty] } : tl,
+              )
+            : [{ id: 't-1', nazwa: p.nazwa, karty: noweKarty }],
+        );
+        noweIds.push(noweId);
+        noweKarty.push({
+          id: noweId,
+          szablonId: sz.id,
+          dane: { ...w.dane },
+          ilosc: w.ilosc,
+        });
+      }
+      if (aktualneTalie.length === 0) {
+        aktualneTalie = [{ id: 't-1', nazwa: p.nazwa, karty: noweKarty }];
+      } else {
+        const celTalia =
+          aktualneTalie.find((tl) => tl.karty.some((k) => k.szablonId === sz.id)) ??
+          aktualneTalie[0]!;
+        aktualneTalie = aktualneTalie.map((tl) =>
+          tl.id === celTalia.id ? { ...tl, karty: [...tl.karty, ...noweKarty] } : tl,
+        );
+      }
+      return { ...p, talie: aktualneTalie };
+    });
+    if (noweIds.length > 0) ustawZaznaczone([noweIds[0]!]);
+    ustawWersjeKomunikatu(docelowaWersja);
+    pokazKomunikat({
+      tekst: t('tabelaImport.zaimportowano', { liczba: wiersze.length }),
+      akcja: {
+        etykieta: t('pasek.cofnij'),
+        wykonaj: () => {
+          ustawWersjeKomunikatu(undefined);
+          edycja.cofnij();
+        },
+      },
+    });
+    return true;
+  };
 
   // Kolumny dla widoku tabeli (ze wszystkich szablonów widocznych kart lub wybranego filtru).
   const kolumnyTabeli = useMemo(() => {
@@ -658,7 +723,7 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
         onCofnij={edycja.cofnij}
         onPonow={edycja.ponow}
         stanZapisu={stanZapisu}
-        dodatkowe={<PrzyciskZapisu edycja={edycja} />}
+        onZapisz={edycja.zapiszTeraz}
         akcjaGlowna={{
           etykieta: t('karty.doDruku'),
           href: `#/projekt/${idProjektu}/drukuj`,
@@ -1141,6 +1206,20 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
               window.location.hash = `#/szablon/${encodeURIComponent(wynik.id)}?powrot=${powrotKarty}`;
             }
           }}
+        />
+      )}
+      {oknoImportu && projekt.szablony.length > 0 && (
+        <ImportDanych
+          nazwaKartki={projekt.nazwa}
+          szablony={projekt.szablony}
+          rewersDlaSzablonu={(s) => {
+            const rewersyMapa = new Map((projekt.rewersy ?? []).map((r) => [r.id, r]));
+            const talia = projekt.talie[0];
+            return rewersKarty(rewersyMapa, {}, s, talia ?? {});
+          }}
+          zasoby={projekt.zasoby}
+          zamknij={() => ustawOknoImportu(false)}
+          zapisz={importujKarty}
         />
       )}
       {wersjaKomunikatu === edycja.wersja && pasekKomunikatu}
