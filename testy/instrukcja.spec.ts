@@ -84,7 +84,7 @@ test('przełączanie języka bez przeładowania, z pamięcią i wspólnym klucze
   expect(await jezyk(page)).toBe('en');
   await expect(page).toHaveTitle('Guide – Cards');
   await expect(
-    page.getByRole('heading', { level: 2, name: 'Printing at 100% scale' }),
+    page.getByRole('heading', { level: 2, name: 'Printing at 100% scale and sheet settings' }),
   ).toBeVisible();
   expect(await zapis(page, 'karty.jezyk')).toBe('en');
   expect(await page.evaluate(() => (window as unknown as { __bez?: boolean }).__bez)).toBe(true);
@@ -114,7 +114,7 @@ test('przełączanie języka aktualizuje ?lang= w adresie, a hasz zmienia przedr
   await przyciskJezyka(page, 'EN').click();
   await expect(page).toHaveURL(/\?lang=en#en-druk$/);
   await expect(
-    page.getByRole('heading', { level: 2, name: 'Printing at 100% scale' }),
+    page.getByRole('heading', { level: 2, name: 'Printing at 100% scale and sheet settings' }),
   ).toBeInViewport();
 });
 
@@ -227,11 +227,14 @@ test('spis treści działa z klawiatury, a nagłówek dostaje fokus', async ({ p
   await page.keyboard.press('Enter');
   await expect(page.locator('#tresc')).toBeFocused();
 
-  const link = spis.getByRole('link', { name: 'Edycja kart na kartce' });
+  const link = spis.getByRole('link', { name: 'Tworzenie projektu i edycja kart' });
   await link.focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/#pl-edycja-kart$/);
-  const naglowek = page.getByRole('heading', { level: 2, name: 'Edycja kart na kartce' });
+  const naglowek = page.getByRole('heading', {
+    level: 2,
+    name: 'Tworzenie projektu i edycja kart',
+  });
   await expect(naglowek).toBeFocused();
   await expect(naglowek).toBeInViewport();
   await expect(link).toHaveAttribute('aria-current', 'location');
@@ -249,7 +252,7 @@ test('spis treści: wszystkie pozycje prowadzą do nagłówków w obu językach'
     await page.goto(`./instrukcja/?lang=${j}`);
     const linki = page.locator(`nav ol[lang="${j}"] a`);
     const n = await linki.count();
-    expect(n).toBe(9);
+    expect(n).toBe(10);
     for (let i = 0; i < n; i++) {
       const href = (await linki.nth(i).getAttribute('href'))!;
       await linki.nth(i).click();
