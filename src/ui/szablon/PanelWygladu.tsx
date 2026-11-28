@@ -10,6 +10,7 @@ import type {
   WyrownanieOsi,
 } from '../../model/szablon';
 import { MOTYWY_WBUDOWANE, type ElementOzdobny } from '../../ozdobniki';
+import { dopasujNaroznikDoPasa, maCiaglyNaroznik } from '../../ozdobniki/noweMotywy';
 import {
   elementyRodzaju,
   useAdresBiblioteki,
@@ -239,6 +240,10 @@ export function PoleRamki<R extends Obramowanie>({
         <WyborNarozniki
           {...narozniki}
           kolorLinii={ozdoba?.wartosc?.kolor ?? ramka?.kolor ?? '#000000'}
+          rozmiarZPasa={dopasujNaroznikDoPasa(
+            ozdoba?.wartosc?.rodzaj === 'motyw' ? ozdoba.wartosc.element : undefined,
+            narozniki.wartosc?.element,
+          )}
           domyslnyRozmiar={
             ozdoba?.wartosc?.rodzaj === 'motyw'
               ? ozdoba.wartosc.szerokosc
@@ -257,6 +262,14 @@ const NAZWY_NAROZNIKOW = {
   'wb:gwiazda': 'narozniki.nazwa.gwiazda',
   'wb:wezel': 'narozniki.nazwa.wezel',
   'wb:zawijas': 'narozniki.nazwa.zawijas',
+  'wb:schodkowy': 'narozniki.nazwa.schodkowy',
+  'wb:muszla': 'narozniki.nazwa.muszla',
+  'wb:kamienny': 'narozniki.nazwa.kamienny',
+  'wb:zwornik': 'narozniki.nazwa.zwornik',
+  'wb:biletowy': 'narozniki.nazwa.biletowy',
+  'wb:trzy-krople': 'narozniki.nazwa.trzy-krople',
+  'wb:kwadraty': 'narozniki.nazwa.kwadraty',
+  'wb:rozeta': 'narozniki.nazwa.rozeta',
 } as const;
 
 const NAZWY_MOTYWOW = {
@@ -266,9 +279,24 @@ const NAZWY_MOTYWOW = {
   'wb:runy': 'motywy.nazwa.runy',
   'wb:lancuch': 'motywy.nazwa.lancuch',
   'wb:gwiazdki': 'motywy.nazwa.gwiazdki',
+  'wb:meander': 'motywy.nazwa.meander',
+  'wb:fala': 'motywy.nazwa.fala',
+  'wb:cegielki': 'motywy.nazwa.cegielki',
+  'wb:arkady': 'motywy.nazwa.arkady',
+  'wb:perforacja': 'motywy.nazwa.perforacja',
+  'wb:krople': 'motywy.nazwa.krople',
+  'wb:impulsy': 'motywy.nazwa.impulsy',
+  'wb:trzciny': 'motywy.nazwa.trzciny',
+  'wb:przesuniete-luki': 'motywy.nazwa.przesuniete-luki',
+  'wb:rozwidlenia': 'motywy.nazwa.rozwidlenia',
+  'wb:wstegi': 'motywy.nazwa.wstegi',
+  'wb:wachlarze': 'motywy.nazwa.wachlarze',
+  'wb:grzbiety': 'motywy.nazwa.grzbiety',
 } as const;
 
-const NAZWY_SEPARATOROW = {
+const NAZWY_POZOSTALYCH = {
+  'wb:tabliczka': 'ksztalt.nazwa.tabliczka',
+  'wb:pieczec': 'ksztalt.nazwa.pieczec',
   'wb:zak-grot': 'zakonczenia.nazwa.grot',
   'wb:zak-zawijas': 'zakonczenia.nazwa.zawijas',
   'wb:zak-lisc': 'zakonczenia.nazwa.lisc',
@@ -278,6 +306,10 @@ const NAZWY_SEPARATOROW = {
   'wb:sr-gwiazda': 'srodek.nazwa.gwiazda',
   'wb:sr-lisc': 'srodek.nazwa.lisc',
   'wb:sr-kropka': 'srodek.nazwa.kropka',
+  'wb:sr-ziarna': 'srodek.nazwa.ziarna',
+  'wb:sr-klamra': 'srodek.nazwa.klamra',
+  'wb:zak-piorkowe': 'zakonczenia.nazwa.piorkowe',
+  'wb:zak-zszywka': 'zakonczenia.nazwa.zszywka',
 } as const;
 
 /** Nazwa elementu dla użytkownika: własna albo z i18n (wbudowane). */
@@ -285,7 +317,7 @@ export function nazwaElementu(e: ElementOzdobny): string {
   const klucz =
     NAZWY_NAROZNIKOW[e.id as keyof typeof NAZWY_NAROZNIKOW] ??
     NAZWY_MOTYWOW[e.id as keyof typeof NAZWY_MOTYWOW] ??
-    NAZWY_SEPARATOROW[e.id as keyof typeof NAZWY_SEPARATOROW];
+    NAZWY_POZOSTALYCH[e.id as keyof typeof NAZWY_POZOSTALYCH];
   return e.nazwa ?? (klucz ? t(klucz) : e.id);
 }
 
@@ -384,6 +416,7 @@ function WyborMotywu({
 }) {
   const idEtykiety = useId();
   const motywy = elementyRodzaju('motyw', useElementyWlasne());
+  const ciaglyNaroznik = maCiaglyNaroznik(ozdoba.element);
   const ustaw = (z: Partial<OzdobaMotyw>) => zmien({ ...ozdoba, ...z });
   return (
     <div className="pole-panelu">
@@ -440,13 +473,17 @@ function WyborMotywu({
           />
         )}
       </div>
-      <Wybor
-        etykieta={t('dekoracje.poLuku')}
-        wartosc={ozdoba.poLuku === true}
-        zmien={(v) => zmien(v ? { ...ozdoba, poLuku: true } : bez(ozdoba, 'poLuku'))}
-      />
-      {ozdoba.poLuku && <p className="podpis">{t('dekoracje.poLukuPomoc')}</p>}
-      {podpowiedz && !ozdoba.poLuku && (
+      {ciaglyNaroznik ? (
+        <p className="podpis">{t('motywy.ciaglyNaroznik')}</p>
+      ) : (
+        <Wybor
+          etykieta={t('dekoracje.poLuku')}
+          wartosc={ozdoba.poLuku === true}
+          zmien={(v) => zmien(v ? { ...ozdoba, poLuku: true } : bez(ozdoba, 'poLuku'))}
+        />
+      )}
+      {!ciaglyNaroznik && ozdoba.poLuku && <p className="podpis">{t('dekoracje.poLukuPomoc')}</p>}
+      {!ciaglyNaroznik && podpowiedz && !ozdoba.poLuku && (
         <p className="podpis" role="note">
           {t('motywy.podpowiedzPromien')}
         </p>
@@ -461,12 +498,14 @@ function WyborNarozniki({
   zmien,
   kolorLinii,
   domyslnyRozmiar,
+  rozmiarZPasa,
 }: {
   wartosc: Narozniki | undefined;
   zmien: (n: Narozniki | undefined) => void;
   kolorLinii: string;
   /** Rozmiar nowego narożnika: przy motywie – szerokość pasa (narożnik wypełnia kostkę). */
   domyslnyRozmiar: number;
+  rozmiarZPasa: boolean;
 }) {
   const idEtykiety = useId();
   const narozniki = elementyRodzaju('naroznik', useElementyWlasne());
@@ -509,14 +548,18 @@ function WyborNarozniki({
       </div>
       {wartosc && (
         <div className="dwa-pola">
-          <Liczba
-            etykieta={t('narozniki.rozmiar')}
-            wartosc={wartosc.rozmiar}
-            min={1}
-            max={30}
-            krok={0.5}
-            zmien={(v) => ustaw({ rozmiar: v })}
-          />
+          {rozmiarZPasa ? (
+            <p className="podpis">{t('narozniki.rozmiarZPasa')}</p>
+          ) : (
+            <Liczba
+              etykieta={t('narozniki.rozmiar')}
+              wartosc={wartosc.rozmiar}
+              min={1}
+              max={30}
+              krok={0.5}
+              zmien={(v) => ustaw({ rozmiar: v })}
+            />
+          )}
           <PoleKoloru
             etykieta={t('narozniki.kolor')}
             wartosc={wartosc.kolor}

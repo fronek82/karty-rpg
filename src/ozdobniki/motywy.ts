@@ -10,6 +10,7 @@ import {
   stadion,
 } from './rysunek';
 import type { ElementOzdobny } from './typy';
+import { NOWE_MOTYWY } from './noweMotywy';
 
 /**
  * Wbudowane motywy powtarzalne – rysunki własne (licencja projektu, patrz `LICENCJE.md`), ogólne,
@@ -273,4 +274,5 @@ export const MOTYWY_WBUDOWANE: ElementOzdobny[] = [
   RUNY,
   LANCUCH,
   GWIAZDKI,
+  ...NOWE_MOTYWY,
 ];

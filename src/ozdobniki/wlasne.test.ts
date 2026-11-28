@@ -143,6 +143,31 @@ describe('własne elementy w silniku', () => {
     expect(pole.szer).toBeGreaterThanOrEqual(20);
   });
 
+  it.each(['wb:tabliczka', 'wb:pieczec'])(
+    '%s zachowuje zdobienia jako kształt wartości i grafika',
+    (id) => {
+      const sz = szablon({}, [
+        {
+          id: 'napis',
+          typ: 'wartosc',
+          tekst: '7',
+          ksztalt: 'wlasny',
+          ksztaltElement: id,
+          minSzerokosc: 20,
+          minWysokosc: 20,
+          styl: { czcionka: 'tresc', rozmiar: pt(10) },
+        },
+        { id: 'grafika', typ: 'ikona', ikona: 'gwiazdka', element: id, rozmiar: 12 },
+      ]);
+      const { scena, ostrzezenia } = renderujKarte(sz, { dane: {} }, ctx([]));
+      expect(ostrzezenia).toEqual([]);
+      const grafika = scena.symbole?.[id];
+      expect(grafika?.kontury.length).toBeGreaterThan(1);
+      expect(grafika?.kontury.every((c) => c.obrys?.kolor === 'kolor')).toBe(true);
+      expect(scena.symbole?.[`${id}:zdobienia:z-obrysem`]).toEqual(grafika);
+    },
+  );
+
   it('kształt: brak elementu albo zły rodzaj – ostrzeżenie i prostokąt', () => {
     const naroz = wlasny('wl:n', 'naroznik', '<rect width="5" height="5"/>');
     for (const lista of [[], [naroz]]) {

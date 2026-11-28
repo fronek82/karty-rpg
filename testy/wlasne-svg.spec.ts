@@ -84,7 +84,7 @@ test('import SVG: raport „co pominięto”, użycie jako kształt wartości i 
   await zaznacz(page, 'Siła');
   await panel(page).getByLabel('Kształt').selectOption('wlasny');
   const wybor = panel(page).getByTestId('wybor-ksztaltu');
-  await expect(wybor.getByRole('button')).toHaveCount(1); // tylko elementy rodzaju „kształt”
+  await expect(wybor.getByRole('button')).toHaveCount(3); // dwa systemowe kształty i jeden własny
   await expect(wybor.getByRole('button', { name: 'Gwiazdka' })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -99,7 +99,7 @@ test('import SVG: raport „co pominięto”, użycie jako kształt wartości i 
   const r = await sekcja(page, 'Ramka karty');
   await r.getByLabel('Ramka karty', { exact: true }).selectOption('linia');
   const naroz = r.getByRole('group', { name: 'Narożniki' });
-  await expect(naroz.getByRole('button')).toHaveCount(8); // brak + 6 wbudowanych + własny
+  await expect(naroz.getByRole('button')).toHaveCount(16); // brak + 14 wbudowanych + własny
   await expect(naroz.getByTestId('grupa-systemowe')).toHaveText('Systemowe');
   await expect(naroz.getByTestId('grupa-moja')).toHaveText('Moja biblioteka');
   await naroz.getByRole('button', { name: 'Pióro' }).click();

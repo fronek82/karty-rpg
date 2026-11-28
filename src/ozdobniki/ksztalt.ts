@@ -1,5 +1,6 @@
 import type { Mm } from '../model/jednostki';
-import type { Kontur } from '../silnik/scena';
+import type { Kontur, KonturSymbolu } from '../silnik/scena';
+import { okrag, wielokat } from './rysunek';
 import type { ElementOzdobny } from './typy';
 
 /** Domyślny prostokąt na tekst we własnym kształcie: 15 % marginesu z każdej strony. */
@@ -42,3 +43,99 @@ export function konturWlasnegoKsztaltu(
     }
   return wynik;
 }
+
+const kreska = (kontur: Kontur): KonturSymbolu => ({
+  kontur,
+  obrys: { kolor: 'kolor', grubosc: 0.25 },
+});
+
+/** W miniaturze i polu grafiki pokazujemy obrys i detale jako kolorowalny rysunek. */
+export function konturyOzdobnika(e: ElementOzdobny): KonturSymbolu[] {
+  if (!e.zdobienia) return e.kontury;
+  return [
+    ...e.kontury.map(({ kontur }): KonturSymbolu => ({
+      kontur,
+      obrys: { kolor: 'kolor', grubosc: 0.28 },
+    })),
+    ...e.zdobienia,
+  ];
+}
+
+export const KSZTALTY_WBUDOWANE: ElementOzdobny[] = [
+  {
+    id: 'wb:tabliczka',
+    rodzaj: 'ksztalt',
+    szer: 40,
+    wys: 12,
+    kontury: [
+      {
+        kontur: [
+          ['M', 0, 6],
+          ['L', 4, 2.5],
+          ['L', 7, 2.5],
+          ['L', 7, 0],
+          ['L', 33, 0],
+          ['L', 33, 2.5],
+          ['L', 36, 2.5],
+          ['L', 40, 6],
+          ['L', 36, 9.5],
+          ['L', 33, 9.5],
+          ['L', 33, 12],
+          ['L', 7, 12],
+          ['L', 7, 9.5],
+          ['L', 4, 9.5],
+          ['Z'],
+        ],
+        wypelnienie: 'kolor',
+      },
+    ],
+    zdobienia: [
+      kreska([
+        ['M', 8.3, 1.3],
+        ['L', 31.7, 1.3],
+        ['M', 8.3, 10.7],
+        ['L', 31.7, 10.7],
+      ]),
+    ],
+    tresc: { x: 0.2, y: 0.13, szer: 0.6, wys: 0.74 },
+  },
+  {
+    id: 'wb:pieczec',
+    rodzaj: 'ksztalt',
+    szer: 12,
+    wys: 12,
+    kontury: [
+      {
+        kontur: [
+          ['M', 3, 0],
+          ['L', 9, 0],
+          ['L', 12, 3],
+          ['L', 12, 9],
+          ['L', 9, 12],
+          ['L', 3, 12],
+          ['L', 0, 9],
+          ['L', 0, 3],
+          ['Z'],
+        ],
+        wypelnienie: 'kolor',
+      },
+    ],
+    zdobienia: [
+      kreska(
+        wielokat(
+          [3.5, 1.1],
+          [8.5, 1.1],
+          [10.9, 3.5],
+          [10.9, 8.5],
+          [8.5, 10.9],
+          [3.5, 10.9],
+          [1.1, 8.5],
+          [1.1, 3.5],
+        ),
+      ),
+      kreska(okrag(2.05, 6, 0.46)),
+      kreska(okrag(9.95, 6, 0.46)),
+    ],
+    tresc: { x: 0.25, y: 0.18, szer: 0.5, wys: 0.64 },
+  },
+];

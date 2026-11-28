@@ -36,8 +36,8 @@ const szablon = (reszta: Partial<Szablon>): Szablon => ({
 });
 
 describe('katalog narożników', () => {
-  it('ma 6 wbudowanych narożników o unikalnych identyfikatorach wb:…', () => {
-    expect(NAROZNIKI_WBUDOWANE).toHaveLength(6);
+  it('ma 14 wbudowanych narożników o unikalnych identyfikatorach wb:…', () => {
+    expect(NAROZNIKI_WBUDOWANE).toHaveLength(14);
     const id = ELEMENTY_WBUDOWANE.map((e) => e.id);
     expect(new Set(id).size).toBe(id.length);
     for (const e of NAROZNIKI_WBUDOWANE) {
@@ -220,7 +220,7 @@ describe('galeria wzorców', () => {
   it('sześć narożników na ramce podwójnej – wzorzec SVG', async () => {
     const elementy: ElementSceny[] = [];
     const symbole: NonNullable<Scena['symbole']> = {};
-    NAROZNIKI_WBUDOWANE.forEach((e, i) => {
+    NAROZNIKI_WBUDOWANE.slice(0, 6).forEach((e, i) => {
       const w = narozniki(
         { element: e.id, rozmiar: 12 },
         { x: 4 + (i % 3) * 34, y: 4 + Math.floor(i / 3) * 34, szer: 30, wys: 30 },

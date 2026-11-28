@@ -31,9 +31,9 @@ test('ramka karty: linia podwójna i narożnik z miniatur; zapis w modelu i w po
   await expect(linie).toHaveCount(przed + 1);
   await expect(r.getByLabel('Przerwa między liniami (mm)')).toBeVisible();
 
-  // Narożnik z miniaturami: sześć wbudowanych + „brak”.
+  // Narożnik z miniaturami: 14 wbudowanych + „brak”.
   const naroz = r.getByRole('group', { name: 'Narożniki' });
-  await expect(naroz.getByRole('button')).toHaveCount(7);
+  await expect(naroz.getByRole('button')).toHaveCount(15);
   await expect(page.locator('.karta-podgladu svg use[href^="#"][color]')).toHaveCount(0);
   await naroz.getByRole('button', { name: 'liść' }).click();
   await expect(naroz.getByRole('button', { name: 'liść' })).toHaveAttribute('aria-pressed', 'true');
@@ -48,6 +48,34 @@ test('ramka karty: linia podwójna i narożnik z miniatur; zapis w modelu i w po
   if (process.env.ZRZUTY) await page.screenshot({ path: 'docs/obrazy/m2b-3-ramka-narozniki.png' });
   await naroz.getByRole('button', { name: 'brak' }).click();
   await expect(uzycia).toHaveCount(0);
+});
+
+test('nowe motywy rysują własne łuki i współpracują z narożnikami z biblioteki', async ({
+  page,
+}) => {
+  await kreator(page, { nazwa: 'Płynna ramka', format: 'Standard / Poker', uklad: 'Pusta karta' });
+  await karta(page);
+  const r = await sekcja(page, 'Ramka karty');
+  await r.getByLabel('Ramka karty', { exact: true }).selectOption('motyw');
+
+  const motywy = r.getByRole('group', { name: 'Motyw', exact: true });
+  const narozniki = r.getByRole('group', { name: 'Narożniki', exact: true });
+  await motywy.getByRole('button', { name: 'przesunięte łuki', exact: true }).click();
+  await expect(r).toContainText('Motyw ma własne płynne przejścia w rogach.');
+  await expect(narozniki.getByRole('button', { name: 'brak', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  const symbole = page.locator('.karta-podgladu svg defs g[id]');
+  await expect(symbole).toHaveCount(2);
+  await expect(symbole.last().locator('path[d*="C"]')).toHaveCount(7);
+
+  await motywy.getByRole('button', { name: 'perforacja', exact: true }).click();
+  await narozniki.getByRole('button', { name: 'biletowy', exact: true }).click();
+  await r.getByLabel('Szerokość pasa (mm)').fill('6');
+  await expect(r).toContainText('Rozmiar narożnika dopasowany do szerokości pasa.');
+  await expect(r.getByLabel('Rozmiar narożnika (mm)')).toHaveCount(0);
+  await expect(symbole).toHaveCount(2);
 });
 
 test('obramowanie węzła: linia podwójna i narożnik; rodzaj „brak” je czyści', async ({ page }) => {
@@ -80,10 +108,10 @@ test('motyw: wybór z listy miniatur na ramce karty i na węźle, kolor, pas, sz
   await rodzaj.selectOption('motyw');
   await expect(rodzaj).toHaveValue('motyw');
 
-  // Sześć motywów z miniaturami; linia znika z podglądu, pojawiają się kafelki.
+  // Motywy z miniaturami; linia znika z podglądu, pojawiają się kafelki.
   const lista = r.getByRole('group', { name: 'Motyw', exact: true });
-  await expect(lista.getByRole('button')).toHaveCount(6);
-  await expect(lista.locator('svg')).toHaveCount(6);
+  await expect(lista.getByRole('button')).toHaveCount(19);
+  await expect(lista.locator('svg')).toHaveCount(19);
   for (const n of ['pnącze', 'przeplot', 'łuski', 'runy', 'łańcuch', 'gwiazdki'])
     await expect(lista.getByRole('button', { name: n })).toBeVisible();
   const uzycia = page.locator('.karta-podgladu svg use[color]');
@@ -171,8 +199,8 @@ test('separator ozdobny: trzy wzory z menu, zakończenia, środek, motyw, długo
   await sekcja(page, 'Separator');
   const zak = p.getByRole('group', { name: /^Zakończenia/ });
   const srodek = p.getByRole('group', { name: 'Środek', exact: true });
-  await expect(zak.getByRole('button')).toHaveCount(6); // brak + 5
-  await expect(srodek.getByRole('button')).toHaveCount(5); // brak + 4
+  await expect(zak.getByRole('button')).toHaveCount(8); // brak + 7
+  await expect(srodek.getByRole('button')).toHaveCount(7); // brak + 6
   await expect(zak.getByRole('button', { name: 'grot' })).toHaveAttribute('aria-pressed', 'true');
 
   // Zmiana zakończenia i środka podmienia rysunki; „brak” je usuwa.
@@ -204,7 +232,7 @@ test('separator ozdobny: trzy wzory z menu, zakończenia, środek, motyw, długo
   await pasekDodaj.getByRole('button', { name: 'Separator z motywem', exact: true }).click();
   await sekcja(page, 'Separator');
   const motywy = p.getByRole('group', { name: 'Motyw', exact: true });
-  await expect(motywy.getByRole('button')).toHaveCount(6);
+  await expect(motywy.getByRole('button')).toHaveCount(19);
   await expect(motywy.getByRole('button', { name: 'łańcuch' })).toHaveAttribute(
     'aria-pressed',
     'true',

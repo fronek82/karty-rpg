@@ -2030,6 +2030,17 @@ label.pole-panelu.wybor input[type='checkbox'] {
   font-size: 0.85rem;
 }
 
+.przelacznik-segmentowy.przelacznik-bez-zawijania {
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.przelacznik-bez-zawijania button {
+  flex: 1;
+  min-width: 0;
+  padding-inline: 0.2rem;
+}
+
 .przelacznik-segmentowy button:last-child {
   border-right: 0;
 }

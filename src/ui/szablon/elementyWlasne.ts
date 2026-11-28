@@ -1,12 +1,5 @@
 import { createContext, useContext } from 'react';
-import {
-  MOTYWY_WBUDOWANE,
-  NAROZNIKI_WBUDOWANE,
-  SRODKI_WBUDOWANE,
-  ZAKONCZENIA_WBUDOWANE,
-  type ElementOzdobny,
-  type RodzajElementu,
-} from '../../ozdobniki';
+import { ELEMENTY_WBUDOWANE, type ElementOzdobny, type RodzajElementu } from '../../ozdobniki';
 
 /** Elementy ozdobne do wyborów (widok projektu + biblioteka użytkownika) i adres strony Biblioteki. */
 export const ElementyWlasneKontekst = createContext<{
@@ -29,17 +22,13 @@ export const useElementyWlasne = () => useContext(ElementyWlasneKontekst).elemen
 export const useAdresObrazu = () => useContext(ElementyWlasneKontekst).adresObrazu;
 export const useAdresBiblioteki = () => useContext(ElementyWlasneKontekst).adresBiblioteki;
 
-const WBUDOWANE: Partial<Record<RodzajElementu, ElementOzdobny[]>> = {
-  naroznik: NAROZNIKI_WBUDOWANE,
-  motyw: MOTYWY_WBUDOWANE,
-  zakonczenie: ZAKONCZENIA_WBUDOWANE,
-  srodek: SRODKI_WBUDOWANE,
-};
-
 /** Elementy danego rodzaju do list wyboru: wbudowane, potem własne projektu. */
 export function elementyRodzaju(
   rodzaj: RodzajElementu,
   wlasne: readonly ElementOzdobny[],
 ): ElementOzdobny[] {
-  return [...(WBUDOWANE[rodzaj] ?? []), ...wlasne.filter((e) => e.rodzaj === rodzaj)];
+  return [
+    ...ELEMENTY_WBUDOWANE.filter((e) => e.rodzaj === rodzaj),
+    ...wlasne.filter((e) => e.rodzaj === rodzaj),
+  ];
 }

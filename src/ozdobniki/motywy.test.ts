@@ -71,7 +71,7 @@ const kartaZPanelem = (o: OzdobaMotyw): Szablon => ({
 });
 
 describe('katalog motywów', () => {
-  it('sześć motywów o unikalnych identyfikatorach, z kafelkiem i kostką narożną', () => {
+  it('motywy o unikalnych identyfikatorach, z kafelkiem i kostką narożną', () => {
     expect(MOTYWY_WBUDOWANE.map((e) => e.id)).toEqual([
       'wb:pnacze',
       'wb:przeplot',
@@ -79,6 +79,19 @@ describe('katalog motywów', () => {
       'wb:runy',
       'wb:lancuch',
       'wb:gwiazdki',
+      'wb:meander',
+      'wb:fala',
+      'wb:cegielki',
+      'wb:arkady',
+      'wb:perforacja',
+      'wb:krople',
+      'wb:impulsy',
+      'wb:trzciny',
+      'wb:przesuniete-luki',
+      'wb:rozwidlenia',
+      'wb:wstegi',
+      'wb:wachlarze',
+      'wb:grzbiety',
     ]);
     for (const e of MOTYWY_WBUDOWANE) {
       expect(e.rodzaj).toBe('motyw');
@@ -260,7 +273,7 @@ describe('motyw w scenie karty', () => {
 });
 
 describe('wzorce SVG motywów', () => {
-  for (const e of MOTYWY_WBUDOWANE) {
+  for (const e of MOTYWY_WBUDOWANE.slice(0, 6)) {
     const nazwa = e.id.replace('wb:', '');
     it(`${nazwa} – karta 40 × 60 z ramką, szynami i kostkami narożnymi`, async () => {
       const { scena, ostrzezenia } = renderujKarte(
@@ -286,6 +299,87 @@ describe('wzorce SVG motywów', () => {
       );
     });
   }
+});
+
+describe('motywy z płynnymi przejściami w rogach', () => {
+  it.each(['perforacja', 'przesuniete-luki', 'rozwidlenia', 'wstegi', 'wachlarze'])(
+    '%s łączy końce kafelka z łukami narożnika',
+    (id) => {
+      const e = znajdzElement(`wb:${id}`)!;
+      const styki = e.kostka!.filter(({ kontur }) => kontur[0]?.[1] === e.wys);
+      expect(styki.length).toBeGreaterThan(1);
+      for (const { kontur } of styki) {
+        const y = kontur[0]![2];
+        expect(kontur[1]?.slice(-2)).toEqual([y, e.wys]);
+        expect(
+          e.kontury.some(
+            ({ kontur: bok }) =>
+              bok[0]?.[1] === 0 &&
+              bok[0]?.[2] === y &&
+              bok.at(-1)?.at(-2) === e.szer &&
+              bok.at(-1)?.at(-1) === y,
+          ),
+        ).toBe(true);
+      }
+      const wynik = ramkaZMotywu(
+        ozdoba(e.id, { szerokosc: 3, poLuku: true }),
+        { x: 0, y: 0, szer: 40, wys: 60 },
+        { promien: 6 },
+      );
+      expect(
+        wynik.elementy.filter(
+          (el) => el.typ === 'symbol' && el.klucz === kluczKostki(`${e.id}:20`),
+        ),
+      ).toHaveLength(4);
+    },
+  );
+
+  it('dopasowuje łuki i szyny do przycięcia karty, zachowując szerokość pasa', () => {
+    const { scena, ostrzezenia } = renderujKarte(
+      {
+        ...kartaZRamka(ozdoba('wb:perforacja', { szerokosc: 3, szyny: 0.3 }), {
+          odsuniecie: 0,
+          promien: 0,
+        }),
+        promienRogow: 6,
+      },
+      { dane: { nazwa: 'Ala' } },
+      ctx,
+    );
+    expect(ostrzezenia).toEqual([]);
+    const klucz = kluczKostki('wb:perforacja:20');
+    expect(scena.symbole?.[klucz]?.kontury[0]?.kontur[0]).toEqual(['M', 20, 0.9]);
+    const grupa = scena.elementy[0];
+    expect(grupa?.typ).toBe('grupa');
+    if (grupa?.typ !== 'grupa') return;
+    expect(grupa.elementy.find((el) => el.typ === 'symbol' && el.klucz === klucz)).toMatchObject({
+      macierz: [0.3, 0, 0, 0.3, 0, 0],
+    });
+    expect(
+      grupa.elementy.find((el) => el.typ === 'symbol' && el.klucz === 'wb:perforacja'),
+    ).toMatchObject({ macierz: expect.arrayContaining([0.3, 6]) });
+    expect(grupa.elementy.filter((el) => el.typ === 'prostokat' && el.obrys)).toMatchObject([
+      { promien: 5.85 },
+      { promien: 3.15 },
+    ]);
+  });
+
+  it('dopasowuje narożnik biletowy do Perforacji po zmianie szerokości pasa', () => {
+    const { scena, ostrzezenia } = renderujKarte(
+      kartaZRamka(ozdoba('wb:perforacja', { szerokosc: 6 }), {
+        narozniki: { element: 'wb:biletowy', rozmiar: 2, kolor: '#80501c' },
+      }),
+      { dane: { nazwa: 'Ala' } },
+      ctx,
+    );
+    expect(ostrzezenia).toEqual([]);
+    const rogi = scena.elementy.filter(
+      (e) => e.typ === 'symbol' && e.klucz === kluczKostki('wb:perforacja'),
+    );
+    expect(rogi).toHaveLength(4);
+    expect(rogi[0]).toMatchObject({ macierz: [0.6, 0, 0, 0.6, 1, 1], kolor: '#80501c' });
+    expect(scena.symbole?.['wb:biletowy']).toBeUndefined();
+  });
 });
 
 describe('PDF z motywami', () => {

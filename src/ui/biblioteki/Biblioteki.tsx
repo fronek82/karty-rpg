@@ -135,7 +135,7 @@ async function pobierzPlik(w: WpisBiblioteki): Promise<void> {
 
 /** Systemowe ozdobniki (wbudowane) – tylko do odczytu, nad siatką „Moja biblioteka”. */
 function Systemowe() {
-  const grupy = ['motyw', 'naroznik', 'zakonczenie', 'srodek'] as const;
+  const grupy = ['motyw', 'naroznik', 'zakonczenie', 'srodek', 'ksztalt'] as const;
   return (
     <details className="ozdobniki-systemowe">
       <summary>{t('biblioteka.systemowe')}</summary>

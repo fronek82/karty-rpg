@@ -54,9 +54,9 @@ const OZDOBNY = {
 } satisfies Partial<PoleSeparator>;
 
 describe('katalog zakończeń i środków', () => {
-  it('5 zakończeń i 4 środki o unikalnych identyfikatorach wb:…, kolorowalne, w polu rysunku', () => {
-    expect(ZAKONCZENIA_WBUDOWANE).toHaveLength(5);
-    expect(SRODKI_WBUDOWANE).toHaveLength(4);
+  it('7 zakończeń i 6 środków o unikalnych identyfikatorach wb:…, kolorowalne, w polu rysunku', () => {
+    expect(ZAKONCZENIA_WBUDOWANE).toHaveLength(7);
+    expect(SRODKI_WBUDOWANE).toHaveLength(6);
     const id = ELEMENTY_WBUDOWANE.map((e) => e.id);
     expect(new Set(id).size).toBe(id.length);
     for (const e of [...ZAKONCZENIA_WBUDOWANE, ...SRODKI_WBUDOWANE]) {
