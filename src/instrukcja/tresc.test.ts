@@ -49,8 +49,12 @@ const KLUCZOWE: Record<string, (j: Jezyk) => string> = {
   'pobierz.menu': (j) => SLOWNIKI[j]['pobierz.menu']!,
   'pobierz.pdf': (j) => SLOWNIKI[j]['pobierz.pdf']!,
   'start.importujPliki': (j) => SLOWNIKI[j]['start.importujPliki']!,
-  'start.stworzDo': (j) =>
-    SLOWNIKI[j]['start.stworzDo']!.replace('{gra}', SLOWNIKI[j]['gra.mausritter.nazwaDo']!),
+  'start.mausritterTytul': (j) => SLOWNIKI[j]['start.mausritterTytul']!,
+  'start.noweKarty': (j) => SLOWNIKI[j]['start.noweKarty']!,
+  'start.nowySzablonBtn': (j) => SLOWNIKI[j]['start.nowySzablonBtn']!,
+  'karty.doDruku': (j) => SLOWNIKI[j]['karty.doDruku']!,
+  'edytor.dodajElement': (j) => SLOWNIKI[j]['edytor.dodajElement']!,
+  'mausritter.odCzegoZaczynamy': (j) => SLOWNIKI[j]['mausritter.odCzegoZaczynamy']!,
 };
 
 const CUDZYSLOW: Record<Jezyk, RegExp> = { pl: /„([^„”]+)”/g, en: /“([^“”]+)”/g };
@@ -405,15 +409,16 @@ describe('parytet sekcji PL ↔ EN', () => {
 describe('zrzuty ekranu w treści', () => {
   const NAZWY = [
     'start',
+    'nowy-szablon',
+    'edytor-szablonu',
+    'ekran-kart',
+    'ustawienia',
     'mausritter',
     'edytor-kartki',
-    'ekran-kart',
-    'edytor-szablonu',
-    'ustawienia',
     'biblioteki',
   ];
 
-  it.each(JEZYKI)('(%s) siedem rysunków z alt, podpisem, wymiarami i loading=lazy', (j) => {
+  it.each(JEZYKI)('(%s) osiem rysunków z alt, podpisem, wymiarami i loading=lazy', (j) => {
     const rysunki = [...artykul(j).querySelectorAll('figure')];
     expect(rysunki.map((f) => f.querySelector('img')!.getAttribute('src'))).toEqual(
       NAZWY.map((n) => `/instrukcja-zrzuty/${j}/${n}.png`).sort(
