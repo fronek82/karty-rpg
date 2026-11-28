@@ -1,9 +1,9 @@
 /*
- * Style UI2 R7 dla ekranu druku i sekcji „Linie cięcia” (wzór: docs/makiety-ui2/Druk.dc.html).
+ * Style UI2 R7 / R12 dla ekranu druku i sekcji „Linie cięcia” (wzór: docs/makiety-ui2/Druk.dc.html).
  * Wszystkie kolory pochodzą wyłącznie z tokenów w src/ui/tokeny.css.
  */
 
-/* Dokładna wysokość paska jak przed UI-1 (55,78 px) chroni podpikselową pozycję wzorców PNG kartek. */
+/* Dokładna wysokość starego paska jak przed UI-1 (55,78 px) chroni podpikselową pozycję wzorców PNG kartek. */
 .edytor-kartki > .pasek-gorny {
   height: 3.486328125rem;
   flex-wrap: nowrap;
@@ -24,11 +24,354 @@
   gap: 5px;
 }
 
+/* --- Ekran Druk UI2 (R12) --- */
+.druk-ui2-ekran {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.druk-ui2-ekran .ui2-panel-sekcji {
+  width: 340px;
+}
+
+.ui2-pasek-boczny-prawa {
+  margin-left: auto;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  color: var(--tekst-2);
+  white-space: nowrap;
+}
+
+/* Split-button „⤓ Pobierz PDF” + „▾” */
+.druk-ui2-pobierz-grupa {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.druk-ui2-pobierz-pdf {
+  padding: 0 16px;
+}
+
+.druk-ui2-pobierz-rozwin {
+  width: 36px;
+  padding: 0;
+  border-left: 1px solid var(--tlo);
+  justify-content: center;
+}
+
+.druk-ui2-pobierz-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 240px;
+  padding: 4px 0;
+  background: var(--powierzchnia);
+  border: 1.5px solid var(--tekst);
+  box-shadow: 4px 4px 0 var(--riso-niebieski);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+}
+
+.druk-ui2-pobierz-menu .menu-pozycja {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--tekst);
+  border: none;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.druk-ui2-pobierz-menu .menu-pozycja:hover,
+.druk-ui2-pobierz-menu .menu-pozycja:focus-visible {
+  background: var(--akcent);
+  color: var(--na-akcencie);
+  outline: none;
+}
+
+/* Pasek nad podglądem: Pokaż + podsumowanie */
+.druk-ui2-pasek-gorny {
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.druk-ui2-pokaz-etykieta {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tekst);
+  white-space: nowrap;
+}
+
+.druk-ui2-segmenty {
+  display: inline-flex;
+  padding-left: 1.5px;
+}
+
+.druk-ui2-seg-btn {
+  height: 30px;
+  padding: 0 12px;
+  margin-left: -1.5px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.druk-ui2-seg-btn[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+  position: relative;
+  z-index: 1;
+}
+
+.druk-ui2-seg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.druk-ui2-podsumowanie {
+  margin-left: auto;
+  font-family: var(--czcionka-mono);
+  font-size: 12px;
+  color: var(--tekst);
+  white-space: nowrap;
+}
+
+/* Obszar roboczy podglądu druku */
+.druk-ui2-obszar {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px 28px;
+  background-color: var(--tlo-robocze);
+  background-image: radial-gradient(var(--kropki-robocze) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.druk-ui2-obszar .strona-kartki {
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Nawigacja stron w pasku stanu */
+.druk-ui2-strony-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.druk-ui2-strona-btn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.druk-ui2-strona-btn[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+/* Lista kart w druku (lewy PasekBoczny) */
+.druk-ui2-lista-kart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.druk-ui2-karta-wiersz {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--tekst);
+  background: var(--powierzchnia);
+  color: var(--tekst);
+}
+
+.druk-ui2-karta-wiersz.zwiniety {
+  justify-content: center;
+  padding: 0;
+}
+
+.druk-ui2-karta-wiersz.pominieta {
+  background: transparent;
+  border-color: var(--linia-2);
+  color: var(--tekst-2);
+}
+
+.druk-ui2-karta-czek {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  background: var(--powierzchnia);
+  color: var(--tlo);
+  font-size: 11px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.druk-ui2-karta-czek.aktywny {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.druk-ui2-karta-nazwa {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.druk-ui2-karta-kopie {
+  font-family: var(--czcionka-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: inherit;
+}
+
+/* Prawy panel Ustawienia druku – kafelki papierów i kontrolki */
+.druk-ui2-wybor-arkusza {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--linia-2);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.druk-ui2-blad {
+  margin: 8px 14px;
+}
+
+.druk-ui2-papiery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.druk-ui2-papier-kafelek {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.druk-ui2-papier-kafelek[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.druk-ui2-papier-zarys {
+  display: block;
+  border: 1.5px solid currentColor;
+  box-sizing: border-box;
+}
+
+.druk-ui2-papier-nazwa {
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.druk-ui2-papier-mm {
+  font-family: var(--czcionka-mono);
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.druk-ui2-wiersz-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.druk-ui2-przycisk-pelny {
+  width: 100%;
+  height: 36px;
+  justify-content: center;
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.druk-ui2-przycisk-pelny.ui2-przycisk-glowny {
+  height: 40px;
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.druk-ui2-pobierz-siatka {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.druk-ui2-przycisk-drugi {
+  height: 32px;
+  padding: 0 6px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.druk-ui2-przycisk-drugi:hover:not(:disabled) {
+  background: var(--tlo-pasek);
+}
+
+.druk-ui2-przycisk-drugi:disabled,
+.druk-ui2-przycisk-pelny:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Sekcja Linie cięcia */
 .druk-ui2-linie-cialo {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-top: 6px;
 }
 
 .druk-ui2-grubosci {
@@ -38,7 +381,8 @@
 }
 
 .druk-ui2-grubosc-btn {
-  padding: 4px 8px;
+  flex: 1 1 0;
+  padding: 5px 6px;
   border: 1.5px solid var(--tekst);
   border-radius: 0;
   background: var(--powierzchnia);
@@ -47,6 +391,7 @@
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .druk-ui2-grubosc-btn[aria-pressed='true'] {
@@ -62,8 +407,8 @@
 }
 
 .druk-ui2-probka {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 1.5px solid var(--tekst);
   border-radius: 0;
@@ -77,7 +422,7 @@
 
 .druk-ui2-kolor-input {
   width: 28px;
-  height: 24px;
+  height: 26px;
   padding: 0;
   border: 1.5px solid var(--tekst);
   background: transparent;
@@ -94,41 +439,78 @@
   background: var(--tekst);
 }
 
-/* Lista kart w druku (lewy pasek w trybie druku) */
-.druk-ui2-lista-kart {
+/* Kompatybilność kontrolek wewnątrz ui2-sekcja-cialo */
+.druk-ui2-ekran .ui2-sekcja-cialo .pole-panelu {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.druk-ui2-karta-wiersz {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 4px 6px;
-  border: 1px solid var(--linia-2);
+.druk-ui2-ekran .ui2-sekcja-cialo .pole-panelu.dwa-pola {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.druk-ui2-ekran .ui2-sekcja-cialo input[type='text'],
+.druk-ui2-ekran .ui2-sekcja-cialo input[type='number'],
+.druk-ui2-ekran .ui2-sekcja-cialo select {
+  height: 30px;
+  padding: 0 8px;
   background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.druk-ui2-ekran .ui2-sekcja-cialo .przelacznik-segmentowy {
+  display: flex;
+}
+
+.druk-ui2-ekran .ui2-sekcja-cialo .przelacznik-segmentowy button {
+  flex: 1 1 0;
+  height: 30px;
+  padding: 0 6px;
+  background: var(--powierzchnia);
+  color: var(--tekst);
+  border: 1.5px solid var(--tekst);
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.druk-ui2-karta-nazwa {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.druk-ui2-ekran .ui2-sekcja-cialo .przelacznik-segmentowy button + button {
+  border-left: none;
 }
 
-.druk-ui2-karta-kopie {
-  font-family: var(--czcionka-mono);
+.druk-ui2-ekran .ui2-sekcja-cialo .przelacznik-segmentowy button[aria-pressed='true'] {
+  background: var(--tekst);
+  color: var(--tlo);
+}
+
+.druk-ui2-ekran .ui2-sekcja-cialo .wybor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.druk-ui2-ekran .ui2-sekcja-cialo .podpis {
+  margin: 0;
   font-size: 11px;
-  font-weight: 700;
+  line-height: 1.4;
   color: var(--tekst-2);
+  font-weight: 400;
 }
 
-/* Mausritter R8: lewy pasek „Dodaj kartę” obok arkusza (3 kolumny: 60px + arkusz + panel) */
+/* Mausritter R8: lewy pasek „Dodaj kartę” obok arkusza (zachowane dla kompatybilności) */
 .mausritter-ui2-pasek-opak {
   position: sticky;
   top: 3.486328125rem;

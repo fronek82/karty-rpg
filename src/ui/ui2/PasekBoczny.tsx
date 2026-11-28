@@ -33,6 +33,8 @@ export interface PasekBocznyProps {
   ekranId: string;
   /** Etykieta nawigacji (`aria-label`) i tytuł nagłówka w stanie rozwiniętym. */
   tytul: string;
+  /** Opcjonalny element po prawej stronie nagłówka w stanie rozwiniętym (np. licznik sztuk w druku). */
+  naglowekPrawa?: ReactNode;
   grupy: readonly GrupaPaskaBocznego[];
   /** Krótka wskazówka na dole listy w stanie rozwiniętym. */
   wskazowka?: string;
@@ -42,6 +44,8 @@ export interface PasekBocznyProps {
   strona?: 'lewy' | 'prawy';
   /** Dodatkowa zawartość pod grupami (np. gdy ekran renderuje własne kafelki). */
   dzieci?: ReactNode;
+  /** Opcjonalny render zawartości zależny od stanu rozwinięcia (np. lista kart w druku). */
+  renderujTresc?: (rozwiniety: boolean) => ReactNode;
 }
 
 function odczytajStanPaska(ekranId: string, domyslny: boolean): boolean {
@@ -73,11 +77,13 @@ function zapiszStanPaska(ekranId: string, rozwiniety: boolean): void {
 export function PasekBoczny({
   ekranId,
   tytul,
+  naglowekPrawa,
   grupy,
   wskazowka,
   domyslnieRozwiniety = false,
   strona = 'lewy',
   dzieci,
+  renderujTresc,
 }: PasekBocznyProps) {
   const [rozwiniety, ustawRozwiniety] = useState<boolean>(() =>
     odczytajStanPaska(ekranId, domyslnieRozwiniety),
@@ -101,7 +107,12 @@ export function PasekBoczny({
       data-stan={rozwiniety ? 'rozwiniety' : 'zwiniety'}
     >
       <div className="ui2-pasek-boczny-naglowek">
-        {rozwiniety && <span className="ui2-pasek-boczny-tytul">{tytul}</span>}
+        {rozwiniety && (
+          <>
+            <span className="ui2-pasek-boczny-tytul">{tytul}</span>
+            {naglowekPrawa && <span className="ui2-pasek-boczny-prawa">{naglowekPrawa}</span>}
+          </>
+        )}
       </div>
 
       <div className="ui2-pasek-boczny-lista">
@@ -157,6 +168,7 @@ export function PasekBoczny({
             })}
           </div>
         ))}
+        {renderujTresc?.(rozwiniety)}
         {dzieci}
         {rozwiniety && wskazowka && <p className="ui2-pasek-wskazowka">{wskazowka}</p>}
       </div>

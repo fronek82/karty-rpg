@@ -12,7 +12,6 @@ import {
   wymiaryUkladu,
   type Arkusz,
   type DopasowanieDoSlotu,
-  type LinieCiecia,
   type OpcjeMieszane,
   type PresetUkladu,
   type UkladArkusza,
@@ -20,8 +19,7 @@ import {
 import type { Projekt } from '../../model/projekt';
 import { baza } from '../bazaUI';
 import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
-import { kolorSceny } from '../../silnik/scena';
-import { PoleKoloru } from '../szablon/Kontrolki';
+import { SekcjaPanelu } from '../ui2/PanelSekcji';
 import { PoleLiczby } from './PoleLiczby';
 import { PodgladWymiarowUkladu } from './PodgladWymiarowUkladu';
 
@@ -31,21 +29,15 @@ const nowyId = () => `uklad-${Date.now().toString(36)}-${Math.random().toString(
 /**
  * Układ arkusza kartki: automatyczny (karty stykają się) albo własny – stała siatka z marginesem
  * górnym i lewym, odstępami i rozmiarem karty (gotowe arkusze z perforacją). Kartka obok i diagram
- * w panelu aktualizują się na żywo. „Moje układy” w tej przeglądarce (IndexedDB), kalibracja drukarki
- * (localStorage) i wydruk testowy.
+ * w panelu aktualizują się na żywo. „Moje układy” w tej przeglądarce (IndexedDB).
  */
 export function PanelUkladu({
   arkusz,
   wynik,
   zmienUklad,
-  wydrukTestowy,
   przelaczRozmiary,
   naKartce = [],
-  kalibracja,
-  zmienKalibracje,
 }: {
-  kalibracja: Kalibracja;
-  zmienKalibracje: (k: Kalibracja) => void;
   /** Przełączenie „jeden rozmiar (siatka)” ↔ „mieszane” (z przeniesieniem kart). */
   przelaczRozmiary?: (tryb: 'jeden' | 'mieszane') => void;
   /** Karty na kartce pogrupowane wg szablonu (lista „Na kartce” w trybie mieszanym). */
@@ -61,7 +53,6 @@ export function PanelUkladu({
   /** Ostatnio zbudowana kartka – siatka startowa przy przejściu na własny układ. */
   wynik?: WynikArkusza;
   zmienUklad: (f: (p: Projekt) => Projekt, klucz?: string) => boolean;
-  wydrukTestowy: () => void;
 }) {
   const u = arkusz.ustawienia;
   const A = arkusz.id;
@@ -99,27 +90,6 @@ export function PanelUkladu({
 
   const zmienSiatke = (z: Partial<UkladArkusza>, klucz: string) =>
     uklad && zmienUklad((p) => ustawUstawieniaArkusza(p, A, { uklad: { ...uklad, ...z } }), klucz);
-
-  // Kartka bez zapisanego dopasowania działa jak przed M2b-1: luz 0,5 mm.
-  const dopasowanie: DopasowanieDoSlotu = u.dopasowanie ?? {
-    ...DOPASOWANIE_DOMYSLNE,
-    luz: TOLERANCJA_ROZMIARU,
-  };
-  const zmienDopasowanie = (z: Partial<DopasowanieDoSlotu>, klucz: string) =>
-    zmienUklad(
-      (p) => ustawUstawieniaArkusza(p, A, { dopasowanie: { ...dopasowanie, ...z } }),
-      `dopasowanie-${klucz}`,
-    );
-
-  // Linie cięcia (też nożyczki i linie prowadzące) – np. jasne na ciemnych kartach.
-  // Tryb drukarni rysuje znaczniki cięcia zamiast linii; własny układ może linie wyłączyć.
-  const drukarnia = !!u.drukarnia?.wlaczony;
-  const rysujLinie = !drukarnia && (!uklad || uklad.linieCiecia);
-  const zmienLinie = (z: Partial<LinieCiecia>, klucz: string) =>
-    zmienUklad(
-      (p) => ustawUstawieniaArkusza(p, A, { linie: { ...u.linie, ...z } }),
-      `linie-${A}-${klucz}`,
-    );
 
   const zmienMieszane = (z: Partial<OpcjeMieszane>, klucz: string) =>
     zmienUklad(
@@ -200,8 +170,7 @@ export function PanelUkladu({
   const poza = wymiary && (wymiary.prawo < -1e-6 || wymiary.dol < -1e-6);
 
   return (
-    <fieldset className="sekcja-ukladu">
-      <legend>{t('uklad.tytul')}</legend>
+    <SekcjaPanelu tytul={t('uklad.tytul')} domyslnieOtwarta>
       {przelaczRozmiary && (
         <div className="pole-panelu">
           <label htmlFor={`rozmiary-${A}`}>{t('mieszane.tytul')}</label>
@@ -329,73 +298,6 @@ export function PanelUkladu({
         </select>
         <p className="podpis">{t('uklad.opis')}</p>
       </div>
-      {!mieszane && (
-        <fieldset className="karta-w-slocie">
-          <legend>{t('dopasowanie.tytul')}</legend>
-          <PoleLiczby
-            id="dopasowanie-luz"
-            etykieta={t('dopasowanie.luz')}
-            wartosc={dopasowanie.luz}
-            min={0}
-            max={LUZ_MAKS}
-            krok={0.5}
-            zmien={(v) => zmienDopasowanie({ luz: v }, 'luz')}
-          />
-          <p className="podpis">
-            {t('dopasowanie.luzOpis', { tolerancja: zaokr(TOLERANCJA_ROZMIARU) })}
-          </p>
-          <div className="pole-panelu">
-            <span id={`dop-polozenie-${A}`}>{t('dopasowanie.polozenie')}</span>
-            <div
-              className="przelacznik-segmentowy"
-              role="group"
-              aria-labelledby={`dop-polozenie-${A}`}
-            >
-              <button
-                type="button"
-                aria-pressed={dopasowanie.polozenie === 'srodek'}
-                onClick={() => zmienDopasowanie({ polozenie: 'srodek' }, 'polozenie')}
-              >
-                {t('dopasowanie.srodek')}
-              </button>
-              <button
-                type="button"
-                aria-pressed={dopasowanie.polozenie === 'lewy-gorny'}
-                onClick={() => zmienDopasowanie({ polozenie: 'lewy-gorny' }, 'polozenie')}
-              >
-                {t('dopasowanie.lewyGorny')}
-              </button>
-            </div>
-          </div>
-          <label className="pole-panelu wybor">
-            <input
-              type="checkbox"
-              checked={dopasowanie.tloDoSlotu}
-              onChange={(e) => zmienDopasowanie({ tloDoSlotu: e.target.checked }, 'tlo')}
-            />
-            {t('dopasowanie.tloDoSlotu')}
-          </label>
-          <div className="pole-panelu">
-            <span id={`dop-linie-${A}`}>{t('dopasowanie.linie')}</span>
-            <div className="przelacznik-segmentowy" role="group" aria-labelledby={`dop-linie-${A}`}>
-              <button
-                type="button"
-                aria-pressed={dopasowanie.linie === 'slot'}
-                onClick={() => zmienDopasowanie({ linie: 'slot' }, 'linie')}
-              >
-                {t('dopasowanie.wokolSlotu')}
-              </button>
-              <button
-                type="button"
-                aria-pressed={dopasowanie.linie === 'karta'}
-                onClick={() => zmienDopasowanie({ linie: 'karta' }, 'linie')}
-              >
-                {t('dopasowanie.wokolKarty')}
-              </button>
-            </div>
-          </div>
-        </fieldset>
-      )}
       {uklad && (
         <>
           <div className="pole-panelu dwa-pola">
@@ -538,76 +440,133 @@ export function PanelUkladu({
       <p role="status" aria-live="polite" className="podpis">
         {status}
       </p>
-      <fieldset className="linie-ciecia" disabled={!rysujLinie}>
-        <legend>{t('linie.tytul')}</legend>
-        <PoleKoloru
-          etykieta={t('linie.kolor')}
-          wartosc={kolorSceny(u.linie.kolor)}
-          moznaBrak={false}
-          zmien={(v) => v && zmienLinie({ kolor: v }, 'kolor')}
+    </SekcjaPanelu>
+  );
+}
+
+/** Osobna zwijana sekcja „Karta w slocie” (UI2 R12, 5.6). W trybie mieszanym ukryta. */
+export function SekcjaKartyWSlocie({
+  arkusz,
+  zmienUklad,
+}: {
+  arkusz: Arkusz;
+  zmienUklad: (f: (p: Projekt) => Projekt, klucz?: string) => boolean;
+}) {
+  const u = arkusz.ustawienia;
+  if (u.rozmiary === 'mieszane') return null;
+  const A = arkusz.id;
+  // Kartka bez zapisanego dopasowania działa jak przed M2b-1: luz 0,5 mm.
+  const dopasowanie: DopasowanieDoSlotu = u.dopasowanie ?? {
+    ...DOPASOWANIE_DOMYSLNE,
+    luz: TOLERANCJA_ROZMIARU,
+  };
+  const zmienDopasowanie = (z: Partial<DopasowanieDoSlotu>, klucz: string) =>
+    zmienUklad(
+      (p) => ustawUstawieniaArkusza(p, A, { dopasowanie: { ...dopasowanie, ...z } }),
+      `dopasowanie-${klucz}`,
+    );
+
+  return (
+    <SekcjaPanelu tytul={t('dopasowanie.tytul')} domyslnieOtwarta={false}>
+      <PoleLiczby
+        id="dopasowanie-luz"
+        etykieta={t('dopasowanie.luz')}
+        wartosc={dopasowanie.luz}
+        min={0}
+        max={LUZ_MAKS}
+        krok={0.5}
+        zmien={(v) => zmienDopasowanie({ luz: v }, 'luz')}
+      />
+      <p className="podpis">
+        {t('dopasowanie.luzOpis', { tolerancja: zaokr(TOLERANCJA_ROZMIARU) })}
+      </p>
+      <div className="pole-panelu">
+        <span id={`dop-polozenie-${A}`}>{t('dopasowanie.polozenie')}</span>
+        <div className="przelacznik-segmentowy" role="group" aria-labelledby={`dop-polozenie-${A}`}>
+          <button
+            type="button"
+            aria-pressed={dopasowanie.polozenie === 'srodek'}
+            onClick={() => zmienDopasowanie({ polozenie: 'srodek' }, 'polozenie')}
+          >
+            {t('dopasowanie.srodek')}
+          </button>
+          <button
+            type="button"
+            aria-pressed={dopasowanie.polozenie === 'lewy-gorny'}
+            onClick={() => zmienDopasowanie({ polozenie: 'lewy-gorny' }, 'polozenie')}
+          >
+            {t('dopasowanie.lewyGorny')}
+          </button>
+        </div>
+      </div>
+      <label className="pole-panelu wybor">
+        <input
+          type="checkbox"
+          checked={dopasowanie.tloDoSlotu}
+          onChange={(e) => zmienDopasowanie({ tloDoSlotu: e.target.checked }, 'tlo')}
+        />
+        {t('dopasowanie.tloDoSlotu')}
+      </label>
+      <div className="pole-panelu">
+        <span id={`dop-linie-${A}`}>{t('dopasowanie.linie')}</span>
+        <div className="przelacznik-segmentowy" role="group" aria-labelledby={`dop-linie-${A}`}>
+          <button
+            type="button"
+            aria-pressed={dopasowanie.linie === 'slot'}
+            onClick={() => zmienDopasowanie({ linie: 'slot' }, 'linie')}
+          >
+            {t('dopasowanie.wokolSlotu')}
+          </button>
+          <button
+            type="button"
+            aria-pressed={dopasowanie.linie === 'karta'}
+            onClick={() => zmienDopasowanie({ linie: 'karta' }, 'linie')}
+          >
+            {t('dopasowanie.wokolKarty')}
+          </button>
+        </div>
+      </div>
+    </SekcjaPanelu>
+  );
+}
+
+/** Osobna zwijana sekcja „Kalibracja drukarki” (UI2 R12, 5.6). */
+export function SekcjaKalibracji({
+  kalibracja,
+  zmienKalibracje,
+  wydrukTestowy,
+}: {
+  kalibracja: Kalibracja;
+  zmienKalibracje: (k: Kalibracja) => void;
+  wydrukTestowy: () => void;
+}) {
+  return (
+    <SekcjaPanelu tytul={t('uklad.kalibracja')} domyslnieOtwarta={false}>
+      <p className="podpis">{t('uklad.kalibracjaOpis')}</p>
+      <button type="button" className="druk-ui2-przycisk-pelny" onClick={wydrukTestowy}>
+        {t('uklad.wydrukTestowy')}
+      </button>
+      <div className="pole-panelu dwa-pola">
+        <PoleLiczby
+          id="kalibracja-x"
+          etykieta={t('uklad.przesuniecieX')}
+          wartosc={kalibracja.x}
+          min={-MAKS_PRZESUNIECIA}
+          max={MAKS_PRZESUNIECIA}
+          krok={0.1}
+          zmien={(v) => zmienKalibracje({ ...kalibracja, x: v })}
         />
         <PoleLiczby
-          id="linie-grubosc"
-          etykieta={t('linie.grubosc')}
-          wartosc={u.linie.grubosc}
-          min={0.05}
-          max={2}
-          krok={0.01}
-          zmien={(v) => zmienLinie({ grubosc: v }, 'grubosc')}
+          id="kalibracja-y"
+          etykieta={t('uklad.przesuniecieY')}
+          wartosc={kalibracja.y}
+          min={-MAKS_PRZESUNIECIA}
+          max={MAKS_PRZESUNIECIA}
+          krok={0.1}
+          zmien={(v) => zmienKalibracje({ ...kalibracja, y: v })}
         />
-        <div className="pole-panelu dwa-pola">
-          <PoleLiczby
-            id="linie-kreska"
-            etykieta={t('linie.kreska')}
-            wartosc={u.linie.kreska}
-            min={0.5}
-            max={20}
-            krok={0.5}
-            zmien={(v) => zmienLinie({ kreska: v }, 'kreska')}
-          />
-          <PoleLiczby
-            id="linie-przerwa"
-            etykieta={t('linie.przerwa')}
-            wartosc={u.linie.przerwa}
-            min={0}
-            max={20}
-            krok={0.5}
-            zmien={(v) => zmienLinie({ przerwa: v }, 'przerwa')}
-          />
-        </div>
-        <p className="podpis">
-          {t(rysujLinie ? 'linie.opis' : drukarnia ? 'linie.drukarnia' : 'linie.wylaczone')}
-        </p>
-      </fieldset>
-      <fieldset className="kalibracja">
-        <legend>{t('uklad.kalibracja')}</legend>
-        <p className="podpis">{t('uklad.kalibracjaOpis')}</p>
-        <div className="pole-panelu dwa-pola">
-          <PoleLiczby
-            id="kalibracja-x"
-            etykieta={t('uklad.przesuniecieX')}
-            wartosc={kalibracja.x}
-            min={-MAKS_PRZESUNIECIA}
-            max={MAKS_PRZESUNIECIA}
-            krok={0.1}
-            zmien={(v) => zmienKalibracje({ ...kalibracja, x: v })}
-          />
-          <PoleLiczby
-            id="kalibracja-y"
-            etykieta={t('uklad.przesuniecieY')}
-            wartosc={kalibracja.y}
-            min={-MAKS_PRZESUNIECIA}
-            max={MAKS_PRZESUNIECIA}
-            krok={0.1}
-            zmien={(v) => zmienKalibracje({ ...kalibracja, y: v })}
-          />
-        </div>
-        <button type="button" onClick={wydrukTestowy}>
-          {t('uklad.wydrukTestowy')}
-        </button>
-        <p className="podpis">{t('uklad.wydrukTestowyOpis')}</p>
-      </fieldset>
-    </fieldset>
+      </div>
+    </SekcjaPanelu>
   );
 }
 

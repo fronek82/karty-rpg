@@ -20,11 +20,13 @@ import { baza } from '../bazaUI';
 import { zapiszMiniatureWpisuSzablonu } from '../miniaturaRewersu';
 import { usePasekKomunikatu } from '../PasekKomunikatu';
 import { nazwaPliku, zapiszPlik } from '../pliki';
+import type { WartosciImportu } from '../../dane/importTabeli';
+import { ImportDanych } from '../kartka/ImportDanych';
 import { OknoNowySzablon } from '../start/OknoNowySzablon';
 import { NaglowekProjektu, type DefinicjaKroku, type StanZapisuUi2 } from '../ui2/NaglowekProjektu';
 import { PasekBoczny, type GrupaPaskaBocznego } from '../ui2/PasekBoczny';
 import type { ProjektWEdycji } from '../useProjekt';
-import { PrzyciskZapisu, useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
+import { useSkrotZapisu, useStrazWyjscia } from '../zapisReczny';
 import { OknoAktualizacjiSzablonu } from './OknoAktualizacjiSzablonu';
 import { OknoPrzeniesieniaKart } from './OknoPrzeniesieniaKart';
 import './kartyUi2.css';
@@ -70,6 +72,7 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
   const [szukajBiblioteki, ustawSzukajBiblioteki] = useState('');
   const [oknoNowegoSzablonu, ustawOknoNowegoSzablonu] = useState(false);
   const [oknoPrzeniesienia, ustawOknoPrzeniesienia] = useState(false);
+  const [oknoImportu, ustawOknoImportu] = useState(false);
   const [wpisySzablonow, ustawWpisySzablonow] = useState<WpisSzablonu[]>([]);
   const [aktualizowanyCel, ustawAktualizowanyCel] = useState<
     { rodzaj: 'awers' | 'rewers'; idWProjekcie: string } | undefined
@@ -599,7 +602,7 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
         })),
         {
           id: 'nowy-szablon',
-          nazwa: t('edytor.nowySzablon'),
+          nazwa: t('start.nowySzablon'),
           ikona: 'M12 5v14M5 12h14',
           onKlik: () => ustawOknoNowegoSzablonu(true),
         },
@@ -609,6 +612,14 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
       id: 'dane',
       nazwa: t('karty.grupaDane'),
       pozycje: [
+        {
+          id: 'import-csv',
+          nazwa: t('karty.importCsv'),
+          ikona: 'M12 15V3m0 0L8 7m4-4l4 4M4 19h16',
+          onKlik: () => {
+            if (projekt.szablony.length > 0) ustawOknoImportu(true);
+          },
+        },
         {
           id: 'eksport-csv',
           nazwa: t('karty.eksportCsv'),
@@ -658,7 +669,7 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
         onCofnij={edycja.cofnij}
         onPonow={edycja.ponow}
         stanZapisu={stanZapisu}
-        dodatkowe={<PrzyciskZapisu edycja={edycja} />}
+        onZapisz={edycja.zapiszTeraz}
         akcjaGlowna={{
           etykieta: t('karty.doDruku'),
           href: `#/projekt/${idProjektu}/drukuj`,
@@ -1132,6 +1143,70 @@ export function EkranKart({ edycja }: { edycja: ProjektWEdycji }) {
             />
           );
         })()}
+      {oknoImportu && projekt.szablony.length > 0 && (
+        <ImportDanych
+          nazwaKartki={projekt.nazwa}
+          szablony={projekt.szablony}
+          rewersDlaSzablonu={(s) => {
+            const rewersy = new Map((projekt.rewersy ?? []).map((r) => [r.id, r]));
+            const talia =
+              projekt.talie.find((tl) => tl.karty.some((k) => k.szablonId === s.id)) ??
+              projekt.talie[0];
+            return rewersKarty(rewersy, {}, s, talia ?? {});
+          }}
+          zasoby={projekt.zasoby}
+          zamknij={() => ustawOknoImportu(false)}
+          zapisz={(szablonId: string, wiersze: WartosciImportu[]) => {
+            if (!szablonyPoId.has(szablonId) || wiersze.length === 0) return false;
+            const noweIds: string[] = [];
+            const docelowaWersja = edycja.wersja + 1;
+            zmien((p) => {
+              const uzyte = new Set(p.talie.flatMap((tl) => tl.karty.map((k) => k.id)));
+              let n = uzyte.size + 1;
+              const noweKarty: Karta[] = wiersze.map((w) => {
+                while (uzyte.has(`k-${n}`)) n++;
+                const id = `k-${n++}`;
+                uzyte.add(id);
+                noweIds.push(id);
+                return {
+                  id,
+                  szablonId,
+                  dane: { ...w.dane },
+                  ilosc: w.ilosc,
+                };
+              });
+              if (p.talie.length === 0) {
+                return {
+                  ...p,
+                  talie: [{ id: 't-1', nazwa: p.nazwa, karty: noweKarty }],
+                };
+              }
+              const celTalia =
+                p.talie.find((tl) => tl.karty.some((k) => k.szablonId === szablonId)) ??
+                p.talie[0]!;
+              return {
+                ...p,
+                talie: p.talie.map((tl) =>
+                  tl.id === celTalia.id ? { ...tl, karty: [...tl.karty, ...noweKarty] } : tl,
+                ),
+              };
+            });
+            if (noweIds[0]) ustawZaznaczone([noweIds[0]]);
+            ustawWersjeKomunikatu(docelowaWersja);
+            pokazKomunikat({
+              tekst: t('tabelaImport.zaimportowano', { liczba: wiersze.length }),
+              akcja: {
+                etykieta: t('pasek.cofnij'),
+                wykonaj: () => {
+                  ustawWersjeKomunikatu(undefined);
+                  edycja.cofnij();
+                },
+              },
+            });
+            return true;
+          }}
+        />
+      )}
       {oknoNowegoSzablonu && (
         <OknoNowySzablon
           zamknij={() => ustawOknoNowegoSzablonu(false)}

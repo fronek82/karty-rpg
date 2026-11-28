@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState, type ComponentProps } from 'react';
-import {
-  roleProjektu,
-  ustawRole,
-  ustawTytulArkusza,
-  ustawUstawieniaArkusza,
-} from '../../dane/edycja';
-import { BladDanych } from '../../dane/schemat';
-import { formatujLiczbe, t, tJesliJest } from '../../i18n';
+import { useEffect, useMemo, useState, type ComponentProps } from 'react';
+import { dodajKopieRewersuDoProjektu } from '../../dane/aktualizacjaSzablonu';
+import type { WpisSzablonu } from '../../dane/bibliotekaSzablonow';
+import { ustawTytulArkusza, ustawUstawieniaArkusza } from '../../dane/edycja';
+import { czyDwustronnyWlaczony, przypiszRewers } from '../../dane/rewers';
+import type { WynikArkusza } from '../../druk/arkusz';
+import { osOdwracania } from '../../druk/dwustronny';
+import { formatujLiczbe, t } from '../../i18n';
 import {
   czyFormatZdjeciowy,
   DRUKARNIA_DOMYSLNA,
@@ -22,33 +21,35 @@ import {
   type UkladDrukarni,
   type UstawieniaArkusza,
 } from '../../model/arkusz';
-import type { WynikArkusza } from '../../druk/arkusz';
-import { osOdwracania } from '../../druk/dwustronny';
-import { czyDwustronnyWlaczony, przypiszRewers } from '../../dane/rewers';
+import type { Projekt } from '../../model/projekt';
+import { baza } from '../bazaUI';
 import { MAKS_PRZESUNIECIA, type Kalibracja } from '../kalibracja';
 import { PodgladRewersu } from '../rewers/PodgladRewersu';
-import { RewersyProjektu } from '../rewers/RewersyProjektu';
-import { niezgodnosciDruku, przodyDoPrzypisania, useZgodnoscTylu } from '../zgodnoscTylu';
 import { dolaczRewersGlobalnyDoProjektu, useRewersyGlobalne } from '../rewersyGlobalne';
-import {
-  dolaczRodzineGlobalnaDoProjektu,
-  useCzcionkiGlobalne,
-  wgrajCzcionkiGlobalnie,
-} from '../zasobyGlobalne';
-import { KatalogGoogleFonts } from './KatalogGoogleFonts';
-import { PanelUkladu } from './PanelUkladu';
+import { PanelSekcji, SekcjaPanelu } from '../ui2/PanelSekcji';
+import type { ProjektWEdycji } from '../useProjekt';
+import { niezgodnosciDruku, przodyDoPrzypisania, useZgodnoscTylu } from '../zgodnoscTylu';
+import { OpcjeRewersowGlobalnych, wybranaOpcja } from '../zrodloOpcji';
+import type { CoPobrac } from './MenuPobierz';
+import { PanelUkladu, SekcjaKalibracji, SekcjaKartyWSlocie } from './PanelUkladu';
 import { PoleLiczby } from './PoleLiczby';
 import { SekcjaLiniiCiecia } from './SekcjaLiniiCiecia';
-import { SzablonyProjektu } from './SzablonyProjektu';
-import type { Projekt } from '../../model/projekt';
-import type { ProjektWEdycji } from '../useProjekt';
-import { OpcjeRewersowGlobalnych, wybranaOpcja } from '../zrodloOpcji';
 
 /** Granice własnego papieru (mm) – jak w schemacie zapisu. */
 const MIN_PAPIER = 20;
 const MAX_PAPIER = 1000;
 
 const zaokr = (x: number) => formatujLiczbe(x, 1);
+
+/** Krótkie etykiety papierów do kafelków w sekcji „Papier” (wzór: Druk.dc.html). */
+const ETYKIETY_PAPIERU: Record<Exclude<Papier, 'wlasny'>, string> = {
+  A4: 'A4',
+  Letter: 'Letter',
+  A5: 'A5',
+  'foto-10x15': '10×15',
+  'foto-13x18': '13×18',
+  'foto-15x21': '15×21',
+};
 
 /**
  * Zmiana papieru. Format zdjęciowy: strefa bezpieczeństwa 3 mm i marginesy równe strefie (mały
@@ -71,22 +72,15 @@ export function zmianaPapieru(u: UstawieniaArkusza, papier: Papier): Partial<Ust
   return zmiana;
 }
 
-const komunikat = (e: unknown) =>
-  e instanceof BladDanych ? e.message : String(e instanceof Error ? e.message : e);
-
 /**
- * Ustawienia kartki (wszystkich jej stron) i projektu: tytuł, kolor / czarno-biały, papier,
- * czcionki ról (z wgrywaniem własnych). `zmienUklad` odrzuca zmianę, po której karty nie
- * zmieściłyby się w siatce.
+ * Prawy panel „Ustawienia druku” (UI2 R12, wzór: docs/makiety-ui2/Druk.dc.html, plan 5.6 i 14.1).
+ * Zbudowany ze wspólnych komponentów `PanelSekcji` i `SekcjaPanelu`.
+ * Bez „Nowy tył” i bez „Katalog Google Fonts” (decyzja D21).
  */
 export function PanelUstawien({
   edycja,
   arkusz,
   zmienUklad,
-  nowaKartka,
-  kartkaDlaSzablonu,
-  zamknij,
-  staly = false,
   arkusze,
   wybierzArkusz,
   blad,
@@ -101,31 +95,30 @@ export function PanelUstawien({
   zmienKalibracjeRewersu,
   warstwaTekstowaPdf,
   zmienWarstweTekstowaPdf,
+  pobierz,
+  pobieranieWylaczone = false,
   bezRewersow = false,
 }: {
-  /** Gra z kartami jednostronnymi – bez rewersu talii i listy rewersów projektu. */
+  /** Gra z kartami jednostronnymi – bez rewersu talii i druku dwustronnego. */
   bezRewersow?: boolean;
   przelaczRozmiary?: (tryb: 'jeden' | 'mieszane') => void;
   naKartce?: ComponentProps<typeof PanelUkladu>['naKartce'];
-  kalibracja: ComponentProps<typeof PanelUkladu>['kalibracja'];
-  zmienKalibracje: ComponentProps<typeof PanelUkladu>['zmienKalibracje'];
+  kalibracja: Kalibracja;
+  zmienKalibracje: (k: Kalibracja) => void;
   kalibracjaRewersu: Kalibracja;
   zmienKalibracjeRewersu: (k: Kalibracja) => void;
   warstwaTekstowaPdf: boolean;
   zmienWarstweTekstowaPdf: (wlaczona: boolean) => void;
+  /** Pobieranie PDF / obrazów ze sekcji „Pobierz”. */
+  pobierz?: (co: CoPobrac) => void;
+  pobieranieWylaczone?: boolean;
   /** Ostatnio zbudowana kartka (siatka startowa własnego układu). */
   wynik?: WynikArkusza;
   wydrukTestowy: () => void;
   wydrukTestowyDwustronny: () => void;
-  /** Własne karty: nowa kartka dopasowana do rozmiaru szablonu. */
-  kartkaDlaSzablonu?: (szablonId: string) => void;
   edycja: ProjektWEdycji;
   arkusz: Arkusz;
   zmienUklad: (f: (p: Projekt) => Projekt, klucz?: string) => boolean;
-  nowaKartka?: () => void;
-  zamknij?: () => void;
-  /** Stały panel po prawej w widoku „Drukuj karty” – bez przycisku zamykania i bez przejmowania fokusu. */
-  staly?: boolean;
   arkusze?: { id: string; nazwa: string }[];
   wybierzArkusz?: (id: string) => void;
   blad?: string;
@@ -133,18 +126,8 @@ export function PanelUstawien({
   const { projekt, zmien } = edycja;
   const { rewersyGlobalne } = useRewersyGlobalne(projekt);
   const { okno: oknoZgodnosci, potwierdz: potwierdzZgodnosc } = useZgodnoscTylu();
-  const { rodzinyGlobalne } = useCzcionkiGlobalne(projekt);
+  const [wpisyBiblioteki, ustawWpisyBiblioteki] = useState<WpisSzablonu[]>([]);
   const u = arkusz.ustawienia;
-  const [bladCzcionki, ustawBladCzcionki] = useState<string>();
-  const [status, ustawStatus] = useState('');
-  const plik = useRef<HTMLInputElement>(null);
-  const naglowek = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    if (!staly) naglowek.current?.focus();
-  }, [staly]);
-  const rodziny = [
-    ...new Set(projekt.zasoby.flatMap((z) => (z.rodzaj === 'czcionka' ? [z.rodzina] : []))),
-  ];
   const A = arkusz.id;
   const talia = projekt.talie.find((x) => x.id === arkusz.taliaId);
   const rewersTalii =
@@ -155,38 +138,41 @@ export function PanelUstawien({
   // Tekst tytułu w polu (także przy „bez tytułu” – pamiętany do przywrócenia).
   const [tekstTytulu, ustawTekstTytulu] = useState(u.tytul?.tekst || arkusz.nazwa);
 
-  const wgraj = async (pliki: File[]) => {
-    ustawBladCzcionki(undefined);
-    try {
-      const opisy = await wgrajCzcionkiGlobalnie(pliki, edycja);
-      ustawStatus(t('czcionki.wgrano', { lista: opisy.join(', ') }));
-    } catch (e) {
-      ustawBladCzcionki(komunikat(e));
-    }
-  };
+  useEffect(() => {
+    if (bezRewersow) return;
+    let aktywny = true;
+    void baza()
+      .szablonyBiblioteki()
+      .then((lista) => {
+        if (aktywny) ustawWpisyBiblioteki(lista);
+      })
+      .catch(() => undefined);
+    return () => {
+      aktywny = false;
+    };
+  }, [bezRewersow]);
 
-  const tytulPanelu = staly ? t('kartka.opcjeDruku') : t('kartka.ustawienia');
+  const zrodlaRewersowWProjekcie = useMemo(
+    () => new Set((projekt.rewersy ?? []).map((r) => r.zrodlo?.id).filter((x): x is string => !!x)),
+    [projekt.rewersy],
+  );
+  const rewersyZMoichSzablonow = useMemo(
+    () =>
+      wpisyBiblioteki.filter((w) => w.rodzaj === 'rewers' && !zrodlaRewersowWProjekcie.has(w.id)),
+    [wpisyBiblioteki, zrodlaRewersowWProjekcie],
+  );
+
+  const papieryKafelki: readonly Papier[] = [
+    ...(Object.keys(PAPIERY) as Exclude<Papier, 'wlasny'>[]),
+    'wlasny',
+  ];
 
   return (
-    <aside className="panel-edytora" aria-label={tytulPanelu}>
+    <PanelSekcji tytul={t('druk.ustawienia')} etykietaAria={t('druk.ustawienia')}>
       {oknoZgodnosci}
-      <div className="naglowek-panelu">
-        <h2 ref={naglowek} tabIndex={staly ? undefined : -1}>
-          {tytulPanelu}
-        </h2>
-        {!staly && zamknij && (
-          <button
-            type="button"
-            className="zamknij"
-            aria-label={t('kartka.zamknijUstawienia')}
-            onClick={zamknij}
-          >
-            ✕
-          </button>
-        )}
-      </div>
+
       {arkusze && arkusze.length > 1 && wybierzArkusz && (
-        <div className="pole-panelu">
+        <div className="druk-ui2-wybor-arkusza">
           <label htmlFor="wybor-arkusza-druku">{t('kartka.wybierzKartke')}</label>
           <select
             id="wybor-arkusza-druku"
@@ -201,131 +187,118 @@ export function PanelUstawien({
           </select>
         </div>
       )}
-      <p className="podpis">{t('kartka.ustawieniaOpis', { kartka: arkusz.nazwa })}</p>
+
       {blad && (
-        <p role="alert" className="blad-pola">
+        <p role="alert" className="blad-pola druk-ui2-blad">
           {blad}
         </p>
       )}
-      <div className="pole-panelu">
-        <label htmlFor="tytul-kartki">{t('kartka.tytulKartki')}</label>
-        <input
-          id="tytul-kartki"
-          type="text"
-          value={tekstTytulu}
-          disabled={polozenie === 'brak'}
-          onChange={(e) => {
-            ustawTekstTytulu(e.target.value);
-            // Pusty tekst nie wyłącza tytułu (do tego jest „bez tytułu”) – czekamy na wpis.
-            if (e.target.value.trim())
-              zmienUklad((p) => ustawTytulArkusza(p, A, e.target.value), 'tytul');
-          }}
-        />
-      </div>
-      <div className="pole-panelu">
-        <label htmlFor="polozenie-tytulu">{t('kartka.polozenieTytulu')}</label>
-        <select
-          id="polozenie-tytulu"
-          value={polozenie}
-          disabled={!u.tytul}
-          onChange={(e) => {
-            const x = e.target.value as 'lewo' | 'gora' | 'brak';
-            if (!u.tytul) return;
-            zmienUklad((p) =>
-              ustawUstawieniaArkusza(p, A, {
-                tytul: {
-                  ...u.tytul!,
-                  tekst:
-                    x === 'brak' ? '' : u.tytul!.tekst.trim() || tekstTytulu.trim() || arkusz.nazwa,
-                  ...(x === 'brak' ? {} : { polozenie: x }),
-                },
-              }),
+
+      {/* 1. Papier (otwarta) */}
+      <SekcjaPanelu tytul={t('druk.sekcja.papier')} domyslnieOtwarta>
+        <div
+          className="druk-ui2-papiery"
+          role="group"
+          aria-label={t('kartka.papier')}
+          data-testid="siatka-papierow"
+        >
+          {papieryKafelki.map((id) => {
+            const wybrany = u.papier === id;
+            const wym = id === 'wlasny' ? { szer: 200, wys: 280 } : PAPIERY[id];
+            const skala = 30 / Math.max(wym.szer, wym.wys);
+            const iw = Math.max(10, Math.round(wym.szer * skala));
+            const ih = Math.max(10, Math.round(wym.wys * skala));
+            return (
+              <button
+                key={id}
+                type="button"
+                className="druk-ui2-papier-kafelek"
+                aria-pressed={wybrany}
+                aria-label={t(`papier.${id}`)}
+                onClick={() =>
+                  zmienUklad((p) => ustawUstawieniaArkusza(p, A, zmianaPapieru(u, id)))
+                }
+              >
+                <span
+                  className="druk-ui2-papier-zarys"
+                  style={{ width: iw, height: ih }}
+                  aria-hidden="true"
+                />
+                <span className="druk-ui2-papier-nazwa">
+                  {id === 'wlasny' ? t('druk.papierWlasnySkrot') : ETYKIETY_PAPIERU[id]}
+                </span>
+                <span className="druk-ui2-papier-mm">
+                  {id === 'wlasny' ? '… mm' : `${wym.szer}×${wym.wys}`}
+                </span>
+              </button>
             );
-          }}
-        >
-          {(['lewo', 'gora', 'brak'] as const).map((x) => (
-            <option key={x} value={x}>
-              {t(`kartka.tytul.${x}`)}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="pole-panelu">
-        <span id="druk-kolor">{t('kartka.druk')}</span>
-        <div className="przelacznik-segmentowy" role="group" aria-labelledby="druk-kolor">
-          <button
-            type="button"
-            aria-pressed={!u.czarnoBialy}
-            onClick={() => zmien((p) => ustawUstawieniaArkusza(p, A, { czarnoBialy: false }))}
-          >
-            {t('kartka.kolor')}
-          </button>
-          <button
-            type="button"
-            aria-pressed={!!u.czarnoBialy}
-            onClick={() => zmien((p) => ustawUstawieniaArkusza(p, A, { czarnoBialy: true }))}
-          >
-            {t('kartka.czarnoBialy')}
-          </button>
+          })}
         </div>
-      </div>
-      <div className="pole-panelu">
-        <label htmlFor="papier">{t('kartka.papier')}</label>
-        <select
-          id="papier"
-          value={u.papier}
-          onChange={(e) => {
-            const papier = e.target.value as Papier;
-            zmienUklad((p) => ustawUstawieniaArkusza(p, A, zmianaPapieru(u, papier)));
-          }}
-        >
-          {[...(Object.keys(PAPIERY) as Papier[]), 'wlasny' as const].map((x) => (
-            <option key={x} value={x}>
-              {t(`papier.${x}`)}
-            </option>
-          ))}
-        </select>
-      </div>
-      {u.papier === 'wlasny' && (
-        <div className="pole-panelu dwa-pola">
-          {(['szer', 'wys'] as const).map((os) => (
-            <PoleLiczby
-              key={os}
-              id={`papier-${os}`}
-              etykieta={t(os === 'szer' ? 'kartka.szerokoscPapieru' : 'kartka.wysokoscPapieru')}
-              wartosc={(u.wymiaryPapieru ?? PAPIERY.A4)[os]}
-              min={MIN_PAPIER}
-              max={MAX_PAPIER}
-              zmien={(v) => {
-                const w = { ...(u.wymiaryPapieru ?? PAPIERY.A4), [os]: v };
-                zmienUklad((p) => ustawUstawieniaArkusza(p, A, { wymiaryPapieru: w }), 'papier');
-              }}
-            />
-          ))}
+
+        {u.papier === 'wlasny' && (
+          <div className="pole-panelu dwa-pola">
+            {(['szer', 'wys'] as const).map((os) => (
+              <PoleLiczby
+                key={os}
+                id={`papier-${os}`}
+                etykieta={t(os === 'szer' ? 'kartka.szerokoscPapieru' : 'kartka.wysokoscPapieru')}
+                wartosc={(u.wymiaryPapieru ?? PAPIERY.A4)[os]}
+                min={MIN_PAPIER}
+                max={MAX_PAPIER}
+                zmien={(v) => {
+                  const w = { ...(u.wymiaryPapieru ?? PAPIERY.A4), [os]: v };
+                  zmienUklad((p) => ustawUstawieniaArkusza(p, A, { wymiaryPapieru: w }), 'papier');
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="druk-ui2-wiersz-2">
+          <div className="pole-panelu">
+            <span id="orientacja">{t('kartka.orientacja')}</span>
+            <div className="przelacznik-segmentowy" role="group" aria-labelledby="orientacja">
+              {(['pionowa', 'pozioma'] as const).map((x) => (
+                <button
+                  key={x}
+                  type="button"
+                  aria-pressed={u.orientacja === x}
+                  onClick={() => zmienUklad((p) => ustawUstawieniaArkusza(p, A, { orientacja: x }))}
+                >
+                  {t(`kartka.orientacja.${x}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="pole-panelu">
+            <span id="druk-kolor">{t('kartka.druk')}</span>
+            <div className="przelacznik-segmentowy" role="group" aria-labelledby="druk-kolor">
+              <button
+                type="button"
+                aria-pressed={!u.czarnoBialy}
+                onClick={() => zmien((p) => ustawUstawieniaArkusza(p, A, { czarnoBialy: false }))}
+              >
+                {t('kartka.kolor')}
+              </button>
+              <button
+                type="button"
+                aria-pressed={!!u.czarnoBialy}
+                onClick={() => zmien((p) => ustawUstawieniaArkusza(p, A, { czarnoBialy: true }))}
+              >
+                {t('kartka.czarnoBialy')}
+              </button>
+            </div>
+          </div>
         </div>
-      )}
-      <div className="pole-panelu">
-        <span id="orientacja">{t('kartka.orientacja')}</span>
-        <div className="przelacznik-segmentowy" role="group" aria-labelledby="orientacja">
-          {(['pionowa', 'pozioma'] as const).map((x) => (
-            <button
-              key={x}
-              type="button"
-              aria-pressed={u.orientacja === x}
-              onClick={() => zmienUklad((p) => ustawUstawieniaArkusza(p, A, { orientacja: x }))}
-            >
-              {t(`kartka.orientacja.${x}`)}
-            </button>
-          ))}
-        </div>
+
         <p className="podpis">
           {(() => {
             const s = wymiaryStrony(u);
             return t('kartka.wymiaryPapieru', { szer: zaokr(s.szer), wys: zaokr(s.wys) });
           })()}
         </p>
-      </div>
-      <div className="pole-panelu">
+
         <PoleLiczby
           id="strefa"
           etykieta={t('kartka.marginesBezpieczenstwa')}
@@ -339,19 +312,21 @@ export function PanelUstawien({
             })
           }
         />
-        <p className="podpis">{t('kartka.marginesBezpieczenstwaOpis')}</p>
-      </div>
+      </SekcjaPanelu>
+
+      {/* 2. Układ kart na arkuszu (otwarta) */}
       <PanelUkladu
-        kalibracja={kalibracja}
-        zmienKalibracje={zmienKalibracje}
         arkusz={arkusz}
         {...(wynik ? { wynik } : {})}
         zmienUklad={zmienUklad}
-        wydrukTestowy={wydrukTestowy}
         {...(przelaczRozmiary ? { przelaczRozmiary } : {})}
         {...(naKartce ? { naKartce } : {})}
       />
+
+      {/* 3. Linie cięcia (otwarta) */}
       <SekcjaLiniiCiecia arkusz={arkusz} zmien={zmien} />
+
+      {/* 4. Druk dwustronny */}
       {!bezRewersow &&
         (() => {
           const rewersyMapa = new Map((projekt.rewersy ?? []).map((r) => [r.id, r] as const));
@@ -367,8 +342,7 @@ export function PanelUstawien({
               klucz ? { klucz: `dwustronny:${A}:${klucz}` } : {},
             );
           return (
-            <fieldset className="sekcja-dwustronny">
-              <legend>{t('dwustronny.tytul')}</legend>
+            <SekcjaPanelu tytul={t('dwustronny.tytul')} domyslnieOtwarta={dwu.wlaczony}>
               <label className="wybor">
                 <input
                   type="checkbox"
@@ -415,7 +389,6 @@ export function PanelUstawien({
                       {os === 'pionowa' ? t('dwustronny.osPionowa') : t('dwustronny.osPozioma')}
                     </p>
                   </div>
-                  <p className="podpis">{t('dwustronny.korektaOpis')}</p>
                   <div className="pole-panelu dwa-pola">
                     <PoleLiczby
                       id="kalibracja-rewers-x"
@@ -436,15 +409,23 @@ export function PanelUstawien({
                       zmien={(v) => zmienKalibracjeRewersu({ ...kalibracjaRewersu, y: v })}
                     />
                   </div>
-                  <button type="button" onClick={wydrukTestowyDwustronny}>
+                  <button
+                    type="button"
+                    className="druk-ui2-przycisk-pelny"
+                    onClick={wydrukTestowyDwustronny}
+                  >
                     {t('dwustronny.wydrukProbny')}
                   </button>
-                  <p className="podpis">{t('dwustronny.wydrukProbnyOpis')}</p>
                 </>
               )}
-            </fieldset>
+            </SekcjaPanelu>
           );
         })()}
+
+      {/* 5. Karta w slocie */}
+      <SekcjaKartyWSlocie arkusz={arkusz} zmienUklad={zmienUklad} />
+
+      {/* 6. Tryb drukarni (spad) */}
       {(() => {
         const druk = u.drukarnia ?? DRUKARNIA_DOMYSLNA;
         const zmienDruk = (z: Partial<typeof druk>, klucz?: string) =>
@@ -459,8 +440,7 @@ export function PanelUstawien({
             o.komunikat.startsWith('niska-rozdzielczosc-ramki:'),
         );
         return (
-          <fieldset className="sekcja-drukarni">
-            <legend>{t('drukarnia.tytul')}</legend>
+          <SekcjaPanelu tytul={t('drukarnia.tytul')} domyslnieOtwarta={druk.wlaczony}>
             <label className="wybor">
               <input
                 type="checkbox"
@@ -503,13 +483,6 @@ export function PanelUstawien({
                       </option>
                     ))}
                   </select>
-                  <p className="podpis">
-                    {t(
-                      druk.uklad === 'pojedyncza'
-                        ? 'drukarnia.opisPojedyncza'
-                        : 'drukarnia.opisSiatka',
-                    )}
-                  </p>
                 </div>
                 <p className="podpis">
                   {t('drukarnia.wymiary', {
@@ -526,11 +499,114 @@ export function PanelUstawien({
                 )}
               </>
             )}
-          </fieldset>
+          </SekcjaPanelu>
         );
       })()}
-      <fieldset className="sekcja-pdf">
-        <legend>{t('pdf.tytul')}</legend>
+
+      {/* 7. Tytuł arkusza */}
+      <SekcjaPanelu tytul={t('druk.sekcja.tytulArkusza')} domyslnieOtwarta={false}>
+        <div className="pole-panelu">
+          <label htmlFor="tytul-kartki">{t('kartka.tytulKartki')}</label>
+          <input
+            id="tytul-kartki"
+            type="text"
+            value={tekstTytulu}
+            disabled={polozenie === 'brak'}
+            onChange={(e) => {
+              ustawTekstTytulu(e.target.value);
+              // Pusty tekst nie wyłącza tytułu (do tego jest „bez tytułu”) – czekamy na wpis.
+              if (e.target.value.trim())
+                zmienUklad((p) => ustawTytulArkusza(p, A, e.target.value), 'tytul');
+            }}
+          />
+        </div>
+        <div className="pole-panelu">
+          <label htmlFor="polozenie-tytulu">{t('kartka.polozenieTytulu')}</label>
+          <select
+            id="polozenie-tytulu"
+            value={polozenie}
+            disabled={!u.tytul}
+            onChange={(e) => {
+              const x = e.target.value as 'lewo' | 'gora' | 'brak';
+              if (!u.tytul) return;
+              zmienUklad((p) =>
+                ustawUstawieniaArkusza(p, A, {
+                  tytul: {
+                    ...u.tytul!,
+                    tekst:
+                      x === 'brak'
+                        ? ''
+                        : u.tytul!.tekst.trim() || tekstTytulu.trim() || arkusz.nazwa,
+                    ...(x === 'brak' ? {} : { polozenie: x }),
+                  },
+                }),
+              );
+            }}
+          >
+            {(['lewo', 'gora', 'brak'] as const).map((x) => (
+              <option key={x} value={x}>
+                {t(`kartka.tytul.${x}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </SekcjaPanelu>
+
+      {/* 8. Kalibracja drukarki */}
+      <SekcjaKalibracji
+        kalibracja={kalibracja}
+        zmienKalibracje={zmienKalibracje}
+        wydrukTestowy={wydrukTestowy}
+      />
+
+      {/* 9. Pobierz / Opcje PDF (otwarta) */}
+      <SekcjaPanelu tytul={t('druk.sekcja.pobierz')} domyslnieOtwarta>
+        {pobierz && (
+          <>
+            <button
+              type="button"
+              className="ui2-przycisk-glowny druk-ui2-przycisk-pelny"
+              disabled={pobieranieWylaczone}
+              onClick={() => pobierz({ rodzaj: 'pdf' })}
+            >
+              {t('druk.pobierzPdfPrzycisk')}
+            </button>
+            <div className="druk-ui2-pobierz-siatka">
+              <button
+                type="button"
+                className="druk-ui2-przycisk-drugi"
+                disabled={pobieranieWylaczone}
+                onClick={() => pobierz({ rodzaj: 'strony', format: 'jpg' })}
+              >
+                {t('druk.pobierzStronyJpg')}
+              </button>
+              <button
+                type="button"
+                className="druk-ui2-przycisk-drugi"
+                disabled={pobieranieWylaczone}
+                onClick={() => pobierz({ rodzaj: 'strony', format: 'png' })}
+              >
+                {t('druk.pobierzStronyPng')}
+              </button>
+              <button
+                type="button"
+                className="druk-ui2-przycisk-drugi"
+                disabled={pobieranieWylaczone}
+                onClick={() => pobierz({ rodzaj: 'karty', format: 'jpg' })}
+              >
+                {t('druk.pobierzKartyJpg')}
+              </button>
+              <button
+                type="button"
+                className="druk-ui2-przycisk-drugi"
+                disabled={pobieranieWylaczone}
+                onClick={() => pobierz({ rodzaj: 'karty', format: 'png' })}
+              >
+                {t('druk.pobierzKartyPng')}
+              </button>
+            </div>
+          </>
+        )}
         <label className="wybor">
           <input
             type="checkbox"
@@ -539,79 +615,34 @@ export function PanelUstawien({
           />
           <span>{t('pdf.warstwaTekstowa')}</span>
         </label>
-        <p className="podpis">{t('pdf.warstwaTekstowaOpis')}</p>
-      </fieldset>
-      <fieldset className="sekcja-czcionek">
-        <legend>{t('czcionki.tytul')}</legend>
-        {roleProjektu(projekt).map((rola) => (
-          <label key={rola} className="rola">
-            <span>{tJesliJest(`rola.${rola}`) ?? rola}</span>
-            <select
-              aria-label={t('czcionki.rolaEtykieta', { rola: tJesliJest(`rola.${rola}`) ?? rola })}
-              value={projekt.role[rola] ?? ''}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v && rodzinyGlobalne.includes(v)) {
-                  void dolaczRodzineGlobalnaDoProjektu(v, edycja, (p) =>
-                    ustawRole(p, rola, v),
-                  ).catch(() => undefined);
-                  return;
-                }
-                zmienUklad((p) => ustawRole(p, rola, v));
-              }}
-            >
-              <option value="">{t('czcionki.brakRodziny')}</option>
-              {rodziny.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-              {rodzinyGlobalne.length > 0 && (
-                <optgroup label={t('czcionki.globalneGrupa')}>
-                  {rodzinyGlobalne.map((r) => (
-                    <option key={`g:${r}`} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </label>
-        ))}
-        <button type="button" onClick={() => plik.current?.click()}>
-          {t('kartka.wgrajCzcionke')}
-        </button>
-        <input
-          ref={plik}
-          type="file"
-          multiple
-          accept=".ttf,.otf,.woff,.woff2"
-          hidden
-          data-testid="plik-czcionki"
-          onChange={(e) => {
-            const f = [...(e.target.files ?? [])];
-            e.target.value = '';
-            if (f.length) void wgraj(f);
-          }}
-        />
-        <KatalogGoogleFonts edycja={edycja} onStatus={ustawStatus} onBlad={ustawBladCzcionki} />
-        <p role="status" aria-live="polite" className="podpis">
-          {status}
-        </p>
-        {bladCzcionki && (
-          <p role="alert" className="blad-pola">
-            {bladCzcionki}
-          </p>
-        )}
-      </fieldset>
+      </SekcjaPanelu>
+
+      {/* 10. Tyły talii (wybór z tyłów projektu i z Moich szablonów, bez „Nowy tył”) */}
       {talia && !bezRewersow && (
-        <fieldset className="sekcja-szablonow">
-          <legend>{t('rewers.przypisanieTalia')}</legend>
+        <SekcjaPanelu tytul={t('rewers.przypisanieTalia')} domyslnieOtwarta={false}>
           <div className="pole-panelu">
             <select
               aria-label={t('rewers.przypisanieTalia')}
               value={typeof talia.rewersId === 'string' ? talia.rewersId : ''}
               onChange={(e) => {
+                const raw = e.target.value;
+                if (raw.startsWith('bib:')) {
+                  const wpis = rewersyZMoichSzablonow.find((w) => w.id === raw.slice(4));
+                  if (!wpis || wpis.rodzaj !== 'rewers' || !wpis.rewers) return;
+                  const przody = przodyDoPrzypisania(projekt, talia.id);
+                  void potwierdzZgodnosc(przody, wpis.rewers).then((tak) => {
+                    if (!tak) return;
+                    zmien((p) => {
+                      const dodany = dodajKopieRewersuDoProjektu(p, wpis);
+                      return przypiszRewers(
+                        dodany.projekt,
+                        { rodzaj: 'talia', id: talia.id },
+                        dodany.rewersId,
+                      );
+                    });
+                  });
+                  return;
+                }
                 const { id: v, zrodlo } = wybranaOpcja(e);
                 const przody = przodyDoPrzypisania(projekt, talia.id);
                 if (zrodlo === 'globalny') {
@@ -642,6 +673,15 @@ export function PanelUstawien({
                   {r.nazwa}
                 </option>
               ))}
+              {rewersyZMoichSzablonow.length > 0 && (
+                <optgroup label={t('karty.grupaZMoichSzablonow')}>
+                  {rewersyZMoichSzablonow.map((r) => (
+                    <option key={r.id} value={`bib:${r.id}`}>
+                      {r.nazwa}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
               <OpcjeRewersowGlobalnych lista={rewersyGlobalne} />
             </select>
           </div>
@@ -651,19 +691,8 @@ export function PanelUstawien({
             komunikatBraku={t('rewers.rozstrzygnietyBrak')}
             etykieta={t('rewers.podgladEtykieta')}
           />
-        </fieldset>
+        </SekcjaPanelu>
       )}
-      {kartkaDlaSzablonu && (
-        <SzablonyProjektu edycja={edycja} kartkaDlaSzablonu={kartkaDlaSzablonu} />
-      )}
-      {!bezRewersow && <RewersyProjektu edycja={edycja} />}
-      {nowaKartka && (
-        <p>
-          <button type="button" onClick={nowaKartka}>
-            {t('kartka.nowaKartka')}
-          </button>
-        </p>
-      )}
-    </aside>
+    </PanelSekcji>
   );
 }

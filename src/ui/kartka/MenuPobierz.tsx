@@ -12,13 +12,18 @@ const POZYCJE: { klucz: KluczTekstu; co: CoPobrac }[] = [
   { klucz: 'pobierz.kartyPng', co: { rodzaj: 'karty', format: 'png' } },
 ];
 
-/** Menu „Pobierz ▾”: PDF, obrazy stron, karty osobno (JPG/PNG 300 dpi). Klawiatura jak menu. */
+/**
+ * Menu pobierania: PDF, obrazy stron, karty osobno (JPG/PNG 300 dpi). Klawiatura jak menu.
+ * W trybie `ui2` (ekran Druk R12): główny przycisk „⤓ Pobierz PDF” + przycisk „▾” obok z listą formatów.
+ */
 export function MenuPobierz({
   wylaczone,
   pobierz,
+  ui2 = false,
 }: {
   wylaczone: boolean;
   pobierz: (co: CoPobrac) => void;
+  ui2?: boolean;
 }) {
   const [otwarte, ustawOtwarte] = useState(false);
   const przycisk = useRef<HTMLButtonElement>(null);
@@ -60,30 +65,63 @@ export function MenuPobierz({
     }
   };
   return (
-    <div className="menu-pobierz">
-      <button
-        ref={przycisk}
-        type="button"
-        className="glowny"
-        disabled={wylaczone}
-        aria-haspopup="menu"
-        aria-expanded={otwarte}
-        aria-controls={otwarte ? 'menu-pobierz' : undefined}
-        onClick={() => ustawOtwarte((x) => !x)}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            ustawOtwarte(true);
-          }
-        }}
-      >
-        {t('pobierz.menu')} <span aria-hidden="true">▾</span>
-      </button>
+    <div className={ui2 ? 'menu-pobierz druk-ui2-pobierz-grupa' : 'menu-pobierz'}>
+      {ui2 ? (
+        <>
+          <button
+            type="button"
+            className="ui2-przycisk-glowny druk-ui2-pobierz-pdf"
+            disabled={wylaczone}
+            onClick={() => pobierz({ rodzaj: 'pdf' })}
+          >
+            {t('druk.pobierzPdf')}
+          </button>
+          <button
+            ref={przycisk}
+            type="button"
+            className="ui2-przycisk-glowny druk-ui2-pobierz-rozwin"
+            disabled={wylaczone}
+            aria-label={t('druk.inneFormaty')}
+            title={t('druk.inneFormaty')}
+            aria-haspopup="menu"
+            aria-expanded={otwarte}
+            aria-controls={otwarte ? 'menu-pobierz' : undefined}
+            onClick={() => ustawOtwarte((x) => !x)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                ustawOtwarte(true);
+              }
+            }}
+          >
+            <span aria-hidden="true">▾</span>
+          </button>
+        </>
+      ) : (
+        <button
+          ref={przycisk}
+          type="button"
+          className="glowny"
+          disabled={wylaczone}
+          aria-haspopup="menu"
+          aria-expanded={otwarte}
+          aria-controls={otwarte ? 'menu-pobierz' : undefined}
+          onClick={() => ustawOtwarte((x) => !x)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              ustawOtwarte(true);
+            }
+          }}
+        >
+          {t('pobierz.menu')} <span aria-hidden="true">▾</span>
+        </button>
+      )}
       {otwarte && (
         <div
           ref={menu}
           id="menu-pobierz"
-          className="menu-typu"
+          className={ui2 ? 'menu-typu druk-ui2-pobierz-menu' : 'menu-typu'}
           role="menu"
           aria-label={t('pobierz.menu')}
           onKeyDown={klawisz}
