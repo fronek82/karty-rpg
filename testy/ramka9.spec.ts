@@ -122,3 +122,39 @@ test('ramka 9-slice z PNG: edytor wcięć, podglądy, dpi i użycie w panelu Ram
   await rodzaj2.selectOption('brak');
   await expect(podgladKarty.locator('image')).toHaveCount(0);
 });
+
+for (const rozszerzenie of ['svg', 'png'] as const) {
+  test(`ramka ${rozszerzenie} z biblioteki w nowym szablonie z ekranu startowego`, async ({
+    page,
+  }) => {
+    await page.goto('./#/biblioteki/ozdobniki');
+    if (rozszerzenie === 'svg') {
+      await page.getByTestId('plik-svg').setInputFiles('testy/zasoby/gwiazdka.svg');
+      await page.getByLabel('Nazwa', { exact: true }).fill('Gwiazdka');
+      await page.getByRole('button', { name: 'Dodaj do biblioteki' }).click();
+      await page.getByRole('button', { name: 'ramka 9-slice', exact: true }).click();
+    } else {
+      await page.getByTestId('plik-png').setInputFiles('testy/zasoby/ramka-testowa.png');
+    }
+    await expect(page.getByTestId('edytor-ramki9')).toBeVisible();
+
+    await page.goto('./');
+    await page.getByTestId('start-nowy-szablon').click();
+    await page
+      .getByTestId('okno-nowy-szablon')
+      .getByRole('button', { name: 'Utwórz szablon' })
+      .click();
+    await expect(page).toHaveURL(/#\/szablon\/[^/]+$/);
+    await karta(page);
+    const ramka = await sekcja(page, 'Ramka karty');
+    await ramka.getByLabel('Ramka karty', { exact: true }).selectOption('obraz');
+    const podglad = page.locator('.karta-podgladu svg');
+    const fragmenty = podglad.locator(rozszerzenie === 'svg' ? 'use[href*="-s"]' : 'image');
+    await expect(fragmenty.first()).toBeVisible();
+
+    await page.locator('header.ui2-naglowek .ui2-stan-zapisu-btn').click();
+    await expect(page.locator('header.ui2-naglowek .ui2-stan-zapisu')).toContainText('zapisano');
+    await page.reload();
+    await expect(fragmenty.first()).toBeVisible();
+  });
+}

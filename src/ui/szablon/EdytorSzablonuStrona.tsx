@@ -29,7 +29,6 @@ import { nazwaPliku } from '../pliki';
 import { zapiszZakladkeStart } from '../start/ListaProjektow';
 import { polaczElementy, useElementyOzdobne } from '../useBiblioteka';
 import type { ProjektWEdycji, StanZapisu } from '../useProjekt';
-import { dolaczZasobyGlobalne } from '../zasobyGlobalne';
 import { zasobyProjektu } from '../zasobyProjektu';
 import type { PlikSzablonuEdytora, TrybBibliotekiEdytora } from './EdytorDrzewa';
 import { EdytorKarty } from './EdytorKarty';
@@ -214,13 +213,13 @@ function useSzablonBiblioteki(id: string, zapytanie?: string): StanSzablonuBibli
                 }
               : {}),
         };
-        const zGlobalnymi = await dolaczZasobyGlobalne(syntetyczny, bazowy.zasoby);
+        const zGlobalnymi = await baza().widokProjektu(syntetyczny, bazowy.zasoby);
         if (!aktywny) return;
 
         refWpis.current = wpis;
         ustawEd({
           projekt: zGlobalnymi.projekt,
-          dane: zGlobalnymi.dane,
+          dane: zGlobalnymi.zasoby,
           historia: pustaHistoria(),
           wersja: 0,
           niezapisane: false,
@@ -261,13 +260,12 @@ function useSzablonBiblioteki(id: string, zapytanie?: string): StanSzablonuBibli
 
   const daneZasobow = ed?.dane;
 
-  const zasoby = useMemo(
-    () =>
-      projektZElementami && daneZasobow
-        ? zasobyProjektu(projektZElementami, daneZasobow)
-        : undefined,
-    [projektZElementami, daneZasobow],
-  );
+  const zasoby = useMemo(() => {
+    if (!projektZElementami || !daneZasobow) return undefined;
+    const z = zasobyProjektu(projektZElementami, daneZasobow);
+    const elementy = projektZElementami.biblioteka?.ozdobniki;
+    return elementy ? { ...z, zasoby: { ...z.zasoby, elementy } } : z;
+  }, [projektZElementami, daneZasobow]);
   useEffect(() => () => zasoby?.zwolnij(), [zasoby]);
 
   const zmien = useCallback((f: (p: Projekt) => Projekt, opcje?: { klucz?: string }) => {
