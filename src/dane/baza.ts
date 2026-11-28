@@ -657,7 +657,7 @@ export class BazaProjektow {
    * ozdobniki biblioteki jako `biblioteka.ozdobniki`. Wpisy kolidujące z zasobami projektu
    * (to samo id albo ta sama rodzina i wariant czcionki) są pomijane.
    */
-  private async widokProjektu(
+  async widokProjektu(
     zapisany: Projekt,
     dane: DaneZasobow,
   ): Promise<{ projekt: Projekt; zasoby: DaneZasobow }> {
