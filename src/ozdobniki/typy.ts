@@ -31,6 +31,8 @@ export interface ElementOzdobny {
   wys: number;
   /** Części rysunku; kolor `'kolor'` = kolorowalny (bierze kolor z ustawień ozdoby). */
   kontury: KonturSymbolu[];
+  /** Wbudowany kształt wartości: kolorowalne detale wewnątrz obrysu, niezależne od tła. */
+  zdobienia?: KonturSymbolu[];
   /**
    * Tylko motyw: kostka narożna – kwadrat `wys` × `wys` rysowany dla lewego górnego rogu
    * (zewnętrzne krawędzie przy górze i po lewej), odbijany na cztery rogi ramki.

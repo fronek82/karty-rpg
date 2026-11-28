@@ -7,7 +7,7 @@ import { otworzUstawieniaAplikacji, slot, zapisano } from './pomoc';
  * - rozszerzony katalog Google Fonts z podglądem kroju przed pobraniem i filtrem rozwijanym,
  * - nagłówek panelu karty nie przejmuje długiego opisu przy pustej nazwie,
  * - zapamiętywanie wysokości pól wielowierszowych między kartami i elementami szablonu,
- * - listy rozwijane zamiast zawijających się przycisków segmentowych.
+ * - wyrównanie tekstu jako cztery przyciski w jednym rzędzie.
  */
 
 test.use({ viewport: { width: 1440, height: 1000 } });
@@ -24,13 +24,22 @@ test('nagłówek panelu karty nie pokazuje opisu, wysokość textarea zostaje mi
     uklad: 'Tytuł i opis',
   });
 
-  // 1) W edytorze szablonu: Wyrównanie jest listą rozwijaną, a pozostałe segmenty nie zawijają się.
+  // 1) W edytorze szablonu: Wyrównanie i pozostałe segmenty nie zawijają się.
   await zaznacz(page, 'Opis');
   const styl = await sekcja(page, 'Styl tekstu');
-  const wyrownanie = styl.getByLabel('Wyrównanie', { exact: true });
-  await expect(wyrownanie).toBeVisible();
-  await wyrownanie.selectOption('justuj');
-  await expect(wyrownanie).toHaveValue('justuj');
+  const wyrownanie = styl.getByRole('group', { name: 'Wyrównanie', exact: true });
+  await expect(wyrownanie.getByRole('button')).toHaveCount(4);
+  await expect(wyrownanie.getByRole('button', { name: 'lewo' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  const justuj = wyrownanie.getByRole('button', { name: 'justuj' });
+  await justuj.click();
+  await expect(justuj).toHaveAttribute('aria-pressed', 'true');
+  await expect(wyrownanie.getByRole('button', { name: 'lewo' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
 
   const zawinieteSegmenty = await panel(page)
     .locator('.przelacznik-segmentowy')

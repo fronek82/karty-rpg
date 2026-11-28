@@ -2,6 +2,7 @@ import type { Mm } from '../model/jednostki';
 import type { Kolor, Narozniki } from '../model/szablon';
 import type { DefinicjaSymbolu, ElementSceny, Macierz } from '../silnik/scena';
 import { znajdzElement } from './katalog';
+import { konturyOzdobnika } from './ksztalt';
 import type { ElementOzdobny } from './typy';
 
 /**
@@ -30,9 +31,10 @@ export function symbolZElementu(
   e: ElementOzdobny,
   jednolity = e.kolorowanie === 'jednolity',
 ): DefinicjaSymbolu {
-  if (!jednolity) return { kontury: e.kontury, szer: e.szer, wys: e.wys };
+  const rysunek = konturyOzdobnika(e);
+  if (!jednolity) return { kontury: rysunek, szer: e.szer, wys: e.wys };
   // Własny rysunek „jednolity”: wszystkie wypełnienia i obrysy dziedziczą kolor z miejsca użycia.
-  const kontury = e.kontury.map((c) => ({
+  const kontury = rysunek.map((c) => ({
     ...c,
     ...(c.wypelnienie !== undefined ? { wypelnienie: 'kolor' as const } : {}),
     ...(c.obrys ? { obrys: { ...c.obrys, kolor: 'kolor' as const } } : {}),

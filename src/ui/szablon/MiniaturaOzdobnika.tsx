@@ -1,5 +1,6 @@
 import { konturNaD } from '../../silnik/svg';
 import type { ElementOzdobny } from '../../ozdobniki';
+import { konturyOzdobnika } from '../../ozdobniki/ksztalt';
 
 /** Miniatura elementu biblioteki – rysunek kolorowalny dziedziczy kolor tekstu (`currentColor`). */
 export function MiniaturaOzdobnika({
@@ -54,7 +55,7 @@ export function MiniaturaOzdobnika({
         />
       )}
       {adres && <image href={adres} x="0" y="0" width={element.szer} height={element.wys} />}
-      {element.kontury.map((c, i) => (
+      {konturyOzdobnika(element).map((c, i) => (
         <path
           key={i}
           d={konturNaD(c.kontur)}

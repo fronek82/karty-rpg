@@ -37,7 +37,12 @@ import type { RejestrCzcionek } from './czcionki';
 import { kolorZDanych, styleZDanych } from './styleZDanych';
 import { konturIkony } from './ikony';
 import { znajdzElement } from '../ozdobniki/katalog';
-import { konturWlasnegoKsztaltu, wnetrzeWlasnegoKsztaltu } from '../ozdobniki/ksztalt';
+import {
+  konturyOzdobnika,
+  konturWlasnegoKsztaltu,
+  wnetrzeWlasnegoKsztaltu,
+} from '../ozdobniki/ksztalt';
+import { dopasujNaroznikDoPasa, maCiaglyNaroznik } from '../ozdobniki/noweMotywy';
 import {
   FIGURY,
   type Figura,
@@ -555,12 +560,15 @@ export function renderujKarte(
       return;
     }
     const pas = Math.min(o.szerokosc, obszar.szer / 2, obszar.wys / 2);
+    const dopasowanyNaroznik = dopasujNaroznikDoPasa(o.element, n?.element);
+    const poLuku = o.poLuku && !maCiaglyNaroznik(o.element) && promien > pas / 2;
     const rogi =
-      n && !(o.poLuku && promien > pas / 2)
+      n && !dopasowanyNaroznik && !poLuku
         ? rysujNarozniki(n, obszar, o.kolor, ctx.elementy)
         : undefined;
     const w = ramkaZMotywu(o, obszar, {
       bezKostek: !!rogi && rogi.elementy.length > 0,
+      ...(dopasowanyNaroznik && n?.kolor !== undefined ? { kolorKostki: n.kolor } : {}),
       promien,
       ...(ctx.elementy ? { wlasne: ctx.elementy } : {}),
     });
@@ -912,6 +920,22 @@ export function renderujKarte(
                 },
       );
     }
+    if (pole && wlasny?.zdobienia) {
+      const klucz = `${wlasny.id}:zdobienia`;
+      const linia = w.obramowanie && obrys(w.obramowanie);
+      const symbol = linia ? klucz : `${klucz}:z-obrysem`;
+      symbole[symbol] = {
+        kontury: linia ? wlasny.zdobienia : konturyOzdobnika(wlasny),
+        szer: wlasny.szer,
+        wys: wlasny.wys,
+      };
+      elementy.push({
+        typ: 'symbol',
+        klucz: symbol,
+        macierz: [obszar.szer / wlasny.szer, 0, 0, obszar.wys / wlasny.wys, obszar.x, obszar.y],
+        kolor: linia ? linia.kolor : (pole.styl.kolor ?? CZARNY),
+      });
+    }
     if (czyKontener(w) && w.teksturaTla)
       teksturaTla(w.teksturaTla, obszar, w.postrzepienie?.sila ? 0 : promien, w.id);
     if (w.ozdoba?.rodzaj === 'ramka9' && !ksztalt) {
@@ -1057,12 +1081,16 @@ export function renderujKarte(
     const r = szablon.ramka;
     if (r.ozdoba) {
       const o = r.odsuniecie ?? 0;
+      const promienObrysu = Math.max(0, (szablon.promienRogow ?? 0) - o);
+      const promienRamki = r.promien ?? promienObrysu;
       dodajOzdobe(
         r.ozdoba,
         { x: o, y: o, szer: szer - 2 * o, wys: wys - 2 * o },
         'ramka-karty',
         r.narozniki,
-        r.promien ?? Math.max(0, (szablon.promienRogow ?? 0) - o),
+        r.ozdoba.rodzaj === 'motyw' && maCiaglyNaroznik(r.ozdoba.element)
+          ? Math.max(promienRamki, promienObrysu)
+          : promienRamki,
       );
     } else {
       const linia = obrys(r);

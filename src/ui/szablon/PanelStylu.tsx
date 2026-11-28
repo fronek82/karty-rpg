@@ -144,11 +144,12 @@ export function PanelStylu({
         </button>
       </div>
       {wyrownanie && (
-        <Lista
+        <Przelacznik
           etykieta={t('styl.wyrownanie')}
+          wJednymWierszu
           opcje={(['lewo', 'srodek', 'prawo', 'justuj'] as const).map((w) => ({
             wartosc: w,
-            tekst: t(`styl.wyrownanie.${w}`),
+            tekst: t(`styl.wyrownanie.krotkie.${w}`),
           }))}
           wartosc={ef.wyrownanie ?? domyslne.wyrownanie ?? 'lewo'}
           zmien={(v) => ustaw({ wyrownanie: v })}

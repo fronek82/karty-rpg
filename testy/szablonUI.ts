@@ -93,7 +93,7 @@ export async function styl(
     kursywa?: boolean;
     wielkie?: boolean;
     kapitaliki?: boolean;
-    wyrownanie?: 'do lewej' | 'do środka' | 'do prawej' | 'wyjustuj';
+    wyrownanie?: 'lewo' | 'środek' | 'prawo' | 'justuj';
     wciecie?: number;
     odstepAkapitow?: number;
     minRozmiar?: number;
@@ -106,7 +106,10 @@ export async function styl(
   if (o.wielkie !== undefined) await wlacz(s, 'WIELKIE', o.wielkie);
   if (o.kapitaliki !== undefined) await wlacz(s, 'Kapitaliki', o.kapitaliki);
   if (o.wyrownanie)
-    await s.getByLabel('Wyrównanie', { exact: true }).selectOption({ label: o.wyrownanie });
+    await s
+      .getByRole('group', { name: 'Wyrównanie', exact: true })
+      .getByRole('button', { name: o.wyrownanie, exact: true })
+      .click();
   if (o.wciecie !== undefined) await s.getByLabel('Wcięcie akapitu (mm)').fill(String(o.wciecie));
   if (o.odstepAkapitow !== undefined)
     await s.getByLabel('Odstęp po akapicie (mm)').fill(String(o.odstepAkapitow));

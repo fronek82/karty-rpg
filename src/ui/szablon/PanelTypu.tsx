@@ -73,7 +73,7 @@ export function PanelTypu({
   const adresBiblioteki = useAdresBiblioteki();
   const wyjdzDoBiblioteki = useWyjscieDoBiblioteki();
   const wlasneElementy = useElementyWlasne();
-  const wlasneKsztalty = elementyRodzaju('ksztalt', wlasneElementy);
+  const ksztaltyBiblioteki = elementyRodzaju('ksztalt', wlasneElementy);
   const grafikiSvg = [...ELEMENTY_WBUDOWANE, ...wlasneElementy].filter((e) => e.kontury.length > 0);
   // Zmiana stylu jako funkcja – przy kilku zaznaczonych stosowana do stylu każdego elementu.
   const zmienStyl = (
@@ -179,7 +179,7 @@ export function PanelTypu({
             opcje={[
               ...KSZTALTY.map((k) => ({ wartosc: k, tekst: t(`ksztalt.${k}`) })),
               // Własny kształt z biblioteki ozdobników (rodzaj „kształt”).
-              ...(wlasneKsztalty.length > 0 || pole.ksztalt === 'wlasny'
+              ...(ksztaltyBiblioteki.length > 0 || pole.ksztalt === 'wlasny'
                 ? [{ wartosc: 'wlasny' as const, tekst: t('ksztalt.wlasny') }]
                 : []),
             ]}
@@ -187,7 +187,13 @@ export function PanelTypu({
             zmien={(v) =>
               ustaw(
                 v === 'wlasny'
-                  ? { ksztalt: v, ksztaltElement: pole.ksztaltElement ?? wlasneKsztalty[0]?.id }
+                  ? {
+                      ksztalt: v,
+                      ksztaltElement:
+                        pole.ksztaltElement ??
+                        wlasneElementy.find((e) => e.rodzaj === 'ksztalt')?.id ??
+                        ksztaltyBiblioteki[0]?.id,
+                    }
                   : { ksztalt: v, ksztaltElement: undefined },
               )
             }
@@ -221,7 +227,7 @@ export function PanelTypu({
                 data-testid="wybor-ksztaltu"
               >
                 <GrupyOzdobnikow
-                  elementy={wlasneKsztalty}
+                  elementy={ksztaltyBiblioteki}
                   render={(e) => (
                     <button
                       key={e.id}

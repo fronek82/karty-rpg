@@ -1,8 +1,9 @@
 import type { Mm } from '../model/jednostki';
-import type { OzdobaMotyw } from '../model/szablon';
+import type { Kolor, OzdobaMotyw } from '../model/szablon';
 import type { DefinicjaSymbolu, ElementSceny, Macierz } from '../silnik/scena';
 import { konturProstokata } from '../silnik/konturyFigur';
 import { znajdzElement } from './katalog';
+import { maCiaglyNaroznik, powiekszCiaglyNaroznik } from './noweMotywy';
 import { macierzeNarozniki, symbolZElementu, type WynikNarozniki } from './narozniki';
 import type { ElementOzdobny } from './typy';
 
@@ -45,24 +46,25 @@ export function macierzeBokow(
   e: Pick<ElementOzdobny, 'szer' | 'wys'>,
   obszar: Obszar,
   pas: Mm,
+  bokRogu: Mm = pas,
 ): Macierz[] {
   const { x, y, szer, wys } = obszar;
   const sv = pas / e.wys;
   const wynik: Macierz[] = [];
-  const poziomo = rozlozKafelki(szer - 2 * pas, pas, e);
-  const pionowo = rozlozKafelki(wys - 2 * pas, pas, e);
+  const poziomo = rozlozKafelki(szer - 2 * bokRogu, pas, e);
+  const pionowo = rozlozKafelki(wys - 2 * bokRogu, pas, e);
   // Góra: wzdłuż +X.
   for (let i = 0; i < poziomo.n; i++)
-    wynik.push([poziomo.krok / e.szer, 0, 0, sv, x + pas + i * poziomo.krok, y]);
+    wynik.push([poziomo.krok / e.szer, 0, 0, sv, x + bokRogu + i * poziomo.krok, y]);
   // Prawy: wzdłuż +Y, głębia w −X.
   for (let i = 0; i < pionowo.n; i++)
-    wynik.push([0, pionowo.krok / e.szer, -sv, 0, x + szer, y + pas + i * pionowo.krok]);
+    wynik.push([0, pionowo.krok / e.szer, -sv, 0, x + szer, y + bokRogu + i * pionowo.krok]);
   // Dół: wzdłuż −X, głębia w −Y.
   for (let i = 0; i < poziomo.n; i++)
-    wynik.push([-poziomo.krok / e.szer, 0, 0, -sv, x + szer - pas - i * poziomo.krok, y + wys]);
+    wynik.push([-poziomo.krok / e.szer, 0, 0, -sv, x + szer - bokRogu - i * poziomo.krok, y + wys]);
   // Lewy: wzdłuż −Y, głębia w +X.
   for (let i = 0; i < pionowo.n; i++)
-    wynik.push([0, -pionowo.krok / e.szer, sv, 0, x, y + wys - pas - i * pionowo.krok]);
+    wynik.push([0, -pionowo.krok / e.szer, sv, 0, x, y + wys - bokRogu - i * pionowo.krok]);
   return wynik;
 }
 
@@ -141,7 +143,12 @@ export interface WynikOzdoby extends WynikNarozniki {
 export function ramkaZMotywu(
   o: OzdobaMotyw,
   obszar: Obszar,
-  opcje: { bezKostek?: boolean; wlasne?: readonly ElementOzdobny[]; promien?: Mm } = {},
+  opcje: {
+    bezKostek?: boolean;
+    kolorKostki?: Kolor;
+    wlasne?: readonly ElementOzdobny[];
+    promien?: Mm;
+  } = {},
 ): WynikOzdoby {
   const e = znajdzElement(o.element, opcje.wlasne);
   if (!e || e.rodzaj !== 'motyw') return { elementy: [], symbole: {}, nieznany: o.element, pas: 0 };
@@ -152,16 +159,27 @@ export function ramkaZMotywu(
     [e.id]: symbolZElementu(e),
   };
   const promien = opcje.promien ?? 0;
-  const luk = o.poLuku && promien > pas / 2;
-  const macierze = luk ? macierzeLuku(e, obszar, pas, promien) : macierzeBokow(e, obszar, pas);
+  const ciaglyNaroznik = maCiaglyNaroznik(e.id);
+  const bokRogu = ciaglyNaroznik
+    ? Math.min(Math.max(pas, promien), obszar.szer / 2, obszar.wys / 2)
+    : pas;
+  const luk = o.poLuku && !ciaglyNaroznik && promien > pas / 2;
+  const macierze = luk
+    ? macierzeLuku(e, obszar, pas, promien)
+    : macierzeBokow(e, obszar, pas, bokRogu);
   for (const macierz of macierze)
     elementy.push({ typ: 'symbol', klucz: e.id, macierz, kolor: o.kolor });
-  if (!opcje.bezKostek && !luk) {
+  if ((ciaglyNaroznik || !opcje.bezKostek) && !luk) {
     if (e.kostka) {
-      const klucz = kluczKostki(e.id);
-      symbole[klucz] = { ...symbolZElementu({ ...e, kontury: e.kostka }), szer: e.wys };
-      for (const macierz of macierzeNarozniki({ szer: e.wys, wys: e.wys }, obszar, pas))
-        elementy.push({ typ: 'symbol', klucz, macierz, kolor: o.kolor });
+      // Łuk może być większy niż pas. Powiększamy promień, zachowując rozstaw kresek.
+      const powiekszony = bokRogu > pas;
+      const bok = powiekszony ? (bokRogu / pas) * e.wys : e.wys;
+      const klucz = kluczKostki(powiekszony ? `${e.id}:${bok}` : e.id);
+      const pole = { szer: bok, wys: bok };
+      const kontury = powiekszony ? powiekszCiaglyNaroznik(e.id, bok) : e.kostka;
+      symbole[klucz] = symbolZElementu({ ...e, ...pole, kontury });
+      for (const macierz of macierzeNarozniki(pole, obszar, bokRogu))
+        elementy.push({ typ: 'symbol', klucz, macierz, kolor: opcje.kolorKostki ?? o.kolor });
     } else {
       // Motyw bez kostki: róg to kwadrat pasa z obrysem.
       for (const m of macierzeNarozniki({ szer: 1, wys: 1 }, obszar, pas))
@@ -180,13 +198,14 @@ export function ramkaZMotywu(
     const g = Math.min(o.szyny, pas);
     const obrys = { kolor: o.kolor, grubosc: g };
     const { x, y, szer, wys } = obszar;
+    const promienSzyn = ciaglyNaroznik ? bokRogu : luk ? promien : 0;
     elementy.push({
       typ: 'prostokat',
       x: x + g / 2,
       y: y + g / 2,
       szer: Math.max(0, szer - g),
       wys: Math.max(0, wys - g),
-      ...(luk ? { promien: Math.max(0, promien - g / 2) } : {}),
+      ...(promienSzyn ? { promien: Math.max(0, promienSzyn - g / 2) } : {}),
       obrys,
     });
     const w = pas - g / 2;
@@ -197,7 +216,7 @@ export function ramkaZMotywu(
         y: y + w,
         szer: szer - 2 * w,
         wys: wys - 2 * w,
-        ...(luk ? { promien: Math.max(0, promien - w) } : {}),
+        ...(promienSzyn ? { promien: Math.max(0, promienSzyn - w) } : {}),
         obrys,
       });
   }

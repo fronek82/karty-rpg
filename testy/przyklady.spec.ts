@@ -173,7 +173,7 @@ test('A. karta czaru: kolorowa karta, białe panele, siatka 2×2 etykieta/warto�
       .click({ modifiers: ['Shift'] });
   await expect(panel(page)).toContainText('Zmiany dotyczą wszystkich zaznaczonych');
   await expect(drzewo(page).locator('[aria-selected="true"]')).toHaveCount(4);
-  await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 8, wyrownanie: 'do środka' });
+  await styl(await sekcja(page, 'Styl tekstu'), { rozmiar: 8, wyrownanie: 'środek' });
   await styl(await sekcja(page, 'Styl etykiety'), {
     rozmiar: 5.5,
     pogrubienie: true,
@@ -193,7 +193,7 @@ test('A. karta czaru: kolorowa karta, białe panele, siatka 2×2 etykieta/warto�
   await zaznacz(page, 'Opis');
   await styl(await sekcja(page, 'Styl tekstu'), {
     rozmiar: 7.5,
-    wyrownanie: 'wyjustuj',
+    wyrownanie: 'justuj',
     minRozmiar: 5,
     odstepAkapitow: 1,
   });
@@ -281,7 +281,7 @@ test('B. blok statystyk: tytuł kapitalikami, tabela cech, separator, akapity wy
   await zaznacz(page, 'Opis');
   await styl(await sekcja(page, 'Styl tekstu'), {
     rozmiar: 7,
-    wyrownanie: 'wyjustuj',
+    wyrownanie: 'justuj',
     wciecie: 2,
     minRozmiar: 5,
   });

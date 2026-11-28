@@ -28,9 +28,11 @@ export function Przelacznik<T extends string>({
   opcje,
   wartosc,
   zmien,
+  wJednymWierszu = false,
 }: {
   etykieta: string;
   opcje: readonly { wartosc: T; tekst: string; wylaczona?: boolean }[];
+  wJednymWierszu?: boolean;
   wartosc: T | undefined;
   zmien: (v: T) => void;
 }) {
@@ -38,7 +40,11 @@ export function Przelacznik<T extends string>({
   return (
     <div className="pole-panelu">
       <span id={id}>{etykieta}</span>
-      <div className="przelacznik-segmentowy" role="group" aria-labelledby={id}>
+      <div
+        className={`przelacznik-segmentowy${wJednymWierszu ? ' przelacznik-bez-zawijania' : ''}`}
+        role="group"
+        aria-labelledby={id}
+      >
         {opcje.map((o) => (
           <button
             key={o.wartosc}
