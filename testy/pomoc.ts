@@ -74,14 +74,16 @@ export async function przeciagnij(
 /** Przechodzi do widoku „Drukuj karty” (jeśli jeszcze nie otwarty) i zwraca stały panel opcji druku. */
 export const panelDruku = (page: Page, en = false) =>
   page.getByRole('complementary', {
-    name: en ? 'Print & sheet options' : 'Opcje druku i arkusza',
+    name: en
+      ? /^(Print settings|Print & sheet options)$/
+      : /^(Ustawienia druku|Opcje druku i arkusza)$/,
   });
 
 export async function otworzDruk(page: Page, en = false) {
   const panel = panelDruku(page, en);
   if (!(await panel.isVisible())) {
     await page
-      .getByRole('link', { name: en ? /^(Print cards|Go to print)/ : /^(Drukuj karty|Do druku)/ })
+      .getByRole('link', { name: en ? /^(Print cards|Go to print|To print)/ : /^(Drukuj karty|Do druku)/ })
       .click();
     await expect(panel).toBeVisible({ timeout: 15000 });
   }
@@ -114,12 +116,19 @@ export async function zamknijImport(page: Page) {
   }
 }
 
-/** Otwiera rozwijane menu „Pobierz” (w razie potrzeby przechodzi najpierw do „Drukuj karty”) i klika „Pobierz PDF (do druku)”. */
+/** Klika „⤓ Pobierz PDF” na ekranie Druk (w razie potrzeby przechodzi najpierw do Druku). */
 export async function kliknijPobierzPdf(page: Page, en = false) {
-  const pobierz = page.getByRole('button', { name: en ? 'Download' : 'Pobierz', exact: true });
-  if (!(await pobierz.isVisible())) {
+  const przyciskPdf = page.getByRole('button', {
+    name: en ? /Download PDF$/ : /Pobierz PDF$/,
+  });
+  if (!(await przyciskPdf.isVisible())) {
     await otworzDruk(page, en);
   }
+  if (await przyciskPdf.isVisible()) {
+    await przyciskPdf.click();
+    return;
+  }
+  const pobierz = page.getByRole('button', { name: en ? 'Download' : 'Pobierz', exact: true });
   await pobierz.click();
   await page
     .getByRole('menuitem', {
