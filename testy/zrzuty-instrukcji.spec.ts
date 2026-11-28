@@ -172,6 +172,10 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
         page.getByRole('complementary', { name: t('szablon.wlasciwosci') }),
       ).toBeVisible();
       await expect(page.locator('.karta-podgladu')).toBeVisible();
+      await page
+        .getByRole('navigation', { name: t('edytor.dodajElement') })
+        .getByRole('button', { name: t('ui2.pasek.rozwinOpis') })
+        .click();
       await zapisz(page, 'edytor-szablonu');
     });
 
@@ -213,6 +217,10 @@ for (const [jezyk, motyw] of JEZYKI_ZRZUTOW.flatMap((j) => motywy.map((m) => [j,
       });
       await page.locator('.strona-kartki .karta-na-kartce').first().click();
       await expect(page.getByRole('complementary', { name: t('kartka.panelKart') })).toBeVisible();
+      await page
+        .getByRole('navigation', { name: t('mausritter.dodajKarte') })
+        .getByRole('button', { name: t('ui2.pasek.rozwinOpis') })
+        .click();
       await zapisz(page, 'edytor-kartki');
     });
 
